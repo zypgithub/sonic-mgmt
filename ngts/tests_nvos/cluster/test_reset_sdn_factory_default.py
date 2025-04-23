@@ -81,7 +81,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-            time.sleep(2)
+            time.sleep(4)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format)

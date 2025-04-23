@@ -45,6 +45,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
         all_config_files_paths = {}
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
+        uploaded_files = []
         initial_configuration_restored = False
         path_to_config = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
         config_file_name = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
@@ -66,11 +67,13 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                 sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[path_to_file.split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
                 initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + path_to_file.split('/')[-1]
                 logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
+                uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + path_to_file.split('/')[-1])
 
                 # Create a dummy config file.
                 file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
                 dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
                 engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
+                uploaded_files.append(dummy_file_path)
 
                 edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
                 engines.sonic_mgmt.run_cmd(edit_cmd)
@@ -129,14 +132,14 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
                         sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-                engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 if all_state_files_paths[file_type]:
                     for file in all_state_files_paths[file_type]:
                         app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
                         sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-
+            for file_path in uploaded_files:
+                engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
             # Make sure all files are deleted.
             ClusterTools.verify_sdn_config_files_deleted(sdn)
@@ -163,14 +166,14 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
                             sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                     if (file_type in all_state_files_paths) and all_state_files_paths[file_type]:
                         for file in all_state_files_paths[file_type]:
                             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
                             sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-                    # engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
+            for file_path in uploaded_files:
+                engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
 
 def verify_all_files_are_deleted(engines, files_list):

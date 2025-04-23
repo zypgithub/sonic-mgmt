@@ -57,6 +57,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         initial_config_contents = {}
         initial_configs_paths_to_restore = {}
         log_levels = {}
+        uploaded_files = []
         initial_configuration_restored = False
         path_to_config = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
         config_file_name = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
@@ -95,11 +96,13 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
                     initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
                     logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
+                    uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1])
 
                     # Create a dummy config file.
                     file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
                     dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
                     engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
+                    uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name)
                     edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
                     engines.sonic_mgmt.run_cmd(edit_cmd)
                     path_to_config[file_type] = dummy_file_path
@@ -215,7 +218,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                             file = file.split('/')[-1]
                             sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
                             engines.sonic_mgmt.run_cmd(f"sudo rm -rf {initial_configs_paths_to_restore[file_type]}")
-                    engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH}/*")
+                for file_path in uploaded_files:
+                    engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
             with allure.step("Restore log level"):
                 cluster.apps.app_name[app].loglevel.action_restore_cluster()

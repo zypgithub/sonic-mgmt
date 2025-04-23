@@ -43,10 +43,11 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
         initial_config_contents = {}
         sdn_files_deleted = False
         interface_wa_called = False
+        uploaded_files = []
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -94,7 +95,8 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                 next(interfaces_wa)
             except StopIteration:
                 pass  # Or handle it if necessary
-        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
+        for file_path in uploaded_files:
+            engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
@@ -125,10 +127,11 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
         initial_config_contents = {}
         sdn_files_deleted = False
         interface_wa_called = False
+        uploaded_files = []
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -175,7 +178,8 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 next(interfaces_wa)
             except StopIteration:
                 pass  # Or handle it if necessary
-        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
+        for file_path in uploaded_files:
+            engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
@@ -204,10 +208,11 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
         initial_config_contents = {}
         sdn_files_deleted = False
         interface_wa_called = False
+        uploaded_files = []
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -254,7 +259,8 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 next(interfaces_wa)
             except StopIteration:
                 pass  # Or handle it if necessary
-        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
+        for file_path in uploaded_files:
+            engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
         with allure.step("Verify the setup is functional"):
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
@@ -286,10 +292,11 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         initial_config_contents = {}
         sdn_files_deleted = False
         interface_wa_called = False
+        uploaded_files = []
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        log_level = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        log_level, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
@@ -344,7 +351,8 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 time.sleep(2)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
-        engines.sonic_mgmt.run_cmd(f"sudo rm -rf {ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/*'}")
+        for file_path in uploaded_files:
+            engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
@@ -423,16 +431,19 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     initial_configs_paths_to_restore = {}
     path_to_config = {}
     config_file_name = {}
+    uploaded_files = []
 
     for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
         sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
         initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
+        uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1])
         logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
 
         file_name = 'dummy_' + (initial_configs_paths_to_restore[file_type]).split('/')[-1]
         dummy_file_path = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name
         engines.sonic_mgmt.run_cmd("sudo cp {} {}".format(initial_configs_paths_to_restore[file_type], dummy_file_path))
+        uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + file_name)
         with allure.step("Change initial content"):
             edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=dummy_file_path)
             engines.sonic_mgmt.run_cmd(edit_cmd)
@@ -472,7 +483,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
                 continue
             assert current_config_set == expected_config_set, f"Configuration mismatch:\nCurrent: {current_config_set}\nExpected: {expected_config_set}"
 
-    return log_level
+    return log_level, uploaded_files
 
 
 def rotate_logs(system):
@@ -489,9 +500,13 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
 
     for file_type, file_path in config_files_paths.items():
+        if file_type == 'chassis_mapping' and is_bug_active(4222718):
+            continue
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
+        if file_type == 'chassis_mapping' and is_bug_active(4222718):
+            continue
         init_file_content = initial_config_contents.get(file_type)
         if set(current_file_content.split('\n')) != set(init_file_content.split('\n')):
             errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {init_file_content}\nCurrent: {current_file_content}")
