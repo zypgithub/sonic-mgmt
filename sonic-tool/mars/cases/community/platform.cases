@@ -160,6 +160,14 @@
     </case>
 
     <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
         <info> Test SFP Util Daily </info>
         <name> sfp_util </name>
         <cmd>
