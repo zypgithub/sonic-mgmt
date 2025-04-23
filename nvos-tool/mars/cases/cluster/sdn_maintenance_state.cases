@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+    <global>
+        <Test>
+            <group> NVOS </group>
+            <name> SDN Maintenance State </name>
+            <info>Tests for SDN maintenance state functionality</info>
+            <owner> Batel Shpigel </owner>
+        </Test>
+        <Case>
+            <tags> SDN Maintenance State </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+            <tout> 900 </tout>
+            <tags>ALL</tags>
+        </Case>
+    </global>
+    <case>
+        <name> SDN Maintenance State Show Commands </name>
+        <info>Test the SDN maintenance state show commands functionality</info>
+        <tout> 900 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py::test_maintenance_state_show_cmd --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN Maintenance State Change </name>
+        <info>Test the ability to change and restore maintenance state for SDN transceivers</info>
+        <tout> 900 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py::test_change_maintenance_state --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN Maintenance State Bad Parameters </name>
+        <info>Test error handling for invalid parameters in SDN maintenance state commands</info>
+        <tout> 900 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py::test_bad_params --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+    <case>
+        <name> SDN Maintenance State Port State Changes </name>
+        <info>Test that port states change correctly based on maintenance state changes</info>
+        <tout> 900 </tout>
+        <cmd>
+            <params>
+                <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py::test_port_state_change_according_to_maintenance_state --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+            </params>
+        </cmd>
+    </case>
+</CASEDEF> 
