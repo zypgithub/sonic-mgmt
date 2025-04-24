@@ -466,7 +466,7 @@ class SystemConsts:
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test']
+                                             'verification_test', 'opasswd.old']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 

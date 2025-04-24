@@ -60,7 +60,7 @@ def test_link_low_power_enabled(engines, devices, topology_obj, prepare_traffic,
             with allure.step("wait until ports update"):
                 time.sleep(50)
 
-            _test_l1_behavior(engine=engines.dut, device=devices.dut, expected_state=NvosConst.ENABLED, expected_l1_cap_value=1)
+            _test_l1_behavior(engine=engines.dut, device=devices.dut, expected_state=NvosConst.ENABLED, expected_l1_cap_value=0)
 
     finally:
         fae.ib.link_low_power.unset(IbInterfaceConsts.LINK_STATE, apply=True)

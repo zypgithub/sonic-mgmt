@@ -1096,7 +1096,7 @@ class JulietSwitch(NvLinkSwitch):
         }
         cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
         self.constants = self.constants._replace(cluster_files=cluster_files)
-        bmc_dump_files = ['bmc_debug_log_dump.tar']
+        bmc_dump_files = ['bmc_debug_log_dump.tar.xz']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
         self.constants.dump_files.remove('hdparm')
