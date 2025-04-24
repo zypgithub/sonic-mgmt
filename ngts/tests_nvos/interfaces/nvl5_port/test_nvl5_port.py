@@ -8,10 +8,8 @@ from retry.api import retry_call
 
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst
-from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtPort import MgmtPort
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
-from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -314,17 +312,17 @@ def set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, s
     TestToolkit.tested_api = test_api
     with allure.step(f"Select {devices.dut.nvl5_port_type} ports"):
         port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl5_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith(prefix)]
-        up_ports = [MgmtPort(port_name) for port_name in port_names]
+        up_ports = [Port(port_name) for port_name in port_names]
         selected_port = random.choice(up_ports)
 
     with allure.step('set up streamed gnmi session - subscribe client to port speed'):
-        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, 'admin',
-                            'admin', verify_tools_installed=True)
+        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
+                            devices.dut.default_password, verify_tools_installed=True)
         session = client.gnmic_subscribe_interface_speed_and_keep_session_alive(GnmiMode.STREAM, selected_port.name,
                                                                                 skip_cert_verify=True)
 
     with allure.step(f"Create instance for all ports"):
-        all_ports = MgmtPort(group_all_ports)
+        all_ports = Port(group_all_ports)
 
     speed = IbInterfaceConsts.XDR_SLOW_SPEED
     try:
@@ -335,11 +333,10 @@ def set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, s
                 with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
-            up_ports[0].interface.wait_for_port_speed(up_ports[0], speed)
-
             with allure.step(f"Validate xdr slow speed on ports"):
                 retry_call(validate_ports_state_and_speed, [speed, port_names, prefix], exceptions=AssertionError, tries=6,
-                           delay=10)
+                           delay=30)
+                time.sleep(30)  # GNMI 30 seconds pulling interval
 
     # Unset port speed and verify default (400G) is restored
     finally:
@@ -348,11 +345,10 @@ def set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, s
             if not standalone_system:
                 with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
-            up_ports[0].interface.wait_for_port_speed(up_ports[0], devices.dut.nvl5_port_speed)
 
             with allure.step(f"Validate unset xdr slow speed on ports"):
                 retry_call(validate_ports_state_and_speed, [devices.dut.nvl5_port_speed, port_names, prefix], exceptions=AssertionError, tries=6,
-                           delay=10)
+                           delay=30)
 
         with allure.step('verify that client received the xdr speed in the existing streaming session'):
             out, err = client.close_session_and_get_out_and_err(session)
