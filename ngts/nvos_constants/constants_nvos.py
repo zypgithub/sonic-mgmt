@@ -1532,6 +1532,7 @@ class OperationTimeConsts:
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
+    THRESHOLDS['julietscaleout generate_tech_support'] = THRESHOLDS['julietscaleout generate_tech_support'] * 1.1
 
 
 class StatsConsts:
