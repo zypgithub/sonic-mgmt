@@ -500,8 +500,6 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
 
     for file_type, file_path in config_files_paths.items():
-        if file_type == 'chassis_mapping' and is_bug_active(4222718):
-            continue
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
