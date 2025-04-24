@@ -1150,7 +1150,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.asic_type = NvosConst.NVL5
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
-        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation, redfish_aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
             'nmx-controller': {
                 **{  # Unpack
