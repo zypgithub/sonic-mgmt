@@ -60,7 +60,8 @@ class ClusterTools:
                 with allure.step(f"Start app again {app} and validate its up"):
                     output = cluster.apps.app_name[app].action_start_cluster_app()
                     nmx_c_expected_state = 'up' if app == ClusterConsts.NMX_CONTROLLER else ''
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
+                    app_state = '' if app == ClusterConsts.NMX_CONTROLLER else app
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state, app=app_state)
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                 ClusterTools.verify_app_is_up(engines, app)
                 if app == ClusterConsts.NMX_CONTROLLER and (has_loopbox or not standalone_system):
@@ -492,7 +493,7 @@ class ClusterTools:
         TestToolkit.tested_api = test_api
 
     @staticmethod
-    def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state=''):
+    def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='', app=''):
         for _ in range(15):
             final_sleep_time = 2
             if (not cluster_expected_state) and (not nmx_c_expected_state):
@@ -516,7 +517,17 @@ class ClusterTools:
                 else:
                     logger.info(f"Cluster is now in the wanted state. Sleeping for {final_sleep_time} seconds.")
                     time.sleep(final_sleep_time)
-                    break
+                    if app:
+                        logger.info(f"Checking {app} state")
+                        output = OutputParsingTool.parse_show_output_to_dict(
+                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            output_format=OutputFormat.json).get_returned_value()
+                        app_status = output[app]['status']
+                        if app_status == 'ok':
+                            break
+                        time.sleep(2)
+                    else:
+                        break
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn):
