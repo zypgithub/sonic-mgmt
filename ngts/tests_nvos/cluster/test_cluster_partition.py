@@ -88,9 +88,11 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
             sdn.factory_default.action_reset(param='force')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
+        TestToolkit.tested_api = ApiType.NVUE
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         interface_wa_called = True
+        TestToolkit.tested_api = test_api
         with allure.step("Checking if partition is restored to original"):
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
@@ -234,8 +236,10 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             sdn.factory_default.action_reset(param='force')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
+        TestToolkit.tested_api = ApiType.NVUE
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
+        TestToolkit.tested_api = test_api
         interface_wa_called = True
         with allure.step("Checking if partition is restored to original"):
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
