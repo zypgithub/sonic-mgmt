@@ -740,7 +740,7 @@ def get_list_of_directories(current_installed_img, starts_with=None):
         if os.path.isdir(temp_dir) and "-001" not in temp_dir:
             logger.info("Searching for images in path: " + temp_dir)
             relevant_images = [f for f in os.listdir(temp_dir) if f.startswith("nvos-amd64-25.") and
-                               current_installed_img.replace("nvos-25", "nvos-amd64-25") not in f]
+                               list(current_installed_img.values())[0].replace("nvos-25", "nvos-amd64-25") not in f]
             if relevant_images:
                 return_directories[temp_dir] = relevant_images
         if len(return_directories) == 2:
