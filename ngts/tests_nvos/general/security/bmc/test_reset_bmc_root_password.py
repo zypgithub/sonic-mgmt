@@ -144,8 +144,8 @@ def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, 
                     output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
                     while "Connected to" not in output:
                         output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
-                    logger.info("Wait for 20 seconds before trying to reset bmc root password")
-                    time.sleep(20)
+                    logger.info("Wait for 30 seconds before trying to reset bmc root password")
+                    time.sleep(30)
 
             with allure.step("Reset BMC Password to default - using nvos command"):
                 output = platform.bmc_password.action_reset().verify_result()
