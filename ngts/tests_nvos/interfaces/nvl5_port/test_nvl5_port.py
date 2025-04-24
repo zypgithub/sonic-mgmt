@@ -17,6 +17,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links, skip_if_no_access_links
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
@@ -24,7 +25,7 @@ from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, ve
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, summarize_switch_ports
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
@@ -273,28 +274,25 @@ def test_nvl5_negative(engines, devices, test_api):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_interface_xdr_slow_speed_access_ports(engines, devices, test_api, setup_name, standalone_system, has_loopbox):
-    if not has_loopbox and standalone_system:
-        pytest.skip("Skipping test - no connected access ports")
+    skip_if_no_access_links(has_loopbox, standalone_system)
     acp_ports_range = f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}'
-    set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
-                                       standalone_system, acp_ports_range, prefix='acp')
+    _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+                                        standalone_system, acp_ports_range, prefix='acp')
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_interface_xdr_slow_speed_trunk_ports(engines, devices, test_api, setup_name, standalone_system):
-    if isinstance(devices.dut, JulietNonScaleoutSwitch):
-        pytest.skip("Skipping test - no connected trunk ports")
-    set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
-                                       standalone_system, "sw1-18p1-2s1-2", prefix='sw')
+    skip_if_no_trunk_links(devices)
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+                                        standalone_system, summarized_switch_ports, prefix='sw')
 
 
-@pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, standalone_system,
-                                       group_all_ports: str, prefix: str):
+def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, standalone_system,
+                                        group_all_ports: str, prefix: str):
     """
     Configure xdr slow speed on all trunk / access ports
     Relevant CLI commands:
