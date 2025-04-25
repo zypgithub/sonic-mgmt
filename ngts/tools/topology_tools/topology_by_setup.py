@@ -5,11 +5,14 @@ from ngts.common.util import get_specified_installed_dpu_indexes
 logger = logging.getLogger()
 
 
+def need_dpu_player(setup_name):
+    return 'bobcat' in setup_name or 'CI_sonic_SS' in setup_name
+
+
 def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
     topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
-    if 'bobcat' in setup_name or 'CI_sonic_SS' in setup_name:
-        if not is_dark_mode(topology):
-            add_dpu_player(topology, slow_cli, override_type)
+    if need_dpu_player(setup_name):
+        add_dpu_player(topology, slow_cli, override_type)
 
     return update_dut_alias(topology)
 
@@ -56,15 +59,3 @@ def add_dpu_player(topology, slow_cli, override_type):
         if dpu_host_name in topology.players:
             topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Name'] += f"-dpu-{dpu_index}"
             topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Description'] = dpu_host_name
-
-
-def is_dark_mode(topology):
-    try:
-        dark_mode = True
-        dark_mode_config = topology.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf")
-        if "DARK_MODE=false" in dark_mode_config:
-            dark_mode = False
-    except Exception as err:
-        logger.error(f"Can not get dark mode config. Err:{err}")
-    logger.info(f"dark mode is:{dark_mode}")
-    return dark_mode
