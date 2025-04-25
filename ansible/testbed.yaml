@@ -2325,6 +2325,118 @@
   inv_name: lab
   comment: Mellanox MTVR testbed
 
+- conf-name: r-bison-16-t0-isolated-d16u16s2
+  group-name: vm-t1
+  topo: t0-isolated-d16u16s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t0-isolated-v6-d32u32s2
+  group-name: vm-t1
+  topo: t0-isolated-v6-d32u32s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t0-isolated-d256u256s2
+  group-name: vm-t1
+  topo: t0-isolated-d256u256s2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t1-isolated-d28u1
+  group-name: vm-t1
+  topo: t1-isolated-d28u1
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t1-isolated-v6-d56u2
+  group-name: vm-t1
+  topo: t1-isolated-v6-d56u2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-t1-isolated-d510u2
+  group-name: vm-t1
+  topo: t1-isolated-d510u2
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-ptf32
+  group-name: vm-t1
+  topo: ptf32
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-16-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-16
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_94
+  vm_base: VM7413
+  dut:
+    - r-bison-16
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-tigris-04-t0
   group-name: vm-t1
   topo: t0

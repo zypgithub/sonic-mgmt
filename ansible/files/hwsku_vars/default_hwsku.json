@@ -210,5 +210,9 @@
     "mtvr-bobcat-05_setup": {
         "default_hwsku": "Mellanox-SN4280-O28",
         "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80"]
+    },
+    "r-bison-16_setup": {
+        "default_hwsku": "Mellanox-SN5640-C512S2",
+        "support_hwsku": ["Mellanox-SN5640-C448O16", "Mellanox-SN5640-C512S2"]
     }
 }
