@@ -687,7 +687,6 @@
   - '.*ERR swss#orchagent: :- create: create status: SAI_STATUS_FAILURE.*'
   Conditions:
   - Affected_test_cases:
-    - bfd/test_bfd.py
     - vxlan/test_vxlan_ecmp.py
     Redmine:
     - 3536554
