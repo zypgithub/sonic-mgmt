@@ -16,7 +16,7 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
-    verify_the_setup_is_functional, get_current_time
+    verify_the_setup_is_functional, get_current_time, KEEP_ONLY_FILES
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
@@ -27,8 +27,7 @@ logger = logging.getLogger()
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name,
-                                       handle_la_marker_in_manufacture):
+def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -221,7 +220,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 ClusterTools.create_empty_partition(sdn, {})
 
         with allure.step("Run reset factory with keep only-files param"):
-            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time)
+            execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ONLY_FILES, current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
 
         with allure.step("Verify cluster in correct state"):
@@ -275,7 +274,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name,
-                                               standalone_system, handle_la_marker_in_manufacture):
+                                               standalone_system):
     # Only fetched and generated files will be cleaned.
     # SAME
     TestToolkit.tested_api = test_api

@@ -1,3 +1,6 @@
+# todo: combine these with the consts at ngts/tests_nvos/system/factory_reset/helpers.py
+
+
 class FactoryResetType:
     NO_PARAMS = 'NoParams'
     KEEP_BASIC = 'KeepBasic'

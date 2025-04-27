@@ -430,7 +430,7 @@ def test_system_dns_server_max_set_unset_single_apply(engines):
 @pytest.mark.dns
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_static_system_dns(engines, devices, handle_la_marker_in_manufacture):
+def test_factory_reset_for_static_system_dns(engines, devices):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:
@@ -479,7 +479,7 @@ def test_factory_reset_for_static_system_dns(engines, devices, handle_la_marker_
 @pytest.mark.dns
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_with_config_save_for_static_system_dns(engines, devices, handle_la_marker_in_manufacture):
+def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:

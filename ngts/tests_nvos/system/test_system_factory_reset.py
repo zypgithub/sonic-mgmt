@@ -24,7 +24,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox,
-                                      setup_name, standalone_system, test_name, handle_la_marker_in_manufacture):
+                                      setup_name, standalone_system, test_name):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -84,7 +84,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_basic(engines, devices, test_api, test_name, handle_la_marker_in_manufacture):
+def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -110,7 +110,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name, handle_
             output_dictionary_mgmt_show = factory_reset_keep_basic_pre_steps(engines, system)
 
     with allure.step("Run reset factory with keep basic param"):
-        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_BASIC, current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -140,7 +140,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name, handle_
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, handle_la_marker_in_manufacture):
+def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -166,7 +166,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, ha
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory with keep all-config param"):
-        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep all-config", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ALL_CONFIG, current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -220,7 +220,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name):
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory keep only-files"):
-        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "keep only-files", current_time, test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ONLY_FILES, current_time, test_name=test_name)
 
     update_timezone(system)
 

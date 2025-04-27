@@ -18,7 +18,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.general.security.tpm_attestation.helpers import factory_reset_tpm_checker
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
-    verify_cleanup_done, verify_the_setup_is_functional, get_current_time
+    verify_the_setup_is_functional, get_current_time
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.constants import MINUTE

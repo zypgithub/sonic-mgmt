@@ -16,8 +16,8 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 running_dockers = {}
-KEEP_ALL_CONFIG = "keep-all-config"
-KEEP_ONLY_FILES = "only-files"
+KEEP_ALL_CONFIG = "keep all-config"
+KEEP_ONLY_FILES = "keep only-files"
 KEEP_BASIC = "keep basic"
 DO_NOT_CHECK_DOCKERS = ['snmp']
 
