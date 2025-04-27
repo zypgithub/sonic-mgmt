@@ -43,6 +43,7 @@ def pytest_collection_modifyitems(session, config, items):
     sn5400   - 128
     sn5600   - 128
     sn5610   - 244
+    sn5640   - 512
     """
     if len(items) == 1 and items[0].name in MAX_PORTS_TEST_LIST and config.option.ports_number:
         minimum_ports_number = 4
@@ -68,6 +69,15 @@ def pytest_collection_modifyitems(session, config, items):
 
         # save pre running config for config_check
         dut_engine.run_cmd(f"sonic-cfggen -d --print-data > {PRE_RUNNING_CONFIG_PATH}")
+
+        # Save available config_db.json from DUT to sonic-mgmt docker /tmp folder
+        logger.info(f'Copy original config_db.json from DUT to sonic-mgmt /tmp folder')
+        dut_engine.copy_file(source_file=f"{PRE_RUNNING_CONFIG_PATH}",
+                             dest_file=f'/tmp/{CONFIG_DB_COPY_NAME}', file_system='/tmp/', direction='get')
+
+        if platform == PlatformTypesConstants.PLATFORM_BISON:
+            logger.info("Bison is already configured to max ports")
+            return
 
         if items[0].name == ACL_SCALE_TEST_NAME:
             if '_simx' in platform:
@@ -117,10 +127,6 @@ def pytest_collection_modifyitems(session, config, items):
 
         original_config_db = read_config_db_from_shared_location(orig_config_db_shared_path)
         existing_ports_num = len(original_config_db['PORT'])
-        # Save available config_db.json from DUT to sonic-mgmt docker /tmp folder
-        logger.info(f'Copy original config_db.json from DUT to sonic-mgmt /tmp folder')
-        dut_engine.copy_file(source_file=f"{PRE_RUNNING_CONFIG_PATH}",
-                             dest_file=f'/tmp/{CONFIG_DB_COPY_NAME}', file_system='/tmp/', direction='get')
 
         if expected_ports_num != existing_ports_num:
             if platform in UNSUPPORTED_SPLIT_PLATFORMS:
@@ -136,7 +142,6 @@ def pytest_collection_modifyitems(session, config, items):
 
             # Mark that the original configuration needs to be restored after the test
             logger.info('The max port configuration has loaded')
-            setattr(session, 'restore_original_config', True)
             cli_object.ip.apply_dns_servers_into_resolv_conf()
 
 
@@ -149,11 +154,6 @@ def add_marker(items, skip):
 
 def reload_config(session, platform_params, chip_type):
     # Reload the original configuration
-    restore_original_config = getattr(session, 'restore_original_config', False)
-    logger.info(f'Configuration restoration needed: {restore_original_config}')
-    if not restore_original_config:
-        return
-
     topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
     dut_engine = topology.players['dut']['engine']
     cli_object = SonicCli(topology)
