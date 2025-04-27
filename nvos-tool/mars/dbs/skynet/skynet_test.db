@@ -23,7 +23,7 @@
                     <name> Send Failure Report </name>
                     <tout> 900 </tout>
                     <params>
-                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/python /devts/infra/tools/sql/skynet_failure_report.py  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600 --session_id=[[run_time:session_id]] --project_name NVOS --report_recipients nvos-skynet-maintainers@exchange.nvidia.com </exec>
+                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/python /devts/infra/tools/sql/skynet_failure_report.py  --setup_name=[[conf:extra_info.setup_name]]  --session_id=[[run_time:session_id]] --project_name NVOS --report_recipients nvos-skynet-maintainers@exchange.nvidia.com </exec>
                     </params>
                 </cmd>
             </on_not_success>
