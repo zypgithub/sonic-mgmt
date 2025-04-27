@@ -3,13 +3,16 @@ import math
 import re
 from datetime import datetime
 
-import allure
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
 from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, CumulusConsts
+from ngts.nvos_tools.infra import ExceptionTool
+from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic import get_oldest_syslog_id, \
+    insert_new_start_string
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -158,23 +161,42 @@ class TestToolkit:
         return pytest.is_mars_run and not TestToolkit.is_special_run()
 
     @staticmethod
-    def get_loganalyzer_marker(engine):
-        with allure.step("Get log analyzer marker"):
-            try:
+    def get_loganalyzer_marker(engine, get_full_line=False) -> str:
+        """
+        Returns the most recent log-analyzer test-start marker from the logs. If get_full_line is false, returns only
+        the line contents; otherwise returns the full line from the log, including timestamp, hostname, etc. .
+        """
+        try:
+            with allure.step("Get log analyzer marker"):
                 markers = engine.run_cmd('grep " start-LogAnalyzer-" /var/log/syslog')
                 last_marker = markers.split("\n")[-1]
-                return re.findall(r'\bstart-LogAnalyzer-\S+', last_marker)[0]
-            except BaseException:
-                return ""
+                return last_marker if get_full_line else re.findall(r'\bstart-LogAnalyzer-\S+', last_marker)[0]
+        except BaseException as e:
+            ExceptionTool.log_exception(e)
+            return ""
 
     @staticmethod
     def add_loganalyzer_marker(engine, marker):
-        with allure.step("Add log analyzer marker"):
-            try:
+        """Injects the log-analyzer test-start marker at the current position in the log."""
+        try:
+            with allure.step("Add log analyzer marker"):
                 if marker:
                     engine.run_cmd(f"logger -p info '{marker}'")
-            except BaseException:
-                logging.warning("Failed to add log analyzer marker")
+        except BaseException as e:
+            logging.warning("Failed to add log analyzer marker: " + ExceptionTool.format_exception(e))
+
+    @staticmethod
+    def add_loganalyzer_marker_at_beginning(engine, marker):
+        """
+        Creates a new "log" file that contains `marker` and zips it into syslog.n.gz so it would appear to be the oldest
+        log file. `marker` must be a full log line (containing the timestamp, hostname, etc.).
+        """
+        try:
+            with allure.step("Adding log analyzer marker as the first log line"):
+                oldest_syslog_id = get_oldest_syslog_id(engine)
+                insert_new_start_string(engine, oldest_syslog_id, marker)
+        except BaseException as e:
+            ExceptionTool.log_exception(e)
 
     @staticmethod
     def start_code_section_loganalyzer_ignore():

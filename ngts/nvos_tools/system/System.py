@@ -157,13 +157,27 @@ class FactoryDefault(BaseComponent):
     def unset(self, op_param=""):
         raise Exception("unset is not implemented for system/factory-default")
 
-    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None, system_is_ready_timeout=None, verify_duration=False, test_name=''):
+    def action_reset(self, engine=None, device=None, operation='reset factory', param="", topology_obj=None,
+                     system_is_ready_timeout=None, verify_duration=False, test_name='', handle_log_analyzer=None):
+        """
+        Calls factory-reset action.
+        If handle_log_analyzer is True, once the action completes, the log-analyzer start-marker will be injected as the
+        first log-line. If False, this will not be done. If set to None (the default) then it will be done, unless
+        factory-reset is run with 'keep only-files' flag (in which case the log-files are not deleted).
+        """
         with allure.step("Execute factory reset {}".format(param)):
             logging.info("Execute factory reset {}".format(param))
             if not engine:
                 engine = TestToolkit.engines.dut
             if not device:
                 device = TestToolkit.devices.dut
+
+            from ngts.tests_nvos.system.factory_reset.helpers import KEEP_ONLY_FILES
+            # can't import at top of file due to circular import
+            if handle_log_analyzer or (handle_log_analyzer is None and param != KEEP_ONLY_FILES):
+                log_analyzer_marker = TestToolkit.get_loganalyzer_marker(engine, get_full_line=True)
+            else:
+                log_analyzer_marker = ""
 
             res_obj, duration = OperationTime.save_duration(f'reset factory {param}', "", test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_reset, engine=engine, device=device, comp="factory-default", param=param, topology_obj=topology_obj,
@@ -177,6 +191,8 @@ class FactoryDefault(BaseComponent):
                 else:
                     result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
+            if log_analyzer_marker:
+                TestToolkit.add_loganalyzer_marker_at_beginning(engine, log_analyzer_marker)
             logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
             res_obj.duration = duration
 

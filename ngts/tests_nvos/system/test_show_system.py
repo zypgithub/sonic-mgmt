@@ -337,7 +337,7 @@ def test_system_location_set(test_api, engines, nv_command):
 
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_system_contact_location(engines, nv_command, handle_la_marker_in_manufacture):
+def test_factory_reset_for_system_contact_location(engines, nv_command):
     """
     Run factory reset system command and verify the system contact and location fields are removed from system show
         Test flow:
