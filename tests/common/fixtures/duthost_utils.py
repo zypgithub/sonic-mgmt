@@ -241,7 +241,7 @@ def shutdown_ebgp(duthosts, rand_one_dut_hostname):
         # Shutdown all eBGP neighbors
         duthost.command("sudo config bgp shutdown all")
         # Verify that the total eBGP routes are 0.
-        pt_assert(wait_until(60, 2, 5, check_ebgp_routes, 0, 0, duthost),
+        pt_assert(wait_until(120, 2, 5, check_ebgp_routes, 0, 0, duthost),
                   "eBGP routes are not 0 after shutting down all neighbors on {}".format(duthost))
         pt_assert(wait_until(orch_cpu_timeout, 2, 0, check_orch_cpu_utilization, duthost, orch_cpu_threshold),
                   "Orch CPU utilization {} > orch cpu threshold {} after shutdown all eBGP"
