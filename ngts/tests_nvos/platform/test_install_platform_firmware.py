@@ -54,7 +54,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
                 NvueGeneralCli.save_config(engines.dut)
                 res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
                                                                 install_new_image_fw, nv_command.platform, test_name,
-                                                                test_image_name)
+                                                                test_image_name, devices)
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_cmd(nv_command.platform, version_name)
                 nv_command.system.validate_health_status(HealthConsts.OK)
