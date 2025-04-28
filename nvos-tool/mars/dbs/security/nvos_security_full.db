@@ -89,23 +89,23 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_pka.cases </cases>
 	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_sed_password.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
-	</test>
-    <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
-    </test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_rbac.cases </cases>
     </test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_crl.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_sed_password.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
+	</test>
+    <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
+    </test>
 </DBDEF>
