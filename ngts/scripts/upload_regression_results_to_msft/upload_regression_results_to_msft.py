@@ -48,6 +48,10 @@ def init_parser():
                         help='sonic image version, i.e, '
                              '202305_RC.57-a21ec72e5_Internal', required=True)
     parser.add_argument('-l', '--log_level', dest='log_level', default=logging.INFO, help='log verbosity')
+    parser.add_argument('--git_repository', dest='git_repository',
+                        help='Repository to clone sonic-mgmt public repo from')
+    parser.add_argument('--branch', dest='branch',
+                        help='Branch to collect tests from')
 
     subparsers = parser.add_subparsers(help='help for subcommand', dest="subcommand")
 
@@ -75,12 +79,11 @@ def init_parser():
     # MODIFY ARGUMENTS
     parser_modify_results.add_argument('--user_excel_table_path', dest='user_excel_table_path',
                                        help='Path to excel table file that should be modified')
-    parser_modify_results.add_argument('--redmine_issues_to_update', dest='redmine_issues_to_update',
-                                       default="{}", help='Specify redmine issues that should '
-                                       'be updated to some other message in JSON format.'
-                                       'JSON format should be {redmine_issue_url: message_text}'
-                                       'i.e. {"https://redmine.mellanox.com/issues/3651153": '
-                                       '"test issue for nvidia platform, work in progress", ...}')
+    parser_modify_results.add_argument('--redmine_issues_to_update_path', dest='redmine_issues_to_update_path',
+                                       help='Path to json file that contains internal redmine issues to change to '
+                                       'some other message in JSON format, the JSON file should be in the format of '
+                                       '{"redmine_issue": "new_message"}',
+                                       default=None)
     # EXPORT ARGUMENTS
     parser_export_results.add_argument('--export_excel', dest='export_excel_path',
                                        help='Path to excel table file that should be exported to MSFT.',
@@ -126,18 +129,19 @@ class ReleaseResultsUploader:
         self.excel_table_name = f"{self.script_running_date}_{self.sonic_version}.xlsx"
         self.excel_table_path = os.path.join(self.sonic_version_release_results_dir,
                                              f"collected_results_{self.excel_table_name}")
+        self.branch = arguments.branch
         self.tmp_sonic_mgmt_git_dir = "/tmp/sonic-mgmt-get-new-tests"
         if self.command == "collect":
             self.last_days = arguments.last_days
             self.user_sessions = arguments.user_sessions
             self.platform_list = arguments.platform_list
             self.started_by_regexes = arguments.sessions_started_by_regexes
-            self.git_path = self.clone_sonic_mgmt_public_repo()
+            self.repo_path = self.clone_sonic_mgmt_public_repo(arguments.git_repository)
             self.all_setups = get_all_setups()
             self.all_setups_platforms = get_all_setups_platform()
         elif self.command == "modify":
             self.user_excel_table_path = arguments.user_excel_table_path
-            self.redmine_issues_to_update = json.loads(arguments.redmine_issues_to_update)
+            self.redmine_issues_to_update_path = arguments.redmine_issues_to_update_path
             self.user_modified_excel_table_path = os.path.join(self.sonic_version_release_results_dir,
                                                                f"user_modified_{self.excel_table_name}")
         elif self.command == "export":
@@ -162,7 +166,6 @@ class ReleaseResultsUploader:
                                                                   f'concated_results_{self.excel_table_name}')
 
         self.sheet_name = "community_tests"
-        self.branch = self.get_branch_from_sonic_version()
         self.redmine_bugs = set()
         self.community_issues_redmine_bugs = dict()
         self.nvidia_community_tests = set()
@@ -187,17 +190,18 @@ class ReleaseResultsUploader:
             os.chmod(updated_files_dir, access)
         return sonic_version_release_results_dir, updated_files_dir
 
-    def get_branch_from_sonic_version(self):
-        return re.search(r"(\d{6}).*", self.sonic_version).group(1)
-
-    def clone_sonic_mgmt_public_repo(self):
+    def clone_sonic_mgmt_public_repo(self, git_repository):
         if os.path.exists(self.tmp_sonic_mgmt_git_dir):
             shutil.rmtree(self.tmp_sonic_mgmt_git_dir, ignore_errors=True)
-        os.mkdir(self.tmp_sonic_mgmt_git_dir)
-        cmd = "git clone https://github.com/sonic-net/sonic-mgmt.git".split()
-        p = subprocess.Popen(cmd, cwd=self.tmp_sonic_mgmt_git_dir)
-        p.wait(timeout=180)
-        return os.path.join(self.tmp_sonic_mgmt_git_dir, "sonic-mgmt")
+        try:
+            os.mkdir(self.tmp_sonic_mgmt_git_dir)
+            cmd = f"git clone {git_repository}".split()
+            p = subprocess.Popen(cmd, cwd=self.tmp_sonic_mgmt_git_dir)
+            p.wait(timeout=180)
+            return os.path.join(self.tmp_sonic_mgmt_git_dir, "sonic-mgmt")
+        except Exception as e:
+            logger.error(f"Error cloning {git_repository}: {e}")
+            raise e
 
     def exec_command_on_regression_results_to_msft(self):
         """
@@ -241,8 +245,20 @@ class ReleaseResultsUploader:
         filter_setups_not_in_results = self.filter_setups(setups_not_in_results)
         self.compose_collect_results_mail(setups_in_results, filter_setups_not_in_results)
 
+    def load_redmine_issues_to_update(self):
+        if not self.redmine_issues_to_update_path:
+            self.redmine_issues_to_update = dict()
+            return
+        try:
+            with open(self.redmine_issues_to_update_path, 'r') as f:
+                self.redmine_issues_to_update = json.load(f)
+        except Exception as e:
+            logger.error(f"Error loading redmine issues file: {e}")
+            raise e
+
     def modify_results(self):
         df = pd.read_excel(self.user_excel_table_path, sheet_name=self.sheet_name, index_col=0)
+        self.load_redmine_issues_to_update()
         row_idx_to_remove = []
         host_commercial_name_col = []
         for i in range(len(df)):
@@ -820,7 +836,7 @@ class ReleaseResultsUploader:
         if full_test_path in self.nvidia_community_tests:
             return False
         else:
-            command = f"cd {self.git_path} && git cat-file -e origin/{self.branch}:{full_test_path} && echo file exists"
+            command = f"cd {self.repo_path} && git cat-file -e origin/{self.branch}:{full_test_path} && echo file exists"
             stream = os.popen(command)
             output = stream.read()
             return "file exists" in output

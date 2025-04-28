@@ -58,6 +58,8 @@
           "node": "fit150-r2d2",
           "parameters": {
               "sonic_version": "${sonic_version}",
+              "git_repository": "${git_repository}",
+              "branch": "${branch}",
               "command": "${command}",
               "parameters": "${parameters}",
               "container_name": "sonic-mgmt-${USER}"

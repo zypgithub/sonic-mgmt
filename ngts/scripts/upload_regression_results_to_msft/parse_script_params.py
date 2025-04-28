@@ -43,32 +43,16 @@ def get_platform_filter_param(params):
     return new_params
 
 
-def split_modify_params(params):
-    if ",true" in params:
-        params_list = params.split(",true ")
-        # params_list[0] = params_list[0][1:]
-        params_list[1] = "true {}".format(params_list[1][:-2])
-    else:
-        params_list = params.split(",false ")[:-1]
-    return params_list
-
-
 def update_param_list(params, replace_dict, params_idx_dict, command):
     for old_str, new_str in replace_dict.items():
         params = params.replace(old_str, new_str)
-    params_list = params.split(",") if command != 'modify' else split_modify_params(params)
+    params_list = params.split(",")
     params_list = [param for param in params_list if param]
     params_to_remove = []
     for idx in params_idx_dict.keys():
         if idx < len(params_list):
             if params_list[idx].startswith('true '):
                 params_list[idx] = params_list[idx].replace("true", params_idx_dict[idx])
-                if params_idx_dict[idx] == "--redmine_issues_to_update":
-                    param_name, json_str = params_list[idx].split("--redmine_issues_to_update ")
-                    json_str = re.search(r"\s*(.*)", json_str).group(1)
-                    json_str = json_str.replace("\\\"", "\\\\\"")
-                    json_str = json_str.replace("\"", "\\\"")
-                    params_list[idx] = "--redmine_issues_to_update  {json_str}\\\"".format(json_str=json_str)
             else:
                 params_to_remove.append(params_list[idx])
     for param in params_to_remove:
@@ -85,7 +69,7 @@ def parse_params(params, command):
         params_idx_dict = {1: "--filter_sessions_started_by", 2: "--filter_platforms"}
         params = get_platform_filter_param(params)
     elif command == "modify":
-        params_idx_dict = {0: "--user_excel_table_path", 1: "--redmine_issues_to_update"}
+        params_idx_dict = {0: "--user_excel_table_path", 1: "--redmine_issues_to_update_path"}
     elif command == "compare":
         params_idx_dict = {0: "--compare_excel", 1: "--msft_results_path"}
     elif command == "save":
