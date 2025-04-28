@@ -552,8 +552,11 @@ class SonicInstallationSteps:
                     general_cli_obj.save_configuration()
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):
-                    retry_call(fetch_dash_api_package, tries=3, delay=10, logger=logger)
-                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+                    try:
+                        retry_call(fetch_dash_api_package, tries=3, delay=2, logger=logger)
+                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+                    except Exception as e:
+                        logger.warning(f"Failed to install dash api: {e}")
 
                 if dut_engine.run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) != 'dpu.conf':
                     with allure.step('Startup dpu and save config'):
