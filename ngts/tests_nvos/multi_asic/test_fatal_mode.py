@@ -144,11 +144,10 @@ def test_post_fatal_recovery(engines):
 
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setting):
+def test_flow_until_soft_reset(engines, devices, random_api, random_asic, events_count_setting):
     """
     Test that health-events trigger fatal mode properly, and that the system leaves fatal mode when everything is fine.
     """
-    TestToolkit.tested_api = ApiType.NVUE
     _trigger_soft_reset(False, random_asic, events_count_setting)
     try:
         with allure.step(f'Validate {FATAL_REASON_FILE} exists'):
@@ -162,13 +161,11 @@ def test_flow_until_soft_reset(engines, devices, random_asic, events_count_setti
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_reboot(engines, devices, random_asic, test_name, events_count_setting):
+def test_flow_until_reboot(engines, devices, random_api, random_asic, test_name, events_count_setting):
     """
     Test repetitive health-events cause "soft reset" and then reboot. After everything is fine, leave fatal mode.
     Also generate tech-support and assert the dump contains /etc/system_fatal and fatal_reason files.
     """
-    TestToolkit.tested_api = ApiType.OPENAPI
-
     _set_settings(reboot_count=2, clear_time=4)  # longer clear-time so we have enough time to generate tech-support
     _trigger_soft_reset(False, random_asic, events_count_setting)
 
@@ -191,13 +188,11 @@ def test_flow_until_reboot(engines, devices, random_asic, test_name, events_coun
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_flow_until_close_ports(engines, devices, random_asic, events_count_setting):
+def test_flow_until_close_ports(engines, devices, random_api, random_asic, events_count_setting):
     """
     Test the full flow – repetitive health-events cause "soft reset", followed by reboot, followed by ports-close, and
     the system remains in this state.
     """
-    TestToolkit.tested_api = ApiType.NVUE
-
     _trigger_soft_reset(False, random_asic, events_count_setting)
     _trigger_reboot(random_asic, events_count_setting)
 
@@ -239,9 +234,8 @@ def _test_negative_flow_time_window(engines, devices, random_asic):
 
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
-def test_negative_flow_with_warnings(engines, devices, random_asic):
+def test_negative_flow_with_warnings(engines, devices, random_api, random_asic):
     """Test that fatal-mode is not triggered by health events with irrelevant event_ids."""
-    TestToolkit.tested_api = ApiType.OPENAPI
     _simulate_events(["warning"], random_asic)
     _assert_syncd_restart(expect_restart=False)
     _assert_system_fatal_mode(False, False)
@@ -551,9 +545,7 @@ def _assert_system_fatal_file(count: int):
 
 def _check_tech_support(engine, test_name, num_reboots_done):
     with allure.step(f"Generate tech-support and validate contents"):
-        tech_support_tar, _ = System().techsupport.action_generate(engine, option="5 minutes ago",
-                                                                   since_time="5 minutes ago",
-                                                                   test_name=test_name)  # todo: params for save duration?
+        tech_support_tar, _ = System().techsupport.action_generate(engine, test_name=test_name)
         with allure.independent_step("Verify " + FATAL_FILE):
             validate_file_in_tech_support(engine, tech_support_tar, FATAL_FILE, num_reboots_done)
         with allure.independent_step("Verify " + FATAL_REASON_FILE):
