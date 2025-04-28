@@ -32,7 +32,7 @@
                 <!-- Fast-reboot is not supported on t1 -->
                 <key> topology </key>
                 <op> in </op>
-                <value> ["t1", "t1-lag", "t1-64-lag", "t1-64-lag-clet", "t1-56-lag", "t1-28-lag"] </value>
+                <value> ["t1", "t1-lag", "t1-64-lag", "t1-64-lag-clet", "t1-56-lag", "t1-28-lag", "t1-isolated-d224u8"] </value>
             </condition>
         </ignore>
 
