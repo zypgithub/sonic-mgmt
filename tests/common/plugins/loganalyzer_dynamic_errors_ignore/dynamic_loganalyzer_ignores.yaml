@@ -156,9 +156,10 @@
 # example 2: AOC cable supporting speed are 100G or 200G, port breakout supporting 50G but 50G can not be applied
 # due to cable limitation
 - Errors_list:
-    - '.*ERR pmon#xcvrd: CMIS: Ethernet\d+: no suitable app for the port appl .* host_lane_count \d+ host_speed .*'
+    - '.*ERR pmon#xcvrd.*CMIS: Ethernet\d+: no suitable app for the port appl .* host_lane_count \d+ host_speed .*'
   Conditions:
   - Platform:
+    - sn4280
     - sn4700
     - sn5600
     - sn5640
