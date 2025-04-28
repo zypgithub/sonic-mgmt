@@ -46,3 +46,43 @@ class GrpcMsg:
     MSG_SERVER_REFLECT = 'service ServerReflection'
     MSG_SUBSCRIBE_RESPONSE = 'message SubscribeResponse'
     ALL_MSGS = {SERVER_REFLECTION_SUBSCRIBE_RESPONSE: MSG_SUBSCRIBE_RESPONSE}
+
+
+class GnmiConstants:
+    SPEED_NEGOTIATE = 'speed-negotiate'
+    SPEED = "speed"
+    IN_OCTETS = 'in-octets'
+    IN_PKTS = 'in-pkts'
+    IN_DISCARDS = 'in-discards'
+    IN_ERRORS = 'in-errors'
+    OUT_OCTETS = 'out-octets'
+    OUT_PKTS = 'out-pkts'
+    OUT_DISCARDS = 'out-discards'
+    OUT_ERRORS = 'out-errors'
+    SYMBOL_ERROR_COUNTER = 'symbol-error-counter'
+    XMIT_WAIT = 'xmit-wait'
+    LINK_ERROR_RECOVERY = 'link-error-recovery'
+    LINK_DOWNED = 'link-downed'
+    RCV_REMOTE_PHY_ERRORS = 'rcv-remote-phy-errors'
+    RCV_SWITCH_RELAY_ERRORS = 'rcv-switch-relay-errors'
+    RCV_CONSTRAINTS_ERRORS = 'rcv-constraints-errors'
+    LOCAL_LINK_INTEGRITY_ERRORS = 'local-link-integrity-errors'
+    QP1_DROPPED = 'qp1-dropped'
+    PORT_BUFFER_OVERRUN_ERRORS = 'port-buffer-overrun-errors'
+    IN_UNICAST_PKTS = 'in-unicast-pkts'
+    OUT_UNICAST_PKTS = 'out-unicast-pkts'
+    IN_MULTICAST_PKTS = 'in-multicast-pkts'
+    OUT_MULTICAST_PKTS = 'out-multicast-pkts'
+    MTU = "mtu"
+    OPERATIONAL_VL = 'operational-vl'
+    WIDTH = 'width'
+    IB_SPEED = "ib-speed"
+    OPER_STATUS = 'oper-status'
+    SUPPORTED_IB_SPEEDS = 'supported-ib-speeds'
+    SUPPORTED_SPEED = 'supported-speed'
+    MAX_SUPPORTED_MTUS = 'max-supported-mtus'
+    PHYSICAL_PORT_STATE = 'physical-port-state'
+    LOGICAL_PORT_STATE = 'logical-port-state'
+    SUPPORTED_WIDTHS = 'supported-widths'
+    VL_CAPABILITIES = "vl-capabilities"
+    IB_SUBNET = "ib-subnet"

@@ -13,6 +13,7 @@ from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbCons
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -51,6 +52,7 @@ class IbSwitch(BaseSwitch):
         self.init_documents_consts()
         self.init_cli_coverage_prop("nvos")
         self._init_interface_lists()
+        self._init_interface_attributes_mapping_dict()
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -472,6 +474,43 @@ class IbSwitch(BaseSwitch):
             }
         }
 
+    def _init_interface_attributes_mapping_dict(self):
+        self.interface_attributes_mapping_dict = {
+            IbInterfaceConsts.LINK_AUTO_NEGOTIATE: GnmiConstants.SPEED_NEGOTIATE,
+            IbInterfaceConsts.LINK_SPEED: GnmiConstants.SPEED,
+            # counters
+            IbInterfaceConsts.LINK_STATS_IN_BYTES: GnmiConstants.IN_OCTETS,
+            IbInterfaceConsts.LINK_STATS_IN_PKTS: GnmiConstants.IN_PKTS,
+            IbInterfaceConsts.LINK_STATS_IN_DROPS: GnmiConstants.IN_DISCARDS,
+            IbInterfaceConsts.LINK_STATS_IN_ERRORS: GnmiConstants.IN_ERRORS,
+            IbInterfaceConsts.LINK_STATS_OUT_BYTES: GnmiConstants.OUT_OCTETS,
+            IbInterfaceConsts.LINK_STATS_OUT_PKTS: GnmiConstants.OUT_PKTS,
+            IbInterfaceConsts.LINK_STATS_OUT_DROPS: GnmiConstants.OUT_DISCARDS,
+            IbInterfaceConsts.LINK_STATS_OUT_ERRORS: GnmiConstants.OUT_ERRORS,
+            IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS: GnmiConstants.SYMBOL_ERROR_COUNTER,
+            IbInterfaceConsts.LINK_STATS_OUT_WAIT: GnmiConstants.XMIT_WAIT,
+            IbInterfaceConsts.LINK_STATS_QNT3[0]: GnmiConstants.LINK_ERROR_RECOVERY,
+            IbInterfaceConsts.LINK_STATS_QNT3[1]: GnmiConstants.LINK_DOWNED,
+            IbInterfaceConsts.LINK_STATS_QNT3[2]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[3]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[4]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[5]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[6]: GnmiConstants.QP1_DROPPED,
+            IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
+            # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
+            IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
+            IbInterfaceConsts.LINK_STATS_MULTICAST_IN_PKTS: GnmiConstants.IN_MULTICAST_PKTS,
+            IbInterfaceConsts.LINK_STATS_MULTICAST_OUT_PKTS: GnmiConstants.OUT_MULTICAST_PKTS,
+            ##
+            IbInterfaceConsts.LINK_MAX_SUPPORTED_MTU: GnmiConstants.MAX_SUPPORTED_MTUS,
+            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE: GnmiConstants.PHYSICAL_PORT_STATE,
+            IbInterfaceConsts.LINK_LOGICAL_PORT_STATE: GnmiConstants.LOGICAL_PORT_STATE,
+            IbInterfaceConsts.LINK_SUPPORTED_LANES: GnmiConstants.SUPPORTED_WIDTHS,
+            IbInterfaceConsts.LINK_VL_ADMIN_CAPABILITIES: GnmiConstants.VL_CAPABILITIES,
+        }
+
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
@@ -729,6 +768,17 @@ class BlackMambaSwitch(IbSwitch):
         self.fnm_link_speed = '800G'
         self.fnm_internal_link_speed = '50G'
 
+    def _init_interface_attributes_mapping_dict(self):
+        super()._init_interface_attributes_mapping_dict()
+        self.interface_attributes_mapping_dict.update({
+            IbInterfaceConsts.LINK_MTU: GnmiConstants.MTU,
+            IbInterfaceConsts.LINK_OPERATIONAL_VLS: GnmiConstants.OPERATIONAL_VL,
+            IbInterfaceConsts.LINK_LANES: GnmiConstants.WIDTH,
+            IbInterfaceConsts.LINK_IB_SPEED: GnmiConstants.IB_SPEED,
+            IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS: GnmiConstants.SUPPORTED_IB_SPEEDS,
+            IbInterfaceConsts.LINK_IB_SUBNET: GnmiConstants.IB_SUBNET,
+        })
+
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
@@ -925,6 +975,19 @@ class CrocodileSwitch(IbSwitch):
             [f'{port}pl{i}' for port in traffic_ports for i in range(1, 5)]
         )
 
+    def _init_interface_attributes_mapping_dict(self):
+        super()._init_interface_attributes_mapping_dict()
+        self.interface_attributes_mapping_dict.update({
+            # IbInterfaceConsts.LINK_DUPLEX: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            IbInterfaceConsts.LINK_MTU: GnmiConstants.MTU,
+            IbInterfaceConsts.LINK_OPERATIONAL_VLS: GnmiConstants.OPERATIONAL_VL,
+            IbInterfaceConsts.LINK_LANES: GnmiConstants.WIDTH,
+            IbInterfaceConsts.LINK_IB_SPEED: GnmiConstants.IB_SPEED,
+            IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS: GnmiConstants.SUPPORTED_IB_SPEEDS,
+            IbInterfaceConsts.LINK_IB_SUBNET: GnmiConstants.IB_SUBNET,
+            # IbInterfaceConsts.LINK_ROUND_TRIP_LATENCY: '' #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+        })
+
     def _init_boot_time_timeouts(self):
         super()._init_boot_time_timeouts()
         self.timeout_system_is_ready = 10 * MINUTE
@@ -957,6 +1020,12 @@ class NvLinkSwitch(IbSwitch):
     def _init_interface_lists(self):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0', 'eth1']
+
+    def _init_interface_attributes_mapping_dict(self):
+        super()._init_interface_attributes_mapping_dict()
+        self.interface_attributes_mapping_dict.update({
+            # IbInterfaceConsts.LINK_SUPPORTED_SPEEDS: GnmiConstants.SUPPORTED_SPEED #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+        })
 
     def _init_constants(self):
         super()._init_constants()

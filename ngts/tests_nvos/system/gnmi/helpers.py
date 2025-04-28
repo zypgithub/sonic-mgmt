@@ -605,3 +605,38 @@ def setup_gnmi_mtls_checker(engines=None):
 def wait_for_gnmi_to_update_data():
     with allure.step(f'wait {GnmiConsts.SLEEP_TIME_FOR_UPDATE} seconds for gnmi to update with new data'):
         time.sleep(GnmiConsts.SLEEP_TIME_FOR_UPDATE)
+
+
+def parse_gnmi_output(gnmi_out):
+    """
+    This differs from run_gnmi_client_and_parse_output - works also when path=''
+
+    GNMI-output as an example:
+    interfaces/interface[name=acp1]/phy-diag/state/raw-ber: 3E-10
+    interfaces/interface[name=acp1]/phy-diag/state/eth-an-fsm-state: 0
+    interfaces/interface[name=acp1]/phy-diag/state/last-logic-recovery-attempts: 0
+    interfaces/interface[name=acp1]/phy-diag/state/psi-fsm-state: IDLE
+    interfaces/interface[name=acp1]/phy-diag/state/successful-recovery-events: 0
+
+    for the example, this function will return:
+    {
+        'raw-ber': '3E-10'
+        'eth-an-fsm-state': '0'
+        'last-logic-recovery-attempts': '0'
+        'psi-fsm-state': 'IDLE'
+        'successful-recovery-events': '0'
+    }
+    """
+    res = {}
+    try:
+        gnmi_out_as_list = [line for line in gnmi_out.splitlines() if line.strip()]
+        for line in gnmi_out_as_list:
+            key_value_pair = line.split(": ")
+            key = key_value_pair[0].split("/")[-1]
+            value = key_value_pair[1]
+            res[key] = value
+        return res
+    except Exception as e:
+        logger.info("Got an exception while trying to parse GNMI output")
+        logger.info(e)
+        raise e

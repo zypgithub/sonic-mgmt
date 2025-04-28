@@ -65,4 +65,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_response_mgmt_ip_inband.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_gnmi_cli_interface_compare.cases </cases>
+	</test>
 </DBDEF>

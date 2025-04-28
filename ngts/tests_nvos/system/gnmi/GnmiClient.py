@@ -84,10 +84,11 @@ class GnmiClient:
 
     def gnmic_subscribe_interface(self, mode: str, interface_name: str, username: str = '', password: str = '',
                                   skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
-                                  cmd_time=None, wait_till_done: bool = False) -> Tuple[str, str]:
+                                  cmd_time=None, wait_till_done: bool = False, interface_path: str = None) -> Tuple[str, str]:
         out, err, _ = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
                                                           cacert,
-                                                          debug_mode, cmd_time, False, wait_till_done)
+                                                          debug_mode, cmd_time, False, wait_till_done,
+                                                          interface_path)
         return out, err
 
     def gnmic_subscribe_interface_and_keep_session_alive(self, mode: str, interface_name: str, username: str = '',
@@ -140,7 +141,7 @@ class GnmiClient:
                                        cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False,
                                        interface_path: str = None) -> \
             Tuple[str, str, subprocess.Popen]:
-        path = interface_path or 'state/description'
+        path = 'state/description' if interface_path is None else interface_path
         return self.gnmic_subscribe(f'interfaces/interface[name={interface_name}]', path, mode, True,
                                     username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
                                     keep_session_alive, wait_till_done)

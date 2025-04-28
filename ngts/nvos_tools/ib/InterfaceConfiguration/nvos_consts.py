@@ -85,10 +85,14 @@ class IbInterfaceConsts:
     LINK_STATS_IN_ERRORS = "in-errors"
     LINK_STATS_IN_SYMBOL_ERRORS = "in-symbol-errors"
     LINK_STATS_IN_PKTS = "in-pkts"
+    LINK_STATS_UNICAST_IN_PKTS = "unicast-in-pkts"
+    LINK_STATS_MULTICAST_IN_PKTS = "multicast-in-pkts"
     LINK_STATS_OUT_BYTES = "out-bytes"
     LINK_STATS_OUT_DROPS = "out-drops"
     LINK_STATS_OUT_ERRORS = "out-errors"
     LINK_STATS_OUT_PKTS = "out-pkts"
+    LINK_STATS_UNICAST_OUT_PKTS = "unicast-out-pkts"
+    LINK_STATS_MULTICAST_OUT_PKTS = "multicast-out-pkts"
     LINK_STATS_OUT_WAIT = "out-wait"
     MAX_BYTE_COUNTER_AFTER_CLEAR = 2500
     MAX_PKT_COUNTER_AFTER_CLEAR = 9
