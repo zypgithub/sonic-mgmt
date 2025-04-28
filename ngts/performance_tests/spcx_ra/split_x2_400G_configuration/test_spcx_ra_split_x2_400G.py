@@ -24,7 +24,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6, set_ibm):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines

@@ -53,3 +53,8 @@ def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_paramete
         stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name)
         stream_list.append(stream)
     create_json_traffic_file_with_stream_list(spine_tg, traffic_parameters, json_path, stream_list)
+
+
+@pytest.fixture(scope='function', autouse=False)
+def set_ibm(players, conf_args):
+    players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)

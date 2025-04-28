@@ -55,14 +55,20 @@ def basic_setup_configuration(players, conf_args):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def ibm_fixture(players, conf_args):
-    original_conf_args = copy.deepcopy(conf_args)
-    conf_args["auto_buffer_mode"] = "True"
-    with allure.step("Set auto buffer mode to True"):
+def set_ibm(players, conf_args):
+    with allure.step("Set IBM in accordance with the test configuration"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
+
+
+@pytest.fixture(scope='function', autouse=False)
+def ibm_fixture(players, conf_args):
+    copied_conf_args = copy.deepcopy(conf_args)
+    copied_conf_args["auto_buffer_mode"] = "True"
+    with allure.step("Set auto buffer mode to True"):
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, copied_conf_args)
     yield
     with allure.step("Set auto buffer mode to False"):
-        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, original_conf_args)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
 
 
 @pytest.fixture(scope='function', autouse=True)

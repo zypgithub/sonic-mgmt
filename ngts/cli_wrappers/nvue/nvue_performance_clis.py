@@ -43,8 +43,6 @@ class NvuePerformanceCli(PerformanceCommon):
         full_path = os.path.join(dst_dir, "tmp.yaml")
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
-        logging.info("Enable IBM mode")
-        self.set_ibm(scenario, conf_args)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
 
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
@@ -68,9 +66,9 @@ class NvuePerformanceCli(PerformanceCommon):
     def set_ibm(self, scenario, conf_args):
         ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
         if conf_args['params']:
-            ctl = conf_args.get('params', {}).get("low_ar_threshold", Cl_Consts.LOW_AR_THRESHOLD)
-            ctm = conf_args.get('params', {}).get("med_ar_threshold", Cl_Consts.MED_AR_THRESHOLD)
-            cth = conf_args.get('params', {}).get("high_ar_threshold", Cl_Consts.HIGH_AR_THRESHOLD)
+            ctl = conf_args.get('params', {}).get("low_ar_thres", Cl_Consts.LOW_AR_THRESHOLD)
+            ctm = conf_args.get('params', {}).get("med_ar_thresh", Cl_Consts.MED_AR_THRESHOLD)
+            cth = conf_args.get('params', {}).get("high_ar_thresh", Cl_Consts.HIGH_AR_THRESHOLD)
         else:
             ctl = Cl_Consts.LOW_AR_THRESHOLD
             ctm = Cl_Consts.MED_AR_THRESHOLD
@@ -292,7 +290,7 @@ class NvuePerformanceCli(PerformanceCommon):
             "split_left": conf_args['split_left'],
             "split_right": conf_args['split_right'],
             "total_ports": total_dut_ports,
-            "speed": conf_args['speed'],
+            "speed": conf_args.get('speed', "400000000"),
             "two_sided_ar": conf_args['two_sided_ar']
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
@@ -413,7 +411,7 @@ class NvuePerformanceCli(PerformanceCommon):
             logging.info("Number of nexthops resolved on the dut at time {} is {}".format(start_time - timeout, nexthop_number))
             sleep(10)
             timeout -= 10
-            if timeout <= 0:
+            if timeout < 0 and nexthop_number < number_of_nexthops:
                 raise RealIssue("After {} seconds, the number of nexthops resolved on the dut is {}".format(start_time, nexthop_number))
         return True
 
