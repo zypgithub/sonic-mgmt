@@ -160,16 +160,6 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
 
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
-        if not standalone_system:
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                 output_format=output_format).get_returned_value()
-            assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
-                                                                 output_format=output_format).get_returned_value()
-            uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from)
-            assert uuid not in uuids, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute, See current uuids: {uuids}"
-            assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
-
         with allure.step("Validate apps are still running"):
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
         with allure.step("Check log level"):
@@ -191,6 +181,17 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"Config file was not loaded properly. Expected content {expected_config_content}, Actual content: " \
                     f"{current_config_content}. \n " \
                     f"{ClusterConsts.EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE[file_type]} was not preserved"
+
+        if not standalone_system:
+            with allure.step("checking partitions are preserved after upgrade"):
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                assert ClusterConsts.EMPTY_PARTITION_ID in output.keys(), f'Partition {ClusterConsts.EMPTY_PARTITION_ID} was deleted, while its expected to be kept'
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[ClusterConsts.EMPTY_PARTITION_ID].show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                uuids, locations = ClusterTools.uuid_location_in_partition(sdn, partition_to_remove_from)
+                assert uuid not in uuids, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute, See current uuids: {uuids}"
+                assert location not in locations, f"uuid {uuid} was not deleted from {partition_to_remove_from} although it was removed with no-reroute. See current locations: {locations}"
 
     finally:
         if not standalone_system:

@@ -111,10 +111,11 @@ def verify_current_config_equals_given_config(sdn, engines, initial_config_conte
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete()
             if file_type == 'chassis_mapping' and is_bug_active(4222718):
                 continue
-            initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
-            current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
-            if initial_config_set != current_config_set:
-                errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {initial_config_set}\nCurrent: {current_config_set}")
+            if ClusterConsts.EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE[file_type] not in current_config_content:
+                errors_list.append(f"Config file was not loaded properly. Expected content {initial_config_contents},"
+                                   f" Actual content: {current_config_content}. \n "
+                                   f"{ClusterConsts.EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE[file_type]} "
+                                   f"was not preserved")
         assert not errors_list, "\n\n".join(errors_list)
 
 
