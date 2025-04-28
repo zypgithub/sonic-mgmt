@@ -25,6 +25,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.tests_nvos.general.security.centralized_tests.upgrade.test_upgrade import fetch_install_img
+from ngts.tests_nvos.checklist.test_checklist_ipv6 import send_open_api_request
 
 logger = logging.getLogger()
 
@@ -104,7 +105,7 @@ def test_show_system_image(original_version):
 @pytest.mark.system
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_downgrade_upgrade(release_name, random_api, original_version, devices, engines, downgrade_version_realpath,
-                           target_version_realpath):
+                           target_version_realpath, dut_ipv6_addr):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -153,6 +154,9 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             with allure.step('uninstall orig version'):
                 system.image.action_uninstall('force')
 
+            with allure.step('run curl via ipv6, customer bug #4318552'):
+                send_open_api_request(dut_ipv6_addr, engines.dut)
+
         player = engines.sonic_mgmt
         scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
         with allure.step('Get config file and path for target version'):
@@ -170,6 +174,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     finally:
         with allure.step(f"Run upgrade: {target_version_realpath}"):
             fetch_install_img(system, target_version_realpath, engines)
+        with allure.step('Run curl via ipv6, customer bug #4318552'):
+            send_open_api_request(dut_ipv6_addr, engines.dut)
         target_fetched_image = target_version_realpath.split('/')[-1]
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
