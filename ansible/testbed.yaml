@@ -6691,7 +6691,7 @@
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-bobcat-07
-  ptf_ip: 10.245.44.185/16
+  ptf_ip: 10.245.44.186/16
   ptf_ipv6:
   server: server_54
   vm_base: VM0000

@@ -2873,8 +2873,8 @@ ptf-mtvr-bobcat-06 ansible_host=10.245.44.183 ansible_ssh_user="{{ lookup('env',
 10.245.44.183 ansible_host=10.245.44.183 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 # MTVR canonical testbed CI_sonic_SS_3 topologies
-ptf-mtvr-bobcat-07 ansible_host=10.245.44.185 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.245.44.185 ansible_host=10.245.44.185 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-mtvr-bobcat-07 ansible_host=10.245.44.186 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.245.44.186 ansible_host=10.245.44.186 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-245-2-40 ansible_host=10.245.2.40 protocol=snmp
