@@ -398,7 +398,9 @@ class CertificateGenerator:
             .out(p12_bundle_path)\
             .in_file(cert_public_pem_path)\
             .inkey(cert_private_path)\
-            .passout('pass', p12_pass)
+            .passout('pass', p12_pass)\
+            .keypbe('AES-256-CBC')\
+            .certpbe('AES-256-CBC')
         create_p12_bundle_cmd = create_p12_bundle_cmd_builder.get_command_string()
         self._run(create_p12_bundle_cmd, stdout_func)
         self._verify_file(p12_bundle_path, 'generated certificate crt')
