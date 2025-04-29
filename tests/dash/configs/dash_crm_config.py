@@ -118,7 +118,6 @@ ROUTING_TYPE_CONFIG = {
 
 VNET_MAPPING_CONFIG = {
     f"DASH_VNET_MAPPING_TABLE:Vnet2:20.2.2.2": {
-        "mac_address": "F9:22:83:99:22:A2",
         "routing_type": RoutingType.ROUTING_TYPE_PRIVATELINK,
         "underlay_ip": "10.0.2.2",
         "overlay_sip_prefix": "fd41:108:20:abc:abc::0/ffff:ffff:ffff:ffff:ffff:ffff::",
