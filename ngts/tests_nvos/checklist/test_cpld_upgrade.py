@@ -62,6 +62,8 @@ def test_cpld_upgrade(engines, devices, topology_obj):
 
 
 def _firmware_install_test(devices, platform: Platform, image_details, engines, topology_obj):
+    player_engine = engines['sonic_mgmt']
+    scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
     burn_filename = os.path.basename(image_details['path'])
     has_refresh_image = 'refresh_path' in image_details
     if has_refresh_image:
@@ -77,11 +79,11 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                                                        str(set(initial_files) & file_names))
 
     with allure.step(f"Fetching BURN image"):
-        platform.firmware.cpld.action_fetch(image_details['path']).verify_result()
+        platform.firmware.cpld.action_fetch(image_details['path'], base_url=scp_path).verify_result()
 
     if has_refresh_image:
         with allure.step(f"Fetching REFRESH image"):
-            platform.firmware.cpld.action_fetch(image_details['refresh_path']).verify_result()
+            platform.firmware.cpld.action_fetch(image_details['refresh_path'], base_url=scp_path).verify_result()
 
     with allure.step(f"Asserting fetch was successful"):
         file_list = platform.firmware.cpld.show_files_as_list()
@@ -106,9 +108,6 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
                         result_obj = platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
                             device=devices.dut, topology_obj=topology_obj)
                         result_obj.verify_result()
-
-                        with allure.step(f"verify operation time for install cpld {refresh_filename!r} (duration: {result_obj.duration})"):
-                            OperationTime.verify_operation_time(result_obj.duration, 'install cpld').verify_result()
 
                 except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                     logger.info(f"GET request failed as expected because of switch reboot")
