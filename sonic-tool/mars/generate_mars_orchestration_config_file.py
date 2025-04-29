@@ -22,6 +22,7 @@ community_develop_set_1_dbs = [
     'warm_reboot.db',
     'span.db',
     'snmp.db',
+    'packet_trimming.db'
     'bsl.db'
 ]
 
