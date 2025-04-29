@@ -202,7 +202,7 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type)
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type=inner_packet_type)
         pkt[outer_encap.upper()]['IP'].dst = "10.3.3.4"
         verify_packets = [{'send': pkt, 'exp': None}]
         self.send_packet_and_verify_dash_eni_counter(
@@ -219,7 +219,7 @@ class TestEniCounter:
         """
         packet_number = 1
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_CA_PA_ENTRY_MISS_DROP_PACKETS": packet_number}
-        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type)
+        pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type=inner_packet_type)
         ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.PE_CA) + 1)
         pkt[outer_encap.upper()]['IP'].dst = ip_with_same_outbound_route_prefix1
         verify_packets = [{'send': pkt, 'exp': None}]
@@ -269,6 +269,7 @@ class TestEniCounter:
                SAI_ENI_STAT_INBOUND_RX_PACKETS: +packet_number
                SAI_ENI_STAT_RX_PACKETS: +packet_number*2
                SAI_ENI_STAT_RX_BYTES: +len(inbound_packet)*packet_number + len(outbound_packet)*packet_number
+               SAI_ENI_STAT_FLOW_AGED: +1
         5. Send a inbound pkt without inbound route
         6. Get the eni_counter_after_sending_pkt after sending the inbound pkt
         7. Check the following counter change as follows by comparing eni_counter_before_sending_pkt
@@ -279,8 +280,8 @@ class TestEniCounter:
         inbound_packet_len = 142
         packet_number = 1
 
-        vm_to_dpu_pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type)
-        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config, inner_packet_type)
+        vm_to_dpu_pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type=inner_packet_type)
+        pe_to_dpu_pkt, exp_dpu_to_vm_pkt = inbound_pl_packets(dash_pl_config, inner_packet_type=inner_packet_type)
 
         with allure.step("send outbound and inbound packet and verify the relevant eni counter"):
             eni_counter_check_point_dict = {"SAI_ENI_STAT_FLOW_CREATED": 1,
