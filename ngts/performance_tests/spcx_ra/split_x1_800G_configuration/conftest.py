@@ -63,7 +63,7 @@ def ibm_fixture(players, conf_args):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, copied_conf_args)
     yield
     with allure.step("Set auto buffer mode to False"):
-        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, original_conf_args)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
 
 
 @pytest.fixture(scope='function', autouse=True)
