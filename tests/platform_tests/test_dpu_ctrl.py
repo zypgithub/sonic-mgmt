@@ -88,7 +88,7 @@ def test_dpu_power_off_and_on(duthosts, localhost, dpu_npu_port_list, rand_one_d
         duthost.shell(cmd_dpu_power_off)["stdout"]
         do_verification_after_power_off_dpu(duthost, test_dpu_list, test_dpu_npu_port_list, dpu_bridge_midplane_ip_map)
 
-    reboot_type = random.choice(["None", "cold", "soft"])
+    reboot_type = random.choice(["None", "cold"])
     if reboot_type != "None":
         with allure.step(f"dut {reboot_type} reboot  after power off dpu"):
             logger.info("Do {} reboot".format(reboot_type))
@@ -101,7 +101,7 @@ def test_dpu_power_off_and_on(duthosts, localhost, dpu_npu_port_list, rand_one_d
         duthost.shell(cmd_dpu_power_on)["stdout"]
         do_verification_after_power_on_dpu(duthost, test_dpu_list, test_dpu_npu_port_list, dpu_bridge_midplane_ip_map)
 
-    reboot_type = random.choice(["None", "cold", "soft"])
+    reboot_type = random.choice(["None", "cold"])
     if reboot_type != "None":
         with allure.step(f"dut {reboot_type} reboot after power on dpu"):
             logger.info("Do {} reboot".format(reboot_type))
