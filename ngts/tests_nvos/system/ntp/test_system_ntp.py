@@ -940,6 +940,7 @@ def test_ntp_log(engines):
             system.ntp.unset(apply=True).verify_result()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
