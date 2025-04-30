@@ -5,7 +5,7 @@ import copy
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
-from constants import LOCAL_PTF_INTF, REMOTE_PTF_RECV_INTF
+from constants import LOCAL_PTF_INTF, REMOTE_PTF_RECV_INTF, VXLAN_UDP_BASE_SRC_PORT
 from gnmi_utils import apply_messages
 from packets import outbound_pl_packets, inbound_pl_packets
 from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
@@ -91,46 +91,53 @@ def add_static_route_from_npu_to_dpu(duthost, dpuhost, apply_dpu_basic_config, c
     duthost.shell(f"ip route del {pl.APPLIANCE_VIP}")
 
 
-@pytest.fixture(scope="module")
-def common_setup_teardown(localhost, duthost, ptfhost, dpuhost, eni_counter_setup):
-
+@pytest.fixture(autouse=True, scope="module")
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range, eni_counter_setup):
+    if skip_config:
+        return
+    dpuhost = dpuhosts[dpu_index]
     logger.info(pl.ROUTING_TYPE_PL_CONFIG)
     base_config_messages = {
         **pl.APPLIANCE_CONFIG,
         **pl.ROUTING_TYPE_PL_CONFIG,
         **pl.VNET_CONFIG,
-        **pl.ENI_CONFIG,
-        **pl.PE_VNET_MAPPING_CONFIG,
-        **pl.ROUTE_GROUP1_CONFIG
+        **pl.ROUTE_GROUP1_CONFIG,
+        **pl.METER_POLICY_V4_CONFIG
     }
     logger.info(base_config_messages)
 
     apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
 
-    route_messages = {
+    route_and_mapping_messages = {
+        **pl.PE_VNET_MAPPING_CONFIG,
         **pl.PE_SUBNET_ROUTE_CONFIG,
         **pl.VM_SUBNET_ROUTE_CONFIG
     }
-    logger.info(route_messages)
-    apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index)
+    logger.info(route_and_mapping_messages)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index)
+
+    meter_rule_messages = {
+        **pl.METER_RULE1_V4_CONFIG,
+        **pl.METER_RULE2_V4_CONFIG,
+    }
+    logger.info(meter_rule_messages)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index)
+
+    logger.info(pl.ENI_CONFIG)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index)
 
     logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
     apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
 
-    if is_redmine_issue_active([4125251])[0]:
+    if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
         config_reload(dpuhost, safe_reload=True)
-    else:
-
-        logger.info(f"recover messages2: {pl.ENI_ROUTE_GROUP1_CONFIG}")
-        apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, set_db=False)
-
-        logger.info(f"recover messages1: {route_messages}")
-        apply_messages(localhost, duthost, ptfhost, route_messages, dpuhost.dpu_index, set_db=False)
-
-        logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {base_config_messages}")
-        apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, set_db=False)
 
 
 @pytest.fixture(scope="function", params=["vxlan", "gre"])
