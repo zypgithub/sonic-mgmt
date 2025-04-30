@@ -365,24 +365,25 @@ def configure_trimming_action(duthost, buffer_profile_name, action):
         duthost: DUT host object
         buffer_profile_name: Name of the buffer profile to configure
         action: Packet discard action, must be either "trim" or "drop"
-               - "trim": Enable packet trimming
-               - "drop": Disable packet trimming (packets will be dropped)
+               - "on": Enable packet trimming
+               - "off": Disable packet trimming (packets will be dropped)
 
     Returns:
         bool: True if configuration was successful, False otherwise
     """
     # Validate action parameter
-    if action not in ["trim", "drop"]:
-        logger.error(f"Invalid action: {action}. Must be either 'trim' or 'drop'")
+    if action not in ["on", "off"]:
+        logger.error(f"Invalid action: {action}. Must be either 'on' or 'off'")
         return False
 
-    logger.info(f"Setting packet discard action to '{action}' for buffer profile: {buffer_profile_name}")
+    logger.info(f"Setting packet trimming action to '{action}' for buffer profile: {buffer_profile_name}")
 
-    # Set packet trimming action
-    cmd_set = f"redis-cli -n 4 hset 'BUFFER_PROFILE|{buffer_profile_name}' packet_discard_action {action}"
+    # Set packet trimming action using the new command format
+    cmd_set = f"sudo config mmu -p {buffer_profile_name} -t {action}"
     duthost.shell(cmd_set)
+    duthost.shell("show mmu")
 
-    logger.info(f"Successfully set packet discard action to '{action}' for buffer profile {buffer_profile_name}")
+    logger.info(f"Successfully set packet trimming action to '{action}' for buffer profile {buffer_profile_name}")
     return True
 
 
@@ -1091,7 +1092,7 @@ def set_buffer_profiles_for_block_and_trim_queues(duthost, interfaces, block_que
             duthost.shell(block_cmd)
 
             logger.info(
-                f"Successfully set interface {interface} \blocking queue {block_queue_id} "
+                f"Successfully set interface {interface} blocking queue {block_queue_id} "
                 f"profile to {block_queue_profile}")
 
             # Set buffer profile for the trimming queue

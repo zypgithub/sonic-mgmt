@@ -68,7 +68,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT and verify trimmed packets"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -94,7 +94,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT to trigger trimming"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -117,7 +117,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT and verify trimmed packets"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -148,7 +148,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Verify SRv6 packets after trimming"):
             verify_srv6_packet_with_trimming(duthost, ptfadapter, setup_srv6, test_params, DEFAULT_PACKET_SIZE,
@@ -166,21 +166,21 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT and verify trimmed packets"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
                                    TRIM_DSCP, expect_packets=True)
 
         with allure.step("Disable trimming"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "drop")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "off")
 
         with allure.step("Verify no trimming action and packets are dropped"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
                                    TRIM_DSCP, expect_packets=False)
 
         with allure.step("Enable trimming again"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Verify trimming function works"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -189,8 +189,8 @@ class TestPacketTrimming:
         with allure.step("Trimming config toggles"):
             for i in range(CONFIG_TOGGLE_COUNT):
                 logger.info(f"Trimming config toggle test iteration {i + 1}")
-                configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "drop")
-                configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+                configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "off")
+                configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Verify trimming still works after feature toggles"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -208,7 +208,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT and verify trimmed packets"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
@@ -238,7 +238,7 @@ class TestPacketTrimming:
             configure_trimming_global(duthost, TRIM_SIZE, TRIM_DSCP, TRIM_QUEUE)
 
         with allure.step("Enable trimming in buffer profile"):
-            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "trim")
+            configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "on")
 
         with allure.step("Send packets from PTF to DUT and verify trimmed packets"):
             verify_packet_trimming(duthost, ptfadapter, test_params, DEFAULT_PACKET_SIZE, DEFAULT_DSCP, TRIM_SIZE,
