@@ -628,8 +628,14 @@ class SonicInstallationSteps:
 
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):
-                    retry_call(fetch_dash_api_package, tries=3, delay=10, logger=logger)
-                    os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+                    try:
+                        retry_call(fetch_dash_api_package, tries=3, delay=2, logger=logger)
+                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
+                    except Exception as e:
+                        logger.error(f"Failed to update the dash api in sonic-mgmt: {e}")
+                        logger.info("Copying the dash api to sonic-mgmt and try install again")
+                        os.system("scp /auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb ./libdashapi_1.0.0_amd64.deb")
+                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                 with allure.step('Apply NAT config to smartSwitch'):
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
 
