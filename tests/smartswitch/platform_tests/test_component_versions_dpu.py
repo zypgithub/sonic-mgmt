@@ -7,7 +7,7 @@ import sys
 from tests.common import config_reload
 current_path = sys.path.copy()
 sys.path.insert(0, "dash")
-from tests.dash.conftest import add_dpu_info, dpu_index
+from tests.dash.conftest import add_dpu_info
 sys.path = current_path
 
 pytestmark = [
@@ -147,20 +147,18 @@ def readme_versions(duthost):
 
 
 @pytest.fixture(scope="module")
-def dpu_component_table(dpuhosts, dpu_index):
+def dpu_component_table(dpuhosts):
     """
     Fixture to get the component version table from the DPU
 
     :param dpuhosts: dpuhosts fixture
-    :param dpu_index: dpu_index fixture
-    :return: Dictionary with component versions parsed from the table
+    :return: List of dictionaries with component versions parsed from the table
     """
-    dpuhost = dpuhosts[dpu_index]
-    yield parse_component_version_table(dpuhost)
+    return [parse_component_version_table(dpuhost) for dpuhost in dpuhosts]
 
 
 @allure.title('Test DPU Component Versions')
-def test_dpu_component_versions(readme_versions, dpu_component_table, dpuhosts, dpu_index):
+def test_dpu_component_versions(readme_versions, dpu_component_table, dpuhosts):
     """
     Verify that the component versions on the DPU match what's expected
 
@@ -171,25 +169,25 @@ def test_dpu_component_versions(readme_versions, dpu_component_table, dpuhosts, 
     :param readme_versions: readme_versions fixture
     :param dpu_component_table: dpu_component_table fixture
     :param dpuhosts: dpuhosts fixture
-    :param dpu_index: dpu_index fixture
     """
-    dpuhost = dpuhosts[dpu_index]
-    actual_versions = fetch_versions_from_dpu(dpuhost)
+    for dpu_index, dpu_host in enumerate(dpuhosts):
+        logger.info(f"Testing DPU index {dpu_index}, host: {dpu_host}")
+        actual_versions = fetch_versions_from_dpu(dpu_host)
 
-    # Check if all components from README are in the component table
-    for component in README_COVERED_COMPONENTS:
-        if component in readme_versions and component in dpu_component_table:
-            # Extract the compilation and actual versions from the component table
-            compilation_version, table_actual_version = dpu_component_table[component]
+        # Check if all components from README are in the component table
+        for component in README_COVERED_COMPONENTS:
+            if component in readme_versions and component in dpu_component_table[dpu_index]:
+                # Extract the compilation and actual versions from the component table
+                compilation_version, table_actual_version = dpu_component_table[dpu_index][component]
 
-            # Test 1: Check if compilation version matches the README version
-            readme_version = readme_versions[component]
-            assert compilation_version == readme_version, \
-                f"Compilation version for {component} in component table ({compilation_version}) " \
-                f"doesn't match README version ({readme_version})"
+                # Test 1: Check if compilation version matches the README version
+                readme_version = readme_versions[component]
+                assert compilation_version == readme_version, \
+                    f"Compilation version for {component} in component table ({compilation_version}) " \
+                    f"doesn't match README version ({readme_version})"
 
-            # Test 2: Check if actual version in the table matches the directly fetched version
-            direct_actual_version = actual_versions[component]
-            assert table_actual_version == direct_actual_version, \
-                f"Actual version for {component} in component table ({table_actual_version}) " \
-                f"doesn't match directly fetched version ({direct_actual_version})"
+                # Test 2: Check if actual version in the table matches the directly fetched version
+                direct_actual_version = actual_versions[component]
+                assert table_actual_version == direct_actual_version, \
+                    f"Actual version for {component} in component table ({table_actual_version}) " \
+                    f"doesn't match directly fetched version ({direct_actual_version})"
