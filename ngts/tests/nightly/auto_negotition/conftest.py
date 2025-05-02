@@ -8,7 +8,6 @@ from ngts.constants.constants import InterfacesTypeConstants, PlatformTypesConst
 from ngts.tests.conftest import get_dut_loopbacks, get_dut_host_loopbacks
 from ngts.helpers.interface_helpers import get_lb_mutual_speed, speed_string_to_int_in_mb
 from ngts.cli_util.cli_parsers import parse_show_interfaces_transceiver_eeprom
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -436,6 +435,10 @@ def is_auto_neg_supported_port(port, compliance_info_per_port, used_in_auto_neg_
     """
     port_supports_auto_neg = False
     port_spec_type, port_spec_value = compliance_info_per_port[port]
+
+    # eeprom contains empty values for Specification compliance, test will not run on the port
+    if port_spec_value == "Unknown":
+        return port_supports_auto_neg
 
     matched_supported_regex = any(re.search(regex_pattern, port_spec_value) for regex_pattern in
                                   CableComplianceConst.SUPPORTED_SPECIFICATION_COMPLIANCE[port_spec_type])
