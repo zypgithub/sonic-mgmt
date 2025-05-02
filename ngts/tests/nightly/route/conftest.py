@@ -36,7 +36,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--max_scale",
         action="store_true",
-        help="Use max scale routes, otherwise 10K routes will be used",
+        help="Use max scale routes, otherwise 20K routes will be used",
     )
 
 
