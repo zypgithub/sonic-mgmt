@@ -130,6 +130,18 @@ class TestCert:
         cacert=f'{TEST_CERTS}/ca2/ca.crt'
     )
 
+    cert_chain_raw_1 = CertInfo(
+        name='raw-chain-1',
+        info='Raw certificate chain (public key only) for import test',
+        public=f'{TEST_CERTS}/cert-chain/chain.pem',  # Path to the chain file
+        private=f'{TEST_CERTS}/cert-chain/leafcert.key',
+        p12_bundle=None,
+        p12_password='mypass',
+        dn=None,
+        ip=None,
+        cacert=None
+    )
+
     all_certs: List[CertInfo] = [cert_valid_1, cert_valid_2, cert_private_public_mismatch, cert_ca_mismatch]
 
 

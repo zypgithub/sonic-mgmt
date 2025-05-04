@@ -1,4 +1,5 @@
 import random
+import re
 from typing import List
 
 import pytest
@@ -7,12 +8,13 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
 from ngts.nvos_tools.infra.CertificateGenerator import CertificateGeneratorOnRemoteHost
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OpenSslCmdBuilder import OpenSslCmdBuilder
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import randomize_hex_str
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.conftest import clear_certs, clear_existing_certs
-from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields
+from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields, DUT_IMPORTED_CERTS_PUBLIC_DIR
 from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates, \
     send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
@@ -45,7 +47,7 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
     9.	Show a single cert – expect fields [installed, serial-number, valid-from, valid-to]
     10.	Verify installed empty {}
     11.	Verify all the rest non empty strings
-    12.	Show dump of any cert – expect ‘DNS:nvos-dut’ in output (sanity)
+    12.	Show dump of any cert – expect 'DNS:nvos-dut' in output (sanity)
     13.	Show installed of any cert – expect empty {}
     14.	Delete a cert
     15.	Show all certs – expect deleted cert not exist
@@ -230,7 +232,7 @@ def test_cert_mgmt_import_cert_bundle_bad_param(test_api, engines, scp_player, c
     1. empty value
     2. random string as url
     3. use wrong pass to bundle with pass
-    4. don’t give pass to bundle with pass
+    4. don't give pass to bundle with pass
     5. use empty pass to bundle with pass
     6. use pass to bundle without pass
     """
@@ -250,7 +252,7 @@ def test_cert_mgmt_import_cert_bundle_bad_param(test_api, engines, scp_player, c
         'cert1': {description: 'empty uri value', uri: "", passphrase: cert_with_pass.p12_password},
         'cert2': {description: 'random string as url', uri: rand_str, passphrase: cert_with_pass.p12_password},
         'cert3': {description: 'wrong pass to bundle with pass', uri: bundle_with_pass_uri, passphrase: rand_str},
-        'cert4': {description: "don’t give pass to bundle with pass", uri: bundle_with_pass_uri, passphrase: None},
+        'cert4': {description: "don't give pass to bundle with pass", uri: bundle_with_pass_uri, passphrase: None},
         'cert5': {description: 'empty pass to bundle with pass', uri: bundle_with_pass_uri, passphrase: ""},
         'cert6': {description: 'pass to bundle without pass', uri: bundle_with_no_pass_uri,
                   passphrase: cert_with_pass.p12_password},
@@ -432,3 +434,66 @@ def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
     with allure.step('verify successfully changed in show'):
         out = OutputParsingTool.parse_json_str_to_dictionary(system.api.show()).get_returned_value()
         assert out[CERTIFICATE] == cert_id, f'unexpected cert in api show\nexpected: {cert_id}\nactual: {out[CERTIFICATE]}'
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_cert_mgmt_import_raw_chain(test_api, engines):
+    """
+    Verify that importing a certificate chain raw with system security import data works
+
+    1. Import a certificate chain using data import
+    2. Verify the import was successful
+    3. Use openssl to verify the chain exists and matches expected pattern
+    """
+    TestToolkit.tested_api = test_api
+    security = System().security
+
+    cert_name = "imported-raw-chain"
+    cert_info = TestCert.cert_chain_raw_1  # Use the constant defined in constants.py
+
+    # Get certificate data using the existing CertInfo method
+    with allure.step('Get certificate chain data'):
+        try:
+            # get_cert_content_str reads public path when private is None
+            chain_data = cert_info.get_cert_content_str()
+            if not chain_data:
+                pytest.fail(f"Could not read certificate chain content from {cert_info.public}")
+        except FileNotFoundError:
+            pytest.fail(f"Certificate chain file not found locally at {cert_info.public}")
+        except Exception as e:
+            pytest.fail(f"Error reading certificate chain file {cert_info.public}: {e}")
+
+    # Import the certificate chain using raw data
+    with allure.step('Import certificate chain using data'):
+        security.certificate.cert_id[cert_name].action_import(data=chain_data).verify_result()
+
+    # Verify import success in show output
+    with allure.step('Verify certificate chain appears in show output'):
+        security_cert_output_dict: dict = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
+        assert cert_name in security_cert_output_dict, f"Certificate chain {cert_name} not found in show output:\n{security_cert_output_dict}"
+
+    # Verify files in expected locations on DUT
+    with allure.step('Verify certificate chain files in expected locations'):
+        verify_cert_in_expected_locations(cert_name, engines.dut)
+
+    # Use openssl on DUT to verify the chain structure
+    with allure.step('Verify certificate chain with openssl'):
+        # Construct the path to the imported public key file on the DUT
+        dut_cert_path = f"{DUT_IMPORTED_CERTS_PUBLIC_DIR}/{cert_name}.crt"
+
+        # Build the openssl command parts using the builder
+        convert_pkcs7_cmd = OpenSslCmdBuilder().subcommand("crl2pkcs7").option("nocrl").option("certfile", dut_cert_path)
+        print_pkcs7_cmd = OpenSslCmdBuilder().subcommand("pkcs7").option("print_certs").option("noout")
+
+        # Combine commands with a pipe and add | cat for safety
+        cmd = f"{convert_pkcs7_cmd.get_command_string()} | {print_pkcs7_cmd.get_command_string()}"
+
+        chain_relations_output = engines.dut.run_cmd(cmd)
+
+        # Check for chain existence using regex
+        chain_pattern = r"issuer\s*\=.*CN\s*\=\s*([\w\-_\.]+)\s+subject\s*=\s*.*CN\s*=\s*\1"
+        matches = re.findall(chain_pattern, chain_relations_output)
+        # We expect at least one self-signed cert or intermediate CA where issuer=subject CN
+        assert matches, "Certificate chain validation failed."
