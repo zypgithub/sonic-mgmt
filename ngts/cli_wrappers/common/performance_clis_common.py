@@ -133,6 +133,14 @@ class PerformanceCommon:
 
     # Optional Functions
 
+    def validate_no_drops_on_tg_ports(self):
+        """
+        This Method is checking if any packets were dropped on the traffic genrators
+        Mloop ports, indicating that the test full traffic pattern did not reach the dut
+        TODO: Should be implemented in DVS and Cumulus
+        """
+        return []
+
     def wait_for_nexthop_resolution(self, conf_args=None, number_of_nexthops=None, timeout=120):
         """
         Wait for the number of nexthops to be resolved on the dut
@@ -174,6 +182,7 @@ class PerformanceCommon:
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
 
     def run_traffic(self, scenario, traffic_jsons):
+        self.cli_obj.interface.clear_counters()
         json_path = traffic_jsons[self.dut_alias]
         traffic_json_path = self.copy_traffic_json_to_player(scenario, json_path)
         self.set_tg_json_env_var(traffic_json_path)

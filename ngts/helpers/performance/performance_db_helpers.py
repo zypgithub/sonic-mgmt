@@ -150,22 +150,20 @@ def restructure_counters(validation_json):
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     counters_df_list = collect_all_samples_into_df_list(counters_samples, ValidationConsts.COUNTERS_DATAFRAME)
     max_df = pd.concat(counters_df_list).groupby(level=0).max()
-    updated_columns_names = get_updated_columns_names()
-    counters_df = max_df.rename(columns=updated_columns_names)
+    updated_columns_names_dict = get_updated_columns_names()
+    counters_df = max_df.rename(columns=updated_columns_names_dict)
     return counters_df
 
 
+def change_name_to_camel_case(name):
+    components = name.split('_')
+    return components[0] + ''.join(x.title() for x in components[1:])
+
+
 def get_updated_columns_names():
-    updated_columns_names = {
-        'if_out_discards': MongoDbConsts.IF_OUT_DISCARDS,
-        'a_mac_control_frames_transmitted': MongoDbConsts.MAC_CONTROL_FRAMES_TRANSMITTED,
-        'a_mac_control_frames_received': MongoDbConsts.MAC_CONTROL_FRAMES_RECEIVED,
-        'a_pause_mac_ctrl_frames_transmitted': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED,
-        'a_pause_mac_ctrl_frames_received': MongoDbConsts.PAUSE_MAC_CONTROL_FRAMES_RECEIVED
-    }
-    ecn_counters_columns_names = dict(list(zip(MRCConsts.ECN_COUNTERS, MongoDbConsts.MONGO_DB_ECN_COUNTERS)))
-    updated_columns_names.update(ecn_counters_columns_names)
-    return updated_columns_names
+    updated_columns_names_list = [change_name_to_camel_case(counter) for counter in PerfConsts.TOTAL_COUNTERS]
+    updated_columns_names_dict = dict(list(zip(PerfConsts.TOTAL_COUNTERS, updated_columns_names_list)))
+    return updated_columns_names_dict
 
 
 def collect_all_samples_into_df_list(samples, sample_df_key):
@@ -233,7 +231,6 @@ def restructure_tc(validation_json):
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         df_list = collect_all_samples_into_df_list(tc_samples, ValidationConsts.TC_DATAFRAME)
         df_result = get_base_df(df_list)
-        df_result.drop("occMaxByPort", axis=1, inplace=True)
         df_result[ValidationConsts.TC_OCC_AVG] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_AVG)
         df_result[ValidationConsts.TC_OCC_99] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_99)
         df_result[ValidationConsts.TC_OCC_MAX] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_MAX)

@@ -1755,7 +1755,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step('Get SDK_VER git'):
             sdk_version = self.get_sdk_version()
             if latest_version:
-                sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version)
+                sdk_branch = self.get_sdk_branch(sdk_version)
+                sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
             docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
             copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version.replace("-", "."))],
@@ -1790,6 +1791,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                                  validate=True)
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
         return sdk_version
+
+    def get_sdk_branch(self, sdk_version):
+        command = f"cat /auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{sdk_version}/SDK_BRANCH.txt"
+        sdk_branch = os.popen(command).read().strip()
+        if sdk_branch.startswith("sx_sdk_"):
+            sdk_branch = re.search(r"sx_sdk_(\d+_\d+_\d{4})", sdk_branch).group(1)
+        return sdk_branch
 
     def startup_dpu(self, dpu_index_list):
         for dpu_index in dpu_index_list:

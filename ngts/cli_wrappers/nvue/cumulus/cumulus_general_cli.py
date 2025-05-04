@@ -18,7 +18,7 @@ class CumulusGeneralCli(NvueGeneralCli):
     def __init__(self, engine, device):
         super().__init__(engine, device)
 
-    def install_traffic_generator(self, latest_version=False):
+    def install_traffic_generator(self, latest_version=True):
         """
         Function verifies the traffic generator is functional post deploy on CL OS
 
@@ -31,7 +31,8 @@ class CumulusGeneralCli(NvueGeneralCli):
         with allure.step('Get SDK_VER git'):
             sdk_version = self.get_sdk_version()
             if latest_version:
-                sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version)
+                sdk_branch = self.get_sdk_branch(sdk_version)
+                sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
             deb_file_path = os.path.join(PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
                                          PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version))

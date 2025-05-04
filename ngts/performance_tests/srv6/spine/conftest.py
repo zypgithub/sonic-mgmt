@@ -14,7 +14,7 @@ def conf_args(chip_type, players):
         "scenario": "srv6",
         "speed": SonicConst.HWSKU_DOWNSTREAM_PORTS_SPEED[sku],
         "hwsku": sku,
-        "dut_mac": players['dut']['cli'].performance.get_mac(),
+        "dut_mac": players['dut']['cli'].performance.mac,
         "dut": "spine",
         "chip_type": chip_type
     }

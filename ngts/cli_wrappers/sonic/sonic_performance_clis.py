@@ -29,8 +29,10 @@ class SonicPerformanceCli(PerformanceCommon):
         self.topology_obj = topology_obj
         self.engine = engine
         self.dut_alias = dut_alias
+        self.hostname = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
         self.cli_obj = cli_obj
         self.chip_type = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['chip_type']
+        self.mac = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['mac_address'].lower()
         self.service_port_idx = -1
         self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
@@ -38,6 +40,21 @@ class SonicPerformanceCli(PerformanceCommon):
         self.connected_ports, self.unconnected_ports = [], []
         self.mloops = []
         self.port_groups = {}
+
+    def validate_no_drops_on_tg_ports(self):
+        violations = []
+        with allure.step(f"Validate no drops on TG ports on {self.dut_alias}"):
+            self.execute_cmd("show interfaces counters")
+            counters_dict = self.cli_obj.interface.parse_interfaces_counters()
+            self.validate_tg_ports(self.connected_ports, counters_dict, "Connected", violations)
+            self.validate_tg_ports(self.unconnected_ports, counters_dict, "Unconnected (Mloop)", violations)
+        return violations
+
+    def validate_tg_ports(self, ports_list, counters_dict, port_type, violations):
+        for port in ports_list:
+            tx_drop_counter = counters_dict[port]['TX_DRP'].replace(",", "")
+            if int(tx_drop_counter) > 0:
+                violations.append(f"{port_type} Port {port} on {self.dut_alias}-{self.hostname} has {tx_drop_counter} TX_DRP")
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
@@ -179,6 +196,8 @@ class SonicPerformanceCli(PerformanceCommon):
         with allure.step(f'Apply SKU {conf_args["hwsku"]} on {self.dut_alias}'):
             self.apply_sku(conf_args["hwsku"], conf_args["dut"], conf_args["chip_type"])
 
+        self.load_qos_config_on_tg()
+
         with allure.step(f'Apply Test Configuration on {self.dut_alias}'):
             self.get_configuration_file(scenario, conf_args, template_suite)
 
@@ -206,6 +225,20 @@ class SonicPerformanceCli(PerformanceCommon):
                 self.cli_obj.general.verify_dockers_are_up()
                 self.disable_im()
 
+    def load_tg_custom_buffer_conf(self, updated_config_db, templates_path):
+        """
+        This function is used to get the custom buffer configuration for the traffic generator
+        """
+        env = Environment(loader=FileSystemLoader(templates_path))
+        template_name = "tg_custom_buffer_conf.jinja"
+        jinja_template = env.get_template(template_name)
+        template_string = jinja_template.render(connected_ports=self.connected_ports,
+                                                unconnected_ports=self.unconnected_ports)
+        tg_custom_buffer_conf = json.loads(template_string)
+        for key, value in tg_custom_buffer_conf.items():
+            updated_config_db[key] = value
+        return updated_config_db
+
     def load_qos_config_on_dut(self):
         """
         Without loading the QOS configuration the dut won't have
@@ -216,6 +249,17 @@ class SonicPerformanceCli(PerformanceCommon):
                 self.cli_obj.general.reload_configuration(force=True)
                 self.cli_obj.general.verify_dockers_are_up()
                 self.cli_obj.qos.reload_qos(no_dynamic=True)
+                self.cli_obj.general.save_configuration()
+
+    def load_qos_config_on_tg(self):
+        """
+        Loads the QoS configuration on the traffic generator
+        """
+        if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
+            with allure.step(f'Load QoS configuration on {self.dut_alias}'):
+                self.cli_obj.general.reload_configuration(force=True)
+                self.cli_obj.general.verify_dockers_are_up()
+                self.cli_obj.qos.reload_qos()
                 self.cli_obj.general.save_configuration()
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
@@ -238,6 +282,9 @@ class SonicPerformanceCli(PerformanceCommon):
         json_dict = json.loads(template_string)
         hwsku_json = self.cli_obj.general.get_config_db()
         updated_config_db = merge(json_dict, hwsku_json)
+        self.update_mac(updated_config_db)
+        if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
+            updated_config_db = self.load_tg_custom_buffer_conf(updated_config_db, templates_path)
         conf_path = os.path.join(templates_path, f"{self.dut_alias}_config_db.json")
         self.save_configuration_file(conf_path, updated_config_db, dst_dut_dir="/tmp")
         return conf_path
@@ -311,11 +358,15 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def update_sku(self, hwsku_json):
         self.update_sku_port_admin_status(hwsku_json)
+        self.update_mac(hwsku_json)
         save_config_db_json(self.engine, hwsku_json, remove_json_path=False)
 
     def update_sku_port_admin_status(self, hwsku_json):
         for port, port_dict in hwsku_json["PORT"].items():
             port_dict.update({"admin_status": "up"})
+
+    def update_mac(self, hwsku_json):
+        hwsku_json["DEVICE_METADATA"]["localhost"]["mac"] = self.mac
 
     def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
         save_config_db_json(self.engine, conf_json, conf_path, remove_json_path=False)
@@ -478,11 +529,12 @@ class SonicPerformanceCli(PerformanceCommon):
         """
         traffic_parameters = {
             "ports": self.get_sdk_ports(self.get_tg_unconnected_ports()),
-            "MAC": {"src": self.get_mac(),
+            "MAC": {"src": self.mac,
                     "dst": conf_args["dut_mac"]},
             "IP": {},
             "IPV6": {},
-            "UDP": {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT},
+            PerfConsts.IP_PROTOCOL_UDP: {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT},
+            PerfConsts.IP_PROTOCOL_TCP: {"sport": PerfConsts.TCP_SOURCE_PORT, "dport": PerfConsts.TCP_DOURCE_PORT},
             "packet_size": conf_args["packet_size"],
             "is_ipv6": conf_args["is_ipv6"]
         }
@@ -582,3 +634,8 @@ class SonicPerformanceCli(PerformanceCommon):
         with open(full_path, 'w') as f:
             json.dump(ports_connectivity_dict, f)
         copy_files_to_syncd(self.engine, [ports_file], PerfConsts.CONFIG_FILES_DIR)
+
+    def configure_ports_shaper(self, shaper_value):
+        configure_ports_shaper_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names ConfigureShaperOnAllPorts"
+        self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd))
+        self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd, env_variables=[f'{PerfConsts.SHAPER_VALUE_ENV_VAR}={shaper_value}']))

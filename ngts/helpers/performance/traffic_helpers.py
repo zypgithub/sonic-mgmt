@@ -143,7 +143,7 @@ def create_json_traffic_stream(player_alias, traffic_parameters, stream_name, tc
 
 
 def create_srv6_json_traffic_stream(player_alias, traffic_parameters, stream_name,
-                                    tc, BTH={}, payload=True):
+                                    tc, BTH={}, payload=True, ip_protocol=PerfConsts.IP_PROTOCOL_UDP):
     """
     Creates a JSON representation of a traffic stream.
 
@@ -183,10 +183,18 @@ def create_srv6_json_traffic_stream(player_alias, traffic_parameters, stream_nam
     )
 
     # Add UDP header with source and destination ports
-    packet.add_udp_header(
-        source_port=traffic_parameters["UDP"]["src"],
-        dest_port=traffic_parameters["UDP"]["dst"]
-    )
+    if ip_protocol == PerfConsts.IP_PROTOCOL_UDP:
+        packet.add_udp_header(
+            source_port=traffic_parameters[PerfConsts.IP_PROTOCOL_UDP]["src"],
+            dest_port=traffic_parameters[PerfConsts.IP_PROTOCOL_UDP]["dst"]
+        )
+    elif ip_protocol == PerfConsts.IP_PROTOCOL_TCP:
+        packet.add_tcp_header(
+            sport=traffic_parameters[PerfConsts.IP_PROTOCOL_TCP]["sport"],
+            dport=traffic_parameters[PerfConsts.IP_PROTOCOL_TCP]["dport"]
+        )
+    else:
+        pass
     if BTH:
         packet.add_bth_header(opcode=BTH['opcode'], ar=1)
     # Add payload header with player alias
@@ -218,17 +226,32 @@ def create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, 
         json.dump(traffic_json, json_file, indent=3)
 
 
+def validate_no_drops_on_tg_ports(traffic_json, players, violations_list):
+    for player_alias in PerfConsts.TG_ALIAS_LIST:
+        with allure.step(f"Validate no drops on TG ports on - {player_alias}"):
+            cli_obj = players[player_alias]['cli']
+            violations = cli_obj.performance.validate_no_drops_on_tg_ports()
+            violations_list.extend(violations)
+
+
 def validate_bw(traffic_json, bw_threshold, violations_list):
     with allure.step(f"Validate all bandwidth samples minimal value is above {bw_threshold} threshold"):
         bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
         bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-        lower_bw_sample = []
+        lower_tx_bw_sample = []
+        lower_rx_bw_sample = []
         for sample_id, bw_sample in bw_samples.items():
-            if bw_sample[ValidationConsts.BW_STATS][ValidationConsts.BW_MIN] < bw_threshold:
-                lower_bw_sample.append(sample_id)
-        if lower_bw_sample:
-            violations_list.append(f"Not all bandwidth samples were higher than threshold {bw_threshold}, "
-                                   f"please check {lower_bw_sample}")
+            bw_stats = bw_sample[ValidationConsts.BW_STATS]
+            if bw_stats[ValidationConsts.TX_RATE_MIN] < bw_threshold:
+                lower_tx_bw_sample.append(sample_id)
+            if bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
+                lower_rx_bw_sample.append(sample_id)
+        if lower_tx_bw_sample:
+            violations_list.append(f"Not all tx bandwidth samples were higher than threshold {bw_threshold}, "
+                                   f"please check {lower_tx_bw_sample}")
+        if lower_rx_bw_sample:
+            violations_list.append(f"Not all rx bandwidth samples were higher than threshold {bw_threshold}, "
+                                   f"please check {lower_rx_bw_sample}")
 
 
 def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_list):
@@ -246,14 +269,6 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
                                        f"please check {sample_id}")
 
 
-def get_avg_ports_tx(traffic_json):
-    bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
-    samples = list(traffic_json[ValidationConsts.BW_SAMPLES].keys())
-    bw_samples_stats = bw_samples[samples[-1]][ValidationConsts.BW_STATS]
-    avg_ports_tx = bw_samples_stats[ValidationConsts.BW_AVG]
-    return avg_ports_tx
-
-
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):
     with allure.step(f"Validate all TC samples average occupancy is below {tc_occ_threshold} cells"):
         tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
@@ -267,13 +282,15 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
                     tc_occ = tc_dict[tc_occ_key]
                     if tc_occ > tc_occ_th:
                         higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
+                        with allure.step(f"Attach TC sample {sample_id}: {tc_dict}"):
+                            pass
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
                                    f"please check {higher_tc_samples}")
 
 
 def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, violations_list):
-    with allure.step(f"Validate {', '.join(tc_to_validate)} TC samples average occupancy is below {tc_occ_threshold} cells"):
+    with allure.step(f"Validate {tc_to_validate} TC samples occupancy rate is below {tc_occ_threshold} cells"):
         tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         higher_tc_samples = []
@@ -284,9 +301,7 @@ def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, violations_l
                 if tc_name in tc_to_validate:
                     for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
                         tc_occ = tc_dict[tc_occ_key]
-                        if tc_occ_th == 0 and tc_occ > tc_occ_th:
-                            higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
-                        elif tc_occ > tc_occ_th:
+                        if tc_occ > tc_occ_th:
                             higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
@@ -326,17 +341,15 @@ def validate_counters_sample(sample_id, counters_sample, counters_list, violatio
         counters_list (list): list of counters to validate
         violations_list (list): List to store any validation violations found
     """
-    counters_df = counters_sample[ValidationConsts.COUNTERS_DATAFRAME]
+    counters_df = pd.DataFrame(counters_sample[ValidationConsts.COUNTERS_DATAFRAME])
 
-    # Check each counter dictionary in the dataframe
-    for counters_dict in counters_df:
-        for counter_name in counters_list:
-            counter_value = counters_dict[counter_name]
+    ports_with_counters = counters_df.loc[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].any(axis=1), ValidationConsts.PORT].to_list()
+    counters_with_values = counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].columns[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].gt(0).any()].tolist()
 
-            if counter_value > 0:
-                port = counters_dict[ValidationConsts.PORT]
-                violations_list.append(f"Port {port} {counter_name}: {counter_value} > 0, "
-                                       f"please check {sample_id}")
+    if ports_with_counters or counters_with_values:
+        violations_list.append(f"Ports: {ports_with_counters} had one or more of the following counters:\n"
+                               f"{counters_with_values} with values > 0,\n "
+                               f"please check {sample_id}")
 
 
 def is_ipv6(address):
@@ -386,7 +399,7 @@ def generate_mac_range(start_mac, count):
     return mac_list
 
 
-def pick_random_non_consecutive_ports(ports_list, port_number):
+def pick_random_non_consecutive_ports(ports_list, port_number, non_consecutive_gap=16):
     if port_number > (len(ports_list) + 1) // 2:
         raise ValueError("Cannot select non-consecutive items, list too small for the selection.")
 
@@ -397,13 +410,20 @@ def pick_random_non_consecutive_ports(ports_list, port_number):
 
     for i in range(port_number):
         selected_ports.append(ports_list[start_idx % len(ports_list)])
-        start_idx += 16
+        start_idx += non_consecutive_gap
+    return selected_ports
+
+
+def pick_random_consecutive_ports(ports_list, port_number):
+    indices = list(range(len(ports_list) - port_number))
+    start_idx = random.choice(indices)
+    selected_ports = ports_list[start_idx:start_idx + port_number]
     return selected_ports
 
 
 def validate_no_dropped_packets_on_queue(traffic_json, cli_obj, interface_list, queue_list, violations_list):
     for interface in interface_list:
-        with allure.step(f"Validate no dropped packets on queues {','.join(queue_list)} for {interface}"):
+        with allure.step(f"Validate no dropped packets on queues {queue_list} for {interface}"):
             show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
             logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
             for queue in queue_list:
@@ -411,27 +431,112 @@ def validate_no_dropped_packets_on_queue(traffic_json, cli_obj, interface_list, 
                     violations_list.append(f"Dropped packets on {interface} queue {queue}")
 
 
-def validate_no_untrimmed_packets(traffic_json, cli_obj, interface_list, trimming_queue, drop_queue, violations_list):
+def validate_no_untrimmed_packets(traffic_json, cli_obj, interface_list, trimming_queue, drop_queues, violations_list):
     """
     validate all packets sent to queue drop_queue are dropped and trimmed on queue trimming_queue for all interfaces
     :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
     :param trimming_queue: trimming queue, i.e 'UC4'
-    :param drop_queue: drop queue, i.e 'UC1'
+    :param drop_queues: list of drop queues, i.e ['UC1', 'UC2']
     """
     for interface in interface_list:
-        with allure.step(f"Validate all packets sent to queue {drop_queue} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+        total_drop_queue_counter_pkts = 0
+        total_drop_queue_drop_pkts = 0
+        with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
             show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
-            logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
-            drop_queue_counter_pkts = int(show_queue_counters_dict[f"UC{drop_queue}"]["Counter/pkts"])
-            drop_queue_drop_pkts = int(show_queue_counters_dict[f"UC{drop_queue}"]["Drop/pkts"])
-            trimming_queue_counter_pkts = int(show_queue_counters_dict[f"UC{trimming_queue}"]["Counter/pkts"])
-            trimming_queue_drop_pkts = int(show_queue_counters_dict[f"UC{trimming_queue}"]["Drop/pkts"])
-            if not is_no_untrimmed_packets(drop_queue_counter_pkts, drop_queue_drop_pkts, trimming_queue_counter_pkts, trimming_queue_drop_pkts):
-                violations_list.append(f"Untrimmed packets detected on {interface}")
+        logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+        for drop_queue in drop_queues:
+            drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
+            total_drop_queue_counter_pkts += drop_queue_counter_pkts
+            total_drop_queue_drop_pkts += drop_queue_drop_pkts
+        trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
+        if not is_no_untrimmed_packets(total_drop_queue_counter_pkts, total_drop_queue_drop_pkts, trimming_queue_counter_pkts, trimming_queue_drop_pkts):
+            violations_list.append(f"Untrimmed packets detected on {interface}")
+
+
+def get_counters_for_queue(show_queue_counters_dict, queue):
+    queue_counter_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Counter/pkts"].replace(",", ""))
+    queue_drop_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"].replace(",", ""))
+    return queue_counter_pkts, queue_drop_pkts
 
 
 def is_no_untrimmed_packets(drop_queue_counter_pkts, drop_queue_drop_pkts, trimming_queue_counter_pkts, trimming_queue_drop_pkts):
-    if drop_queue_counter_pkts == 0 and drop_queue_drop_pkts > 0 and drop_queue_drop_pkts < trimming_queue_counter_pkts and trimming_queue_drop_pkts == 0:
+    if drop_queue_counter_pkts == 0 and \
+            drop_queue_drop_pkts > 0 and \
+            trimming_queue_counter_pkts > 0 and \
+            trimming_queue_drop_pkts == 0:
         return True
     else:
         return False
+
+
+def validate_trimmed_untrimmed_percentages(traffic_json, cli_obj, interface_list, trimming_queue, drop_queues, violations_list):
+    """
+    validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
+    :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
+    :param trimming_queue: trimming queue, i.e 'UC4'
+    :param drop_queues: list of drop queues, i.e ['UC1', 'UC2']
+    """
+    queue_packet_percentages = []
+    with allure.step(f"Validate all packets sent to queues {drop_queues} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
+        for interface in interface_list:
+            with allure.step(f"Validate all packets sent to queues {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+                total_packets_egress_port = 0
+                total_packets_egress_port_dropped = 0
+                show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
+                logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+                for drop_queue in drop_queues:
+                    drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
+                    total_packets_egress_port += drop_queue_counter_pkts
+                    total_packets_egress_port_dropped += drop_queue_drop_pkts
+                trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
+                total_packets_to_egress_port = total_packets_egress_port + trimming_queue_counter_pkts
+                untrimmed_percentage = round(total_packets_egress_port / total_packets_to_egress_port, 2)
+                trimming_percentage = round(trimming_queue_counter_pkts / total_packets_to_egress_port, 2)
+                queue_packet_percentages.append({ValidationConsts.PORT: interface,
+                                                 ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
+                                                 ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage})
+                if trimming_queue_drop_pkts > 0:
+                    violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
+    queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
+    average_untrimmed_percentage = queue_packet_percentages_df[ValidationConsts.UNTRIMMED_PRECENTAGE].mean()
+    average_trimming_percentage = queue_packet_percentages_df[ValidationConsts.TRIMMING_PRECENTAGE].mean()
+    new_row = pd.DataFrame([{ValidationConsts.PORT: "Average",
+                             ValidationConsts.UNTRIMMED_PRECENTAGE: average_untrimmed_percentage,
+                             ValidationConsts.TRIMMING_PRECENTAGE: average_trimming_percentage}])
+    queue_packet_percentages_df = pd.concat([queue_packet_percentages_df, new_row], ignore_index=True)
+    with allure.step(f"Attach queue packets percentages, average untrimmed percentage is {average_untrimmed_percentage} and average trimming percentage is {average_trimming_percentage}"):
+        allure.attach(queue_packet_percentages_df.to_html(), "Queue packets percentages", attachment_type=allure.attachment_type.HTML)
+
+
+def validate_trimmed_untrimmed_dropped_percentages(traffic_json, cli_obj, interface_list, trimming_queue, drop_queue, violations_list):
+    """
+    validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
+    :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
+    :param trimming_queue: trimming queue, i.e 'UC4'
+    :param drop_queue: drop queue, i.e 'UC1'
+    """
+    queue_packet_percentages = []
+    with allure.step(f"Validate all packets sent to queue {drop_queue} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
+        for interface in interface_list:
+            with allure.step(f"Validate all packets sent to queue {drop_queue} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+                total_packets_egress_port = 0
+                show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
+                logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+                drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
+                trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
+                total_packets_egress_port = drop_queue_counter_pkts + drop_queue_drop_pkts
+                dropped_without_trimming = drop_queue_drop_pkts - trimming_queue_counter_pkts
+                if dropped_without_trimming > 0:
+                    dropped_without_trimming_percentage = round(dropped_without_trimming / total_packets_egress_port, 2)
+                else:
+                    dropped_without_trimming_percentage = 0
+                untrimmed_percentage = round(drop_queue_counter_pkts / total_packets_egress_port, 2)
+                trimming_percentage = round(trimming_queue_counter_pkts / total_packets_egress_port, 2)
+                queue_packet_percentages_dict = {ValidationConsts.PORT: interface,
+                                                 ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
+                                                 ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage,
+                                                 ValidationConsts.DROPPED_WITHOUT_TRIMMING_PRECENTAGE: dropped_without_trimming_percentage}
+                queue_packet_percentages.append(queue_packet_percentages_dict)
+                if trimming_queue_drop_pkts > 0:
+                    violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
+                return queue_packet_percentages_dict

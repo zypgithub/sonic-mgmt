@@ -12,7 +12,7 @@ from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters
+from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters, validate_no_drops_on_tg_ports
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
@@ -64,6 +64,7 @@ class ValidationConfig:
     scenario: str
     chip_type: str
     run_validate_counters: bool = True
+    run_validate_no_drops_on_tg_ports: bool = True
     samples_params_dict: Dict = field(default_factory=lambda: PerfConsts.SAMPLES_PARAMS)
     tc_occ_threshold: Dict = field(default_factory=lambda: PerfConsts.OCC_TH_DICT)
     temperature_threshold: float = PerfConsts.TEMPERATURE_TH
@@ -87,6 +88,7 @@ class ValidationConfig:
             Dict[str, Validation]: Dictionary mapping validation names to their configurations
         """
         validations = {
+
             # Counter validation - checks for drops and other counters (such as POC)
             'counters': Validation(
                 validate_counters,
@@ -121,6 +123,13 @@ class ValidationConfig:
                     'power_threshold': self.power_threshold
                 }
             ) if self.power_threshold is not None else None,
+
+            # Traffic pattern validation - checks for dropped packets on mloop ports
+            'traffic_pattern': Validation(
+                validate_no_drops_on_tg_ports,
+                {'players': self.players}
+            ) if self.run_validate_no_drops_on_tg_ports else None,
+
         }
         validations.update(self.additional_validations)
         return validations
@@ -212,7 +221,8 @@ def stop_traffic(players, step="Stopping Traffic - Tear down"):
 
 
 def validate_traffic_results(players, test_name, scenario, samples_params_dict,
-                             players_to_be_validated=PerfConsts.PERF_SETUP_DUT_ALIASES):
+                             players_to_be_validated=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                             attach_to_allure=True):
     traffic_validation_jsons_list = []
     for player_alias in players_to_be_validated:
         cli_object = players[player_alias]['cli']
@@ -228,22 +238,24 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
                                                performance_clis_function_args=(full_path, samples_params_dict),
                                                step="Traffic Validation - Test Body")
         traffic_json = attach_json_to_allure(full_path,
-                                             f'Traffic Validation JSON results on {player_alias} - {hostname}')
+                                             f'Traffic Validation JSON results on {player_alias} - {hostname}',
+                                             attach_to_allure)
         traffic_validation_jsons_list.append(traffic_json)
 
         add_test_mongo_metadata(test_name, {MongoDbConsts.VALIDATOR_RESULTS: traffic_json})
     return traffic_validation_jsons_list
 
 
-def attach_json_to_allure(json_path, attachment_name):
+def attach_json_to_allure(json_path, attachment_name, attach_to_allure=True):
     with open(json_path) as f:
         json_str = f.read()
-        allure.attach(json_str, attachment_name, allure.attachment_type.JSON)
+        if attach_to_allure:
+            allure.attach(json_str, attachment_name, allure.attachment_type.JSON)
         json_obj = json.loads(json_str)
     return json_obj
 
 
-def run_validation(config: ValidationConfig, ignore_violations=False):
+def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_allure=True):
     """
     Executes traffic validation based on the provided configuration.
 
@@ -260,9 +272,11 @@ def run_validation(config: ValidationConfig, ignore_violations=False):
         # Get traffic validation results for the configured test
         traffic_validation_jsons_list = validate_traffic_results(players=config.players, test_name=config.test_name,
                                                                  scenario=config.scenario,
-                                                                 samples_params_dict=config.samples_params_dict)
+                                                                 samples_params_dict=config.samples_params_dict,
+                                                                 attach_to_allure=attach_to_allure)
 
         # Process each traffic validation JSON result
+
         for traffic_json in traffic_validation_jsons_list:
             violations_list = []
             skipped_validations = []

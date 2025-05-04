@@ -20,7 +20,7 @@ class SonicTrimmingCli(PerformanceCommon):
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
-    def configure_trim_of_all_packets(self, ports, queue, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+    def configure_trim_of_all_packets(self, ports, queues, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         """
         This function is used to manufacture the behaviour where all the packets are trimmed
         for selected ports and queue.
@@ -28,13 +28,14 @@ class SonicTrimmingCli(PerformanceCommon):
         configure it to drop all the packets for selected queue on selected ports.
 
         :param ports: list of ports, i.e ['Ethernet111', 'Ethernet112']
-        :param queue: queue, i.e 1
+        :param queues: list of queues, i.e [1, 2]
         :param scenario: scenario, i.e 'srv6'
         :param template_suite: path to the template suite, i.e 'ngts/performance_tests/srv6/sonic'
         """
-        self.get_disable_queue_json(ports, queue, scenario, template_suite)
-        self.execute_cmd("sonic-cfggen -w -j /tmp/zero_scheduler.json")
-        self.execute_cmd("sonic-cfggen -w -j /tmp/disable_queue.json")
+        self.configure_zero_scheduler()
+        for queue in queues:
+            self.get_disable_queue_json(ports, queue, scenario, template_suite)
+            self.execute_cmd("sonic-cfggen -w -j /tmp/disable_queue.json")
 
     def disable_packets_aging(self):
         """
@@ -60,16 +61,23 @@ class SonicTrimmingCli(PerformanceCommon):
         template_string = jinja_template.render(ports=ports, queue=queue)
         json_dict = json.loads(template_string)
         disable_queue_file_name = "disable_queue.json"
-        zero_scheduler_file_name = "zero_scheduler.json"
         full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, disable_queue_file_name)
         with open(full_path, 'w') as f:
             json.dump(json_dict, f)
-        for file in [disable_queue_file_name, zero_scheduler_file_name]:
-            self.engine.copy_file(source_file=os.path.join(PerfConsts.CONFIG_FILES_DIR, file),
-                                  dest_file=file,
-                                  file_system='/tmp',
-                                  direction='put'
-                                  )
+        self.engine.copy_file(source_file=os.path.join(PerfConsts.CONFIG_FILES_DIR, disable_queue_file_name),
+                              dest_file=disable_queue_file_name,
+                              file_system='/tmp',
+                              direction='put'
+                              )
+
+    def configure_zero_scheduler(self):
+        zero_scheduler_file_name = "zero_scheduler.json"
+        self.engine.copy_file(source_file=os.path.join(PerfConsts.CONFIG_FILES_DIR, zero_scheduler_file_name),
+                              dest_file=zero_scheduler_file_name,
+                              file_system='/tmp',
+                              direction='put'
+                              )
+        self.execute_cmd("sonic-cfggen -w -j /tmp/zero_scheduler.json")
 
     def enable_trimming_on_lossy_queue(self):
         file_name = "enable_queue_trimming.json"

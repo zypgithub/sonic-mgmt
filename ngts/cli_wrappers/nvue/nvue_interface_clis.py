@@ -111,3 +111,6 @@ class NvueInterfaceCli(SonicInterfaceCli):
         output = self.engine.run_cmd("nv sh interface status -o json")
         output = json.loads(output)
         return output
+
+    def clear_counters(self):
+        pass

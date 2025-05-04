@@ -3,7 +3,7 @@ import pytest
 from ngts.constants.constants import SonicConst
 from ngts.constants.performance_constants import PerfConsts, MRCConsts
 from ngts.helpers.performance.performance_setup_helpers import apply_test_configuration
-from ngts.performance_tests.srv6.conftest import get_tg_bisection_traffic_params
+from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_tg_bisection_traffic_params
 
 
 def get_bisection_traffic(players, conf_args, traffic_type,
@@ -31,7 +31,7 @@ def conf_args(chip_type, players):
         "scenario": "srv6",
         "speed": SonicConst.HWSKU_DOWNSTREAM_PORTS_SPEED[sku],
         "hwsku": sku,
-        "dut_mac": players['dut']['cli'].performance.get_mac(),
+        "dut_mac": players['dut']['cli'].performance.mac,
         "dut": "leaf",
         "chip_type": chip_type,
         "downlinks_tg": PerfConsts.RIGHT_TG_ALIAS

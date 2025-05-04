@@ -543,10 +543,9 @@ class GeneralCliCommon(GeneralCliInterface):
         kernel_version = re.search(r"(\d+\.\d+\.\d+)", kernel_version_output).group(1)
         return kernel_version
 
-    def get_latest_sdk_version(self, cur_sdk_version):
+    def get_latest_sdk_version(self, cur_sdk_version, sdk_branch):
         dut_kernel_version = self.get_kernel_version()
-        latest_sdk_prefix = re.search(r"(\d.\d.\d{2})\d+-*\d*", cur_sdk_version).group(1).replace(".", "_")
-        deb_file_path = os.path.join(PerfConsts.LATEST_SDK_DEB_DIR_TEMPLATE.format(SDK_BRANCH=f"{latest_sdk_prefix}00"))
+        deb_file_path = os.path.join(PerfConsts.LATEST_SDK_DEB_DIR_TEMPLATE.format(SDK_BRANCH=sdk_branch))
         available_kernel_versions = os.listdir(deb_file_path)
 
         deb_kernel_version = None

@@ -35,11 +35,16 @@ class ValidationConsts:
     BW_SAMPLES = "Bandwidth_samples"
     BW_DATAFRAME = "bandwidth_dataframe"
     BW_STATS = 'bw_stats'
-    BW_AVG = 'avg'
-    BW_MIN = 'min_bw'
+    TX_BW_AVG = 'tx_avg'
+    RX_BW_AVG = 'rx_avg'
+    TX_RATE_MIN = 'min_tx_bw'
+    RX_RATE_MIN = 'min_rx_bw'
     PORT = "port"
     OS_PORT_NAME = "osPortName"
     OS_PORTS_NAME_MAPPING_DATAFRAME = "osPortsNameMappingDataframe"
+    UNTRIMMED_PRECENTAGE = "untrimmedPrecentage"
+    TRIMMING_PRECENTAGE = "trimmingPrecentage"
+    DROPPED_WITHOUT_TRIMMING_PRECENTAGE = "droppedWithoutTrimmingPrecentage"
     POWER_SAMPLES = "Power_samples"
     TEMPERATURE_SAMPLES = "Temperature_samples"
     TEMPERATURE = "temperature"
@@ -54,14 +59,15 @@ class PerfConsts:
     PERF_SETUP_PLAYERS_ALIASES = [LEFT_TG_ALIAS, DUT_ALIAS, RIGHT_TG_ALIAS]
     PERF_SETUP_TG_ALIASES = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     PERF_SETUP_DUT_ALIASES = [DUT_ALIAS]
-
+    ECN_CAPABLE_TRANSPORT = 1
     # Sample Parameters
     SAMPLES_PARAMS = {
         "SAMPLE_DURATION": 60,
-        "BW_SAMPLE_DELAY": 5,
+        "BW_SAMPLE_DELAY": 10,
         "TC_SAMPLE_DELAY": 1,
-        "COUNTERS_SAMPLE_DELAY": 1
+        "COUNTERS_SAMPLE_DELAY": 15
     }
+    SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     OCC_AVG_TH = 400
     TC_NUM = 6 if is_redmine_issue_active([4393276])[0] else 7
     # Thresholds
@@ -205,6 +211,54 @@ class PerfConsts:
         "a_pause_mac_ctrl_frames_transmitted",
         "a_pause_mac_ctrl_frames_received"
     ]
+    ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(TC_NUM)]
+    TC_BUFFER_DISCARDS_COUNTERS = [f'tx_no_buffer_discard_uc_tc_{tc}' for tc in range(TC_NUM)]
+    TC_WRED_DISCARDS_COUNTERS = [f'tx_wred_discard_tc_{tc}' for tc in range(TC_NUM)]
+    TOTAL_COUNTERS = [
+        'ingress_policy_engine',
+        'ingress_vlan_membership',
+        'ingress_tag_frame_type',
+        'egress_vlan_membership',
+        'loopback_filter',
+        'egress_general',
+        'egress_hoq',
+        'port_isolation',
+        'egress_policy_engine',
+        'ingress_tx_link_down',
+        'egress_stp_filter',
+        'egress_hoq_stall',
+        'egress_sll',
+        'ingress_discard_all',
+        'a_alignment_errors',
+        'a_frame_check_sequence_errors',
+        'a_frame_too_long_errors',
+        'a_in_range_length_errors',
+        'a_symbol_error_during_carrier',
+        'a_unsupported_opcodes_received',
+        'a_in_range_length_errors',
+        'a_mac_control_frames_transmitted',
+        'a_mac_control_frames_received',
+        'a_pause_mac_ctrl_frames_transmitted',
+        'a_pause_mac_ctrl_frames_received',
+        'if_in_discards',
+        'if_in_errors',
+        'if_out_discards',
+        'if_out_errors',
+        'ether_stats_crc_align_errors',
+        'ether_stats_drop_events',
+        'dot3stats_alignment_errors',
+        'dot3stats_carrier_sense_errors',
+        'dot3stats_fcs_errors',
+        'dot3stats_frame_too_longs',
+        'dot3stats_sqe_test_errors',
+        'dot3stats_symbol_errors',
+        'dot3stats_internal_mac_transmit_errors',
+        'dot3stats_internal_mac_receive_errors',
+        'port_rx_fcs_errors',
+        'port_rx_no_buffer',
+        'port_rx_other_errors',
+        'port_tx_errors',
+    ] + ECN_COUNTERS + TC_BUFFER_DISCARDS_COUNTERS + TC_WRED_DISCARDS_COUNTERS
 
     # Timeouts
     TIMEOUT_FOR_NEXTHOP_RESOLUTION = 180
@@ -231,15 +285,13 @@ class MongoDbConsts:
     TC_DATA = "tcData"
     TEMP_DATA = "temperatureData"
     TEST_NAME = "testName"
+    TEST_WORKLOAD = "testWorkload"
+    TEST_TRAFFIC_TYPE = "testTrafficType"
+    INGRESS_PORT_SEQUENCE = "ingressPortSequence"
     TIME_STAMP = "timeStamp"
     TIME_REGEX_FORMAT = "%d-%m-%Y %H:%M:%S"
     TIME_REGEX_FORMAT_FOR_MONGO_DB = "%d-%m-%Y_%H-%M-%S"
-    IF_OUT_DISCARDS = "ifOutDiscards"
-    MAC_CONTROL_FRAMES_TRANSMITTED = "aMacControlFramesTransmitted"
-    MAC_CONTROL_FRAMES_RECEIVED = "aMacControlFramesReceived"
-    PAUSE_MAC_CONTROL_FRAMES_TRANSMITTED = "aPauseMacCtrlFramesTransmitted"
-    PAUSE_MAC_CONTROL_FRAMES_RECEIVED = "aPauseMacCtrlFramesReceived"
-    MONGO_DB_ECN_COUNTERS = [f'txEcnMarkedTc{tc}' for tc in range(PerfConsts.TC_NUM)]
+
     POWER_TOTAL = "powerTotal"
     POWER_BY_COLLECTORS = "powerByCollectors"
     ALLURE_URL = "allureUrl"
@@ -257,6 +309,9 @@ class MongoDbConsts:
 
 
 class MRCConsts:
+    MIN_INGRESS_PORTS_NUM = 2
+    MAX_INGRESS_PORTS_NUM = 11
+    INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM + 1))
     HWSKU_BY_CHIP_TYPE = {
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},
@@ -267,9 +322,17 @@ class MRCConsts:
         "SPC4": 128,
         "SPC5": 180
     }
+    VICTIM_PORTS_NUM = 90
+    ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
+        "SPC4": (16, 8),
+        "SPC5": (10, 18)
+    }
     TRAFFIC_TYPE_IPV6 = "IPv6"
     TRAFFIC_TYPE_SRV6 = "SRv6"
     TRAFFIC_TYPE_LIST = [TRAFFIC_TYPE_IPV6, TRAFFIC_TYPE_SRV6]
+    INGRESS_PORT_SEQUENCE_CONSECUTIVE = 'consecutive'
+    INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE = 'non_consecutive'
+    INGRESS_PORT_SEQUENCE = [INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE]
     DUT_TX_UTIL_TH = 0.98
     BUFFER_CELL_SIZE = 192
     HALF_MRC_DATA_PACKET_SIZE = 11
@@ -303,12 +366,20 @@ class MRCConsts:
     MAX_TRIM_SIZE_CHECKING_RANGE = 512
     TRIMMING_TC = '4'
     MRC1_DATA_TC = '1'
-    VICTIM_PORTS_NUM = 90
     MRC2_DATA_TC = '2'
     MRC_RETRANSMISSION_TC = '3'
     MRC_CONTROL_TC = '4'
     GFP_DATA_TC = '5'
-    VICTIM_PORTS_QUEUE_LIST = [MRC2_DATA_TC, MRC_RETRANSMISSION_TC, MRC_CONTROL_TC, GFP_DATA_TC]
+    WORKLOAD_1_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC)]
+    WORKLOAD_2_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC), int(GFP_DATA_TC)]
+    MRC_DATA_ONLY_WORKLOAD_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC)]
+    WORKLOAD1_NAME = 'workload_1'
+    WORKLOAD2_NAME = 'workload_2'
+    MRC_DATA_ONLY_WORKLOAD_NAME = 'mrc_data_only'
+    MRC_REGRESSION_WORKLOADS_LIST = [WORKLOAD1_NAME]
+    MRC_DATA_ONLY_WORKLOADS_LIST = [MRC_DATA_ONLY_WORKLOAD_NAME]
+    SHAPER_VALUE = 0.975
+    SHAPER_VALUE_AFTER_TEST = 1.0
 
 
 class PowerConsts:
