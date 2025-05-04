@@ -492,7 +492,7 @@ class IbSwitch(BaseSwitch):
     def get_lane_bmap(cls, port: Port) -> str:
         """
         Calculates the lane-bmap as it would appear in the output of sx_api_ports_mapping_dump.py
-        Note: If the port given is an aggregated port, returned value is for plane-port #1.
+        Note: Aggregated ports have no bmap so this function fails for these.
 
         Returns:
             str: lane-bmap as a string representing a hex number, e.g. on Crocodile: Port('swB11p2pl4') --> '0x18'
@@ -500,7 +500,7 @@ class IbSwitch(BaseSwitch):
         # todo cls.validate_port_name(port)
         lane_bmap = cls._get_lane_bmap(port)
         lane_bmap = f'0x{lane_bmap:0>2X}'
-        logger.info(f"{port.name=} ==> {lane_bmap}")
+        logger.info(f"{port.name=} ==> {lane_bmap=}")
         return lane_bmap
 
     @classmethod
@@ -746,7 +746,7 @@ class BlackMambaSwitch(IbSwitch):
 
     @classmethod
     def _get_lane_bmap(cls, port):
-        return 0x10 ** (port.local_port - 1) * 2 ** ((port.plane_number or 1) - 1)
+        return 0x10 ** (port.local_port - 1) * 2 ** (port.plane_number - 1)
 
 
 # -------------------------- Taipan Switch ----------------------------
@@ -1035,6 +1035,7 @@ class JulietSwitch(NvLinkSwitch):
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
+        self.num_of_plane_ports = 1
 
     def _init_fan_list(self):
         super()._init_fan_list()

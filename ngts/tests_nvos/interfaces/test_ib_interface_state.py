@@ -3,7 +3,6 @@ import logging
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
-from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
@@ -11,7 +10,6 @@ from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -165,7 +163,9 @@ def test_ib_interface_state_up_once(engines, devices, test_api):
 
     try:
         with allure.step('verify state is down after port toggle event'):
-            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name=port_name, sleep=5)
+            plane_port_name = (port_name if devices.dut.num_of_plane_ports == 1
+                               else Tools.MultiPlanarTool.select_random_plane_port(fae).port.name)
+            IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name=plane_port_name, sleep=5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
