@@ -46,8 +46,8 @@ class TestSpcX400GTo200G:
         with allure.step(f"Run traffic on all the ports. Packet size is {packet_size} bytes"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            # TODO: Remove this once the issue 4215613 is fixed (change skip_first_counters_iteration to False (4215613))
-            skip_first_counters_iteration = True if is_redmine_issue_active([4215613])[0] else False
+            # TODO: Remove this once the issue 4426155 is fixed (change skip_first_counters_iteration to False (4426155))
+            skip_first_counters_iteration = True if is_redmine_issue_active([4426155])[0] else False
             # TODO: Change to port groups (Shahaf Bodner next commit)
             bw_threshold = None
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
