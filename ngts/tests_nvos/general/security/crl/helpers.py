@@ -148,6 +148,7 @@ class GnmiCrlClient(CrlClient):
         client_cert: Optional[CertInfo] = None,
         port: Optional[int] = None,
     ):
+        verify_gnmi_client_tools_installed()  # Makes sure gnmic and grpcurl are installed on the test player
         gnmic = GnmicCmdBuilder(self.host).capabilities()
         if run_insecure or not client_cert:
             gnmic.skip_verify()

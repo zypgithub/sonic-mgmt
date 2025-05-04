@@ -42,7 +42,8 @@ def verify_installed_cacert(installed_app_name, expect_installed_ca=None):
     cas_resource = System().security.ca_certificate
     with allure.step(f'find CAs that are installed on {installed_app_name}'):
         cas_show = OutputParsingTool.parse_json_str_to_dictionary(cas_resource.show()).get_returned_value()
-        installed_cas = [ca for ca in cas_show if installed_app_name in cas_show[ca][INSTALLED]]
+        # TODO: there's a bug 4424853 - installed field is missing
+        installed_cas = [ca for ca in cas_show if installed_app_name in cas_show[ca].get(INSTALLED, {})]
     if expect_installed_ca:
         with allure.step(f'verify only installed CA is: {expect_installed_ca}'):
             assert installed_cas == [expect_installed_ca], (f'unexpected CAs installed on {installed_app_name}.\n'
