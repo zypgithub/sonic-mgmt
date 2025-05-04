@@ -676,6 +676,7 @@ class BlackMambaSwitch(IbSwitch):
         self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
         self.expected_operation_durations.update({
             "Install BIOS": 550,
+            'install cpld': 1000,
         })
 
     def get_mgmt_ports(self) -> List[str]:
@@ -832,6 +833,7 @@ class CrocodileSwitch(IbSwitch):
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/crocodile_versions.json"
         self.expected_operation_durations.update({
             "Install BIOS": 500,
+            'install cpld': 720,
         })
         self.constants.firmware.append('CPLD4')
 
@@ -1035,6 +1037,10 @@ class JulietSwitch(NvLinkSwitch):
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
+        self.expected_operation_durations.update({
+            "Install BIOS": 600,
+            'install cpld': 720,
+        })
         self.num_of_plane_ports = 1
 
     def _init_fan_list(self):
