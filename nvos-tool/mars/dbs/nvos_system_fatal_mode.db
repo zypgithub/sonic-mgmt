@@ -26,7 +26,7 @@
                 <name> post_fatal_recovery </name>
                 <tout> 900 </tout>
                 <params>
-                    <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/multi_asic/test_fatal_mode.py  -k test_post_fatal_recovery  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600 --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]</exec>
+                    <exec> PYTHONPATH=/devts/ /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/multi_asic/test_fatal_mode.py  -k test_post_fatal_recovery  --setup_name=[[conf:extra_info.setup_name]]  --timeout 600 --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --session_id=[[run_time:session_id]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini     --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results  --disable_loganalyzer  --showlocals  [[conf:extra_info.additional_options]]</exec>
                 </params>
 			</post>
             <on_not_success>
