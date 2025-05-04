@@ -74,4 +74,4 @@ def set_allure_lossy_lossless_title(request, scenario, is_ipv6):
     test_name_with_scenario = re.sub(r'\[.*?\]', test_name, f"- Scenario {scenario}: {scenario_names_dict[scenario]}")
 
     allure.dynamic.title(test_name_with_scenario)
-    return test_name_with_scenario
+    return test_name

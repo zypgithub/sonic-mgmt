@@ -235,6 +235,9 @@ class MongoDbConsts:
     MONGO_DB_DICT_PATH = "/auto/sw/projects/performance/results/mongodb/"
     MONGO_DB_UPLOADS = os.path.join(MONGO_DB_DICT_PATH, "for_upload/")
     MONGO_DB_ERRORS = os.path.join(MONGO_DB_DICT_PATH, "errors/")
+    MONGO_DB_SANDBOX_TESTS = os.path.join(MONGO_DB_DICT_PATH, "Sandbox_testing/")
+    MONGO_DB_SANDBOX_TESTING_COMMAND = f"{MONGO_DB_DICT_PATH}./initiate_sandbox"
+    MONGO_DB_SANDBOX_TESTING_TIMEOUT = 30
 
 
 class MRCConsts:
