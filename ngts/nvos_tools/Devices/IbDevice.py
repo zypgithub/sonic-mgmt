@@ -408,6 +408,21 @@ class IbSwitch(BaseSwitch):
         }
         self.module_offset = None  # Should be overridden in child if used for module mapping
         self.expected_operation_durations = {}
+        self.unsupported_commands_list = ["nv show platform environment leakage",
+                                          "nv show platform firmware BMC",
+                                          "nv show platform firmware FPGA",
+                                          "nv show platform firmware EROT",
+                                          "nv show platform firmware EROT-ASIC1",
+                                          "nv show platform firmware EROT-ASIC2",
+                                          "nv show platform firmware EROT-BMC",
+                                          "nv show platform firmware EROT-CPU",
+                                          "nv show platform firmware EROT-FPGA",
+                                          "nv show platform boot-policy",
+                                          "nv show platform cable-cartridge",
+                                          "nv show platform chassis-location",
+                                          "nv show system cli",
+                                          "nv show cluster",
+                                          "nv show sdn"]
 
     def sleep_after_system_reboot(self):
         pass
@@ -922,6 +937,8 @@ class CrocodileSwitch(IbSwitch):
             "Install BIOS": 500,
         })
         self.constants.firmware.append('CPLD4')
+        self.unsupported_commands_list.extend(["nv show ib device ASIC3",
+                                               "nv show ib device ASIC4"])
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -1036,6 +1053,12 @@ class NvLinkSwitch(IbSwitch):
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
         self.unset_all_command += "; nv unset cluster"
+        self.unsupported_commands_list = ["nv show platform ps-redundancy",
+                                          "nv show platform environment psu",
+                                          "nv show ib device ASIC3",
+                                          "nv show ib device ASIC4",
+                                          "nv show system profile",
+                                          "nv show ib ibdiagnet"]
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports

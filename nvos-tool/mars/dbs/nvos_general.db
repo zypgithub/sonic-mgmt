@@ -49,4 +49,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_general_stress_serial_connection.cases </cases>
 	</test>
+
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_run_unsupported_commands.cases </cases>
+	</test>
 </DBDEF>
