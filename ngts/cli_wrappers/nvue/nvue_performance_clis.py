@@ -156,8 +156,8 @@ class NvuePerformanceCli(PerformanceCommon):
         """
         os_ports_name_mapping = []
         dut_ports = self.get_dut_ports()
-        for port in dut_ports:
-            sdk_port = self.get_sdk_port(port)
+        sdk_ports = self.get_sdk_ports(dut_ports)
+        for port, sdk_port in zip(dut_ports, sdk_ports):
             os_ports_name_mapping.append({ValidationConsts.PORT: sdk_port,
                                           ValidationConsts.OS_PORT_NAME: port})
         return os_ports_name_mapping
