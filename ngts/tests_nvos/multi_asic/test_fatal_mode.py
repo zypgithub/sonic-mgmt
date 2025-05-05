@@ -84,7 +84,7 @@ def assert_fatal_logs(engines, request):
     yield
 
     test_name = request.node.name
-    if test_name is "test_negative_flow_with_warnings":
+    if test_negative_flow_with_warnings.__name__ in test_name:
         logger.info("Fatal log check not needed for test_negative_flow_with_warnings as it doesn't create fatal events")
         return
 
