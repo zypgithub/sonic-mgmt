@@ -184,8 +184,10 @@ def test_save_reboot(engines, devices):
                 with allure.step('Verify system location is set to location_info_1'):
                     ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
                         verify_result()
+
             with allure.step("verify dscp option is loaded back after reboot"):
-                dscp_output = OutputParsingTool.parse_json_str_to_dictionary(rule_id_obj.action.show).get_returned_value()
+                dscp_output = OutputParsingTool.parse_json_str_to_dictionary(rule_id_obj.action.show()).\
+                    get_returned_value()
                 assert dscp_output['set']['dscp'] == 1, \
                     "The configured dscp is not present after reboot"
 
