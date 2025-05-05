@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DBDEF>
+    <global>
+        <!-- parameters passed to setup steps commands-->
+        <default_params_type> basic_setup_step_params </default_params_type>
+        <DB>
+            <info> PORT_ERROR </info>
+            <owner> SONiC </owner>
+            <group> SONiC </group>
+
+            <!-- OPTIONAL TAGS -->
+            <tags> PORT_ERROR </tags>
+            <ignore>
+                <condition>
+                    <key> dut_name </key>
+                    <op> not in </op>
+                    <value> ["mtvr-moose-04", "r-bison-08"] </value>
+                </condition>
+            </ignore>
+
+            <!-- pre db commands - executed once before DB run -->
+            <pre>
+                <name> deploy ptp-256 topo </name>
+                <type> reg_exec_cmd </type>
+                <tout> 3000 </tout>
+                <run_posts_after_pre_failed> True </run_posts_after_pre_failed>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_rpc_check_and_set_topology.py --setup_name=[[conf:extra_info.setup_name]] --current_topo=[[conf:extra_info.topology]] --expected_topo=ptp-256  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
+                </params>
+            </pre>
+            <post>
+                <name> restore original topo </name>
+                <type> reg_exec_cmd </type>
+                <tout> 3000 </tout>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_rpc_check_and_set_topology.py --setup_name=[[conf:extra_info.setup_name]] --current_topo=ptp-256 --expected_topo=[[conf:extra_info.topology]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
+                </params>
+            </post>
+        </DB>
+        <Test>
+            <pre></pre>
+            <post></post>
+        </Test>
+        <Case>
+            <!-- OPTIONAL TAGS -->
+            <!--<tags> TAG NAME</tags>-->
+            <pre></pre>
+            <post></post>
+        </Case>
+    </global>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/port_error.cases </cases>
+    </test>
+
+</DBDEF>

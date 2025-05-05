@@ -173,10 +173,11 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
                     with allure.step('Enable autoneg on copper cable ports if SW controlled'):
                         cli_objects.dut.im.enable_autoneg_on_passive_copper(copper_cables)
 
-    with allure.step("Post upgrade checks"):
-        cmd = "ansible-playbook -i inventory --limit {SWITCH} post_upgrade_check.yml " \
-              "-e topo={TOPO} -b -vvv ".format(SWITCH=dut_name, TOPO=expected_topo)
-        run_testbed_cli_script(cmd, ansible_path)
+    if expected_topo != "ptp-256":
+        with allure.step("Post upgrade checks"):
+            cmd = "ansible-playbook -i inventory --limit {SWITCH} post_upgrade_check.yml " \
+                  "-e topo={TOPO} -b -vvv ".format(SWITCH=dut_name, TOPO=expected_topo)
+            run_testbed_cli_script(cmd, ansible_path)
 
     engines.dut.disconnect()
     hwsku = get_sonic_hwsku(engines.dut)
