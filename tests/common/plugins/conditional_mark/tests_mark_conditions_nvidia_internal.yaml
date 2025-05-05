@@ -34,6 +34,10 @@ tests/nightly/route/test_async_route.py:
     conditions:
     - "'simx' in platform"
     - "'ASAN' in build_version"
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: 4427471"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4427471"
 
 tests/nightly/routing/test_routing.py::TestRouting::test_reboot:
   skip:
