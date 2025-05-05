@@ -1,0 +1,35 @@
+{
+    "sdk_test_info":
+        {
+            "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
+            "sdk_test_name": "SpcxTG"
+        },
+    "{{ PerfConsts.SDK_TEST_CONF }}": {
+            {% set ports = get_right_left_ports_dict() %}
+            {% set right_ports = ports["right_ports"] %}
+            {% set left_ports = ports["left_ports"] %}
+            {% set all_ports = left_ports + right_ports %}
+            "split_dict": { "{{conf_args.split_right}}": {{all_ports | tojson}}},
+            "fws_base_vlan": 200,
+            "is_ipv6": "{{conf_args.is_ipv6}}",
+            "shaper_val": 0.975,
+            "key_un_fws": "un_fws_port_{}",
+            "smac": "00:01:02:03:04:05",
+            "left_mac": "00:01:02:03:04:06",
+            "right_mac": "00:00:00:00:10:60",
+            "source_ip": {% if conf_args.is_ipv6 %} "192:168:0:0:0:0:0:1" {% else %} "4.4.4.4" {% endif %},
+            "left_dst_ip": {% if conf_args.is_ipv6 %} "192:168:5:1:1:1:2:0" {% else %} "10.0.1.0" {% endif %},
+            "right_dst_ip": {% if conf_args.is_ipv6 %} "192:168:5:1:1:2:2:0"{% else %} "192.168.1.0" {% endif %},
+            "packet_size": 4096,
+            "lossy_dscp_value": 34,
+            "returned_mac_addr": ["00:00:00:00:10:70", "00:00:00:00:10:90"],
+            "vlan": {% if dut_alias=="left_tg" %} 3 {% else %} 5 {% endif %},
+
+            {# Configure port groups - either from provided config or default mapping #}
+            {% if conf_args.port_groups is defined %}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.RIGHT_TG_ALIAS] | tojson }}
+            {% else %}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_right) | tojson }}
+            {% endif %}
+        }
+}

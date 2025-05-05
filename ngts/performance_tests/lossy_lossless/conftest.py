@@ -4,36 +4,20 @@ import logging
 import os
 from ngts.constants.performance_constants import MongoDbConsts, PerfConsts
 from ngts.constants.constants import BugHandlerConst
-from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list, create_json_traffic_stream
+from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list, create_json_traffic_stream, dscp_to_tc
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "lossy_lossless"
 
 
-def add_dscp_ecn_support(dscp_value):
-    """
-    This function changes the dscp value, in order to mark packet as ECN (Explicit Congestion Notification) supported.
-    This way, packet isn't dropped due to RED (Random Early Detection).
-
-    This function is used to add IP TOS (IPv4) or TC (IPv6) to support dscp and ECN.
-
-    Args:
-        dscp_value:     Current dscp value (34 for lossy traffic or 26 for lossless)
-
-    Returns:
-        ECN supported value (shift left and bit OR 10)
-    """
-    return (dscp_value << 2) | 0b10
-
-
 def create_lossy_lossless_json_traffic_file(player_alias, traffic_parameters, json_path, num_lossy_packets, num_lossless_packets):
     traffic_parameters["num_packets"] = num_lossy_packets
     lossy_stream = create_json_traffic_stream(player_alias, traffic_parameters, f"{player_alias}_lossy_stream",
-                                              add_dscp_ecn_support(traffic_parameters["lossy_dscp_value"]))
+                                              dscp_to_tc(traffic_parameters["lossy_dscp_value"], 2))
 
     traffic_parameters["num_packets"] = num_lossless_packets
     lossless_stream = create_json_traffic_stream(player_alias, traffic_parameters, f"{player_alias}_lossless_stream",
-                                                 add_dscp_ecn_support(traffic_parameters["lossless_dscp_value"]))
+                                                 dscp_to_tc(traffic_parameters["lossless_dscp_value"], 2))
 
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path,
                                               stream_list=[lossy_stream, lossless_stream])

@@ -1,0 +1,99 @@
+{
+    {# Test configuration metadata #}
+    "sdk_test_info": {
+        "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/ar_vs_random/ar_vs_random_dut.py",
+        "sdk_test_name": "ARvsRandomDUT"
+    },
+    "{{ PerfConsts.SDK_TEST_CONF }}": {
+        {# VLAN configuration #}
+        "left_side_vlan": 3,
+        "right_side_vlan": 5,
+
+        {# Feature flags #}
+        "is_ipv6": "{{ conf_args.is_ipv6 }}",
+        "run_fw_latency_optimization": "{{ conf_args.run_fw_latency_optimization }}",
+        "override_qos_to_tc_map": "False",
+
+        {# Port configuration setup #}
+        {% set ports = get_right_left_ports_dict() %}
+        {% set right_ports = ports["right_ports"] %}
+        {% set left_ports = ports["left_ports"] %}
+
+        {# Split configuration based on left/right split settings #}
+        {% if conf_args.split_left != conf_args.split_right %}
+        "split_dict": {
+            "{{ conf_args.split_left }}": {{ left_ports | tojson }},
+            "{{ conf_args.split_right }}": {{ right_ports | tojson }}
+        },
+        {% else %}
+        {% set split_for_all_ports = conf_args.split_left %}
+        {% set all_ports = left_ports + right_ports %}
+        "split_dict": {
+            "{{ split_for_all_ports }}": {{ all_ports | tojson }}
+        },
+        {% endif %}
+
+        {# IP configuration - handles both IPv4 and IPv6 #}
+        "source_ip": {% if conf_args.is_ipv6 %}"192:168:0:0:0:0:0:1"{% else %}"4.4.4.4"{% endif %},
+        "dip_left_to_right": {% if conf_args.is_ipv6 %}"192:168:5:1:1:1:2:0"{% else %}"10.0.1.0"{% endif %},
+        "dip_right_to_left": {% if conf_args.is_ipv6 %}"192:168:5:1:1:2:2:0"{% else %}"192.168.1.0"{% endif %},
+        "neigh_mask": {% if conf_args.is_ipv6 %}"FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"{% else %}"255.255.255.255"{% endif %},
+
+        {# MAC address configuration #}
+        "egress_rif_mac": "00:00:00:00:10:60",
+        "original_dmac": "00:01:02:03:04:06",
+        "original_smac": "00:01:02:03:04:05",
+        "neigh_mac_left_to_right": "00:00:00:00:10:70",
+        "neigh_mac_right_to_left": "00:00:00:00:10:90",
+
+        {# Buffer and congestion settings #}
+        "auto_buffer_mode": "{{ conf_args.auto_buffer_mode }}",
+        "congestion_thresh_lo": {{ conf_args.congestion_thresh_lo }},
+
+        {# Split ports configuration #}
+        {% set split_left = conf_args.split_left %}
+        {% set split_right = conf_args.split_right %}
+        {% set split_ports = get_split_ports(split_right, split_left) %}
+        {% set right_split_ports = split_ports["right_split_ports"] %}
+        {% set left_split_ports = split_ports["left_split_ports"] %}
+
+        "split_ports": {{ split_ports | tojson }},
+        "two_sided_ar": "{{ conf_args.two_sided_ar }}",
+
+        {# Configure port groups - either from provided config or default mapping #}
+        {% if conf_args.port_groups is defined %}
+        "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.DUT_ALIAS] | tojson }},
+        {% else %}
+        "{{ PerfConsts.PORT_GROUPS }}": {
+            "left_ports_leaf_to_spine": {{ left_split_ports | tojson }},
+            "right_ports_leaf_to_host": {{ right_split_ports | tojson }}
+        },
+        {% endif %}
+
+        {# IP address configuration for right side ports #}
+        {% if conf_args.is_ipv6 %}
+        {% set ip_address = "192:168:5:1:1:1:2:0" %}
+        {% set ip_mode = "v6" %}
+        {% else %}
+        {% set ip_address = "10.0.1.0" %}
+        {% set ip_mode = "v4" %}
+        {% endif %}
+
+        "right_side_ports_to_ip_dict": {{ generate_ip_list(address_start = ip_address, step = 1, mode = ip_mode, list_of_ports = right_split_ports ) | tojson }},
+
+        "ecmp_type_ar": "{{ conf_args.ecmp_type_ar }}",
+        "one_to_one_leaf_scenario": "{{ conf_args.one_to_one_leaf_scenario }}",
+
+        {% if conf_args.ecmp_type_stateless is defined %}
+        "ecmp_type_stateless": "{{ conf_args.ecmp_type_stateless }}",
+        {% else %}
+        "ecmp_type_stateless": "False",
+        {% endif %}
+
+        {% if conf_args.ecmp_size is defined %}
+        "ecmp_size": {{ conf_args.ecmp_size }}
+        {% else %}
+        "ecmp_size": 512
+        {% endif %}
+    }
+}

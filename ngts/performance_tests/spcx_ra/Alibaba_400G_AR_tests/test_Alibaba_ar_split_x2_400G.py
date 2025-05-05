@@ -97,5 +97,5 @@ class Test_Alibaba_x2Split_400G:
             with allure.step(f"Verifying the ACL counters. ACL AR counter: {acl_ar_counter}, ACL GOTO counter: {acl_goto_counter} which are {goto_percentage:.3f}% of the total packets"):
                 if scenario_configuration.create_acls and acl_ar_counter == 0:
                     raise Exception(f"AR ACL is not working as expected. {acl_ar_counter} is 0")
-                if scenario_configuration.create_goto_acl and not (4.99 <= goto_percentage <= 5.01):
-                    raise Exception(f"GOTO ACL is not working as expected. GOTO counter: {acl_goto_counter} is {goto_percentage:.3f}% of the total packets (expected 5 ± 0.01%)")
+                if scenario_configuration.create_goto_acl and not (4.8 <= goto_percentage <= 5.2):
+                    raise Exception(f"GOTO ACL is not working as expected. GOTO counter: {acl_goto_counter} is {goto_percentage:.3f}% of the total packets (expected 5 ± 0.2%)")

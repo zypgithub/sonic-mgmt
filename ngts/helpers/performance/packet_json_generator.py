@@ -31,7 +31,7 @@ class PacketGenerator:
         self.packet_size = packet_size
         self.headers = {}
         self.num_packets = num_packets
-        self.packet = scapy.Ether()
+        self.packet = None
 
     def get_json(self) -> dict:
         """
@@ -77,7 +77,7 @@ class PacketGenerator:
             dst: The destination IP address as a string.
         """
         self.headers["Ether"] = {"src": src, "dst": dst}
-        self.packet /= scapy.Ether(src=src, dst=dst)
+        self.packet = scapy.Ether(src=src, dst=dst) if self.packet is None else self.packet / scapy.Ether(src=src, dst=dst)
 
     def add_vlan_header(self, vlan_id: int, priority: int = 0) -> None:
         """
@@ -173,8 +173,8 @@ class PacketGenerator:
         """
         header_size = len(self.packet)
         available_payload_size = self.packet_size - header_size
-        if available_payload_size <= 0:
-            raise ValueError("Packet size is too small to fit headers and payload.")
+        if available_payload_size < 0:
+            raise ValueError(f"Packet size is too small to fit headers and payload. Packet size: {self.packet_size}. Headers size: {header_size}")
         if len(data) > available_payload_size:
             self.headers["Raw"] = {"load": data[:available_payload_size]}
         else:

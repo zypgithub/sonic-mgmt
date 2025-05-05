@@ -200,8 +200,8 @@ def create_srv6_json_traffic_stream(player_alias, traffic_parameters, stream_nam
     return stream
 
 
-def create_json_traffic_file(player_alias, traffic_parameters, json_path):
-    stream = create_json_traffic_stream(player_alias, traffic_parameters, f"spcx_ra_{player_alias}_main_stream")
+def create_json_traffic_file(player_alias, traffic_parameters, json_path, ip_protocol=PerfConsts.IP_PROTOCOL_UDP, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC):
+    stream = create_json_traffic_stream(player_alias, traffic_parameters, f"spcx_ra_{player_alias}_main_stream", ip_protocol=ip_protocol, tc=tc)
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list=[stream])
 
 

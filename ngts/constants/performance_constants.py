@@ -112,6 +112,9 @@ class PerfConsts:
     RIGHT_TG_ALIAS = "right_tg"
     TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     CL_ROCE_LOSSLESS_DEFAULT_TC = 96
+    DVS_LOSSLESS_TC = 26
+    DVS_LOSSY_TC = 34
+    DVS_CONTROL_TC = 48
     PORT_GROUPS = "port_groups"
 
     # Configuration Files
@@ -139,6 +142,13 @@ class PerfConsts:
     # Packet Sizes and Utilization Thresholds
     PACKET_SIZE_LIST = [4096]
     TG_TX_UTIL_TH = 95
+    ROCE_ACK_SIZE = 64
+    RTT_PROB_SIZE = 138
+    RTT_PROB_RESPONSE_SIZE = 118
+    CNP_SIZE = 116
+    NACK_SIZE = 102
+    SACK_SIZE = 170
+    GFP_CONTROL_SIZE = 138
 
     # Indexes
     VALUE_INDEX = 0
@@ -179,7 +189,9 @@ class PerfConsts:
     DVS_WELCOME_MESSAGE = "Welcome to the NVIDIA Switch Development System"
     ROCE_PORT = 4791
     UDP_SOURCE_PORT = 2001
+    TCP_SOURCE_PORT = 2001
     UDP_DOURCE_PORT = 80
+    TCP_DOURCE_PORT = 80
     ADAPTIVE_ROUTING_ENABLED = 1
     IP_PROTOCOL_UDP = "UDP"
     IP_PROTOCOL_TCP = "TCP"

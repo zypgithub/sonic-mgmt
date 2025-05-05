@@ -145,7 +145,7 @@ def get_alibaba_traffic(players, conf_args, template_suite="traffic_packets_json
                                                                                conf_args=conf_args)
 
         traffic_parameters.pop(PerfConsts.IP_PROTOCOL_UDP)
-        traffic_parameters[PerfConsts.IP_PROTOCOL_TCP] = {"sport": PerfConsts.UDP_SOURCE_PORT, "dport": PerfConsts.UDP_DOURCE_PORT}
+        traffic_parameters[PerfConsts.IP_PROTOCOL_TCP] = {"sport": PerfConsts.TCP_SOURCE_PORT, "dport": PerfConsts.TCP_DOURCE_PORT}
         traffic_parameters["num_traffic_streams"] = 2 if conf_args["create_goto_acl"] else 1
         traffic_parameters["goto_acl_destination_port"] = conf_args["goto_acl_destination_port"]
 

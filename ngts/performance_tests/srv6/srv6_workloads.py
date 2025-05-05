@@ -1,7 +1,7 @@
 import os
 import random
 from infra.tools.exceptions.test_issue import TestIssue
-from ngts.constants.performance_constants import MRCConsts
+from ngts.constants.performance_constants import MRCConsts, PerfConsts
 from ngts.helpers.performance.traffic_helpers import (create_srv6_json_traffic_stream, dscp_to_tc)
 
 PORT_DEFAULT_IPV6_PREFIX = "aaaa"
@@ -181,7 +181,7 @@ def get_mrc_stream(player_alias, traffic_parameters, mrc_num_packets,
 def get_rtt_stream(player_alias, traffic_parameters, src_ports,
                    dst_port, rtt_dscp, rtt_stream_num, ecn_enabled=True):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 138
+    traffic_parameters["packet_size"] = PerfConsts.RTT_PROB_SIZE
     ecn_value = 1 if ecn_enabled else 0
     rtt_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                  tc=dscp_to_tc(rtt_dscp, ecn=ecn_value),
@@ -192,7 +192,7 @@ def get_rtt_stream(player_alias, traffic_parameters, src_ports,
 
 def get_probe_ack_stream(player_alias, traffic_parameters, src_ports, dst_port):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 118
+    traffic_parameters["packet_size"] = PerfConsts.RTT_PROB_RESPONSE_SIZE
     probe_ack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                        tc=dscp_to_tc(MRCConsts.PROBE_ACK_DSCP),
                                                        stream_name=f"{', '.join(src_ports)}_to_{dst_port}_ProbeAck",
@@ -202,7 +202,7 @@ def get_probe_ack_stream(player_alias, traffic_parameters, src_ports, dst_port):
 
 def get_roce_ack_stream(player_alias, traffic_parameters, src_ports, dst_port):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 64
+    traffic_parameters["packet_size"] = PerfConsts.ROCE_ACK_SIZE
     roce_ack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                       tc=dscp_to_tc(MRCConsts.ROCE_ACK_DSCP),
                                                       stream_name=f"{', '.join(src_ports)}_to_{dst_port}_ROCE_ACK",
@@ -212,7 +212,7 @@ def get_roce_ack_stream(player_alias, traffic_parameters, src_ports, dst_port):
 
 def get_nack_stream(player_alias, traffic_parameters, src_ports, dst_port):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 102
+    traffic_parameters["packet_size"] = PerfConsts.NACK_SIZE
     nack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                   tc=dscp_to_tc(MRCConsts.NACK_DSCP),
                                                   stream_name=f"{', '.join(src_ports)}_to_{dst_port}_NACK",
@@ -222,7 +222,7 @@ def get_nack_stream(player_alias, traffic_parameters, src_ports, dst_port):
 
 def get_sack_stream(player_alias, traffic_parameters, src_ports, dst_port):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 170
+    traffic_parameters["packet_size"] = PerfConsts.SACK_SIZE
     sack_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                   tc=dscp_to_tc(MRCConsts.SACK_DSCP),
                                                   stream_name=f"{', '.join(src_ports)}_to_{dst_port}_SACK",
@@ -232,7 +232,7 @@ def get_sack_stream(player_alias, traffic_parameters, src_ports, dst_port):
 
 def get_cnp_stream(player_alias, traffic_parameters, src_ports, dst_port, num_packets=1):
     traffic_parameters["num_packets"] = num_packets
-    traffic_parameters["packet_size"] = 116
+    traffic_parameters["packet_size"] = PerfConsts.CNP_SIZE
     cnp_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                  tc=dscp_to_tc(MRCConsts.CNP_DSCP),
                                                  stream_name=f"{', '.join(src_ports)}_to_{dst_port}_CNP",
@@ -252,7 +252,7 @@ def get_gfp_data_stream(player_alias, traffic_parameters, src_ports, dst_port):
 
 def get_gfp_control_stream(player_alias, traffic_parameters, src_ports, dst_port):
     traffic_parameters["num_packets"] = 1
-    traffic_parameters["packet_size"] = 138
+    traffic_parameters["packet_size"] = PerfConsts.GFP_CONTROL_SIZE
     gfp_control_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,
                                                          tc=dscp_to_tc(MRCConsts.GFP_CONTROL_DSCP),
                                                          stream_name=f"{', '.join(src_ports)}_to_{dst_port}_GFP_CONTROL",
