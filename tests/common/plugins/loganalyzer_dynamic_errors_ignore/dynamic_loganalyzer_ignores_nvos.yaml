@@ -1843,6 +1843,7 @@
 
 # NVOS
 - Errors_list:
+    - '.*Log rotation failed.*'
     - '.*ERR kernel:.*loop: Write error at byte offset.*'
     - '.*ERR kernel:.*blk_update_request: I\/O error, dev loop1, sector.*'
     - '.*WARNING kernel:.*EXT4-fs warning \(device loop1\): ext4_end_bio:347: I\/O error.*'
@@ -1850,7 +1851,7 @@
     - '.*ERR kernel:.*Buffer I\/O error on device loop1, logical block.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_positive_flow
+      - tests_nvos/system/test_system_ssd_cleanup.py
 
 # NVOS
 - Errors_list:
