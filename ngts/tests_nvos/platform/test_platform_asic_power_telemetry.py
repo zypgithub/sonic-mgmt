@@ -103,7 +103,7 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
 
             with allure.step('Stress the system for 5 seconds'):
                 for _ in range(5):
-                    nv_command.platform.firmware.show().get_returned_value()
+                    nv_command.platform.firmware.show()
 
             with allure.step("Get output from NVUE command after reboot"):
                 counters_after_sleep = _get_power_temetry_counters(nv_command.platform, random_asic)
@@ -168,6 +168,6 @@ def test_negative_platform_asic_power_telemetry_not_supported(engines, topology_
 
 
 def _get_power_temetry_counters(platform_obj, random_asic):
-    asic_output = OutputParsingTool.parse_json_str_to_dictionary(platform_obj.platform.asic.show(random_asic + ' power counters')).get_returned_value()
+    asic_output = OutputParsingTool.parse_json_str_to_dictionary(platform_obj.asic.show(random_asic + ' power counters')).get_returned_value()
 
     return {key: asic_output[key] for key in PlatformConsts.POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS if key in asic_output}
