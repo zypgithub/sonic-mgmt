@@ -10,7 +10,6 @@ import allure
 from retry import retry
 
 from ngts.common.checkers import is_ver1_greater_or_equal_ver2
-
 logger = logging.getLogger()
 
 SENSOR_DATA = {"asic": {"temperature_file_name_rule": "asic",
@@ -668,7 +667,11 @@ def get_sensor_temperature_file_name(sensor_type, platform_params):
             sensor_index = random.choice(voltmon_index_list)
         else:
             start_index = SENSOR_DATA[sensor_type]["start_index"]
-            sensor_index = random.randint(start_index, SENSOR_DATA[sensor_type]["total_number"])
+            total_number = SENSOR_DATA[sensor_type]["total_number"]
+            if 'bison' in platform_params['host_name']:
+                start_index = start_index + 1
+                total_number = total_number + 1
+            sensor_index = random.randint(start_index, total_number)
         sensor_temperature_file_name = sensor_temperature_file_name.format(sensor_index)
 
     if sensor_type == "ambient":
