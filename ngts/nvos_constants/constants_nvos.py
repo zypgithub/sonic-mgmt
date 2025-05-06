@@ -1213,7 +1213,7 @@ class NtpConsts:
         VERSION_3 = '3'
         VERSION_4 = '4'
 
-    class AggressivePolling(Enum):
+    class Iburst(Enum):
         ENABLED = 'enabled'
         DISABLED = 'disabled'
 
@@ -1233,13 +1233,14 @@ class NtpConsts:
     SERVER = 'server'
     STATE = 'state'
     STATUS = 'status'
+    SOURCE = 'source'
     VRF = 'vrf'
     KEY = 'key'
     VALUE = 'value'
     TYPE = 'type'
     RESOLVE_AS = 'resolve-as'
     ASSOCIATION_TYPE = 'association-type'
-    AGGRESSIVE_POLLING = 'aggressive-polling'
+    IBURST = 'iburst'
     VERSION = 'version'
     TRUSTED = 'trusted'
     SERVER_ID = 'server-id'
@@ -1262,6 +1263,7 @@ class NtpConsts:
     DUMMY_SERVER7 = 'dummy.server7'
     DUMMY_SERVER8 = 'dummy.server8'
     SERVER_FAILED = 'DNS resolution failed'
+    USER_CONFIG = 'user-config'
     MULTIPLE_SERVERS_NUMBER = 11
     CONFIG_TIME_DIFF_THRESHOLD = 2.5  # [sec]
     SHOW_TIME_DIFF_THRESHOLD = 0.5  # [sec]
@@ -1307,33 +1309,35 @@ class NtpConsts:
     NTP_DEFAULT_DICT = {
         AUTHENTICATION: Authentication.DISABLED.value,
         DHCP: Dhcp.ENABLED.value,
-        LISTEN: Listen.ETH0.value,
+        LISTEN: {Listen.ETH0.value: {}},
         SERVER: {},
         STATE: State.ENABLED.value,
         STATUS: Status.UNSYNCHRONISED.value,
         VRF: Vrf.DEFAULT.value
     }
-    NTP_STATUS_DEFAULT_DICT = {}
     SERVER_DEFAULT_VALUES_DICT = {
-        AGGRESSIVE_POLLING: AggressivePolling.DISABLED.value,
+        IBURST: Iburst.DISABLED.value,
         ASSOCIATION_TYPE: AssociationType.SERVER.value,
         RESOLVE_AS: SERVER_FAILED,
+        SOURCE: USER_CONFIG,
         STATE: State.ENABLED.value,
         TRUSTED: Trusted.NO.value,
         VERSION: Version.VERSION_4.value
     }
     SERVER1_DEFAULT_VALUES_DICT = {
-        AGGRESSIVE_POLLING: AggressivePolling.DISABLED.value,
+        IBURST: Iburst.DISABLED.value,
         ASSOCIATION_TYPE: AssociationType.SERVER.value,
         RESOLVE_AS: SERVER1_IPV4,
+        SOURCE: USER_CONFIG,
         STATE: State.ENABLED.value,
         TRUSTED: Trusted.NO.value,
         VERSION: Version.VERSION_4.value
     }
     SERVER2_DEFAULT_VALUES_DICT = {
-        AGGRESSIVE_POLLING: AggressivePolling.DISABLED.value,
+        IBURST: Iburst.DISABLED.value,
         ASSOCIATION_TYPE: AssociationType.SERVER.value,
         RESOLVE_AS: SERVER2_IPV4,
+        SOURCE: USER_CONFIG,
         STATE: State.ENABLED.value,
         TRUSTED: Trusted.NO.value,
         VERSION: Version.VERSION_4.value
@@ -1363,7 +1367,7 @@ class NtpConsts:
         DUMMY_SERVER8: SERVER_DEFAULT_VALUES_DICT,
     }
     SERVER_NONE_DEFAULT_VALUES_DICT = {
-        AGGRESSIVE_POLLING: AggressivePolling.ENABLED.value,
+        IBURST: Iburst.ENABLED.value,
         ASSOCIATION_TYPE: AssociationType.SERVER.value,
         KEY: KEY_1,
         RESOLVE_AS: SERVER1_IPV4,
@@ -1372,7 +1376,7 @@ class NtpConsts:
         VERSION: Version.VERSION_3.value
     }
     SERVER_DISABLED_DICT = {
-        AGGRESSIVE_POLLING: AggressivePolling.DISABLED.value,
+        IBURST: Iburst.DISABLED.value,
         ASSOCIATION_TYPE: AssociationType.SERVER.value,
         KEY: KEY_1,
         RESOLVE_AS: SERVER1_IPV4,

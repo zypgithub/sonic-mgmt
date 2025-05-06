@@ -10,6 +10,7 @@ class Ntp(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/ntp')
         self.servers = NtpBaseResources(self, resource='/server')
         self.keys = NtpBaseResources(self, resource='/key')
+        self.listen = BaseComponent(self, path='/listen')
 
 
 class NtpBaseResources(BaseComponent):

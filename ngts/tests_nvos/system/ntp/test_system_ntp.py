@@ -7,6 +7,7 @@ import pytest
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.nvos_constants.constants_nvos import ApiType, NtpConsts, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -66,9 +67,9 @@ def test_configure_ntp_server(test_api):
             system.ntp.unset().verify_result()
             system.ntp.set(op_param_name=NtpConsts.DHCP, op_param_value=NtpConsts.Dhcp.DISABLED.value).verify_result()
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.DISABLED.value).verify_result()
-            system.ntp.set(op_param_name=NtpConsts.LISTEN, op_param_value=NtpConsts.Listen.ETH0.value).verify_result()
+            system.ntp.listen.set(NtpConsts.Listen.ETH0.value).verify_result()
             system.ntp.set(op_param_name=NtpConsts.VRF, op_param_value=NtpConsts.Vrf.DEFAULT.value,
-                           apply=True).verify_result()
+                           apply=True, ask_for_confirmation=True).verify_result()
             time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp commands output"):
@@ -118,7 +119,7 @@ def test_configure_ntp_server(test_api):
 
         with allure.step("Update existing ntp server with none default values"):
             system.ntp.servers.resources_dict[server_name].set(
-                op_param_name=NtpConsts.AGGRESSIVE_POLLING, op_param_value=NtpConsts.AggressivePolling.ENABLED.value).\
+                op_param_name=NtpConsts.IBURST, op_param_value=NtpConsts.Iburst.ENABLED.value).\
                 verify_result()
             system.ntp.servers.resources_dict[server_name].set(
                 op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.DISABLED.value).verify_result()
@@ -152,7 +153,7 @@ def test_configure_ntp_server(test_api):
             else:
                 system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.ASSOCIATION_TYPE).\
                     verify_result()
-                system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.AGGRESSIVE_POLLING).\
+                system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.IBURST).\
                     verify_result()
                 system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.STATE).verify_result()
                 system.ntp.servers.resources_dict[server_name].unset(op_param=NtpConsts.VERSION).verify_result()
@@ -197,7 +198,7 @@ def test_configure_ntp_server(test_api):
 
         with allure.step("Set system ntp enabled"):
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.ENABLED.value,
-                           apply=True).verify_result()
+                           apply=True, ask_for_confirmation=True).verify_result()
             time.sleep(NtpConsts.SYNCHRONIZATION_MAX_TIME)
 
         with allure.step("Validate show system ntp output"):
@@ -213,7 +214,7 @@ def test_configure_ntp_server(test_api):
             system.ntp.unset().verify_result()
             system.ntp.set(op_param_name=NtpConsts.STATE, op_param_value=NtpConsts.State.DISABLED.value).verify_result()
             system.ntp.set(op_param_name=NtpConsts.DHCP, op_param_value=NtpConsts.Dhcp.DISABLED.value,
-                           apply=True).verify_result()
+                           apply=True, ask_for_confirmation=True).verify_result()
             time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Validate show system ntp commands output"):
@@ -235,7 +236,7 @@ def test_configure_ntp_server(test_api):
                 system.ntp.unset(op_param=NtpConsts.DHCP).verify_result()
                 system.ntp.unset(op_param=NtpConsts.LISTEN).verify_result()
                 system.ntp.unset(op_param=NtpConsts.STATE).verify_result()
-                system.ntp.unset(op_param=NtpConsts.VRF, apply=True).verify_result()
+                system.ntp.unset(op_param=NtpConsts.VRF, apply=True, ask_for_confirmation=True).verify_result()
             time.sleep(NtpConsts.CONFIG_TIME)
             ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
             assert ntp_show[NtpConsts.AUTHENTICATION] == NtpConsts.NTP_DEFAULT_DICT[NtpConsts.AUTHENTICATION], \
@@ -487,7 +488,7 @@ def test_configure_ntp_multiple_servers(test_api):
     - Add and configure multiple servers
     - Servers can be configured using ip address (v4/v6) and hostname.
     - Show system NTP (brief and status)
-    - Show all NTP servers (brief and query)
+    - Show all NTP servers (brief and detail)
     - Show NTP configuration per-server
     - Unset of specific server and unset on all servers
     - Disable per-server configuration
@@ -514,7 +515,6 @@ def test_configure_ntp_multiple_servers(test_api):
     server2_hostname = get_hostname_from_ip(NtpConsts.SERVER2_IPV4)
     ntp_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
     ntp_brief_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
-    ntp_status_dict = dict(NtpConsts.NTP_STATUS_DEFAULT_DICT)
 
     try:
         with allure.step("Clear all ntp configurations"):
@@ -544,19 +544,12 @@ def test_configure_ntp_multiple_servers(test_api):
             else:
                 ntp_show_brief = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show('brief')).\
                     get_returned_value()
-                ntp_show_status = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show('status')).\
-                    get_returned_value()
                 ntp_dict[NtpConsts.SERVER] = ntp_brief_dict[NtpConsts.SERVER] = NtpConsts.MULTIPLE_SERVERS_DEFAULT_DICT
                 ntp_dict[NtpConsts.DHCP] = ntp_brief_dict[NtpConsts.DHCP] = NtpConsts.Dhcp.DISABLED.value
                 ntp_dict[NtpConsts.STATUS] = ntp_brief_dict[NtpConsts.STATUS] = NtpConsts.Status.SYNCHRONISED.value
                 ntp_dict[NtpConsts.REFERENCE] = ntp_brief_dict[NtpConsts.REFERENCE] = ntp_show[NtpConsts.REFERENCE]
-                ntp_dict[NtpConsts.OFFSET] = ntp_show[NtpConsts.OFFSET]  # Offset is not validated
-                ntp_brief_dict[NtpConsts.OFFSET] = ntp_show_brief[NtpConsts.OFFSET]  # Offset is not validated
-                ntp_status_dict[NtpConsts.REFERENCE] = ntp_show[NtpConsts.REFERENCE]  # NtpConsts.SERVER1_IPV4
-                ntp_status_dict[NtpConsts.STATUS] = NtpConsts.Status.SYNCHRONISED.value
-                ntp_status_dict[NtpConsts.OFFSET] = ntp_show_status[NtpConsts.OFFSET]  # Offset is not validated
+                ntp_dict[NtpConsts.OFFSET] = ntp_brief_dict[NtpConsts.OFFSET] = ntp_show[NtpConsts.OFFSET]  # Offset is not validated
                 ValidationTool.compare_dictionary_content(ntp_show_brief, ntp_brief_dict).verify_result()
-                ValidationTool.compare_dictionary_content(ntp_show_status, ntp_status_dict).verify_result()
             ValidationTool.compare_dictionary_content(ntp_show, ntp_dict).verify_result()
 
         with allure.step("Validate show system ntp server (all flags) output"):
@@ -569,11 +562,11 @@ def test_configure_ntp_multiple_servers(test_api):
             else:
                 server_brief_list = OutputParsingTool.parse_json_str_to_dictionary(
                     system.ntp.servers.show('brief')).get_returned_value()
-                server_query_list = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.ntp.servers.show('query')).get_returned_value()
+                server_detail_list = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.ntp.servers.show('detail')).get_returned_value()
                 ValidationTool.compare_dictionary_content(server_brief_list, NtpConsts.MULTIPLE_SERVERS_CONFIG_DICT).\
                     verify_result()
-                listed_servers = len(server_query_list)
+                listed_servers = len(server_detail_list)
                 assert listed_servers == 2, "Listed {listed} servers, expected {expected} servers". \
                     format(listed=listed_servers, expected=2)
                 ValidationTool.compare_dictionary_content(server_list, NtpConsts.MULTIPLE_SERVERS_CONFIG_DICT). \
@@ -940,6 +933,7 @@ def test_ntp_log(engines):
             system.ntp.unset(apply=True).verify_result()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
@@ -1029,6 +1023,7 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
         # Connection in SSH is back
 
         with allure.step("Verify ntp status is synchronized, listen to eth0, and stable for 5 min"):
+            DutUtilsTool.run_cmd_with_disconnect(serial_engine, 'nv show system')
             verify_ntp_sync_stabilization(nv_command, NtpConsts.Listen.ETH0.value, 300)
 
     finally:
@@ -1170,5 +1165,5 @@ def verify_ntp_status_and_listen(nv_command, expected_listen, expected_status, e
             nv_command.system.ntp.show(dut_engine=engine_dut)).get_returned_value()
         assert ntp_show[NtpConsts.STATUS] == expected_status, (f'NTP status is {ntp_show[NtpConsts.STATUS]},'
                                                                f'while it should be "{expected_status}"')
-        assert ntp_show[NtpConsts.LISTEN] == expected_listen, (f'NTP listen is {ntp_show[NtpConsts.LISTEN]},'
-                                                               f'while it should be "{expected_listen}"')
+        assert ntp_show[NtpConsts.LISTEN] == {expected_listen: {}}, (f'NTP listen is {ntp_show[NtpConsts.LISTEN]},'
+                                                                     f'while it should be "{expected_listen}"')
