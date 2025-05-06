@@ -1,4 +1,4 @@
-from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient, NmxControllerCrlClient, NmxTelemetryCrlClient
+from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient, NmxControllerCrlClient, NmxCrlClient, NmxTelemetryCrlClient
 import pytest
 
 from ngts.nvos_tools.infra.CrlValidator import CrlValidator
@@ -27,10 +27,12 @@ def system_with_cleanup():
 
 
 @pytest.fixture(scope="function", params=clients)
-def validator_with_cleanup(request, dut_hostname, engines, dut_ipv6_addr):
+def validator_with_cleanup(request, dut_hostname, engines, devices, dut_ipv6_addr):
     ip = dut_ipv6_addr if get_cur_test_param_value(
         request, "addressing_type") == AddressingType.IPV6 else engines.dut.ip
     Client = request.param
+    if issubclass(Client, NmxCrlClient) and not devices.dut.has_nmx:
+        pytest.skip("NMX is not supported on this device")
     crl_validator = CrlValidator(app=Client(host=dut_hostname, ip=ip))
     yield crl_validator
     crl_validator.cleanup()
