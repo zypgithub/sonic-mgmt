@@ -43,6 +43,9 @@ class SonicInstallationSteps:
         if is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
             SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
+            if dut_name == 'r-bison-01':
+                logger.info(f"Skipping topologies removal/addition for {dut_name} as this is a bgp scale setup")
+                return
             # Get ptf docker tag
             ptf_tag = SonicInstallationSteps.get_ptf_tag_sonic(base_version, target_version)
             dut_names = []
