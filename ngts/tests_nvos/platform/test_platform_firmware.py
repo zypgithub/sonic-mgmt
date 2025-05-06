@@ -17,8 +17,6 @@ logger = logging.getLogger()
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.nvos_ci
-@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(MINUTE, func_only=True)
 def test_show_platform_firmware(engines, devices, test_api, output_format):
