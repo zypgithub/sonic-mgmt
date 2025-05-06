@@ -53,7 +53,7 @@ master:
     dialout: 75
     telemetry: 70
     dhcprelayd: 10
-    rsyslogd: &rsyslogd_defaults
+    rsyslogd:
       expected_value: 30
       containers_list: ['gnmi','dhcp_relay','what-just-happened','snmp','mgmt-framework','lldp','pmon','radv','syncd',
                         'bgp','teamd','swss','eventd','database']
@@ -102,7 +102,6 @@ master:
     sx_sdk: 600
     syncd: 300
     rsyslogd:
-      <<: *rsyslogd_defaults
       expected_value: 100
   MSN2700: # Simx Panther
     <<: *platform_defaults
@@ -115,7 +114,6 @@ master:
     sx_sdk: 1100
     syncd: 300
     rsyslogd:
-      <<: *rsyslogd_defaults
       expected_value: 100
   MSN3700: # Anaconda
     <<: *platform_defaults
@@ -154,7 +152,6 @@ master:
     syncd: 350
     thermalctld: 60
     rsyslogd:
-      <<: *rsyslogd_defaults
       expected_value: 100
   # SPC4
   SN5400: # Hippo
