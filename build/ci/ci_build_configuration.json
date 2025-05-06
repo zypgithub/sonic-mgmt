@@ -288,6 +288,23 @@
           "out_of_mail": true
         },
         {
+          "name": "Allocate setup QTM3",
+          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
+          "category": "Allocate setups",
+          "node": "MINI_MARS@QTM3",
+          "parameters": {
+            "queue_id": "devops_nvos_ci_qtm3",
+            "priority": "${PRIORITY_NUMBER}",
+            "setup_type": "NVOS_CHIPSIM_SONIC_MGMT_QTM3",
+            "setup_var": "NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP",
+            "device_var": "SWITCH_SUNBIRD",
+            "setup_requirements": "group_name:Sagi,sub_group:CI,setup_status:enable"
+          },
+          "skip": "${SKIP_NVOS_BAT}",
+          "on_failure": "stop",
+          "out_of_mail": true
+        },
+        {
           "name": "BAT Community SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
@@ -477,6 +494,27 @@
           "out_of_mail": false
         },
         {
+          "name": "BAT QTM3",
+          "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
+          "category": "BAT",
+          "node": "MINI_MARS@QTM3",
+          "parameters": {
+            "matrix_row": "CHIPSIM",
+            "matrix_col": "QTM3",
+            "global_conf": "${MARS_GLOBAL_CONF}",
+            "local_conf": "${MARS_LOCAL_CONF}",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "target_version": "${NVOS_BIN}",
+            "base_version": "${NVOS_BIN}",
+            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
+            "mars_release_version": "${MARS_RELEASE_VERSION}"
+          },
+          "skip": "${SKIP_NVOS_BAT}",
+          "on_failure": "stop",
+          "out_of_mail": false
+        },
+        {
           "name": "Free community setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
@@ -581,6 +619,19 @@
           "out_of_mail": true
         },
         {
+          "name": "Free QTM3 setup",
+          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
+          "category": "Clean",
+          "node": "MINI_MARS@QTM3",
+          "parameters": {
+            "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}"
+          },
+          "skip": false,
+          "finally": true,
+          "on_failure": "ignore",
+          "out_of_mail": true
+        },
+        {
           "name": "Free SmartSwitch setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
@@ -624,13 +675,18 @@
                 ]
               },
               {
+                "SMARTSWITCH": [
+                  "SPC3/BF3"
+                ]
+              },
+              {
                 "IB": [
                   "QTM2"
                 ]
               },
               {
-                "SMARTSWITCH": [
-                  "SPC3/BF3"
+                "CHIPSIM": [
+                  "QTM3"
                 ]
               }
             ]
