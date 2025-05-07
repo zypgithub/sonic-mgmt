@@ -7,6 +7,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
+from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
@@ -164,7 +165,7 @@ def test_ib_interface_state_up_once(engines, devices, test_api):
     try:
         with allure.step('verify state is down after port toggle event'):
             plane_port_name = (port_name if devices.dut.num_of_plane_ports == 1
-                               else Tools.MultiPlanarTool.select_random_plane_port(fae).port.name)
+                               else MultiPlanarTool.select_random_plane_port(fae).port.name)
             IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name=plane_port_name, sleep=5)
             # in future will verify 'down by port failure' instead of just 'down'
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
