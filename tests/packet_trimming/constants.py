@@ -16,12 +16,6 @@ INVALID_TRIMMING_CONFIGS = [
     (256, 63, -3.0)  # Invalid queue value
 ]
 
-# Buffer configuration constants
-BLOCK_QUEUE_PROFILE = "q_lossy_profile"
-TRIM_QUEUE_PROFILE = "egress_lossless_profile"
-DYNAMIC_TH = "3"
-TRIMMING_CAPABILITY = "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT=257"
-
 # ACL configuration constants
 ACL_TABLE_TYPE_NAME = "TRIMMING_L3"
 ACL_TABLE_NAME = "TRIM_TABLE"
@@ -47,6 +41,12 @@ DUMMY_IPV6 = "8000::2"
 DUMMY_MAC = "00:11:22:33:44:55"
 PACKET_COUNT = 10
 BATCH_PACKET_COUNT = 10000
+
+# Buffer configuration constants
+BLOCK_QUEUE_PROFILE = f"queue{DEFAULT_DSCP}_lossy_profile"
+TRIM_QUEUE_PROFILE = "egress_lossless_profile"
+DYNAMIC_TH = "3"
+TRIMMING_CAPABILITY = "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT=257"
 
 # Test constants
 PORT_TOGGLE_COUNT = 10  # number of times to toggle admin state
