@@ -283,7 +283,7 @@ def apply_resources_configs(default_crm_facts, localhost, duthost, ptfhost, dpuh
     yield
 
     if pytest.crm_res_cleanup_required:
-        apply_messages(localhost, duthost, ptfhost, CONFIG_MESSAGES, dpuhost.dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, CONFIG_MESSAGES, dpuhost.dpu_index, set_db=False)
     del pytest.crm_res_cleanup_required
 
 
@@ -505,7 +505,7 @@ class TestDashCRM:
         """
         Validate that after cleanup CRM resources - CRM output the same as it was before test case(without config)
         """
-        apply_messages(self.localhost, self.duthost, self.ptfhost, CONFIG_MESSAGES, self.dpu_index, set=False)
+        apply_messages(self.localhost, self.duthost, self.ptfhost, CONFIG_MESSAGES, self.dpu_index, set_db=False)
 
         pytest.crm_res_cleanup_required = False
 

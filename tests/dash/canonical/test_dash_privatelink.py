@@ -173,14 +173,14 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpuhost):
     else:
 
         logger.info(f"recover messages2: {messages2}")
-        apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages2, dpuhost.dpu_index, set_db=False)
 
 
         logger.info(f"recover messages1: {messages1}")
-        apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, messages1, dpuhost.dpu_index, set_db=False)
 
         logger.info(f"recover pl.ROUTING_TYPE_PL_CONFIG: {pl.ROUTING_TYPE_PL_CONFIG}")
-        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set=False)
+        apply_messages(localhost, duthost, ptfhost, pl.ROUTING_TYPE_PL_CONFIG, dpuhost.dpu_index, set_db=False)
 
 
 def test_privatelink_basic_transform(

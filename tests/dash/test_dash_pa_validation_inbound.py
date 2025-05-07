@@ -112,7 +112,7 @@ def apply_inbound_configs(localhost, duthost, ptfhost, dpuhost):
         config_reload(dpuhost, safe_reload=True)
         return
 
-    apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index, set=False)
+    apply_messages(localhost, duthost, ptfhost, config_messages, dpuhost.dpu_index, set_db=False)
 
 
 def test_inbound_vnet_pa_validate(ptfadapter, apply_inbound_configs, dash_config_info, acl_default_rule):
