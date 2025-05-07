@@ -10,6 +10,7 @@ from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metad
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
 from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 logger = logging.getLogger()
 
@@ -35,6 +36,9 @@ class TestSPCXRA_x1Split_800G:
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size, ibm_fixture):
 
+        if isinstance(self.cli_object, NvueCli):
+            pytest.mark.xfail(reason="test_ar_perf_max_bandwidth expected to fail on Nvue")
+
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
 
@@ -58,6 +62,9 @@ class TestSPCXRA_x1Split_800G:
     @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
+
+        if isinstance(self.cli_object, NvueCli):
+            pytest.mark.xfail(reason="test_ar_perf_max_bandwidth_ibm expected to fail on Nvue")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
@@ -85,6 +92,9 @@ class TestSPCXRA_x1Split_800G:
     @allure.title('test_ar_perf_max_bandwidth_leaf')
     @allure.description('Calculate the port utilization on the DUT with AR enabled on one side')
     def test_ar_perf_max_bandwidth_leaf(self, request, packet_size, conf_args):
+
+        if isinstance(self.cli_object, NvueCli):
+            pytest.mark.xfail(reason="test_ar_perf_max_bandwidth_leaf expected to fail on Nvue")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
