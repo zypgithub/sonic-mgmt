@@ -299,7 +299,7 @@ class IbSwitch(BaseSwitch):
         self.multi_asic_system = False
         self.multi_planar = False
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
-        self.install_patterns = {self.login_pattern: 0}
+        self.install_patterns = {self.login_pattern: 0, "NOS install successful": 1}
         self.install_success_patterns = list(self.install_patterns.keys())
         self.mst_dev_name = '/dev/mst/mt54002_pciconf0'  # TODO update
         self.category_list = ['temperature', 'cpu', 'disk', 'power', 'fan', 'mgmt-interface', 'voltage']
