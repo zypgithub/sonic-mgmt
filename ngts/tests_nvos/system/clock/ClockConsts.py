@@ -12,6 +12,7 @@ class ClockConsts:
     PATH_TIMEZONE_YAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'timezone.yaml')
 
     TIMEDATECTL_CMD = "timedatectl"
+    TIMEDATECTL_SET_LOCAL_RTC_CMD = "sudo timedatectl set-local-rtc {}"
     TIMEDATECTL_TIMEZONE_FIELD_NAME = "Time zone"
     TIMEDATECTL_DATETIME_FIELD_NAME = "Local time"
 

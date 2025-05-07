@@ -241,7 +241,7 @@ def test_ssh_login_notifications_default_fields_admin(engines, login_source_ip_a
     '''
     with allure.step("Connecting to switch before validation to clear all failed messages"):
         logger.info("Connecting to switch before validation to clear all failed messages")
-        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(System().show())
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(System().datetime.show())
         SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip)
         # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
         #                                                       username=engines.dut.username,
@@ -267,7 +267,7 @@ def test_ssh_login_notification_password_change_admin(engines, login_source_ip_a
         new_password = generate_strong_password()
 
     with allure.step("Connecting to switch before validation to clear all failed messages"):
-        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         SshAuthenticator(username, password, engines.dut.ip).attempt_login_success()
         # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
         #                                                       username=username,
@@ -300,7 +300,7 @@ def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses
             f"User created: \nusername: {user_name} \npassword: {password}\ncapability: {SystemConsts.ROLE_CONFIGURATOR}")
 
     with allure.step("Connecting to switch with the new user for first time"):
-        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
         # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip, username=user_name, password=password)
 
@@ -333,7 +333,7 @@ def test_ssh_login_notification_cli_commands_good_flow(engines, login_source_ip_
     system = System(None)
 
     with allure.step("Connecting to switch before validation to clear all failed messages"):
-        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
         # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
         #                                                       username=engines.dut.username,
@@ -423,7 +423,7 @@ def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip
 
     with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
         logger.info("Connecting to switch with newly created user to collect the login timestamp")
-        successful_login_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
 
     random_number_of_connection_fails = random.randint(5, 7)

@@ -43,10 +43,10 @@ def orig_timezone(system, engines):
     Backup original timezone before a test, and restore it after
     @yield: original timezone (before test)
     """
-    with allure.step("Backup current timezone from 'nv show system'"):
-        original_timezone = OutputParsingTool.parse_json_str_to_dictionary(system.show()) \
-            .get_returned_value()[SystemConsts.TIMEZONE]
-        logging.info("Backup current timezone from 'nv show system'\torig timezone: {tz}".format(tz=original_timezone))
+    with allure.step("Backup current timezone from 'nv show system date-time'"):
+        original_timezone = ClockTools.normalize_timezone(OutputParsingTool.parse_json_str_to_dictionary(system.datetime.show())
+                                                          .get_returned_value()[SystemConsts.TIMEZONE])
+        logging.info("Backup current timezone from 'nv show system date-time'\torig timezone: {tz}".format(tz=original_timezone))
 
     yield original_timezone
 
@@ -100,7 +100,7 @@ def ntp_off(system):
         with allure.step('Changing ntp state from "{}" to "{}"'.format(ClockConsts.ENABLED, ClockConsts.DISABLED)):
             system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.DISABLED, apply=True).verify_result()
 
-    yield
+    yield should_change
 
     if should_change:
         with allure.step('Changing back ntp state from "{}" to "{}"'.format(ClockConsts.DISABLED, ClockConsts.ENABLED)):
@@ -135,7 +135,7 @@ def init_datetime(system):
     """Fixture to enable NTP before test, and restore it to it's original state
     """
     with allure.step('Getting current date-time before test'):
-        orig_dt = ClockTools.get_datetime_from_show_system_output(system.show())
+        orig_dt = ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show())
         logging.info('date-time before test: {}'.format(orig_dt))
 
     yield orig_dt

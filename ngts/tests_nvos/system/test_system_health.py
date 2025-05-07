@@ -297,7 +297,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
     thermal_directory = devices.dut.fan_direction_dir
     system.log.rotate_logs()
     health_issue_dict = {}
-    date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+    date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
     verify_health_before_test()
@@ -313,7 +313,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
         validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
-        date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         time.sleep(1)
         with allure.step("Cleanup - Fix the health issues"):
             HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
@@ -341,7 +341,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
     thermal_directory = devices.dut.fan_direction_dir
     speed_changed = False
     system.log.rotate_logs()
-    date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+    date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
     verify_health_before_test()
@@ -364,7 +364,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
     finally:
         if speed_changed:
             with allure.step("Fix the health issues"):
-                date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+                date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
                 time.sleep(1)
                 HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
                 retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
@@ -567,7 +567,7 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
 
     system = System()
     system.log.rotate_logs()
-    date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+    date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
     system.validate_health_status(OK)
@@ -576,7 +576,7 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
         with simulate_health_issue_using_config_file(engines.dut):
             validate_health_issues_exist(system, SIMULATED_ISSUES)
             validate_health_fix_or_issue(engines, system, SIMULATED_ISSUES, date_time, False)
-            date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+            date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
 
     time.sleep(1)
     validate_health_fix_or_issue(engines, system, SIMULATED_ISSUES, date_time, True)
@@ -601,7 +601,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
 
     system = System()
     system.log.rotate_logs()
-    date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+    date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
     system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
     time.sleep(1)
     system.validate_health_status(OK)
@@ -634,7 +634,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
                        exceptions=AssertionError, tries=12, delay=5)
 
     finally:
-        date_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         time.sleep(1)
         with allure.step("Fix the health issue "):
             with allure.step("restart docker"):

@@ -7,7 +7,7 @@ from typing import Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
-    DiskConsts
+    DiskConsts, DateTimeConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -348,12 +348,22 @@ class BaseSwitch(BaseDevice):
         super()._init_constants()
         system_dic = {
             'system': [SystemConsts.HOSTNAME, SystemConsts.PLATFORM, SystemConsts.PRODUCT_NAME,
-                       SystemConsts.PRODUCT_RELEASE, SystemConsts.MEMORY, SystemConsts.UPTIME, SystemConsts.TIMEZONE,
+                       SystemConsts.MEMORY, SystemConsts.UPTIME,
                        SystemConsts.HEALTH_STATUS, SystemConsts.DATE_TIME, SystemConsts.STATUS],
             'message': [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE],
             'reboot': [SystemConsts.REBOOT_REASON],
             'version': [SystemConsts.VERSION_BASE_OS, SystemConsts.VERSION_IMAGE, SystemConsts.VERSION_KERNEL,
-                        SystemConsts.VERSION_ONIE, SystemConsts.VERSION_PRODUCT_RELEASE]
+                        SystemConsts.VERSION_ONIE, SystemConsts.VERSION_PRODUCT_RELEASE],
+            'date-time': [
+                DateTimeConsts.LOCAL_TIME,
+                DateTimeConsts.UNIVERSAL_TIME,
+                DateTimeConsts.RTC_TIME,
+                DateTimeConsts.TIMEZONE,
+                DateTimeConsts.SYSTEM_CLOCK_SYNCHRONIZED,
+                DateTimeConsts.NTP_SERVICE,
+                DateTimeConsts.RTC_IN_LOCAL_TZ,
+                DateTimeConsts.UNIX_TIME
+            ]
         }
         dump_files = ['APPL_DB.json', 'ASIC_DB.json', 'boot.conf', 'bridge.fdb', 'bridge.vlan', 'CONFIG_DB.json',
                       'COUNTERS_DB_1.json', 'COUNTERS_DB_2.json', 'COUNTERS_DB.json', 'date.counter_1',

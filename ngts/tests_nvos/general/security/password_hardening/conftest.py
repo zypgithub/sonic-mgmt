@@ -61,7 +61,7 @@ def init_time(engines, system):
         time.sleep(3)
 
     with allure.step('Save original datetime before test'):
-        orig_datetime = ClockTools.get_datetime_from_show_system_output(system.show())
+        orig_datetime = ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show())
         morning_datetime = re.sub(PwhConsts.REGEX_TIME, '03:00:00', orig_datetime)
 
     with allure.step('Change time to 3AM ({})'.format(morning_datetime)):

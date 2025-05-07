@@ -1,8 +1,9 @@
 import logging
 import random
 from datetime import datetime
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType, DateTimeConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 import pytest
@@ -19,43 +20,38 @@ from ngts.nvos_tools.infra.Tools import Tools
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_contains_timezone_and_datetime(test_api, engines, system):
+def test_show_system_date_time(test_api, engines, devices, nv_command):
     """
     @summary:
-    Check that show system command's output contains timezone and date-time fields
-        1. run show system
-        2. verify timezone & date-time fields exist in output
-        3. validate fields' values
+    Verify that 'nv show system date-time' returns all expected fields with values
+    and that key values match the output from 'timedatectl'.
+
+    @steps:
+    1. Execute 'nv show system date-time'
+    2. Validate that all expected fields exist and have non-empty values
+    3. Compare the timezone and local time with 'timedatectl' output
+
+    @param test_api: The API type to use (from ApiType enum)
+    @param engines: Object giving access to DUT shell/command interfaces
+    @param devices: Provides DUT metadata and expected schema
+    @param nv_command: Wrapper for executing NVUE CLI/API commands
     """
     TestToolkit.tested_api = test_api
-    logging.info("Starting test : test_show_system_contains_timezone_and_datetime")
 
-    with allure.step('Run show system and timedatectl commands'):
-        # run commands
-        show_system_output_str = system.show()
-        timedatectl_output_str = engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD)
-        # parse outputs to dicts
-        show_system_output = OutputParsingTool \
-            .parse_json_str_to_dictionary(show_system_output_str).get_returned_value()
-        timedatectl_output = OutputParsingTool \
-            .parse_linux_cmd_output_to_dic(timedatectl_output_str).get_returned_value()
-
-    with allure.step('Verify timezone & date-time fields exist in output'):
-        tested_fields = [ClockConsts.TIMEZONE, ClockConsts.DATETIME]
-        Tools.ValidationTool \
-            .verify_field_exist_in_json_output(json_output=show_system_output, keys_to_search_for=tested_fields) \
-            .verify_result()
+    with allure.step('Run show system command and verify that each field has a value'):
+        date_time_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.datetime.show()).get_returned_value()
+        ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
+            date_time_output, nv_command.system.get_expected_fields(devices.dut, 'date-time')).verify_result()
 
     with allure.step("Validate timezone value"):
         # verify that timezones are the same
-        Tools.ValidationTool.compare_values(value1=show_system_output[ClockConsts.TIMEZONE],
-                                            value2=ClockTools
-                                            .get_timezone_from_timedatectl_output(timedatectl_output_str),
-                                            should_equal=True).verify_result()
+        timedatectl_output_str = engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD)
+        ValidationTool.compare_values(date_time_output[DateTimeConsts.TIMEZONE], ClockTools
+                                      .get_timezone_from_timedatectl_output(timedatectl_output_str)).verify_result()
 
     with allure.step("Validate date-time value"):
         # extract date-time value from outputs
-        show_system_datetime = ClockTools.get_datetime_from_show_system_output(show_system_output_str)
+        show_system_datetime = date_time_output[DateTimeConsts.LOCAL_TIME]
         timedatectl_datetime = ClockTools.get_datetime_from_timedatectl_output(timedatectl_output_str)
         # verify both date-time values are the same
         ClockTools.verify_same_datetimes(show_system_datetime, timedatectl_datetime)
@@ -68,11 +64,20 @@ def test_show_system_contains_timezone_and_datetime(test_api, engines, system):
 def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, orig_timezone, ntp_off):
     """
     @summary:
-    Check that system timezone set & unset commands work correctly with valid inputs
-        1. Set new timezone to random timezone from timezone.yaml
-        2. Verify new timezone is set in 'nv show system' and 'timedatectl'
-        3. Unset timezone
-        4. verify timezone returned to default in 'nv show system' and 'timedatectl'
+    Validate timezone configuration using NVUE when NTP is disabled.
+
+    @steps:
+    1. Pick a valid timezone (different from the current one)
+    2. Set it using 'nv set system date-time timezone'
+    3. Verify that it is correctly reflected in NVUE and timedatectl
+    4. Unset the timezone and validate it returns to default
+
+    @param test_api: The API type to use (from ApiType enum)
+    @param engines: Provides shell/command execution on DUT
+    @param system: Interface to system-level NVUE commands
+    @param valid_timezones: List of valid timezones from config (e.g. timezone.yaml)
+    @param orig_timezone: Original timezone on the DUT before the test
+    @param ntp_off: Fixture that disables NTP to allow manual time changes
     """
     TestToolkit.tested_api = test_api
 
@@ -80,16 +85,20 @@ def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, 
         new_timezone = RandomizationTool.select_random_value(list_of_values=valid_timezones,
                                                              forbidden_values=[orig_timezone, None]).get_returned_value()
 
-    with allure.step("Set the new timezone with 'nv set system timezone'"):
+    with allure.step("Set the new timezone with 'nv set system date-time timezone'"):
         ClockTools.set_timezone(new_timezone, system, apply=True).verify_result()
 
-    with allure.step("Verify new timezone in 'nv show system' and in 'timedatectl'"):
-        ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
+    with allure.step("Verify 'nv show system date-time' output"):
+        with allure.independent_step("Verify new timezone in 'nv show system date-time' and in 'timedatectl'"):
+            ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
 
-    with allure.step("Unset the timezone with 'nv unset system timezone'"):
+        with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
+            ClockTools.verify_ntp_fields(system, False)
+
+    with allure.step("Unset the timezone with 'nv unset system date-time timezone'"):
         ClockTools.unset_timezone(system, apply=True).verify_result()
 
-    with allure.step("Verify default timezone in 'nv show system' and in 'timedatectl'"):
+    with allure.step("Verify default timezone in 'nv show system date-time' and in 'timedatectl'"):
         ClockTools.verify_timezone(engines, system, expected_timezone=ClockConsts.DEFAULT_TIMEZONE)
 
 
@@ -100,11 +109,22 @@ def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, 
 def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, orig_timezone, ntp_on):
     """
     @summary:
-    Check that system timezone set & unset commands work correctly with valid inputs when ntp is enabled
-        1. Set new timezone to random timezone from timezone.yaml
-        2. Verify new timezone is set in 'nv show system' and 'timedatectl'
-        3. Unset timezone
-        4. verify timezone returned to default in 'nv show system' and 'timedatectl'
+    Verify that the system timezone can be set and unset correctly when NTP is enabled.
+
+    @steps:
+    1. Select a random valid timezone from the configuration (excluding the current one).
+    2. Set the new timezone using NVUE.
+    3. Validate the timezone is reflected correctly in both 'nv show system date-time' and 'timedatectl'.
+    4. Confirm NTP-related fields reflect that NTP is enabled.
+    5. Unset the timezone.
+    6. Ensure the system reverts to the default timezone.
+
+    @param test_api: Type of API being used for the test (CLI, REST, etc.)
+    @param engines: Test execution engines providing DUT command access
+    @param system: NVUE system object to apply configuration
+    @param valid_timezones: List of allowed timezones for testing
+    @param orig_timezone: Timezone configured prior to test start
+    @param ntp_on: Fixture that ensures NTP is enabled before the test
     """
     TestToolkit.tested_api = test_api
 
@@ -112,16 +132,20 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
         new_timezone = RandomizationTool.select_random_value(list_of_values=valid_timezones,
                                                              forbidden_values=[orig_timezone, None]).get_returned_value()
 
-    with allure.step("Set the new timezone with 'nv set system timezone'"):
+    with allure.step("Set the new timezone with 'nv set system date-time timezone'"):
         ClockTools.set_timezone(new_timezone, system, apply=True).verify_result()
 
-    with allure.step("Verify new timezone in 'nv show system' and in 'timedatectl'"):
-        ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
+    with allure.step("Verify 'nv show system date-time' output"):
+        with allure.independent_step("Verify new timezone in 'nv show system date-time' and in 'timedatectl'"):
+            ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
 
-    with allure.step("Unset the timezone with 'nv unset system timezone'"):
+        with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
+            ClockTools.verify_ntp_fields(system, True)
+
+    with allure.step("Unset the timezone with 'nv unset system date-time timezone'"):
         ClockTools.unset_timezone(system, apply=True).verify_result()
 
-    with allure.step("Verify default timezone in 'nv show system' and in 'timedatectl'"):
+    with allure.step("Verify default timezone in 'nv show system date-time' and in 'timedatectl'"):
         ClockTools.verify_timezone(engines, system, expected_timezone=ClockConsts.DEFAULT_TIMEZONE)
 
 
@@ -132,10 +156,20 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
 def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetime, ntp_off, pwh_off):
     """
     @summary:
-    Check that system date-time change action command work correctly with valid input of date and time
-        1. Pick a random date and time
-        2. Set new date and time with the action change command
-        3. Verify new date-time in 'nv show system' and 'timedatectl'
+    Validate the system correctly updates its date and time using NVUE when NTP is disabled.
+
+    @steps:
+    1. Select a random valid date and time.
+    2. Apply the date-time update using 'nv action change system date-time'.
+    3. Confirm the change is reflected in 'nv show system date-time'.
+    4. Also validate the new time using the system's 'timedatectl' output.
+
+    @param test_api: Type of API being used for the test (CLI, REST, etc.)
+    @param engines: Test execution engines providing DUT command access
+    @param system: NVUE system object to apply configuration
+    @param init_datetime: Initial datetime before the test begins (fixture)
+    @param ntp_off: Fixture that ensures NTP is turned off
+    @param pwh_off: Fixture to disable persistent write hooks if applicable
     """
     TestToolkit.tested_api = test_api
 
@@ -146,11 +180,11 @@ def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetim
         system.datetime.action_change(params=new_datetime).verify_result()
 
     with allure.step("Run 'nv show system' and 'timedatectl' immediately to verify date-time changed"):
-        show_system_output_str = system.show()
+        show_date_time_output_str = system.datetime.show()
         timedatectl_output_str = engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD)
 
     with allure.step("Verify date-time"):
-        show_system_datetime = ClockTools.get_datetime_from_show_system_output(show_system_output_str)
+        show_system_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_date_time_output_str)
         ClockTools.verify_same_datetimes(new_datetime, show_system_datetime)
         timedatectl_datetime = ClockTools.get_datetime_from_timedatectl_output(timedatectl_output_str)
         ClockTools.verify_same_datetimes(new_datetime, timedatectl_datetime)
@@ -197,6 +231,30 @@ def test_action_change_time_only_ntp_off(engines, system, datetime_backup_restor
         timedatectl_datetime = ClockTools.get_datetime_from_timedatectl_output(timedatectl_output_str)
         ClockTools.verify_same_datetime(new_datetime, timedatectl_datetime)
 '''
+
+
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.clock
+def test_rtc_in_local_tz(engines, nv_command):
+    """
+    @summary:
+    Verify that setting 'rtc-in-local-tz' via timedatectl is reflected correctly in NVUE output.
+    Steps:
+        1. Check default (should be 'no')
+        2. Set to 'yes' via timedatectl, validate NVUE reflects it
+        3. Revert to 'no', and re-validate
+    """
+    with allure.step("Validate default rtc-in-local-tz is 'no'"):
+        ClockTools.verify_rtc_in_local_tz(DateTimeConsts.RtcInLocalTZ.NO.value, nv_command)
+
+    with allure.step("Set rtc-in-local-tz to 'yes' and validate"):
+        ClockTools.set_rtc_in_local_tz(engines, True)
+        ClockTools.verify_rtc_in_local_tz(DateTimeConsts.RtcInLocalTZ.YES.value, nv_command)
+
+    with allure.step("Revert rtc-in-local-tz to 'no' and validate"):
+        ClockTools.set_rtc_in_local_tz(engines, False)
+        ClockTools.verify_rtc_in_local_tz(DateTimeConsts.RtcInLocalTZ.NO.value, nv_command)
 
 
 # --------------------- Basic Bad Flow --------------------- #

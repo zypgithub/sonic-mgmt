@@ -54,7 +54,7 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
     start_time = datetime.now()
 
     with allure.step("Run power-cycle command and measure duration"):
-        system_time = ClockTools.get_datetime_object_from_show_system_output(system.show())
+        system_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         result_obj, duration = OperationTime.save_duration(ActionConsts.POWER_CYCLE, force_str, test_name,
                                                            do_power_cycle, force_str)
         result_obj.verify_result()

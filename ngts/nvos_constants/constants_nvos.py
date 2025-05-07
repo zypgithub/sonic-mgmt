@@ -1432,6 +1432,29 @@ class ClusterApps:
     ALL_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
 
 
+class DateTimeConsts:
+    LOCAL_TIME = "local-time"
+    UNIVERSAL_TIME = "universal-time"
+    RTC_TIME = "rtc-time"
+    TIMEZONE = "timezone"
+    SYSTEM_CLOCK_SYNCHRONIZED = "system-clock-synchronized"
+    NTP_SERVICE = "ntp-service"
+    RTC_IN_LOCAL_TZ = "rtc-in-local-tz"
+    UNIX_TIME = "unix-time"
+
+    class NtpService(Enum):
+        ACTIVE = 'active'
+        INACTIVE = 'inactive'
+
+    class SystemClockSynchronized(Enum):
+        YES = 'yes'
+        NO = 'no'
+
+    class RtcInLocalTZ(Enum):
+        YES = 'yes'
+        NO = 'no'
+
+
 class ClusterConsts:
     APP_VERSION = 'app-ver'
     APP_NAME = 'app-name'

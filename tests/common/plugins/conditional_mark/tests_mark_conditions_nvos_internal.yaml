@@ -236,10 +236,6 @@ tests_nvos/system/test_show_system.py::test_system:
     conditions:
       - https://redmine.mellanox.com/issues/3975976
 
-tests_nvos/system/clock/test_system_clock.py::test_change_valid_datetime_ntp_on_error_flow:
-  skip:
-    reason: "Skip until fixed because this failure changes the system time which causes other tests to fail"
-
 tests_nvos/interfaces/test_interface_link_transceiver_diagnostics.py::test_interface_link_diagnostics_basic_invalid_ports:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4135623"
@@ -397,11 +393,6 @@ tests_nvos/system/ntp/test_system_ntp.py::test_ntp_system_authentication:
   skip:
     reason: "Skip until fixed"
 
-tests_nvos/system/clock/test_system_clock.py::test_action_change_date_time_ntp_off:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4357239"
-    conditions:
-      - https://redmine.mellanox.com/issues/4357239
 
 tests_nvos/system/test_techsupport_commands.py::test_techsupport_size:
   skip:

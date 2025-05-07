@@ -13,7 +13,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, DateTimeConsts
 
 
 class ClockTools:
@@ -46,7 +46,7 @@ class ClockTools:
         @return: timezone as a string
         """
         return OutputParsingTool.parse_linux_cmd_output_to_dic(timedatectl_output)\
-            .get_returned_value()[ClockConsts.TIMEDATECTL_TIMEZONE_FIELD_NAME].split(' ')[0]
+            .get_returned_value()[ClockConsts.TIMEDATECTL_TIMEZONE_FIELD_NAME]
 
     @staticmethod
     def get_datetime_from_timedatectl_output(timedatectl_output):
@@ -59,23 +59,23 @@ class ClockTools:
                         .get_returned_value()[ClockConsts.TIMEDATECTL_DATETIME_FIELD_NAME].split(' ')[1:3])
 
     @staticmethod
-    def get_datetime_from_show_system_output(show_system_output):
+    def get_local_time_from_show_system_date_time_output(show_system_date_time_output):
         """
         @summary:
-            Extract date-time value from 'nv show system' raw output
+            Extract date-time value from 'nv show system date-time' raw output
         @return: date-time as a string of the format 'YYYY-MM-DD hh:mm:ss'
         """
-        return OutputParsingTool.parse_json_str_to_dictionary(show_system_output) \
-            .get_returned_value()[ClockConsts.DATETIME]
+        return OutputParsingTool.parse_json_str_to_dictionary(show_system_date_time_output) \
+            .get_returned_value()[DateTimeConsts.LOCAL_TIME]
 
     @staticmethod
-    def get_datetime_object_from_show_system_output(show_system_output):
+    def get_local_time_object_from_show_system_date_time_output(show_system_date_time_output):
         """
         @summary:
-            Extract date-time value from 'nv show system' raw output
+            Extract date-time value from 'nv show system date-time'' raw output
         @return: datetime object
         """
-        orig_datetime = ClockTools.get_datetime_from_show_system_output(show_system_output)
+        orig_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_system_date_time_output)
         return datetime.strptime(orig_datetime, StatsConsts.SYSTEM_TIME_FORMAT)
 
     @staticmethod
@@ -274,6 +274,37 @@ class ClockTools:
         return bad_inputs
 
     @staticmethod
+    def verify_ntp_fields(system_obj, enabled=True):
+        """
+        @summary:
+        Verify that NTP service status and system clock synchronization status are as expected
+        in 'nv show system date-time' command output.
+
+        @param system_obj: System object
+        @param enabled: [True/False] Whether NTP is expected to be ON (True) or OFF (False)
+        """
+
+        datetime_output = OutputParsingTool.parse_json_str_to_dictionary(
+            system_obj.datetime.show()).get_returned_value()
+
+        show_ntp_service = datetime_output[DateTimeConsts.NTP_SERVICE]
+        show_clock_sync = datetime_output[DateTimeConsts.SYSTEM_CLOCK_SYNCHRONIZED]
+
+        # Decide expected values based on ntp_on flag
+        expected_ntp_service = DateTimeConsts.NtpService.ACTIVE.value if enabled else DateTimeConsts.NtpService.INACTIVE.value
+        expected_clock_sync = DateTimeConsts.SystemClockSynchronized.YES.value if enabled else DateTimeConsts.SystemClockSynchronized.NO.value
+
+        logging.info("Verify NTP service:\nexpected: {expected}\nactual: {actual}".format(
+            expected=expected_ntp_service, actual=show_ntp_service))
+
+        ValidationTool.compare_values(show_ntp_service, expected_ntp_service).verify_result()
+
+        logging.info("Verify system clock synchronized:\nexpected: {expected}\nactual: {actual}".format(
+            expected=expected_clock_sync, actual=show_clock_sync))
+
+        ValidationTool.compare_values(show_clock_sync, expected_clock_sync).verify_result()
+
+    @staticmethod
     def verify_timezone(engines, system_obj, expected_timezone, verify_with_linux=True):
         """
         @summary:
@@ -287,10 +318,11 @@ class ClockTools:
             finish feature implementation, because until then, there is a mock feature implementation,
             which doesn't touch the linux clock.
         """
-        show_system_timezone = OutputParsingTool.parse_json_str_to_dictionary(system_obj.show()) \
-            .get_returned_value()[ClockConsts.TIMEZONE]
+        show_system_timezone = ClockTools.normalize_timezone(OutputParsingTool.parse_json_str_to_dictionary(system_obj.datetime.show())
+                                                             .get_returned_value()[ClockConsts.TIMEZONE])
         logging.info("Verify timezone in nv show:\nexpected timezone: {expected}\n'nv show system' timezone: {timezone}"
                      .format(expected=expected_timezone, timezone=show_system_timezone))
+
         ValidationTool.compare_values(show_system_timezone, expected_timezone).verify_result()
 
         if verify_with_linux:
@@ -298,7 +330,7 @@ class ClockTools:
                 .get_timezone_from_timedatectl_output(engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD))
             logging.info("Verify timezone in timedatectl:\nexpected timezone: {expected}\n'timedatectl' timezone: {timezone}"
                          .format(expected=expected_timezone, timezone=timedatectl_timezone))
-            ValidationTool.compare_values(timedatectl_timezone, expected_timezone).verify_result()
+            ValidationTool.compare_values(ClockTools.normalize_timezone(timedatectl_timezone), expected_timezone).verify_result()
 
     @staticmethod
     def verify_same_datetimes(dt1, dt2, allowed_margin=ClockConsts.DATETIME_MARGIN):
@@ -373,14 +405,14 @@ class ClockTools:
         @param expected_err: list of expected error messages (optional)
         """
         with allure.step("Save original date-time from show system"):
-            orig_datetime = ClockTools.get_datetime_from_show_system_output(system_obj.show())
+            orig_datetime = ClockTools.get_local_time_from_show_system_date_time_output(system_obj.datetime.show())
             logging.info("original date-time: '{odt}'".format(odt=orig_datetime))
 
         with allure.step("Try to set the datetime '{bdt}'".format(bdt=bad_datetime)):
             res_obj = system_obj.datetime.action_change(params=bad_datetime)
 
         with allure.step("Take date-time from show system and 'timedatectl (after the change command)"):
-            show_datetime = ClockTools.get_datetime_from_show_system_output(system_obj.show())
+            show_datetime = ClockTools.get_local_time_from_show_system_date_time_output(system_obj.datetime.show())
             timedatectl_datetime = ClockTools.get_datetime_from_timedatectl_output(
                 engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD))
             logging.info("show system date-time (after the change command): '{dt}'".format(dt=show_datetime))
@@ -420,7 +452,7 @@ class ClockTools:
         :param apply: whether to apply the set or not, defaults to True
         :return: ResultObj from the set command
         """
-        return system_obj.set(op_param_name=ClockConsts.TIMEZONE, op_param_value=new_tz, apply=apply)
+        return system_obj.datetime.set(op_param_name=ClockConsts.TIMEZONE, op_param_value=new_tz, apply=apply)
 
     @staticmethod
     def unset_timezone(system_obj, apply=True):
@@ -430,7 +462,7 @@ class ClockTools:
         :param apply: whether to apply the unset or not, defaults to True
         :return: ResultObj from the unset command
         """
-        return system_obj.unset(op_param=ClockConsts.TIMEZONE, apply=apply)
+        return system_obj.datetime.unset(op_param=ClockConsts.TIMEZONE, apply=apply)
 
     @staticmethod
     def verify_show_and_log_times(system):
@@ -442,7 +474,7 @@ class ClockTools:
         """
         with allure.step('Take date-time from show and from last log timestamp'):
             system.log.rotate_logs()
-            show_output = system.show()
+            show_system_datetime = system.datetime.show()
             logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
             if not logs or ("q: command not found" in logs):
                 # this is a workaround: sometimes `nv show system log` just doesn't do anything
@@ -451,7 +483,7 @@ class ClockTools:
                 logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
 
             last_log_datetime = ' '.join((re.findall(NvosConst.DATE_TIME_REGEX, logs)[-1]).split(' '))
-            show_datetime = ClockTools.get_datetime_from_show_system_output(show_output)
+            show_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_system_datetime)
             log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime)
             logging.info('show date-time: {}\nlogs date-time: {}'.format(show_datetime, log_datetime))
 
@@ -513,3 +545,25 @@ class ClockTools:
             date1_obj = datetime.fromisoformat(date1)
             date2_obj = datetime.fromisoformat(date2)
             return (date1_obj - date2_obj).days
+
+    @staticmethod
+    def normalize_timezone(timezone):
+        return timezone.split(' ')[0]
+
+    @staticmethod
+    def get_rtc_in_local_tz_value(nv_command):
+        """Fetch and parse rtc-in-local-tz from NVUE output."""
+        output_dict = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.datetime.show()).get_returned_value()
+        return output_dict[DateTimeConsts.RTC_IN_LOCAL_TZ]
+
+    @staticmethod
+    def verify_rtc_in_local_tz(expected_value, nv_command):
+        """Compare rtc-in-local-tz value to expected and assert."""
+        actual_value = ClockTools.get_rtc_in_local_tz_value(nv_command)
+        ValidationTool.compare_values(actual_value, expected_value).verify_result()
+
+    @staticmethod
+    def set_rtc_in_local_tz(engines, enable: bool):
+        """Set rtc-in-local-tz via timedatectl."""
+        engines.dut.run_cmd(ClockConsts.TIMEDATECTL_SET_LOCAL_RTC_CMD.format(1 if enable else 0))
