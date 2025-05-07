@@ -12,5 +12,22 @@
             "log_level": "2",
             "port": "50052"
         }
+    },
+    "INTERFACE": {
+            "Ethernet0": {},
+            "Ethernet0|18.0.202.1/31": {}
+    },
+    "LOOPBACK_INTERFACE": {
+        "Loopback0": {},
+        "Loopback0|10.1.0.5/32": {}
+    },
+    "STATIC_ROUTE": {
+        "default|101.1.2.3/32": {
+            "blackhole": "false",
+            "distance": "0",
+            "ifname": "Ethernet0",
+            "nexthop": "18.0.202.0",
+            "nexthop-vrf": "default"
+        }
     }
 }

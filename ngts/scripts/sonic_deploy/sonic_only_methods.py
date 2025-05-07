@@ -10,7 +10,7 @@ from ngts.helpers import json_file_helper
 from ngts.scripts.sonic_deploy.image_preparetion_methods import is_url, get_sonic_branch
 from ngts.constants.constants import MarsConstants, SonicDeployConstants, SonicConst
 from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigraph_cmd, deploy_minigpraph, \
-    reboot_validation, execute_script, is_bf_topo, is_dualtor_topo, is_dualtor_aa_topo, generate_minigraph, \
+    reboot_validation, execute_script, is_dualtor_topo, is_dualtor_aa_topo, generate_minigraph, \
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call
 from ngts.helpers.run_process_on_host import run_background_process_on_host
@@ -92,7 +92,7 @@ class SonicInstallationSteps:
         add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
                                                                    ptf_tag, hwsku)
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
-        if (not is_bf_topo(sonic_topo) and not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and
+        if (not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and
                 "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
@@ -287,27 +287,24 @@ class SonicInstallationSteps:
         logger.info("Removing topologies to get the clear environment")
         with allure.step("Remove Topologies (community step)"):
             if setup_name and is_dualtor_topo(sonic_topo):
-                topologies = SonicInstallationSteps.get_topologies_to_remove(sonic_topo, setup_name)
+                topologies = SonicInstallationSteps.get_topologies_to_remove(setup_name)
                 _remove_topologies(setup_name, topologies)
             if dut_names:
                 for dut_name in dut_names:
-                    topologies = SonicInstallationSteps.get_topologies_to_remove(sonic_topo, dut_name)
+                    topologies = SonicInstallationSteps.get_topologies_to_remove(dut_name)
                     _remove_topologies(dut_name, topologies)
 
     @staticmethod
-    def get_topologies_to_remove(required_topology, dut_name):
-        if is_bf_topo(required_topology):
-            topos_to_remove = [required_topology]
+    def get_topologies_to_remove(dut_name):
+        cached_topo = get_cached_topology(dut_name)
+        if cached_topo:
+            logger.info(f"Found cached topology: {cached_topo}, removing only this one")
+            topos_to_remove = [cached_topo]
         else:
-            cached_topo = get_cached_topology(dut_name)
-            if cached_topo:
-                logger.info(f"Found cached topology: {cached_topo}, removing only this one")
-                topos_to_remove = [cached_topo]
+            if 'dual-tor' in dut_name:
+                topos_to_remove = MarsConstants.TOPO_ARRAY_DUALTOR
             else:
-                if 'dual-tor' in dut_name:
-                    topos_to_remove = MarsConstants.TOPO_ARRAY_DUALTOR
-                else:
-                    topos_to_remove = MarsConstants.TOPO_ARRAY
+                topos_to_remove = MarsConstants.TOPO_ARRAY
         return topos_to_remove
 
     @staticmethod
@@ -549,7 +546,10 @@ class SonicInstallationSteps:
                 general_cli_obj = dut['cli_obj']
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                   recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
-                                  cli_obj=general_cli_obj)
+                                  cli_obj=general_cli_obj, deploy_dpu=deploy_dpu)
+                if deploy_dpu:
+                    dut['engine'].run_cmd('sudo config save -y')
+
             with allure.step('Apply DNS servers configuration'):
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
@@ -573,20 +573,6 @@ class SonicInstallationSteps:
                         general_cli_obj.startup_dpu(dpu_index_list)
                         general_cli_obj.save_configuration()
 
-                with allure.step('Apply DPU IP assignment configuration'):
-                    config_file_name = "dpu_basic_config.json"
-                    dut_engine = topology_obj.players['dut']['engine']
-                    config_path = \
-                        os.path.join(MarsConstants.SONIC_MGMT_DIR,
-                                     f"tests/smart_switch/{config_file_name}")
-                    dut_engine.copy_file(source_file=config_path,
-                                         dest_file=config_file_name, file_system='/tmp/',
-                                         overwrite_file=True, verify_file=False)
-                    dut_engine.run_cmd(
-                        'sudo cp /etc/sonic/config_db.json /etc/sonic/config_db.backup.json')
-                    dut_engine.run_cmd(
-                        f'sudo sonic-cfggen -j /tmp/{config_file_name} --write-to-db', validate=True)
-                    general_cli_obj.save_configuration()
                 with allure.step('Apply NAT config to smartSwitch'):
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
 

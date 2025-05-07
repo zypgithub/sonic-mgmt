@@ -13,7 +13,7 @@ DST_FULL_CONFIG_FILE = "/tmp/dpu_full.json"
 DEFAULT_CONFIG_FILE = "/etc/sonic/config_db.json"
 GEN_FULL_CONFIG_CMD = "jq -s '.[0] * .[1]' {} {} > {}".format(
     DEFAULT_CONFIG_FILE, DST_DPU_CONFIG_FILE, DST_FULL_CONFIG_FILE)
-CONFIG_RELOAD_CMD = "sudo config reload {} -y".format(DST_FULL_CONFIG_FILE)
+CONFIG_RELOAD_CMD = "sudo config reload {} -y -f".format(DST_FULL_CONFIG_FILE)
 CONFIG_SAVE_CMD = "sudo config save -y"
 # Need to add retry for Cisco SS since DPU takes longer to admin up
 MAX_RETRIES = 5
@@ -90,6 +90,9 @@ class LoadExtraDpuConfigModule(object):
             self.module.fail_json(msg="DPU config file not found: {}".format(SRC_DPU_CONFIG_FILE))
 
         for i in range(0, self.dpu_num):
+            # Update the extra dpu config file
+            self.module.run_command("sed -i 's/18.0.202/18.{}.202/g' {}".format(i, SRC_DPU_CONFIG_FILE))
+
             dpu_ip = DPU_HOST_IP_BASE.format(i + 1)
 
             ssh = self.connect_to_dpu(dpu_ip)
