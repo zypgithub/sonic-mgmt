@@ -183,7 +183,7 @@ if __name__ == "__main__":
     setup_name = args.setup_name
     cli_type = args.cli_type
     cli_type_str = f"-{cli_type}" if cli_type else ""
-    allure_project_id = (setup_name.replace('_', '-') + cli_type_str).lower()
+    allure_project_id = (setup_name.replace('_', '-') + cli_type_str).lower() + "-session-reports"
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
     if args.action == 'upload':
