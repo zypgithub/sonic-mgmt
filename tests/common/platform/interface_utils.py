@@ -104,9 +104,13 @@ def check_interface_status(dut, asic_index, interfaces, xcvr_skip_list):
     output = dut.command("show interface description")
     intf_status = parse_intf_status(output["stdout_lines"][2:])
     if dut.is_multi_asic:
-        check_intf_presence_command = 'show interface transceiver presence -n {} {}'.format(namespace, {})
+        check_intf_presence_command = 'show interface transceiver presence -n {}'.format(namespace)
     else:
-        check_intf_presence_command = 'show interface transceiver presence {}'
+        check_intf_presence_command = 'show interface transceiver presence'
+    check_inerfaces_presence_output = dut.command(check_intf_presence_command)["stdout_lines"][2:]
+    check_inerfaces_presence_output = (
+        {ports_presence.split()[0]: ports_presence.split()[1] for ports_presence in check_inerfaces_presence_output}
+    )
     for intf in interfaces:
         expected_oper = "up" if intf in mg_ports else "down"
         expected_admin = "up" if intf in mg_ports else "down"
@@ -121,13 +125,11 @@ def check_interface_status(dut, asic_index, interfaces, xcvr_skip_list):
             logging.info("Admin status of interface %s is %s, expected '%s'" % (intf, intf_status[intf]["admin"],
                                                                                 expected_admin))
             return False
-
         # Cross check the interface SFP presence status
         if intf not in xcvr_skip_list[dut.hostname]:
-            check_presence_output = dut.command(check_intf_presence_command.format(intf))
-            presence_list = check_presence_output["stdout_lines"][2].split()
-            assert intf in presence_list, "Wrong interface name in the output: %s" % str(presence_list)
-            assert 'Present' in presence_list, "Status is not expected, presence status: %s" % str(presence_list)
+            assert intf in check_inerfaces_presence_output, "Wrong interface name in the output for: %s" % str(intf)
+            interface_presence = check_inerfaces_presence_output.get(intf,'')
+            assert 'Present' in interface_presence, "Status is not expected, presence status: %s" % str({intf:interface_presence})
 
     logging.info("Check interface status using the interface_facts module")
     intf_facts = dut.interface_facts(up_ports=mg_ports, namespace=namespace)["ansible_facts"]
@@ -166,7 +168,7 @@ def check_interface_information(dut, asic_index, interfaces, xcvr_skip_list):
 
     return True
 
-
+@functools.lru_cache(maxsize=1)
 def get_port_map(dut, asic_index=None):
     """
     @summary: Get the port mapping info from the DUT
