@@ -1524,7 +1524,7 @@ class OperationTimeConsts:
                   'start stop cluster app with loopbox': 720,
                   'start stop cluster': 285,
                   'cluster update log level': 6,
-                  'install bmc': 900,
+                  'install bmc': 1200,
                   'install fpga': 900,
                   'install asic': 600,
                   'install bios': 600,
