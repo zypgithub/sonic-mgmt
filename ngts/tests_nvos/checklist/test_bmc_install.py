@@ -21,7 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.bmc
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bmc"], indirect=True)
-def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name):
+def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name, nv_command):
     """
     @summary: test all these commands:
         nv show platform firmware BMC files
@@ -54,11 +54,11 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
         res_obj = BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
                                                                name=version_name, filename=filename, topology_obj=topology_obj,
                                                                test_name=test_name)
+        with allure.step(f"Verify background copy status is completed in 7 minutes time"):
+            BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_BMC_PATH_NAME)
         with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
-        with allure.step(f"Verify background copy status is completed in 7 minutes time"):
-            _check_background_copy_completed(curl_tool, path='/Chassis/MGX_ERoT_BMC_0')
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
         res_obj = BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,
@@ -68,11 +68,3 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
             OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master
-
-
-@retry(AssertionError, tries=14, delay=30)
-def _check_background_copy_completed(curl_tool, path):
-    erot_bmc_output = curl_tool.run_redfish_command(rest_op='GET', path=path)
-    erot_status_dict = OutputParsingTool.parse_json_str_to_dictionary(erot_bmc_output).get_returned_value()
-    background_copy_status = erot_status_dict['Oem']['Nvidia']['BackgroundCopyStatus']
-    assert background_copy_status == "Completed", "Background copy status is not completed"
