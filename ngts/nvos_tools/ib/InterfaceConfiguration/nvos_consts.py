@@ -98,9 +98,34 @@ class IbInterfaceConsts:
     MAX_PKT_COUNTER_AFTER_CLEAR = 9
     LINK_STATS_RCV_ICRC_ERRORS = 'rcv-icrc-errors'
     LINK_STATS_TX_PARITY_ERRORS = 'tx-parity-errors'
-    LINK_STATS_QNT3 = ['link-error-recovery', 'link-downed', 'port-rcv-remote-physical-errors', 'port-rcv-switch-relay-errors',
-                       'port-rcv-constraint-errors', 'local-link-integrity-errors', 'qp1-drops', 'buffer-overrun-errors',
-                       LINK_STATS_RCV_ICRC_ERRORS, LINK_STATS_TX_PARITY_ERRORS]
+    LINK_PLR_RCV_CODES_ERRORS = 'plr-rcv-codes-err'
+    LINK_STATS_QNT3 = ['link-error-recovery',
+                       'link-downed',
+                       'port-rcv-remote-physical-errors',
+                       'port-rcv-switch-relay-errors',
+                       'port-rcv-constraint-errors',
+                       'local-link-integrity-errors',
+                       'qp1-drops',
+                       'buffer-overrun-errors',
+                       LINK_STATS_RCV_ICRC_ERRORS,
+                       LINK_STATS_TX_PARITY_ERRORS,
+                       LINK_PLR_RCV_CODES_ERRORS]
+    LINK_PHY_RAW_ERRORS = ["phy-raw-errors-lane0",
+                           "phy-raw-errors-lane1",
+                           "phy-raw-errors-lane2",
+                           "phy-raw-errors-lane3",
+                           "phy-raw-errors-lane4",
+                           "phy-raw-errors-lane5",
+                           "phy-raw-errors-lane6",
+                           "phy-raw-errors-lane7"]
+    LINK_PHY_RAW_BER = ["raw-ber-lane0",
+                        "raw-ber-lane1",
+                        "raw-ber-lane2",
+                        "raw-ber-lane3",
+                        "raw-ber-lane4",
+                        "raw-ber-lane5",
+                        "raw-ber-lane6",
+                        "raw-ber-lane7"]
     LINK_BREAKOUT_NDR = "2x-ndr"
     LINK_BREAKOUT_HDR = "2x-hdr"
     LINK_BREAKOUT_XDR = "2x-xdr"

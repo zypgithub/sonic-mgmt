@@ -86,3 +86,20 @@ class GnmiConstants:
     SUPPORTED_WIDTHS = 'supported-widths'
     VL_CAPABILITIES = "vl-capabilities"
     IB_SUBNET = "ib-subnet"
+    PLR_RCV_CODES = 'plr-rcv-codes'
+    PHY_RAW_ERRORS = ["raw-errors-ch-1",
+                      "raw-errors-ch-2",
+                      "raw-errors-ch-3",
+                      "raw-errors-ch-4",
+                      "raw-errors-ch-5",
+                      "raw-errors-ch-6",
+                      "raw-errors-ch-7",
+                      "raw-errors-ch-8"]
+    PHY_RAW_BER = ["raw-ber-ch-1",
+                   "raw-ber-ch-2",
+                   "raw-ber-ch-3",
+                   "raw-ber-ch-4",
+                   "raw-ber-ch-5",
+                   "raw-ber-ch-6",
+                   "raw-ber-ch-7",
+                   "raw-ber-ch-8"]

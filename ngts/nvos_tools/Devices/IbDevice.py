@@ -514,6 +514,7 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
             # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
             # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            IbInterfaceConsts.LINK_STATS_QNT3[10]: GnmiConstants.PLR_RCV_CODES,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_MULTICAST_IN_PKTS: GnmiConstants.IN_MULTICAST_PKTS,
@@ -524,6 +525,22 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_LOGICAL_PORT_STATE: GnmiConstants.LOGICAL_PORT_STATE,
             IbInterfaceConsts.LINK_SUPPORTED_LANES: GnmiConstants.SUPPORTED_WIDTHS,
             IbInterfaceConsts.LINK_VL_ADMIN_CAPABILITIES: GnmiConstants.VL_CAPABILITIES,
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[0]: GnmiConstants.PHY_RAW_ERRORS[0],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[1]: GnmiConstants.PHY_RAW_ERRORS[1],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[2]: GnmiConstants.PHY_RAW_ERRORS[2],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[3]: GnmiConstants.PHY_RAW_ERRORS[3],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[4]: GnmiConstants.PHY_RAW_ERRORS[4],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[5]: GnmiConstants.PHY_RAW_ERRORS[5],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[6]: GnmiConstants.PHY_RAW_ERRORS[6],
+            IbInterfaceConsts.LINK_PHY_RAW_ERRORS[7]: GnmiConstants.PHY_RAW_ERRORS[7],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[0]: GnmiConstants.PHY_RAW_BER[0],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[1]: GnmiConstants.PHY_RAW_BER[1],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[2]: GnmiConstants.PHY_RAW_BER[2],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[3]: GnmiConstants.PHY_RAW_BER[3],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[4]: GnmiConstants.PHY_RAW_BER[4],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[5]: GnmiConstants.PHY_RAW_BER[5],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[6]: GnmiConstants.PHY_RAW_BER[6],
+            IbInterfaceConsts.LINK_PHY_RAW_BER[7]: GnmiConstants.PHY_RAW_BER[7]
         }
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):

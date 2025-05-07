@@ -1,6 +1,7 @@
 import pytest
 import logging
 import random
+import re
 
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
@@ -10,7 +11,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, parse_gnmi_output
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr, GnmiConstants
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.constants.constants import GnmiConsts
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -84,7 +85,8 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api):
                         for attribute, value in adjusted_cli_output.items():
                             with allure.independent_step(f"Testing {attribute}"):
                                 assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
-                                assert gnmi_output_as_dict[attribute] == value, f"Output mismatch. CLI={value}, GNMI={gnmi_output_as_dict[attribute]}"
+                                gnmi_value = gnmi_output_as_dict[attribute]
+                                assert (gnmi_value == value) or handle_numeric_values(gnmi_value, value), f"Output mismatch. CLI={value}, GNMI={gnmi_output_as_dict[attribute]}"
 
 
 def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):
@@ -98,6 +100,8 @@ def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):
             for inner_attribute, inner_value in value.items():
                 if inner_attribute in attributes_mapping_dict.keys():
                     res[attributes_mapping_dict[inner_attribute]] = adjust_cli_values(inner_attribute, inner_value)
+                elif attribute in ["phy-diag", "phy-detail"]:
+                    res[inner_attribute] = inner_value if inner_value is not None else "N/A"
         else:
             if attribute in attributes_mapping_dict.keys():
                 res[attributes_mapping_dict[attribute]] = adjust_cli_values(attribute, value)
@@ -144,3 +148,10 @@ def adjust_cli_values(attribute, value):
     if adjustment_function:
         return adjustment_function(value)
     return str(value) if not isinstance(value, str) else value
+
+
+def handle_numeric_values(value1, value2):
+    out = False
+    if re.match(r'^\d*\.?\d+$', value1) and re.match(r'^\d*\.?\d+$', value2):
+        out = float(value1) == float(value2)
+    return out
