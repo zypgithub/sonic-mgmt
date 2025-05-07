@@ -177,5 +177,8 @@ def insert_new_start_string(engine, oldest_syslog_id, new_start_string):
     new_oldest_syslog_id = oldest_syslog_id + 1
     with allure.step(f'Inserting start_sting line into syslog file with ID: {new_oldest_syslog_id}'):
         engine.run_cmd(f'sudo echo \'{new_start_string}\' > syslog.{new_oldest_syslog_id}')
-        engine.run_cmd(f'sudo gzip syslog.{new_oldest_syslog_id}')
-        engine.run_cmd(f'sudo mv syslog.{new_oldest_syslog_id}.gz /var/log/')
+        if new_oldest_syslog_id > 1:
+            engine.run_cmd(f'sudo gzip syslog.{new_oldest_syslog_id}')
+            engine.run_cmd(f'sudo mv syslog.{new_oldest_syslog_id}.gz /var/log/')
+        else:
+            engine.run_cmd(f'sudo mv syslog.{new_oldest_syslog_id} /var/log/')
