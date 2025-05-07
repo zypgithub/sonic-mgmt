@@ -98,8 +98,8 @@ def pytest_collection_modifyitems(session, config, items):
             return
         # TODO: need to remove once the ticket closed.
         from infra.tools.redmine.redmine_api import is_redmine_issue_active
-        if is_redmine_issue_active([4398874])[0]:
-            skip = pytest.mark.skip(reason='https://redmine.mellanox.com/issues/4398874')
+        if is_redmine_issue_active([4435626])[0]:
+            skip = pytest.mark.skip(reason='https://redmine.mellanox.com/issues/4435626')
             add_marker(items, skip)
             return
         platform_max_ports_num = max_ports_num_per_platform[platform]

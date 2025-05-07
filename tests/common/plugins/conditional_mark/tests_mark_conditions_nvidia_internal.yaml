@@ -394,6 +394,10 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     reason: "The test is related to performance, no meaningful to run it on simx platform "
     conditions:
     - "'simx' in platform"
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436229 and ACS-MSN4600C"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436229 and hwsku in ['ACS-MSN4600C']"
 
 tests/push_build_tests/system/test_cpu_ram_hdd_usage:py::TestCpuRamHddUsage::test_cpu_usage:
   skip:
