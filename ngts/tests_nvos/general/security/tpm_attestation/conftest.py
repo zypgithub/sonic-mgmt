@@ -70,6 +70,6 @@ def clear_tpm_dir(engines, check_tpm_ready_for_testing):
 @pytest.fixture()
 def save_local_timezone(engines):
     with allure.step(f'set local timezone to {LinuxConsts.JERUSALEM_TIMEZONE}'):
-        System().set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE).verify_result()
+        System().datetime.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE).verify_result()
     with allure.step('save configurations'):
         NvueGeneralCli.save_config(engines.dut)

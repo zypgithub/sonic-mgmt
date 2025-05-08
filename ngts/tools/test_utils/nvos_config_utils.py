@@ -33,7 +33,7 @@ def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE
 
         logging.info(f'Set switch timezone: {timezone}')
         system = System()
-        system.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
+        system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
         system.api.set(SystemConsts.STATE, NvosConst.ENABLED, dut_engine=dut_engine).verify_result()
 
         if apply:
@@ -64,7 +64,7 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
 
         logging.info(f'Set switch timezone: {timezone}')
         system = System()
-        system.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE, dut_engine=dut_engine).verify_result()
+        system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE, dut_engine=dut_engine).verify_result()
 
         logging.info('Set authentication restrictions configurations')
         system.aaa.authentication.restrictions.set(RestrictionsConsts.LOCKOUT_STATE,
