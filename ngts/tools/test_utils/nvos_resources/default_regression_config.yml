@@ -13,4 +13,5 @@
       security:
         password-hardening:
           state: enabled
-      timezone: Asia/Jerusalem
+      date-time:
+        timezone: Asia/Jerusalem
