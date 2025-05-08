@@ -4,7 +4,7 @@ import random
 import json
 import time
 
-from ipaddress import ip_interface, ip_address
+from ipaddress import ip_interface
 from constants import ENI, VM_VNI, VNET1_VNI, VNET2_VNI, REMOTE_CA_IP, LOCAL_CA_IP, REMOTE_ENI_MAC, \
     LOCAL_ENI_MAC, REMOTE_CA_PREFIX, LOOPBACK_IP, DUT_MAC, LOCAL_PA_IP, LOCAL_PTF_INTF, LOCAL_PTF_MAC, \
     REMOTE_PA_IP, REMOTE_PTF_INTF, REMOTE_PTF_MAC, REMOTE_PA_PREFIX, VNET1_NAME, VNET2_NAME, ROUTING_ACTION, \
@@ -13,38 +13,17 @@ from constants import ENI, VM_VNI, VNET1_VNI, VNET2_VNI, REMOTE_CA_IP, LOCAL_CA_
 from dash_utils import render_template_to_host, apply_swssconfig_file
 from gnmi_utils import generate_gnmi_cert, apply_gnmi_cert, recover_gnmi_cert, apply_gnmi_file
 from dash_acl import AclGroup, DEFAULT_ACL_GROUP, WAIT_AFTER_CONFIG, DefaultAclRule
-from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
+from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost
 
 logger = logging.getLogger(__name__)
 
 ENABLE_GNMI_API = True
 
 
-def get_dpu_dataplane_port(duthost, dpu_index):
-    platform = duthost.facts["platform"]
-    platform_json = json.loads(duthost.shell(f"cat /usr/share/sonic/device/{platform}/platform.json")["stdout"])
-    try:
-        interface = list(platform_json["DPUS"][f"dpu{dpu_index}"]["interface"].keys())[0]
-    except KeyError:
-        if_dpu_index = 224 + dpu_index*8
-        interface = f"Ethernet{if_dpu_index}"
-
-    logger.info(f"DPU dataplane interface: {interface}")
-    return interface
-
-
 def get_interface_ip(duthost, interface):
     cmd = f"ip addr show {interface} | grep -w inet | awk '{{print $2}}'"
     output = duthost.shell(cmd)["stdout"].strip()
     return ip_interface(output)
-
-
-@pytest.fixture(scope="module")
-def dpu_ip(duthost, dpu_index):
-    dpu_port = get_dpu_dataplane_port(duthost, dpu_index)
-    npu_interface_ip = get_interface_ip(duthost, dpu_port)
-    return npu_interface_ip.ip + 1
-
 
 def pytest_addoption(parser):
     """
@@ -497,30 +476,6 @@ def acl_default_rule(localhost, duthost, ptfhost, dash_config_info):
         default_acl_rule.teardown()
         del default_acl_group
         time.sleep(WAIT_AFTER_CONFIG)
-
-
-@pytest.fixture(scope="module", autouse=True)
-def add_dpu_info(dpuhosts, duthost):
-    data_port_base_ip = ip_address("10.0.0.74")
-    dpu_npu_port_list = sorted(get_dpu_npu_ports_from_hwsku(duthost))
-    for dpuhost in dpuhosts:
-        ip_intf_facts = dpuhost.show_ip_interface()['ansible_facts']['ip_interfaces']
-        dpuhost_ip = ip_intf_facts['eth0-midplane']['ipv4']
-        dpuhost.dpu_index = int(dpuhost_ip.split(".")[-1]) - 1
-        dpuhost.dpu_mgmt_ip = dpuhost_ip
-        logger.info(f"dpuhost.dpu_mgmt_ip:{dpuhost.dpu_mgmt_ip}, dpu_index: {dpuhost.dpu_index}")
-
-        npu_data_port_ip = str(data_port_base_ip + dpuhost.dpu_index * 2)
-        dpu_data_port_ip = str(ip_address(npu_data_port_ip) + 1)
-
-        dpuhost.data_port_on_npu = dpu_npu_port_list[dpuhost.dpu_index]
-        dpuhost.npu_data_port_ip = npu_data_port_ip
-        dpuhost.dpu_data_port_ip = dpu_data_port_ip
-        dpuhost.dataplane_mask_length = 31
-        dpuhost.name = f"dpu{dpuhost.dpu_index}"
-        logger.info(f"dpuhost.data_port_on_npu: {dpuhost.data_port_on_npu}, "
-                    f"dpuhost.npu_data_port_ip:{dpuhost.npu_data_port_ip}, "
-                    f"dpuhost.dpu_data_port_ip:{dpuhost.dpu_data_port_ip}, ")
 
 
 @pytest.fixture(scope="module")

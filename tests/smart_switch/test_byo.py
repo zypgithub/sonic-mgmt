@@ -18,7 +18,7 @@ from tests.common.constants import RESOLV_CONF_NAMESERVERS
 from tests.common.utilities import wait_until
 current_path = sys.path.copy()
 sys.path.insert(0, "dash")
-from tests.dash.conftest import add_dpu_info
+from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost
 sys.path = current_path
 
 logger = logging.getLogger(__name__)

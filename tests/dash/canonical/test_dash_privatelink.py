@@ -1,5 +1,5 @@
 import logging
-from ipaddress import ip_interface, ip_network
+from ipaddress import ip_address
 
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
@@ -8,7 +8,7 @@ from constants import LOCAL_PTF_INTF, REMOTE_DUT_INTF, REMOTE_PTF_MAC, REMOTE_PT
 from gnmi_utils import apply_messages
 from packets import outbound_pl_packets, inbound_pl_packets
 from tests.common import config_reload
-
+from tests.common.helpers.smartswitch_util import get_dpu_dataplane_port
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,29 @@ def dash_pl_config(duthost, config_facts, minigraph_facts):
                  REMOTE_DUT_INTF: 0
                  }
     return dash_info
+
+
+@pytest.fixture(scope="session", autouse=True)
+def add_dpu_info(dpuhosts, duthost):
+    data_port_base_ip = ip_address("10.0.0.74")
+    for dpuhost in dpuhosts:
+        ip_intf_facts = dpuhost.show_ip_interface()['ansible_facts']['ip_interfaces']
+        dpuhost_ip = ip_intf_facts['eth0-midplane']['ipv4']
+        dpuhost.dpu_index = int(dpuhost_ip.split(".")[-1]) - 1
+        dpuhost.dpu_mgmt_ip = dpuhost_ip
+        logger.info(f"dpuhost.dpu_mgmt_ip:{dpuhost.dpu_mgmt_ip}, dpu_index: {dpuhost.dpu_index}")
+
+        npu_data_port_ip = str(data_port_base_ip + dpuhost.dpu_index * 2)
+        dpu_data_port_ip = str(ip_address(npu_data_port_ip) + 1)
+
+        dpuhost.data_port_on_npu = get_dpu_dataplane_port(duthost, dpuhost.dpu_index)
+        dpuhost.npu_data_port_ip = npu_data_port_ip
+        dpuhost.dpu_data_port_ip = dpu_data_port_ip
+        dpuhost.dataplane_mask_length = 31
+        dpuhost.name = f"dpu{dpuhost.dpu_index}"
+        logger.info(f"dpuhost.data_port_on_npu: {dpuhost.data_port_on_npu}, "
+                    f"dpuhost.npu_data_port_ip:{dpuhost.npu_data_port_ip}, "
+                    f"dpuhost.dpu_data_port_ip:{dpuhost.dpu_data_port_ip}, ")
 
 
 @pytest.fixture(scope="module")

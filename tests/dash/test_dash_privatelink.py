@@ -1,6 +1,4 @@
 import logging
-import time
-from ipaddress import ip_interface, ip_network
 
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
@@ -9,7 +7,6 @@ from constants import LOCAL_PTF_INTF, LOCAL_DUT_INTF, REMOTE_DUT_INTF, REMOTE_PT
 from gnmi_utils import apply_messages
 from packets import outbound_pl_packets, inbound_pl_packets
 from tests.dash.conftest import get_interface_ip
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common import config_reload
 
 logger = logging.getLogger(__name__)
@@ -38,7 +35,7 @@ def use_pkt_alt_attrs(duthost):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def add_npu_static_routes(duthost, dash_pl_config, dpu_index, apply_switch_basic_config, apply_dpu_basic_config, dpuhosts, skip_config, skip_cleanup):
+def add_npu_static_routes(duthost, dash_pl_config, skip_config, skip_cleanup, dpu_index, dpuhosts):
     dpuhost = dpuhosts[dpu_index]
     if not skip_config:
         cmds = []
@@ -63,7 +60,7 @@ def add_npu_static_routes(duthost, dash_pl_config, dpu_index, apply_switch_basic
 
 
 @pytest.fixture(autouse=True, scope="module")
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range):
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, skip_config, dpuhosts, set_vxlan_udp_sport_range):
     if skip_config:
         return
     dpuhost = dpuhosts[dpu_index]
@@ -109,52 +106,6 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
 
     if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
         config_reload(dpuhost, safe_reload=True)
-
-
-# added by nvidia
-@pytest.fixture(scope="module")
-def apply_switch_basic_config(duthost, dpuhosts, dpu_index):
-    dpuhost = dpuhosts[dpu_index]
-    logger.info("Add ip to npu dpu data port")
-    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
-    duthost.shell(cmd_add_npu_dpu_port_ip)
-
-    yield
-
-    logger.info("Remove the ip of npu dpu data port")
-    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
-    duthost.shell(cmd_remove_npu_dpu_port_ip)
-
-
-@pytest.fixture(scope="module")
-def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dpuhosts, dpu_index):
-    dpuhost = dpuhosts[dpu_index]
-    logger.info("Add ip to Ethernet0")
-    cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpuhost.dpu_data_port_ip}/31"
-    dpuhost.shell(cmd_add_data_port_ip)
-
-    logger.info("Add ip to Loopback0")
-    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
-    dpuhost.shell(cmd_add_l0_ip)
-
-    logger.info("Add ip underlay route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
-    dpuhost.shell(cmd_add_npu_neig_route)
-
-    yield
-
-    if not is_redmine_issue_active([4125251])[0]:
-        logger.info("Remove ip default route via Ethernet0")
-        cmd_del_npu_neig_route = f"sudo ip route del {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
-        dpuhost.shell(cmd_del_npu_neig_route)
-
-        logger.info("Remove the ip of Loopback0")
-        cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
-        dpuhost.shell(cmd_remove_l0_ip)
-
-        logger.info("Remove ip of Ethernet0")
-        cmd_remove_data_port_ip = f"sudo config interface ip  remove Ethernet0 {dpuhost.dpu_data_port_ip}/31"
-        dpuhost.shell(cmd_remove_data_port_ip)
 
 
 @pytest.mark.parametrize("encap_proto", ["vxlan", "gre"])

@@ -7,7 +7,7 @@ import sys
 from tests.common import config_reload
 current_path = sys.path.copy()
 sys.path.insert(0, "dash")
-from tests.dash.conftest import add_dpu_info
+from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost
 sys.path = current_path
 
 pytestmark = [

@@ -1,22 +1,20 @@
 import logging
-from ipaddress import ip_network, IPv4Address
+from ipaddress import IPv4Address
 import copy
 
 import configs.privatelink_config as pl
 import ptf.testutils as testutils
 import pytest
-from constants import LOCAL_PTF_INTF, REMOTE_PTF_RECV_INTF, VXLAN_UDP_BASE_SRC_PORT
+from constants import LOCAL_PTF_INTF, LOCAL_DUT_INTF, REMOTE_DUT_INTF, REMOTE_PTF_RECV_INTF, REMOTE_PTF_SEND_INTF, VXLAN_UDP_BASE_SRC_PORT
 from gnmi_utils import apply_messages
 from packets import outbound_pl_packets, inbound_pl_packets
-from tests.smart_switch.conftest import SMARTSWITCH_PLATFORMS, copy_proxy_ssh, skip_unsupported_platform, platform # noqa F401
 from tests.common import config_reload
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import wait_until
 from dash_eni_counter_utils import get_eni_counters, get_eni_counter_oid, verify_eni_counter, \
     eni_counter_setup, ENI_COUNTER_READY_MAX_TIME
-import time
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from tests.dash.conftest import get_interface_ip
 
 
 logger = logging.getLogger(__name__)
@@ -26,73 +24,33 @@ pytestmark = [
 ]
 
 
-@pytest.fixture(scope="module")
-def apply_switch_basic_config(duthost, dpuhost):
-    logger.info("Add ip to npu dpu data port")
-    cmd_add_npu_dpu_port_ip = f'sudo config interface ip add {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
-    duthost.shell(cmd_add_npu_dpu_port_ip)
-
-    yield
-
-    logger.info("Remove the ip of npu dpu data port")
-    cmd_remove_npu_dpu_port_ip = f'sudo config interface ip Remove {dpuhost.data_port_on_npu} {dpuhost.npu_data_port_ip}/31'
-    duthost.shell(cmd_remove_npu_dpu_port_ip)
-
-
-@pytest.fixture(scope="module")
-def apply_dpu_basic_config(dpuhost, apply_switch_basic_config):
-    logger.info("Add ip to Ethernet0")
-    cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpuhost.dpu_data_port_ip}/31"
-    dpuhost.shell(cmd_add_data_port_ip)
-
-    logger.info("Add ip to Loopback0")
-    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
-    dpuhost.shell(cmd_add_l0_ip)
-
-    logger.info("Add ip underlay route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
-    dpuhost.shell(cmd_add_npu_neig_route)
-
-    yield
-
-    if not is_redmine_issue_active([4125251])[0]:
-        logger.info("Remove ip default route via Ethernet0")
-        cmd_del_npu_neig_route = f"sudo ip route del {pl.PE_PA}/32 via {dpuhost.npu_data_port_ip} dev Ethernet0"
-        dpuhost.shell(cmd_del_npu_neig_route)
-
-        logger.info("Remove the ip of Loopback0")
-        cmd_remove_l0_ip = f"sudo config interface ip  remove Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
-        dpuhost.shell(cmd_remove_l0_ip)
-
-        logger.info("Remove ip of Ethernet0")
-        cmd_remove_data_port_ip = f"sudo config interface ip  remove Ethernet0 {dpuhost.dpu_data_port_ip}/31"
-        dpuhost.shell(cmd_remove_data_port_ip)
-
-
 @pytest.fixture(scope="module", autouse=True)
-def add_static_route_from_npu_to_dpu(duthost, dpuhost, apply_dpu_basic_config, common_setup_teardown):
-    remote_pa_ip = "10.0.0.1"
-    logger.info("Add npu to dpu VIP route")
-    cmd = f"ip route replace {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}"
-    duthost.shell(cmd)
+def add_npu_static_routes(duthost, dash_pl_config, skip_config, skip_cleanup, dpu_index, dpuhosts):
+    dpuhost = dpuhosts[dpu_index]
+    if not skip_config:
+        cmds = []
+        vm_nexthop_ip = get_interface_ip(duthost, dash_pl_config[LOCAL_DUT_INTF]).ip + 1
+        pe_nexthop_ip = get_interface_ip(duthost, dash_pl_config[REMOTE_DUT_INTF]).ip + 1
 
-    logger.info("Add underlay outbound to ptf route")
-    underlay_outbound_to_ptf_route_subnet = ip_network(f'{pl.PE_PA}/32').supernet(prefixlen_diff=8)
-    cmd_add_underlay_outbound_to_ptf_route = f"ip route add {underlay_outbound_to_ptf_route_subnet} via {remote_pa_ip}"
-    duthost.shell(cmd_add_underlay_outbound_to_ptf_route)
+        cmds.append(f"ip route replace {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}")
+        cmds.append(f"ip route replace {pl.VM1_PA}/32 via {vm_nexthop_ip}")
+        cmds.append(f"ip route replace {pl.PE_PA}/32 via {pe_nexthop_ip}")
+        logger.info(f"Adding static routes: {cmds}")
+        duthost.shell_cmds(cmds=cmds)
 
     yield
 
-    logger.info("Remove underlay outbound to ptf route")
-    cmd_del_underlay_outboud_to_ptf_route = f"ip route del {underlay_outbound_to_ptf_route_subnet} via {remote_pa_ip}"
-    duthost.shell(cmd_del_underlay_outboud_to_ptf_route)
-
-    logger.info("Remove npu to dpu VIP route")
-    duthost.shell(f"ip route del {pl.APPLIANCE_VIP}")
+    if not skip_config and not skip_cleanup:
+        cmds = []
+        cmds.append(f"ip route del {pl.APPLIANCE_VIP}/32 via {dpuhost.dpu_data_port_ip}")
+        cmds.append(f"ip route del {pl.VM1_PA}/32 via {vm_nexthop_ip}")
+        cmds.append(f"ip route del {pl.PE_PA}/32 via {pe_nexthop_ip}")
+        logger.info(f"Removing static routes: {cmds}")
+        duthost.shell_cmds(cmds=cmds)
 
 
 @pytest.fixture(autouse=True, scope="module")
-def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range, eni_counter_setup):
+def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range):
     if skip_config:
         return
     dpuhost = dpuhosts[dpu_index]
@@ -114,27 +72,27 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
         **pl.VM_SUBNET_ROUTE_CONFIG
     }
     logger.info(route_and_mapping_messages)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index)
 
     meter_rule_messages = {
         **pl.METER_RULE1_V4_CONFIG,
         **pl.METER_RULE2_V4_CONFIG,
     }
     logger.info(meter_rule_messages)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index)
 
     logger.info(pl.ENI_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpuhost.dpu_index)
 
     logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
     apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, False)
 
     if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
         config_reload(dpuhost, safe_reload=True)
@@ -153,19 +111,11 @@ def inner_packet_type(request):
 class TestEniCounter:
 
     @pytest.fixture(autouse=True)
-    def setup_param(self, dpuhost, ptfadapter, config_facts, minigraph_facts):
+    def setup_param(self, dpuhost, ptfadapter, eni_counter_setup):
         self.ptfadapter = ptfadapter
         self.dpuhost = dpuhost
         self.eni = pl.ENI_ID
         self.eni_counter_oid = get_eni_counter_oid(dpuhost, self.eni)
-        pc_member_config = config_facts["PORTCHANNEL_MEMBER"]
-        member_ports = []
-        for member_config in pc_member_config.values():
-            for member in member_config:
-                member_ports.append(member)
-
-        self.expected_ptf_ports = [minigraph_facts["minigraph_ptf_indices"][port] for port in member_ports]
-        logger.info(f"Expecting transformed packet on PTF ports: {self.expected_ptf_ports}")
 
     def test_outbound_pkt_pass_eni_counter(self, dash_pl_config, outer_encap, inner_packet_type):
         """
@@ -194,7 +144,7 @@ class TestEniCounter:
 
         pkt, exp_pkt = outbound_pl_packets( \
             dash_pl_config, outer_encap=outer_encap, inner_packet_type=inner_packet_type)
-        verify_packets = [{'send': pkt, 'exp': exp_pkt}]
+        verify_packets = [{'send': pkt, 'exp': exp_pkt, 'dir':"outbound"}]
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
@@ -211,7 +161,7 @@ class TestEniCounter:
         eni_counter_check_point_dict = {"SAI_ENI_STAT_OUTBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
         pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type=inner_packet_type)
         pkt[outer_encap.upper()]['IP'].dst = "10.3.3.4"
-        verify_packets = [{'send': pkt, 'exp': None}]
+        verify_packets = [{'send': pkt, 'exp': None, 'dir':"outbound"}]
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
@@ -229,7 +179,7 @@ class TestEniCounter:
         pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type=inner_packet_type)
         ip_with_same_outbound_route_prefix1 = format(IPv4Address(pl.PE_CA) + 1)
         pkt[outer_encap.upper()]['IP'].dst = ip_with_same_outbound_route_prefix1
-        verify_packets = [{'send': pkt, 'exp': None}]
+        verify_packets = [{'send': pkt, 'exp': None, 'dir':"outbound"}]
 
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
@@ -254,8 +204,8 @@ class TestEniCounter:
         pkt, _ = outbound_pl_packets(dash_pl_config, outer_encap, inner_packet_type='tcp')
         pkt_rst = copy.deepcopy(pkt)
         pkt_rst[outer_encap.upper()]["TCP"].flags = "R"
-        verify_packets = [{'send': pkt, 'exp': None},
-                          {'send': pkt_rst, 'exp': None}]
+        verify_packets = [{'send': pkt, 'exp': None, 'dir':"outbound"},
+                          {'send': pkt_rst, 'exp': None, 'dir':"outbound"}]
         self.send_packet_and_verify_dash_eni_counter(
             dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
@@ -300,14 +250,14 @@ class TestEniCounter:
                                                 outbound_packet_len * packet_number + inbound_packet_len*packet_number,
                                                 "SAI_ENI_STAT_FLOW_AGED": 1
                                             }
-            verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None},
-                              {'send': pe_to_dpu_pkt, 'exp': exp_dpu_to_vm_pkt}]
+            verify_packets = [{'send': vm_to_dpu_pkt, 'exp': None, 'dir':"outbound"},
+                              {'send': pe_to_dpu_pkt, 'exp': exp_dpu_to_vm_pkt, 'dir':"inbound"}]
             self.send_packet_and_verify_dash_eni_counter(
                 dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
         with allure.step("send the inbound packet without inbound route and verify the relevant eni counter"):
             eni_counter_check_point_dict = {"SAI_ENI_STAT_INBOUND_ROUTING_ENTRY_MISS_DROP_PACKETS": packet_number}
-            verify_packets = [{'send': pe_to_dpu_pkt, 'exp': None}]
+            verify_packets = [{'send': pe_to_dpu_pkt, 'exp': None, 'dir':"inbound"}]
             self.send_packet_and_verify_dash_eni_counter(
                 dash_pl_config, eni_counter_check_point_dict, packet_number, verify_packets)
 
@@ -320,9 +270,15 @@ class TestEniCounter:
 
         with allure.step("sending packets"):
             for pkts in verify_packets:
-                testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkts['send'], packet_number)
+                if pkts['dir'] == "outbound":
+                    testutils.send(self.ptfadapter, dash_pl_config[LOCAL_PTF_INTF], pkts['send'], packet_number)
+                else:
+                    testutils.send(self.ptfadapter, dash_pl_config[REMOTE_PTF_SEND_INTF], pkts['send'], packet_number)
                 if pkts['exp']:
-                    testutils.verify_packet_any_port(self.ptfadapter, pkts['exp'], self.expected_ptf_ports)
+                    if pkts['dir'] == "outbound":
+                        testutils.verify_packet_any_port(self.ptfadapter, pkts['exp'], dash_pl_config[REMOTE_PTF_RECV_INTF])
+                    else:
+                        testutils.verify_packet(self.ptfadapter, pkts['exp'], dash_pl_config[LOCAL_PTF_INTF])
         def _verify_eni_counter():
             with allure.step("get dash eni counter after sending pkts"):
                 eni_counter_after_sending_pkt = get_eni_counters(self.dpuhost, self.eni_counter_oid)
