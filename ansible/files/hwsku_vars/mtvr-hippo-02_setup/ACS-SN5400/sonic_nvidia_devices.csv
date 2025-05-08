@@ -1,7 +1,0 @@
-Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
-mtvr-hippo-02,10.245.20.246/22,ACS-SN5400,DevSonic,,sonic
-mtvr-leopard-05,10.245.20.247/22,ACS-MSN4700,FanoutLeaf,,sonic,files/hwsku_vars/mtvr-hippo-02_setup/ACS-SN5400/port_config.ini
-mtvr-dl360-01,10.245.42.60,TestServ,Server,,
-pdu-10-245-2-13,10.245.2.13,Vertiv,Pdu,snmp,
-pdu-10-245-2-35,10.245.2.35,Vertiv,Pdu,snmp,
-rcon-mtvr-rack-1-7,10.245.2.4,,ConsoleServer,ssh,sonic

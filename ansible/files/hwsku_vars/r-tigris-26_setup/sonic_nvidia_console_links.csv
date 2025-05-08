@@ -1,3 +1,0 @@
-StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
-rcon-sws-3-5,7026,r-tigris-26,ssh,,root
-rcon-sws-3-5,7027,r-tigris-27,ssh,,root
