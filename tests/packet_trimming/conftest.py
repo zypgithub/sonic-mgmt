@@ -18,6 +18,36 @@ from tests.packet_trimming.packet_trimming_helper import (delete_blocking_schedu
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def is_packet_trimming_supported(duthost):
+    """
+    Check if the current device supports packet trimming feature.
+
+    Logic:
+    1. For Nvidia SPC1/SPC2/SPC3 platform, do not support packet trimming, skip the test.
+    2. For Nvidia SPC4 platform, check if the "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT" exists in sai.profile.
+       If not, skip the test.
+
+    Args:
+        duthost: DUT host object
+    """
+    platform = duthost.facts["platform"]
+    logger.info(f"Checking packet trimming support for platform: {platform}")
+
+    # For Nvidia SPC1/2/3 platforms, skip the test
+    if any(platform_id in platform.lower() for platform_id in ["sn2", "sn3", "sn4"]):
+        pytest.skip(f"Packet trimming is not supported on {platform}")
+
+    # For Nvidia SPC4 platforms, check if the "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT" exists in sai.profile
+    elif any(spc4_platform in platform for spc4_platform in ["sn5600", "sn5610"]):
+        hwsku = duthost.facts["hwsku"]
+        sai_profile = f"/usr/share/sonic/device/{platform}/{hwsku}/sai.profile"
+        sai_profile_content = duthost.command(f"cat {sai_profile}")["stdout_lines"]
+
+        if "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT" not in sai_profile_content:
+            pytest.skip("Packet trimming is not supported")
+
+
 @pytest.fixture(scope="module")
 def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links):    # noqa F401
     """
