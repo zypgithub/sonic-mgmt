@@ -310,7 +310,7 @@ def _test_daylight_saving_time(engines, devices, random_asic, add_one_hour):
             _wait_to_exit_fatal()
 
     finally:
-        system.unset(ClockConsts.TIMEZONE, apply=True)
+        system.datetime.unset(ClockConsts.TIMEZONE, apply=True)
 
 
 # todo 5.12.	test_fail_to_start_once_after_firmware_burn
@@ -413,9 +413,9 @@ def _set_dst(enter: bool, system: System):
     """Enter or exit DST (plus/minus 1 hour in system clock)."""
     with allure.step(f"{_set_dst}: Simulate {'entering' if enter else 'exiting'} DST"):
         if enter:
-            system.set(ClockConsts.TIMEZONE, ClockConsts.DST_TIMEZONE, apply=True)
+            system.datetime.set(ClockConsts.TIMEZONE, ClockConsts.DST_TIMEZONE, apply=True)
         else:
-            system.set(ClockConsts.TIMEZONE, ClockConsts.DEFAULT_TIMEZONE, apply=True)
+            system.datetime.set(ClockConsts.TIMEZONE, ClockConsts.DEFAULT_TIMEZONE, apply=True)
 
 
 def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
