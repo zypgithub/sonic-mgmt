@@ -18,4 +18,5 @@
         user:
           admin:
             password: $y$j9T$Uay927sQ.WFouaJb1uHpd/$Vn58Jt3rx4TElcI7KUYbtA/qQtK/qKM2qWy9J9wanF3
-      timezone: Asia/Jerusalem
+      date-time:
+        timezone: Asia/Jerusalem
