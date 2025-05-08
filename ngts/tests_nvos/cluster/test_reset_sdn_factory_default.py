@@ -50,7 +50,8 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
-def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, setup_name):
+def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, setup_name,
+                           handle_la_marker_in_manufacture):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
     with allure.step("Create Cluster object"):
