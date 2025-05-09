@@ -24,7 +24,23 @@ class TestNewTc:
         self.dut_engine = engines.dut
         self.topology_obj = topology_obj
 
+    @pytest.fixture(autouse=False)
+    def hide_hw_management_sync_service(self):
+        """
+        The hw_management_sync service will update the thermal sensor value,
+        specially since the hw-mgmt V.7.0040.4007, the minimal driver has been
+        disabled on platforms SPC2-SPC5.
+        This fixture is to hide the hw_management_sync service to avoid the thermal
+        sensor value being updated by the hw_management_sync service. test_temperature_sweep
+        needs to mock the temperature value so we need to stop the hw_management_sync service
+        before the test and start it after the test.
+        """
+        self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
+        yield
+        self.dut_engine.run_cmd("sudo systemctl start hw-management-sync")
+
     @allure.title('test temperature sweep')
+    @pytest.mark.usefixtures("hide_hw_management_sync_service")
     def test_temperature_sweep(self, request, get_dut_supported_sensors_and_tc_config, platform_params):
         """
         This test is to verify temperature sweep
