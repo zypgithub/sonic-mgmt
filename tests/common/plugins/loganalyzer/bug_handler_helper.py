@@ -17,7 +17,6 @@ from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folde
     create_log_analyzer_yaml_file, group_log_errors_by_timestamp, summarize_la_bug_handler
 from ngts.scripts.allure_reporter import predict_allure_report_link
 from tests.common.helpers.parallel import reset_ansible_local_tmp
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
 
 logger = logging.getLogger()
 PYTEST_RUN_CMD = 'pytest_run_cmd'
@@ -522,7 +521,7 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
     file_handler.setLevel(logging.INFO)
     logging.getLogger().addHandler(file_handler)
     try:
-        analyzer: LogAnalyzer = analyzers[node.hostname]
+        analyzer = analyzers[node.hostname]
         analyzer_summary = la_results[node.hostname]
         duthost, request = analyzer.ansible_host, analyzer.request
         if skip_bug_handler(duthost, request):
