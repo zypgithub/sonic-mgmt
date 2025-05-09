@@ -1338,7 +1338,8 @@ class TestAclWithReboot(TestBasicAcl):
     """
     # Flag to ensure reboot only happens once
     dut_rebooted = False
-    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa F811
+
+    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
         """Save configuration and reboot after rules are applied.
 
         Args:
@@ -1388,8 +1389,10 @@ class TestAclWithPortToggle(TestBasicAcl):
     Verify that ACLs still function as expected after links flap.
     """
     # Flag to ensure port toggle only happens once
+
     dut_port_toggled = False
-    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa F811
+
+    def post_setup_hook(self, dut, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts):     # noqa: F811
         """Toggle ports after rules are applied.
 
         Args:
