@@ -839,11 +839,35 @@ qos/test_qos_sai.py:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/16200 and 'dualtor-aa' in topo_name"
 
+qos/test_qos_sai.py::TestQosSai::testQosSaiDwrr:
+  skip:
+    reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438572"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4438572 and 'sn2' in platform"
+
 qos/test_qos_sai_dual_tor.py:
   skip:
     reason: "test_qos_sai_dual_tor tests only support on Mellanox-SN4600C-C64 and Mellanox-SN2700-D48C8"
     conditions:
     - "hwsku not in ['Mellanox-SN4600C-C64', 'Mellanox-SN2700-D48C8', 'Mellanox-SN4700-O8V48']"
+
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case4:
+  skip:
+    reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438716"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4438716 and 'sn2' in platform"
+
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case5:
+  skip:
+    reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438716"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4438716 and 'sn2' in platform"
+
+vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case6:
+  skip:
+    reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438716"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4438716 and 'sn2' in platform"
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
@@ -917,6 +941,42 @@ hash/test_generic_hash.py::test_reboot:
     reason: "The WR/FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
     conditions:
     - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
+
+hash/test_generic_hash.py::test_lag_hash[CRC-DST_MAC:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
+
+hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-DST_MAC:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
+
+hash/test_generic_hash.py::test_lag_hash[CRC-ETHERTYPE:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
+
+hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-ETHERTYPE:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
+
+hash/test_generic_hash.py::test_lag_hash[CRC-VLAN_ID:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
+
+hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-VLAN_ID:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4436939"
 
 generic_config_updater:
   skip:
