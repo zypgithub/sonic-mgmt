@@ -43,7 +43,7 @@ def get_specified_installed_dpus_from_noga(topology_obj):
     Get specified installed dpus from noga
     """
     dut_attr = eval(topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])
-    specified_installed_dpus = dut_attr.get("installed_dpus", '')
+    specified_installed_dpus = dut_attr.get("installed_dpus", "dpu0,dpu1,dpu2,dpu3")
     logger.info(f"specified installed dpus from noga are :{specified_installed_dpus}")
     return specified_installed_dpus
 

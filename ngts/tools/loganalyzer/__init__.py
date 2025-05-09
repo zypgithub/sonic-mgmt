@@ -67,7 +67,7 @@ def duthosts(ansible_adhoc, topology_obj, request):
                             NvosCliTypes.NvueCliTypes:
                         logger.info(f'Ignore when NVOS dut is down')
                         continue
-                    elif isinstance(err, KeyError) and ('bf' in dut_hostname or 'dpu' in dut_hostname):
+                    elif isinstance(err, KeyError) and 'dpu' in dut_hostname:
                         logger.info(f'Ignore the DPUs on smart switch setup if the ansible host is not available')
                         continue
                     else:

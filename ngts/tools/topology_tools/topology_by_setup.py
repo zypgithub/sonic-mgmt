@@ -45,9 +45,6 @@ def add_dpu_player(topology, slow_cli, override_type):
                         'IP': topology.players['dut']['engine'].ip,
                         }
     dpu_indexes = get_specified_installed_dpu_indexes()
-    if not dpu_indexes:
-        dpu_indexes = [0, 1, 2, 3]
-
     base_dpu_ssh_nat_port = 5021
 
     for dpu_index in dpu_indexes:
