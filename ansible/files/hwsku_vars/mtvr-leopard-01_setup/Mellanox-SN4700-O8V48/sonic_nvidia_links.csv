@@ -51,8 +51,8 @@ mtvr-leopard-01,Ethernet224,mtvr-leopard-02,Ethernet224,200000,349,Access,on
 mtvr-leopard-01,Ethernet228,mtvr-leopard-02,Ethernet228,200000,350,Access,on
 mtvr-leopard-01,Ethernet232,mtvr-leopard-02,Ethernet232,200000,351,Access,on
 mtvr-leopard-01,Ethernet236,mtvr-leopard-02,Ethernet236,200000,352,Access,on
-mtvr-leopard-01,Ethernet240,mtvr-leopard-02,Ethernet240,200000,353,Access,on
-mtvr-leopard-01,Ethernet244,mtvr-leopard-02,Ethernet244,200000,354,Access,on
+mtvr-leopard-01,Ethernet240,mtvr-leopard-02,Ethernet240,100000,353,Access,on
+mtvr-leopard-01,Ethernet244,mtvr-leopard-02,Ethernet244,100000,354,Access,on
 mtvr-leopard-01,Ethernet248,mtvr-leopard-02,Ethernet248,200000,355,Access,on
 mtvr-leopard-01,Ethernet252,mtvr-leopard-02,Ethernet252,200000,356,Access,on
 mtvr-leopard-02,Ethernet248,mtvr-r740-04,enp135s0f0,100000,301-356,Trunk,on
