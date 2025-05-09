@@ -7,6 +7,7 @@ import ipaddress
 import tempfile
 import scapy.all as scapy
 import ptf.testutils as testutils
+import random
 
 from ptf.mask import Mask
 from tests.common.config_reload import config_reload
@@ -15,36 +16,48 @@ from tests.common.utilities import wait_until
 from tests.common.helpers.srv6_helper import dump_packet_detail, validate_srv6_in_appl_db, validate_srv6_in_asic_db
 from tests.common.reboot import reboot
 from tests.packet_trimming.constants import (DEFAULT_SRC_PORT, DEFAULT_DST_PORT, DEFAULT_TTL, DUMMY_MAC, DUMMY_IPV6,
-                                             DUMMY_IP, BATCH_PACKET_COUNT, PACKET_COUNT, BLOCK_QUEUE_PROFILE,
+                                             DUMMY_IP, BATCH_PACKET_COUNT, PACKET_COUNT,
                                              BLOCK_DATA_PLANE_SCHEDULER_NAME, TRIM_QUEUE, PACKET_TYPE, SRV6_PACKETS,
                                              TRIM_QUEUE_PROFILE, TRIMMING_CAPABILITY, ACL_TABLE_NAME,
                                              ACL_RULE_PRIORITY, ACL_TABLE_TYPE_NAME, ACL_RULE_NAME, SRV6_MY_SID_LIST,
                                              SRV6_INNER_SRC_IP, SRV6_INNER_DST_IP, DEFAULT_QUEUE_SCHEDULER_CONFIG,
-                                             SRV6_UNIFORM_MODE, SRV6_OUTER_SRC_IPV6, SRV6_INNER_SRC_IPV6,
-                                             SRV6_INNER_DST_IPV6, SRV6_UN)
+                                             SRV6_UNIFORM_MODE, SRV6_OUTER_SRC_IPV6, SRV6_INNER_SRC_IPV6, ECN,
+                                             SRV6_INNER_DST_IPV6, SRV6_UN, ASYM_TC, ASYM_PORT_1_DSCP, ASYM_PORT_2_DSCP)
 
 logger = logging.getLogger(__name__)
 
 
-def configure_trimming_global(duthost, size, dscp, queue):
+def configure_trimming_global(duthost, size, queue, dscp=None, tc=None):
     """
     Configure global trimming settings.
 
     Args:
         duthost: DUT host object
         size (int): Trimming size in bytes
-        dscp (int): DSCP value for trimmed packets
         queue (int): Queue index for trimmed packets
+        dscp (int or str): DSCP value for trimmed packets or 'from-tc' to use TC-based DSCP
+        tc (int): Traffic Class value, required when dscp='from-tc'
+
+    Returns:
+        bool: True if configuration succeeded, False if failed
     """
     try:
-        logger.info(f"Configuring trimming global: size={size}, dscp={dscp}, queue={queue}")
-        cmd = f"config switch-trimming global --size {size} --dscp {dscp} --queue {queue}"
+        if dscp == 'from-tc':
+            if tc is None:
+                raise ValueError("TC value must be provided when dscp is 'from-tc'")
+            logger.info(f"Configuring trimming global: size={size}, queue={queue}, dscp=from-tc, tc={tc}")
+            cmd = f"config switch-trimming global --size {size} --queue {queue} --dscp from-tc --tc {tc}"
+        else:
+            logger.info(f"Configuring trimming global: size={size}, queue={queue}, dscp={dscp}")
+            cmd = f"config switch-trimming global --size {size} --queue {queue} --dscp {dscp}"
+
         duthost.shell(cmd)
         logger.info("Successfully configured global trimming")
+        return True
 
     except Exception as e:
         logger.error(f"Exception occurred while configuring trimming global: {e}")
-        raise
+        return False
 
 
 def get_trimming_global_status(duthost):
@@ -67,15 +80,16 @@ def get_trimming_global_status(duthost):
         return None
 
 
-def verify_trimming_config(duthost, size, dscp, queue):
+def verify_trimming_config(duthost, size, queue, dscp=None, tc=None):
     """
     Verify global trimming configuration meets expected values.
 
     Args:
         duthost: DUT host object
         size (int): Expected trimming size in bytes
-        dscp (int): Expected DSCP value for trimmed packets
         queue (int): Expected queue index for trimmed packets
+        dscp (int or str): Expected DSCP value for trimmed packets or 'from-tc' for TC-based DSCP
+        tc (int): Expected Traffic Class value, required when dscp='from-tc'
 
     Returns:
         bool: True if configuration matches expected values, False otherwise
@@ -84,7 +98,10 @@ def verify_trimming_config(duthost, size, dscp, queue):
         AssertionError: If any configuration value does not match expected value
     """
     try:
-        logger.info(f"Verifying trimming configuration: expected size={size}, dscp={dscp}, queue={queue}")
+        if dscp == 'from-tc':
+            logger.info(f"Verifying trimming configuration: expected size={size}, queue={queue}, dscp=from-tc, tc={tc}")
+        else:
+            logger.info(f"Verifying trimming configuration: expected size={size}, queue={queue}, dscp={dscp}")
 
         # Get current trimming configuration
         trimming_config = get_trimming_global_status(duthost)
@@ -96,11 +113,19 @@ def verify_trimming_config(duthost, size, dscp, queue):
         assert int(trimming_config.get("size", 0)) == int(size), \
             f"Trimming size mismatch: expected {size}, got {trimming_config.get('size')}"
 
-        assert int(trimming_config.get("dscp_value", 0)) == int(dscp), \
-            f"DSCP value mismatch: expected {dscp}, got {trimming_config.get('dscp_value')}"
-
         assert int(trimming_config.get("queue_index", 0)) == int(queue), \
             f"Queue index mismatch: expected {queue}, got {trimming_config.get('queue_index')}"
+
+        if dscp == 'from-tc':
+            # For from-tc configuration, verify dscp_mode and tc_value
+            assert trimming_config.get("dscp_value") == "from-tc", \
+                f"DSCP value mismatch: expected from-tc, got {trimming_config.get('dscp_value')}"
+            assert int(trimming_config.get("tc_value", 0)) == int(tc), \
+                f"TC value mismatch: expected {tc}, got {trimming_config.get('tc_value')}"
+        else:
+            # For direct DSCP configuration, verify dscp_value
+            assert int(trimming_config.get("dscp_value", 0)) == int(dscp), \
+                f"DSCP value mismatch: expected {dscp}, got {trimming_config.get('dscp_value')}"
 
         logger.info("Trimming configuration verification successful, all parameters match expected values")
         return True
@@ -164,12 +189,14 @@ def generate_packet(duthost, packet_type, dst_addr, send_pkt_size, send_pkt_dscp
             'ipv6_src': src_ip,
             'ipv6_dst': dst_ip,
             'ipv6_hlim': ip_ttl,
+            'ipv6_ecn': ECN,
             'ipv6_tc': ipv6_send_tc
         })
         recv_params.update({
             'ipv6_src': src_ip,
             'ipv6_dst': dst_ip,
             'ipv6_hlim': ip_ttl - 1,
+            'ipv6_ecn': ECN,
             'ipv6_tc': ipv6_recv_tc
         })
     else:  # IPv4
@@ -177,12 +204,14 @@ def generate_packet(duthost, packet_type, dst_addr, send_pkt_size, send_pkt_dscp
             'ip_src': src_ip,
             'ip_dst': dst_ip,
             'ip_ttl': ip_ttl,
+            'ip_ecn': ECN,
             'ip_dscp': send_pkt_dscp
         })
         recv_params.update({
             'ip_src': src_ip,
             'ip_dst': dst_ip,
             'ip_ttl': ip_ttl - 1,
+            'ip_ecn': ECN,
             'ip_dscp': recv_pkt_dscp
         })
 
@@ -473,6 +502,7 @@ def fill_egress_buffer(duthost, ptfadapter, port_id, buffer_size, target_queue, 
         udp_dport=DEFAULT_DST_PORT,
         ip_ttl=DEFAULT_TTL,
         ip_dscp=dscp_value,
+        ip_ecn=ECN,
         pktlen=fill_packet_size
     )
 
@@ -543,21 +573,18 @@ def fill_egress_buffer(duthost, ptfadapter, port_id, buffer_size, target_queue, 
     return total_sent_packets
 
 
-def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_pkt_dscp, recv_pkt_size, recv_pkt_dscp,
-                           packet_count=PACKET_COUNT, timeout=5, fill_buffer=True, expect_packets=True):
+def verify_packet_trimming(duthost, ptfadapter, ingress_port, egress_port, block_queue, send_pkt_size,
+                           send_pkt_dscp, recv_pkt_size, recv_pkt_dscp, packet_count=PACKET_COUNT, timeout=5,
+                           fill_buffer=True, expect_packets=True):
     """
     Verify packet trimming for all packet types with given parameters.
 
     Args:
         duthost: DUT host object
         ptfadapter: PTF adapter object
-        test_param (dict): Test parameters containing:
-            - dst_ipv4_addr: Destination IPv4 address
-            - dst_ipv6_addr: Destination IPv6 address
-            - downlink_port_ptf_id: Downlink port ID for sending packets
-            - uplink_port_ptf_id: Uplink port ID(s) for receiving packets (integer or list)
-            - uplink_port: List of uplink ports to apply trimming config
-            - block_queue: Queue to block for triggering trimming
+        ingress_port (dict): Ingress port
+        egress_port (dict): Egress port
+        block_queue (Queue): Queue for packet trimming
         send_pkt_size (int): Send packet size
         send_pkt_dscp (int): Send packet dscp
         recv_pkt_size (int): Expected packet size after trimming
@@ -574,11 +601,12 @@ def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_
     Raises:
         Exception: If packet verification fails
     """
+    logger.info(f"Verifying trim packet on {egress_port}")
     try:
         trimming_context = ConfigTrimming(
             duthost,
-            test_param['uplink_port'],
-            test_param['block_queue']
+            egress_port['name'],
+            block_queue
         )
 
         with trimming_context:
@@ -587,20 +615,20 @@ def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_
                 # Get buffer configuration and size to calculate how many packets to send
                 buffer_size = calculate_buffer_size_for_queue(
                     duthost,
-                    test_param['uplink_port'],
-                    test_param['block_queue']
+                    egress_port['name'],
+                    block_queue
                 )
 
                 # Fill buffer
                 fill_egress_buffer(
                     duthost,
                     ptfadapter,
-                    test_param['downlink_port_ptf_id'],
+                    ingress_port['ptf_id'],
                     buffer_size,
-                    test_param['block_queue'],
-                    test_param['dst_ipv4_addr'],
+                    block_queue,
+                    egress_port['ipv4'],
                     send_pkt_dscp,
-                    test_param['uplink_port']
+                    egress_port['name']
                 )
 
             # Test each packet type for trimming
@@ -608,8 +636,7 @@ def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_
                 logger.info(f"Testing packet type: {packet_type}")
 
                 # Get dst address
-                dst_addr = (
-                    test_param['dst_ipv4_addr'] if packet_type.startswith('ipv4') else test_param['dst_ipv6_addr'])
+                dst_addr = (egress_port['ipv4'] if packet_type.startswith('ipv4') else egress_port['ipv6'])
 
                 # Generate packet
                 pkt, exp_pkt = generate_packet(
@@ -631,38 +658,38 @@ def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_
                 ptfadapter.dataplane.flush()
 
                 # Send packet
-                logger.info(f"Sending {packet_count} packets from port {test_param['downlink_port_ptf_id']}")
+                logger.info(f"Sending {packet_count} packets from port {ingress_port['ptf_id']}")
                 testutils.send(
                     ptfadapter,
-                    port_id=test_param['downlink_port_ptf_id'],
+                    port_id=ingress_port['ptf_id'],
                     pkt=pkt,
                     count=packet_count
                 )
 
-                # Ensure uplink_port_ptf_id is in list format for ports parameter
-                verify_ports = test_param['uplink_port_ptf_id']
-                if not isinstance(verify_ports, list):
-                    verify_ports = [verify_ports]
+                # Get port info
+                verify_port = egress_port['ptf_id']
+                device = ptfadapter.dataplane.port_device_map[verify_port]
+                port_tuple = (device, verify_port)
 
                 # Verify packet based on expectation
                 if expect_packets:
                     logger.info(
-                        f"Expecting packets on ports {verify_ports} with size {recv_pkt_size} and DSCP {recv_pkt_dscp}")
-                    testutils.verify_packet_any_port(
+                        f"Expecting packets on ports {verify_port} with size {recv_pkt_size} and DSCP {recv_pkt_dscp}")
+                    testutils.verify_packet(
                         ptfadapter,
                         exp_pkt,
-                        ports=verify_ports,
+                        port_id=port_tuple,
                         timeout=timeout
                     )
                     logger.info(
                         f"Successfully verified {packet_type} packet trimming with size {recv_pkt_size} "
                         f"and DSCP {recv_pkt_dscp}")
                 else:
-                    logger.info(f"Expecting NO packets on ports {verify_ports}")
-                    testutils.verify_no_packet_any(
+                    logger.info(f"Expecting NO packets on ports {verify_port}")
+                    testutils.verify_no_packet(
                         ptfadapter,
                         exp_pkt,
-                        ports=verify_ports,
+                        port_id=verify_port,
                         timeout=timeout
                     )
                     logger.info(f"Successfully verified NO {packet_type} packets were received as expected")
@@ -674,8 +701,8 @@ def verify_packet_trimming(duthost, ptfadapter, test_param, send_pkt_size, send_
         raise
 
 
-def verify_srv6_packet_with_trimming(duthost, ptfadapter, config_setup, test_param, send_pkt_size, send_pkt_dscp,
-                                     recv_pkt_size, recv_pkt_dscp, fill_buffer=True):
+def verify_srv6_packet_with_trimming(duthost, ptfadapter, config_setup, ingress_port, egress_port, block_queue,
+                                     send_pkt_size, send_pkt_dscp, recv_pkt_size, recv_pkt_dscp, fill_buffer=True):
     """
     Verify packet trimming for all packet types with given parameters.
 
@@ -683,13 +710,9 @@ def verify_srv6_packet_with_trimming(duthost, ptfadapter, config_setup, test_par
         duthost: DUT host object
         ptfadapter: PTF adapter object
         config_setup: config_setup
-        test_param (dict): Test parameters containing:
-            - dst_ipv4_addr: Destination IPv4 address
-            - dst_ipv6_addr: Destination IPv6 address
-            - downlink_port_ptf_id: Downlink port ID for sending packets
-            - uplink_port_ptf_id: Uplink port ID(s) for receiving packets (integer or list)
-            - uplink_port: List of uplink ports to apply trimming config
-            - block_queue: Queue to block for triggering trimming
+        ingress_port (dict): Ingress port
+        egress_port (dict): Egress port
+        block_queue (Queue): Queue for packet trimming
         send_pkt_size (int): Send packet size
         send_pkt_dscp (int): Send packet dscp
         recv_pkt_size (int): Expected packet size after trimming
@@ -705,8 +728,8 @@ def verify_srv6_packet_with_trimming(duthost, ptfadapter, config_setup, test_par
     try:
         trimming_context = ConfigTrimming(
             duthost,
-            test_param['uplink_port'],
-            test_param['block_queue']
+            egress_port['name'],
+            block_queue
         )
 
         with trimming_context:
@@ -715,24 +738,24 @@ def verify_srv6_packet_with_trimming(duthost, ptfadapter, config_setup, test_par
                 # Get buffer configuration and size to calculate how many packets to send
                 buffer_size = calculate_buffer_size_for_queue(
                     duthost,
-                    test_param['uplink_port'],
-                    test_param['block_queue']
+                    egress_port['name'],
+                    block_queue
                 )
 
                 # Fill buffer
                 fill_egress_buffer(
                     duthost,
                     ptfadapter,
-                    test_param['downlink_port_ptf_id'],
+                    ingress_port['ptf_id'],
                     buffer_size,
-                    test_param['block_queue'],
-                    test_param['dst_ipv4_addr'],
+                    block_queue,
+                    egress_port['ipv4'],
                     send_pkt_dscp,
-                    test_param['uplink_port']
+                    egress_port['name']
                 )
 
-            validate_srv6_function(duthost, ptfadapter, config_setup, test_param, send_pkt_size, send_pkt_dscp,
-                                   recv_pkt_size, recv_pkt_dscp)
+            validate_srv6_function(duthost, ptfadapter, config_setup, ingress_port, egress_port, send_pkt_size,
+                                   send_pkt_dscp, recv_pkt_size, recv_pkt_dscp)
 
     except Exception as e:
         logger.error(f"Packet trimming verification failed: {str(e)}")
@@ -1060,7 +1083,7 @@ def cleanup_trimming_acl(duthost):
 
 
 def set_buffer_profiles_for_block_and_trim_queues(duthost, interfaces, block_queue_id,
-                                                  block_queue_profile=BLOCK_QUEUE_PROFILE, trim_queue_id=TRIM_QUEUE,
+                                                  block_queue_profile, trim_queue_id=TRIM_QUEUE,
                                                   trim_queue_profile=TRIM_QUEUE_PROFILE):
     """
     Set buffer profiles for blocked queue and forward trimming packet queue.
@@ -1069,7 +1092,7 @@ def set_buffer_profiles_for_block_and_trim_queues(duthost, interfaces, block_que
         duthost: DUT host object
         interfaces (list or str): Port names to configure, can be a list or single string
         block_queue_id: Queue index used for blocking traffic
-        block_queue_profile (str): Buffer profile name to apply for blocking queue (default: BLOCK_QUEUE_PROFILE)
+        block_queue_profile (str): Buffer profile name to apply for blocking queue
         trim_queue_id (int): Queue index used for packet trimming (default: TRIM_QUEUE)
         trim_queue_profile (str): Buffer profile name to apply for trimming queue (default: TRIM_QUEUE_PROFILE)
 
@@ -1274,20 +1297,20 @@ def update_service_port_qos_map(duthost, service_port):
     logger.info(f"Service port {service_port} QoS map configuration updated successfully")
 
 
-def get_test_ports(upstream_links, downstream_links):
+def get_test_ports(upstream_links, downstream_links, service_links):
     """
-    This function selects the first interface from upstream_links as uplink_port and
-    the first interface from downstream_links as downlink_port.
+    Select test ports for packet trimming test.
 
     Args:
         upstream_links (dict): Dictionary of upstream links with interfaces as keys
         downstream_links (dict): Dictionary of downstream links with interfaces as keys
+        service_links (dict): Dictionary of service links with interfaces as keys
 
     Returns:
-        tuple: (uplink_port, downlink_port)
-              A tuple containing two dictionaries, each with a single key-value pair:
-              - uplink_port: Dictionary with one interface from upstream_links
-              - downlink_port: Dictionary with one interface from downstream_links
+        dict: Dictionary containing selected test ports:
+            - 'ingress_port': dict, the first interface in downstream_links
+            - 'egress_port_1': dict, randomly selected from all interfaces in upstream_links and service_links
+            - 'egress_port_2': dict, randomly selected from all interfaces in downstream_links except the first one
 
     Example:
         uplink_port:
@@ -1297,21 +1320,39 @@ def get_test_ports(upstream_links, downstream_links):
         downlink_port:
         {'Ethernet192': {'name': 'ARISTA81T0', 'ptf_port_id': 84, 'downstream_port': 'Ethernet1'}}
     """
-    logger.info("Selecting the first interface from downstream and upstream links as test ports")
+    logger.info("Selecting test ports")
     logger.info(f"upstream_links: {upstream_links}")
     logger.info(f"downstream_links: {downstream_links}")
+    logger.info(f"service_links: {service_links}")
 
-    # Get the first upstream link
-    first_key_upstream = list(upstream_links.keys())[0]
-    uplink_port = {first_key_upstream: upstream_links[first_key_upstream]}
-    logger.info(f"Selected uplink port: {uplink_port}")
+    # ingress_port: the first downlink
+    ingress_key = list(downstream_links.keys())[0]
+    ingress_port = {ingress_key: downstream_links[ingress_key]}
+    logger.info(f"Selected ingress_port: {ingress_port}")
 
-    # Get the first downstream link
-    first_key_downstream = list(downstream_links.keys())[0]
-    downlink_port = {first_key_downstream: downstream_links[first_key_downstream]}
-    logger.info(f"Selected downlink port: {downlink_port}")
+    # egress_port_1: all interfaces in upstream_links and service_links are combined and randomly selected
+    combined_links = {**upstream_links, **service_links}
+    combined_keys = list(combined_links.keys())
+    if not combined_keys:
+        raise ValueError("No available interfaces in upstream_links and service_links for egress_port_1")
+    egress1_key = random.choice(combined_keys)
+    egress_port_1 = {egress1_key: combined_links[egress1_key]}
+    logger.info(f"Selected egress_port_1: {egress_port_1}")
 
-    return uplink_port, downlink_port
+    # egress_port_2: all interfaces in downstream_links except the first interface are randomly selected
+    downstream_keys = list(downstream_links.keys())
+    candidate_downstream_keys = downstream_keys[1:]
+    if not candidate_downstream_keys:
+        raise ValueError("No available downstream_links for egress_port_2 except ingress_port")
+    egress2_key = random.choice(candidate_downstream_keys)
+    egress_port_2 = {egress2_key: downstream_links[egress2_key]}
+    logger.info(f"Selected egress_port_2: {egress_port_2}")
+
+    return {
+        "ingress_port": ingress_port,
+        "egress_port_1": egress_port_1,
+        "egress_port_2": egress_port_2
+    }
 
 
 def get_interface_peer_addresses(mg_facts, interface_name):
@@ -1354,8 +1395,8 @@ def get_interface_peer_addresses(mg_facts, interface_name):
     return ipv4_peer_addr, ipv6_peer_addr
 
 
-def validate_srv6_function(duthost, ptfadapter, dscp_mode, test_param, send_pkt_size, send_pkt_dscp, recv_pkt_size,
-                           recv_pkt_dscp):
+def validate_srv6_function(duthost, ptfadapter, dscp_mode, ingress_port, egress_port, send_pkt_size, send_pkt_dscp,
+                           recv_pkt_size, recv_pkt_dscp):
     """
     Validate SRv6 functionality
 
@@ -1363,7 +1404,8 @@ def validate_srv6_function(duthost, ptfadapter, dscp_mode, test_param, send_pkt_
         duthost: DUT host object
         ptfadapter: PTF adapter object
         dscp_mode (str): DSCP mode ('pipe' or 'uniform')
-        test_param (dict): Test parameters dictionary containing interface and port information
+        ingress_port (dict): Ingress port
+        egress_port (dict): Egress port
         send_pkt_size (int): Size of the packet to send
         send_pkt_dscp (int): DSCP value of the packet to send
         recv_pkt_size (int): Expected size of the received packet after trimming
@@ -1444,18 +1486,17 @@ def validate_srv6_function(duthost, ptfadapter, dscp_mode, test_param, send_pkt_
             exp_pkt_len=actual_recv_pkt_size
         )
 
-        # Ensure uplink_port_ptf_id is in list format for ports parameter
-        verify_ports = test_param['uplink_port_ptf_id']
-        if not isinstance(verify_ports, list):
-            verify_ports = [verify_ports]
+        verify_port = egress_port['ptf_id']
+        device = ptfadapter.dataplane.port_device_map[verify_port]
+        port_tuple = (device, verify_port)
 
         send_verify_srv6_packet_for_trimming(
             ptfadapter=ptfadapter,
             pkt=srv6_pkt,
             exp_pkt=exp_pkt,
             exp_pro=srv6_packet["exp_process_result"],
-            ptf_src_port_id=test_param['downlink_port_ptf_id'],
-            ptf_dst_port_ids=verify_ports,
+            ptf_src_port_id=ingress_port['ptf_id'],
+            ptf_dst_port_ids=port_tuple,
             packet_num=PACKET_COUNT
         )
 
@@ -1525,6 +1566,7 @@ def create_srv6_packet_for_trimming(
             ip_src=inner_src_ip,
             ip_dst=inner_dst_ip,
             ip_dscp=inner_dscp if inner_dscp else 0,
+            ip_ecn=ECN,
             pktlen=pkt_len
         )
 
@@ -1533,6 +1575,7 @@ def create_srv6_packet_for_trimming(
             ip_src=inner_src_ip,
             ip_dst=inner_dst_ip,
             ip_dscp=exp_inner_dscp,
+            ip_ecn=ECN,
             pktlen=exp_pkt_len
         )
         scapy_ver = scapy.IP
@@ -1543,6 +1586,7 @@ def create_srv6_packet_for_trimming(
             ipv6_src=inner_src_ipv6,
             ipv6_dst=inner_dst_ipv6,
             ipv6_dscp=inner_dscp if inner_dscp else 0,
+            ipv6_ecn=ECN,
             pktlen=pkt_len
         )
 
@@ -1551,6 +1595,7 @@ def create_srv6_packet_for_trimming(
             ipv6_src=inner_src_ipv6,
             ipv6_dst=inner_dst_ipv6,
             ipv6_dscp=exp_inner_dscp,
+            ipv6_ecn=ECN,
             pktlen=exp_pkt_len
         )
         scapy_ver = scapy.IPv6
@@ -1670,7 +1715,7 @@ def send_verify_srv6_packet_for_trimming(
         exp_pkt: Expected packet
         exp_pro (str): Expected process result ('forward' or 'drop')
         ptf_src_port_id (int): Source PTF port ID
-        ptf_dst_port_ids (list): List of destination PTF port IDs
+        ptf_dst_port_ids:
         packet_num (int): Number of packets to send (default: 10)
     """
     ptfadapter.dataplane.flush()
@@ -1683,10 +1728,10 @@ def send_verify_srv6_packet_for_trimming(
 
     try:
         if exp_pro == 'forward':
-            port_index, _ = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)
-            logger.info(f'Received packet(s) on port {ptf_dst_port_ids[port_index]}\n')
+            testutils.verify_packet(ptfadapter, exp_pkt, port_id=ptf_dst_port_ids)
+            logger.info('Successfully received packets')
         elif exp_pro == 'drop':
-            testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)
+            testutils.verify_no_packet(ptfadapter, exp_pkt, port_id=ptf_dst_port_ids)
             logger.info(f'No packet received on {ptf_dst_port_ids}')
         else:
             logger.error(f'Wrong expected process result: {exp_pro}')
@@ -1727,3 +1772,221 @@ def reboot_dut(duthost, localhost, reboot_type):
         logger.info('Performing cold reboot')
         reboot(duthost, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
                safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
+
+
+def configure_tc_to_dscp_map(duthost, egress_ports):
+    """
+    Configure TC to DSCP mapping and apply it to the specified egress ports.
+
+    Args:
+        duthost: DUT host object
+        egress_ports (list): List of egress port dicts
+
+    Example:
+        {
+            "TC_TO_DSCP_MAP": {
+                "spine_trim_map": {
+                    "5": "10"
+                },
+                "host_trim_map": {
+                    "5": "20"
+                }
+            },
+            "PORT_QOS_MAP": {
+                "Ethernet64": {
+                    "tc_to_dscp_map": "spine_trim_map"
+                },
+                "Ethernet8": {
+                    "tc_to_dscp_map": "host_trim_map"
+                }
+            }
+        }
+    """
+    logger.info("Configuring TC_TO_DSCP_MAP for asymmetric DSCP")
+
+    tc_to_dscp_map = {"spine_trim_map": {ASYM_TC: ASYM_PORT_1_DSCP}}
+    port_qos_map = {egress_ports[0]['name']: {"tc_to_dscp_map": "spine_trim_map"}}
+
+    if len(egress_ports) == 2:
+        tc_to_dscp_map["host_trim_map"] = {ASYM_TC: ASYM_PORT_2_DSCP}
+        port_qos_map[egress_ports[1]['name']] = {"tc_to_dscp_map": "host_trim_map"}
+
+    if len(egress_ports) not in (1, 2):
+        raise ValueError("egress_ports should have 1 or 2 ports")
+
+    tc_to_dscp_config = {
+        "TC_TO_DSCP_MAP": tc_to_dscp_map,
+        "PORT_QOS_MAP": port_qos_map
+    }
+    logger.info(f"TC_TO_DSCP_MAP configuration: {tc_to_dscp_config}")
+
+    # Create temporary JSON file
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp_file:
+        temp_file_path = temp_file.name
+        json.dump(tc_to_dscp_config, temp_file, indent=4)
+
+    # Copy JSON file to DUT
+    dut_json_path = "/tmp/tc_to_dscp_map.json"
+    duthost.copy(src=temp_file_path, dest=dut_json_path)
+
+    # Remove local temporary file
+    os.unlink(temp_file_path)
+
+    # Apply configuration
+    logger.info(f"Applying TC_TO_DSCP_MAP configuration: {dut_json_path}")
+    duthost.shell(f"sonic-cfggen -w -j {dut_json_path}")
+
+    logger.info("TC_TO_DSCP_MAP configuration applied successfully")
+
+
+def remove_tc_to_dscp_map(duthost):
+    """
+    Remove TC_TO_DSCP_MAP configuration, but keep PORT_QOS_MAP.
+
+    Args:
+        duthost: DUT host object
+    """
+    logger.info("Removing TC_TO_DSCP_MAP configuration")
+
+    # Construct configuration with empty TC_TO_DSCP_MAP
+    tc_to_dscp_config = {
+        "TC_TO_DSCP_MAP": {}
+    }
+    logger.info(f"TC_TO_DSCP_MAP removal config: {tc_to_dscp_config}")
+
+    # Create temporary JSON file
+    with tempfile.NamedTemporaryFile(mode='w+', suffix='.json', delete=False) as temp_file:
+        temp_file_path = temp_file.name
+        json.dump(tc_to_dscp_config, temp_file, indent=4)
+
+    # Copy JSON file to DUT
+    dut_json_path = "/tmp/tc_to_dscp_map_remove.json"
+    duthost.copy(src=temp_file_path, dest=dut_json_path)
+
+    # Remove local temporary file
+    os.unlink(temp_file_path)
+
+    # Apply configuration
+    logger.info(f"Applying TC_TO_DSCP_MAP removal config: {dut_json_path}")
+    duthost.shell(f"sonic-cfggen -w -j {dut_json_path}")
+
+    logger.info("TC_TO_DSCP_MAP configuration removed successfully")
+
+
+def verify_asymmetric_dscp_packet_trimming(
+    duthost, ptfadapter, ingress_port, egress_ports, block_queue, send_pkt_size, send_pkt_dscp, recv_pkt_size,
+    recv_pkt_dscp_port1, recv_pkt_dscp_port2, expect_packets=True):
+    """
+    Verify packet trimming in asymmetric DSCP mode for one or two egress ports.
+
+    Args:
+        duthost: DUT host object
+        ptfadapter: PTF adapter object
+        ingress_port (dict): Ingress port
+        egress_ports (list): List of egress port dicts
+        block_queue: Queue for packet trimming
+        send_pkt_size (int): Send packet size
+        send_pkt_dscp (int): Send packet dscp
+        recv_pkt_size (int): Expected packet size after trimming
+        recv_pkt_dscp_port1 (int): DSCP value for the first egress port
+        recv_pkt_dscp_port2 (int): DSCP value for the second egress port
+        expect_packets (bool): Whether to expect packets to be received (default: True)
+    """
+    dscp_list = [recv_pkt_dscp_port1]
+    if len(egress_ports) == 2:
+        dscp_list.append(recv_pkt_dscp_port2)
+
+    for egress_port, dscp in zip(egress_ports, dscp_list):
+        logger.info(f"Verifying packet trimming for egress port {egress_port['name']} with DSCP {dscp}")
+        verify_packet_trimming(
+            duthost=duthost,
+            ptfadapter=ptfadapter,
+            ingress_port=ingress_port,
+            egress_port=egress_port,
+            block_queue=block_queue,
+            send_pkt_size=send_pkt_size,
+            send_pkt_dscp=send_pkt_dscp,
+            recv_pkt_size=recv_pkt_size,
+            recv_pkt_dscp=dscp,
+            expect_packets=expect_packets
+        )
+
+
+def verify_normal_packet(duthost, ptfadapter, ingress_port, egress_port, send_pkt_size, send_pkt_dscp, recv_pkt_size,
+                         recv_pkt_dscp, packet_count=PACKET_COUNT, timeout=5, expect_packets=True):
+    """
+    Verify normal packet transmission and reception.
+
+    Args:
+        duthost: DUT host object
+        ptfadapter: PTF adapter object
+        ingress_port (dict): Ingress port
+        egress_port (dict): Egress port
+        send_pkt_size (int): Packet size to send
+        send_pkt_dscp (int): DSCP value to send
+        recv_pkt_size (int): Expected received packet size
+        recv_pkt_dscp (int): Expected received DSCP value
+        packet_count (int): Number of packets to send, default 10
+        timeout (int): Verification timeout, default 5 seconds
+        expect_packets (bool): Whether to expect packets, default True
+    """
+    for packet_type in PACKET_TYPE:
+        logger.info(f"Testing normal packet type: {packet_type}")
+
+        # Get destination address
+        dst_addr = egress_port['ipv4'] if packet_type.startswith('ipv4') else egress_port['ipv6']
+
+        # Generate packet
+        pkt, exp_pkt = generate_packet(
+            duthost,
+            packet_type,
+            dst_addr,
+            send_pkt_size,
+            send_pkt_dscp,
+            recv_pkt_size,
+            recv_pkt_dscp
+        )
+
+        logger.info('Send packet format:\n ---------------------------')
+        logger.info(f'{dump_packet_detail(pkt)}\n---------------------------')
+        logger.info('Expect receive packet format:\n ---------------------------')
+        logger.info(f'{dump_packet_detail(exp_pkt.exp_pkt)}\n---------------------------')
+
+        # Flush dataplane
+        ptfadapter.dataplane.flush()
+
+        # Send packet
+        logger.info(f"Sending {packet_count} packets from port {ingress_port['ptf_id']}")
+        testutils.send(
+            ptfadapter,
+            port_id=ingress_port['ptf_id'],
+            pkt=pkt,
+            count=packet_count
+        )
+
+        # Get verify port
+        verify_port = egress_port['ptf_id']
+        device = ptfadapter.dataplane.port_device_map[verify_port]
+        port_tuple = (device, verify_port)
+
+        # Verify packet
+        if expect_packets:
+            logger.info(f"Expecting packets on ports {verify_port} with size {recv_pkt_size} and DSCP {recv_pkt_dscp}")
+            testutils.verify_packet(
+                ptfadapter,
+                exp_pkt,
+                port_id=port_tuple,
+                timeout=timeout
+            )
+            logger.info(f"Successfully verified normal packet with size {recv_pkt_size}")
+        else:
+            logger.info(f"Expecting NO packets on ports {verify_port}")
+            testutils.verify_no_packet(
+                ptfadapter,
+                exp_pkt,
+                port_id=verify_port,
+                timeout=timeout
+            )
+            logger.info(f"Successfully verified NO {packet_type} packets were received as expected")
+
+    return True

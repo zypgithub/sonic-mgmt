@@ -4,16 +4,29 @@ TRIM_DSCP = 48
 TRIM_QUEUE = 6
 TRIM_SIZE_MAX = 4084
 
-VALID_TRIMMING_CONFIGS = [
+VALID_TRIMMING_CONFIGS_SYM = [
     (300, 32, 5),    # Valid values
     (256, 0, 0),     # Min Boundary values
     (4084, 63, 7)    # Max Boundary values
 ]
 
-INVALID_TRIMMING_CONFIGS = [
+INVALID_TRIMMING_CONFIGS_SYM = [
     (1.1, 32, 5),    # Invalid size value
     (256, -1, 5),    # Invalid dscp value
     (256, 63, -3.0)  # Invalid queue value
+]
+
+VALID_TRIMMING_CONFIGS_ASYM = [
+    (300, 'from-tc', 3, 5),     # Valid values
+    (256, 'from-tc', 0, 0),     # Min Boundary values
+    (4084, 'from-tc', 6, 14)    # Max Boundary values
+]
+
+INVALID_TRIMMING_CONFIGS_ASYM = [
+    (1.1, 'from-tc', 3, 5),     # Invalid size value
+    (256, 'test', 3, 5),        # Invalid dscp value
+    (256, 'from-tc', -3.0, 5),  # Invalid queue value
+    (300, 'from-tc', 3, 256)    # Invalid tc value
 ]
 
 # ACL configuration constants
@@ -31,7 +44,7 @@ DEFAULT_SRC_IPV6 = "2001:db8::1"
 DEFAULT_DST_IPV6 = "2001:db8::2"
 DEFAULT_SRC_PORT = 4321
 DEFAULT_DST_PORT = 1234
-DEFAULT_DSCP = 0
+DEFAULT_DSCP = 1   # Map to queue1
 DEFAULT_PACKET_SIZE = 400
 DEFAULT_TTL = 64
 JUMBO_PACKET_SIZE = 5000
@@ -41,16 +54,23 @@ DUMMY_IPV6 = "8000::2"
 DUMMY_MAC = "00:11:22:33:44:55"
 PACKET_COUNT = 10
 BATCH_PACKET_COUNT = 10000
+ECN = 2   # ECN Capable Transport(0), ECT(0)
 
 # Buffer configuration constants
-BLOCK_QUEUE_PROFILE = f"queue{DEFAULT_DSCP}_lossy_profile"
 TRIM_QUEUE_PROFILE = "egress_lossless_profile"
 DYNAMIC_TH = "3"
 TRIMMING_CAPABILITY = "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT=257"
 
+# Asymmetric DSCP constants
+ASYM_TC = TRIM_QUEUE
+ASYM_PORT_1_DSCP = 10
+ASYM_PORT_2_DSCP = 20
+
 # Test constants
-PORT_TOGGLE_COUNT = 10  # number of times to toggle admin state
+PORT_TOGGLE_COUNT = 10    # number of times to toggle admin state
 CONFIG_TOGGLE_COUNT = 10  # number of times to toggle configuration
+MODE_TOGGLE_COUNT = 5     # number of times to toggle Symmetric and Asymmetric mode
+NORMAL_PACKET_DSCP = 4    # DSCP value for normal packet
 
 BLOCK_DATA_PLANE_SCHEDULER_NAME = "SCHEDULER_BLOCK_DATA_PLANE"
 DATA_PLANE_QUEUE_LIST = ["0", "1", "2", "3", "4", "5", "6"]

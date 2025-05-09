@@ -14,13 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def downstream_links(rand_selected_dut, tbinfo):
+def downstream_links(rand_selected_dut, tbinfo, nbrhosts):
     """
     Returns a dictionary of all the links that are downstream from the DUT.
 
     Args:
         rand_selected_dut: DUT fixture
         tbinfo: testbed information fixture
+        nbrhosts: neighbor host fixture
     Returns:
         links: Dictionary of links downstream from the DUT
     """
@@ -28,12 +29,32 @@ def downstream_links(rand_selected_dut, tbinfo):
     duthost = rand_selected_dut
 
     def filter(interface, neighbor, mg_facts, tbinfo):
-        if ((tbinfo["topo"]["type"] == "t0" and "Server" in neighbor["name"])
-                or (tbinfo["topo"]["type"] == "t1" and "T0" in neighbor["name"])):
-            port = mg_facts["minigraph_neighbors"][interface]["port"]
+        port = mg_facts["minigraph_neighbors"][interface]["port"]
+        ptf_port_id = mg_facts["minigraph_ptf_indices"][interface]
+        if tbinfo["topo"]["type"] == "t1" and "T0" in neighbor["name"]:
+            # Search for BGP neighbor information
+            local_ipv4_addr = None
+            peer_ipv4_addr = None
+            for item in mg_facts["minigraph_bgp"]:
+                if item["name"] == neighbor["name"]:
+                    if isinstance(ip_address(item["addr"]), IPv4Address):
+                        # The address of neighbor device
+                        local_ipv4_addr = item["addr"]
+                        # The address of DUT
+                        peer_ipv4_addr = item["peer_addr"]
+                        break
             links[interface] = {
                 "name": neighbor["name"],
-                "ptf_port_id": mg_facts["minigraph_ptf_indices"][interface],
+                "ptf_port_id": ptf_port_id,
+                "local_ipv4_addr": local_ipv4_addr,
+                "peer_ipv4_addr": peer_ipv4_addr,
+                "downstream_port": port,
+                "host": nbrhosts[neighbor["name"]]["host"]
+            }
+        elif tbinfo["topo"]["type"] == "t0" and "Server" in neighbor["name"]:
+            links[interface] = {
+                "name": neighbor["name"],
+                "ptf_port_id": ptf_port_id,
                 "downstream_port": port
             }
 
