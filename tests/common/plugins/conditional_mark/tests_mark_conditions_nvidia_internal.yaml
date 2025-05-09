@@ -1334,23 +1334,14 @@ tests/nightly/lag/test_lag.py:
 
 srv6/:
   skip:
-    reason: "Testcase ignored due to only support SRv6 function since branch 202412"
+    reason: "Testcase ignored on not supported platforms and branches"
     conditions_logical_operator: or
     conditions:
       - "'202405' in release"
       - "'202411' in release"
-
-srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_config_reload:
-  skip:
-    reason: "Testcase ignored due to test issue"
-
-srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_bgp_restart:
-  skip:
-    reason: "Testcase ignored due to test issue"
-
-srv6/test_srv6_dataplane.py::test_srv6_dataplane_after_reboot:
-  skip:
-    reason: "Testcase ignored due to test issue"
+      - "'sn2' in platform"
+      - "'sn3' in platform"
+      - "'sn4' in platform"
 
 console/test_console_driver.py:
   skip:
