@@ -418,7 +418,11 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
         inconsistent_config = {}
 
         # Ignore the following keys in the comparison as they are expected and are not considered as stale configurations.
-        exclude_config_table_names = {"LOGGER"}
+        # after upgrading from 202411 to current master RC, the new OS will add
+        # extra default configurations for KDUMP, we don't care about KDUMP configurations
+        # for existed cases so far. If KDUMP configurations need to be considered,
+        # please remove the key from the exclude_config_table_names list.
+        exclude_config_table_names = {"LOGGER", "KDUMP"}
 
         pre_running_config = dut_data["pre_running_config"]
         cur_running_config = dut_data["cur_running_config"]
