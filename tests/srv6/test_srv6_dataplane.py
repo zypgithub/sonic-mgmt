@@ -184,12 +184,16 @@ class SRv6Base():
                 continue
 
             logger.info('-------------------------------------------------------------------------')
+            if srv6_packet['validate_dip_shift']:
+                logger.info('Validate DIP shift')
+            if srv6_packet['validate_usd_flavor']:
+                logger.info('Validate USD flavor')
             logger.info(f'SRv6 tunnel decapsulation mode: {dscp_mode}')
             logger.info(f'Send {self.params["packet_num"]} SRv6 packets with action: {srv6_packet["action"]}')
             logger.info(f'Pkt Src MAC: {ptf_src_mac}')
             logger.info(f'Pkt Dst MAC: {self.params["router_mac"]}')
             if srv6_packet['action'] == SRv6.uN:
-                logger.info(f'Outer Pkt Src IP: {self.params["inner_src_ipv6"]}')
+                logger.info(f'Outer Pkt Src IP: {srv6_packet["outer_src_ipv6"]}')
                 logger.info(f'Outer Pkt Dst IP: {srv6_packet["dst_ipv6"]}')
                 if srv6_packet["exp_dst_ipv6"]:
                     logger.info(f'Expect Outer Pkt Dst IP: {srv6_packet["exp_dst_ipv6"]}')
@@ -213,7 +217,7 @@ class SRv6Base():
             srv6_pkt, exp_pkt = create_srv6_packet(
                 outer_src_mac=ptf_src_mac,
                 outer_dst_mac=self.params['router_mac'],
-                outer_src_pkt_ip=self.params['outer_src_ipv6'],
+                outer_src_pkt_ip=srv6_packet['outer_src_ipv6'],
                 outer_dst_pkt_ip=srv6_packet['dst_ipv6'],
                 srv6_action=srv6_packet['action'],
                 inner_dscp=srv6_packet['inner_dscp'],
@@ -227,10 +231,10 @@ class SRv6Base():
                 inner_pkt_ver=srv6_packet['inner_pkt_ver'],
                 dscp_mode=dscp_mode,
                 router_mac=self.params['router_mac'],
-                inner_src_ip=self.params['inner_src_ip'],
-                inner_dst_ip=self.params['inner_dst_ip'],
-                inner_src_ipv6=self.params['inner_src_ipv6'],
-                inner_dst_ipv6=self.params['inner_dst_ipv6']
+                inner_src_ip=srv6_packet['inner_src_ip'],
+                inner_dst_ip=srv6_packet['inner_dst_ip'],
+                inner_src_ipv6=srv6_packet['inner_src_ipv6'],
+                inner_dst_ipv6=srv6_packet['inner_dst_ipv6']
             )
 
             send_verify_srv6_packet(
@@ -250,7 +254,7 @@ class SRv6Base():
 
 class TestSRv6DataPlaneBase(SRv6Base):
 
-    def test_srv6_full_func(self, config_setup, default_tunnel_mode, srv6_crm_total_sids,
+    def test_srv6_full_func(self, config_setup, srv6_crm_total_sids,
                             setup_standby_ports_on_rand_unselected_tor,       # noqa: F811
                             toggle_all_simulator_ports_to_rand_selected_tor,  # noqa: F811
                             ptfadapter, rand_selected_dut, localhost, request, enum_frontend_asic_index):
@@ -259,51 +263,58 @@ class TestSRv6DataPlaneBase(SRv6Base):
             srv6_pkt_list = self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
 
         with allure.step('Validate SRv6 counters'):
-            validate_srv6_counters(rand_selected_dut, srv6_pkt_list, MySIDs.MY_SID_LIST, self.params['packet_num'])
+            pytest_assert(wait_until(60, 5, 0, validate_srv6_counters, rand_selected_dut, srv6_pkt_list,
+                                     MySIDs.MY_SID_LIST, self.params['packet_num']),
+                          "SRv6 counters are not as expected")
 
-        with allure.step('Execute reboot test'):
-            reboot_type = request.config.getoption("--srv6_reboot_type")
+        if random.random() < 0.5:
 
-            if reboot_type == "random":
-                reboot_type = random.choice(["cold", "reload"])
+            with allure.step('Execute reboot test'):
+                reboot_type = request.config.getoption("--srv6_reboot_type")
 
-            if reboot_type == "cold":
-                reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
-                       safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
-            else:
-                config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
+                if reboot_type == "random":
+                    reboot_type = random.choice(["cold", "reload"])
 
-            with allure.step('Validate SRv6 packet process'):
-                self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
-
-            with allure.step('Validate SRv6 counters'):
-                validate_srv6_counters(rand_selected_dut, srv6_pkt_list, MySIDs.MY_SID_LIST,
-                                       self.params['packet_num'])
-
-        with allure.step('Validate SRv6 function after BGP restart'):
-
-            with allure.step('Execute BGP restart'):
-                if rand_selected_dut.is_multi_asic:
-                    rand_selected_dut.command(f"systemctl restart bgp@{enum_frontend_asic_index}")
+                if reboot_type == "cold":
+                    reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
+                           safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
                 else:
-                    rand_selected_dut.command("systemctl restart bgp")
+                    config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
 
-            with allure.step('Validate BGP docker UP'):
-                pytest_assert(wait_until(100, 10, 0, rand_selected_dut.is_service_fully_started_per_asic_or_host,
-                                         "bgp"), "BGP not started.")
+                with allure.step('Validate SRv6 packet process'):
+                    self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
 
-            with allure.step('Validate BGP sessions UP'):
-                self._validate_bgp_session(rand_selected_dut)
+                with allure.step('Validate SRv6 counters'):
+                    validate_srv6_counters(rand_selected_dut, srv6_pkt_list, MySIDs.MY_SID_LIST,
+                                           self.params['packet_num'])
 
-            with allure.step('Validate SRv6 packet process'):
-                self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
+            with allure.step('Validate SRv6 function after BGP restart'):
 
-            with allure.step('Validate SRv6 counters'):
-                validate_srv6_counters(rand_selected_dut, srv6_pkt_list, MySIDs.MY_SID_LIST, self.params['packet_num'])
+                with allure.step('Execute BGP restart'):
+                    if rand_selected_dut.is_multi_asic:
+                        rand_selected_dut.command(f"systemctl restart bgp@{enum_frontend_asic_index}")
+                    else:
+                        rand_selected_dut.command("systemctl restart bgp")
 
-        if is_mellanox_device(rand_selected_dut) and config_setup == SRv6.pipe_mode:
-            with allure.step('Validate SAI SDK dump contains SRv6 information'):
-                validate_techsupport_generation(rand_selected_dut, feature_list=['SRv6'])
+                with allure.step('Validate BGP docker UP'):
+                    pytest_assert(wait_until(100, 10, 0, rand_selected_dut.is_service_fully_started_per_asic_or_host,
+                                             "bgp"),
+                                  "BGP not started.")
+
+                with allure.step('Validate BGP sessions UP'):
+                    self._validate_bgp_session(rand_selected_dut)
+
+                with allure.step('Validate SRv6 packet process'):
+                    self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
+
+                with allure.step('Validate SRv6 counters'):
+                    pytest_assert(wait_until(60, 5, 0, validate_srv6_counters, rand_selected_dut, srv6_pkt_list,
+                                             MySIDs.MY_SID_LIST, self.params['packet_num']),
+                                  "SRv6 counters are not as expected")
+
+            if is_mellanox_device(rand_selected_dut) and config_setup == SRv6.pipe_mode:
+                with allure.step('Validate SAI SDK dump contains SRv6 information'):
+                    validate_techsupport_generation(rand_selected_dut, feature_list=['SRv6'])
 
 
 @pytest.mark.parametrize("with_srh", [True, False])

@@ -17,24 +17,11 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='class')
-def default_tunnel_mode(rand_selected_dut):
-    default_tunnel_mode = rand_selected_dut.shell(
-        'sonic-db-cli APPL_DB HGET "TUNNEL_DECAP_TABLE:IPINIP_V6_TUNNEL" "dscp_mode"')["stdout"]
-    yield default_tunnel_mode
-
-
-@pytest.fixture(scope='class')
-def prepare_param(rand_selected_dut, tbinfo, mg_facts, downstream_links, upstream_links,  # noqa: F811
-                  default_tunnel_mode):  # noqa F811
+def prepare_param(rand_selected_dut, srv6_packet_type, downstream_links, upstream_links):  # noqa F811
     prepare_param = {}
-    prepare_param['inner_src_ip'] = '1.1.1.1'
-    prepare_param['inner_dst_ip'] = '2.2.2.2'
-    prepare_param['inner_src_ipv6'] = '2000::1'
-    prepare_param['inner_dst_ipv6'] = '3000::2'
-    prepare_param['outer_src_ipv6'] = '1000:1000::1'
     prepare_param['packet_num'] = 100
     prepare_param['router_mac'] = rand_selected_dut.facts["router_mac"]
-    prepare_param['srv6_packets'] = SRv6Packets.srv6_packets
+    prepare_param['srv6_packets'] = SRv6Packets.generate_srv6_packets(MyLocators.my_locator_list, srv6_packet_type)
     prepare_param['srv6_next_header'] = SRv6Packets.srv6_next_header
 
     downlink = select_random_link(downstream_links)
@@ -69,8 +56,8 @@ def srv6_crm_total_sids(rand_selected_dut):
     rand_selected_dut.command(f"crm config polling interval {original_crm_polling_interval}")
 
 
-@pytest.fixture(params=MySIDs.TUNNEL_MODE)
-def config_setup(request, rand_selected_dut, srv6_crm_total_sids):
+@pytest.fixture(scope="class", params=MySIDs.TUNNEL_MODE)
+def config_setup(request, rand_selected_dut, srv6_crm_total_sids, srv6_packet_type):
     '''
     Configure 10 instances of SRV6_MY_SIDS
     '''
@@ -136,3 +123,8 @@ def pytest_addoption(parser):
         required=False,
         help="reboot type such as random, reload, cold"
     )
+
+
+@pytest.fixture(scope="class", params=['srh', 'no_srh'])
+def srv6_packet_type(request):
+    return request.param

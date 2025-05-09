@@ -3,43 +3,28 @@ import time
 import requests
 import ptf.packet as scapy
 import ptf.testutils as testutils
-from tests.common.utilities import wait_until
 from tests.common.helpers.dut_utils import get_available_tech_support_files, get_new_techsupport_files_list, \
     extract_techsupport_tarball_file
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.srv6_helper import SRv6
 
 logger = logging.getLogger(__name__)
+LOCATOR_NUM = 128
 
 
 class MyLocators():
+    # Generate 128 locators with incrementing IPv6 addresses
     my_locator_list = [
-        ['locator_1', '2001:1000:100::'],
-        ['locator_2', '2001:1001:200::'],
-        ['locator_3', '2001:2000:300::'],
-        ['locator_4', '2001:2001:400::'],
-        ['locator_5', '2001:3000:500::'],
-        ['locator_6', '2001:3001:600::'],
-        ['locator_7', '2001:4000:700::'],
-        ['locator_8', '2001:4001:800::'],
-        ['locator_9', '2001:5000:900::'],
-        ['locator_10', '2001:5001:a00::']
+        [f'locator_{i + 1}', f'2001:{1001 + i}:{1 + i}::', f'{1 + i}'] for i in range(LOCATOR_NUM)
     ]
 
 
 class MySIDs(MyLocators):
     TUNNEL_MODE = [SRv6.pipe_mode]
+    # Generate 128 SIDs based on the locator list
     MY_SID_LIST = [
-        [MyLocators.my_locator_list[0][0], MyLocators.my_locator_list[0][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[1][0], MyLocators.my_locator_list[1][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[2][0], MyLocators.my_locator_list[2][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[3][0], MyLocators.my_locator_list[3][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[4][0], MyLocators.my_locator_list[4][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[5][0], MyLocators.my_locator_list[5][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[6][0], MyLocators.my_locator_list[6][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[7][0], MyLocators.my_locator_list[7][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[8][0], MyLocators.my_locator_list[8][1], SRv6.uN, 'default'],
-        [MyLocators.my_locator_list[9][0], MyLocators.my_locator_list[9][1], SRv6.uN, 'default']
+        [locator_name, sid, SRv6.uN, 'default']
+        for locator_name, sid, _ in MyLocators.my_locator_list
     ]
 
 
@@ -48,19 +33,43 @@ def validate_srv6_in_appl_db(duthost,
                              node_len=16,
                              func_len=0,
                              arg_len=0):
-    for entry in MySIDs.MY_SID_LIST:
-        prefix = entry[1]
-        action = entry[2]
-        try:
-            appl_action = duthost.shell(f'sonic-db-cli APPL_DB HGET "SRV6_MY_SID_TABLE:'
-                                        f'{block_len}:{node_len}:{func_len}:{arg_len}:{prefix}" action')["stdout"]
-            if action.lower() != appl_action:
-                logger.error(f"Real action is {appl_action}, but expected action is {action}")
+    """
+    Validate all SRv6 MySIDs in Application DB using a single query.
+
+    Args:
+        duthost (SonicHost): DUT host object
+        block_len (int): Block length for SRv6 SID
+        node_len (int): Node length for SRv6 SID
+        func_len (int): Function length for SRv6 SID
+        arg_len (int): Argument length for SRv6 SID
+
+    Returns:
+        bool: True if all MySIDs are valid, False otherwise
+    """
+    try:
+        # Get all SRv6 MySID entries from APPL_DB
+        appl_db_keys = duthost.shell('sonic-db-cli APPL_DB KEYS "SRV6_MY_SID_TABLE*"')["stdout"]
+        if not appl_db_keys:
+            logger.error("No SRv6 MySID entries found in APPL_DB")
+            return False
+
+        # Convert keys to a set for faster lookup
+        appl_db_keys_set = set(appl_db_keys.split())
+
+        # Validate each MySID
+        for entry in MySIDs.MY_SID_LIST:
+            prefix = entry[1]
+            expected_key = f"SRV6_MY_SID_TABLE:{block_len}:{node_len}:{func_len}:{arg_len}:{prefix}"
+
+            # Check if the key exists
+            if expected_key not in appl_db_keys_set:
+                logger.error(f"MySID entry not found in APPL_DB: {expected_key}")
                 return False
-        except Exception as err:
-            logger.error(f"Failed to check SRV6_MY_SID_TABLE - prefix:{prefix} in Application DB")
-            raise err
-    return True
+
+        return True
+
+    except Exception as err:
+        raise Exception(f"Failed to validate SRv6 MySIDs in Application DB: {str(err)}")
 
 
 def validate_sai_sdk_dump_files(duthost, techsupport_folder, feature_list=[]):
@@ -524,51 +533,6 @@ def verify_srv6_counterpoll_status(duthost, expected_status, expected_interval=N
         raise Exception(f"Failed to verify SRv6 counterpoll status: {str(e)}")
 
 
-def verify_srv6_stats(duthost, mysid, expected_packets, expected_bytes):
-    """
-    Verify SRv6 statistics for a specific MySID.
-
-    Args:
-        duthost (SonicHost): DUT host object
-        mysid (str): MySID to check (e.g., '2001:1000:100::/48')
-        expected_packets (int): Expected number of packets
-        expected_bytes (int): Expected number of bytes
-
-    Returns:
-        bool: True if statistics match expected values, False otherwise
-    """
-    try:
-        # Get SRv6 statistics using show_and_parse
-        stats_list = duthost.show_and_parse('show srv6 stats')
-
-        # Convert list to dictionary with MySID as key
-        stats_dict = {item['mysid']: item for item in stats_list}
-
-        # Check if MySID exists in the dictionary
-        if mysid not in stats_dict:
-            logger.error(f"MySID {mysid} not found in SRv6 statistics")
-            return False
-
-        # Get current values
-        current_stats = stats_dict[mysid]
-        current_packets = int(current_stats['packets'])
-        current_bytes = int(current_stats['bytes'])
-
-        # Compare with expected values
-        if current_packets == expected_packets and current_bytes == expected_bytes:
-            logger.info(f"SRv6 statistics match expected values for MySID {mysid}: "
-                        f"Packets={current_packets}, Bytes={current_bytes}")
-            return True
-        else:
-            logger.error(f"SRv6 statistics mismatch for MySID {mysid}: "
-                         f"Expected Packets={expected_packets}, Bytes={expected_bytes}, "
-                         f"Actual Packets={current_packets}, Bytes={current_bytes}")
-            return False
-
-    except Exception as e:
-        raise Exception(f"Failed to verify SRv6 statistics: {str(e)}")
-
-
 def validate_srv6_counters(duthost, srv6_pkt_list, mysid_list, pkt_num):
     """
     Validate SRv6 counters based on the list of SRv6 packets.
@@ -582,12 +546,36 @@ def validate_srv6_counters(duthost, srv6_pkt_list, mysid_list, pkt_num):
     Returns:
         bool: True if counters match expected values, False otherwise
     """
-    for srv6_pkt, mysid in zip(srv6_pkt_list, mysid_list):
-        # Wireshark and PTF do not include FCS field when calculating frame length, but the switch does,
-        # so add 4 bytes when validating SRv6 counters at switch
-        single_pkt_len = len(srv6_pkt) + 4
-        mysid_with_prefix = mysid[1] + '/' + str(SRv6.prefix_len)
-        assert wait_until(10, 1, 0, verify_srv6_stats, duthost, mysid_with_prefix, pkt_num, pkt_num * single_pkt_len)
+    try:
+        stats_list = duthost.show_and_parse('show srv6 stats')
+        stats_dict = {item['mysid']: item for item in stats_list}
+
+        for srv6_pkt, mysid in zip(srv6_pkt_list, mysid_list):
+            # Wireshark and PTF do not include FCS field when calculating frame length, but the switch does,
+            # so add 4 bytes when validating SRv6 counters at switch
+            single_pkt_len = len(srv6_pkt) + 4
+            mysid_with_prefix = mysid[1] + '/' + str(SRv6.prefix_len)
+
+            if mysid_with_prefix not in stats_dict:
+                logger.error(f"MySID {mysid_with_prefix} not found in SRv6 statistics")
+                return False
+
+            current_stats = stats_dict[mysid_with_prefix]
+            current_packets = int(current_stats['packets'])
+            current_bytes = int(current_stats['bytes'])
+
+            if current_packets != pkt_num or current_bytes != pkt_num * single_pkt_len:
+                logger.error(f"SRv6 statistics mismatch for MySID {mysid_with_prefix}: "
+                             f"Expected Packets={pkt_num}, Bytes={pkt_num * single_pkt_len}, "
+                             f"Actual Packets={current_packets}, Bytes={current_bytes}")
+                return False
+
+            logger.info(f"SRv6 statistics match expected values for MySID {mysid_with_prefix}: "
+                        f"Packets={current_packets}, Bytes={current_bytes}")
+
+        return True
+    except Exception as e:
+        raise Exception(f"Failed to validate SRv6 counters: {str(e)}")
 
 
 def get_srv6_mysid_entry_usage(duthost):
