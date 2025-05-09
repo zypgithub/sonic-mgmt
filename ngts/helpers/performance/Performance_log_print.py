@@ -10,7 +10,6 @@ logger = logging.getLogger()
 
 
 def print_players_logs(players_info, players_list=PerfConsts.PERF_SETUP_PLAYERS_ALIASES, print_to_stdout=False):
-    config_root_logger()
     for player in players_list:
         player_hostname = players_info[player]['cli'].chassis.get_hostname()
         try:

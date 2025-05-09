@@ -3,6 +3,7 @@ import logging
 import logging.config
 import threading
 from ngts.constants.constants import BugHandlerConst
+import sys
 
 
 class ThreadLogFilter(logging.Filter):
@@ -71,7 +72,8 @@ def config_root_logger():
             'console': {
                 'level': 'INFO',
                 'class': 'logging.StreamHandler',
-                'formatter': 'root_formatter'
+                'formatter': 'root_formatter',
+                'stream': sys.__stdout__
             },
             'log_file': {
                 'class': 'logging.FileHandler',

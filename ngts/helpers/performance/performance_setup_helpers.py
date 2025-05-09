@@ -8,7 +8,7 @@ from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts
-from ngts.helpers.thread_log_filter import redirect_thread_stdout, config_root_logger
+from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
@@ -128,7 +128,7 @@ class ValidationConfig:
 
 def apply_test_configuration(players, scenario, conf_args,
                              players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
-                             step="basic_test_configuration - set-up", parallel_run=True):
+                             step="basic_test_configuration - apply_test_configuration", parallel_run=True):
     """
     Applies test configuration to multiple players either sequentially (debug mode) or in parallel.
 
@@ -154,14 +154,14 @@ def apply_test_configuration(players, scenario, conf_args,
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
 
 
-def configure_mloops(players, step="basic_test_configuration - set-up"):
+def configure_mloops(players, step="basic_test_configuration - configure_mloops"):
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
                                            action="configure mloops",
                                            performance_clis_function_name="configure_mloops",
                                            performance_clis_function_args=(), step=step)
 
 
-def save_base_configuration(players, step="basic_test_configuration - set-up"):
+def save_base_configuration(players, step="basic_test_configuration - save_base_configuration"):
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
                                            action="save base configuration",
                                            performance_clis_function_name="save_basic_configuration",
@@ -169,7 +169,7 @@ def save_base_configuration(players, step="basic_test_configuration - set-up"):
 
 
 def restore_basic_configuration(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
-                                step="basic_test_configuration - tear-down"):
+                                step="Tear down - restore_base_configuration"):
     call_performance_function_with_threads(players, players_aliases=players_aliases,
                                            action="restore base configuration",
                                            performance_clis_function_name="restore_basic_configuration",
@@ -219,7 +219,7 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
                                                action="run traffic validator",
                                                performance_clis_function_name="validate_traffic",
                                                performance_clis_function_args=(full_path, samples_params_dict),
-                                               step="Test Body")
+                                               step="Traffic Validation - Test Body")
         traffic_json = attach_json_to_allure(full_path,
                                              f'Traffic Validation JSON results on {player_alias} - {hostname}')
         traffic_validation_jsons_list.append(traffic_json)
@@ -284,7 +284,7 @@ def run_validation(config: ValidationConfig, ignore_violations=False):
         return traffic_validation_jsons_list, violations_list
 
 
-def set_ports_admin_state(players, port_list, port_state="up", step="Test Body"):
+def set_ports_admin_state(players, port_list, port_state="up", step="Test Body - set_ports_admin_state"):
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
                                            action=f"set ports: {port_list} to {port_state}",
                                            performance_clis_function_name="set_ports",
@@ -295,7 +295,7 @@ def set_ports_admin_state(players, port_list, port_state="up", step="Test Body")
 def call_performance_function_with_threads(players, players_aliases, action,
                                            performance_clis_function_name,
                                            performance_clis_function_args, step):
-    config_root_logger()
+
     players_aliases_str = ",".join(players_aliases)
     logging.info(f"Start {action} on {players_aliases_str}")
     threads_list = []
