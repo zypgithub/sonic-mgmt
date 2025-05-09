@@ -9,6 +9,7 @@ logger = logging.getLogger()
 
 
 pytestmark = [
+    pytest.mark.disable_loganalyzer,
     pytest.mark.dependency(depends=["test_apply_basic_conf"])
 ]
 
