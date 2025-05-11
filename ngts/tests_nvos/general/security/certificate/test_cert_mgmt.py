@@ -1,5 +1,6 @@
+import os
 import random
-import re
+import tempfile
 from typing import List
 
 import pytest
@@ -14,7 +15,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.helpers import randomize_hex_str
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.conftest import clear_certs, clear_existing_certs
-from ngts.tests_nvos.general.security.certificate.constants import TestCert, CertShowFields, DUT_IMPORTED_CERTS_PUBLIC_DIR
+from ngts.tests_nvos.general.security.certificate.constants import TEST_CERTS, TestCert, CertShowFields, DUT_IMPORTED_CERTS_PUBLIC_DIR
 from ngts.tests_nvos.general.security.certificate.helpers import verify_cert_in_expected_locations, import_certificates, \
     send_curl_with_and_verify
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
@@ -24,6 +25,7 @@ from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 from tests.platform_tests.test_first_time_boot_password_change.conftest import dut_hostname
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 
 """ CLI tests """
 
@@ -453,47 +455,27 @@ def test_cert_mgmt_import_raw_chain(test_api, engines):
     cert_name = "imported-raw-chain"
     cert_info = TestCert.cert_chain_raw_1  # Use the constant defined in constants.py
 
-    # Get certificate data using the existing CertInfo method
     with allure.step('Get certificate chain data'):
         try:
-            # get_cert_content_str reads public path when private is None
             chain_data = cert_info.get_cert_content_str()
             if not chain_data:
                 pytest.fail(f"Could not read certificate chain content from {cert_info.public}")
-        except FileNotFoundError:
-            pytest.fail(f"Certificate chain file not found locally at {cert_info.public}")
         except Exception as e:
             pytest.fail(f"Error reading certificate chain file {cert_info.public}: {e}")
 
-    # Import the certificate chain using raw data
     with allure.step('Import certificate chain using data'):
         security.certificate.cert_id[cert_name].action_import(data=chain_data).verify_result()
 
-    # Verify import success in show output
-    with allure.step('Verify certificate chain appears in show output'):
+    with allure.step('Verify certificate chain import success'):
+        verify_cert_in_expected_locations(cert_name, engines.dut)
         security_cert_output_dict: dict = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
         assert cert_name in security_cert_output_dict, f"Certificate chain {cert_name} not found in show output:\n{security_cert_output_dict}"
 
-    # Verify files in expected locations on DUT
-    with allure.step('Verify certificate chain files in expected locations'):
-        verify_cert_in_expected_locations(cert_name, engines.dut)
-
-    # Use openssl on DUT to verify the chain structure
     with allure.step('Verify certificate chain with openssl'):
-        # Construct the path to the imported public key file on the DUT
-        dut_cert_path = f"{DUT_IMPORTED_CERTS_PUBLIC_DIR}/{cert_name}.crt"
-
-        # Build the openssl command parts using the builder
-        convert_pkcs7_cmd = OpenSslCmdBuilder().subcommand("crl2pkcs7").option("nocrl").option("certfile", dut_cert_path)
-        print_pkcs7_cmd = OpenSslCmdBuilder().subcommand("pkcs7").option("print_certs").option("noout")
-
-        # Combine commands with a pipe and add | cat for safety
-        cmd = f"{convert_pkcs7_cmd.get_command_string()} | {print_pkcs7_cmd.get_command_string()}"
-
-        chain_relations_output = engines.dut.run_cmd(cmd)
-
-        # Check for chain existence using regex
-        chain_pattern = r"issuer\s*\=.*CN\s*\=\s*([\w\-_\.]+)\s+subject\s*=\s*.*CN\s*=\s*\1"
-        matches = re.findall(chain_pattern, chain_relations_output)
-        # We expect at least one self-signed cert or intermediate CA where issuer=subject CN
-        assert matches, "Certificate chain validation failed."
+        cmd_runner = CmdRunner()
+        with tempfile.NamedTemporaryFile() as tmp_cert_file:
+            engines.dut.copy_file(source_file=f"{DUT_IMPORTED_CERTS_PUBLIC_DIR}/{cert_name}.crt", dest_file=tmp_cert_file.name,
+                                  file_system=os.path.dirname(tmp_cert_file.name), direction='get')
+            verify_cmd = OpenSslCmdBuilder().subcommand("verify").CAfile(f"{TEST_CERTS}/cert-chain/rootca.crt").option("untrusted", f"{TEST_CERTS}/cert-chain/interca.crt").positional_arg(tmp_cert_file.name).get_command_string()
+            openssl_verify_result = cmd_runner.run_cmd(verify_cmd)
+            assert "OK" in openssl_verify_result, f"Certificate chain verification failed: {openssl_verify_result}"
