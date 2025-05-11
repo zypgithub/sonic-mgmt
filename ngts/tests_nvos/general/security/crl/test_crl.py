@@ -3,7 +3,6 @@ import os
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_tools.infra import CmdRunner
 from ngts.tests_nvos.conftest import dut_hostname, get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.helpers import generate_certs, get_test_certs_dir_location, prepare_tmp_test_certs, set_new_random_users
@@ -20,6 +19,8 @@ from ngts.nvos_tools.infra.CrlValidator import CrlValidator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmicCmdBuilder
@@ -419,7 +420,7 @@ def test_continious_application(engines, validator_with_cleanup):
         .subscribe(prefix="platform-general", path="", mode=GnmiMode.STREAM)
         .build()
     )
-    cmd_runner = CmdRunner("GnmiClient")
+    cmd_runner = CmdRunner('GnmiClient')
     _, _, gnmi_process = cmd_runner.run_cmd_in_process(cmd=gnmic_cmd, keep_process_alive=True)
 
     with allure.step("Validate process is running"):
