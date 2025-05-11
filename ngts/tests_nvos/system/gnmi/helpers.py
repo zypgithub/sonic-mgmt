@@ -232,7 +232,7 @@ def create_interface_state_commands_list(port_name, infiniband_name):
 
 def create_platform_general_commands_list():
     usage_name = "USAGE"
-    state_xpath = "components/platform-general/{field}"
+    state_xpath = "platform-general/state/{field}"
     gnmi_list = [create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_total_size",
                                                 state_xpath.format(field="disk-total-size")),
                  create_gnmi_and_redis_cmd_dict(6, f"DISK_INFO|{usage_name}", "disk_usage",
@@ -307,18 +307,20 @@ def create_gnmi_infiniband_list(port_name, port_oid, infiniband_name):
 
 @retry(AssertionError, tries=3, delay=10)
 def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, allowed_range_in_bytes=None):
-    sonic_mgmt_engine = engines.sonic_mgmt
+    client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
+                        devices.dut.default_username, devices.dut.default_password,
+                        verify_tools_installed=True)
     for command in gnmi_list:
         prefix_and_path = command[GnmiConsts.XPATH_KEY].rsplit("/", 1)
-        cmd = f"gnmic -a {engines.dut.ip} --port {GnmiConsts.GNMI_DEFAULT_PORT} --skip-verify subscribe " \
-            f"--prefix '{prefix_and_path[0]}' --path '{prefix_and_path[1]}' --target nvos " \
-            f"-u {devices.dut.default_username} -p {devices.dut.default_password} --mode once --format flat"
-        logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
-        gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
+        gnmi_client_output, gnmi_client_err, _ = client.gnmic_subscribe(prefix=prefix_and_path[0],
+                                                                        path=prefix_and_path[1],
+                                                                        mode='once', flat=True,
+                                                                        skip_cert_verify=True)
+        verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_client_output, gnmi_client_err)
         gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         redis_output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
                                                             db_name=command[GnmiConsts.REDIS_CMD_DB_NAME],
-                                                            db_config=f"\"{command[GnmiConsts.REDIS_CMD_TABLE_NAME]}\"",
+                                                            db_config=command[GnmiConsts.REDIS_CMD_TABLE_NAME],
                                                             param=command[GnmiConsts.REDIS_CMD_PARAM])
         if ',' in redis_output:
             redis_output = str(sorted(redis_output.split(',')))
