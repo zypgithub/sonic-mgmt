@@ -6704,6 +6704,24 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: mtvr-bobcat-08-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-bobcat-08
+  ptf_ip: 10.245.44.188/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - mtvr-bobcat-08
+    - mtvr-bobcat-08-dpu-0
+    - mtvr-bobcat-08-dpu-1
+    - mtvr-bobcat-08-dpu-2
+    - mtvr-bobcat-08-dpu-3
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-leopard-41-ptf-any
   group-name: vm-t1
   topo: ptf-any

@@ -214,7 +214,7 @@ def get_port_config_ini_ports_configuration(port_config_ini_path):
     with open(port_config_ini_path, 'r') as file:
         file_content = file.read()
         file.close()
-    port_configuration_pattern = r"(Ethernet\d+)\s*([\d+,]*\d*)\s*(etp\d+\w*)\s*(\d+)\s*(\d+)"
+    port_configuration_pattern = r"(Ethernet\d+)\s+([\d+,]*\d*)\s+(etp\d+\w*)\s+(\d+)\s+(\d+)"
     port_configuration_list = re.findall(port_configuration_pattern, file_content, re.IGNORECASE)
     port_configuration_dict = get_port_configuration_as_dict(port_configuration_list)
     return port_configuration_dict
