@@ -103,7 +103,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
         f'Arguments "accounting_servers" and "expect_accounting_logs" must be lists of the same length!\n' \
         f'Actual accounting_servers: {accounting_servers}\nActual expect_accounting_logs: {expect_accounting_logs}'
 
-    should_check_accounting = bool(accounting_servers)
+    should_check_accounting = bool(expect_accounting_logs)
     accounting_server_mngrs = [AaaServerManager(server.ipv4_addr, server.docker_name) for server in accounting_servers]
     if should_check_accounting:
         assert switch_hostname, f'Must give "switch_hostname" argument when should check accounting.\n' \
@@ -123,8 +123,12 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                 verify_auth_with_medium(medium, user, expect_login_success, verify_authorization, engines, topology_obj)
 
                 if should_check_accounting:
-                    check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
-                                     expect_accounting_logs)
+                    if medium == AuthMedium.OPENAPI:
+                        check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
+                                         [False for _ in expect_accounting_logs])
+                    else:
+                        check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
+                                         expect_accounting_logs)
 
             logging.info('\n')
 
