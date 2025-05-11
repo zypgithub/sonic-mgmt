@@ -226,10 +226,6 @@ tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_mapping_table:
   skip:
     reason: "Netq version was updated and mapping change. Skipping until further alignment."
 
-tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_platform_general_components:
-  skip:
-    reason: "Netq version was updated and mapping change. Skipping until further alignment."
-
 tests_nvos/system/test_show_system.py::test_system:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3975976"
