@@ -627,6 +627,7 @@ class GorillaSwitch(IbSwitch):
         self.stats_cpu_header_num_of_lines = 12
         self.stats_temperature_header_num_of_lines = 53
         self.valid_ports_count = 64
+        self.cpld_amount = 3
         self.number_of_transceivers = 64
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = [f'sw{a + 1}' for a in range(32)]
@@ -658,6 +659,7 @@ class GorillaSwitch(IbSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="MQM9700.*")})
+        self._extend_firmware_by_cpld_amount()
 
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
@@ -701,6 +703,7 @@ class BlackMambaSwitch(IbSwitch):
         super()._init_constants()
         self.ib_ports_num = 2 * 72
         self.core_count = 4
+        self.cpld_amount = 6
         self.asic_type = NvosConst.QTM3
         self.multi_planar = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
@@ -746,7 +749,6 @@ class BlackMambaSwitch(IbSwitch):
         self.number_of_transceivers = 145
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = ['fnm1'] + [f'sw{a + 1}' for a in range(72)]
-        self.constants.firmware.extend(['CPLD4', 'CPLD5', 'CPLD6'])
         self.expected_operation_durations.update({
             "Install BIOS": 550,
             'install cpld': 1000,
@@ -789,6 +791,7 @@ class BlackMambaSwitch(IbSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
+        self._extend_firmware_by_cpld_amount()
 
     def _init_interface_lists(self):
         super()._init_interface_lists()
@@ -848,7 +851,8 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
         self.number_of_transceivers = 18
         self.transceivers_tables_name = "TRANSCEIVER_INFO"
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
-        self.constants.firmware.append('CPLD7')
+        self.cpld_amount = 7
+        self._extend_firmware_by_cpld_amount()
         self.show_platform_output.update({
             PlatformConsts.SYSTEM_TYPE: "Q3450_LD",
             "asic-model": self.asic_type,
@@ -950,6 +954,7 @@ class CrocodileSwitch(IbSwitch):
         self.stats_cpu_header_num_of_lines = 12
         self.stats_power_header_num_of_lines = 17
         self.stats_temperature_header_num_of_lines = 32
+        self.cpld_amount = 4
         self.valid_ports_count = 73
         self.number_of_transceivers = 73
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
@@ -963,7 +968,6 @@ class CrocodileSwitch(IbSwitch):
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 13.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 9 * MINUTE,
         })
-        self.constants.firmware.append('CPLD4')
         self.unsupported_commands_list.extend(["nv show ib device ASIC3",
                                                "nv show ib device ASIC4"])
 
@@ -1003,6 +1007,7 @@ class CrocodileSwitch(IbSwitch):
             "max-speed": ExpectedString(range_min=20000, range_max=40000)}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": None})
+        self._extend_firmware_by_cpld_amount()
 
     def _init_interface_lists(self):
         super()._init_interface_lists()
@@ -1189,6 +1194,7 @@ class JulietSwitch(NvLinkSwitch):
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
         self.number_of_transceivers = 72
+        self.cpld_amount = 4
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
         self.transceiver_list = [f'sw{a + 1}' for a in range(18)]
         self.module_offset = 9
@@ -1215,6 +1221,7 @@ class JulietSwitch(NvLinkSwitch):
             "serial": None, PlatformConsts.INV_STATE: FansConsts.STATE_OK,
             "type": PlatformConsts.FW_BMC.lower()}
         self.platform_inventory_values.update({'bmc': platform_inventory_bmc_values})
+        self._extend_firmware_by_cpld_amount()
 
     def _init_fae_lists(self):
         super()._init_fae_lists()
@@ -1649,9 +1656,8 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             PlatformConsts.SYSTEM_TYPE: "N5500_LD",
             "asic-model": self.asic_type,
         })
-        self.constants = self.constants._replace(
-            firmware=[f for f in self.constants.firmware if f != "CPLD4"]
-        )
+        self.cpld_amount = 3
+        self._extend_firmware_by_cpld_amount()
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)

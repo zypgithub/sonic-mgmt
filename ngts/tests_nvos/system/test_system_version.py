@@ -27,8 +27,18 @@ def test_show_system_version(test_api, engines, devices, nv_command):
 
     with allure.step('Run show system command and verify that each field has a value'):
         version_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.version.show()).get_returned_value()
+
+        version_image_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.version.image.show()).get_returned_value()
+
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
             version_output, nv_command.system.get_expected_fields(devices.dut, 'version')).verify_result()
+
+        product_release = version_output[SystemConsts.VERSION_PRODUCT_RELEASE]
+        build_id = version_image_output[SystemConsts.VERSION_BUILD_ID]
+
+    with allure.step(f"Verify product-release is equal to build-id"):
+        assert product_release in build_id, f"Product release '{product_release}' not found in build-id '{build_id}'"
 
 
 @pytest.mark.version
