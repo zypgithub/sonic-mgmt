@@ -254,23 +254,6 @@
           "out_of_mail": true
         },
         {
-          "name": "Allocate setup QTM2",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "node": "MINI_MARS@QTM2",
-          "parameters": {
-            "queue_id": "devops_nvos_ci_qtm2",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_NVOS_QTM2",
-            "setup_var": "CI_NVOS_QTM2_SETUP",
-            "device_var": "SWITCH_BLACKBIRD",
-            "setup_requirements": "group_name:Sagi,sub_group:CI,setup_status:enable"
-          },
-          "skip": "${SKIP_NVOS_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": true
-        },
-        {
           "name": "Allocate setup SmartSwitch",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
@@ -434,27 +417,6 @@
           "out_of_mail": false
         },
         {
-          "name": "BAT QTM2",
-          "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
-          "category": "BAT",
-          "node": "MINI_MARS@QTM2",
-          "parameters": {
-            "matrix_row": "IB",
-            "matrix_col": "QTM2",
-            "global_conf": "${MARS_GLOBAL_CONF}",
-            "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_NVOS_QTM2_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${CI_NVOS_QTM2_SETUP}/",
-            "target_version": "${NVOS_BIN}",
-            "base_version": "${NVOS_BIN}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
-          },
-          "skip": "${SKIP_NVOS_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": false
-        },
-        {
           "name": "BAT SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
@@ -568,19 +530,6 @@
           "out_of_mail": true
         },
         {
-          "name": "Free QTM2 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "node": "MINI_MARS@QTM2",
-          "parameters": {
-            "setup_name": "${CI_NVOS_QTM2_SETUP}"
-          },
-          "skip": false,
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
           "name": "Free SmartSwitch setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
@@ -621,11 +570,6 @@
               {
                 "ETH_COMMUNITY": [
                   "SPC"
-                ]
-              },
-              {
-                "IB": [
-                  "QTM2"
                 ]
               },
               {
