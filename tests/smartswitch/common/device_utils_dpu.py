@@ -13,6 +13,7 @@ from tests.common.platform.interface_utils \
 from tests.common.reboot import wait_for_startup
 from tests.common.platform.processes_utils import wait_critical_processes
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 # Timeouts, Delays and Time Intervals in secs
 DPU_TIMEOUT = 210
@@ -23,7 +24,7 @@ SWITCH_MAX_DELAY = 100
 SWITCH_MAX_TIMEOUT = 400
 INTF_MAX_TIMEOUT = 300
 INTF_TIME_INT = 5
-DPU_MAX_TIMEOUT = 360
+DPU_MAX_TIMEOUT = 400 if is_redmine_issue_active([4425328])[0] else 360 # this is a workaround for the redmine issue 4425328
 DPU_MAX_TIME_INT = 30
 REBOOT_CAUSE_TIMEOUT = 30
 REBOOT_CAUSE_INT = 10
