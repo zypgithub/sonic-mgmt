@@ -124,7 +124,7 @@ def setup_trimming(duthost, test_params):
     yield
 
     with allure.step("Disable trimming in buffer profile"):
-        configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "drop")
+        configure_trimming_action(duthost, BLOCK_QUEUE_PROFILE, "off")
 
     with allure.step("Delete the blocking scheduler"):
         delete_blocking_scheduler(duthost)
@@ -140,7 +140,7 @@ def setup_trimming(duthost, test_params):
 
 
 @pytest.fixture(params=SRV6_TUNNEL_MODE)
-def setup_srv6(request, rand_selected_dut):
+def setup_srv6(duthost, request, rand_selected_dut, upstream_links):
     """
     Configure 10 instances of SRV6_MY_SIDS
     """
@@ -157,7 +157,21 @@ def setup_srv6(request, rand_selected_dut):
         dscp_mode = request.param
         create_srv6_sid(rand_selected_dut, locator_name, ip_addr, action, vrf, dscp_mode)
 
+    # If there are multiple uplink interfaces, they are in ECMP relationship, and SRv6 packets would
+    # be sent out through a randomly selected interface. For trimming with SRv6 test, we use the first
+    # uplink interface as the test interface and shutdown all other interfaces to ensure packet forwarding.
+    if len(upstream_links) >= 2:
+        interfaces = list(upstream_links.keys())
+        for interface in interfaces[1:]:
+            duthost.shutdown(interface)
+
     yield dscp_mode
+
+    # Restore interfaces
+    if len(upstream_links) >= 2:
+        interfaces = list(upstream_links.keys())
+        for interface in interfaces[1:]:
+            duthost.no_shutdown(interface)
 
     for locator_param in SRV6_MY_LOCATOR_LIST:
         locator_name = locator_param[0]
