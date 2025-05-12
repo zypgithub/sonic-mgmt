@@ -70,6 +70,8 @@ class DeviceFactory:
                     device_name = 'Mellanox SN5640'
                 elif "4600C" in device_name:
                     device_name = 'Mellanox SN4600c'
+                elif "_LD-Juliet" in device_name:
+                    device_name = device_name.replace('_LD-Juliet', '_LD - Juliet')
                 else:
                     device_name = device_name[0:7]
             instance_type = DeviceFactory.device_type_dict[device_name]
