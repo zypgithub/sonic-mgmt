@@ -1,4 +1,4 @@
 Hostname,ManagementIp,HwSku,Type,Protocol,Os
-mtvr-bobcat-07,10.245.21.153/22,Mellanox-SN4280-O28,DevSonic,,sonic
+mtvr-bobcat-08,10.245.21.153/22,Mellanox-SN4280-O28,DevSonic,,sonic
 pdu-10-245-2-15,10.245.2.15,Vertiv,Pdu,snmp,
 pdu-10-245-2-34,10.245.2.34,Vertiv,Pdu,snmp,
