@@ -96,6 +96,22 @@ class CpldComponent(Component):
             return False
 
     def power_cycle(self, switch_info):
+        try:
+            print("Checking if snmpset is installed...")
+            self._run_ssh("which snmpset")
+            print("snmpset is already installed.")
+        except Exception:
+            print("snmpset not found. Attempting to install...")
+            try:
+                self._run_ssh("sudo apt-get update && sudo apt-get install -y snmp")
+                print("snmp package installed successfully.")
+                self._run_ssh("which snmpset")
+                print("snmpset is now installed.")
+            except Exception as e:
+                print(f"Failed to install snmp package: {e}")
+                print("Please install snmp package manually and try again.")
+                raise
+
         remote_reboot_cmd = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.REMOTE_REBOOT]
         if 'auto' not in remote_reboot_cmd:
             remote_reboot_cmd = f'/auto{remote_reboot_cmd}'
@@ -125,6 +141,7 @@ class CpldComponent(Component):
             print(e.output)
             print(e.stderr)
             print("Power cycle failed. Please do one manually.")
+            raise
 
     def _run_ssh(self, command):
         """

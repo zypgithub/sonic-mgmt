@@ -9,7 +9,7 @@ fi
 
 hostname=$1
 fwpkg_path=$2
-res=$(curl -s --location https://noga.mellanox.com/app/server/php/rest_api?api_cmd=get_resource_data\&resource_name=$hostname)
+res=$(curl -s --location https://noga.nvidia.com/app/server/php/rest_api?api_cmd=get_resource_data\&resource_name=$hostname)
 if [ $? -ne 0 ]; then
   echo "Curl command failed" >&2
   exit 1

@@ -65,11 +65,16 @@ def start_components_update(_args):
 
     component_manager.print_installed_versions()
     was_update_performed = component_manager.perform_update()
+    update_errors = component_manager.get_errors()
 
     if was_update_performed:
         component_manager.perform_pc(switch_info)
 
     component_manager.print_installed_versions()
+
+    if update_errors:
+        error_summary = "The following component updates encountered errors:\\n" + "\\n".join(update_errors)
+        raise Exception(error_summary)
 
 
 def verify_install_path(install_path):
