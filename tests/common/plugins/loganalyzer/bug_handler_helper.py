@@ -93,6 +93,8 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                                                                    test_name, hostname,
                                                                    log_analyzer_bug_metadata, bug_handler_params,
                                                                    bug_handler_dumps_results, is_serial_log)
+                    logger.info(f"yaml_file_path: {yaml_file_path}")
+                    logger.info(f"{yaml_file_path} exists?: {os.path.exists(yaml_file_path)}")
                     if yaml_file_path:
                         with allure.step("Run Bug Handler on Log Analyzer error"):
                             logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
