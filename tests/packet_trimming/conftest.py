@@ -3,7 +3,7 @@ import pytest
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.utilities import get_dscp_to_queue_value, configure_packet_aging
-from tests.common.helpers.ptf_tests_helper import downstream_links, upstream_links    # noqa F401
+from tests.common.helpers.ptf_tests_helper import downstream_links, upstream_links, service_links    # noqa F401
 from tests.common.mellanox_data import is_mellanox_device
 from tests.common.helpers.srv6_helper import create_srv6_locator, del_srv6_locator, create_srv6_sid, del_srv6_sid
 from tests.packet_trimming.constants import (SERVICE_PORT, BLOCK_QUEUE_PROFILE, COUNTERPOLL_INTERVAL, DEFAULT_DSCP,
@@ -170,7 +170,7 @@ def setup_trimming(duthost, test_params):
 
 
 @pytest.fixture(params=SRV6_TUNNEL_MODE)
-def setup_srv6(duthost, request, rand_selected_dut, upstream_links):
+def setup_srv6(duthost, request, rand_selected_dut, upstream_links, service_links):
     """
     Configure 10 instances of SRV6_MY_SIDS
     """
@@ -190,18 +190,25 @@ def setup_srv6(duthost, request, rand_selected_dut, upstream_links):
     # If there are multiple uplink interfaces, they are in ECMP relationship, and SRv6 packets would
     # be sent out through a randomly selected interface. For trimming with SRv6 test, we use the first
     # uplink interface as the test interface and shutdown all other interfaces to ensure packet forwarding.
+    shutdown_ports = []
     if len(upstream_links) >= 2:
         interfaces = list(upstream_links.keys())
-        for interface in interfaces[1:]:
-            duthost.shutdown(interface)
+        shutdown_ports.extend(interfaces[1:])
+
+    # Service ports also act as SRv6 ECMP next hops, need to shut them down in SRv6 tests
+    shutdown_ports.extend(service_links.keys())
+
+    # Shut down all collected ports
+    for port in shutdown_ports:
+        logger.info(f"Shutting down port: {port}")
+        duthost.shutdown(port)
 
     yield dscp_mode
 
-    # Restore interfaces
-    if len(upstream_links) >= 2:
-        interfaces = list(upstream_links.keys())
-        for interface in interfaces[1:]:
-            duthost.no_shutdown(interface)
+    # Restore all previously shutdown ports
+    for port in shutdown_ports:
+        logger.info(f"Starting up port: {port}")
+        duthost.no_shutdown(port)
 
     for locator_param in SRV6_MY_LOCATOR_LIST:
         locator_name = locator_param[0]
