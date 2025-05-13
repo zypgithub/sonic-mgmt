@@ -4,8 +4,7 @@ import re
 import pytest
 import logging
 import functools
-from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, \
-    get_interface_index_and_subport, get_dpu_npu_ports_from_hwsku
+from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, get_interfaces_physical_path, get_dpu_npu_ports_from_hwsku
 
 logger = logging.getLogger()
 
@@ -86,9 +85,10 @@ PLATFORM_GENERATION = ['4280', '4700', '5600', '5610', '5640']
 CMD_INTERFACE_TRANSCEIVER = "show interface transceiver eeprom"
 CMD_SFPUTIL_EEPROM = "sudo sfputil show eeprom"
 CMD_INTERFACE_TRANSCEIVER_STATUS = "show interfaces transceiver status"
-CMD_REDIS_TRANSCEIVER_INFO = 'redis-cli -n 6 hgetall "TRANSCEIVER_INFO|{}"'
-CMD_REDIS_TRANSCEIVER_STATUS = 'redis-cli -n 6 hgetall "TRANSCEIVER_STATUS|{}"'
-
+CMD_REDIS_TRANSCEIVERS = {
+    "TRANSCEIVER_INFO": 'redis-cli -n 6 keys "TRANSCEIVER_INFO|*"',
+    "TRANSCEIVER_STATUS": 'redis-cli -n 6 keys "TRANSCEIVER_STATUS|*"'
+}
 
 def enable_cmis_mgr_in_pmon_file(duthost):
     """
@@ -186,11 +186,54 @@ def parse_sc_eeprom(output_lines):
     return parse_output_to_dict(output_lines, EEPROM_CLI_KEYS)
 
 
-def parse_sfp_info_from_redis(duthost, cmd, asic_index, interfaces):
+def parse_all_interfaces_eeprom_output_to_dict(output):
+    """
+    @summary: Parse the SFP eeprom information from command output
+    @param output: command output
+    @return: returns result in a dictionary
+    """
+    port_info = {}
+    pattern = r'(Ethernet\d+):(.*?)(?=Ethernet\d+:|$)'
+    matches = re.finditer(pattern, output, re.DOTALL)
+    for match in matches:
+        port_name = match.group(1)
+        port_data = match.group(2).strip()
+        port_info[port_name] = port_data
+    return port_info
+
+
+def parse_transceivers_info_from_redis(transceiver_query_output,cmd_type):
+    result = {}
+    sections = transceiver_query_output.split(f'=== {cmd_type}|')
+    for section in sections:
+        if not section.strip():
+            continue
+        split_section = section.strip().split('===')
+        intf = split_section[0].strip()
+        data = split_section[1].splitlines()
+        result[intf] = data[1:]
+    return result
+
+@functools.lru_cache(maxsize=2)
+def get_all_transceivers_info_from_redis(duthost, asichost, cmd_type):
+    """
+    @summary: Get all interfaces transceiver info from redis database
+    @param duthost: duthost fixture
+    @param asichost: asichost fixture
+    @return: Returns result in a dictionary
+    """
+    cmd = (
+        f"for port in $({CMD_REDIS_TRANSCEIVERS[cmd_type]}); do echo \"=== $port ===\"; redis-cli -n 6 hgetall \"$port\"; done"
+    )
+    docker_cmd = asichost.get_docker_cmd(cmd, "database")
+    all_interfaces_xcvr_info = parse_transceivers_info_from_redis(duthost.shell(docker_cmd)["stdout"],cmd_type)
+    return all_interfaces_xcvr_info
+
+def transform_redis_transceiver_data(duthost, cmd_type, asic_index, interfaces):
     """
     @summary: Parse the SFP eeprom information from redis database
     @param duthost: duthost fixture
-    @param cmd: command to be executed
+    @param cmd_type: command type to be executed
     @param asic_index: asic index
     @param interfaces: interfaces list
     @return: Returns result in a dictionary
@@ -198,19 +241,15 @@ def parse_sfp_info_from_redis(duthost, cmd, asic_index, interfaces):
     result_dict = {}
     asichost = duthost.asic_instance(asic_index)
     logging.info("Check detailed transceiver information of each connected port")
+    all_interfaces_xcvr_info = get_all_transceivers_info_from_redis(duthost, asichost, cmd_type)
     for intf in interfaces:
         redis_all_data_dict = {}
-        docker_cmd = asichost.get_docker_cmd(cmd.format(intf), "database")
-        port_xcvr_info = duthost.command(docker_cmd)["stdout_lines"]
-        # Convert to dictionary
-
-        split_by_2 = [port_xcvr_info[i * 2:(i + 1) * 2] for i in range((len(port_xcvr_info) + 2 - 1) // 2)]
+        intf_xcvr_info = all_interfaces_xcvr_info[intf]
+        split_by_2 = [intf_xcvr_info[i * 2:(i + 1) * 2] for i in range((len(intf_xcvr_info) + 2 - 1) // 2)]
         for item in split_by_2:
             redis_all_data_dict.update({item[0]: item[1].rstrip()})
-
         # Clean up the placeholder (\x00 or \u0000) in vendor_date field
         cleanup_placeholder(redis_all_data_dict, "vendor_date")
-
         result_dict.update({intf: redis_all_data_dict})
     return result_dict
 
@@ -224,10 +263,10 @@ def compare_data_from_cli_and_redis(cli_data, redis_data, port, key_mapping):
             f"Data from cli param {cli_eeprom_key} does not match data from redis"
 
 
-def get_sff_cables(duthost, cmd, asic_index, port_list):
+def get_sff_cables(duthost, cmd_type, asic_index, port_list):
     sff_ports = []
     for port in port_list:
-        redis_output = parse_sfp_info_from_redis(duthost, cmd,
+        redis_output = transform_redis_transceiver_data(duthost, cmd_type,
                                                  asic_index, [port])
         if 'QSFP28' in redis_output[port][SC_REDIS_SFP_IDENTIFIER_KEY]:
             sff_ports.append(port)
@@ -250,18 +289,42 @@ def get_mst_path(duthost):
     return mst_path
 
 
-def get_mlxlink_ber(duthost, interface):
+def parse_mlxlink_interfaces_output(output, interfaces_physical_paths):
+    '''
+    @summary: Parse the mlxlink output from get_mlxlink_output_all_interfaces into a dictionary.
+    @param output: mlxlink output per interface
+    @param interfaces_physical_paths: dictionary of interfaces and their physical paths
+    @return: Returns result in a dictionary
+    '''
+    reverse_interfaces_physical_paths = {v: k for k, v in interfaces_physical_paths.items()}
+    result = {}
+    for interface_output in output:
+        interface_output_splitted = interface_output.split("===")
+        interface_path = interface_output_splitted[0].strip()
+        interface_name = reverse_interfaces_physical_paths[interface_path]
+        result[interface_name] = interface_output_splitted[1]
+    return result
+
+
+def get_mlxlink_interfaces_output(duthost,interfaces):
+    interfaces_physical_paths = get_interfaces_physical_path(duthost, interfaces)
+    mst_path = get_mst_path(duthost)
+    interfaces_physical_paths_as_str = ' '.join(interfaces_physical_paths.values())
+    cmd = f"""for iface in {interfaces_physical_paths_as_str}; do echo "=== Interface: $iface ==="; mlxlink -d {mst_path} -p "$iface" -c; done"""
+    output=duthost.shell(cmd)['stdout']
+    output_per_interface=output.split("=== Interface: ")
+    output_per_interface=output_per_interface[1:]
+    return parse_mlxlink_interfaces_output(output_per_interface, interfaces_physical_paths)
+
+def get_mlxlink_ber_all_interfaces(duthost, interfaces):
     """
     @summary: Parse the  output
     @param duthost: duthost fixture
     @param interface: DUT interface
     @return: BER values dictionary
     """
-    mst_path = get_mst_path(duthost)
-    port_index, subport = get_interface_index_and_subport(duthost, interface)
-    port_full_path = f"{port_index}/{subport}" if subport not in ['', '0', '1'] else port_index
-    cmd = duthost.command(f"mlxlink -d {mst_path} -p {port_full_path} -c")['stdout']
-    return parse_output_to_dict(cmd, BER_KEY_MAP)
+    mlxlink_output_all_interfaces = get_mlxlink_interfaces_output(duthost, interfaces)
+    return { interface: parse_output_to_dict(output, BER_KEY_MAP)  for interface, output in mlxlink_output_all_interfaces.items()}
 
 
 def get_split_ports(duthost, port_index, include_down_ports=False):
@@ -290,13 +353,14 @@ def get_ports_supporting_sc(duthost, only_ports_index_up=False):
     @return: list of Software Control ports supported
     """
     physical_ports_map = get_physical_index_to_interfaces_map(duthost, only_ports_index_up=only_ports_index_up)
-    dpu_npu_ports = get_dpu_npu_ports_from_hwsku(duthost)
-    physical_ports_map = {k: v for k, v in physical_ports_map.items() if not set(v).issubset(set(dpu_npu_ports))}
+    cmd='for i in /sys/module/sx_core/asic0/module*/control; do echo -n "$(basename $(dirname $i)): "; cat $i; done'
+    res=duthost.shell(cmd)['stdout'].splitlines()
     ports_with_sc_support = []
-    for port_number, port_name in physical_ports_map.items():
-        cmd = duthost.shell(f"sudo cat /sys/module/sx_core/asic0/module{int(port_number) - 1}/control")
-        if int(cmd['stdout']) == SC_ENABLED:
-            ports_with_sc_support.extend(port_name)
+    for module_sc_status in res:
+        module_number, sc_status =  re.findall(r'module(\d+): (\d+)', module_sc_status)[0]
+        port_number = int(module_number) + 1
+        if int(sc_status) == SC_ENABLED and str(port_number) in physical_ports_map:
+            ports_with_sc_support.extend(physical_ports_map[str(port_number)])
     return ports_with_sc_support
 
 

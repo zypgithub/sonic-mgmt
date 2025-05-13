@@ -329,9 +329,21 @@ def get_interfaces_info(duthost):
         interfaces_info.update(db_output["PORT"])
     return interfaces_info
 
+
+@functools.lru_cache(maxsize=1)
 def get_interface_index_and_subport(duthost, interface):
     interfaces_info = get_interfaces_info(duthost)
     return interfaces_info[interface]["index"], interfaces_info[interface].get("subport", "")
+
+
+def get_interfaces_physical_path(duthost,interfaces):
+    interfaces_full_path = {}
+    first_port_in_split = get_first_port_in_split(duthost)
+    for intf in interfaces:
+       intf_idx, intf_subport = get_interface_index_and_subport(duthost, intf)
+       interfaces_full_path[intf] =  f"{intf_idx}/{intf_subport}" if intf not in first_port_in_split else intf_idx
+    return interfaces_full_path
+
 
 def get_physical_index_to_interfaces_map(duthost, only_ports_index_up=False):
     """
