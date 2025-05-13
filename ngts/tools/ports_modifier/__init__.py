@@ -75,7 +75,7 @@ def pytest_collection_modifyitems(session, config, items):
         dut_engine.copy_file(source_file=f"{PRE_RUNNING_CONFIG_PATH}",
                              dest_file=f'/tmp/{CONFIG_DB_COPY_NAME}', file_system='/tmp/', direction='get')
 
-        if platform == PlatformTypesConstants.PLATFORM_BISON:
+        if platform in PlatformTypesConstants.BISON_PLATFORMS:
             logger.info("Bison is already configured to max ports")
             return
 
@@ -163,7 +163,6 @@ def reload_config(session, platform_params, chip_type):
                          overwrite_file=True, verify_file=False)
     logger.info(f'Copy db file from DUT /tmp folder to DUT {CONFIG_DB_DUT_PATH}')
     dut_engine.run_cmd(f'sudo cp {CONFIG_DB_DUT_TEMP_PATH} {CONFIG_DB_DUT_PATH}')
-    cli_object.general.reload_configuration(force=True)
 
     # enable independent module in case it's disabled
     platform = get_platform_info(topology)['platform']
@@ -172,6 +171,9 @@ def reload_config(session, platform_params, chip_type):
         cli_object.im.enable_im_in_sai()
         cli_object.im.upload_cmis_files(platform_params, chip_type)
         cli_object.im.enable_cmis_mgr_in_pmon_file(platform_params)
+
+    # reload config for original config_db.json and IM configuration
+    cli_object.general.reload_configuration(force=True)
 
 
 def read_config_db_from_shared_location(config_db_path):
