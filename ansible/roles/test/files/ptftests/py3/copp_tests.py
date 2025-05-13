@@ -58,6 +58,7 @@ class ControlPlaneBaseTest(BaseTest):
 
     def __init__(self):
         BaseTest.__init__(self)
+        self.log_fp = open('/tmp/copp.log', 'a')
         test_params = testutils.test_params_get()
         self.verbose = 'verbose' in test_params and test_params['verbose']
 
@@ -87,12 +88,10 @@ class ControlPlaneBaseTest(BaseTest):
         self.ip_version = test_params.get('ip_version', None)
 
     def log(self, message, debug=False):
-        self.log_fp = open('/tmp/copp.log', 'a')
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if (debug and self.verbose) or (not debug):
             print(("%s : %s" % (current_time, message)))
         self.log_fp.write("%s : %s\n" % (current_time, message))
-        self.log_fp.close()
 
     def setUp(self):
         self.dataplane = ptf.dataplane_instance
@@ -116,6 +115,8 @@ class ControlPlaneBaseTest(BaseTest):
     def tearDown(self):
         if config["log_dir"] is not None:
             self.dataplane.stop_pcap()
+
+        self.log_fp.close()
 
     def timeout(self, seconds, message):
         def timeout_exception(self, message):
