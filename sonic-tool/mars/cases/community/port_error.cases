@@ -31,4 +31,74 @@
         </cmd>
     </case>
 
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> Test Interfaces Fec  Case </info>
+        <name> intf_fec </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/test_intf_fec.py </static_args>
+             </params>
+        </cmd>
+    </case>
+    <case>
+        <info> Test SFP API Case</info>
+        <name> platform_api_sfp </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 2100 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/api/test_sfp.py </static_args>
+             </params>
+        </cmd>
+    </case>
+    <case>
+        <info> Test SFP Show </info>
+        <name> sfp_show </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfpshow.py </static_args>
+             </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- weekend case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Test SFP Util Weekly </info>
+        <name> sfp_util_weekly </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --all_ports --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
+             </params>
+        </cmd>
+    </case>
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Test SFP Util Daily </info>
+        <name> sfp_util </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 7200 --session-timeout 7200 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/sfp/test_sfputil.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
 </CASEDEF>
