@@ -691,9 +691,9 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
 
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
   skip:
-    reason: "Testcase ignored on leopard due to RM issue: https://redmine.mellanox.com/issues/4396617"
+    reason: "Testcase ignored on leopard and bobcat due to RM issue: https://redmine.mellanox.com/issues/4396617"
     conditions:
-    - "https://redmine.mellanox.com/issues/4396617 and '4700' in platform"
+    - "https://redmine.mellanox.com/issues/4396617 and ('4700' in platform or '4280' in platform)"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
   skip:
