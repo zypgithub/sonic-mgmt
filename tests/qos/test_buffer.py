@@ -2523,6 +2523,7 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname, conn_graph_facts, p
             'Add addtional PGs',
             ['Update speed .* and cable length .* for port .* failed, accumulative headroom size exceeds the limit',
              'Unable to update profile for port .*. Accumulative headroom size exceeds limit'],
+            None,
             request)
 
         maximum_profile_name = make_expected_profile_name(
@@ -2563,6 +2564,7 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname, conn_graph_facts, p
             'Static profile',
             ['Update speed .* and cable length .* for port .* failed, accumulative headroom size exceeds the limit',
              'Unable to update profile for port .*. Accumulative headroom size exceeds limit'],
+            None,
             request)
 
         logging.info('[Config headroom override to PG 3-4]')
@@ -2599,6 +2601,7 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname, conn_graph_facts, p
             'Configure a larger size to a static profile',
             ['BUFFER_PROFILE .* cannot be updated because .* referencing it violates the resource limitation',
              'Unable to update profile for port .*. Accumulative headroom size exceeds limit'],
+            None,
             request)
 
         logging.info('[Update headroom override to a larger size]')
@@ -2627,6 +2630,7 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname, conn_graph_facts, p
             ['BUFFER_PROFILE .* cannot be updated because .* referencing it violates the resource limitation',
              'Unable to update profile for port .*. Accumulative headroom size exceeds limit',
              'refreshSharedHeadroomPool: Failed to update buffer profile .* when toggle shared headroom pool'],
+            None,
             request)
 
         # Enable shared headroom pool
