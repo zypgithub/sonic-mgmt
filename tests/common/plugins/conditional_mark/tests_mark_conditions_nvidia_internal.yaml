@@ -419,6 +419,18 @@ tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evp
     conditions:
       - "https://redmine.mellanox.com/issues/4200858"
 
+tests/push_build_tests/L3/static_route/test_static_route.py::test_basic_static_route:
+  xfail:
+    reason: "Xfail due to https://redmine.mellanox.com/issues/4445774"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4445774 and 'r-leopard-56' in testbed"
+
+tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_client_renew_request_from_global_ip:
+  xfail:
+    reason: "Xfail due to https://redmine.mellanox.com/issues/4445774"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4445774 and 'r-leopard-56' in testbed"
+
 tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4202758"
