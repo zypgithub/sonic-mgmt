@@ -4,7 +4,8 @@ import re
 import pytest
 import logging
 import functools
-from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, get_interface_index_and_subport
+from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, \
+    get_interface_index_and_subport, get_dpu_npu_ports_from_hwsku
 
 logger = logging.getLogger()
 
@@ -258,7 +259,7 @@ def get_mlxlink_ber(duthost, interface):
     """
     mst_path = get_mst_path(duthost)
     port_index, subport = get_interface_index_and_subport(duthost, interface)
-    port_full_path = f"{port_index}/{subport}" if subport not in ['','0','1'] else port_index
+    port_full_path = f"{port_index}/{subport}" if subport not in ['', '0', '1'] else port_index
     cmd = duthost.command(f"mlxlink -d {mst_path} -p {port_full_path} -c")['stdout']
     return parse_output_to_dict(cmd, BER_KEY_MAP)
 
@@ -289,6 +290,8 @@ def get_ports_supporting_sc(duthost, only_ports_index_up=False):
     @return: list of Software Control ports supported
     """
     physical_ports_map = get_physical_index_to_interfaces_map(duthost, only_ports_index_up=only_ports_index_up)
+    dpu_npu_ports = get_dpu_npu_ports_from_hwsku(duthost)
+    physical_ports_map = {k: v for k, v in physical_ports_map.items() if not set(v).issubset(set(dpu_npu_ports))}
     ports_with_sc_support = []
     for port_number, port_name in physical_ports_map.items():
         cmd = duthost.shell(f"sudo cat /sys/module/sx_core/asic0/module{int(port_number) - 1}/control")

@@ -989,11 +989,12 @@ platform_tests/mellanox:
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
-    reason: "202405 and 202411 not support command like 'mlxlink -d /dev/mst/mt53104_pci_cr0 -p 1 -m' on mellanox spc3 devices when software control is enabled"
+    reason: "202405 and 202411 not support command like 'mlxlink -d /dev/mst/mt53104_pci_cr0 -p 1 -m' on mellanox spc3 devices when software control is enabled; SN4 and SN5 are not supported until https://redmine.mellanox.com/issues/3588062 is implemented"
     conditions_logical_operator: or
     conditions:
       - "'SN4' in hwsku and (release in ['202405', '202411'])"
       - "'SN5' in hwsku and (release in ['202405', '202411'])"
+      - "('SN4' in hwsku or 'SN5' in hwsku) and https://redmine.mellanox.com/issues/3588062"
 
 platform_tests/mellanox/test_check_sfp_using_ethtool.py:
   skip:
