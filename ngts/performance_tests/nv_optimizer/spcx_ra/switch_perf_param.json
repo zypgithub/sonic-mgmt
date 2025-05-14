@@ -1,0 +1,74 @@
+{
+    "measurement_command": "python /root/mars/workspace/sonic-mgmt/ngts/performance_tests/nv_optimizer/spcx_ra/switch_perf.py",
+    "parameters": [
+        {
+            "name": "low_ar_thresh",
+            "type": "range",
+            "bounds": [
+                100,
+                1000
+            ],
+            "value_type": "int"
+        },
+        {
+            "name": "med_ar_thresh",
+            "type": "range",
+            "bounds": [
+                100,
+                1000
+            ],
+            "value_type": "int"
+        },
+        {
+            "name": "high_ar_thresh",
+            "type": "range",
+            "bounds": [
+                100,
+                1000
+            ],
+            "value_type": "int"
+        },
+        {
+            "name": "sib",
+            "type": "range",
+            "bounds": [
+                1,
+                511
+            ],
+            "value_type": "int"
+        },
+        {
+            "name": "tc_reserved_KB",
+            "type": "range",
+            "bounds": [
+                0,
+                20
+            ],
+            "value_type": "int"
+        },
+        {
+            "name": "tc_alpha_power",
+            "type": "range",
+            "bounds": [
+                -7,
+                7
+            ],
+            "value_type": "int"
+        }
+    ],
+    "minimize": false,
+    "parameter_constraints": [
+        "low_ar_thresh <= med_ar_thresh",
+        "med_ar_thresh <= high_ar_thresh"
+    ],
+    "initial_trials": [
+        {
+            "low_ar_thresh": 400,
+            "med_ar_thresh": 800,
+            "high_ar_thresh": 1200,
+            "sib": 414,
+            "tc_reserved_KB": 1,
+            "tc_alpha_power": 1
+        }
+    ]
+}

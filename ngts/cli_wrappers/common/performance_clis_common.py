@@ -258,3 +258,9 @@ class PerformanceCommon:
     def create_acl_dump(self):
         create_acl_dump_cmd = "sx_api_flex_acl_dump.py"
         return self.execute_cmd(self.get_cmd_for_sdk(create_acl_dump_cmd))
+
+    def dynamic_configuration_helper(self, scenario, performance_parameters):
+        """
+        This method is used to apply the dynamic configuration on the dut
+        """
+        pass

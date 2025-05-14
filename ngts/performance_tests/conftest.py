@@ -1,4 +1,5 @@
 import json
+import re
 import pytest
 import allure
 import os
@@ -127,7 +128,10 @@ def update_test_data_in_mongo_db(request, players, is_ipv6):
     except Exception as e:
         raise e
     finally:
-        create_test_validation_entry_to_db(players, test_name)
+        if re.search('optimize', test_name, re.IGNORECASE):
+            return
+        else:
+            create_test_validation_entry_to_db(players, test_name)
 
 
 def get_all_players_ports(players, right_split_num=1, left_split_num=1):

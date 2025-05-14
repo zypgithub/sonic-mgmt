@@ -64,12 +64,3 @@ def basic_setup_configuration(players, conf_args, init, cleanup):
 def ibm_fixture(players, conf_args):
     with allure.step("Set IBM in accordance with the test configuration"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
-
-
-@pytest.fixture(scope='function', autouse=True)
-def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
-
-    test_name = get_perf_test_name(request, is_ipv6)
-    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "switch_perf_optimizer",
-                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
-    yield

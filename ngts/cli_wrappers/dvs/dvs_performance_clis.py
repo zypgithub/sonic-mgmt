@@ -410,3 +410,28 @@ class DvsPerformance(PerformanceCommon):
         logging.info("Unsplit all SPC5 ports")
         get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
         self.execute_cmd(get_player_ports_cmd)
+
+    def dynamic_configuration_helper(self, scenario, performance_parameters):
+        """
+        This method is used to apply the dynamic configuration on the dut
+        """
+        if not performance_parameters:
+            logging.warning("No performance parameters provided for dynamic configuration")
+            logging.warning(f"Continuing with the default {scenario} configuration")
+            return
+
+        config_file = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", "performance_config_templates", scenario, "dvs", f"{self.dut_alias}_dynamic_conf.json")
+        with open(config_file, "w") as f:
+            json.dump(performance_parameters, f, indent=4)
+
+        # Copy the file to the target system
+        self.engine.copy_file(
+            source_file=config_file,
+            file_system="/tmp",
+            dest_file=f"{self.dut_alias}_dynamic_conf.json",
+            overwrite_file=True,
+            verify_file=False
+        )
+
+        get_dynamic_conf_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_DYNAMIC_CONF_PREFIX}{scenario}"
+        self.execute_cmd(get_dynamic_conf_cmd)

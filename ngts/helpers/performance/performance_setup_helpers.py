@@ -176,6 +176,13 @@ def restore_basic_configuration(players, players_aliases=PerfConsts.PERF_SETUP_P
                                            performance_clis_function_args=(), step=step)
 
 
+def dynamic_configuration_helper(players, scenario, performance_parameters, step="basic_test_configuration - dynamic_configuration_helper"):
+    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                                           action="dynamic configuration",
+                                           performance_clis_function_name="dynamic_configuration_helper",
+                                           performance_clis_function_args=(scenario, performance_parameters), step=step)
+
+
 def run_traffic(players, scenario, traffic_jsons, step="Running Traffic - Test body", attach_traffic_json=True):
 
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,

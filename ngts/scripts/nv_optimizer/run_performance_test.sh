@@ -11,7 +11,7 @@ function show_help {
     echo "  --cleanup      Cleanup the test"
     echo "  --parameter_file_location       The location of the parameter file to be used in the pytest command"
     echo "Example:"
-    echo " run_test.sh --setup_name=nv_performance_mtvr-moose-17 --test_name=spcx_ra/switch_perf_optimiser/test_nv_perf_optimiser.py"
+    echo " run_test.sh --setup_name=nv_performance_mtvr-moose-17 --test_name=switch_perf_optimizer/spcx_ra"
     exit 1
 }
 
@@ -42,6 +42,10 @@ do
         PARAMETER_FILE_LOCATION="${arg#*=}"
         shift
         ;;
+        --target_cli_type=*)
+        TARGET_CLI_TYPE="${arg#*=}"
+        shift
+        ;;
         --help|-h)
         show_help
         ;;
@@ -58,6 +62,9 @@ if [ -z "$SETUP_NAME" ] || [ -z "$TEST_NAME" ]; then
     echo "Error: Both --setup_name and --test_name are required"
     show_help
 fi
+if [ -z "$TARGET_CLI_TYPE" ]; then
+    TARGET_CLI_TYPE="NVUE"
+fi
 
 # Run the pytest command
 
@@ -67,11 +74,10 @@ COMMAND="/ngts_venv/bin/pytest --setup_name=$SETUP_NAME \
     --log-level=INFO \
     --clean-alluredir \
     --alluredir=/tmp/allure-results \
-    --target_cli_type=NVUE \
+    --target_cli_type=$TARGET_CLI_TYPE \
     --showlocals \
     --disable_loganalyzer \
     --dynamic_update_skip_reason \
-    --random_seed=1742332940 \
     --store_la_logs \
     --ignore_la_failure \
     --ignore-conditional-mark"

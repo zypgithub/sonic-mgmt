@@ -1,2 +1,2 @@
 source ~/.bashrc
-conda create -n optimization python=3.12 -y
+/root/miniconda/bin/conda create -n optimization python=3.12 -y
