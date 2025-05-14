@@ -214,14 +214,14 @@ class SonicInstallationSteps:
             example: /auto/sw_system_release/sonic/master.234-27a6641fb_Internal/Mellanox/sonic-mellanox.bin
         :return: ptf docker tag, example: '42007'
         """
-        ptf_tag = '558858'
+        ptf_tag = 'latest'
         try:
             if is_url(image_path):
                 file_path_index = 3
                 image_path = '/' + '/'.join(image_path.split('/')[file_path_index:])
             branch = get_sonic_branch(image_path)
             logger.info('SONiC branch is: {}'.format(branch))
-            ptf_tag = MarsConstants.BRANCH_PTF_MAPPING.get(branch, '669063')
+            ptf_tag = MarsConstants.BRANCH_PTF_MAPPING.get(branch, 'latest')
         except Exception as err:
             logger.error('Can not get SONiC branch and PTF tag from path: {}, using "latest". Error: {}'.format(
                 image_path, err))
