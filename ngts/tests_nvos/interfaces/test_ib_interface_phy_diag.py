@@ -27,12 +27,25 @@ INTENTIONAL_LINK_DOWN_REMOTE_CODE = 33
 LINK_DOWN_PREI_CODE = 4
 LINK_DOWN_UNKNOWN_CODE = 1
 
-CODE_TO_DESCRIPTION = {0: "NO_LINK_DOWN_INDICATION",
-                       1: "UNKNOWN_REASON",
-                       4: "ALIGNMENT_LOSS",
-                       22: "DOWN_BY_MANAGEMENT_COMMAND",
-                       23: "CABLE_WAS_UNPLUGGED",
-                       33: "PEER_SIDE_DOWN_TO_DISABLE_STATE"}
+# source: PRM Rev 1.55.205, section 9.17.7 PUDE - Port Up/Down Event, table 1684 - PUDE - Port Up/Down Event Fields
+CODE_TO_DESCRIPTION = {
+    0: "No_link_down_indication", 1: "Unknown_reason", 2: "Hi_SER_or_Hi_BER", 3: "Block_Lock_loss", 4: "Alignment_loss",
+    5: "FEC_sync_loss", 6: "PLL_lock_loss", 7: "FIFO_overflow", 8: "false_SKIP_condition",
+    9: "Minor_Error_threshold_exceeded", 10: "Physical_layer_retransmission_timeout", 11: "Heartbeat_errors",
+    12: "Link_Layer_credit_monitoring_watchdog", 13: "Link_Layer_integrity_threshold_exceeded",
+    14: "Link_Layer_buffer_overrun", 15: "Down_by_outband_command_with_healthy_link",
+    16: "Down_by_outband_command_for_link_with_hi_ber", 17: "Down_by_inband_command_with_healthy_link",
+    18: "Down_by_inband_command_for_link_with_hi_ber", 19: "Down_by_verification_GW", 20: "Received_Remote_Fault",
+    21: "Received_TS1", 22: "Down_by_management_command", 23: "Cable_was_unplugged", 24: "Cable_access_issue",
+    25: "Cable_Thermal_shutdown", 26: "Current_issue", 27: "Power_budget", 28: "Fast_recovery_raw_ber",
+    29: "Fast_recovery_effective_ber", 30: "Fast_recovery_symbol_ber", 31: "Fast_recovery_credit_watchdog",
+    32: "Peer_side_down_to_sleep_state", 33: "Peer_side_down_to_disable_state",
+    34: "Peer_side_down_to_disable_and_port_lock", 35: "Peer_side_down_due_to_thermal_event",
+    36: "Peer_side_down_due_to_force_event", 37: "Peer_side_down_due_to_reset_event", 38: "Reset_no_power_cycle",
+    39: "Fast_recovery_tx_plr_trigger", 40: "Down_due_to_HW_force_event", 41: "Down_due_to_thermal_event",
+    42: "L1_exit_failure", 43: "too_many_link_error_recoveries", 44: "Down_due_to_contain_mode",
+    45: "BW_loss_threshold_exceeded", 46: "ELS_laser_fault",
+}
 
 logger = logging.getLogger()
 
@@ -223,8 +236,8 @@ def assert_reason_all_planes(aggregated_port: Port, side: str, expected_code: in
 
 
 def assert_description_matches_code(description: str, code: Union[int, str], item: str):
-    expected = CODE_TO_DESCRIPTION[code]
-    assert description == expected, (
+    expected = CODE_TO_DESCRIPTION[code].upper()
+    assert description.upper() == expected, (
         f"{item} has {description=} but reason-code is {code} which is expected to have this description: " +
         expected
     )
