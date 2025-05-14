@@ -272,7 +272,8 @@ def test_password_hardening_set_invalid_input(engines, system):
                                 expected_err = PwhConsts.ERR_INVALID_SET_ENABLE_DISABLED
                             elif setting in PwhConsts.MIN.keys():  # setting is numeric
                                 if re.match(PwhConsts.REGEX_NUMERIC, str(invalid_value)):  # value is numeric but not in range
-                                    expected_err = PwhConsts.ERR_RANGE.format(PwhConsts.MIN[setting], PwhConsts.MAX[setting])
+                                    expected_err = PwhConsts.ERR_RANGE.format(setting, PwhConsts.MIN[setting],
+                                                                              PwhConsts.MAX[setting])
                                     # if int(invalid_value) < PwhConsts.MIN[setting]:
                                     #     expected_err = PwhConsts.ERR_VALUE_LESS_THAN_MIN.format(setting, invalid_value, PwhConsts.MIN[setting])
                                     # else:

@@ -14,6 +14,7 @@ from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -290,34 +291,37 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 
     try:
         with allure.step("Fetch bad flows"):
-            with allure.step("Fetch an image"):
+            with allure.independent_step("Fetch an image"):
                 player = engines['sonic_mgmt']
                 scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
                                                               ip=player.ip, path=image_path)
                 system.image.action_fetch(scp_path)
                 images_name.append(image_name)
-            with allure.step("Fetch the same image again using ipv6 address"):
-                scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                              ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
-                system.image.action_fetch(scp_path)
-            with allure.step("Fetch an image that does not exist"):
+
+            if IpTool.is_dhcp_client6_has_lease(engines.dut):
+                with allure.independent_step("Fetch the same image again using ipv6 address"):
+                    scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                                  ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
+                    system.image.action_fetch(scp_path)
+
+            with allure.independent_step("Fetch an image that does not exist"):
                 system.image.action_fetch(scp_path + rand_name, "Failed")
 
         with allure.step("Delete bad flows"):
-            with allure.step("Delete file that does not exist"):
+            with allure.independent_step("Delete file that does not exist"):
                 system.image.files.delete_files([rand_name], "File not found")
 
         with allure.step("Install bad flows"):
-            with allure.step("Install image file that does not exist"):
+            with allure.independent_step("Install image file that does not exist"):
                 file_rand_name.action_file_install("Image does not exist").verify_result()
 
         with allure.step("Boot-next bad flows"):
             if not original_images[ImageConsts.PARTITION2_IMG]:
-                with allure.step("Boot-next {}, even tough we have no image there".format(ImageConsts.PARTITION2_IMG)):
+                with allure.independent_step("Boot-next {}, even tough we have no image there".format(ImageConsts.PARTITION2_IMG)):
                     system.image.action_boot_next(ImageConsts.PARTITION2_IMG, 'Failed')
-            with allure.step("Boot-next random string"):
+            with allure.independent_step("Boot-next random string"):
                 system.image.action_boot_next(ImageConsts.PARTITION2_IMG, "Failed")
-            with allure.step("Boot-next the same partition"):
+            with allure.independent_step("Boot-next the same partition"):
                 system.image.action_boot_next(original_image_partition)
 
         with allure.step("Rename bad flows"):
@@ -327,9 +331,9 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
         with allure.step("Upload bad flows"):
             player = engines['sonic_mgmt']
             upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
-            with allure.step("Upload image file that does not exist"):
+            with allure.independent_step("Upload image file that does not exist"):
                 file_rand_name.action_upload(upload_path, "File not found")
-            with allure.step("Upload the same image twice"):
+            with allure.independent_step("Upload the same image twice"):
                 with allure.step("First upload"):
                     image_file.action_upload(upload_path)
                     with allure.step("Validate file was uploaded"):
@@ -735,7 +739,7 @@ def get_list_of_directories(current_installed_img, starts_with=None):
         if os.path.isdir(temp_dir) and "-001" not in temp_dir:
             logger.info("Searching for images in path: " + temp_dir)
             relevant_images = [f for f in os.listdir(temp_dir) if f.startswith("nvos-amd64-25.") and
-                               current_installed_img.replace("nvos-25", "nvos-amd64-25") not in f]
+                               list(current_installed_img.values())[0].replace("nvos-25", "nvos-amd64-25") not in f]
             if relevant_images:
                 return_directories[temp_dir] = relevant_images
         if len(return_directories) == 2:

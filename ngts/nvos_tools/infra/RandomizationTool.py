@@ -379,7 +379,7 @@ class RandomizationTool:
             filtered_connections = RegressionLinks.get_filtered_transceivers_and_ports(setup_name, transceiver_type,
                                                                                        is_loopback, connected_to)
             transceiver_to_remove = [] if forbidden_transceivers is None else forbidden_transceivers.copy()
-            output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(Port.show_interface(engine)).verify_result()
+            output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(Port.show_interface(engine)).verify_result()
             if requested_ports_state or requested_ports_logical_state:
                 for transceiver, ports_list in filtered_connections.items():
                     filtered_ports_list = [port for port in ports_list if ValidationTool.validate_port_link(output_dictionary[port], requested_ports_state, requested_ports_logical_state)]

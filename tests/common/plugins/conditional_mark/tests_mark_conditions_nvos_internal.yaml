@@ -703,4 +703,11 @@ tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4412532"
     conditions:
       - https://redmine.mellanox.com/issues/4412532
+tests_nvos/interfaces/test_ib_interface_phy_diag.py::test_unintentional_link_down_counter:
+  skip:
+    reason: "Cannot simulate link-error on juliet: https://redmine.mellanox.com/issues/4377334"
+    conditions:
+      - "'juliet' in testbed"
+      - https://redmine.mellanox.com/issues/4377334
+
 ########################## NVOS IGNORE END ##########################

@@ -275,7 +275,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name,
-                                               standalone_system, handle_la_marker_in_manufacture):
+                                               standalone_system):
     # Only fetched and generated files will be cleaned.
     # SAME
     TestToolkit.tested_api = test_api

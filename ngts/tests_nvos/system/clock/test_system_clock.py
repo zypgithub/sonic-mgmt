@@ -153,7 +153,7 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetime, ntp_off, pwh_off):
+def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetime, pwh_off, ntp_off):
     """
     @summary:
     Validate the system correctly updates its date and time using NVUE when NTP is disabled.

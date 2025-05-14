@@ -223,7 +223,7 @@ class Port(BaseComponent):
         logger.info(f'parsed "{name}" ==> {result}')
         return result
 
-    def get_plane_port(self, plane_number):
+    def get_plane_port(self, plane_number) -> "Port":
         """ Port('sw1p1') --> Fae(port_name='sw1p1pl3').port """
         if self.is_plane_port():
             raise ValueError(f'{self=} is a plane-port')

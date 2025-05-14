@@ -46,14 +46,26 @@ class OpenSmTool:
             OpenSmTool.stop_open_sm_on_server(engines)
 
         with allure.step("Get GUID to start OpenSM"):
+            output = engines.hfnm.run_cmd("ibdev2netdev")
+            if "No space left on device" in output:
+                logger.info("Attempting to clean up opensm.log files to free space...")
+                engines.hfnm.run_cmd("rm -f /var/log/opensm.log*")
+                logger.info("Retrying ibdev2netdev...")
+                output = engines.hfnm.run_cmd("ibdev2netdev")
+
+                if "No space left on device" in output:
+                    return ResultObj(False, "Failed to cleanup opensm logs")
+
             if multiplanar:
                 # CX8 needs to see the planarized interface
-                output = engines.hfnm.run_cmd("ibdev2netdev")
                 if "smi2" not in output:
-                    engines.hfnm.run_cmd(f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+                    engines.hfnm.run_cmd(
+                        f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
+
                 opensm_path = '/opt/ufm/opensm/sbin/opensm'
             else:
                 opensm_path = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
+
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
             for line in output.splitlines():

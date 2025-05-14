@@ -37,7 +37,7 @@ class IbInterfaceTool:
                                  apply=True, ask_for_confirmation=True).verify_result()
 
     @staticmethod
-    def simulate_plugin_module_event(engine, device, module_index, mst_dev_name, sleep):
+    def simulate_plugin_module_event(engine, device, module_index, mst_dev_name, sleep=50):
         with allure.step(f"Simulate plugin event for module {module_index}"):
             admin_status = "1"  # The code to simulate plug event
             RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
@@ -45,7 +45,7 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
-    def simulate_unplug_module_event(engine, device, module_index, mst_dev_name, sleep):
+    def simulate_unplug_module_event(engine, device, module_index, mst_dev_name, sleep=8):
         with allure.step(f"Simulate unplug event for module {module_index}"):
             admin_status = "0xe"  # The code to simulate unplug event
             RegisterTool.update_pmaos_register(engine, device, mst_dev_name=mst_dev_name,
@@ -53,7 +53,7 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
-    def simulate_toggle_port_event(engine, device, port_name='', sleep=0):
+    def simulate_toggle_port_event(engine, device, port_name='', sleep=5):
         with allure.step(f"Simulate toggle port event for port {port_name}"):
             mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
             local_port_hex = IbInterfaceTool.get_local_port_hex(engine, device, port_name)

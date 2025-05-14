@@ -2023,4 +2023,12 @@
         - tests_nvos/system/test_system_factory_reset.py
         - tests_nvos/cluster/test_cluster_factory_reset.py
 
+# NVOS: Expected logs during ztp negative tests
+- Errors_list:
+    - '.*provisioning-script: Error.*'
+    - '.*ZTP completed with FAILED.*'
+    - '.*ERR sonic-ztp.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative
 # --------------------------------------------------
