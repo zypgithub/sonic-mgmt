@@ -174,7 +174,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def deploy_image(self, topology_obj, image_path, apply_base_config=False, setup_name=None,
                      platform_params=None, deploy_type='sonic', reboot_after_install=None, fw_pkg_path=None,
                      set_timezone='Israel', disable_ztp=False, configure_dns=False, destination_hwsku=None,
-                     setup_info=None, dut_alias='dut', deploy_fanout_threads=None):
+                     setup_info=None, dut_alias='dut', deploy_fanout_threads=None,):
         with allure.step('Preparing switch for installation'):
             logger.info("Begin: Preparing switch for installation ")
             in_onie = self.prepare_for_installation(topology_obj, dut_alias)
@@ -424,18 +424,22 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         '''
         return SerialConsoleTool.get_serial_console_session(topology_obj, dut_alias)
 
-    def enter_onie_install_mode(self, topology_obj, dut_alias='dut'):
+    def enter_onie_mode(self, topology_obj, onie_menu_entry, dut_alias='dut'):
         '''
-        @summary: in this function we want to enter install mode,
-        we are doing so by the following step:
-            1.create a serial engine
-            2.remote reboot
-            3.wait till GRUB menu appears:
-                a. if the NVOS grub menu appears then select ONIE entry (pressing down 2 key arrows)
-                b. if the ONIE grub menu appears just do nothing (the install entry will be marked and after 5 secs it
-                will enter the install mode)
-        '''
+        @summary: In this function we want to enter ONIE install/update mode.
 
+        We are doing so by the following steps:
+            1. Create a serial engine
+            2. Trigger remote reboot
+            3. Wait for GRUB menu to appear:
+                a. If the NVOS GRUB menu appears, select the ONIE entry (pressing down 2 key arrows)
+                b. If the ONIE GRUB menu appears, do nothing — the selected entry will auto-trigger after 5 seconds
+
+        @param onie_menu_entry: The GRUB menu entry to select under the ONIE bootloader.
+                                Common values are:
+                                  - 'ONIE: Install OS'
+                                  - 'ONIE: Update ONIE'
+        '''
         with allure.step("Initializing serial connection to device"):
             serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
 
@@ -443,22 +447,21 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             self.remote_reboot_nvue(topology_obj, dut_alias)
 
         with allure.step('wait for NVOS/ONIE grub menu'):
-            # Set timeout based on the active status of Redmine issue #4028150
             to = 360 if is_bug_active(4028150) else 240
             grub_menu_pointer = 0
-            onie_install_os_pointer = 1
+            onie_menu_pointer = 1
             esc_grub_pointer = 2
-            onie_install_os = 'ONIE: Install OS'
-            grub_menu_patterns = ['ONIE\\s+', onie_install_os, GrubMenuTool.GRUB_ESC_PATTERN]
+
+            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.GRUB_ESC_PATTERN]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
-        if respond != onie_install_os_pointer:
+        if respond != onie_menu_pointer:
             if respond == esc_grub_pointer:
                 with allure.step('Grub menu new style handle'):
                     logger.info('Hit ESC on grub new style')
-                    output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns, timeout=to,
-                                                            send_without_enter=True)
+                    output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns,
+                                                            timeout=to, send_without_enter=True)
                     time.sleep(1)
 
             if respond >= len(grub_menu_patterns):
@@ -476,17 +479,19 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
                     logger.info("Pressing Enter to enter ONIE grub menu")
                     _, respond = serial_engine.run_cmd('\r',
-                                                       expected_value=['Due to security constraints, '
-                                                                       'this option will uninstall your current OS',
-                                                                       'Answer "YES" to continue', '\\*ONIE:.*'],
+                                                       expected_value=[
+                                                           'Due to security constraints, this option will uninstall your current OS',
+                                                           'Answer "YES" to continue',
+                                                           '\\*ONIE:.*'
+                                                       ],
                                                        timeout=30, send_without_enter=True)
 
                     if respond != esc_grub_pointer:
                         with allure.step("MLNX-OS system. Enter 'YES' and wait till in ONIE grub menu"):
-                            serial_engine.run_cmd('YES', onie_install_os, timeout=420)
+                            serial_engine.run_cmd('YES', onie_menu_entry, timeout=420)
 
-        with allure.step('in ONIE grub menu: Go to onie install mode'):
-            GrubMenuTool.select_grub_menu_item(serial_engine, onie_install_os)
+        with allure.step(f'in ONIE grub menu: Go to {onie_menu_entry}'):
+            GrubMenuTool.select_grub_menu_item(serial_engine, onie_menu_entry)
 
         with allure.step("Waiting for onie prompt"):
             self.wait_for_onie_prompt(serial_engine)
@@ -525,7 +530,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('Prepare for installation: enter ONIE'):
             switch_in_onie = False
             try:
-                self.enter_onie(topology_obj, dut_alias)
+                self.enter_onie(topology_obj, 'ONIE: Install OS', dut_alias)
                 switch_in_onie = True
             except Exception as err:
                 logger.info("Got an exception: {}".format(str(err)))
@@ -539,8 +544,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         serial_engine.run_cmd('\r', ['Please press Enter to activate this console', 'ONIE:/\\s+'], timeout=60)
 
     @retry(Exception, tries=3, delay=5)
-    def enter_onie(self, topology_obj, dut_alias='dut'):
-        self.enter_onie_install_mode(topology_obj, dut_alias)
+    def enter_onie(self, topology_obj, onie_menu_entry, dut_alias='dut'):
+        self.enter_onie_mode(topology_obj, onie_menu_entry, dut_alias)
 
     def confirm_in_onie_install_mode(self, topology_obj, dut_alias='dut'):
         pass
