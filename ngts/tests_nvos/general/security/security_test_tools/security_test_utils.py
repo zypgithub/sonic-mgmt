@@ -7,6 +7,7 @@ import pytz
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AaaServerManager import \
@@ -63,14 +64,15 @@ def clear_accounting_logs_on_servers(accounting_server_mngrs: List[AaaServerMana
             mngr.clear_accounting_logs()
 
 
-def check_accounting(after_time: str, client_ip: str, client_username: str,
+def check_accounting(after_time: str, switch_hostname: str, client_username: str,
                      accounting_server_mngrs: List[AaaServerManager], expect_accounting_logs: List[bool]):
     with allure.step('Verify accounting logs on given servers'):
         for i, mngr in enumerate(accounting_server_mngrs):
             expect_logs = expect_accounting_logs[i]
             with allure.step(f'Check accounting on server: {mngr.ip} , Expect logs: {expect_logs}'):
+                switch_hostname = IpTool.get_eth0_hostname(switch_hostname)
                 accounting_logs: AaaAccountingLogsFileContent = mngr.tail_accounting_logs(
-                    grep=[client_ip, client_username], after_time=after_time)
+                    grep=[switch_hostname, client_username], after_time=after_time)
                 assert bool(accounting_logs.logs) == expect_logs, \
                     f'There are {"no " if expect_logs else ""}accounting logs ' \
                     f'on server "{mngr.ip}" for user "{client_username}", ' \
