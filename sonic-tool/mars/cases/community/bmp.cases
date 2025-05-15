@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> BMP Test </info>
+            <name> bmp test </name>
+            <owner> </owner>
+            <pre></pre>
+            <post></post>
+        </Test>
+        <Case>
+            <tags> BMP test </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <ignore>
+            <!-- daily case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> BMP configdb test Case </info>
+        <name> BMP configdb test </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts bmp/test_bmp_configdb.py </static_args>
+            </params>
+        </cmd>
+    </case>
+        <case>
+        <ignore>
+            <!-- daily case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> BMP redis instance test Case </info>
+        <name> BMP redis instance testcase </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts bmp/test_bmp_redis_instance.py </static_args>
+            </params>
+        </cmd>
+    </case>
+        <case>
+        <ignore>
+            <!-- daily case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> BMP statedb test Case </info>
+        <name> BMP statedb test </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts bmp/test_bmp_statedb.py </static_args>
+            </params>
+        </cmd>
+    </case>
+        <case>
+        <ignore>
+            <!-- daily case -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> != </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> BMP docker restart test Case </info>
+        <name> BMP docker restart test </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts bmp/test_docker_restart.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

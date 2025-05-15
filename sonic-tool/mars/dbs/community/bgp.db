@@ -264,5 +264,37 @@
             </condition>
         </ignore>
     </test>
-
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_operation_in_ro.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+    </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_port_disable.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+    </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bmp.cases </cases>
+        <ignore>
+            <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+            <condition>
+                <key> skip_main_hwsku_only_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+    </test>
 </DBDEF>

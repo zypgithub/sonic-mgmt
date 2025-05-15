@@ -133,5 +133,7 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/mgmt_ipv6.cases </cases>
     </test>
-
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fips.cases </cases>
+    </test>
 </DBDEF>
