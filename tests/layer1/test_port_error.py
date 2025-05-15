@@ -59,7 +59,7 @@ class TestMACFault(object):
         for port_name, eeprom_info in eeprom_infos.items():
             if parsed_presence.get(port_name) == "Present" and \
                     "SFP EEPROM detected" in eeprom_info[port_name] \
-                    and "COPPER" not in eeprom_info["Media Interface Code"].upper():
+                    and "COPPER" not in eeprom_info.get("Media Interface Technology", "COPPER").upper():
                 available_optical_interfaces.append(port_name)
 
         pytest_assert(available_optical_interfaces, "No interfaces with SFP detected. Cannot proceed with tests.")
