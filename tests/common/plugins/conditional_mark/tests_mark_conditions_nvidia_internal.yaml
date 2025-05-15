@@ -1438,4 +1438,35 @@ dash/test_dash_crm.py::test_dash_outbound_ca_to_pa:
     conditions:
     - "https://redmine.mellanox.com/issues/4291276 and '4280' in platform"
 
+
+platform_tests/api/test_watchdog.py::test_arm_disarm_states:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4417277"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
+
+platform_tests/api/test_watchdog.py::test_remaining_time:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4417277"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
+
+platform_tests/api/test_watchdog.py::test_periodic_arm:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4417277"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
+
+platform_tests/api/test_watchdog.py::test_arm_different_timeout_greater:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4417277"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
+
+platform_tests/api/test_watchdog.py::test_arm_different_timeout_smaller:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4417277"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
