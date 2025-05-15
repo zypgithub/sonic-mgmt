@@ -2641,16 +2641,6 @@ telemetry/test_telemetry.py::test_virtualdb_table_streaming:
       - https://github.com/sonic-net/sonic-buildimage/issues/22201
 
 #######################################
-#####         pktgen              #####
-#######################################
-test_pktgen.py:
-  skip:
-    reason: "Have known issue, only running for 'cisco-8000', skipping for all other ASIC types"
-    conditions:
-      - "asic_type not in ['cisco-8000']"
-      - "https://github.com/sonic-net/sonic-mgmt/issues/13804"
-
-#######################################
 #####         vs_chassis          #####
 #######################################
 test_vs_chassis_setup.py:
