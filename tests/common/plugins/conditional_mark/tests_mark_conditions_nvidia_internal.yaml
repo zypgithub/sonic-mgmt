@@ -440,13 +440,6 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
 
 
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE START ##########################
-clock/test_clock.py:
-  skip:
-    reason: "Testcase ignored due to RM issue 4056053"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/4056053"
-
 sflow/test_sflow.py:
   skip:
     reason: "Testcase ignored due to community sflow test had not been adapted to the dualtor setup"
