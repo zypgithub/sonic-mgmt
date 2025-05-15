@@ -37,10 +37,10 @@ def test_techsupport_show(engines, test_name, test_api, devices):
             system.techsupport.show()).get_returned_value().values())
         folder, duration = system.techsupport.action_generate(test_name=test_name)
 
-        OperationTime.verify_operation_time(duration, operation).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file1 = system.techsupport.file_name
         folder, duration = system.techsupport.action_generate()
-        OperationTime.verify_operation_time(duration, operation).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file2 = system.techsupport.file_name
         output_dictionary_after_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
             system.techsupport.show()).get_returned_value().values())
@@ -89,7 +89,7 @@ def test_techsupport_since(engines, test_name, test_api, devices):
         output_dictionary = list(Tools.OutputParsingTool.parse_show_files_to_dict(
             system.techsupport.show()).get_returned_value().values())
         validate_techsupport_since(output_dictionary, tech_support_folder)
-        OperationTime.verify_operation_time(duration, operation).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         system.techsupport.action_delete(system.techsupport.file_name)
 
 
@@ -238,7 +238,7 @@ def test_techsupport_multiple_times(engines, test_name, test_api, devices):
         for i in range(0, 4):
             with allure.step("Generate Tech-Support for the {} time".format(i)):
                 folder, duration = system.techsupport.action_generate(test_name=test_name)
-                OperationTime.verify_operation_time(duration, operation).verify_result()
+                OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
                 files_names.append(system.techsupport.file_name)
 
     for file_name in files_names:

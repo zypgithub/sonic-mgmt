@@ -11,6 +11,7 @@ from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -677,6 +678,9 @@ class BlackMambaSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 550,
             'install cpld': 1000,
+            self.generate_tech_support: 130,
+            InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 14.5 * MINUTE,
+            InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
         })
 
     def get_mgmt_ports(self) -> List[str]:
@@ -834,6 +838,9 @@ class CrocodileSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 500,
             'install cpld': 720,
+            self.generate_tech_support: 100,
+            InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 13.5 * MINUTE,
+            InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 9 * MINUTE,
         })
         self.constants.firmware.append('CPLD4')
 

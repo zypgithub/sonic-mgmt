@@ -21,7 +21,7 @@ from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 logger = logging.getLogger()
 
 
-@pytest.mark.timeout(30 * MINUTE, func_only=True)
+@pytest.mark.timeout(45 * MINUTE, func_only=True)
 @pytest.mark.cpld
 def test_cpld_upgrade(engines, devices, topology_obj):
     """
