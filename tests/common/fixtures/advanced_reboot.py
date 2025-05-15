@@ -135,6 +135,7 @@ class AdvancedReboot:
         self.neighborType = self.request.config.getoption("--neighbor_type")
         if 'sonic' in self.neighborType:
             self.neighborType = 'sonic'
+        self.ceosNeighLacpMultiplier = self.request.config.getoption("--ceos_neighbor_lacp_multiplier")
 
         # Set default reboot limit if it is not given
         if self.rebootLimit is None:
@@ -914,6 +915,7 @@ class AdvancedReboot:
             "service_data": None if self.rebootType != 'service-warm-restart' else self.service_data,
             "neighbor_type": self.neighborType,
             "kvm_support": True,
+            "ceos_neighbor_lacp_multiplier": self.ceosNeighLacpMultiplier,
         }
 
         if self.dual_tor_mode:

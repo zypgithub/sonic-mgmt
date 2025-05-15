@@ -136,6 +136,10 @@ def pytest_addoption(parser):
                                                                                           "vsonic", "ceos"],
                      help="Neighbor devices type")
 
+    # ceos neighbor lacp multiplier
+    parser.addoption("--ceos_neighbor_lacp_multiplier", action="store", default=3, type=int,
+                     help="LACP multiplier for ceos neighbors")
+
     # FWUtil options
     parser.addoption('--fw-pkg', action='store', help='Firmware package file')
 
