@@ -5,7 +5,7 @@ r-bison-16     ansible_host=10.210.26.15 ansible_hostv6="fe80::5200:e6ff:fe46:2b
 sonic_latest
 
 [ptf]
-ptf-r-bison-16  ansible_host=10.215.40.182 ansible_ssh_usr=root ansible_ssh_pass=root
+ptf-r-bison-16  ansible_host=10.215.34.2 ansible_ssh_usr=root ansible_ssh_pass=root
 
 [lab:children]
 sonic

@@ -516,5 +516,5 @@ r-bison-16,Ethernet509,r-moose-06,Ethernet69,100000,1027,Access,on
 r-bison-16,Ethernet510,r-moose-06,Ethernet70,100000,1028,Access,on
 r-bison-16,Ethernet511,r-moose-06,Ethernet71,100000,1029,Access,on
 
-r-bison-17,Ethernet504,r-sonic-17,p4p2,100000,"2-100,615-1021",Trunk,on
-r-moose-06,Ethernet288,r-sonic-17,p4p2,100000,1022-1029,Trunk,on
+r-bison-17,Ethernet504,r-sonic-18,p1p2,100000,"2-100,615-1021",Trunk,on
+r-moose-06,Ethernet288,r-sonic-18,p1p2,100000,1022-1029,Trunk,on
