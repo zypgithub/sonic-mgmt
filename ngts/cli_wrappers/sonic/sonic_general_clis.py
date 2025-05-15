@@ -13,7 +13,8 @@ from retry.api import retry_call
 import ngts.helpers.json_file_helper as json_file_helper
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultTestServerCred
-from infra.tools.general_constants.constants import SonicSimxConstants, SonicHostsConstants
+from infra.tools.general_constants.constants import SonicSimxConstants
+from infra.tools.general_constants.air_constants import HostsConstants
 from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
@@ -1561,8 +1562,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for interface in config_db_dict['PORT']:
             config_db_dict['PORT'][interface]['admin_status'] = 'up'
         ips_dict = get_dhcp_ips_dict(topology_obj)
-        gw_ip = ips_dict[SonicHostsConstants.OOB_MGMT_SERVER]
-        dut_ip = ips_dict[SonicHostsConstants.DUT]
+        gw_ip = ips_dict[HostsConstants.OOB_MGMT_SERVER]
+        dut_ip = ips_dict[HostsConstants.DUT]
         config_db_dict['MGMT_INTERFACE'] = {f'eth0|{dut_ip}/24': {'gwaddr': gw_ip}}
         config_db_path = os.path.join(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name, SonicConst.CONFIG_DB_JSON)
         self.create_extended_config_db_file(setup_name, config_db_dict, config_db_path)

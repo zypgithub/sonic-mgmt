@@ -6,7 +6,7 @@ import re
 from retry.api import retry_call
 
 from infra.tools.connection_tools.onie_engine import OnieEngine
-from infra.tools.general_constants.air_constants import SonicNvidiaAirConstants
+from infra.tools.general_constants.air_constants import NvidiaAirConstants
 from ngts.constants.constants import InfraConst, PlatformTypesConstants, SonicDeployConstants
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.helpers.json_file_helper import extract_fw_data
@@ -212,7 +212,7 @@ class SonicOnieCli:
         with allure.step('Downloading SONiC image'):
             if 'air' in platform_params.setup_name:
                 self.download_image_into_air(topology_obj, image_path, image_name, dst_image_file_path)
-                dst_image_file_path = f'http://{SonicNvidiaAirConstants.NVIDIA_AIR_OOB_MGMT_SERVER_IP}/{image_name}'
+                dst_image_file_path = f'http://{NvidiaAirConstants.NVIDIA_AIR_OOB_MGMT_SERVER_IP}/{image_name}'
             else:
                 self.download_image_into_nvidia_lab(image_path, dst_image_file_path)
 
