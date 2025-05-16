@@ -29,8 +29,8 @@ r-leopard-01,Ethernet104,r-leopard-20,Ethernet104,200000,327,Access,on
 r-leopard-01,Ethernet108,r-leopard-20,Ethernet108,200000,328,Access,on
 r-leopard-01,Ethernet112,r-leopard-20,Ethernet112,200000,329,Access,on
 r-leopard-01,Ethernet116,r-leopard-20,Ethernet116,200000,330,Access,on
-r-leopard-01,Ethernet120,r-leopard-20,Ethernet120,200000,331,Access,on
-r-leopard-01,Ethernet124,r-leopard-20,Ethernet124,200000,332,Access,on
+r-leopard-01,Ethernet120,r-leopard-20,Ethernet120,200000,331,Access,off
+r-leopard-01,Ethernet124,r-leopard-20,Ethernet124,200000,332,Access,off
 r-leopard-01,Ethernet128,r-leopard-20,Ethernet128,200000,333,Access,on
 r-leopard-01,Ethernet132,r-leopard-20,Ethernet132,200000,334,Access,on
 r-leopard-01,Ethernet136,r-leopard-20,Ethernet136,200000,335,Access,on
