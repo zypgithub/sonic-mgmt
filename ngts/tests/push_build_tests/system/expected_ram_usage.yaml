@@ -144,7 +144,7 @@ master:
   MSN4600C: # Tigon
     <<: *platform_defaults
     sx_sdk: 1200
-    syncd: 300
+    syncd: 325
   MSN4700: # Leopard
     <<: *platform_defaults
     total: 6000
