@@ -449,7 +449,8 @@ def send_verify_srv6_packet(
 
     try:
         if exp_pro == 'forward':
-            port_index, _ = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)
+            # set timeout to 30 to override the affection of huge BGP update exchange after config reload or bgp restart
+            port_index, _ = testutils.verify_packet_any_port(ptfadapter, exp_pkt, timeout=30, ports=ptf_dst_port_ids)
             logger.info(f'Received packet(s) on port {ptf_dst_port_ids[port_index]}\n')
         elif exp_pro == 'drop':
             testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=ptf_dst_port_ids)

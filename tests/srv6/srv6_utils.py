@@ -10,12 +10,13 @@ from tests.common.helpers.srv6_helper import SRv6
 
 logger = logging.getLogger(__name__)
 LOCATOR_NUM = 128
+ROUTE_BASE = '2001'
 
 
 class MyLocators():
     # Generate 128 locators with incrementing IPv6 addresses
     my_locator_list = [
-        [f'locator_{i + 1}', f'2001:{1001 + i}:{1 + i}::', f'{1 + i}'] for i in range(LOCATOR_NUM)
+        [f'locator_{i + 1}', f'{ROUTE_BASE}:{1001 + i}:{1 + i}::', f'{1 + i}'] for i in range(LOCATOR_NUM)
     ]
 
 
@@ -70,6 +71,56 @@ def validate_srv6_in_appl_db(duthost,
 
     except Exception as err:
         raise Exception(f"Failed to validate SRv6 MySIDs in Application DB: {str(err)}")
+
+
+def validate_srv6_in_asic_db(duthost):
+    """
+    Validate all SRv6 MySIDs in ASIC DB using a single query.
+
+    Args:
+        duthost (SonicHost): DUT host object
+
+    Returns:
+        bool: True if all MySIDs are valid, False otherwise
+    """
+    try:
+        asic_db_keys = duthost.shell('sonic-db-cli ASIC_DB keys "*ASIC_STATE:SAI_OBJECT_TYPE_MY_SID_ENTRY*"')["stdout"]
+        if not asic_db_keys:
+            logger.error("No SRv6 MySID entries found in ASIC_DB")
+            return False
+
+        # Validate each MySID
+        for entry in MySIDs.MY_SID_LIST:
+            prefix = entry[1]
+
+            # Check if the key exists
+            if prefix not in asic_db_keys:
+                logger.error(f"MySID entry not found in ASIC_DB: {prefix}")
+                return False
+
+        return True
+
+    except Exception as err:
+        raise Exception(f"Failed to validate SRv6 MySIDs in ASIC DB: {str(err)}")
+
+
+def validate_srv6_route(duthost):
+    """
+    Validate the SRv6 route in ASIC DB
+    """
+    try:
+        asic_route = duthost.shell(
+            f'sonic-db-cli ASIC_DB keys "ASIC_STATE:SAI_OBJECT_TYPE_ROUTE_ENTRY:*{ROUTE_BASE}::/16*"')["stdout"]
+
+        if not asic_route:
+            logger.error(f"No SRv6 route {ROUTE_BASE}::/16 found")
+            return False
+
+        logger.info(f"SRv6 route {ROUTE_BASE}::/16 installed")
+        return True
+
+    except Exception as err:
+        raise Exception(f"Failed to validate SRv6 route {ROUTE_BASE}::/16: {str(err)}")
 
 
 def validate_sai_sdk_dump_files(duthost, techsupport_folder, feature_list=[]):

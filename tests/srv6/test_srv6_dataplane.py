@@ -10,7 +10,7 @@ from ptf.testutils import simple_ipv6_sr_packet, send_packet, verify_no_packet_a
 from ptf.mask import Mask
 from tests.srv6.srv6_utils import MySIDs, runSendReceive, verify_appl_db_sid_entry_exist, SRv6, \
     validate_srv6_in_appl_db, validate_techsupport_generation, validate_srv6_counters, clear_srv6_counters, \
-    get_neighbor_mac, verify_asic_db_sid_entry_exist
+    get_neighbor_mac, validate_srv6_in_asic_db, validate_srv6_route, verify_asic_db_sid_entry_exist
 from tests.common.reboot import reboot
 from tests.common.config_reload import config_reload
 from tests.common.helpers.assertions import pytest_assert
@@ -176,7 +176,16 @@ class SRv6Base():
         clear_srv6_counters(duthost)
 
         logger.info('Validate SRv6 table in APPL DB')
-        wait_until(60, 5, 0, validate_srv6_in_appl_db, duthost)
+        pytest_assert(wait_until(60, 5, 0, validate_srv6_in_appl_db, duthost),
+                      "SRv6 table in APPL DB is not as expected")
+
+        logger.info('Validate SRv6 table in ASIC DB')
+        pytest_assert(wait_until(60, 5, 0, validate_srv6_in_asic_db, duthost),
+                      "SRv6 table in ASIC DB is not as expected")
+
+        logger.info('Validate SRv6 route in ASIC DB')
+        pytest_assert(wait_until(120, 5, 0, validate_srv6_route, duthost),
+                      "SRv6 route in ASIC DB is not as expected")
 
         ptf_src_mac = ptfadapter.dataplane.get_mac(0, self.params['ptf_downlink_port']).decode('utf-8')
         for srv6_packet in self.params['srv6_packets']:

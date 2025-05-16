@@ -2,6 +2,8 @@ import pytest
 import time
 import re
 import logging
+import random
+import ipaddress
 from tests.common.utilities import wait_until
 from tests.common.helpers.ptf_tests_helper import get_stream_ptf_ports
 from tests.common.helpers.ptf_tests_helper import select_random_link
@@ -11,7 +13,7 @@ from tests.common.helpers.srv6_helper import SRv6Packets, create_srv6_locator, d
     del_srv6_sid
 from tests.srv6.srv6_utils import MyLocators, MySIDs, get_srv6_mysid_entry_usage, \
     enable_srv6_counterpoll, disable_srv6_counterpoll, set_srv6_counterpoll_interval, verify_srv6_counterpoll_status, \
-    verify_srv6_crm_status
+    verify_srv6_crm_status, ROUTE_BASE
 
 logger = logging.getLogger(__name__)
 
@@ -56,11 +58,29 @@ def srv6_crm_total_sids(rand_selected_dut):
     rand_selected_dut.command(f"crm config polling interval {original_crm_polling_interval}")
 
 
+def get_random_uplink_port(upstream_links, route_info):  # noqa F811
+    '''
+    Get a random uplink port that is used by the route
+    '''
+    upstream_ports = set(upstream_links.keys())
+    route_ports = {nexthop[1]: str(nexthop[0]) for nexthop in route_info['nexthops']}
+    common_ports = upstream_ports.intersection(route_ports.keys())
+    if common_ports:
+        random_port = random.choice(list(common_ports))
+        return random_port, route_ports[random_port]
+
+
 @pytest.fixture(scope="class", params=MySIDs.TUNNEL_MODE)
-def config_setup(request, rand_selected_dut, srv6_crm_total_sids, srv6_packet_type):
+def config_setup(request, rand_selected_dut, srv6_crm_total_sids, upstream_links):  # noqa F811
     '''
-    Configure 10 instances of SRV6_MY_SIDS
+    Configure 128 instances of SRV6_MY_SIDS
     '''
+    with allure.step('Create static route for SRv6'):
+        route_info = rand_selected_dut.get_ip_route_info(ipaddress.ip_network('::/0'))
+        ifname, nexthop = get_random_uplink_port(upstream_links, route_info)
+        rand_selected_dut.command(f"sonic-db-cli CONFIG_DB HSET STATIC_ROUTE\\|default\\|{ROUTE_BASE}::/16 "
+                                  f"nexthop {nexthop} ifname {ifname}")
+
     with allure.step('Enable SRv6 counterpoll'):
         enable_srv6_counterpoll(rand_selected_dut)
         set_srv6_counterpoll_interval(rand_selected_dut, 1000)
@@ -107,6 +127,9 @@ def config_setup(request, rand_selected_dut, srv6_crm_total_sids, srv6_packet_ty
         used_mysid_num = 0
         available_mysid_num = srv6_crm_total_sids
         wait_until(10, 1, 0, verify_srv6_crm_status, rand_selected_dut, used_mysid_num, available_mysid_num)
+
+    with allure.step('Delete static route for SRv6'):
+        rand_selected_dut.command(f"sonic-db-cli CONFIG_DB DEL STATIC_ROUTE\\|default\\|{ROUTE_BASE}::/16")
 
     rand_selected_dut.shell('sudo config save -y')
 
