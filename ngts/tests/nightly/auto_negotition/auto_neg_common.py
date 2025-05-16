@@ -296,7 +296,7 @@ class TestAutoNegBase(TestAutoFecBase):
                                                   ports_aliases_dict, pci_conf):
         port_number = get_alias_number(ports_aliases_dict[port])
         logger.info("Verify Auto negotiation status based on mlxlink command")
-        mlxlink_actual_conf = cli_object.interface.parse_port_mlxlink_status(pci_conf, port_number)
+        mlxlink_actual_conf = cli_object.interface.parse_port_mlxlink_status(pci_conf, port_number, port_name=port)
         port_conf_dict_copy = deepcopy(port_conf_dict)
         self.update_port_autoneg_expected_mode(port_conf_dict_copy)
         self.compare_actual_and_expected_auto_neg_output(expected_conf=port_conf_dict_copy,

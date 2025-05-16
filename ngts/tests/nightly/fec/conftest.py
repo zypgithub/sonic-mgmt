@@ -292,6 +292,7 @@ def get_dut_ports_basic_mlxlink_dict(cli_objects, interfaces, tested_lb_dict,
         port_number = dut_ports_number_dict[port]
         mlxlink_conf = retry_call(cli_objects.dut.interface.parse_port_mlxlink_status,
                                   fargs=[pci_conf, port_number],
+                                  fkwargs={"port_name": port},
                                   tries=6, delay=10, logger=logger)
         port_fec_mode = mlxlink_conf[AutonegCommandConstants.FEC]
         port_width_mode = int(mlxlink_conf[AutonegCommandConstants.WIDTH])

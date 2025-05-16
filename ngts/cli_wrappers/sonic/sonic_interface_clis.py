@@ -539,7 +539,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         return self.engine.run_cmd("sudo config interface fec {interface_name} {fec_option}"
                                    .format(interface_name=interface, fec_option=fec_option))
 
-    def parse_port_mlxlink_status(self, pci_conf, port_number):
+    def parse_port_mlxlink_status(self, pci_conf, port_number, port_name=""):
         """
         parsing the mlxlink status command,
         sudo mlxlink -d /dev/mst/mt53100_pciconf0 -m -p 35
@@ -557,6 +557,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         ...
         :param pci_conf: /dev/mst/mt53100_pciconf0
         :param port_number: i.e. 35
+        :param port_name: i.e. Ethernet0, optional, only used as workaround to get Vendor Part Number when
+            SAI_INDEPENDENT_MODULE_MODE is enabled
         :return: a dictionary with the parsed mlxlink status of the port
         for example,
         {
@@ -568,6 +570,22 @@ class SonicInterfaceCli(InterfaceCliCommon):
         for key, regex_expression_tuple in regex_expressions.items():
             regex_exp, expected_val, parsed_val, default_val, additional_val = regex_expression_tuple
             actual_val = re.search(regex_exp, port_mlxlink_status)
+            # If SAI INDEPENDENT MODULE MODE is enabled, there's a known limitation that we can't get the
+            # Vendor Part Number from mlxlink command, so we need to get it from transceiver eeprom as a workaround.
+            # See https://redmine.mellanox.com/issues/3588062 for more details.
+            if key == AutonegCommandConstants.PART_NUMBER and actual_val is None:
+                logger.info(
+                    "Unable to get Vendor Part Number from mlxlink command, getting it from transceiver eeprom"
+                )
+                if not port_name:
+                    raise AssertionError(f"Port name is required for port_number: {port_number}")
+                logger.info(
+                    "Getting transceiver eeprom for port_name: %s, port_number: %s",
+                    port_name, port_number
+                )
+                transceiver_eeprom_output = self.get_interfaces_transceiver_eeprom(port_name)
+                logger.info("Transceiver eeprom output: %s", transceiver_eeprom_output)
+                actual_val = re.search(r"Vendor PN\s*:\s*(\S+)", transceiver_eeprom_output)
             if actual_val:
                 actual_val = actual_val.group(1)
             else:

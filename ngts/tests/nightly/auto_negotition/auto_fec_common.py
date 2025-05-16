@@ -72,7 +72,8 @@ class TestAutoFecBase:
         with allure.step('Verify FEC configuration on port: {} with mlxlink command'.format(port)):
             logger.info('Verify FEC configuration on port: {} with mlxlink command'.format(port))
             mlxlink_actual_conf = self.cli_objects.dut.interface.parse_port_mlxlink_status(self.pci_conf,
-                                                                                           port_number)
+                                                                                           port_number,
+                                                                                           port_name=port)
             self.compare_actual_and_expected_fec_output(expected_conf=port_conf_dict, actual_conf=mlxlink_actual_conf)
 
     def verify_interfaces_status_cmd_output_for_port(self, port, port_conf_dict):
