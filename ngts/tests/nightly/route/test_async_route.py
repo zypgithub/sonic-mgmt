@@ -52,31 +52,6 @@ def get_routes_count(dut_engine, ip_version):
     return routes_count
 
 
-def get_routes_operation_duration(dut_engine, ip_version, initial_routes_count, expected_routes_count):
-    """
-    Run the sx_api script to measure the time to perform routes operation
-
-    :param dut_engine: DUT engine object
-    :param str ip_version: the version of IP routes to count
-    :param int initial_routes_count: number of routes before the operation performed
-    :param int expected_routes_count: expected number of routes after the operation performed
-    :return float: time to perform the operation in sec
-    """
-    output = dut_engine.run_cmd(f'docker exec -t syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME}'
-                                f' {ip_version} --initial_number_of_routes {initial_routes_count}'
-                                f' --expected_number_of_routes {expected_routes_count}"')
-    execution_time = -1
-    if output:
-        try:
-            execution_time = float(re.search(r'Time to execute: ([\d\.]+)', output).group(1))
-        except Exception as e:
-            raise Exception(f'Failed to parse the sx_api script output: {str(e)}')
-    else:
-        raise Exception('Failed to retrieve routes operation duration')
-    logger.info(f'Time to perform an operation {execution_time}')
-    return execution_time
-
-
 def get_expected_timing(ip_version, platform, action, routes_count, branch):
     """
     Retrieve expected timing value for particular ip_version, platform, action and routes_count
@@ -184,6 +159,33 @@ def do_traffic_validation(interfaces, routes_validation_list, players, ip_versio
     retry_call(scapy_checker.run_validation, fargs=[], tries=5, delay=10, logger=logger)
 
 
+def run_routes_operation(dut_engine, ip_version, initial_routes_count, expected_routes_count, action):
+    """
+    Run routes operation on DUT and return the execution time
+
+    :param dut_engine: DUT engine object
+    :param str ip_version: IP version of routes
+    :param int initial_routes_count: number of routes before the operation performed
+    :param int expected_routes_count: expected number of routes after the operation performed
+    :param str action: name of the action performed. Could be ADD or REMOVE
+    :return float: time to perform the operation in sec
+    """
+    dut_engine.run_cmd(f'docker exec syncd bash -c "python3 /usr/bin/{SX_API_ROUTES_FILE_NAME} '
+                       f'{ip_version} --initial_number_of_routes {initial_routes_count} '
+                       f'--expected_number_of_routes {expected_routes_count} > /tmp/async_route_log.txt 2>&1 &"')
+    if action == ADD:
+        dut_engine.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_SET_DUT_PATH}')
+    else:
+        dut_engine.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_DEL_DUT_PATH}')
+    while (output := dut_engine.run_cmd(f'docker exec syncd bash -c "cat /tmp/async_route_log.txt"')) == '':
+        time.sleep(2)
+    try:
+        execution_time = float(re.search(r'Time to execute: ([\d\.]+)', output).group(1))
+        return execution_time
+    except Exception as e:
+        raise Exception(f'Failed to parse the sx_api script output: {str(e)}')
+
+
 @pytest.mark.parametrize(
     'ip_version,static_routes',
     [(IPV4, 'static_routes_ipv4'), (IPV6, 'static_routes_ipv6')]
@@ -204,15 +206,13 @@ def test_adding_routes(cli_objects, engines, platform_params, interfaces, player
     for i in range(NUMBER_OF_MEASUREMENTS):
         with allure.step(f'Adding routes time measurement {i}'):
             expected_routes_count = initial_routes_count + new_routes_count
-            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
-            execution_time = get_routes_operation_duration(engines.dut, ip_version, initial_routes_count,
-                                                           expected_routes_count)
+            execution_time = run_routes_operation(engines.dut, ip_version, initial_routes_count, expected_routes_count,
+                                                  ADD)
             with allure.step('Check added routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects,
                                       len(routes_validation_list))
 
-            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
-            get_routes_operation_duration(engines.dut, ip_version, expected_routes_count, initial_routes_count)
+            run_routes_operation(engines.dut, ip_version, expected_routes_count, initial_routes_count, REMOVE)
             with allure.step('Check removed routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, 0)
             timings.append(execution_time)
@@ -254,15 +254,13 @@ def test_removing_routes(cli_objects, engines, platform_params, interfaces, play
     for i in range(NUMBER_OF_MEASUREMENTS):
         with allure.step(f'Removing routes time measurement {i}'):
             expected_routes_count = initial_routes_count + new_routes_count
-            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_SET_DUT_PATH} &')
-            get_routes_operation_duration(engines.dut, ip_version, initial_routes_count, expected_routes_count)
+            run_routes_operation(engines.dut, ip_version, initial_routes_count, expected_routes_count, ADD)
             with allure.step('Check added routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects,
                                       len(routes_validation_list))
 
-            engines.dut.run_cmd(f'sudo python3 /tmp/{SWSS_BULK_CONFIG_FILE_NAME} {ROUTE_APP_CONFIG_DEL_DUT_PATH} &')
-            execution_time = get_routes_operation_duration(engines.dut, ip_version, expected_routes_count,
-                                                           initial_routes_count)
+            execution_time = run_routes_operation(engines.dut, ip_version, expected_routes_count, initial_routes_count,
+                                                  REMOVE)
             with allure.step('Check removed routes on switch by sending traffic'):
                 do_traffic_validation(interfaces, routes_validation_list, players, ip_version, cli_objects, 0)
             timings.append(execution_time)
