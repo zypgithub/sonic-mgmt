@@ -541,9 +541,9 @@ qos/test_qos_sai.py::TestQosSai::testQosSaiQSharedWatermark:
 
 qos/test_qos_sai.py::TestQosSai::testQosSaiPgSharedWatermark[single_asic-wm_pg_shared_lossless]:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398086 on r-panther-01"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398086 on panther platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4398086 and 'r-panther-01' in testbed"
+    - "https://redmine.mellanox.com/issues/4398086 and '2700' in platform"
 
 platform_tests/test_cpu_memory_usage.py:
   skip:
