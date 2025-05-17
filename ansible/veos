@@ -3406,8 +3406,8 @@ vms_89
 host_var_file=host_vars/MTVR-R740-04.yml
 
 [vms_89:vars]
-host_var_file=host_vars/R-SONIC-13.yml
-mgmt_prefixlen=16
+host_var_file=host_vars/MTVR-R740-04.yml
+mgmt_prefixlen=20
 
 [server_94:children]
 vm_host_94
