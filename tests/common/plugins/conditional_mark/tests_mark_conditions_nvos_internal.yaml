@@ -658,4 +658,9 @@ tests_nvos/interfaces/test_ib_interface_phy_diag.py::test_unintentional_link_dow
       - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4377334
 
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist[OpenApi]:
+  skip:
+    conditions:
+      - https://redmine.mellanox.com/issues/4450837
+
 ########################## NVOS IGNORE END ##########################
