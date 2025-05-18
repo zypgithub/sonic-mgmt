@@ -128,5 +128,5 @@ def factory_reset_general_pre_steps(engines, devices, system):
 
 
 def get_health_status(system):
-    system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-    return system_output[SystemConsts.HEALTH_STATUS]
+    system_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+    return system_output[SystemConsts.STATUS]

@@ -347,9 +347,8 @@ class BaseSwitch(BaseDevice):
     def _init_constants(self):
         super()._init_constants()
         system_dic = {
-            'system': [SystemConsts.HOSTNAME, SystemConsts.PLATFORM, SystemConsts.PRODUCT_NAME,
-                       SystemConsts.MEMORY, SystemConsts.UPTIME,
-                       SystemConsts.HEALTH_STATUS, SystemConsts.DATE_TIME, SystemConsts.STATUS],
+            'system': [SystemConsts.HOSTNAME, SystemConsts.PRODUCT_NAME, SystemConsts.VERSION, SystemConsts.UPTIME,
+                       SystemConsts.PRODUCT_RELEASE, SystemConsts.HEALTH, SystemConsts.DATE_TIME, SystemConsts.STATUS],
             'message': [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE],
             'reboot': [SystemConsts.REBOOT_REASON],
             'version': [SystemConsts.VERSION_BASE_OS, SystemConsts.VERSION_IMAGE, SystemConsts.VERSION_KERNEL,
@@ -398,8 +397,7 @@ class BaseSwitch(BaseDevice):
         bmc_dump_files = None
         cluster_files = None
 
-        firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD,
-                    PlatformConsts.FW_CPLD + '1', PlatformConsts.FW_CPLD + '2', PlatformConsts.FW_CPLD + '3']
+        firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD]
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
                                               log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, etc_files, cluster_files,
@@ -413,7 +411,7 @@ class BaseSwitch(BaseDevice):
         self.show_platform_output = {
             "system-mac": ExpectedString(regex=r"([\dA-F]{2}:){5}[\dA-F]{2}"),
             "manufacturer": "Nvidia",
-            "product-name": "",     # These fields need to be updated in subclasses.
+            "system-type": "",     # These fields need to be updated in subclasses.
             "cpu": None,            # `None` means we expect any string not in ['', 'N/A'].
             "memory": ExpectedString.number_and_string('GB', range_min=6),  # Expects "x GB" where x > 6
             "disk-size": ExpectedString.number_and_string('GB', range_min=14.0),
@@ -490,3 +488,9 @@ class BaseSwitch(BaseDevice):
 
     def get_default_config_yml(self, engine, root_dir):
         return ""
+
+    def _extend_firmware_by_cpld_amount(self):
+        if hasattr(self, "cpld_amount"):
+            self.constants.firmware.extend(
+                PlatformConsts.FW_CPLD + str(i) for i in range(1, self.cpld_amount + 1)
+            )

@@ -13,6 +13,7 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -146,10 +147,10 @@ class MultiPlanarTool:
         """
         asic_conf = dict()
 
-        system = System()
-        system_info = OutputParsingTool.parse_json_str_to_dictionary(
-            system.show()).get_returned_value()
-        asic_conf_path = PlatformConsts.ASIC_CONF_FILE_PATH.format(system_info[SystemConsts.PLATFORM])
+        platform = Platform()
+        platform_info = OutputParsingTool.parse_json_str_to_dictionary(
+            platform.show()).get_returned_value()
+        asic_conf_path = PlatformConsts.ASIC_CONF_FILE_PATH.format(platform_info[PlatformConsts.SYSTEM_TYPE].lower())
         with allure.step(f"Generate asic conf dictionary from {asic_conf_path}"):
             asic_conf_values = engine.run_cmd(f"cat {asic_conf_path}")
             for line in asic_conf_values.split('\n'):

@@ -43,7 +43,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
 
     with allure.step('validate expected fields exist in output'):
 
-        keys_to_remove = [SystemConsts.VERSION, SystemConsts.LOCATION, SystemConsts.CONTACT]  # keys pruned from output
+        keys_to_remove = [SystemConsts.LOCATION, SystemConsts.CONTACT]  # keys pruned from output
         for key in keys_to_remove:
             system_output.pop(key, None)
 

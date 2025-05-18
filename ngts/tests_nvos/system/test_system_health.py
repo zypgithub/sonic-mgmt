@@ -116,8 +116,8 @@ def test_show_system_health(devices):
     with allure.step("Validate health status with \"nv show system\" cmd"):
         logger.info("Validate health status with \"nv show system\" cmd")
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        ValidationTool.verify_field_exist_in_json_output(system_output, [SystemConsts.HEALTH_STATUS]).verify_result()
-        verify_expected_health_status(system_output, SystemConsts.HEALTH_STATUS, OK)
+        ValidationTool.verify_field_exist_in_json_output(system_output, [SystemConsts.HEALTH]).verify_result()
+        verify_expected_health_status(system_output[SystemConsts.HEALTH], HealthConsts.STATUS, OK)
 
     with allure.step("Validate \"nv show fae health\" cmd"):
         logger.info("Validate \"nv show fae health\" cmd")

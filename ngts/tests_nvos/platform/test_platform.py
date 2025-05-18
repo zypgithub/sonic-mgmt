@@ -28,14 +28,5 @@ def test_show_platform(engines, test_api, devices, nv_command):
         4. Validate all values are correct
     """
     TestToolkit.tested_api = test_api
-
-    output_format = OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
-    output = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.show(output_format=output_format),
-                                                         output_format=output_format).get_returned_value()
-
-    #   WA to support Q3200_RA and QM3400 for Crocodile product name
-    if devices.dut.asic_type == NvosConst.QTM3 and SystemConsts.PRODUCT_NAME in output.keys() and \
-       output[SystemConsts.PRODUCT_NAME] in "Q3200_RA":
-        output[SystemConsts.PRODUCT_NAME] = devices.dut.show_platform_output[SystemConsts.PRODUCT_NAME]
-
+    output = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.show()).get_returned_value()
     ValidationTool.validate_output_of_show(output, TestToolkit.devices.dut.show_platform_output).verify_result()

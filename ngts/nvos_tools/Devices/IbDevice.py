@@ -597,7 +597,7 @@ class GorillaSwitch(IbSwitch):
             "x86_64-mlnx_mqm9700-r0")
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
         self.show_platform_output.update({
-            "product-name": "MQM9700",
+            PlatformConsts.SYSTEM_TYPE: "MQM9700",
             "asic-model": self.asic_type,
         })
         self.asic_version = BaseSwitch.AsicImageConsts(
@@ -704,7 +704,7 @@ class BlackMambaSwitch(IbSwitch):
         self.multi_planar = True
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
-            "product-name": "Q3400_RA",
+            PlatformConsts.SYSTEM_TYPE: "Q3400_RA",
             "asic-model": self.asic_type,
         })
         self.asic_version = BaseSwitch.AsicImageConsts(
@@ -849,7 +849,7 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
         self.transceiver_list = [f'els{a + 1}' for a in range(18)] + ['fnm1'] + [f'oe{b + 1}' for b in range(72)]
         self.constants.firmware.append('CPLD7')
         self.show_platform_output.update({
-            "product-name": "Q3450_LD",
+            PlatformConsts.SYSTEM_TYPE: "Q3450_LD",
             "asic-model": self.asic_type,
         })
         self.voltage_sensors = [
@@ -922,7 +922,7 @@ class CrocodileSwitch(IbSwitch):
         self.asic_type = NvosConst.QTM3
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
-            "product-name": "QM3400",
+            PlatformConsts.SYSTEM_TYPE: "QM3400",
             "asic-model": self.asic_type,
         })
         self.asic_version = BaseSwitch.AsicImageConsts(
@@ -1331,7 +1331,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5110_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5110_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5110_LD",
             "asic-model": self.asic_type,
         })
 
@@ -1458,7 +1458,7 @@ class JulietAriel(JulietTTMSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5112_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5112_LD",
             "asic-model": self.asic_type,
         })
         self.num_of_cartridges = 2
@@ -1497,7 +1497,7 @@ class JulietArielPS(JulietTTMSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5112_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5112_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5112_LD",
             "asic-model": self.asic_type,
         })
 
@@ -1594,7 +1594,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5100_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5100_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5100_LD",
             "asic-model": self.asic_type,
         })
 
@@ -1645,7 +1645,7 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5500_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5500_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5500_LD",
             "asic-model": self.asic_type,
         })
         self.constants = self.constants._replace(
@@ -1766,7 +1766,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5200_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5200_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5200_LD",
             "asic-model": self.asic_type,
         })
         self.voltage_sensors = ['HSC-VinDC-In', 'HSC-VinDC-Out', 'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1', 'PDB-2-Conv-In-1',
@@ -1811,7 +1811,7 @@ class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5600_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N5600_LD",
+            PlatformConsts.SYSTEM_TYPE: "N5600_LD",
             "asic-model": self.asic_type,
         })
 

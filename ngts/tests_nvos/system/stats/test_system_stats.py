@@ -955,7 +955,7 @@ def test_validate_category_file_values(engines, devices, test_api):
 
         with allure.step("Clear all system stats and delete stats files"):
             system_show = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-            start_time = datetime.strptime(system_show['date-time'], StatsConsts.SYSTEM_TIME_FORMAT)
+            start_time = datetime.strptime(system_show['date-time']['local-time'], StatsConsts.SYSTEM_TIME_FORMAT)
             hostname = system_show['hostname']
             clear_all_internal_and_external_files(engine, system, category_list)
 

@@ -637,7 +637,7 @@ class SystemConsts:
     CPU_PERCENT_THRESH_MIN = 0.0
     CPU_PERCENT_THRESH_MAX = 60.0
 
-    HEALTH_STATUS = "health-status"
+    HEALTH = "health"
 
     EXTERNAL_API_STATE = 'state'
     EXTERNAL_API_STATE_ENABLED = 'enabled'
@@ -836,6 +836,7 @@ class ConfigConsts:
 
 class PlatformConsts:
     PLATFORM_FW = "firmware"
+    SYSTEM_TYPE = "system-type"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
     XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/"
     PLATFORM_ENVIRONMENT = "environment"
@@ -976,7 +977,7 @@ class PlatformConsts:
     EROTS_LIST = ['ERoT_BMC_0', 'ERoT_CPU_0', 'ERoT_FPGA_0', 'ERoT_NVSwitch_0', 'ERoT_NVSwitch_1']
     INV_STATE = 'state'
     INV_OK = 'ok'
-    ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/{}/asic.conf"
+    ASIC_CONF_FILE_PATH = "/usr/share/sonic/device/x86_64-nvidia_{}-r0/asic.conf"
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
     TIMEOUT_AFTER_FW_INSTALL = 1200

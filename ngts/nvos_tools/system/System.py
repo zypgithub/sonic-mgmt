@@ -87,7 +87,7 @@ class System(BaseComponent):
         with allure.step("Validate health status with \"nv show system\" cmd"):
             logger.info("Validate health status with \"nv show system\" cmd")
             system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
-            if expected_status != system_output[SystemConsts.HEALTH_STATUS]:
+            if expected_status != system_output[SystemConsts.HEALTH][HealthConsts.STATUS]:
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show()).get_returned_value()
                 health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
                 exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
