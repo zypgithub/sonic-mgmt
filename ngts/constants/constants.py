@@ -1467,6 +1467,17 @@ class RebootTestConstants:
     IFACES_STATUS_FILE = '/tmp/reboot_ifaces_status.json'
 
 
+class Sonic_Cache:
+    VER_DB_PATH = "/auto/sw_system_release/sonic/verification_db"
+    REDMINE_ISSUES_STATUS_CACHE = "/auto/sw_system_release/sonic/verification_db/redmine_issues.json"
+    PROJECT_NAME = "switchx/sonic/sonic-mgmt"
+    GERRIT_API_URL = "https://git-nbu-sw.nvidia.com/r"
+    branches_url = "https://git-nbu-sw.nvidia.com/r/plugins/gitiles/switchx/sonic/sonic-mgmt/+/refs/heads"
+    SONIC_MGMT_REDMINE_CACHE = "/root/mars/workspace/sonic-mgmt/ngts/scripts/redmine_cache/redmine_issues.json"
+    gerrit_api_token = os.getenv("GERRIT_API_KEY")
+    gerrit_username = os.getenv("SVC_SONIC_VER_BOT")
+
+
 class VxlanConstants:
     HOST_HA = 'ha'
     HOST_HB = 'hb'

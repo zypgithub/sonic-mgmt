@@ -9,8 +9,8 @@ import subprocess
 import json
 import datetime as dt
 from abc import ABCMeta, abstractmethod
-from infra.tools.redmine.redmine_api import get_issues_active_status
 from perscache import Cache
+from ngts.helpers.redmine_cache_helper import access_redmine_cache    
 
 cache = Cache()
 
@@ -106,7 +106,7 @@ def get_redmine_issues_status():
     ignore_list = get_ignore_list()
     ignore_list_string = json.dumps(ignore_list)
     all_redmine_issues = re.findall(r"\"Redmine\":\s*\[(\d+)\]", ignore_list_string)
-    issues_active_status_dict = get_issues_active_status(all_redmine_issues)
+    issues_active_status_dict = access_redmine_cache(all_redmine_issues, use_active_status=True)
     return issues_active_status_dict
 
 

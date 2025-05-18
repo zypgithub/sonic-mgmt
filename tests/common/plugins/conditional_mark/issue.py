@@ -15,9 +15,9 @@ import time
 
 from abc import ABCMeta, abstractmethod
 from perscache import Cache
-from infra.tools.redmine.redmine_api import get_issues_active_status, get_issue_list_info
+from infra.tools.redmine.redmine_api import get_issue_list_info
 from ngts.helpers.bug_handler.bug_handler_helper import is_current_ver_newer_or_equal_than_fixed_ver
-
+from ngts.helpers.redmine_cache_helper import access_redmine_cache    
 
 logger = logging.getLogger(__name__)
 cache = Cache()
@@ -57,11 +57,9 @@ def get_conditions_redmine_issues_status():
     conditions = get_conditions_list()
     ignore_list_string = json.dumps(conditions)
     all_redmine_issues = re.findall(r"https:\/\/redmine\.mellanox\.com\/issues\/(\d+)", ignore_list_string)
-    all_redmine_issues = list(set(all_redmine_issues))
-    issues_active_status_dict = get_issues_active_status(all_redmine_issues)
+    issues_active_status_dict = access_redmine_cache(all_redmine_issues, use_active_status=True)
     return issues_active_status_dict
-
-
+    
 @cache(ttl=dt.timedelta(hours=36))
 def get_conditions_redmine_active_issues_fixed_version():
     logger.info('Reading Redmine Issues information from API')
