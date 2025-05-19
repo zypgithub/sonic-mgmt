@@ -593,8 +593,6 @@ class TestSfpApi(PlatformApiTestBase):
                                              in redis TRANSCEIVER_DOM_THRESHOLD table. Skipping this transceiver")
                                 continue
                             expected_keys += self.QSFPZR_EXPECTED_XCVR_THRESHOLD_INFO_KEYS
-                    if 'PINEWAVE' in info_dict['manufacturer']:
-                        expected_keys += self.INNOLIGHT_EXPECTED_XCVR_THRESHOLD_INFO_KEYS
 
                     missing_keys = set(expected_keys) - set(actual_keys)
                     for key in missing_keys:
