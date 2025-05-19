@@ -1411,6 +1411,33 @@ class NtpConsts:
     }
 
 
+class RebootConsts:
+    HALT = "halt"
+    COLD = "cold"
+    IMMEDIATE = "immediate"
+    POWER_CYCLE = "power-cycle"
+    WARM = "warm"
+    FAST = "fast"
+    FACTORY_RESET = 'factory-reset'
+    POWER_BUTTON = SystemConsts.REBOOT_REASON_POWER_BUTTON
+    REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
+
+    DEFAULT_MODES = [POWER_CYCLE]
+    REBOOT_USER_NA = "N/A"
+    REBOOT_USER_ADMIN = "admin"
+    REBOOT_USER_SYSTEM = "system"
+
+    REBOOT_REASON_MAP = {
+        HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_NA),
+        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_ADMIN),
+        COLD: ("reboot", REBOOT_USER_ADMIN),
+        IMMEDIATE: ("Immediate reboot", REBOOT_USER_ADMIN),
+        FACTORY_RESET: ("reboot", REBOOT_USER_ADMIN),
+        POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, REBOOT_USER_NA)
+    }
+    POWER_CYCLE_NOT_SUPPORTED_ERR_MSG = "Power cycle mode is not supported on this system"
+
+
 class SyslogConsts:
     FORMAT = 'format'
     FIREWAL_NAME = 'firewall-name'

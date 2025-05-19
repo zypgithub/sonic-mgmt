@@ -3,17 +3,20 @@ import time
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, ping_device
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+
+logger = logging.getLogger()
 
 
 @pytest.mark.system
@@ -24,7 +27,7 @@ def test_reboot_command(engines, devices, test_name):
         1. run nv action reboot system
     """
     system = System(None)
-    expected_reboot_reason = SystemConsts.REBOOT_REASON_REBOOT
+    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.COLD]
 
     with allure.step('Run nv action reboot system'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
@@ -36,57 +39,39 @@ def test_reboot_command(engines, devices, test_name):
         assert "history" in output.keys(), "'history' not in the output"
 
         with allure.step("Check system reboot reason output"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show("reason")).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
             ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
 
         with allure.step("Check system reboot history output"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show("history")).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
             if output and len(output.keys()) > 0:
                 ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
                                                                                   ["gentime", "reason", "user"]).verify_result()
 
         with allure.step("Check reboot cause"):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show(SystemConsts.REBOOT_REASON)
-                                                                    ).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
             assert 'reboot' in output["reason"], "reboot not found in show reboot output"
             assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
 
-    with allure.step("Check reboot reason event in system events"):
-        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
-        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
-            format(reboot_reason, expected_reboot_reason)
+    validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
 
 @pytest.mark.system
-def test_reboot_command_immediate(engines, devices, test_name):
+def test_reboot_command_force(engines, devices, test_name, random_api):
     """
     Test flow:
-        1. run nv action reboot system mode immediate
+        1. run nv action reboot system force
     """
-    system = System(None)
-    with allure.step('Run nv action reboot system mode immediate'):
-        result_obj, duration = OperationTime.save_duration('reboot', 'immediate', test_name,
-                                                           system.reboot.action_reboot, params='immediate')
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
-
-
-@pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_reboot_command_force(engines, devices, test_name, test_api):
-    """
-    Test flow:
-        1. run nv action reboot system mode force
-    """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System(None)
     with allure.step('Run nv action reboot system mode force'):
-        result_obj, duration = OperationTime.save_duration('reboot', 'force', test_name,
+        result_obj, duration = OperationTime.save_duration('reboot', '', test_name,
                                                            system.reboot.action_reboot, params='force')
         OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
 
 
 @pytest.mark.system
-def test_reboot_command_type(engines):
+def test_reboot_command_bad_flow(engines, devices):
     """
     Test flow:
         1. run nv action reboot system --type fast
@@ -94,7 +79,9 @@ def test_reboot_command_type(engines):
         3. run nv action reboot system --type warm
         4. expected message: not supported for IB
     """
+    system = System()
     substring = 'Error: Invalid parameter'
+    invalid_command = 'Error: Invalid Command:'
     err_message = 'Reboot types should not be supported in NVOS'
 
     with allure.step('Run nv action reboot system type fast'):
@@ -109,41 +96,41 @@ def test_reboot_command_type(engines):
                                              enter_config_mode=False)
         ValidationTool.verify_substring_in_output(output, substring, err_message, True)
 
+    with allure.step("test non-existing mode"):
+        output = engines.dut.run_cmd('nv action reboot system mode non existing mode')
+        ValidationTool.verify_expected_output(output, invalid_command, True)
+
+        with allure.step("test pruned warm mode"):
+            output = engines.dut.run_cmd('nv action reboot system mode warm')
+            ValidationTool.verify_expected_output(output, invalid_command, True)
+
+    if RebootConsts.POWER_CYCLE not in devices.dut.supported_commands:
+        with (allure.step("action power-cycle not supported. Test negative flow")):
+            output = engines.dut.run_cmd('nv action reboot system mode power-cycle')
+            ValidationTool.verify_expected_output(output, RebootConsts.POWER_CYCLE_NOT_SUPPORTED_ERR_MSG, True)
+
 
 @pytest.mark.system
-def test_reboot_halt(engines, devices, test_name, topology_obj):
-    """
-    Test flow:
-        1. run remote reboot script to turn off PSU and turn on the PSU
-        2. Validate reboot reason in system events
-    """
+@pytest.mark.parametrize('mode', RebootConsts.DEFAULT_MODES)
+def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name):
+    if mode == RebootConsts.POWER_CYCLE and mode not in devices.dut.supported_commands:
+        pytest.skip(f"{mode} not supported")
     system = System()
-    expected_reboot_reason = SystemConsts.REBOOT_REASON_POWER_LOSS
-    dhcp_hostname = ''
+    TestToolkit.tested_api = ApiType.NVUE
+    try:
+        result_obj = _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode)
+        result_obj.verify_result()
+        expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
 
-    with allure.step("Get name from NOGA"):
-        noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
-        dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
+        validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
-    with allure.step('Run nv action reboot system'):
-        OperationTime.save_duration('reboot halt', '', test_name, system.reboot.action_reboot, params='halt',
-                                    should_wait_till_system_ready=False)
-        # Wait for system to halt
-        time.sleep(10)
+        with allure.step("Verify reboot time is within expected range"):
+            OperationTime.verify_operation_time(result_obj.duration, devices.dut.reboot_type).verify_result()
 
-    with allure.step('Power the system back on via PSU'):
-        DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
-
-    with allure.step('Wait for the system to be ready'):
-        res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
-        assert res_obj.result, 'System did not come back up'
-
-    with allure.step("Check reboot reason event in system events"):
-        # Wait for newer system events to be generated
-        time.sleep(60)
-        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
-        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
-            format(reboot_reason, expected_reboot_reason)
+    finally:
+        if not ping_device(engines.dut.ip):
+            logger.info("system is off and will now remote reboot the switch")
+            NvueGeneralCli(TestToolkit.engines.dut).remote_reboot_nvue(topology_obj)
 
 
 @pytest.mark.system
@@ -154,7 +141,7 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
         2. Validate reboot reason in system events
     """
     system = System()
-    expected_reboot_reason = SystemConsts.REBOOT_REASON_POWER_LOSS
+    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.POWER_CYCLE]
     dhcp_hostname = ''
 
     with allure.step("Get name from NOGA"):
@@ -167,15 +154,50 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
     res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
     assert res_obj.result, 'System reboot failed'
 
+    validate_reboot_reason_and_user(system, expected_reason, expected_user)
+
+
+def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
     with allure.step("Check reboot reason event in system events"):
-        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
-        retry_call(_help_validate_reboot_reason, [expected_reboot_reason, reboot_reason], exceptions=AssertionError,
-                   tries=6, delay=10)
+        reboot_reason, reboot_user = OutputParsingTool.get_reboot_reason_and_user_from_system_events(system)
+
+        with allure.independent_step("Validate reboot reason"):
+            assert expected_reason in reboot_reason, \
+                f"Reboot reason is '{reboot_reason}' instead of expected '{expected_reason}'"
+
+        with allure.independent_step("Validate reboot user"):
+            assert expected_user in reboot_user, \
+                f"Reboot user is '{reboot_user}' instead of expected '{expected_user}'"
 
 
-def _help_validate_reboot_reason(expected_reboot_reason, reboot_reason):
-    assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
-        format(reboot_reason, expected_reboot_reason)
+def _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode):
+    system = System()
+    dhcp_hostname = ''
+
+    if mode == RebootConsts.HALT:
+        noga_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+        dhcp_hostname = noga_data['Common']['Name'] or noga_data['Specific']['dhcp_hostname']
+
+    # Run reboot
+    with allure.step(f"Rebooting system with mode: {mode}"):
+        reboot_params = RebootParams()
+        reboot_params.should_wait_till_system_ready = mode != RebootConsts.HALT
+        reboot_result_obj, _ = OperationTime.save_duration(f"reboot {mode}", '', test_name,
+                                                           system.action_reboot,
+                                                           flags=mode,
+                                                           reboot_params=reboot_params)
+        time.sleep(10)
+
+    # PSU recovery for halt
+    if mode == RebootConsts.HALT:
+        with allure.step("Power the system back on via PSU"):
+            DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
+
+        with allure.step("Wait for system to be ready"):
+            result_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
+            assert result_obj.result, f"System did not come back after reboot mode {mode}"
+
+    return reboot_result_obj
 
 
 @pytest.mark.platform

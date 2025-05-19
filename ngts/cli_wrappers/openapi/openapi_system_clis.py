@@ -2,8 +2,8 @@ import logging
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.openapi.openapi_base_clis import OpenApiBaseCli
-from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts, OpenApiReqType
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_constants.constants_nvos import ActionType, SystemConsts, OpenApiReqType, RebootConsts
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from .openapi_command_builder import OpenApiCommandHelper
 from ...nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
@@ -216,6 +216,41 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
         return OpenApiCommandHelper.execute_action(ActionType.ROTATE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_reboot(engine, device, resource_path, op_param="", reboot_params=None):
+        logging.info("Running action: reboot system on dut using OpenApi")
+        reboot_params = reboot_params or RebootParams()
+        parameters_dict = {}
+        tokens = op_param.strip().lower().split()
+
+        for token in tokens:
+            if token in RebootConsts.DEFAULT_MODES:
+                parameters_dict["mode"] = token
+
+        # Set flags if found
+        if "force" in tokens:
+            parameters_dict["force"] = True
+
+        params = \
+            {
+                "state": "start"
+            }
+        if parameters_dict:
+            params.update({"parameters": parameters_dict})
+        result = OpenApiCommandHelper.execute_action(ActionType.REBOOT, engine.engine.username, engine.engine.password,
+                                                     engine.ip, resource_path, params,
+                                                     SystemConsts.REBOOT_RESPONSE_MESSAGES)
+        if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
+            logger.info("Waiting for switch shutdown after reload command")
+            check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+            engine.disconnect()
+            logger.info("Waiting for switch to be ready")
+            check_port_status_till_alive(True, engine.ip, engine.ssh_port)
+
+        if reboot_params.should_wait_till_system_ready:
+            device.wait_for_os_to_become_functional(reboot_params.recovery_engine or engine).verify_result()
+        return result
 
     @staticmethod
     def action_change(engine, resource_path, params_dict=None):

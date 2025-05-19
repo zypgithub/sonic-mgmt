@@ -47,6 +47,7 @@ class DutUtilsTool:
             list_commands = [command, 'y'] if confirm else [command]
             output = device.reload_device(engine, list_commands)
             logger.info(output)
+            output = output.replace('-bash: y: command not found', '')
 
             output_lower = output.lower()
             if ('action succeeded' in output_lower) and ('reboot skipped' in output_lower):

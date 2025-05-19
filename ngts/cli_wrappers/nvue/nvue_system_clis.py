@@ -113,6 +113,30 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_reboot(engine, device, resource_path, op_param="", reboot_params=None):
+        """
+        Rebooting the switch
+        """
+        path = resource_path.replace('/', ' ').strip()
+
+        # Handle op_param: can be a string like "cold force", "halt", "force", etc.
+        op_param_parts = []
+        if op_param:
+            for part in op_param.split():
+                if part != "force":
+                    op_param_parts.append("mode " + part)
+                else:
+                    op_param_parts.append("force")
+
+        # Join cleaned parts
+        op_param_str = " ".join(op_param_parts)
+        cmd = f"nv action reboot {path} {op_param_str}".strip()
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True, reboot_params=reboot_params
+                                   ).verify_result()
+
+    @staticmethod
+    @check_output
     def action_profile_change(engine, device, resource_path, op_param=""):
         """
         Rebooting the switch

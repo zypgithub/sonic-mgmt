@@ -12,9 +12,11 @@ from ngts.tests_nvos.system.factory_reset.post_steps import factory_reset_no_par
 from ngts.tests_nvos.system.factory_reset.pre_steps import (factory_reset_no_params_pre_steps,
                                                             factory_reset_keep_basic_pre_steps,
                                                             factory_reset_general_pre_steps)
+from ngts.tests_nvos.system.test_system_profile_change import update_timezone
+from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 
@@ -44,7 +46,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     TestToolkit.tested_api = test_api
     system = System()
     cluster = Cluster()
-    expected_reboot_reason = SystemConsts.REBOOT_REASON_REBOOT
+    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.FACTORY_RESET]
 
     with allure.step('pre factory reset steps'):
         apply_and_save_port, current_time, just_apply_port, health_status, machine_type, not_apply_port, \
@@ -54,10 +56,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     with allure.step("Run reset factory without params"):
         duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
-    with allure.step("Check reboot reason event in system events"):
-        reboot_reason = OutputParsingTool.get_reboot_reason_system_events(system)
-        assert expected_reboot_reason in reboot_reason, 'Reboot reason is {} instead of {}'.\
-            format(reboot_reason, expected_reboot_reason)
+    validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
     with allure.step('post factory reset steps'):
         factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, health_status,

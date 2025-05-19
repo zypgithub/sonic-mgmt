@@ -567,17 +567,39 @@ class OutputParsingTool:
                 return ResultObj(True, "", result)
 
     @staticmethod
-    def get_reboot_reason_system_events(system):
-        events = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '10000')).get_returned_value()
-        latest_reboot_event_id = '-1'
-        reboot_events = [event_id for event_id in events if 'System reboot occurred' in events[event_id]['text']]
-        for event_id in reboot_events:
-            if int(event_id) > int(latest_reboot_event_id):
-                latest_reboot_event_id = event_id
-        if latest_reboot_event_id == '-1':
-            return ''
-        reboot_reason = events[latest_reboot_event_id]['text'].split(',')[0].split(':')[1]
-        return reboot_reason
+    def get_reboot_reason_and_user_from_system_events(system):
+        events = OutputParsingTool.parse_json_str_to_dictionary(
+            system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '10000')
+        ).get_returned_value()
+
+        # Filter reboot events with IDs as integers
+        reboot_events = {
+            int(event_id): data for event_id, data in events.items()
+            if 'System reboot occurred' in data.get('text', '')
+        }
+
+        if not reboot_events:
+            return '', ''
+
+        # Get the latest event ID
+        latest_event_id = max(reboot_events)
+        latest_event_text = reboot_events[latest_event_id].get('text', '')
+
+        try:
+            # Extract reboot reason
+            reason = latest_event_text.split("reason:", 1)[1].split(",", 1)[0].strip()
+        except (IndexError, ValueError) as e:
+            logger.error(f"Failed to extract reboot reason from event text: '{latest_event_text}'. Exception: {e}")
+            raise ValueError(f"Reboot reason not found in event text: '{latest_event_text}'") from e
+
+        try:
+            # Extract user who performed the reboot
+            user = latest_event_text.split("performed by user:", 1)[1].split(",", 1)[0].strip()
+        except (IndexError, ValueError) as e:
+            logger.error(f"Failed to extract reboot user from event text: '{latest_event_text}'. Exception: {e}")
+            raise ValueError(f"Reboot user not found in event text: '{latest_event_text}'") from e
+
+        return reason, user
 
     def run_iostat_and_parse(engine):
         with allure.step("Execute the iostat command and parse the output into a dictionary"):

@@ -11,6 +11,8 @@ logger = logging.getLogger()
 class Reboot(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/reboot')
+        self.reason = BaseComponent(self, path='/reason')
+        self.history = BaseComponent(self, path='/history')
 
     def action_reboot(self, engine=None, device=None, params="", should_wait_till_system_ready=True,
                       recovery_engine=None, topology_obj=None, system_is_ready_timeout=None):
