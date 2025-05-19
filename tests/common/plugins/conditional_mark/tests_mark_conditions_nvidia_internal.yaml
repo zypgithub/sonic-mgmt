@@ -1251,6 +1251,12 @@ dns/test_dns_resolv_conf.py:
     conditions:
       - "https://redmine.mellanox.com/issues/4405737 and '4280' in platform"
 
+smart_switch/test_check_dpu_fw_version.py:
+  skip:
+    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4452311"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4452311"
+
 ########################## NVIDIA INTERNAL COMMUNITY IGNORE END ############################
 
 
