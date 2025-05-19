@@ -58,12 +58,12 @@ def replace_two_ip_addresses(engine):
     return eth0_gateway, eth0_ip, eth1_ip
 
 
-def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled):
+def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled, hostname):
     """
 
     :return:
     """
-    expected_packet_msg = r"ARP, Request who-has.*\(Broadcast\) .*"
+    expected_packet_msg = f"ARP, Request who-has.*{hostname}.*\\(Broadcast\\).*"
     eth0_gateway, eth0_ip, eth1_ip = replace_two_ip_addresses(engine)
 
     expected_msg1 = expected_messages[0].format(eth1_ip.split('/')[0]) if is_enabled else expected_messages[0]
@@ -71,16 +71,15 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled):
 
     try:
         with allure.step('Verify packets have {} been sent'.format('' if is_enabled else 'not')):
-            with allure.independent_step('check in logs'):
-                time.sleep(10)
-                logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog')
-                assert expected_msg1 in logs_output, f"Error: the expected logs {expected_msg1} is missing"
-                assert expected_msg2 in logs_output, f"Error: the expected logs {expected_msg2} is missing"
-
             with allure.independent_step('check tcpdump output'):
                 output = engine.run_cmd('sudo timeout 30 tcpdump -i eth0 arp')
                 matches = re.findall(expected_packet_msg, output)
                 assert bool(matches) == is_enabled, f"Assertion failed for expected packet msg: ARP, Request who-has ... (Broadcast)\n, output: {output}\n, param: {is_enabled}"
+
+            with allure.independent_step('check in logs'):
+                logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog')
+                assert expected_msg1 in logs_output, f"Error: the expected logs {expected_msg1} is missing"
+                assert expected_msg2 in logs_output, f"Error: the expected logs {expected_msg2} is missing"
 
     finally:
         replace_two_ip_addresses(engine)

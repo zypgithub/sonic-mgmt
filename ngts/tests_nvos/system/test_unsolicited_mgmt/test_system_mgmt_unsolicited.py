@@ -49,7 +49,7 @@ def test_show_system_mgmt_unsolicited_default_values(engines, devices):
 
 
 @pytest.mark.system
-def test_system_mgmt_unsolicited_enabled(engines, devices):
+def test_system_mgmt_unsolicited_enabled(engines, devices, dut_hostname):
     """
     @summary:
         in this function we want to check the basic flow configuring ip address and unsolicited feature is enabled
@@ -64,11 +64,11 @@ def test_system_mgmt_unsolicited_enabled(engines, devices):
     ipv4_eth0_expected_logs = "NOTICE mgmt-unsolicited: Executing command: arping -c 1 -U -i eth0 -S {}"
     ipv4_eth1_expected_logs = "NOTICE mgmt-unsolicited: Executing command: arping -c 1 -U -i eth1 -S {}"
 
-    swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[ipv4_eth0_expected_logs, ipv4_eth1_expected_logs], is_enabled=True)
+    swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[ipv4_eth0_expected_logs, ipv4_eth1_expected_logs], is_enabled=True, hostname=dut_hostname)
 
 
 @pytest.mark.system
-def test_system_mgmt_unsolicited_disabled(engines, devices):
+def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
     """
     @summary:
         in this case we want to disable the unsolicited feature and verify basic flow
@@ -91,7 +91,7 @@ def test_system_mgmt_unsolicited_disabled(engines, devices):
                 show_output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.mgmt_unsolicited.show()).verify_result()
                 ValidationTool.verify_field_value_in_output(show_output, SystemConsts.FAE_SYSTEM_STATE, NvosConst.DISABLED).verify_result()
 
-            swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[feature_disabled_logs, feature_disabled_logs], is_enabled=False)
+            swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[feature_disabled_logs, feature_disabled_logs], is_enabled=False, hostname=dut_hostname)
         finally:
             with allure.step("enable mgmt unsolicited feature"):
                 fae.system.mgmt_unsolicited.set(op_param_name=SystemConsts.STATE, op_param_value=NvosConst.ENABLED, apply=True)
