@@ -99,7 +99,7 @@ SETUPS_GROUPS_MAP = {
         ('ptf_any', 'spc2'): {'sonic_lionfish_r-lionfish-07': SETUPS_GROUP_1, 'sonic_lionfish_r-lionfish-13': SETUPS_GROUP_2},
         ('ptf_any', 'spc3'): {
             'sonic_tigon_r-tigon-15': SETUPS_GROUP_1,
-            'sonic_tigon_r-tigon-17': SETUPS_GROUP_1,
+            'sonic_tigon_r-tigon-17': SETUPS_GROUP_2,
             'sonic_leopard_r-leopard-41': SETUPS_GROUP_1,
             'sonic_leopard_r-leopard-56': SETUPS_GROUP_2,
             'sonic_leopard_r-leopard-32': SETUPS_GROUP_2
