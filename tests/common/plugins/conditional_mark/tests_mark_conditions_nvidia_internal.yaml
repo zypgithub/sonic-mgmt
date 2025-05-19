@@ -694,6 +694,12 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_error_description:
     - "https://redmine.mellanox.com/issues/4220524 and ('sn5610n' in platform or 'sn5600' in platform)"
     - "https://redmine.mellanox.com/issues/4258343 and ('sn4' in platform or 'sn5' in platform)"
 
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_bulk_status:
+  skip:
+    reason: "Testcase ignored on leopard and bobcat due to RM issue: https://redmine.mellanox.com/issues/4448234"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4448234 and ('4700' in platform or '4280' in platform)"
+
 platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
   skip:
     reason: "Testcase ignored on leopard and bobcat due to RM issue: https://redmine.mellanox.com/issues/4396617"
@@ -763,6 +769,12 @@ platform_tests/mellanox/test_check_sfp_presence.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+
+platform_tests/sfp/software_control/test_software_control.py::TestSoftwareControlFunctional::test_sc_check_show_interfaces_transceiver_status:
+  skip:
+    reason: "Skip due to redmine issue https://redmine.mellanox.com/issues/4448257"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4448257"
 
 platform_tests/sfp/test_sfpshow.py:
   skip:
@@ -857,6 +869,12 @@ qos/test_qos_sai_dual_tor.py:
     reason: "test_qos_sai_dual_tor tests only support on Mellanox-SN4600C-C64 and Mellanox-SN2700-D48C8"
     conditions:
     - "hwsku not in ['Mellanox-SN4600C-C64', 'Mellanox-SN2700-D48C8', 'Mellanox-SN4700-O8V48']"
+
+vxlan/test_vnet_bgp_route_precedence.py::
+  skip:
+    reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4452957"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4452957"
 
 vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case4:
   skip:
