@@ -21,6 +21,7 @@ from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -305,9 +306,10 @@ def wait_until_cli_is_up(engine):
 
 @retry(Exception, tries=15, delay=10)
 def wait_on_systemctl_initialization(engine):
-    output = DutUtilsTool.run_cmd_with_disconnect(engine, "sudo systemctl is-system-running")
-    if "running" not in output:
-        raise Exception("Waiting for systemctl to finish initializing")
+    if not is_bug_active(4434382):
+        output = DutUtilsTool.run_cmd_with_disconnect(engine, SystemConsts.SYSTEMCTL_STATUS_CMD)
+        if "running" not in output:
+            raise Exception("Waiting for systemctl to finish initializing")
 
 
 def wait_for_specific_regex_in_logs(engine, regex, timeout=70):

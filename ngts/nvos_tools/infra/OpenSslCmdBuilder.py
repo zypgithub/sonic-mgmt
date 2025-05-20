@@ -63,6 +63,12 @@ class OpenSslCmdBuilder:
         """Adds the '-passout' option (e.g., 'pass:password')."""
         return self.option("passout", f"{method}:{arg}")
 
+    def keypbe(self, encryption: str) -> 'OpenSslCmdBuilder':
+        return self.option("keypbe", encryption)
+
+    def certpbe(self, encryption: str) -> 'OpenSslCmdBuilder':
+        return self.option("certpbe", encryption)
+
     def newkey(self, spec: str) -> 'OpenSslCmdBuilder':
         return self.option("newkey", spec)
 

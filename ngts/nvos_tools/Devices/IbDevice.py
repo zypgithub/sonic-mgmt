@@ -169,8 +169,9 @@ class IbSwitch(BaseSwitch):
 
     def _init_security_lists(self):
         super()._init_security_lists()
-        self.kex_algorithms = ['curve25519-sha256', 'curve25519-sha256@libssh.org', 'diffie-hellman-group16-sha512',
-                               'diffie-hellman-group18-sha512', 'diffie-hellman-group14-sha256']
+        self.kex_algorithms = ['diffie-hellman-group18-sha512', 'diffie-hellman-group16-sha512',
+                               'kex-strict-s-v00@openssh.com', 'diffie-hellman-group14-sha256',
+                               'curve25519-sha256', 'curve25519-sha256@libssh.org']
         self.aaa_cleanup_cmds = ['nv config detach', 'nv unset system aaa authentication order',
                                  'nv unset system aaa authentication failthrough', 'nv config apply -y']
 
@@ -261,7 +262,7 @@ class IbSwitch(BaseSwitch):
         super()._init_services()
         self.available_services.extend((
             'docker.service', 'database.service', 'hw-management.service', 'config-setup.service',
-            'updategraph.service', 'ntp.service', 'hostname-config.service', 'ntp-config.service',
+            'ntpsec.service', 'hostname-config.service', 'ntp-config.service',
             'rsyslog-config.service', 'procdockerstatsd.service',
             'configmgrd.service', 'countermgrd.service', 'portsyncmgrd.service'
         ))

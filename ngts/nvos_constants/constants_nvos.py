@@ -785,6 +785,8 @@ class SystemConsts:
     DUMMY_IMAGE_PATH = '/tmp/'
     DUMMY_IMAGE = 'dummy.bin'
 
+    SYSTEMCTL_STATUS_CMD = "sudo systemctl is-system-running"
+
 
 class DocumentsConsts:
     MIN_FILES_SIZE = 30000
