@@ -1,4 +1,5 @@
 import logging
+import os
 import pytest
 import re
 
@@ -15,12 +16,25 @@ logger = logging.getLogger(__name__)
 
 def test_check_dpu_fw_version(dpuhosts, localhost):
     with allure.step("Get the expected fw version"):
-        sonic_version_output = dpuhosts[0].shell('show ver | grep "Software Version"')['stdout']
-        sonic_image_hash = re.search(r'([a-z0-9]{9,})($|_)', sonic_version_output).group(1)
+        sonic_version_output = dpuhosts[0].shell("show ver | grep '^SONiC Software Version:'")['stdout']
+        # SONiC.master_RC.43-878aeef52_Internal
+        sonic_image_name = sonic_version_output.split(":", 1)[1].strip()
+        pytest_assert(sonic_image_name.startswith("SONiC."), f'SONiC image name must start with "SONiC." Got: {sonic_version_output}')
+
+        sonic_image_version = sonic_image_name.split(".", 1)[1]
+
+        sonic_image_directory = sonic_image_name[6:]
         nfs_path = "/auto/sw_system_release/sonic"
-        image_path = localhost.shell(f"ls {nfs_path} | grep {sonic_image_hash}")['stdout_lines'][-1]
-        readme_path = nfs_path + '/' + image_path + '/dev/README'
-        fw_version_output = localhost.shell(f"cat {readme_path} | grep FW_VERSION_DPU")['stdout']
+        readme_path = f"{nfs_path}/{sonic_image_directory}/dev/README"
+
+        if not os.path.exists(readme_path):
+            # CI run image versions 0 after the branch name
+            if sonic_image_version.startswith("0-"):
+                pytest.skip("README is not available in the NFS for the CI runs")
+            else:
+                pytest.fail(f"README {readme_path} is not found")
+
+        fw_version_output = localhost.shell(f"grep FW_VERSION_DPU '{readme_path}'")['stdout']
         fw_version_pattern = r'\d{2}\.\d{4}'
         expected_fw_version = re.search(fw_version_pattern, fw_version_output).group()
     with allure.step("Check fw versions of all the DPUs"):
