@@ -11,10 +11,10 @@ import logging
 import allure
 import copy
 import os
-from ngts.constants.constants import BugHandlerConst
+from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
-                                                                apply_test_configuration)
+                                                                apply_test_configuration, skip_test_on_unsupported_os)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list, create_json_traffic_stream
@@ -37,6 +37,12 @@ class AlibabaScenarioToconfiguration:
     create_acls: bool
     create_goto_acl: bool
     two_sided_ar: bool
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
 
 
 @pytest.fixture(scope='class', autouse=True)
