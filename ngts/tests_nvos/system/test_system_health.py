@@ -636,7 +636,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
     finally:
         date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         time.sleep(1)
-        with allure.step("Fix the health issue "):
+        with allure.step("Fix the health issue"):
             with allure.step("restart docker"):
                 output = engines.dut.run_cmd("docker start {}".format(docker_to_stop))
                 with allure.step("restart docker auto start"):
@@ -716,8 +716,8 @@ def verify_devices_health_status_in_issues_list(system, devices_list):
 
 def get_system_health_monitoring_config_file_path():
     with allure.step("Get path of system_health_monitoring_config.json"):
-        output = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()
-        platform_name = output[SystemConsts.PLATFORM]
+        output = OutputParsingTool.parse_json_str_to_dictionary(Platform().show()).get_returned_value()
+        platform_name = output[PlatformConsts.SYSTEM_TYPE].lower()
         ret = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(platform_name)
         logger.info(ret)
         return ret
