@@ -887,14 +887,17 @@ class ClusterSimulation:
     @staticmethod
     def config_fm_config(engine):
         with allure.step("Config fm config"):
-            cmd = "nv action generate sdn config app nmx-controller type fm_config"
-            engine.run_cmd(cmd, validate=True)
-            # Get the latest fm_config file
-            cmd_get_latest = "ls -Art /host/cluster_infra/app_config/nmx-controller/fm_config/ | tail -n 1"
-            latest_fm_config = engine.run_cmd(cmd_get_latest, validate=True).strip()
-            fm_config_path = f"/host/cluster_infra/app_config/nmx-controller/fm_config/{latest_fm_config}"
-            # Append the new configuration line
-            cmd_modify = f"sed '$ a MNNVL_TOPOLOGY=gb200_nvl72r2_c2g4_topology' {fm_config_path} | sudo tee /host/cluster_infra/app_config/nmx-controller/fm_config/fm_cfg"
-            engine.run_cmd(cmd_modify, validate=True)
-            cmd = "nv action install sdn config app nmx-controller type fm_config files fm_cfg"
-            engine.run_cmd(cmd, validate=True)
+            script = '''
+                        items=(MNNVL_TOPOLOGY)
+                        declare -A values=([MNNVL_TOPOLOGY]=gb200_nvl72r2_c2g4_topology)
+                        FMCFG_PATH=/host/cluster_infra/app_config/nmx-controller/fm_config
+                        FMCFG_NAME=fm_cfg
+                        sudo mkdir -p "$FMCFG_PATH"
+                        nv action generate sdn config app nmx-controller type fm_config
+                        LATEST_FILE=$(ls -Art "$FMCFG_PATH" | tail -n 1)
+                        sudo cp "$FMCFG_PATH/$LATEST_FILE" "$FMCFG_PATH/$FMCFG_NAME"
+                        for ITEM in "${items[@]}"; do VALUE="${values[$ITEM]}"; sudo sed -i -e "/^${ITEM}=/{h;s/=.*/=${VALUE}/};\\${x;/^$/{s//${ITEM}=${VALUE}/;H};x}" "$FMCFG_PATH/$FMCFG_NAME"; done
+                        cat "$FMCFG_PATH/$FMCFG_NAME"
+                        nv action install sdn config app nmx-controller type fm_config files "$FMCFG_NAME"
+                    '''
+            engine.run_cmd(script, validate=True)
