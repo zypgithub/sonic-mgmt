@@ -742,7 +742,7 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
 
     # In case oo manual run add the following line with updated user/password
-    scp_host_creds = '{username}:{password}@fit74'
+    # scp_host_creds = '{username}:{password}@fit74'
 
     with allure.step('Apply and save pre-defined configuration'):
         NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
