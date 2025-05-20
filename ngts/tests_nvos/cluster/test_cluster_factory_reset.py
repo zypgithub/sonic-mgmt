@@ -27,7 +27,8 @@ logger = logging.getLogger()
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name,
+                                       handle_la_marker_in_manufacture):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
