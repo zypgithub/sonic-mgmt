@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import Tuple, Union
 
 import pytest
 from retry import retry
@@ -101,8 +102,8 @@ class System(BaseComponent):
     def wait_until_health_status_change_to(self, expected_status):
         self.validate_health_status(expected_status)
 
-    def action_reboot(self, flags=(), send_user_confirmation=None, reboot_params=True, engine=None, device=None,
-                      expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES):
+    def action_reboot(self, flags: Union[str, Tuple[str]] = (), send_user_confirmation=None, reboot_params=True,
+                      engine=None, device=None, expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES):
         """
         See documentation of BaseComponent.action().
         Examples for `flags`: 'force' ; 'force immediate' ; ['force', 'immediate'] ; ''
@@ -150,6 +151,9 @@ class Events(BaseComponent):
                                                        query_param_api + events_count_api).get_returned_value()
             else:
                 return system.events.show(query_param_nvue + events_count_nvue)
+
+    def action_clear(self):
+        return self.action(ActionConsts.CLEAR)
 
 
 class Documentation(BaseComponent):

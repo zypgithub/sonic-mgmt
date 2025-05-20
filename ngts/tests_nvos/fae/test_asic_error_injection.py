@@ -32,7 +32,7 @@ def test_asic_error_injection(engines):
             _wait_until_error_injection_status(fae, status=NvosConst.DISABLED, tries=0)
 
         with allure.step("Run action enable for asic error-injection"):
-            fae.platform.asic.error_injection.action_deprecated(ActionConsts.ENABLE)
+            fae.platform.asic.error_injection.action(ActionConsts.ENABLE)
 
         with allure.step("Run show asic error-injection and check value changed"):
             _wait_until_error_injection_status(fae, status=NvosConst.ENABLED)
@@ -45,7 +45,7 @@ def test_asic_error_injection(engines):
 
     finally:
         with allure.step("Disable asic error-injection"):
-            fae.platform.asic.error_injection.action_deprecated(ActionConsts.DISABLE)
+            fae.platform.asic.error_injection.action(ActionConsts.DISABLE)
 
         with allure.step("Run show asic error-injection and check default values"):
             _wait_until_error_injection_status(fae, status=NvosConst.DISABLED)

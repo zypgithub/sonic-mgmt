@@ -107,7 +107,7 @@ def test_set_system_dns_functionality(engines, test_api, release_name, dns_serve
             scp_path = 'scp://{}:{}@{}'.format("root", "3tango", "fit-build-240")
             with allure.step("Fetch an image {}".format(scp_path + BASE_IMAGE_VERSION_TO_INSTALL_PATH)):
                 result = system.image.action_fetch(BASE_IMAGE_VERSION_TO_INSTALL_PATH, base_url=scp_path)
-                assert "Failed to create file" in result.get_returned_value(should_succeed=False)
+                result.verify_result(should_succeed=False, expected_value="Failed to create file")
 
     finally:
         clear_system_dns(system, engines)

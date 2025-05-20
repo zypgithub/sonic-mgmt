@@ -7,7 +7,7 @@ import pytest
 from retry.api import retry_call
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -591,7 +591,7 @@ def test_mgmt_interface_dhcp_option_60(engines, topology_obj):
             tcpdump_process.start()
 
         with allure.step("Renew DHCP to initiate packet transfers"):
-            mgmt_port.interface.ip.dhcp_client.action_deprecated('renew')
+            mgmt_port.interface.ip.dhcp_client.action(ActionConsts.RENEW)
 
     finally:
         with allure.step("Combine with tcpdump process to finish gracefully"):

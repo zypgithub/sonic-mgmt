@@ -208,7 +208,7 @@ class BaseComponent:
                send_user_confirmation: str = None,  # e.g. 'y' or 'n' if NVUE asks for confirmation
                expected_output: Union[str, Iterable[str]] = '',  # string or list of possible strings
                # todo: timeout parameter
-               device=None):
+               device=None) -> ResultObj:
         """
         :param action_str: e.g. 'install', 'reboot', ...
         :param main_param: A 2-tuple containing the (name, value) of the action's main parameter, if any. For example,

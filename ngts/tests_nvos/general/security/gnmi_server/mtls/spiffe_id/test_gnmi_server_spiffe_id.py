@@ -9,6 +9,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import UserRole
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -954,9 +955,7 @@ def test_gnmi_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname)
             NvueGeneralCli.save_config(engines.dut)
 
     with allure.step("reboot the system"):
-        System().action_deprecated(
-            "reboot", param_name="force", expect_reboot=True, output_format=None
-        ).verify_result()
+        NvCommand().system.action_reboot(flags='force').verify_result()
         engines.dut.disconnect()
 
     with allure.step("verify after reboot"):

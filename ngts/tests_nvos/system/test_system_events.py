@@ -264,7 +264,7 @@ def clear_system_events(system):
     :param system:  System object
     """
     with allure.step('Run clear system events and apply config'):
-        system.events.action_deprecated(ActionConsts.CLEAR)
+        system.events.action_clear().verify_result()
 
     with allure.step('Validate events are cleared'):
         retry_call(_verify_field_in_show_output, [system.events, SystemConsts.EVENTS_TABLE_OCCUPANCY, 0],

@@ -410,7 +410,7 @@ def test_gnmi_events_overload(engines, devices):
                               apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Clear system events'):
-            system.events.action_deprecated(ActionConsts.CLEAR).verify_result()
+            system.events.action_clear().verify_result()
 
         with allure.step("Create a separate process to monitor CPU & Memory utilization"):
             cpu_mem_monitor_process = Process(target=check_memory_and_cpu_in_parallel, args=(regex, engines.dut,))
@@ -439,7 +439,7 @@ def test_gnmi_events_overload(engines, devices):
             system.events.unset(apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Clear system events'):
-            system.events.action_deprecated(ActionConsts.CLEAR)
+            system.events.action_clear().verify_result()
 
         with allure.step("Check CPU, Memory and mpstat at the end"):
             validate_memory_and_cpu_utilization()

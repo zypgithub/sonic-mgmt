@@ -153,8 +153,9 @@ def test_ib_interface_state_up_once(engines, devices, test_api):
         system = System()
 
     with allure.step(f'run nv action update fae interface {port_name} link state up-once and apply'):
-        fae.interface.link.state.action_deprecated(ActionConsts.UPDATE, param_name=IbInterfaceConsts.INTERFACE_STATE,
-                                                   param_value=IbInterfaceConsts.UP_ONCE).verify_result()
+        fae.interface.link.state.action(ActionConsts.UPDATE,
+                                        (IbInterfaceConsts.INTERFACE_STATE, IbInterfaceConsts.UP_ONCE)
+                                        ).verify_result()
 
     with allure.step('verify state is up after up-once'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
@@ -175,7 +176,7 @@ def test_ib_interface_state_up_once(engines, devices, test_api):
 
     finally:
         with allure.step('verify state is up after reboot'):
-            system.reboot.action_reboot()
+            system.action_reboot()
             selected_port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
 
 

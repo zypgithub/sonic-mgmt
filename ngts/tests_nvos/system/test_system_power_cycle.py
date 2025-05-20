@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from datetime import datetime
 
 import pytest
@@ -9,13 +8,13 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts, SystemConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import random_api
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
@@ -90,12 +89,12 @@ def _test_command_not_supported(engines, devices, test_name, test_api, force_str
             assert not output, "The following commands should not exist: " + output
 
     with allure.independent_step("Verify command doesn't work"):
-        System().action_deprecated(ActionConsts.POWER_CYCLE, param_name=force_str).verify_result(should_succeed=False)
+        NvCommand().system.action(ActionConsts.POWER_CYCLE, flags=force_str).verify_result(should_succeed=False)
 
 
 def do_power_cycle(force_str: str) -> ResultObj:
-    return System().action_deprecated(ActionConsts.POWER_CYCLE, expect_reboot=True, param_name=force_str, output_format=None,
-                                      expected_output='System will power cycle in a few seconds')
+    return NvCommand().system.action(ActionConsts.POWER_CYCLE, flags=force_str, reboot_params=True,
+                                     expected_output='System will power cycle in a few seconds')
 
 
 def get_bmc_uptime_seconds(engine: LinuxSshEngine) -> float:

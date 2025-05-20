@@ -355,7 +355,7 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
                     output['status'], HealthConsts.OK)
 
     with allure.step('Clear system events'):
-        system.events.action_deprecated(ActionConsts.CLEAR)
+        system.events.action_clear().verify_result()
 
     with allure.step("Assign default FAN direction as per this System"):
         output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
