@@ -966,15 +966,15 @@ class TestConfigInterface():
 
         try:
             # Verify speed and link status
-            _verify_speed(target_speed)
             assert wait_until(60, 1, 0, duthost.links_status_up, [interface])
+            _verify_speed(target_speed)
         finally:
             # Restore to native speed after test
             _set_speed(native_speed)
 
         # After restoration, verify again
-        _verify_speed(native_speed)
         assert wait_until(60, 1, 0, duthost.links_status_up, [interface])
+        _verify_speed(native_speed)
         # Revert inconsistent config changes
         config_reload(duthost)
 
