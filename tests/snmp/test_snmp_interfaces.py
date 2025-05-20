@@ -395,7 +395,7 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
     assert int(rif_counters[rif_interface]['tx_err']) == COUNTER_VALUE, \
         f"tx_err value is {rif_counters[rif_interface]['tx_err']} not set to {COUNTER_VALUE}"
     assert int(rif_counters[rif_interface]['rx_err']) == COUNTER_VALUE, \
-        f"rx_err value is {rif_counters[rif_interface]['tx_err']} not set to {COUNTER_VALUE}"
+        f"rx_err value is {rif_counters[rif_interface]['rx_err']} not set to {COUNTER_VALUE}"
 
     logger.info(f'Compare port counters in COUNTERS DB and counters get from SONiC CLI')
     assert int(port_counters['tx_err']) == COUNTER_VALUE, \
