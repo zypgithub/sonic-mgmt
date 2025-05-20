@@ -2,6 +2,7 @@ import base64
 import random
 import string
 import time
+from typing import Dict
 from urllib.parse import quote
 
 import pytest
@@ -279,7 +280,7 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 
     """
     system = System()
-    original_images, original_image, original_image_partition, partition_id_for_new_image = get_image_data(system)
+    original_images, original_image, original_image_partition, other_partition = get_image_data(system)
     rand_name = RandomizationTool.get_random_string(10, ascii_letters=string.ascii_letters)
     file_rand_name = system.image.files.file_name[rand_name]
 
@@ -316,13 +317,15 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
                 file_rand_name.action_file_install("Image does not exist").verify_result()
 
         with allure.step("Boot-next bad flows"):
-            if not original_images[ImageConsts.PARTITION2_IMG]:
-                with allure.independent_step("Boot-next {}, even tough we have no image there".format(ImageConsts.PARTITION2_IMG)):
-                    system.image.action_boot_next(ImageConsts.PARTITION2_IMG, 'Failed')
+            if not original_images[other_partition][ImageConsts.BUILD_ID]:
+                with allure.independent_step(
+                        f"Boot-next {other_partition}, even though we have no image there"):
+                    system.image.action_boot_next(other_partition).verify_result(
+                        should_succeed=False, expected_value=f"No image on {other_partition}")
             with allure.independent_step("Boot-next random string"):
-                system.image.action_boot_next(ImageConsts.PARTITION2_IMG, "Failed")
-            with allure.independent_step("Boot-next the same partition"):
-                system.image.action_boot_next(original_image_partition)
+                system.image.action_boot_next(RandomizationTool.get_random_string(10)).verify_result(False)
+            with allure.independent_step("Boot-next the same partition (to revert any changes that may have happened)"):
+                system.image.action_boot_next(original_image_partition).verify_result()
 
         with allure.step("Rename bad flows"):
             with allure.step("Rename image file that does not exist"):
@@ -798,7 +801,13 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
         assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'
 
 
-def get_image_data(system):
+def get_image_data(system) -> Tuple[Dict, str, str, str]:
+    """
+    Returns: Output of nv show system image (as dict),
+             name of the image in the current partition,
+             name of the currently active partition (partition1/2),
+             name of the other partition.
+    """
     with allure.step("Save original installed image name"):
         original_images = system.image.get_image_field_values()
         current_partition = ImageConsts.PARTITION + original_images[ImageConsts.CURRENT_IMG]

@@ -135,7 +135,7 @@ class NvosInstallationSteps:
 
         with allure.step('Apply and save pre-defined configuration'):
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
-                                                          scp_host_creds, system)
+                                                          scp_host_creds, system, dut_device)
 
         with allure.step('Upgrade to target version'):
             NvosInstallationSteps.upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds,
@@ -200,7 +200,7 @@ class NvosInstallationSteps:
     def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path,
                                   topology_obj, param_value=''):
         image_scp_url = f'scp://{scp_host_creds}{target_version_path}'
-        system.image.action_fetch(image_scp_url, base_url='', engine=dut_engine)
+        system.image.action_fetch(image_scp_url, base_url='', engine=dut_engine, device=dut_device)
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
@@ -211,9 +211,9 @@ class NvosInstallationSteps:
                                                                                    param_value=param_value, track_boot_intervals=True)
 
     @staticmethod
-    def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system):
+    def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system, dut_device=None):
         conf_scp_url = f'scp://{scp_host_creds}{config_file_path}'
-        system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine)
+        system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine, device=dut_device)
         NvueGeneralCli.replace_config(engine=dut_engine, file=config_filename)
         NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
         NvueGeneralCli.save_config(engine=dut_engine)

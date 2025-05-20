@@ -186,7 +186,7 @@ class BaseComponent:
                                                                 deny_reboot=deny_reboot, topology_obj=topology_obj,
                                                                 expected_output=expected_output)
 
-    def action_fetch(self, path, base_url=None, engine=None) -> ResultObj:
+    def action_fetch(self, path, base_url=None, engine=None, device=None) -> ResultObj:
         """
         nv action fetch <resource-path> <remote-url>
         :param path: Absolute file-path in the network drive, e.g. '/auto/path/to/file.img'.
@@ -195,7 +195,7 @@ class BaseComponent:
         """
         url = (ImageConsts.SCP_PATH if base_url is None else base_url) + path
         with allure.step(f"Fetching: {url}"):
-            return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine,
+            return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine, device=device,
                                expected_output='File fetched successfully')
 
     def action(self,

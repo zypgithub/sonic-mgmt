@@ -2,6 +2,7 @@ import logging
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_constants.constants_nvos import NvosConst, SystemConsts, ConfState
+from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, wait_until_cli_is_up
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -120,9 +121,9 @@ def clear_conf(engine, device, config_yml, root_dir):
                 clear_config_using_unset(engine, device)
 
     except BaseException as ex:
-        allure.attach("Exception", str(ex))
-        logging.error(f"Replace config failed - {ex}")
-        raise ex
+        allure.attach("Exception", ExceptionTool.format_traceback())
+        logging.error(f"Replace config failed - {ExceptionTool.format_exception(ex)}")
+        raise
 
 
 def clear_config_using_unset(engine, device):
