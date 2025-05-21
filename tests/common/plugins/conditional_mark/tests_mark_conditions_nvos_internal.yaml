@@ -626,48 +626,6 @@ tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_env
       - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4259913
 
-tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_traffic:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4276503
-
-tests_nvos/system/test_system_ztp.py::test_ztp_json:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
-tests_nvos/system/test_system_ztp.py::test_ztp_image:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
-tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
-tests_nvos/system/test_system_ztp.py::test_ztp_connectivity_check:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
-tests_nvos/system/test_system_ztp.py::test_ztp_json_complex:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
-tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
-
 tests_nvos/system/test_system_health.py::test_ignore_health_issue:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
@@ -679,12 +637,6 @@ tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_si
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
     conditions:
       - "'juliet' in testbed"
-
-tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
-    conditions:
-      - https://redmine.mellanox.com/issues/4334449
 
 tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
   skip:
@@ -709,5 +661,10 @@ tests_nvos/interfaces/test_ib_interface_phy_diag.py::test_unintentional_link_dow
     conditions:
       - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4377334
+
+tests_nvos/interfaces/multi_planar/test_multi_planar_sym_mgr_and_aport.py::test_verify_breakout_commands_not_exist[OpenApi]:
+  skip:
+    conditions:
+      - https://redmine.mellanox.com/issues/4450837
 
 ########################## NVOS IGNORE END ##########################

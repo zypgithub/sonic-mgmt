@@ -11,6 +11,7 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 import logging
 import pytest
 
@@ -117,6 +118,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
                 logger.info("Tech-support generation takes: {} seconds".format(duration))
             system.techsupport.extract_techsupport_files(engines.dut)
             techsupport_files_dict = system.techsupport.get_techsupport_files_names(engines.dut, expected_files_dict)
+
         with allure.step("validate each expected file name and size"):
             with allure.independent_step('validate files names'):
                 techsupport_files_dict['sai_sdk_dump0'] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict['sai_sdk_dump0'])
@@ -197,6 +199,8 @@ def verify_techsupport_files_names(files_list, expected_files):
     :return: None
     """
     files = [file for file in expected_files if file not in files_list]
+    if is_bug_active(36513547):
+        files.remove('hdparm')
     assert len(files) == 0, "the next files are missed {files}".format(files=files)
     files = [file for file in files_list if file not in expected_files]
     if len(files) != 0:

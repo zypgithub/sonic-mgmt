@@ -204,6 +204,20 @@ class TrafficGeneratorTool:
 
     @staticmethod
     def start_ibping_between_2_hosts(host_a, host_b):
+        with allure.step("Stop ibping if it is already running - on both hosts"):
+            hosts = [host_a, host_b]
+            for host in hosts:
+                with allure.step(f"Check if ibping is already running on {host}"):
+                    output = host.run_cmd(f"ps aux | grep ibping")
+                    lines = [line for line in output.split('\n') if 'grep' not in line]
+                    if lines:
+                        with allure.step(f"Stop ibping on {host}"):
+                            process_ids = [line.split()[1] for line in lines]
+                            cmd = "sudo kill -9"
+                            for process_id in process_ids:
+                                cmd += f" {process_id}"
+                            host.run_cmd(cmd)
+
         with allure.step('start ibping from Host A to Host B'):
             host_a_lid = host_a.run_cmd(IbConsts.BASE_LID).split()[-1]
             host_a.run_cmd('ibping -S &')

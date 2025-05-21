@@ -10,6 +10,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts, IssuConsts,
                                                 NvosConst, SystemConsts)
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
@@ -23,6 +24,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from retry import retry
@@ -107,6 +109,10 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, issu_version, 
     player = engines.sonic_mgmt
     system = System()
 
+    # In case of manual run add the following lines with the relevant paths
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
+
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
@@ -126,25 +132,25 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, issu_version, 
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
             player, dut_engine, dut_device, target_version)
 
-    with allure.step('pre_issu_installation_steps'):
-        traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
+    with allure.step('Pre issu installation steps'):
+        traffic_start_time, interface_dict = pre_issu_installation_steps(
+            engines, devices, target_version, scp_host_creds)
 
     issu_start = time.time()
     logger.info(f"ISSU start time: {issu_start}")
 
-    with allure.step("Perform install image with ISSU skip-sm flag"):
+    with allure.step("Perform install image with ISSU flag"):
         system.image.files.file_name[target_filename].action_file_install_with_reboot(
             force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU_SKIP_SM, should_succeed=True, press_y=True).verify_result(
-            should_succeed=True)
+            param_value=IssuConsts.ISSU, should_succeed=True, press_y=True).verify_result(should_succeed=True)
 
     issu_end = time.time()
     logger.info(f"ISSU end time: {issu_end}")
     issu_diff = issu_end - issu_start
     logger.info(f"ISSU diff time: {issu_diff}")
 
-    with allure.step('post_issu_installation_steps'):
-        post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
+    with allure.step('Post issu installation steps'):
+        post_issu_installation_steps(engines, devices, target_version, fw_version, interface_dict, traffic_start_time)
 
 
 @pytest.mark.system
@@ -194,6 +200,10 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
     player = engines.sonic_mgmt
     system = System()
 
+    # In case of manual run add the following lines with the relevant paths
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
+
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
@@ -224,8 +234,9 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(
             player, dut_engine, dut_device, target_version)
 
-    with allure.step('pre_issu_installation_steps'):
-        traffic_start_time = pre_issu_installation_steps(engines, devices, target_version, scp_host_creds)
+    with allure.step('Pre issu installation steps'):
+        traffic_start_time, interface_dict = pre_issu_installation_steps(
+            engines, devices, target_version, scp_host_creds)
 
     with allure.step("Running on 2 sessions in parallel:"):
         with allure.step(f'Create another session'):
@@ -254,8 +265,8 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
     #     # after upgrade flow switch has new default password
     #     dut_engine.password = dut_device.get_default_password_by_version(target_version)
 
-    with allure.step('post_issu_installation_steps'):
-        post_issu_installation_steps(engines, devices, target_version, fw_version, traffic_start_time)
+    with allure.step('Post issu installation steps'):
+        post_issu_installation_steps(engines, devices, target_version, fw_version, interface_dict, traffic_start_time)
 
 
 @pytest.mark.system
@@ -289,6 +300,11 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     dut_device = devices.dut
     player = engines.sonic_mgmt
     system = System()
+
+    # In case of manual run add the following lines with the relevant paths
+    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.3941-002/amd64/dev/nvos-amd64-25.02.3941-002.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
 
@@ -352,8 +368,8 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
             f'error message: {IssuConsts.ERROR_OPENSM_REACH_TIMEOUT} is missing in output: {output}'
 
-    # with allure.step("Start OpenSM"):
-    #     OpenSmTool.start_open_sm(engines).verify_result()
+    with allure.step("Start OpenSM"):
+        OpenSmTool.start_open_sm(engines).verify_result()
 
     with allure.step("Perform ISSU with “no reboot” flag"):
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
@@ -708,6 +724,7 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     :return:
     """
     system = System()
+    interface = Interface(parent_obj=None)
     dut_engine = engines.dut
     engines_ha = engines.ha
     engines_hb = engines.hb
@@ -719,6 +736,9 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     with allure.step('Get config file and path for target version'):
         config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
+
+    # In case oo manual run add the following line with updated user/password
+    # scp_host_creds = '{username}:{password}@fit74'
 
     with allure.step('Apply and save pre-defined configuration'):
         NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
@@ -758,12 +778,20 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         traffic_start_time = Tools.TrafficGeneratorTool.start_traffic_between_2_hosts(
             engines_ha, engines_hb, IssuConsts.TRAFFIC_DURATION, IssuConsts.SERVER_OUTPUT, IssuConsts.CLIENT_OUTPUT)
 
+        # For testing via ibping - mask the previous line and unmask the following
+        # Tools.TrafficGeneratorTool.start_ibping_between_2_hosts(engines_ha, engines_hb)
+        # traffic_start_time = time.time()
+
+    with allure.step('Run show interface and save its output'):
+        interface_output = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+            interface.show()).get_returned_value()
+
     # TODO: add ipoib test (random)
 
-    return traffic_start_time
+    return traffic_start_time, interface_output
 
 
-def post_issu_installation_steps(engines, devices, target_version, fw_expected, traffic_start_time):
+def post_issu_installation_steps(engines, devices, target_version, fw_expected, interface_dict, traffic_start_time):
     """
     - Stop Ping mgmt. port 0 and mgmt. port 1 and analyze both logs
     - Stop sending data packets from Host A to Host B and analyze log
@@ -783,6 +811,7 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
     :return:
     """
     system = System()
+    interface = Interface(parent_obj=None)
     dut_engine = engines.dut
     engines_ha = engines.ha
     engines_hb = engines.hb
@@ -802,6 +831,9 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
             num_of_iterations = Tools.TrafficGeneratorTool.stop_traffic_between_2_hosts(
                 engines_ha, engines_hb, traffic_start_time, IssuConsts.TRAFFIC_TIMEOUT,
                 IssuConsts.SERVER_OUTPUT, IssuConsts.CLIENT_OUTPUT)
+
+            # For testing via ibping - mask the previous line and unmask the following
+            # num_of_packets = Tools.TrafficGeneratorTool.stop_ibping_between_2_hosts(engines_ha, engines_hb)
 
         with allure.step('Verify show ISSU status'):
             issu_status = OutputParsingTool.parse_json_str_to_dictionary(
@@ -838,6 +870,12 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
 
         with allure.step('Verify configuration after upgrade'):
             NvosInstallationSteps.verify_config_after_upgrade(config_file_path, dut_engine)
+
+        if not is_bug_active(4451315):
+            with allure.step('Verify interfaces status'):
+                interface_output = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+                    interface.show()).get_returned_value()
+                ValidationTool.compare_dictionaries(interface_output, interface_dict).verify_result()
 
         # with allure.step('Validate management services'):
         #     with allure.step("Verify ntp state"):

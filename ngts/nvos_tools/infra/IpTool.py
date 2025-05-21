@@ -259,3 +259,27 @@ class IpTool:
             output_dictionary = OutputParsingTool.parse_show_output_to_dict(
                 NvCommand().port['eth0'].interface.ip.dhcp_client6.show(dut_engine=engine)).get_returned_value()
             return output_dictionary['has-lease'] == 'yes'
+
+    @staticmethod
+    def get_eth0_hostname(hostname: str) -> str:
+        """
+        @summary: Get the switch hostname
+        @param hostname: hostname of the switch
+        @return: hostname of the eth0 interface
+        """
+        mgmt2_suffix = '-mgmt2'
+        if hostname.endswith(mgmt2_suffix):
+            return hostname[:-len(mgmt2_suffix)]
+        return hostname
+
+    @staticmethod
+    def get_eth1_hostname(hostname: str) -> str:
+        """
+        @summary: Get the switch hostname
+        @param hostname: hostname of the switch
+        @return: hostname of the eth1 interface
+        """
+        mgmt2_suffix = '-mgmt2'
+        if not hostname.endswith(mgmt2_suffix):
+            hostname = hostname + mgmt2_suffix
+        return hostname

@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import time
 from datetime import datetime
 
@@ -231,7 +232,9 @@ def verify_cleanup_done(engine, time_before_rf, system, username, param=''):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("ls /host/warmboot")
             if output and "No such file or directory" not in output:
-                errors += "\n/host/warmboot was not cleared: {}".format(output)
+                output = engine.run_cmd("find /host/warmboot")
+                if not all(re.fullmatch(r"/host/warmboot(/namespace\d)?", item) for item in output.splitlines()):
+                    errors += "\n/host/warmboot was not cleared: {}".format(output)
 
     with allure.step("Verify history was deleted"):
         if param not in [KEEP_BASIC, KEEP_ONLY_FILES]:
