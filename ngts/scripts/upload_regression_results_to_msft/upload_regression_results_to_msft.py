@@ -190,6 +190,17 @@ class ReleaseResultsUploader:
             os.chmod(updated_files_dir, access)
         return sonic_version_release_results_dir, updated_files_dir
 
+    def extract_repo_name(self, git_repository):
+        try:
+            # Split by '/' and get the last part
+            repo_name = git_repository.split('/')[-1]
+            # Remove '.git' if present
+            if repo_name.endswith('.git'):
+                repo_name = repo_name[:-4]
+            return repo_name
+        except Exception as e:
+            raise Exception(f"Error extracting repository name: {e}")
+
     def clone_sonic_mgmt_public_repo(self, git_repository):
         if os.path.exists(self.tmp_sonic_mgmt_git_dir):
             shutil.rmtree(self.tmp_sonic_mgmt_git_dir, ignore_errors=True)
@@ -198,7 +209,11 @@ class ReleaseResultsUploader:
             cmd = f"git clone {git_repository}".split()
             p = subprocess.Popen(cmd, cwd=self.tmp_sonic_mgmt_git_dir)
             p.wait(timeout=180)
-            return os.path.join(self.tmp_sonic_mgmt_git_dir, "sonic-mgmt")
+            repo_name = self.extract_repo_name(git_repository)
+            path = os.path.join(self.tmp_sonic_mgmt_git_dir, repo_name)
+            if not os.path.exists(path):
+                raise Exception(f"no path found for {path}")
+            return path
         except Exception as e:
             logger.error(f"Error cloning {git_repository}: {e}")
             raise e
