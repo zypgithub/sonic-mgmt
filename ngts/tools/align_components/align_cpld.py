@@ -5,11 +5,14 @@ from Component import CpldComponent
 from ComponentManager import ComponentManager
 from Constants import NogaConstants, Defaults
 from align_fw_components import get_switch_info, parse_args, create_json_dict, verify_install_path
+from Redfish_rest_api import RedFishRestApi
 
 
 def perform_cpld_update(_args):
     switch_info = get_switch_info(_args.setup_name)
     hostname = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name']
+    bmc_ip = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.BMC_IP]
+    assert bmc_ip, "No bmc ip found in noga"
     if _args.cpld_path:
         install_path = _args.cpld_path
     else:
@@ -25,9 +28,10 @@ def perform_cpld_update(_args):
 
     file_name = os.path.basename(install_path)
     required_version = file_name[file_name.index("CPLD"):file_name.rindex("_")]
+    rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
 
     component = CpldComponent(Defaults.CPLD_NAME, install_path=install_path, switch_ip=hostname,
-                              required_version=required_version, ssh_user=_args.ssh_user, ssh_pass=_args.ssh_pass)
+                              required_version=required_version, ssh_user=_args.ssh_user, ssh_pass=_args.ssh_pass, rf_api=rf_api)
     component_manager = ComponentManager(components=[component])
 
     component_manager.print_installed_versions()

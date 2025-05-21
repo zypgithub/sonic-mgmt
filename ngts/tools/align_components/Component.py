@@ -73,8 +73,9 @@ class BmcComponent(Component):
 
 class CpldComponent(Component):
     def __init__(self, name: str, install_path: str, required_version: str,
-                 switch_ip: str, ssh_user: str, ssh_pass: str):
+                 switch_ip: str, ssh_user: str, ssh_pass: str, rf_api: RedFishRestApi):
         super().__init__(name, install_path, required_version)
+        self.rf_api = rf_api
         self.switch_ip = switch_ip
         self.ssh_user = ssh_user
         self.ssh_pass = ssh_pass
@@ -96,34 +97,18 @@ class CpldComponent(Component):
             return False
 
     def power_cycle(self, switch_info):
-        try:
-            print("Checking if snmpset is installed...")
-            self._run_ssh("which snmpset")
-            print("snmpset is already installed.")
-        except Exception:
-            print("snmpset not found. Attempting to install...")
-            try:
-                self._run_ssh("sudo apt-get update && sudo apt-get install -y snmp")
-                print("snmp package installed successfully.")
-                self._run_ssh("which snmpset")
-                print("snmpset is now installed.")
-            except Exception as e:
-                print(f"Failed to install snmp package: {e}")
-                print("Please install snmp package manually and try again.")
-                raise
-
-        remote_reboot_cmd = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.REMOTE_REBOOT]
-        if 'auto' not in remote_reboot_cmd:
-            remote_reboot_cmd = f'/auto{remote_reboot_cmd}'
-        self._run_player_cmd(remote_reboot_cmd)
-        print("Remote reboot command sent. Sleeping for 2.5 minutes...")
+        reset_type = "PowerCycle"
+        data = {
+            "ResetType": f"{reset_type}"
+        }
+        respond, _ = self.rf_api.post_query(RedfishCollection.RESET, data)
+        print("Power cycle request sent. Sleeping for 2.5 minutes...")
         time.sleep(150)
 
     def _run_player_cmd(self, command):
         try:
-            path, name = command.split(' ')
             output = subprocess.run(
-                ['/bin/bash', path, name],
+                command,
                 check=True,
                 capture_output=True,
                 text=True
