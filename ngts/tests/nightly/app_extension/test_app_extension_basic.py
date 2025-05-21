@@ -6,7 +6,6 @@ import json
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_repository_list_format, \
     verify_add_app_to_repo, extract_version_info, get_non_semver_version_info, \
     verify_changelog_same_to_manifest, APP_INFO, verify_app_container_up_and_repo_status_installed, app_cleanup
-pytestmark = pytest.mark.skip_config_check
 
 logger = logging.getLogger()
 
@@ -201,6 +200,7 @@ def test_show_package_changelog(add_app_into_repo, cli_objects):
 
 
 @pytest.mark.app_ext
+@pytest.mark.skip_config_check
 @allure.title('test app techsupport integration ')
 def test_app_techsupport_integration(add_app_into_repo, cli_objects):
     """

@@ -376,14 +376,14 @@ def toggle_rsyslog_configurations(dut_engine, configurations, target, state):
     dut_engine.run_cmd(cmd_restart_rsyslogd)
 
 
-@pytest.fixture(scope="module", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def config_check(engines, cli_objects, topology_obj, request, sonic_version, platform_params, chip_type):
     """
     Check if the running config (from redis db) is modified after the test case running.
     If so, we will reload the running config after test case running.
     """
     if request.node.get_closest_marker('skip_config_check'):
-        logger.info("****************************Skipping config_check for module: %s****************************", request.node.name)
+        logger.info("Skipping config_check for test: %s", request.node.name)
         yield None
         return
 
