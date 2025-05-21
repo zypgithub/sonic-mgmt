@@ -382,6 +382,11 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
     Check if the running config (from redis db) is modified after the test case running.
     If so, we will reload the running config after test case running.
     """
+    if request.node.get_closest_marker('skip_config_check'):
+        logger.info("****************************Skipping config_check for module: %s****************************", request.node.name)
+        yield None
+        return
+
     is_skynet = request.config.getoption("skynet")
     if is_skynet:
         logger.info("config check is disabled on Skynet systems to prevent system reload")

@@ -16,6 +16,7 @@ import pytest
 from retry.api import retry_call
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.tests.nightly.secure.constants import SecureBootConsts, SonicSecureBootConsts
+pytestmark = pytest.mark.skip_config_check
 
 logger = logging.getLogger()
 allure.logger = logger

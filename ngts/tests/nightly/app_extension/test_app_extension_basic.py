@@ -6,6 +6,7 @@ import json
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_repository_list_format, \
     verify_add_app_to_repo, extract_version_info, get_non_semver_version_info, \
     verify_changelog_same_to_manifest, APP_INFO, verify_app_container_up_and_repo_status_installed, app_cleanup
+pytestmark = pytest.mark.skip_config_check
 
 logger = logging.getLogger()
 
