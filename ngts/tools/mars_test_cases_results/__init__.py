@@ -198,12 +198,16 @@ def dump_json_to_file(json_obj, session_id, mars_key_id, cli_type):
 
 
 def export_data(session_id, mars_key_id, cli_type):
+    job_name = os.environ.get("REGRESSION_TYPE")
+    if job_name and job_name != "regression":
+        logger.info("Skipping export data to mars db for non-regression jobs")
+        return
     export_data_cmd = "/ngts_venv/bin/python /root/mars/workspace/sonic-mgmt/ngts/scripts/export_test_json_to_mars_db.py" \
                       " --session_id={SESSION_ID} --mars_key_id={MARS_KEY_ID} --cli_type={CLI_TYPE} --log-level=INFO " \
         .format(SESSION_ID=session_id, MARS_KEY_ID=mars_key_id, CLI_TYPE=cli_type)
     try:
         logger.info("Exporting json tests data with command:\n{}".format(export_data_cmd))
-        subprocess.check_output(export_data_cmd, shell=True, stderr=subprocess.STDOUT)
+        subprocess.run(export_data_cmd, shell=True, stderr=subprocess.STDOUT, timeout=120)
     except subprocess.CalledProcessError as e:
         logger.error(e.output.decode())
         raise Exception(f"Failed to export data to mars db using the command '{export_data_cmd}', "

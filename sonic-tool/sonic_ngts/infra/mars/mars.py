@@ -17,7 +17,7 @@ def get_mars_session_resource(mars_session_id):
     :param mars_session_id: mars session id, e.g. 123456
     :return: xml tree object of the session id mars information
     """
-    url = 'https://mars.mellanox.com/api/session/{SESSION_ID}.xml'.format(SESSION_ID=mars_session_id)
+    url = 'https://mars.nvidia.com/api/session/{SESSION_ID}.xml'.format(SESSION_ID=mars_session_id)
     return call_mars_rest_api_with_retry(url)
 
 

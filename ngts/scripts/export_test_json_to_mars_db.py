@@ -24,8 +24,8 @@ logger = logging.getLogger()
 
 def set_logger(log_level):
     logging.basicConfig(level=log_level,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        datefmt='%m-%d %H:%M')
+                        format="%(asctime)s [%(filename)s:%(lineno)d][%(levelname)s]%(message)s",
+                        datefmt='%H:%M:%S')
 
 
 def init_parser():
@@ -50,12 +50,16 @@ def init_parser():
 
 def write_json_into_mars_db(json_file_path, cli_type):
     connections_params = DbConstants.CREDENTIALS.get(cli_type, DbConstants.CREDENTIALS[CliType.SONIC])
+    logger.info("Connecting to MARS DB")
     write_db = MarsConnectDB(connections_params['server'], connections_params['database'],
                              connections_params['username'],
                              connections_params['password'])
+    logger.info("Connected to MARS DB")
     with open(json_file_path, 'r') as f:
         json_data = json.load(f)
+        logger.info("JSON data loaded")
         json_handler = JsonHandler(json_data)
+        logger.info("Writing data to MARS DB")
         write_db.write_json_to_db(json_handler.all_data)
 
 
@@ -63,11 +67,14 @@ def export_json_to_mars_db(session_id, mars_key_id, cli_type):
     folder_path = DbConstants.CLI_TYPE_PATH_MAPPING.get(cli_type, DbConstants.CLI_TYPE_PATH_MAPPING[CliType.SONIC])
     json_file_path = os.path.join(folder_path, session_id, "{}_mars_sql_data.json".format(mars_key_id))
     if os.path.exists(json_file_path):
+        logger.info("Checking MARS session status")
         if is_mars_session_still_running(session_id):
             logger.info('Exporting json data at file: {} to MARS SQL DB'.format(json_file_path))
             retry_call(write_json_into_mars_db, fargs=[json_file_path, cli_type],
                        tries=5, delay=15, logger=logger)
             logger.info("Data was exported successfully!")
+        else:
+            logger.info("MARS session is not running, skipping export")
     else:
         logger.warning("Json file: {} doesn't exist - No data was exported".format(json_file_path))
 
@@ -90,7 +97,13 @@ def is_mars_session_still_running(session_id):
     return is_running
 
 
+def main(session_id, mars_key_id, cli_type):
+    logger.info("Export to MARS DB started")
+    export_json_to_mars_db(session_id, mars_key_id, cli_type)
+    logger.info("Export to MARS DB finished")
+
+
 if __name__ == "__main__":
     args = init_parser()
     set_logger(args.log_level)
-    export_json_to_mars_db(args.session_id, args.mars_key_id, args.cli_type)
+    main(args.session_id, args.mars_key_id, args.cli_type)
