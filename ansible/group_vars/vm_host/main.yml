@@ -11,6 +11,6 @@ vm_console_base: 7000
 memory: 2621440
 max_fp_num: 4
 
-ptf_bp_ip: 10.10.246.254/24
+ptf_bp_ip: 10.10.246.254/22
 ptf_bp_ipv6: fc0a::ff/64
 ptf_extra_mgmt_ip: []
