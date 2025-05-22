@@ -16,6 +16,7 @@ import pytest
 from retry.api import retry_call
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.tests.nightly.secure.constants import SecureBootConsts, SonicSecureBootConsts
+pytestmark = pytest.mark.skip_config_check
 
 logger = logging.getLogger()
 allure.logger = logger
@@ -103,7 +104,6 @@ def test_fwutil_install_onie_key_check_fail(secure_boot_helper, platform_params,
 
 
 @pytest.mark.disable_loganalyzer
-@pytest.mark.skip_config_check
 @pytest.mark.parametrize("signed_type", [SonicSecureBootConsts.FWUTIL_KEY_MISMATCHED_SIGNED])
 def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params, signed_type, dut_secure_type):
     """
