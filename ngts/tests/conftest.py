@@ -428,6 +428,9 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
         # for existed cases so far. If KDUMP configurations need to be considered,
         # please remove the key from the exclude_config_table_names list.
         exclude_config_table_names = {"LOGGER", "KDUMP"}
+        ignore_keys = {
+            "DEVICE_METADATA.localhost.timezone",
+        }
 
         pre_running_config = dut_data["pre_running_config"]
         cur_running_config = dut_data["cur_running_config"]
@@ -473,7 +476,8 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
                                 }
                             }
                         )
-            elif not compare_running_config(pre_running_config[key], cur_running_config[key]):
+            elif not compare_running_config(pre_running_config[key], cur_running_config[key],
+                                            current_key=[key], ignore_keys=ignore_keys):
                 inconsistent_config.update(
                     {
                         key: {
@@ -509,17 +513,49 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
             logger.info("Config check passed for {}".format(module_name))
 
 
-def compare_running_config(pre_running_config, cur_running_config):
+def key_path_pattern_match(pattern: str, key_path: str) -> bool:
+    pattern_parts = pattern.split('.')
+    key_parts = key_path.split('.')
+    if len(pattern_parts) != len(key_parts):
+        return False
+    for p, k in zip(pattern_parts, key_parts):
+        if p != '*' and p != k:
+            return False
+    return True
+
+
+def compare_running_config(pre_running_config, cur_running_config,
+                           current_key=[], ignore_keys=set()) -> bool:
+    """
+    Recursively compare two running configs, ignoring keys specified in ignore_keys.
+    Each element in ignore_keys is a dot-separated path, e.g., "a.b.c", "a.*.c", "a.*.*.d", etc...
+    * can be used as a wildcard to match any key.
+    """
+    key_path_str = '.'.join(current_key)
+    for pattern in ignore_keys:
+        if key_path_pattern_match(pattern, key_path_str):
+            return True
     if not isinstance(pre_running_config, type(cur_running_config)):
         return False
     if pre_running_config == cur_running_config:
         return True
     else:
         if isinstance(pre_running_config, dict):
-            if set(pre_running_config.keys()) != set(cur_running_config.keys()):
-                return False
+            pre_keys = set(pre_running_config.keys())
+            cur_keys = set(cur_running_config.keys())
+            if pre_keys != cur_keys:
+                for key in pre_keys ^ cur_keys:
+                    if not any(key_path_pattern_match(pattern, ".".join(current_key + [key])) for pattern in ignore_keys):
+                        return False
+
             for key in pre_running_config.keys():
-                if not compare_running_config(pre_running_config[key], cur_running_config[key]):
+                # Recursively compare, appending the current key to the path
+                if not compare_running_config(
+                    pre_running_config[key],
+                    cur_running_config[key],
+                    current_key=current_key + [str(key)],
+                    ignore_keys=ignore_keys
+                ):
                     return False
             return True
         # We only have string in list in running config now, so we can ignore the order of the list.
