@@ -21,12 +21,14 @@ def test_check_dpu_fw_version(dpuhosts, localhost):
         sonic_image_name = sonic_version_output.split(":", 1)[1].strip()
         pytest_assert(sonic_image_name.startswith("SONiC."), f'SONiC image name must start with "SONiC." Got: {sonic_version_output}')
 
-        sonic_image_version = sonic_image_name.split(".", 1)[1]
-
+        # SONiC.master_RC.43-878aeef52_Internal -> master_RC.43-878aeef52_Internal
         sonic_image_directory = sonic_image_name[6:]
+        # master_RC.43-878aeef52_Internal -> 43-878aeef52_Internal
+        sonic_image_branch, sonic_image_version = sonic_image_directory.split(".", 1)
         nfs_path = "/auto/sw_system_release/sonic"
         readme_path = f"{nfs_path}/{sonic_image_directory}/dev/README"
-
+        logger.debug(f"Sonic image branch: {sonic_image_branch}, version: {sonic_image_version}")
+        logger.debug(f"Expected README path: {readme_path}")
         if not os.path.exists(readme_path):
             # CI run image versions 0 after the branch name
             if sonic_image_version.startswith("0-"):
