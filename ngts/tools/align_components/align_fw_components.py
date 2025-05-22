@@ -112,7 +112,7 @@ def _get_components_for_update(_args, update_via_parameter):
 
 
 def _has_non_encrypted_fpga(bmc_ip):
-    non_encrypted_fpga_ips = {'10.7.111.128', '10.7.113.142', '10.7.113.148', '10.7.113.144'}
+    non_encrypted_fpga_ips = {'10.7.113.142', '10.7.113.148'}
     return bmc_ip in non_encrypted_fpga_ips
 
 
