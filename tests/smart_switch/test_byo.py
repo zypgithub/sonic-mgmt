@@ -72,6 +72,18 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
         duthost.shell('config vlan add 1000')
         duthost.shell(f'config vlan member add 1000 {switch_data_port} --untagged')
         dpu_data_port = dpuhost.data_port_on_npu
+        ip_intfs = duthost.show_and_parse("show ip int")
+        for ip_intf in ip_intfs:
+            if ip_intf['interface'] == dpu_data_port:
+                logger.info(f"Removing the static route for the DPU data port: {dpu_data_port}")
+                match_static_route_prefix_pattern = 'S\>\*([\d\.]+\/\d+)'
+                static_route_for_dpu_data_port = duthost.shell(f'show ip route | grep {dpu_data_port}')['stdout']
+                match_static_route_prefix = re.search(match_static_route_prefix_pattern, static_route_for_dpu_data_port)
+                if match_static_route_prefix:
+                    duthost.shell(f'sudo config route del prefix {match_static_route_prefix.group(1)} dev {dpu_data_port}')
+                logger.info(f"Removing the ip address for the DPU data port: {dpu_data_port}")
+                duthost.shell(f"config interface ip remove {dpu_data_port} "
+                              f"{ip_intf['ipv4 address/mask']}")
         duthost.shell(f'config vlan member add 1000 {dpu_data_port} --untagged')
         ptf_port_index = mg_facts['minigraph_ptf_indices'][switch_data_port]
     with allure.step("Align the DPU time"):
