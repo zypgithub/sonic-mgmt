@@ -67,7 +67,7 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
 
     route_and_mapping_messages = {
-        **pl.PE_VNET_MAPPING_CONFIG,
+        **pl.PE1_VNET_MAPPING_CONFIG,
         **pl.PE_SUBNET_ROUTE_CONFIG,
         **pl.VM_SUBNET_ROUTE_CONFIG
     }

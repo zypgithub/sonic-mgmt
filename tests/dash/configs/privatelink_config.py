@@ -1,4 +1,4 @@
-from dash_api.eni_pb2 import State
+from dash_api.eni_pb2 import State, EniMode
 from dash_api.route_type_pb2 import ActionType, EncapType, RoutingType
 from dash_api.types_pb2 import IpVersion
 
@@ -13,7 +13,9 @@ VM1_PA = "25.1.1.1"  # VM host physical address
 VM1_CA = "10.0.0.11"  # VM customer address
 VM_CA_SUBNET = "10.0.0.0/16"
 PE_PA = "101.1.2.3"  # private endpoint physical address
-PE_CA = "10.2.0.100"  # private endpoint customer address
+PE1_CA = "10.2.0.100"  # private endpoint customer address
+PE_CA = PE1_CA
+PE2_CA = "10.2.0.200"
 PE_CA_SUBNET = "10.2.0.0/16"
 PL_ENCODING_IP = "::d107:64:ff71:0:0"
 PL_ENCODING_MASK = "::ffff:ffff:ffff:0:0"
@@ -41,6 +43,11 @@ ROUTE_GROUP2 = "RouteGroup2"
 ROUTE_GROUP1_GUID = "48af6ce8-26cc-4293-bfa6-0126e8fcdeb2"
 ROUTE_GROUP2_GUID = "58cf62e0-22cc-4693-baa6-012358fcdec9"
 OUTBOUND_DIR_LOOKUP = "dst_mac"
+TUNNEL1 = "Tunnel1"
+TUNNEL1_ENDPOINT_IP = "40.40.40.40"
+TUNNEL2 = "Tunnel2"
+TUNNEL1_ENDPOINT_IPS = [TUNNEL1_ENDPOINT_IP]
+TRUSTED_VNI = "800"
 METER_POLICY_V4 = "MeterPolicyV4"
 METER_RULE_V4_PREFIX1 = "48.10.5.0/255.255.255.0"
 METER_RULE_V4_PREFIX2 = "92.6.0.0/255.255.0.0"
@@ -51,6 +58,28 @@ APPLIANCE_CONFIG = {
         "vm_vni": VM_VNI,
         "local_region_id": LOCAL_REGION_ID,
         "outbound_direction_lookup": OUTBOUND_DIR_LOOKUP
+    }
+}
+APPLIANCE_TRUSTED_VNI_CONFIG = {
+    f"DASH_APPLIANCE_TABLE:{APPLIANCE_ID}": {
+        "sip": APPLIANCE_VIP,
+        "vm_vni": VM_VNI,
+        "outbound_direction_lookup": OUTBOUND_DIR_LOOKUP,
+        "trusted_vni": TRUSTED_VNI
+    }
+}
+
+ENI_FNIC_CONFIG = {
+    f"DASH_ENI_TABLE:{ENI_ID}": {
+        "vnet": VNET1,
+        "underlay_ip": VM1_PA,
+        "mac_address": ENI_MAC,
+        "eni_id": ENI_ID,
+        "admin_state": State.STATE_ENABLED,
+        "pl_underlay_sip": APPLIANCE_VIP,
+        "pl_sip_encoding": f"{PL_ENCODING_IP}/{PL_ENCODING_MASK}",
+        "mode": EniMode.MODE_FNIC,
+        "trusted_vni": TRUSTED_VNI
     }
 }
 
@@ -74,12 +103,23 @@ ENI_CONFIG = {
     }
 }
 
-PE_VNET_MAPPING_CONFIG = {
-    f"DASH_VNET_MAPPING_TABLE:{VNET1}:{PE_CA}": {
+PE1_VNET_MAPPING_CONFIG = {
+    f"DASH_VNET_MAPPING_TABLE:{VNET1}:{PE1_CA}": {
         "routing_type": RoutingType.ROUTING_TYPE_PRIVATELINK,
         "underlay_ip": PE_PA,
         "overlay_sip_prefix": f"{PL_OVERLAY_SIP}/{PL_OVERLAY_SIP_MASK}",
         "overlay_dip_prefix": f"{PL_OVERLAY_DIP}/{PL_OVERLAY_DIP_MASK}",
+        "metering_class_or": "1586",
+    }
+}
+
+PE2_VNET_MAPPING_CONFIG = {
+    f"DASH_VNET_MAPPING_TABLE:{VNET1}:{PE1_CA}": {
+        "routing_type": RoutingType.ROUTING_TYPE_PRIVATELINK,
+        "underlay_ip": PE_PA,
+        "overlay_sip_prefix": f"{PL_OVERLAY_SIP}/{PL_OVERLAY_SIP_MASK}",
+        "overlay_dip_prefix": f"{PL_OVERLAY_DIP}/{PL_OVERLAY_DIP_MASK}",
+        "tunnel": TUNNEL1,
         "metering_class_or": "1586",
     }
 }
@@ -89,6 +129,26 @@ VM1_VNET_MAPPING_CONFIG = {
         "routing_type": RoutingType.ROUTING_TYPE_VNET,
         "underlay_ip": VM1_PA,
         "metering_class_or": "2",
+    }
+}
+EXGW_ROUTE_CONFIG = {
+    f"DASH_ROUTE_TABLE:{ROUTE_GROUP1}:{PE_CA_SUBNET}": {
+        "routing_type": RoutingType.ROUTING_TYPE_DIRECT,
+        "tunnel": TUNNEL2
+    }
+}
+TUNNEL1_CONFIG = {
+    f"DASH_TUNNEL_TABLE:{TUNNEL1}": {
+        "endpoints": TUNNEL1_ENDPOINT_IPS,
+        "vni": ENCAP_VNI,
+        "encap_type": EncapType.ENCAP_TYPE_VXLAN
+    }
+}
+
+ROUTE_RULE1_CONFIG = {
+    f"DASH_ROUTE_RULE_TABLE:{ENI_MAC_STRING}:{TRUSTED_VNI}:{VM1_PA}": {
+        "action_type": ActionType.ACTION_TYPE_DECAP,
+        "priority": 1
     }
 }
 

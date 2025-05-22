@@ -14,6 +14,7 @@ from dash_utils import render_template_to_host, apply_swssconfig_file
 from gnmi_utils import generate_gnmi_cert, apply_gnmi_cert, recover_gnmi_cert, apply_gnmi_file
 from dash_acl import AclGroup, DEFAULT_ACL_GROUP, WAIT_AFTER_CONFIG, DefaultAclRule
 from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost # noqa F401
+from tests.common import config_reload
 
 logger = logging.getLogger(__name__)
 
@@ -455,6 +456,9 @@ def set_vxlan_udp_sport_range(dpuhosts, dpu_index):
     config_path = "/tmp/vxlan_sport_config.json"
     dpuhost.copy(content=json.dumps(vxlan_sport_config, indent=4), dest=config_path, verbose=False)
     apply_swssconfig_file(dpuhost, config_path)
+    yield
+    if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
+        config_reload(dpuhost, safe_reload=True)
 
 
 

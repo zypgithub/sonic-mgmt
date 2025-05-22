@@ -973,6 +973,12 @@ dash/test_dash_vnet.py::test_outbound_vnet_direct:
     conditions:
     - "https://redmine.mellanox.com/issues/3634592 and 'nvda_bf' in platform"
 
+dash/test_dash_privatelink.py::test_pl_nsg:
+  skip:
+    reason: "Testcase is ignored until the NGS feature is merged to the smart-switch-master branch"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4415291"
+
 hash/test_generic_hash.py::test_reboot:
   skip:
     reason: "The WR/FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"

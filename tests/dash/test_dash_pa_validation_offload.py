@@ -112,7 +112,7 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
         **pl_config.APPLIANCE_CONFIG,
         **pl_config.VNET_CONFIG,
         **pl_config.ENI_CONFIG,
-        **pl_config.PE_VNET_MAPPING_CONFIG,
+        **pl_config.PE1_VNET_MAPPING_CONFIG,
         **pl_config.ROUTE_GROUP1_CONFIG
     }
     logger.info(messages1)
@@ -128,7 +128,7 @@ def apply_pl_config(localhost, duthost, ptfhost, dpu_index, pl_config):
         **pl_config.APPLIANCE_CONFIG,
         **pl_config.VNET_CONFIG,
         **pl_config.ENI_CONFIG,
-        **pl_config.PE_VNET_MAPPING_CONFIG,
+        **pl_config.PE1_VNET_MAPPING_CONFIG,
         **pl_config.ROUTE_GROUP1_CONFIG,
         **pl_config.PE_SUBNET_ROUTE_CONFIG,
         **pl_config.ENI_ROUTE_GROUP1_CONFIG,
