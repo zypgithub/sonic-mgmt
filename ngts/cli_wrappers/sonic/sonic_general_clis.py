@@ -156,6 +156,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         current_image = re.search(pattern, output, re.IGNORECASE).group(1)
         return current_image
 
+    def get_image_sonic_release(self):
+        return self.engine.run_cmd('sonic-cfggen -y /etc/sonic/sonic_version.yml -v release')
+
     def set_default_image(self, image_binary, delimiter='-'):
         output = self.engine.run_cmd('sudo sonic{}installer set{}default {}'.format(delimiter, delimiter, image_binary),
                                      validate=True)

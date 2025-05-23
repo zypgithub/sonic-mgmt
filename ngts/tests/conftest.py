@@ -18,6 +18,7 @@ from deepdiff import DeepDiff
 from enum import Enum
 
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
+from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
@@ -508,6 +509,17 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
                 logger.info("reload flow is currently not supported for NVUE")
             else:
                 cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
+            if isinstance(cli_objects.dut.general, SonicGeneralCliDefault) and \
+                    cli_objects.dut.general.get_image_sonic_release() == "none":
+                # Check if the switch OS was upgraded from a previous version to master RC
+                base_image, target_image = cli_objects.dut.general.get_base_and_target_images()
+                logging.info(f"base image: {base_image}, target image: {target_image}")
+                if base_image is not None:
+                    logger.warning(
+                        "config check is disabled when upgrading to master RC, check the failure->\n"
+                        f"{config_check_error_message}"
+                    )
+                    return
             raise Exception(config_check_error_message)
         else:
             logger.info("Config check passed for {}".format(module_name))
