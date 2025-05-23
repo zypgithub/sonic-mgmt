@@ -109,8 +109,6 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
         except Exception as err:
             logger.error("Bug handler failed")
             raise err
-        finally:
-            clear_files(session_id)
         return summarize_la_bug_handler(bug_handler_dumps_results, bug_handler_action), la_errors
 
 
@@ -493,6 +491,8 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
             logging.error(f'Failed to run log analyzer on {node}')
             return
     try:
+        # clear files from previous run
+        clear_files(os.environ.get(InfraConst.ENV_SESSION_ID, 'unknown_session_id'))
         # run bug handler in seperated step to decouple from analyze_logs
         bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=720)
         for node in bh_results.keys():
