@@ -196,9 +196,10 @@ def port_group_df(request, players, conf_args=None):
     port_groups = players[PerfConsts.DUT_ALIAS]['cli'].performance.port_groups
 
     for port_group_name, port_list in port_groups.items():
-        for port in port_list:
+        sdk_port_list = players['dut']['cli'].performance.get_sdk_ports(port_list)
+        for port in sdk_port_list:
             port_group_df.append({
-                ValidationConsts.PORT: players['dut']['cli'].performance.get_sdk_port(port),
+                ValidationConsts.PORT: port,
                 MongoDbConsts.PORT_GROUP_NAME: port_group_name
             })
 
