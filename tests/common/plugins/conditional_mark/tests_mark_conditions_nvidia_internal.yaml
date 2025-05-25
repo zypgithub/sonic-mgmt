@@ -68,7 +68,7 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
     reason: "Testcase not supported on current platform"
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform or '2201' in platform"
+    - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4222701 and 'r-panther-13' in testbed"
   xfail:
     reason: "May fail due to RM 3971501 on r-leopard-56 or due to RM 3969985 on SPC4"
@@ -85,19 +85,18 @@ tests/nightly/runtime/test_runtime.py:
     - "'simx' in platform"
 tests/nightly/auto_negotition:
   skip:
-    reason: "Testcase not supported on simx and 3800 platform. Skipped due to RM 4200667 on sn5610n"
+    reason: "Testcase not supported on simx. Skipped due to RM 4200667 on sn5610n"
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform or '3800' in platform"
+    - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4200667 and 'sn5610n' in platform"
 
 tests/nightly/dynamic_port_breakout:
   skip:
-    reason: "Test is not supported on simx and 3800  and on sn5610n due to RM 4196681"
+    reason: "Test is not supported on simx and on sn5610n due to RM 4196681"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2885961 and 'simx' in platform"
-    - "'3800' in platform"
     - "https://redmine.mellanox.com/issues/4196681 and 'sn5610n' in platform"
 
 tests/nightly/copp/test_copp.py::test_copp_policer[LLDP_Reboot]:
@@ -168,10 +167,9 @@ tests/push_build_tests/L2/vxlan/test_vxlan.py:
 
 tests/push_build_tests/L2/vlan/test_vlan.py::TestVLAN::test_vlan_on_split_port:
   skip:
-    reason: "Testcase ignored due to 2201 platform or RM issue 4444119 for simx platform"
+    reason: "Testcase ignored due to RM issue 4444119 for simx platform"
     conditions_logical_operator: or
     conditions:
-    - "'2201' in platform"
     - "https://redmine.mellanox.com/issues/4444119 and 'simx' in platform"
 
 tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhcp_relay_release_message:
@@ -194,11 +192,10 @@ tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_port:
 
 tests/nightly/adaptive_routing:
   skip:
-    reason: "AR is not supported on SimX Platform or on SN5610N or on ACS-SN5400 hwsku(AR is not supported on Hippos due to missing SAI_HOSTIF_OPER_STATUS_UPDATE_BY_APP=1 in sai.profile)"
+    reason: "AR is not supported on SimX Platform or on SN5610N"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
-    - "'ACS-SN5400' in hwsku"
     - "hwsku not in ['Mellanox-SN5600-O128']"
     - "'sn5610n' in platform"
 
@@ -208,10 +205,9 @@ tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
 
 tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports:
   skip:
-    reason: "Testcase ignored due to platform 2201 or RM issue 3971501"
+    reason: "Testcase ignored due to RM issue 3971501"
     conditions_logical_operator: or
     conditions:
-    - "'2201' in platform"
     - "https://redmine.mellanox.com/issues/4252039"
   xfail:
     reason: "Testcase may fail due to RM https://redmine.mellanox.com/issues/3971501 on r-leopard-56"
@@ -596,10 +592,9 @@ process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical
 
 platform_tests/test_auto_negotiation.py:
   skip:
-    reason: "Testcase ignored due to platform 3800 and the fanout of r-tigon-11 setup is 3800"
+    reason: "Testcase ignored due to the fanout of r-tigon-11 setup is 3800"
     conditions_logical_operator: or
     conditions:
-    - "'3800' in platform"
     - "'r-tigon-11' in testbed"
 
 memory_checker/test_memory_checker.py:
@@ -655,58 +650,18 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
     reason: "Test flow is covered by push gate with upgrade flow"
 
-platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/2382365 and platform 2100"
-    conditions:
-    - "https://redmine.mellanox.com/issues/2382365 and '2100' in platform"
-
-platform_tests/fwutil/test_fwutil.py::test_fwutil_install_url:
-  skip:
-    reason: "Testcase ignored - check ignore condition in tests/common/plugins/conditional_mark/tests_mark_conditions_nvidia_internal.yaml"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/2382365 and '2100' in platform"
-
-platform_tests/fwutil/test_fwutil.py::test_fwutil_auto:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/2382365 and platform 2100"
-    conditions:
-    - "https://redmine.mellanox.com/issues/2382365 and '2100' in platform"
-
-platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current:
-  skip:
-    reason: "Testcase ignored - check ignore condition in tests/common/plugins/conditional_mark/tests_mark_conditions_nvidia_internal.yaml"
-    conditions_logical_operator: or
-    conditions:
-    - "https://redmine.mellanox.com/issues/2382365 and '2100' in platform"
-
 platform_tests/test_reboot.py:
   skip:
-    reason: "Testcase ignored due to platform 2010 or simx doesn't support due to QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
+    reason: "Testcase ignored due to simx doesn't support due to QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
     conditions_logical_operator: or
     conditions:
-    - "'2010' in platform"
     - "'simx' in platform"
-
-platform_tests/test_reboot.py::test_warm_reboot:
-  skip:
-    reason: "Testcase ignored due to platform 2100"
-    conditions:
-    - "'2100' in platform"
-
-platform_tests/test_power_off_reboot.py::test_power_off_reboot:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3013086 and platform 2100"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3013086 and '2100' in platform"
 
 platform_tests/api/test_psu.py::TestPsuApi::test_temperature:
   skip:
-    reason: "Testcase ignored due to platform 2010/2100 or due to RM 4257471"
+    reason: "Testcase ignored due to RM 4257471"
     conditions_logical_operator: or
     conditions:
-    - "'2010' in platform or '2100' in platform"
     - "https://redmine.mellanox.com/issues/4262143 and 'r-gaur-04' in testbed"
 
 platform_tests/api/test_sfp.py:
@@ -875,10 +830,9 @@ ecmp/inner_hashing:
 
 platform_tests/test_sensors.py::test_sensors:
   skip:
-    reason: "Testcase ignored due to RM issue 3816778 on r-anaconda-15  or due to RM issue 4137145 on bobcat or due to RM 4261914 on sn5610n"
+    reason: "Testcase ignored due to RM issue 4137145 on bobcat or due to RM 4261914 on sn5610n"
     conditions_logical_operator: or
     conditions:
-    - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
     - "https://redmine.mellanox.com/issues/4205069 and 'sn5610n' in platform"
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
 
@@ -1374,10 +1328,9 @@ platform_tests/test_sequential_restart.py:
 
 platform_tests/test_sequential_restart.py::test_restart_swss:
   skip:
-    reason: "Skipped due to RM 3816778 on r-anaconda-15 or due to RM 4209112 on r-gaur-04"
+    reason: "Skipped due to RM 4209112 on r-gaur-04"
     conditions_logical_operator: or
     conditions:
-    - "https://redmine.mellanox.com/issues/3816778 and 'r-anaconda-15' in testbed"
     - "https://redmine.mellanox.com/issues/4209112 and 'r-gaur-04' in testbed"
     - "https://redmine.mellanox.com/issues/4477522"
 

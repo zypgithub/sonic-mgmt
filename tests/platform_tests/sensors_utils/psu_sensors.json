@@ -1,22 +1,4 @@
 {
-	"x86_64-mlnx_msn2410-r0": {
-		"default": {
-			"bus": [
-				"i2c-10",
-				"i2c-1-mux (chan_id 10)"
-			],
-			"chip": {
-				"dps460-i2c-*-58": [
-					"2",
-					"R"
-				],
-				"dps460-i2c-*-59": [
-					"1",
-					"L"
-				]
-			}
-		}
-	},
 	"x86_64-mlnx_msn2700-r0": {
 		"default": {
 			"bus": [
@@ -343,22 +325,6 @@
 			}
 		}
 	},
-	"x86_64-nvidia_sn2201-r0": {
-		"default": {
-			"bus": [
-				"i2c-3",
-				"i2c-1-mux (chan_id 1)"
-			],
-			"chip": {
-				"pmbus-i2c-3-58": [
-					"1"
-				],
-				"pmbus-i2c-4-58": [
-					"2"
-				]
-			}
-		}
-	},
 	"x86_64-nvidia_sn4800-r0": {
 		"default": {
 			"bus": [
@@ -381,24 +347,6 @@
 				"dps460-i2c-*-5a": [
 					"4",
 					"L"
-				]
-			}
-		}
-	},
-	"x86_64-nvidia_sn5400-r0": {
-		"default": {
-			"bus": [
-				"i2c-4",
-				"i2c-1-mux (chan_id 3)"
-			],
-			"chip": {
-				"dps460-i2c-*-59": [
-					"1",
-					"L"
-				],
-				"dps460-i2c-*-5a": [
-					"2",
-					"R"
 				]
 			}
 		}

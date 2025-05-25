@@ -185,14 +185,6 @@
         - simx
 
 - Errors_list:
-    - '.* ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/led/led_fan\d_capability - FileNotFoundError\(2, ''No such file or directory''\)'
-  Conditions:
-    - Redmine:
-      - 2972123
-      Platform:
-      - x86_64-nvidia_sn2201-r0
-
-- Errors_list:
     - '.* ERR syncd#SDK: :- guard: RedisReply catches system_error: command:.*Lua redis.* command arguments must be strings or integers.*Input\/output error.*'
     - '.* ERR syncd#SDK: :- runRedisScript: Caught exception while running Redis lua script: RedisReply catches system_error: command:.*Lua redis.* command arguments must be strings or integers.*Input\/output error.*'
     - '.* ERR syncd#SDK: :- guard: RedisReply catches system_error: command: .*attempt to perform arithmetic on local .*in_octets.* \(a boolean value\).*Input\/output error.*'

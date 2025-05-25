@@ -633,7 +633,7 @@ class CpldComponent(FwComponent):
         parsed_ver = "{}_{}{}".format(cpld_pn, cpld_ver_major, cpld_ver_minor)
 
         # handle not supported CPLD3 (Port CPLD) P/N and version minor on SPC-1
-        if platform_type in ['x86_64-mlnx_msn2700-r0', 'x86_64-mlnx_msn2410-r0']:
+        if platform_type in ['x86_64-mlnx_msn2700-r0']:
             if self.get_name() == 'CPLD3':
                 parsed_ver = "{}_{}{}".format(comp_pn, cpld_ver_major, comp_ver_minor)
 

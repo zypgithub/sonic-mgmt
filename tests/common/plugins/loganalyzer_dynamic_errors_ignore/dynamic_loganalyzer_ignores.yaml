@@ -524,7 +524,6 @@
     Platform:
     - x86_64-mlnx_msn2
     - x86_64-mlnx_msn2700-r0
-    - x86_64-mlnx_msn2010-r0
 
 - Errors_list:
   - '.* ERR teamd#tlm_teamd: :- get_dump: Can''t get dump for LAG ''PortChannel\d+''. Skipping'
@@ -981,22 +980,6 @@
     - drop_packets/test_configurable_drop_counters.py
     Redmine:
     - 3310078
-
-- Errors_list:
-  - '.* ERR kernel.* QAT: AE0 is inactive.*'
-  - '.* ERR kernel.* QAT: failed to get device out of reset.*'
-  - '.* ERR kernel.* qat_hal_clr_reset error.*'
-  - '.* ERR kernel.* Failed to init the AEs.*'
-  - '.* ERR kernel.* Failed to initialise Acceleration Engine.*'
-  - '.* WARNING kernel.* probe of .* failed with error -14.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/lag/test_lag.py::test_core_functionality_with_reboot
-    - tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_hosts_ports
-    Redmine:
-    - 3333468
-    Platform:
-    - 2201
 
 - Errors_list:
   - '.* ERR teamd#teammgrd: :- addLagMember: Failed to add Ethernet\d+ to port channel .*'
