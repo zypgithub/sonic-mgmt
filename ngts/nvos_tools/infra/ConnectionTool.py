@@ -20,14 +20,18 @@ class ConnectionTool:
     @staticmethod
     def create_ssh_conn(ip, username, password):
         """
+        Create an SSH connection to the specified IP address.
 
-        :param ip:dut ip
-        :param username: username
-        :param password: password
-        :return:
+        Args:
+            ip (str): The IP address to connect to (IPv4 or IPv6)
+            username (str): The username for the SSH connection
+            password (str): The password for the SSH connection
+
+        Returns:
+            ResultObj: Object containing the connection result and SSH connection if successful
         """
         with allure.step('create ssh connection with the username {username}'.format(username=username)):
-            result_obj = ResultObj(False, "Couldn't connect")
+            result_obj = ResultObj(False, "Couldn't connect - ")
 
             try:
                 ssh_conn = LinuxSshEngine(ip=ip, username=username, password=password)
@@ -36,7 +40,8 @@ class ConnectionTool:
                     result_obj.returned_value = ssh_conn
                     result_obj.result = True
                     result_obj.info = 'Created ssh connection successfully'
-            except NetmikoAuthenticationException:
+            except NetmikoAuthenticationException as ex:
+                result_obj.returned_value += ex
                 return result_obj
 
             return result_obj
@@ -47,10 +52,10 @@ class ConnectionTool:
         Create multiple SSH connections to the given IP address.
 
         Args:
-            ip (str): The IP address to connect to.
-            username (str): The username for the SSH connections.
-            password (str): The password for the SSH connections.
-            amount (int): The number of SSH connections to create.
+            ip (str): The IP address to connect to (IPv4 or IPv6)
+            username (str): The username for the SSH connections
+            password (str): The password for the SSH connections
+            amount (int): The number of SSH connections to create
 
         Returns:
             list: A list of SSH connections
@@ -60,7 +65,8 @@ class ConnectionTool:
             threads = []
 
             for _ in range(amount):
-                thread = threading.Thread(target=lambda: connections.append(ConnectionTool.create_ssh_conn(ip, username, password)))
+                thread = threading.Thread(target=lambda: connections.append(
+                    ConnectionTool.create_ssh_conn(ip, username, password)))
                 threads.append(thread)
                 thread.start()
 
@@ -134,11 +140,12 @@ class ConnectionTool:
 
     @staticmethod
     def ping_device(server_ip, num_of_retries=30, delay_in_sec=15):
-
         @retry(Exception, tries=num_of_retries, delay=delay_in_sec)
         def _ping_device(server_ip):
             logger.info("Ping {}".format(server_ip))
-            cmd = "ping -c 3 {}".format(server_ip)
+            # Check if the address is IPv6
+            is_ipv6 = ':' in server_ip
+            cmd = "ping6 -c 3 {}".format(server_ip) if is_ipv6 else "ping -c 3 {}".format(server_ip)
             logger.info("Running cmd: {}".format(cmd))
             output = subprocess.check_output(cmd, shell=True, universal_newlines=True)
             logger.info("output: " + str(output))

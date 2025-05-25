@@ -62,16 +62,14 @@ class Configurations:
 
     oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8'}
 
-    post_install_commands = {"10.7.144.153": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply -y'],
-                             "10.245.21.50": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply -y'],
-                             "10.245.21.67": ['nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
-                                              'nv config apply -y']
-                             # "10.7.148.248": ['sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/platform.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json',
-                             #                  'sudo cp /usr/share/sonic/device/x86_64-nvidia_q3450_ld-r0/co_optics_modules.json /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/co_optics_modules.json',
-                             #                  'sudo sed -i \'s/"sfp_count"[[:space:]]*:[[:space:]]*"[0-9]*",/"sfp_count":"73",/\' /usr/share/sonic/device/x86_64-nvidia_q3400_ra-r0/platform.json']
-                             }
+    # Map IPs to their post-install commands
+    post_install_commands = {
+        ip: [
+            'nv set acl ACL_MGMT_INBOUND_CP_DEFAULT rule 120 match ip recent-list hit-count 3000',
+            'nv config apply -y'
+        ]
+        for ip in ["10.245.21.67", "10.7.148.160", "10.7.148.161", "10.7.145.61", "10.7.145.62"]
+    }
 
     devices_missing_psus = {}
     devices_to_configure_ndr_ports = ndr_ports.keys()

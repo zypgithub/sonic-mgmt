@@ -81,6 +81,8 @@ def pytest_addoption(parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+    parser.addoption("--ipv6_only", action="store_true", default=False, help="Use ipv6 address for the test")
+    parser.addoption("--ipv6_add", action="store", default=None, help="Provide static ipv6 address")
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -136,6 +138,45 @@ def check_log_size(request, engines):
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
                     assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
+
+
+@pytest.fixture(autouse=True, scope="session")
+def set_ipv6_address(request, engines, devices):
+    """
+    Fixture to set IPv6 address for DUT when IPv6 testing is enabled.
+
+    This fixture is automatically used for all tests and sets the DUT's IP address to IPv6
+    when the --ipv6_only flag is provided. The IPv6 address can be provided via --ipv6_add
+    or will be automatically retrieved from the DUT's management interface.
+
+    Args:
+        request: pytest request object containing command line options
+        engines: Test engines object containing DUT engine
+        devices: Test devices object containing DUT device information
+
+    Raises:
+        Exception: If IPv6 is required but no valid IPv6 address is found
+    """
+    logger = logging.getLogger(__name__)
+
+    if request.config.getoption("--ipv6_only"):
+        logger.info("IPv6 testing mode enabled")
+        ipv6_addr = request.config.getoption("--ipv6_add")
+
+        if not ipv6_addr:
+            logger.info("No IPv6 address provided, attempting to get from DUT")
+            ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(
+                devices.dut.cur_mgmt_port_name,
+                engines.dut
+            )
+
+        if ipv6_addr:
+            logger.info(f"Setting DUT IP to IPv6 address: {ipv6_addr}")
+            engines.dut.ip = ipv6_addr
+        else:
+            error_msg = "IPv6 testing enabled but no valid IPv6 address found for DUT"
+            logger.error(error_msg)
+            raise Exception(error_msg)
 
 
 @pytest.fixture(autouse=True)
