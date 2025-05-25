@@ -489,7 +489,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
                 logger.info(output)
 
         with allure.step('Send line: "onie-stop"'):
-            output, respond = serial_engine.run_cmd('onie-stop', 'done.', timeout=10)
+            output, respond = serial_engine.run_cmd('onie-stop', ['done.', 'discover'], timeout=10)
             logger.info(output)
 
             for _ in range(3):

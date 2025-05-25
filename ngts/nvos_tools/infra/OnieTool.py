@@ -1,7 +1,7 @@
 import datetime
 import re
 
-from ngts.tests_nvos.general.ONIE.constants import OnieConsts
+from ngts.tests_nvos.general.ONIE.constants import OnieConsts, ProvisionConsts
 from ngts.tools.test_utils import allure_utils as allure
 import allure
 import logging
@@ -17,6 +17,41 @@ logger = logging.getLogger()
 
 
 class OnieTool:
+
+    @staticmethod
+    def is_opn(topology_obj):
+        """
+        Determine if the DUT is an OPN device by checking the 'opn' field in topology.
+
+        @param topology_obj: topology object containing players and attributes
+        @return: bool - True if OPN, False otherwise
+        """
+        for host in topology_obj.players:
+            if host in PlayersAliases.duts_list:
+                opn_attr = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get('opn',
+                                                                                                                  '')
+                return opn_attr.strip().lower() == 'yes'
+        raise ValueError("Could not determine if device is OPN – no matching DUT found.")
+
+    @staticmethod
+    def is_ipn(topology_obj):
+        """
+        Determine if the DUT is an IPN device — logically not OPN.
+
+        @param topology_obj: topology object containing players and attributes
+        @return: bool - True if IPN, False otherwise
+        """
+        return not OnieTool.is_opn(topology_obj)
+
+    @staticmethod
+    def get_device_type(topology_obj) -> str:
+        """
+        Determine device type from topology ('OPN' or 'IPN').
+
+        :param topology_obj: Topology object with DUT attributes.
+        :return: 'OPN' or 'IPN'
+        """
+        return OnieConsts.OPN if OnieTool.is_opn(topology_obj) else OnieConsts.IPN
 
     @staticmethod
     def fetch_onie_updater(serial_engine, image_url):
@@ -71,20 +106,45 @@ class OnieTool:
                 raise Exception(f"Unexpected update result.")
 
     @staticmethod
-    def get_onie_updater_path(topology_obj):
-        for host in topology_obj.players:
-            if host in PlayersAliases.duts_list:
-                is_opn = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get('opn',
-                                                                                                                '')
-                return OnieConsts.ONIE_FILES_DICT['IPN'] if is_opn == 'No' else OnieConsts.ONIE_FILES_DICT['OPN']
+    def get_onie_updater_path(topology_obj) -> str:
+        """
+        Get the ONIE updater image path based on device type.
+
+        :param topology_obj: Topology object with DUT attributes.
+        :return: ONIE updater image URL
+        """
+        dev_type = OnieTool.get_device_type(topology_obj)
+        logger.info(f"Selected ONIE updater path for {dev_type}: {OnieConsts.ONIE_FILES_DICT[dev_type]}")
+        return OnieConsts.ONIE_FILES_DICT[dev_type]
 
     @staticmethod
-    def get_onie_version_name_for_pxe(topology_obj):
-        for host in topology_obj.players:
-            if host in PlayersAliases.duts_list:
-                is_opn = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get('opn',
-                                                                                                                '')
-                return OnieConsts.ONIE_VERSIONS_PXE_DICT['IPN'] if is_opn == 'No' else OnieConsts.ONIE_VERSIONS_PXE_DICT['OPN']
+    def get_provisioning_url(topology_obj) -> str:
+        """
+        Return the provisioning URL based on device type (OPN/IPN).
+        """
+        if OnieTool.is_opn(topology_obj):
+            dev_type = OnieTool.get_device_type(topology_obj)
+            version = ProvisionConsts.VERSIONS_DICT[dev_type]['version']
+            logger.info(f"Selected provisioning version: {version}")
+            return ProvisionConsts.VERSIONS_DICT[dev_type]['provisioning_url']
+
+    @staticmethod
+    def run_provisioning(serial_engine, filename):
+        serial_engine.run_cmd("cd /tmp", expected_value=["/tmp"])
+        serial_engine.run_cmd(f"tar -xzf {filename}", expected_value='.*')
+        serial_engine.run_cmd("./sedutil_init.sh", expected_value="completed successfully", timeout=60)
+
+    @staticmethod
+    def get_onie_version_name_for_pxe(topology_obj) -> str:
+        """
+        Get the ONIE PXE menu version string based on device type.
+
+        :param topology_obj: Topology object with DUT attributes.
+        :return: ONIE version string (e.g., 'ONIE_r5.3.0015-115200')
+        """
+        dev_type = OnieTool.get_device_type(topology_obj)
+        logger.info(f"Selected PXE version for {dev_type}: {OnieConsts.ONIE_VERSIONS_PXE_DICT[dev_type]}")
+        return OnieConsts.ONIE_VERSIONS_PXE_DICT[dev_type]
 
     @staticmethod
     def extract_onie_updater_result(output):

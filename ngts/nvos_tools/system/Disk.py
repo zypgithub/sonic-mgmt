@@ -10,8 +10,8 @@ class Disk(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/disk')
 
-    def action_erase(self, dut_engine=None, device=None) -> ResultObj:
+    def action_erase(self, dut_engine=None, device=None, force=None) -> ResultObj:
         with allure.step(f'Execute disk erase action {self.get_resource_path()}'):
             engine = dut_engine if dut_engine else TestToolkit.engines.dut
             return SendCommandTool.execute_command(self._cli_wrapper.action_erase, engine, device,
-                                                   self.get_resource_path())
+                                                   self.get_resource_path(), force=force)

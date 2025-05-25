@@ -111,3 +111,23 @@ class SshPassCmdBuilder(SshCmdBuilder):
                                                         usr=self.user,
                                                         host=self.host).strip() + f" '{self.cmd_to_execute}'"
         return cmd.strip()
+
+
+class ScpPassCmdBuilder(SshPassCmdBuilder):
+    SCP_CMD_TEMPLATE = "sshpass -p '{pw}' scp {opts} {src} {usr}@{host}:{dest}"
+
+    def __init__(self, user: str, password: str, host: str, src: str, dest: str, port=22):
+        super().__init__(user, password, host, port)
+        self.src = src
+        self.dest = dest
+
+    def build(self) -> str:
+        self.options.strip()
+        return ScpPassCmdBuilder.SCP_CMD_TEMPLATE.format(
+            pw=self.password,
+            opts=self.options,
+            src=self.src,
+            usr=self.user,
+            host=self.host,
+            dest=self.dest
+        )
