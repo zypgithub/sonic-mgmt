@@ -49,22 +49,6 @@ master:
       expected_value: 2
       no_simx_flag: True
   # SPC1
-  SN2201: # Alligator
-    <<: *platform_defaults
-    sx_sdk: 30
-    syncd: 5
-  MSN2010: # Boxer
-    <<: *platform_defaults
-    sx_sdk: 10
-    syncd: 5
-  MSN2100: # Bulldog
-    <<: *platform_defaults
-    sx_sdk: 10
-    syncd: 5
-  MSN2410: # Spider
-    <<: *platform_defaults
-    sx_sdk: 30
-    syncd: 5
   SN2700: # Panther
     <<: *platform_defaults
     sx_sdk: 30
@@ -86,20 +70,8 @@ master:
     <<: *platform_defaults
     sx_sdk: 10
     syncd: 5
-  MSN3800: # Tigris
-    <<: *platform_defaults
-    sx_sdk: 10
-    syncd: 5
   # SPC3
   SN4280: # Bobcat
-    <<: *platform_defaults
-    sx_sdk: 5
-    syncd: 2
-  MSN4410: # Ocelot
-    <<: *platform_defaults
-    sx_sdk: 5
-    syncd: 2
-  MSN4600: # Liger
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
@@ -112,10 +84,6 @@ master:
     sx_sdk: 5
     syncd: 2
   # SPC4
-  SN5400: # Hippo
-    <<: *platform_defaults
-    sx_sdk: 5
-    syncd: 2
   SN5600: # Moose/Albatross
     <<: *platform_defaults
     sx_sdk: 5

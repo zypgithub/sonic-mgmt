@@ -19,16 +19,6 @@
         "NEIGHBOR_ENTRIES_CREATION_TIME": "14",
         "FDB_ENTRIES_CREATION_TIME": "0.7"
     },
-    "MSN3800": {
-        "ASIC_RESET_TIME": "2.15",
-        "CREATE_SWITCH_TIME": "16.5",
-        "HOST_IF_CREATION_TIME": "2.9",
-        "SKU_VALIDATION": "0",
-        "PORTS_STATE_ADMIN_TO_OPER_TIME": "7.85",
-        "PHY_PORTS_UP_TO_LAGS_UP_TIME": "1.5",
-        "NEIGHBOR_ENTRIES_CREATION_TIME": "12.15",
-        "FDB_ENTRIES_CREATION_TIME": "0.75"
-    },
     "MSN4600C": {
         "ASIC_RESET_TIME": "2.8",
         "CREATE_SWITCH_TIME": "18.45",

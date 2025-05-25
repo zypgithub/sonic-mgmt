@@ -111,22 +111,6 @@
         "default_hwsku": "Mellanox-SN4600C-C64",
         "support_hwsku": ["Mellanox-SN4600C-C64"]
     },
-    "r-tigris-04_setup": {
-        "default_hwsku": "Mellanox-SN3800-D112C8",
-        "support_hwsku": ["Mellanox-SN3800-D112C8"]
-    },
-    "r-tigris-13_setup": {
-        "default_hwsku": "Mellanox-SN3800-D112C8",
-        "support_hwsku": ["Mellanox-SN3800-D112C8"]
-    },
-    "r-tigris-25_setup": {
-        "default_hwsku": "Mellanox-SN3800-D112C8",
-        "support_hwsku": ["Mellanox-SN3800-D112C8"]
-    },
-    "r-tigris-26_setup": {
-        "default_hwsku": "Mellanox-SN3800-D112C8",
-        "support_hwsku": ["Mellanox-SN3800-D112C8"]
-    },
     "arc-switch1004_setup": {
         "default_hwsku": "Mellanox-SN2700-D48C8",
         "support_hwsku": ["Mellanox-SN2700-D40C8S8", "Mellanox-SN2700-D48C8", "Mellanox-SN2700-C28D8"]
@@ -135,21 +119,9 @@
         "default_hwsku": "Mellanox-SN2700",
         "support_hwsku": ["Mellanox-SN2700", "Mellanox-SN2700-D48C8"]
     },
-    "mtbc-sonic-01-2410_setup": {
-        "default_hwsku": "ACS-MSN2410",
-        "support_hwsku": ["ACS-MSN2410"]
-    },
     "mtbc-sonic-03-2700_setup": {
         "default_hwsku": "Mellanox-SN2700",
         "support_hwsku": ["Mellanox-SN2700"]
-    },
-    "mtvr-hippo-02_setup": {
-        "default_hwsku": "ACS-SN5400",
-        "support_hwsku": ["ACS-SN5400"]
-    },
-    "mtvr-hippo-03_setup": {
-        "default_hwsku": "ACS-SN5400",
-        "support_hwsku": ["ACS-SN5400"]
     },
     "r-moose-01_setup": {
         "default_hwsku": "Mellanox-SN5600-V256",

@@ -11,7 +11,6 @@ from ngts.tools.infra import get_platform_info
 from ngts.conftest import chip_type, platform_params
 logger = logging.getLogger()
 
-UNSUPPORTED_SPLIT_PLATFORMS = [PlatformTypesConstants.PLATFORM_ALLIGATOR]
 REBOOT_TEST_NAME = 'test_push_gate_reboot_policer'
 ACL_SCALE_TEST_NAME = 'test_acl_config_scale'
 CONFIG_DB_DUT_PATH = '/etc/sonic/config_db.json'
@@ -20,7 +19,7 @@ CONFIG_DB_COPY_NAME = 'config_db_copy.json'
 PRE_RUNNING_CONFIG_PATH = '/tmp/pre_running_config.json'
 MAX_PORTS_TEST_LIST = [REBOOT_TEST_NAME, ACL_SCALE_TEST_NAME]
 INDEPENDENT_MODULE_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR,
-                                PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_HIPPO]
+                                PlatformTypesConstants.PLATFORM_LEOPARD,]
 
 
 def pytest_addoption(parser):
@@ -52,11 +51,8 @@ def pytest_collection_modifyitems(session, config, items):
                                       PlatformTypesConstants.PLATFORM_LIONFISH: 93,
                                       PlatformTypesConstants.PLATFORM_ANACONDA: 116,
                                       PlatformTypesConstants.PLATFORM_ANACONDA_C: 116,
-                                      PlatformTypesConstants.PLATFORM_OCELOT: 116,
-                                      PlatformTypesConstants.PLATFORM_LIGER: 124,
                                       PlatformTypesConstants.PLATFORM_TIGON: 124,
                                       PlatformTypesConstants.PLATFORM_LEOPARD: 116,
-                                      PlatformTypesConstants.PLATFORM_HIPPO: 128,
                                       PlatformTypesConstants.PLATFORM_MOOSE: 244,
                                       PlatformTypesConstants.PLATFORM_GAUR: 244
                                       }
@@ -129,11 +125,6 @@ def pytest_collection_modifyitems(session, config, items):
         existing_ports_num = len(original_config_db['PORT'])
 
         if expected_ports_num != existing_ports_num:
-            if platform in UNSUPPORTED_SPLIT_PLATFORMS:
-                msg = f'Platform {platform} can\'t split ports to reach total number of ports: {expected_ports_num}'
-                skip = pytest.mark.skip(reason=msg)
-                add_marker(items, skip)
-                return
             dut_to_host_ports_list = [port for alias, port in topology.ports.items() if alias.startswith('dut-h')]
             modified_config = generate_config_db(original_config_db, dut_engine, expected_ports_num, platform,
                                                  dut_to_host_ports_list, topology)
@@ -202,15 +193,13 @@ def modify_lanes_per_platform(platform, port_lanes, split_x2=False):
     lanes_8_spit_x2_x4_lanes = False
     lanes_8_spit_x4_x2_lanes = False
 
-    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER, PlatformTypesConstants.PLATFORM_TIGON,
-                                     PlatformTypesConstants.PLATFORM_LIGER]
+    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER, PlatformTypesConstants.PLATFORM_TIGON]
     lanes_4_spit_x2_x2_lanes = platform in four_lanes_x2_split_platforms
 
-    eight_lanes_x4_split_platforms = [PlatformTypesConstants.PLATFORM_OCELOT, PlatformTypesConstants.PLATFORM_LEOPARD,
-                                      PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO,
+    eight_lanes_x4_split_platforms = [PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_MOOSE,
                                       PlatformTypesConstants.PLATFORM_GAUR]
 
-    if platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO] and split_x2:
+    if platform in [PlatformTypesConstants.PLATFORM_MOOSE] and split_x2:
         lanes_8_spit_x2_x4_lanes = True
     else:
         lanes_8_spit_x4_x2_lanes = platform in eight_lanes_x4_split_platforms
@@ -236,11 +225,6 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
     if platform == PlatformTypesConstants.PLATFORM_MOOSE:
         # Remove service port from list of ports which will be split
         physical_dut_ports.pop('Ethernet512')
-        port_speed = "100000"
-    if platform == PlatformTypesConstants.PLATFORM_HIPPO:
-        # Remove service port from list of ports which will be split
-        physical_dut_ports.pop('Ethernet512', None)
-        physical_dut_ports.pop('Ethernet520', None)
         port_speed = "100000"
     if platform == PlatformTypesConstants.PLATFORM_LEOPARD:
         port_speed = "100000"
@@ -270,8 +254,7 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
             else:
                 port_lanes = [','.join(port_lanes)]
         else:
-            if (platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_HIPPO,
-                             PlatformTypesConstants.PLATFORM_GAUR] and
+            if (platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR] and
                     expected_num_of_ports - added_ports_counter <= 4):
                 port_lanes = modify_lanes_per_platform(platform, port_lanes, split_x2=True)
             else:

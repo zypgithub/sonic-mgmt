@@ -657,10 +657,7 @@ def get_sensor_temperature_file_name(sensor_type, platform_params):
         elif sensor_type == "voltmon":
             # For ACS-MSN2100, ACS-MSN4600, ACS-MSN2410 and Mellanox-SN2700 the voltmon numbering has gaps.
             # it is by design, Hardware will not fix it.
-            hwsku_voltmon_index_map = {'ACS-MSN2100': [1, 2, 6],
-                                       'ACS-MSN4600': [1, 2, 3, 5, 7],
-                                       'ACS-MSN2410': [1, 2, 6],
-                                       'Mellanox-SN2700': [1, 2, 6]}
+            hwsku_voltmon_index_map = {'Mellanox-SN2700': [1, 2, 6]}
             default_voltmon_index_list = [str(index) for index in range(SENSOR_DATA[sensor_type]["start_index"],
                                                                         SENSOR_DATA[sensor_type]["total_number"] + 1)]
             voltmon_index_list = hwsku_voltmon_index_map.get(platform_params.hwsku, default_voltmon_index_list)

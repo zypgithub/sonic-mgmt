@@ -235,7 +235,6 @@ class TestNewTc:
         """
         # For some platforms, tc_config is linked to the file with the specific hwsku name
         # The below map includes these info
-        special_hwsku_to_tc_config_map = {"ACS-MSN4410": "msn4700"}
 
         with allure.step("Get sku info"):
             hwsku = platform_params.hwsku
@@ -245,8 +244,6 @@ class TestNewTc:
                 expected_hwsku_in_tc_config_file = sku_res.groupdict()['hwsku']
             else:
                 assert False, f" Does not find sku name in {platform_params.hwsku}"
-            expected_hwsku_in_tc_config_file = special_hwsku_to_tc_config_map.get(hwsku,
-                                                                                  expected_hwsku_in_tc_config_file)
             expected_hwsku_in_tc_config_file = expected_hwsku_in_tc_config_file.replace('_', '')
 
         # In case platform name exists in NO_TC_CONFIG_LINK_PLATFORMS list, it means there is no link to TC_CONFIG_FILE,

@@ -16,10 +16,6 @@ from ngts.constants.constants import MarsConstants
 logger = logging.getLogger()
 
 BASE_ONIE_UPDATER_URL = InfraConst.HTTTP_SERVER_FIT16 + '/onie_only/{}/9600/onie-updater-x86_64-mlnx_x86-r0'
-SPECIAL_ONIE_UPDATER_URL = {
-    PlatformTypesConstants.FILTERED_PLATFORM_ALLIGATOR:
-        InfraConst.HTTTP_SERVER_FIT16 + '/onie_only/sn2201/{}/115200/onie-updater-x86_64-nvidia_sn2201-r0'
-}
 DEFAULT_PROMPT = ["ONIE:.+ #", pexpect.EOF]
 
 

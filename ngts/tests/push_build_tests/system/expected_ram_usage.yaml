@@ -80,22 +80,6 @@ master:
     containerd: 270
     healthd: 140
   # SPC1
-  SN2201: # Alligator
-    <<: *platform_defaults
-    sx_sdk: 1000
-    syncd: 300
-  MSN2010: # Boxer
-    <<: *platform_defaults
-    sx_sdk: 1000
-    syncd: 300
-  MSN2100: # Bulldog
-    <<: *platform_defaults
-    sx_sdk: 600
-    syncd: 300
-  MSN2410: # Spider
-    <<: *platform_defaults
-    sx_sdk: 600
-    syncd: 300
   SN2700: # Panther
     <<: *platform_defaults
     total: 6000
@@ -125,24 +109,12 @@ master:
     <<: *platform_defaults
     sx_sdk: 1100
     syncd: 300
-  MSN3800: # Tigris
-    <<: *platform_defaults
-    sx_sdk: 1100
-    syncd: 300
   # SPC3
   SN4280: # Bobcat
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 300
     total: 6000
-  MSN4410: # Ocelot
-    <<: *platform_defaults
-    sx_sdk: 1500
-    syncd: 300
-  MSN4600: # Liger
-    <<: *platform_defaults
-    sx_sdk: 1200
-    syncd: 300
   MSN4600C: # Tigon
     <<: *platform_defaults
     sx_sdk: 1200
@@ -157,11 +129,6 @@ master:
       <<: *rsyslogd_defaults
       expected_value: 100
   # SPC4
-  SN5400: # Hippo
-    <<: *platform_defaults
-    sx_sdk: 1100
-    syncd: 300
-    thermalctld: 60
   SN5600: # Moose/Albatross
     <<: *platform_defaults
     sx_sdk: 1500

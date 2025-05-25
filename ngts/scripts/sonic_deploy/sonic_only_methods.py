@@ -40,7 +40,6 @@ class SonicInstallationSteps:
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
-        SonicInstallationSteps.verify_sonic_branch_supported(setup_info, base_version)
         if is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
             SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
@@ -95,8 +94,7 @@ class SonicInstallationSteps:
         add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
                                                                    ptf_tag, hwsku)
         run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
-        if (not is_dualtor_topo(sonic_topo) and "mtvr-hippo-03" != dut_name and
-                "mtvr-hippo-02" != dut_name and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
+        if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "r-bison-16" != dut_name and
@@ -463,9 +461,6 @@ class SonicInstallationSteps:
         logger.info(f'Current hwsku in the platform_params is: {platform_params["platform"]}')
         hwskus = []
         need_gen_mingraph = False
-        if "mtvr-hippo-03" in setup_name or "mtvr-hippo-02" in setup_name:
-            hwskus = [platform_params["hwsku"]]
-            need_gen_mingraph = True
         if ("r-moose-01" in setup_name or "mtvr-moose-04" in setup_name or "mtvr-moose-13" in setup_name or
                 "mtvr-moose-14" in setup_name):
             hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
@@ -498,13 +493,6 @@ class SonicInstallationSteps:
                                f'{sonic_mgmt_hwsku_path}', ansible_path)
 
                 logger.info(f"Copied the hwsku {hwsku} to sonic-mgmt")
-
-        if "hippo" in setup_name:
-            SonicInstallationSteps.remove_redundant_service_port(dut_platform_path, platform_params['hwsku'],
-                                                                 dut_engine, cli.cli_obj)
-            dut_engine.run_cmd(
-                f"sudo sonic-cfggen --preset t1 -p -H "
-                f"-k {platform_params['hwsku']} > {SonicConst.SONIC_CONFIG_FOLDER}{SonicConst.CONFIG_DB_JSON}")
 
         if ("r-moose-01" in setup_name or "mtvr-moose-14" in setup_name):
             v256 = "Mellanox-SN5600-V256"
@@ -604,12 +592,6 @@ class SonicInstallationSteps:
                                                                    additional_apps=additional_apps,
                                                                    ansible_path=ansible_path,
                                                                    sonic_topo=sonic_topo)
-
-        # This check is for swb respin r-anaconda-15, only the SONiC image with hw-management version
-        # higher than 7.0020.3100 runs properly on this dut, stop the regression if the image is not suitable
-        for dut in setup_info['duts']:
-            if dut['dut_name'] == 'r-anaconda-15':
-                SonicInstallationSteps.verify_hw_management_version(engine=topology_obj.players['dut']['engine'])
 
         for dut in setup_info['duts']:
             # Disconnect ssh connection, prevent "Socket is closed" in case when previous steps did reboot
@@ -821,17 +803,6 @@ class SonicInstallationSteps:
             assert version >= lowest_valid_version, \
                 'Current hw-management version {} is lower than the required version {}.'.format(
                     version, lowest_valid_version)
-
-    @staticmethod
-    def verify_sonic_branch_supported(setup_info, image_path):
-        for dut in setup_info['duts']:
-            if dut['dut_name'] in SonicDeployConstants.UN_SUPPORT_BRANCH_MAP:
-                not_support_branch = SonicDeployConstants.UN_SUPPORT_BRANCH_MAP[dut['dut_name']]
-                logger.info(f'The not supported branch for {dut["dut_name"]} are {not_support_branch}')
-                with allure.step('Getting the image version'):
-                    branch = get_sonic_branch(image_path)
-                    logger.info('SONiC branch is: {}'.format(branch))
-                assert branch not in not_support_branch, f"The setup dose not support to install image of {branch}"
 
 
 def is_community(sonic_topo):

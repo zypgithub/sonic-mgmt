@@ -66,8 +66,7 @@ def get_sanity_checker_result_from_allure_result():
 def take_action_based_on_sanity_checker_result(skip_stop_regression, setup_name):
     sanity_checker_case_res_dict = get_sanity_checker_result_from_allure_result()
     failed_sanity_checker_cases = []
-    skip_setup_list_when_cpld_check_fail = ["sonic_ocelot_r-ocelot-02", "sonic_anaconda_r-anaconda-15",
-                                            "sonic_tigon_r-tigon-15"]
+    skip_setup_list_when_cpld_check_fail = ["sonic_tigon_r-tigon-15"]
 
     logger.info(f"skip stop regression :{skip_stop_regression}")
     for case_name, case_status in sanity_checker_case_res_dict.items():

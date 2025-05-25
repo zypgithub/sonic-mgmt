@@ -341,14 +341,7 @@ def get_related_image_to_switch(base_version, target_version, dut, use_GA_image)
 
 
 def get_image_for_dut(base_version, target_version, dut):
-    if dut['cli_type'] == CliType.SONIC:
-        if dut['dut_name'] == 'mtvr-hippo-05':
-            base_version = base_version.replace('/dev/', '/prod/')
-            if base_version.startswith('http'):
-                base_version = '/auto/' + base_version.split('/auto/')[1]
-            assert os.path.exists(base_version), (f"The required prod image path"
-                                                  f" doesn't exists. {base_version}")
-    elif dut['cli_type'] == CliType.NVUE:
+    if dut['cli_type'] == CliType.NVUE:
         if target_version.startswith('http'):
             target_version = '/auto/' + target_version.split('/auto/')[1]
     return base_version, target_version

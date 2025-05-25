@@ -19,7 +19,6 @@ pytestmark = [
 logger = logging.getLogger()
 
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
-NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -109,8 +108,7 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects,
             except Exception as e:
                 logger.info(e)
                 pass
-        device_with_not_defined_cpld = platform_params.filtered_platform.upper() in NOT_DEFINED_CPLD_DEVICES_LIST
-        if not (device_with_not_defined_cpld or (defined_cpld and cpld_component_data)):
+        if not (defined_cpld and cpld_component_data):
             err_msg = "Failed to get the data for any CPLD from the firmware.json"
             assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
             is_test_failed = True
@@ -119,40 +117,39 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects,
         component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
 
     with allure.step(f'Checking CPLD version for: {defined_cpld}'):
-        if not device_with_not_defined_cpld:
-            _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
-            current_cpld_ver = component_versions_dict[defined_cpld]
-            if current_cpld_ver != latest_cpld_ver:
-                if not is_in_deploy_image_flow:
-                    dut_topology_obj = topology_obj.players['dut']['cli']
-                    try:
-                        with allure.step(f'Shutdown bpg all'):
-                            dut_topology_obj.bgp.shutdown_bgp_all()
-                        with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
-                            logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
-                            SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
-                        with allure.step("disconnect dut"):
-                            engines.dut.disconnect()
-                        with allure.step(f" After power cycle, check containers and interfaces are up"):
-                            dut_topology_obj.general.verify_dockers_are_up()
-                            check_port_oper_up_on_admin_up(dut_topology_obj)
+        _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
+        current_cpld_ver = component_versions_dict[defined_cpld]
+        if current_cpld_ver != latest_cpld_ver:
+            if not is_in_deploy_image_flow:
+                dut_topology_obj = topology_obj.players['dut']['cli']
+                try:
+                    with allure.step(f'Shutdown bpg all'):
+                        dut_topology_obj.bgp.shutdown_bgp_all()
+                    with allure.step(f'Restore CPLD to {latest_cpld_ver}'):
+                        logger.info(f"Restore CPLD to the expected one:{latest_cpld_ver}")
+                        SonicSecureBootHelper.restore_cpld(cli_objects, engines, topology_obj, platform_params, defined_cpld)
+                    with allure.step("disconnect dut"):
+                        engines.dut.disconnect()
+                    with allure.step(f" After power cycle, check containers and interfaces are up"):
+                        dut_topology_obj.general.verify_dockers_are_up()
+                        check_port_oper_up_on_admin_up(dut_topology_obj)
 
-                        with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
-                            component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
-                            current_cpld_ver = component_versions_dict[defined_cpld]
-                            assert current_cpld_ver == latest_cpld_ver, \
-                                f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
-                    except Exception as err:
-                        raise Exception(f"Fail to restore cpld \n. {err}")
-                    finally:
-                        with allure.step(f'Start bpg all'):
-                            dut_topology_obj.bgp.startup_bgp_all()
-                else:
-                    logger.error(
-                        f"The current CPLD {current_cpld_ver} ver does not match the latest one {latest_cpld_ver}")
-                    is_test_failed = True
+                    with allure.step(f"Check if the cpld version is updated to {latest_cpld_ver}"):
+                        component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
+                        current_cpld_ver = component_versions_dict[defined_cpld]
+                        assert current_cpld_ver == latest_cpld_ver, \
+                            f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
+                except Exception as err:
+                    raise Exception(f"Fail to restore cpld \n. {err}")
+                finally:
+                    with allure.step(f'Start bpg all'):
+                        dut_topology_obj.bgp.startup_bgp_all()
+            else:
+                logger.error(
+                    f"The current CPLD {current_cpld_ver} ver does not match the latest one {latest_cpld_ver}")
+                is_test_failed = True
 
-        write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
+    write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
 
 
 @pytest.mark.sanity_checker_ci

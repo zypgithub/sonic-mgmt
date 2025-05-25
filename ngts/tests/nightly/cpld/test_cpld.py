@@ -7,7 +7,6 @@ from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 logger = logging.getLogger()
 
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
-NOT_DEFINED_CPLD_DEVICES_LIST = ['MSN2010', 'SN4800']
 
 
 def test_cpld_version_check(engines, platform_params):
@@ -28,19 +27,17 @@ def test_cpld_version_check(engines, platform_params):
             except Exception as e:
                 logger.info(e)
                 pass
-        device_with_not_defined_cpld = platform_params.filtered_platform.upper() in NOT_DEFINED_CPLD_DEVICES_LIST
-        assert device_with_not_defined_cpld or (defined_cpld and cpld_component_data),\
+        assert (defined_cpld and cpld_component_data), \
             "Failed to get the data for any CPLD from the firmware.json"
 
     with allure.step('Getting info about CPLD from dut'):
         component_versions_dict = get_info_about_current_components_version_dict(engines.dut)
 
     with allure.step(f'Checking CPLD version for: {defined_cpld}'):
-        if not device_with_not_defined_cpld:
-            _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
-            current_cpld_ver = component_versions_dict[defined_cpld]
-            assert current_cpld_ver == latest_cpld_ver, \
-                f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
+        _, latest_cpld_ver = SonicSecureBootHelper.get_latest_expected_cpld(cpld_component_data, defined_cpld)
+        current_cpld_ver = component_versions_dict[defined_cpld]
+        assert current_cpld_ver == latest_cpld_ver, \
+            f'Current {defined_cpld} version: {current_cpld_ver} is not latest: {latest_cpld_ver}'
 
 
 def get_info_about_current_components_version_dict(engine):
