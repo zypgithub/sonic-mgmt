@@ -136,12 +136,12 @@ def test_rename_and_upload(engines):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits) + '.yaml'
         expected_str = "config file {} renamed to {}".format(yaml_file, new_name)
         fetched_config_file = system.config.files.file_name[yaml_file]
-        fetched_config_file.rename_and_verify(new_name, expected_str)
+        fetched_config_file.rename_and_verify(new_name)
 
     with allure.step('upload file'):
         upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
 
-        fetched_config_file.action_upload(upload_path)
+        fetched_config_file.action_upload(upload_path).verify_result()
         with allure.step("Validate file was uploaded"):
             with allure.step("file exist under upload path"):
                 assert remote_server_engine.run_cmd(
@@ -177,7 +177,7 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete all files'):
         delete_all = system.config.files.file_name['']
-        delete_all.action_delete()
+        delete_all.action_delete().verify_result()
 
     with allure.step('fetch 3 yaml files'):
         for file in YAML_FILES_LIST:
@@ -208,7 +208,7 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete one of the config files'):
         file_to_delete = system.config.files.file_name[YAML_FILES_LIST[1]]
-        file_to_delete.action_delete("Action succeeded")
+        file_to_delete.action_delete().verify_result()
 
         with allure.step('verify show command output after delete'):
             show_output = OutputParsingTool.parse_json_str_to_dictionary(system.config.files.show()).verify_result()
@@ -218,7 +218,7 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete all files'):
         delete_all = system.config.files.file_name['']
-        delete_all.action_delete()
+        delete_all.action_delete().verify_result()
 
         with allure.step('verify after delete all'):
             show_output = system.config.files.show(output_format='auto')
@@ -243,10 +243,10 @@ def test_config_bad_flow(engines):
     with allure.step('trying to upload non exist file'):
         with allure.step('get remote server engine'):
             upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
-        fetched_config_file.action_upload(upload_path, "File not found")
+        fetched_config_file.action_upload(upload_path).verify_result(False, "File not found")
 
     with allure.step('trying to rename non exist file'):
-        fetched_config_file.action_rename("Not_file", "File not found")
+        fetched_config_file.action_rename("Not_file").verify_result(False, "File not found")
 
     with allure.step('trying to delete non exist file'):
-        fetched_config_file.action_delete("File not found")
+        fetched_config_file.action_delete().verify_result(False, "File not found")

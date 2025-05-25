@@ -638,7 +638,7 @@ class ClusterTools:
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
                 fm_generated_file_name].action_file_install(force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-                fm_generated_file_name].action_delete()
+                fm_generated_file_name].action_delete().verify_result()
 
         if has_loopbox and "Exists" in engines.dut.run_cmd(
                 f'test -e {sm_path} && echo "Exists" || echo "Does not exist"'):
@@ -646,7 +646,7 @@ class ClusterTools:
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
                 sm_generated_file_name].action_file_install(force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-                sm_generated_file_name].action_delete()
+                sm_generated_file_name].action_delete().verify_result()
 
     @staticmethod
     def get_generated_sdn_file(output, file_type):

@@ -40,18 +40,6 @@ class History(BaseComponent):
     def show_health_report_file(self, file=HealthConsts.HEALTH_FIRST_FILE, exit_cmd='q'):
         return self.show(param="files {}".format(file), exit_cmd=exit_cmd)
 
-    def upload_history_files(self, file_name, upload_path, expected_str=""):
-        return self.files.file_name[file_name].action_upload(upload_path, expected_str)
-
-    def delete_history_file(self, file, expected_str=""):
-        return self.files.file_name[file].action_delete(expected_str)
-
-    def delete_history_files(self, files_to_delete=[], expected_str=''):
-        with allure.step("Delete files"):
-            logging.info("Delete files: {}".format(files_to_delete))
-            for file in files_to_delete:
-                self.delete_history_file(file, expected_str)
-
     def search_line(self, line_to_search, file_output=None):
         if not file_output:
             file_output = self.show()

@@ -71,7 +71,8 @@ def test_cluster_chassis_id(engines, devices, test_api):
 
     finally:
         with allure.step("Delete config file"):
-            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[filename].action_delete()
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[
+                filename].action_delete().verify_result()
 
 
 def get_name_from_generate_config_file(output):

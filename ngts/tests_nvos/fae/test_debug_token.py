@@ -14,7 +14,7 @@ def clear_debug_info_files():
     debug_image = fae.platform.debug.info.debug_image
     with allure.step('delete fetched firmware image files'):
         files = debug_image.files.get_files()
-        debug_image.files.delete_files(files_to_delete=files)
+        debug_image.files.delete_files(files_to_delete=files).verify_result()
 
 
 @pytest.mark.fae
@@ -48,16 +48,15 @@ def test_debug_token_upload_good_flow(engines, test_name, test_api):
     assert file_size > 10000, f"debug token file is missing data\n{engine_file.get_content()}"
 
     with allure.step('try to upload debug info {} to {} - Positive Flow'.format(filename, upload_path)):
-        output = fae.platform.debug.info.debug_image.files.file_name[filename].action_upload(upload_path=upload_path)
-        with allure.step('verify the upload message'):
-            assert "File upload successfully" in output, "Failed to upload the debug info file"
+        fae.platform.debug.info.debug_image.files.file_name[filename].action_upload(upload_path=upload_path
+                                                                                    ).verify_result()
 
         with allure.step("Validate file was uploaded to player and delete it"):
             assert player.run_cmd(cmd='ls /tmp/ | grep {}'.format(filename)), "Did not find the file with ls cmd"
             player.run_cmd(cmd='rm -f /tmp/{}'.format(filename))
 
     with allure.step(f'try to delete debug info {filename}'):
-        debug_image.files.file_name[filename].action_delete()
+        debug_image.files.file_name[filename].action_delete().verify_result()
         debug_image.files.verify_show_files_output()
 
 
@@ -89,22 +88,20 @@ def test_debug_token_upload_bad_flow(engines, test_name, test_api):
         upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
 
     with allure.step('Try to upload non exist debug info file'):
-        fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(upload_path=upload_path,
-                                                                                      should_succeed=False)
+        fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(upload_path=upload_path
+                                                                                      ).verify_result(should_succeed=False)
     filename = generate_and_verify_debug_token(debug_image, test_name)
 
     with allure.step('try to upload debug info to invalid url - url is not in the right format'):
-        output = fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(upload_path=invalid_url_1,
-                                                                                               should_succeed=False)
-        assert "is not a" in output, "URL was not in the right format"
+        fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(
+            upload_path=invalid_url_1).verify_result(should_succeed=False, expected_value="is not a")
 
     with allure.step('try to upload debug info to invalid url - using non supported transfer protocol'):
-        output = fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(upload_path=invalid_url_2,
-                                                                                               should_succeed=False)
-        assert "is not a" in output, "URL used non supported transfer protocol"
+        fae.platform.debug.info.debug_image.files.file_name['nonexist'].action_upload(
+            upload_path=invalid_url_2).verify_result(should_succeed=False, expected_value="is not a")
 
     with allure.step(f'try to delete debug info {filename}'):
-        debug_image.files.file_name[filename].action_delete()
+        debug_image.files.file_name[filename].action_delete().verify_result()
         debug_image.files.verify_show_files_output()
 
 
@@ -164,13 +161,14 @@ def test_debug_info_rename_good_flow(engines, test_name, test_api):
     new_filename = RandomizationTool.get_random_string(9) + '.bin'
 
     with allure.step('try to rename debug info {} to {} - Positive Flow'.format(filename, new_filename)):
-        fae.platform.debug.info.debug_image.files.file_name[filename].action_rename(new_name=new_filename)
+        fae.platform.debug.info.debug_image.files.file_name[filename].action_rename(
+            new_name=new_filename).verify_result()
 
     with allure.step('verify the renamed file exist in target path'):
         debug_image.files.verify_show_files_output(expected_files=[new_filename], unexpected_files=[filename])
 
     with allure.step(f'try to delete debug info {new_filename}'):
-        debug_image.files.file_name[new_filename].action_delete()
+        debug_image.files.file_name[new_filename].action_delete().verify_result()
         debug_image.files.verify_show_files_output()
 
 
@@ -198,8 +196,8 @@ def test_debug_info_rename_bad_flow(engines, test_name, test_api):
     debug_image = fae.platform.debug.info.debug_image
 
     with allure.step('Try to rename non exist debug info file'):
-        fae.platform.debug.info.debug_image.files.file_name['non_exist'].action_rename(new_name='new_name',
-                                                                                       expected_str='not in a bin format')
+        fae.platform.debug.info.debug_image.files.file_name['non_exist'].action_rename(
+            new_name='new_name').verify_result(False, expected_value='not in a bin format')
 
     with allure.step('Try to generate debug info file with invalid name not_with_bin'):
         debug_image.action_generate(name='not_with_bin', test_name=test_name, should_succeed=False)
@@ -209,16 +207,17 @@ def test_debug_info_rename_bad_flow(engines, test_name, test_api):
     new_filename = RandomizationTool.get_random_string(9) + '.bin'
 
     with allure.step('try to rename debug info {} to {}'.format(filename, new_filename)):
-        fae.platform.debug.info.debug_image.files.file_name[filename].action_rename(new_name=new_filename)
+        fae.platform.debug.info.debug_image.files.file_name[filename].action_rename(
+            new_name=new_filename).verify_result()
 
     with allure.step(f'delete the renamed file {new_filename}'):
-        debug_image.files.file_name[new_filename].action_delete()
+        debug_image.files.file_name[new_filename].action_delete().verify_result()
 
     with allure.step(f'bad flow - delete the old non-existing file {filename} - expected fail'):
-        debug_image.files.file_name[filename].action_delete(should_succeed=False)
+        debug_image.files.file_name[filename].action_delete.verify_result(should_succeed=False)
 
     with allure.step(f'bad flow - delete the renamed file {new_filename} - expected fail'):
-        debug_image.files.file_name[new_filename].action_delete(should_succeed=False)
+        debug_image.files.file_name[new_filename].action_delete.verify_result(should_succeed=False)
 
     debug_image.files.verify_show_files_output()
 

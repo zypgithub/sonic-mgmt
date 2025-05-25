@@ -211,11 +211,14 @@ class NvosInstallationSteps:
                                                                                    param_value=param_value, track_boot_intervals=True)
 
     @staticmethod
-    def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system, dut_device=None):
+    def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system, dut_device=None,
+                                verify_result=False):
         conf_scp_url = f'scp://{scp_host_creds}{config_file_path}'
-        system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine, device=dut_device)
-        NvueGeneralCli.replace_config(engine=dut_engine, file=config_filename)
-        NvueGeneralCli.apply_config(engine=dut_engine, option='-y')
+        result = system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine, device=dut_device)
+        if verify_result:
+            result.verify_result()
+        NvueGeneralCli.replace_config(engine=dut_engine, file=config_filename, verify_execution=verify_result)
+        NvueGeneralCli.apply_config(engine=dut_engine, option='-y', verify_execution=verify_result)
         NvueGeneralCli.save_config(engine=dut_engine)
         time.sleep(30)  # due to bug SW #4262437
 

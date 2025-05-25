@@ -47,7 +47,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
                 scp_path = 'scp://{}:{}@{}'.format(player_engine.username, player_engine.password, player_engine.ip)
                 nv_command.platform.firmware.asic.action_fetch(fw_file, base_url=scp_path).verify_result()
                 fetched_image_file = nv_command.platform.firmware.asic.files.file_name[filename]
-                fetched_image_file.action_rename(test_image_name, expected_str="", rewrite_file_name=False)
+                fetched_image_file.action_rename(test_image_name, rewrite_file_name=False).verify_result()
 
             with allure.step("Install firmware and verify"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
@@ -69,7 +69,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
                 NvueGeneralCli.save_config(engines.dut)
 
             OperationTime.save_duration('install default fw', 'include reboot', test_name, install_default_image_fw,
-                                        nv_command.system, test_name, fw_has_changed)
+                                        nv_command.system, test_name, fw_has_changed, devices)
 
         with allure.step('Verify the firmware installed successfully'):
             verify_firmware_with_platform_cmd(nv_command.platform, actual_firmware)

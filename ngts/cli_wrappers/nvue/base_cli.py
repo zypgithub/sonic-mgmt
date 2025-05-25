@@ -1,3 +1,4 @@
+import re
 from abc import abstractmethod, ABCMeta
 from typing import Optional, Tuple, Union, Iterable
 
@@ -28,6 +29,22 @@ class BaseCli(metaclass=ABCMeta):
     def action_deprecated(engine, device, action_type, resource_path, suffix, param_name, param_value, output_format,
                           expect_reboot, recovery_engine, topology_obj, should_succeed, system_is_ready_timeout,
                           track_boot_intervals, deny_reboot, press_y, expected_output: str): pass
+
+    @classmethod
+    def get_nv_action_string(cls, action_str, resource_path, main_param, flags, params):
+        """Returns the full NVUE command, e.g. 'nv action uninstall system image force' """
+        if main_param:
+            if len(main_param) != 2:
+                raise ValueError(f'"main_param" argument should be a 2-tuple (name, value) but it is {repr(main_param)}')
+            main_param_value = main_param[1]
+        else:
+            main_param_value = ''
+        if not isinstance(flags, str):
+            flags = ' '.join(flags or [])
+        param_str = ' '.join([f'{k} {v}' for k, v in params.items()])
+        ret = f'nv action {action_str} {resource_path.replace("/", " ")} {main_param_value} {param_str} {flags}'
+        ret = re.sub(' +', ' ', ret).strip()  # delete double-spaces and trailing spaces
+        return ret
 
     @classmethod
     @abstractmethod

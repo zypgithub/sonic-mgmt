@@ -118,14 +118,14 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
 
     with allure.step("Rename image without mfa ending, should fail"):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits)
-        fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False, should_succeed=False)
+        fetched_image_file.action_rename(new_name, rewrite_file_name=False).verify_result(False)
 
     with allure.step("Rename image and verify"):
         new_name += '.mfa'
-        fetched_image_file.action_rename(new_name, expected_str="", rewrite_file_name=False)
+        fetched_image_file.action_rename(new_name, rewrite_file_name=False).verify_result()
 
     with allure.step("Rename already exist image and verify"):
-        fetched_image_file.action_rename(new_name, expected_str="already exists")
+        fetched_image_file.action_rename(new_name).verify_result(False, expected_value="already exists")
         platform.firmware.asic.files.verify_show_files_output([new_name], [])
 
     with allure.step("Install original image name, should fail"):
@@ -135,7 +135,7 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
 
     with allure.step("Delete original image name, should fail"):
         logging.info("Delete original image name, should fail")
-        platform.firmware.asic.files.file_name[fetched_image_name].action_delete(should_succeed=False)
+        platform.firmware.asic.files.file_name[fetched_image_name].action_delete().verify_result(should_succeed=False)
 
 
 @pytest.mark.checklist
@@ -167,7 +167,7 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
             with allure.step("Upload image to player with {} protocol".format(protocol)):
                 upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
                                                             fetched_image_name)
-                image_file.action_upload(upload_path, expected_str='File upload successfully')
+                image_file.action_upload(upload_path).verify_result(True, 'File upload successfully')
 
             with allure.step("Validate file was uploaded to player and delete it"):
                 assert player.run_cmd(
@@ -176,7 +176,7 @@ def test_platform_firmware_image_upload(engines, devices, topology_obj):
 
     with allure.step("Delete file from player"):
         logging.info("Delete file from player")
-        platform.firmware.asic.files.delete_files([fetched_image_name])
+        platform.firmware.asic.files.delete_files([fetched_image_name]).verify_result()
         platform.firmware.asic.files.verify_show_files_output(unexpected_files=[fetched_image_name])
 
 

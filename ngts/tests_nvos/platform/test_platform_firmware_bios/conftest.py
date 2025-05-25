@@ -14,7 +14,7 @@ def clear_files():
     platform = Platform()
     with allure.step('delete fetched firmware image files'):
         files = platform.firmware.bios.files.get_files()
-        platform.firmware.bios.files.delete_files(files_to_delete=files)
+        platform.firmware.bios.files.delete_files(files_to_delete=files).verify_result()
 
 
 @pytest.fixture(scope='module', autouse=True)

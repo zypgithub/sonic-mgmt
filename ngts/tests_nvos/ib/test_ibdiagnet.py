@@ -152,16 +152,13 @@ def test_ibdiagnet_upload(engines):
                 raise
 
     with allure.step('try to upload non exist ibdiagnet file'):
-        output = ib.ibdiagnet.action_upload(upload_path=upload_path)
-        assert "File not found: {}".format(IbConsts.IBDIAGNET_FILE_NAME) in output.get_info(False), (
-            "we can not upload a non exist file!")
+        output = ib.ibdiagnet.action_upload(upload_path=upload_path).verify_result(
+            False, f"File not found: {IbConsts.IBDIAGNET_FILE_NAME}")
         ib.ibdiagnet.action_run(command=IbConsts.IBDIAGNET_COMMAND, option=IbConsts.IBDIAGNET_PHY_INFO,
                                 expected_str=IbConsts.IBDIAGNET_EXPECTED_MESSAGE)
 
     with allure.step('try to upload ibdiagnet to - Positive Flow'):
-        output = ib.ibdiagnet.action_upload(upload_path=upload_path)
-        with allure.step('verify the upload message'):
-            assert expected_msg_upload in output.returned_value, "Failed to upload the ibdiagnet file"
+        output = ib.ibdiagnet.action_upload(upload_path=upload_path).verify_result(True, expected_msg_upload)
 
         with allure.step('verify files still exist'):
             ValidationTool.verify_all_files_in_compressed_folder(engines.dut, IbConsts.IBDIAGNET_FILE_NAME, IbConsts.IBDIAGNET_EXPECTED_FILES_LIST, IbConsts.IBDIAGNET_ZIPPED_FOLDER_PATH, IbConsts.IBDIAGNET_PATH).verify_result()
@@ -170,12 +167,10 @@ def test_ibdiagnet_upload(engines):
             ValidationTool.verify_all_files_in_compressed_folder(player, IbConsts.IBDIAGNET_FILE_NAME, IbConsts.IBDIAGNET_EXPECTED_FILES_LIST, '/tmp', IbConsts.IBDIAGNET_PATH).verify_result()
 
     with allure.step('try to upload ibdiagnet to invalid url - url is not in the right format'):
-        output = ib.ibdiagnet.action_upload(upload_path=invalid_url_1)
-        assert "is not a" in output.get_info(False), "URL was not in the right format"
+        output = ib.ibdiagnet.action_upload(upload_path=invalid_url_1).verify_result(False, 'is not a')
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
-        output = ib.ibdiagnet.action_upload(upload_path=invalid_url_2)
-        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
+        output = ib.ibdiagnet.action_upload(upload_path=invalid_url_2).verify_result(False, 'is not a')
 
 
 @pytest.mark.ib

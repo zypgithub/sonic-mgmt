@@ -254,7 +254,7 @@ def test_system_stats_generation(engines, devices, test_api):
                 assert name in show_output, "show file is missing category name"
 
         with allure.step("Delete stats external file"):
-            system.stats.files.file_name[file_name].action_delete()
+            system.stats.files.file_name[file_name].action_delete().verify_result()
             output = engine.run_cmd("ls /var/stats")
             assert name in output, "Category internal file not exists"
             stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).\
@@ -737,11 +737,11 @@ def test_system_stats_invalid_values(engines, devices, test_api):
                 verify_result(should_succeed=False)
 
         with allure.step("Validate delete system stats file not exists"):
-            system.stats.files.file_name[StatsConsts.INVALID_FILE_NAME].action_delete(should_succeed=False)
+            system.stats.files.file_name[StatsConsts.INVALID_FILE_NAME].action_delete().verify_result(should_succeed=False)
 
         with allure.step("Validate upload system stats file not exists"):
-            system.stats.files.file_name[StatsConsts.INVALID_FILE_NAME].action_upload(valid_remote_url,
-                                                                                      should_succeed=False)
+            system.stats.files.file_name[StatsConsts.INVALID_FILE_NAME].action_upload(valid_remote_url
+                                                                                      ).verify_result(should_succeed=False)
 
         with allure.step("Validate upload system stats file to invalid URL"):
             file_name = 'stats_cpu_gorilla-154_20230702_145940.csv'
@@ -752,7 +752,7 @@ def test_system_stats_invalid_values(engines, devices, test_api):
                                          dest_ip=engines.dut.ip,
                                          local_file_path=file_path)
             engine.run_cmd("sudo cp /tmp/{} /host/stats".format(file_name))
-            system.stats.files.file_name[file_name].action_upload(invalid_remote_url, should_succeed=False)
+            system.stats.files.file_name[file_name].action_upload(invalid_remote_url).verify_result(should_succeed=False)
 
         with allure.step("Validate generate system stats invalid category"):
             system.stats.category.categoryName[StatsConsts.INVALID_CATEGORY_NAME].action_general(StatsConsts.GENERATE).\
@@ -1020,7 +1020,7 @@ def clear_all_internal_and_external_files(engine, system, category_list):
     stats_files_show = OutputParsingTool.parse_json_str_to_dictionary(system.stats.files.show()).get_returned_value()
     if stats_files_show != "":
         for file in stats_files_show.keys():
-            system.stats.files.file_name[file].action_delete(should_succeed=True)
+            system.stats.files.file_name[file].action_delete().verify_result()
     # clear old files if exist
     engine.run_cmd("sudo rm -f /var/stats/*.old")
 
@@ -1045,7 +1045,7 @@ def validate_upload_stats_file(engines, system, file, delete=True):
         for protocol in upload_protocols:
             with allure.step("Upload stats file to player with {} protocol".format(protocol)):
                 upload_path = 'scp://{}:{}@{}{}'.format(player.username, player.password, player.ip, dest_path)
-                system.stats.files.file_name[file].action_upload(upload_path)
+                system.stats.files.file_name[file].action_upload(upload_path).verify_result()
 
             with allure.step("Validate file was uploaded to player"):
                 assert player.run_cmd(cmd='ls {} | grep {}'.format(dest_path, file)), \

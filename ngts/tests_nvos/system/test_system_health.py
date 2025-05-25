@@ -298,7 +298,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
     system.log.rotate_logs()
     health_issue_dict = {}
     date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-    system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
+    system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     verify_health_before_test()
 
@@ -342,7 +342,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
     speed_changed = False
     system.log.rotate_logs()
     date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-    system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
+    system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     verify_health_before_test()
     fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
@@ -568,7 +568,7 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
     system = System()
     system.log.rotate_logs()
     date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-    system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
+    system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     system.validate_health_status(OK)
 
@@ -602,7 +602,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
     system = System()
     system.log.rotate_logs()
     date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-    system.health.history.delete_history_file(HealthConsts.HEALTH_FIRST_FILE)
+    system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     system.validate_health_status(OK)
     docker_to_stop = "gnmi-server"
@@ -898,7 +898,7 @@ def validate_delete_health_files(system, health_files=[HealthConsts.HEALTH_FIRST
     delete health files and validate new health file was crated with health summary status
     """
     last_status_line = system.health.history.search_line(HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX + OK)[-1]
-    system.health.history.delete_history_files(health_files)
+    system.health.history.files.delete_files(health_files).verify_result()
     time.sleep(5)
     with allure.step("Validate new file was created"):
         logger.info("Validate new file was created")
@@ -930,7 +930,7 @@ def validate_upload_health_files(engines, system, health_files=[HealthConsts.HEA
                 logging.info("Upload health file to player with {} protocol".format(protocol))
                 upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
                                                             file_to_upload)
-                system.health.history.upload_history_files(file_to_upload, upload_path)
+                system.health.history.files.file_name[file_to_upload].action_upload(upload_path).verify_result()
 
             with allure.step("Validate file was uploaded to player and delete it"):
                 logging.info("Validate file was uploaded to player and delete it")

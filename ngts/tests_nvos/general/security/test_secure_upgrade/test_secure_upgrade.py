@@ -126,7 +126,7 @@ def delete_fetched_image(non_secure_image_name):
 
     logging.info("Deleting fetched image")
     system = System()
-    system.image.files.file_name[non_secure_image_name].action_delete("Action succeeded")
+    system.image.files.file_name[non_secure_image_name].action_delete().verify_result()
 
 
 @pytest.mark.secure_boot
@@ -149,4 +149,4 @@ def test_non_secure_boot_upgrade_failure(keep_same_version_installed, is_secure_
                 system.image.files.file_name[img_name].action_file_install(expected_str="Failed to verify image signature").verify_result()
         finally:
             with allure.step(f'delete img file: {img_name}'):
-                system.image.files.file_name[img_name].action_delete()
+                system.image.files.file_name[img_name].action_delete().verify_result()

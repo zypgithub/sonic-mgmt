@@ -1,12 +1,11 @@
 import logging
-import re
 
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -38,26 +37,10 @@ class NvueBaseCli(BaseCli):
     sub_strings_to_search = ['ib', 'sm', 'quantum']
 
     @classmethod
-    def _get_nv_action_string(cls, action_str, resource_path, main_param, flags, params):
-        """Returns the full NVUE command, e.g. 'nv action uninstall system image force' """
-        if main_param:
-            if len(main_param) != 2:
-                raise ValueError(f'"main_param" argument should be a 2-tuple (name, value) but it is {repr(main_param)}')
-            main_param_value = main_param[1]
-        else:
-            main_param_value = ''
-        if not isinstance(flags, str):
-            flags = ' '.join(flags or [])
-        param_str = ' '.join([f'{k} {v}' for k, v in params.items()])
-        ret = f'nv action {action_str} {resource_path.replace("/", " ")} {main_param_value} {param_str} {flags}'
-        ret = re.sub(' +', ' ', ret).strip()  # delete double-spaces and trailing spaces
-        return ret
-
-    @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
                send_user_confirmation, expected_output, device) -> ResultObj:
         """See documentation of BaseComponent.action()"""
-        cmd = cls._get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
+        cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
         with allure.step('Running cmd: ' + cmd):
             # Todo: Instead of send_command_timing, use send_command to expect one of [expected_output, prompt_message,
@@ -85,13 +68,13 @@ class NvueBaseCli(BaseCli):
             return ResultObj(False, returned_value=response, issue_type=IssueType.PossibleBug,
                              info=f'Expected to see a confirmation message, instead got:\n{response}')
 
-        result = SendCommandTool.verify_output(response, expected_output)
+        result = ValidationTool.verify_any_string_in_string(response, expected_output)
         if not result:
             return result
 
         if not reboot_params:
             # The actual reboot-handling is done outside this function (e.g. in BaseComponent.action()).
-            # The following lines only check the command's result, assuming that no reboot happened.
+            # The following lines only check the command's return-code, assuming that no reboot happened.
             try:
                 with allure.step('Assert return code 0'):
                     return_code = netmiko_engine.send_command('echo $?')

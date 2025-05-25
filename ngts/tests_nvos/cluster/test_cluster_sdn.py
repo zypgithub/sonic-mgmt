@@ -64,7 +64,9 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
         with allure.step('Upload initial configurations'):
             for file_type, path_to_file in config_files_paths.items():
                 app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[path_to_file.split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
+                sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
+                    path_to_file.split('/')[-1]].action_upload(
+                    ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH).verify_result()
                 initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + path_to_file.split('/')[-1]
                 logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
                 uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + path_to_file.split('/')[-1])
@@ -131,13 +133,15 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                     for file in all_config_files_paths[file_type]:
                         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
-                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
+                            file].action_delete().verify_result()
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                 if all_state_files_paths[file_type]:
                     for file in all_state_files_paths[file_type]:
                         app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
-                        sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[
+                            file].action_delete().verify_result()
             for file_path in uploaded_files:
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
@@ -165,13 +169,15 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                         for file in all_config_files_paths[file_type]:
                             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
-                            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
+                                file].action_delete().verify_result()
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
                     if (file_type in all_state_files_paths) and all_state_files_paths[file_type]:
                         for file in all_state_files_paths[file_type]:
                             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
-                            sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                            sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[
+                                file].action_delete().verify_result()
             for file_path in uploaded_files:
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 

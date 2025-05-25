@@ -26,4 +26,4 @@ def clear_asic_files():
     platform = Platform()
     with allure.step('delete fetched firmware asic image files'):
         files = platform.firmware.asic.files.get_files()
-        platform.firmware.asic.files.delete_files(files_to_delete=files)
+        platform.firmware.asic.files.delete_files(files_to_delete=files).verify_result()

@@ -22,7 +22,7 @@ def clear_cluster_package_files():
     nmx_package = fae.cluster.package
     with allure.step('delete fetched nmx package files'):
         files = nmx_package.files.get_files()
-        nmx_package.files.delete_files(files_to_delete=files)
+        nmx_package.files.delete_files(files_to_delete=files).verify_result()
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -149,7 +149,7 @@ def verify_start_stop(cluster, app):
 
 def delete_package_file(fae, filename):
     with allure.step(f'try to delete fetched file {filename}'):
-        fae.cluster.package.files.file_name[filename].action_delete()
+        fae.cluster.package.files.file_name[filename].action_delete().verify_result()
 
 
 def nmx_package_flow(app, path, new_version):
@@ -210,7 +210,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
         ClusterTools.verify_app_version(fae.cluster, app_to_test, default_version)
 
     with allure.step(f'try to delete fetched file {filename}'):
-        nmx_package.files.file_name[filename].action_delete()
+        nmx_package.files.file_name[filename].action_delete().verify_result()
 
     with allure.step(f'try to delete already deleted fetched file {filename}'):
-        nmx_package.files.file_name[filename].action_delete(should_succeed=False)
+        nmx_package.files.file_name[filename].action_delete().verify_result(False)

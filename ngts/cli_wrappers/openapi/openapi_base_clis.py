@@ -10,6 +10,7 @@ from ..nvue.nvue_base_clis import BaseCli
 from ...nvos_tools.infra import ExceptionTool
 from ...nvos_tools.infra.ResultObj import ResultObj, IssueType
 from ...nvos_tools.infra.SendCommandTool import SendCommandTool
+from ...nvos_tools.infra.ValidationTool import ValidationTool
 
 logger = logging.getLogger()
 
@@ -38,12 +39,16 @@ class OpenApiBaseCli(BaseCli):
             output = OpenApiCommandHelper.execute_action(OpenApiBaseCli._action_key(action_str), engine.engine.username,
                                                          engine.engine.password, engine.ip, url, data,
                                                          expected_output)
-            result = SendCommandTool.verify_output(output, expected_output)
         except requests.exceptions.RequestException as e:
             result = ResultObj(False,
                                info=(f'Possible connection loss: {ExceptionTool.format_exception(e)}.\n'
                                      f'This is probably due to a reboot.'))
             result.update_traceback()
+        else:
+            if output.startswith(OpenApiCommandHelper.ACTION_ERROR):
+                result = ResultObj(False, output, output.partition(' ')[2])
+            else:
+                result = ValidationTool.verify_any_string_in_string(output, expected_output)
         return result
 
     @staticmethod

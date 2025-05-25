@@ -229,16 +229,20 @@ class BaseComponent:
         """
         additional_params = additional_params or {}
         engine = engine or TestToolkit.engines.dut
-        device = device or TestToolkit.devices.dut
+        try:
+            device = device or TestToolkit.devices.dut
+        except BaseException:
+            pass
 
         if not (reboot_params is None or type(reboot_params) in (bool, RebootParams)):
             raise TypeError(f'{reboot_params=} but it should be one of [True, False, None, RebootParams()]')
 
         resource_path = self.get_resource_path()
-        with allure.step(f"Execute action {action_str} for {resource_path}"):
-            result = self._cli_wrapper.action(action_str, resource_path, main_param, flags, additional_params,
-                                              engine, reboot_params, send_user_confirmation, expected_output,
-                                              device)
+        with allure.step("Execute " + BaseCli.get_nv_action_string(action_str, resource_path, main_param, flags,
+                                                                   additional_params)):
+            result = self._cli_wrapper.action(action_str, resource_path, main_param, flags, additional_params, engine,
+                                              reboot_params, send_user_confirmation, expected_output, device)
+            logger.info(result)
 
         if reboot_params and result:  # if reboot is expected and the action returned a success message: wait on reboot
             reboot_result = DutUtilsTool.wait_on_system_reboot(engine, reboot_params,

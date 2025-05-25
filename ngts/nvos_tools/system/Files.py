@@ -1,6 +1,7 @@
 import logging
-from typing import Dict
+from typing import Dict, Iterable
 
+from ngts.nvos_constants.constants_nvos import ActionConsts, ActionParamConsts, SystemConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -43,16 +44,21 @@ class Files(BaseComponent):
             for file in unexpected_files:
                 assert file not in files, "File: {} is in the files output {}".format(file, files)
 
-    def delete_files(self, files_to_delete=[], expected_str='', engine=None):
+    def delete_files(self, files_to_delete: Iterable[str] = (), engine=None) -> ResultObj:
+        result = ResultObj(True)
         with allure.step("Delete files"):
             logging.info("Delete files: {}".format(files_to_delete))
             for file in files_to_delete:
-                self.file_name[file].action_delete(expected_str, dut_engine=engine)
+                file_result = self.file_name[file].action_delete(engine=engine)
+                if not file_result:
+                    file_result.ignore_result()
+                    result.update(False, result.info + '\n' + file_result.info)
+        return result
 
     def delete_all_existing_files(self, engine=None):
         with allure.step(f'delete all existing files of: {self.get_resource_path()}'):
             out: dict = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=engine)).get_returned_value()
-            self.delete_files(files_to_delete=list(out.keys()), engine=engine)
+            return self.delete_files(files_to_delete=list(out.keys()), engine=engine)
 
 
 class File(BaseComponent):
@@ -66,41 +72,32 @@ class File(BaseComponent):
             return SendCommandTool.execute_command(self._cli_wrapper.show_file, engine, self.file_name,
                                                    exit_cmd).get_returned_value()
 
-    def action_upload(self, upload_path, expected_str="", dut_engine=None, should_succeed=True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        resource_path = self.get_resource_path()
-        with allure.step(f"Upload file {resource_path} to '{upload_path}'"):
-            return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action_deprecated, expected_str,
-                engine, action_type='upload', resource_path=resource_path,
-                param_name='remote-url', param_value=upload_path).get_returned_value(should_succeed)
+    def action_upload(self, upload_path) -> ResultObj:
+        return self.action(ActionConsts.UPLOAD, (ActionParamConsts.REMOTE_URL, upload_path))
 
-    def action_delete(self, expected_str="", dut_engine=None, should_succeed=True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        resource_path = self.get_resource_path()
-        with allure.step(f"Delete file: {resource_path}"):
-            return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action_deprecated, expected_str,
-                engine, action_type='delete', resource_path=resource_path).get_returned_value(should_succeed)
+    def action_delete(self, engine=None) -> ResultObj:
+        return self.action(ActionConsts.DELETE, engine=engine)
 
-    def action_rename(self, new_name, expected_str="", rewrite_file_name=True, dut_engine=None, should_succeed=True
-                      ) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        resource_path = self.get_resource_path()
-        with allure.step(f"Rename file: {resource_path} to: {new_name}"):
-            result = SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action_deprecated, expected_str,
-                engine, action_type='rename', resource_path=resource_path,
-                param_name='new-name', param_value=new_name).get_returned_value(should_succeed)
-            if result and rewrite_file_name:
-                parent: Files = self.parent_obj
-                if self.file_name in parent.file_name:
-                    del parent.file_name[self.file_name]
-                parent.file_name[new_name] = self
-                self.file_name = new_name
-                self._resource_path = f'/{new_name}'
-            return result
+    def action_rename(self, new_name, rewrite_file_name=True) -> ResultObj:
+        result = self.action(ActionConsts.RENAME, (ActionParamConsts.NEW_NAME, new_name))
+        if result and rewrite_file_name:
+            parent: Files = self.parent_obj
+            if self.file_name in parent.file_name:
+                del parent.file_name[self.file_name]
+            parent.file_name[new_name] = self
+            self.file_name = new_name
+            self._resource_path = f'/{new_name}'
+        return result
 
+    def action_install(self, reboot_params, force=True, additional_flags=(), send_user_confirmation=None,
+                       expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES) -> ResultObj:
+        flags = ([ActionParamConsts.FORCE] if force else []) + (
+            additional_flags.split() if isinstance(additional_flags, str) else list(additional_flags))
+        result = self.action(ActionConsts.INSTALL, flags=flags, send_user_confirmation=send_user_confirmation,
+                             reboot_params=reboot_params, expected_output=expected_output)
+        return result
+
+    # todo: remove the install methods below, they're replaced by the one above and kept for backwards compatibility
     def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='', deny_reboot=False) -> ResultObj:
         return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value, deny_reboot=deny_reboot)
 
@@ -129,8 +126,7 @@ class File(BaseComponent):
                 should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout,
                 expected_output=expected_str)
 
-    def rename_and_verify(self, new_name, expected_str="", dut_engine=None):
+    def rename_and_verify(self, new_name):
         original_name = self.file_name
-        self.action_rename(new_name, expected_str, dut_engine=dut_engine)
-        self.parent_obj.verify_show_files_output(expected_files=[new_name], unexpected_files=[original_name],
-                                                 dut_engine=dut_engine)
+        self.action_rename(new_name).verify_result()
+        self.parent_obj.verify_show_files_output(expected_files=[new_name], unexpected_files=[original_name])

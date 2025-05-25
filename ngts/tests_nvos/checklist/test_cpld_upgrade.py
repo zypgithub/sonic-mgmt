@@ -128,7 +128,7 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
     finally:
         for file_name in file_names:
             with allure.step(f"Deleting image file {file_name}"):
-                platform.firmware.cpld.files.file_name[file_name].action_delete()
+                platform.firmware.cpld.files.file_name[file_name].action_delete().verify_result()
 
         with allure.step(f"Asserting delete was successful"):
             final_file_list = platform.firmware.cpld.show_files_as_list()

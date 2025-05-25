@@ -15,6 +15,7 @@ from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -139,13 +140,13 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 
         with allure.step("Install original image name, should fail"):
             logger.info("Install original image name: {}, should fail".format(fetched_image))
-            system.image.files.file_name[fetched_image].action_file_install("Failed").verify_result()
+            system.image.files.file_name[fetched_image].action_install(reboot_params=False).verify_result(False)
 
         with allure.step("Delete original image name, should fail"):
-            system.image.files.delete_files([fetched_image], "File not found")
+            system.image.files.delete_files([fetched_image]).verify_result(False, "File not found")
 
         with allure.step('rename back to original name'):
-            fetched_image_file.action_rename(fetched_image)
+            fetched_image_file.action_rename(fetched_image).verify_result()
 
         with allure.step('install the fetched image (after renamed back to original name)'):
             install_image_and_verify(orig_engine=orig_engine, image_name=fetched_image,
@@ -167,7 +168,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         TestToolkit.tested_api = ApiType.NVUE
         with allure.step('Apply and save pre-defined configuration'):
             NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
-                                                          scp_host_creds, system)
+                                                          scp_host_creds, system, verify_result=True)
             logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
             engines.dut.disconnect()
             engines.dut.run_cmd("true")
@@ -210,15 +211,15 @@ def test_system_image_upload(engines, release_name, test_api, original_version, 
                 with allure.step("Upload image to player with {} protocol".format(protocol)):
                     upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
                                                                 image_name)
-                    image_file.action_upload(upload_path)
+                    image_file.action_upload(upload_path).verify_result()
 
                 with allure.step("Validate file was uploaded to player and delete it"):
                     assert player.run_cmd(
                         cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
                     player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
-        with allure.step("Delete file from player"):
-            system.image.files.delete_files([image_name])
+        with allure.step("Delete file from switch"):
+            system.image.files.delete_files([image_name]).verify_result()
             system.image.files.verify_show_files_output(unexpected_files=[image_name])
 
 
@@ -310,11 +311,11 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 
         with allure.step("Delete bad flows"):
             with allure.independent_step("Delete file that does not exist"):
-                system.image.files.delete_files([rand_name], "File not found")
+                system.image.files.file_name[rand_name].action_delete().verify_result(False, "File not found")
 
         with allure.step("Install bad flows"):
             with allure.independent_step("Install image file that does not exist"):
-                file_rand_name.action_file_install("Image does not exist").verify_result()
+                file_rand_name.action_install(reboot_params=False).verify_result(False, "Image does not exist")
 
         with allure.step("Boot-next bad flows"):
             if not original_images[other_partition][ImageConsts.BUILD_ID]:
@@ -329,26 +330,26 @@ def test_system_image_bad_flow(engines, release_name, test_api, original_version
 
         with allure.step("Rename bad flows"):
             with allure.step("Rename image file that does not exist"):
-                file_rand_name.action_rename(rand_name, "File not found")
+                file_rand_name.action_rename(rand_name).verify_result(False, "File not found")
 
         with allure.step("Upload bad flows"):
             player = engines['sonic_mgmt']
             upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
             with allure.independent_step("Upload image file that does not exist"):
-                file_rand_name.action_upload(upload_path, "File not found")
+                file_rand_name.action_upload(upload_path).verify_result(False, "File not found")
             with allure.independent_step("Upload the same image twice"):
                 with allure.step("First upload"):
-                    image_file.action_upload(upload_path)
+                    image_file.action_upload(upload_path).verify_result()
                     with allure.step("Validate file was uploaded"):
                         assert player.run_cmd(
                             cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
                 with allure.step("Second upload"):
-                    image_file.action_upload(upload_path)
+                    image_file.action_upload(upload_path).verify_result()
                     with allure.step("Delete the file from the player"):
                         player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete all images that have been fetch during the test"):
-            system.image.files.delete_files(images_name)
+            system.image.files.delete_files(images_name).verify_result()
 
 
 @pytest.mark.checklist
@@ -442,7 +443,9 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
 
     else:
         with allure.step("{} uninstall image, while there is just 1 image- should fail".format(uninstall_force)):
-            system.image.action_uninstall(params=uninstall_force, expected_str="Nothing to uninstall")
+            output = system.image.action_uninstall(params=uninstall_force, expected_str="Nothing to uninstall",
+                                                   verify_res=False)
+            assert "Nothing to uninstall" in output
             system.image.verify_show_images_output(original_images)
 
     try:
@@ -455,7 +458,9 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
                 system.image.boot_next_and_verify(original_image_partition)
 
         if not uninstall_force:
-            system.image.action_uninstall(expected_str="Failed to uninstall. Image set to boot-next")
+            output = system.image.action_uninstall(expected_str="Failed to uninstall. Image set to boot-next",
+                                                   verify_res=False)
+            assert "Failed to uninstall. Image set to boot-next" in output
 
     finally:
         cleanup_test(system, original_images, original_image_partition, [fetched_image], orig_engine=orig_engine)
@@ -593,7 +598,7 @@ def test_fetch_image_via_https(test_api):
     finally:
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
-                system.image.files.delete_files([image_file])
+                system.image.files.delete_files([image_file]).verify_result()
 
             with allure.step("Verify earlier fetched image is not shown in the show command"):
                 system.image.files.verify_show_files_output(unexpected_files=[image_file])
@@ -673,7 +678,7 @@ def helper_fetch_image_with_weird_password(engines, system, test_api, weird_pass
     finally:
         if image_fetched:
             with allure.step("Delete the image that has been fetched during the test"):
-                system.image.files.delete_files([SystemConsts.DUMMY_IMAGE])
+                system.image.files.delete_files([SystemConsts.DUMMY_IMAGE]).verify_result()
 
             with allure.step("Verify earlier fetched image is not shown in the show command"):
                 system.image.files.verify_show_files_output(unexpected_files=[SystemConsts.DUMMY_IMAGE])
@@ -692,9 +697,9 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
     with allure.step("Installing image {}".format(image_name)):
         new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username, orig_engine.password)
         res_obj, _ = OperationTime.save_duration('image install', '', test_name,
-                                                 system.image.files.file_name[image_name].action_file_install_with_reboot,
-                                                 SystemConsts.REBOOT_RESPONSE_MESSAGES,
-                                                 True, None, None, new_engine,
+                                                 system.image.files.file_name[image_name].action_install,
+                                                 expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES,
+                                                 force=True, reboot_params=RebootParams(recovery_engine=new_engine)
                                                  )
         res_obj.verify_result()
 
@@ -778,7 +783,7 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
                 system.image.boot_next_and_verify(original_image_partition)
 
             with allure.step("Reboot the system"):
-                system.reboot.action_reboot(recovery_engine=orig_engine)
+                system.action_reboot(reboot_params=RebootParams(recovery_engine=orig_engine))
 
             with allure.step('restore original dut engine'):
                 TestToolkit.engines.dut = orig_engine or TestToolkit.engines.dut
@@ -795,7 +800,7 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
                 logger.info("No image to uninstall")
 
         with allure.step("Delete all images that have been fetch during the test and verify"):
-            system.image.files.delete_files(fetched_image_files)
+            system.image.files.delete_files(fetched_image_files).verify_result()
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
 
         assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'

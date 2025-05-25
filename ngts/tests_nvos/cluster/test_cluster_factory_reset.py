@@ -437,7 +437,9 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_files_paths[file_type].split('/')[-1]].action_upload(ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH)
+        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
+            config_files_paths[file_type].split('/')[-1]].action_upload(
+            ImageConsts.SCP_PATH + ClusterConsts.INITIAL_CONFIGURATIONS_PATH).verify_result()
         initial_configs_paths_to_restore[file_type] = ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1]
         uploaded_files.append(ClusterConsts.INITIAL_CONFIGURATIONS_PATH + '/' + config_files_paths[file_type].split('/')[-1])
         logger.info(f"Uploading files: {initial_configs_paths_to_restore[file_type]}")
@@ -521,7 +523,7 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
                     try:
-                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete().verify_result()
                     except Exception as e:
                         logger.info("File Already Deleted")
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
@@ -530,6 +532,6 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                     file = file.split('/')[-1]
                     try:
-                        sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                        sdn.state.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete().verify_result()
                     except Exception as e:
                         logger.info("File Already Deleted")

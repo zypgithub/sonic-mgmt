@@ -24,12 +24,7 @@ class Image(BaseComponent):
 
     def action_uninstall(self, params="", expected_str="", engine=None, verify_res: bool = True):
         with allure.step("Uninstall {params} system image".format(params=params)):
-            if not engine:
-                engine = TestToolkit.engines.dut
-            res: ResultObj = SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_image,
-                                                                          expected_str, engine,
-                                                                          ActionConsts.UNINSTALL, self.get_resource_path(),
-                                                                          params)
+            res = self.action(ActionConsts.UNINSTALL, flags=params, expected_output=expected_str, engine=engine)
             if verify_res:
                 return res.get_returned_value()
             else:

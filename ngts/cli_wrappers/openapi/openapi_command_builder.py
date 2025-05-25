@@ -354,6 +354,7 @@ class OpenApiRequest:
 
     @staticmethod
     def send_action_request(request_data, expected_str='') -> str:
+        # todo: refactor this function to return a result-obj, or better yet: to raise exception in case of action fail
         with allure.step("Send POST request"):
             req_url = '{url}{resource_path}'.format(url=OpenApiRequest._get_endpoint_url(request_data),
                                                     resource_path=request_data.resource_path)
@@ -368,16 +369,20 @@ class OpenApiRequest:
             OpenApiRequest.print_response(r, OpenApiReqType.ACTION)
 
             validation_res = OpenApiRequest._check_action_post_response(r)
-            validation_res.ignore_result()  # todo: maybe this function should return ResultObj instead of str?
+            validation_res.ignore_result()
             if not validation_res.result:
-                return validation_res.info
+                returned_value = f"{OpenApiCommandHelper.ACTION_ERROR} {validation_res.info}"
+                logger.info(returned_value)
+                return returned_value
 
             r = r.json()
             response = json.dumps(r, indent=2)
             if not response.isnumeric():
                 assert isinstance(r, dict) and r.get('status') != 200 and 'title' in r and 'detail' in r, \
                     f"In case of bad request expect status!=200 and some error message, but response is: {r}"
-                return f"{r['title']}: {r['detail']}"
+                returned_value = f"{OpenApiCommandHelper.ACTION_ERROR} {r['title']}: {r['detail']}"
+                logger.info(returned_value)
+                return returned_value
         response_for_get_request = OpenApiRequest._send_get_req_and_wait_till_completed(
             request_data, response, expected_str)
         return response_for_get_request
@@ -417,8 +422,8 @@ class OpenApiRequest:
                         issue = issue[0]['message']
                     except Exception:
                         pass
-                    if action_state == 'action_error':
-                        return 'action_error: ' + str(issue)
+                    if action_state == OpenApiCommandHelper.ACTION_ERROR:
+                        return f'{OpenApiCommandHelper.ACTION_ERROR}: {str(issue)}'
                     else:
                         raise Exception(action_status + " - issue: " + str(issue))
 
@@ -426,6 +431,7 @@ class OpenApiRequest:
 
 
 class OpenApiCommandHelper:
+    ACTION_ERROR = 'action_error'
     req_method = {OpenApiReqType.GET: OpenApiRequest.send_get_request,
                   OpenApiReqType.PATCH: OpenApiRequest.send_patch_request,
                   OpenApiReqType.DELETE: OpenApiRequest.send_delete_request,

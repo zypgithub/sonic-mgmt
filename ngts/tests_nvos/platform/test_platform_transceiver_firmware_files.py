@@ -71,7 +71,7 @@ def test_transceiver_files_actions_positive(engines, test_api):
                     upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player_engine.username,
                                                                 player_engine.password,
                                                                 player_engine.ip, new_fw_file1)
-                    renamed_file.action_upload(upload_path, expected_str='File upload successfully')
+                    renamed_file.action_upload(upload_path).verify_result(True, 'File upload successfully')
 
                 with allure.step("Validate file was uploaded to player and delete it"):
                     assert player_engine.run_cmd(
@@ -80,7 +80,7 @@ def test_transceiver_files_actions_positive(engines, test_api):
 
         with allure.step("delete one of firmware transceiver files - {}".format(new_fw_file2)):
             file_to_delete = platform.firmware.transceiver.files.file_name[new_fw_file2]
-            file_to_delete.action_delete("Action succeeded")
+            file_to_delete.action_delete().verify_result()
 
         with allure.step("Run the show command and verify that all expected files are correct"):
             platform.firmware.transceiver.files.verify_show_files_output(expected_files=[new_fw_file1],
@@ -139,10 +139,10 @@ def test_transceiver_files_negative(engines, test_api):
         upload_path = '{}://{}:{}@{}/tmp/{}'.format('scp', player_engine.username, player_engine.password,
                                                     player_engine.ip, fw_file_name1)
         fetched_file = platform.firmware.transceiver.files.file_name[non_exist_file_name]
-        assert invalid_file_expected_message in fetched_file.action_upload(upload_path=upload_path, should_succeed=False), "Test failed: trying to upload non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
+        fetched_file.action_upload(upload_path=upload_path).verify_result(False, invalid_file_expected_message)
 
     with allure.step('trying to rename non exist transceiver firmware file'):
-        assert invalid_file_expected_message in fetched_file.action_rename(new_name="Not_file.bin", should_succeed=False), "Test failed: trying to rename non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
+        fetched_file.action_rename(new_name="Not_file.bin").verify_result(False, invalid_file_expected_message)
 
     with allure.step('trying to delete non exist file'):
-        assert invalid_file_expected_message in fetched_file.action_delete(should_succeed=False), "Test failed: trying to delete non exist file = {} the expected error message = {}".format(non_exist_file_name, invalid_file_expected_message)
+        fetched_file.action_delete().verify_result(False, invalid_file_expected_message)

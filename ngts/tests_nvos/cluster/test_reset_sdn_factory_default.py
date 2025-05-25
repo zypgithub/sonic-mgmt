@@ -109,7 +109,7 @@ def verify_current_config_equals_given_config(sdn, engines, initial_config_conte
                                                                  output_format=output_format).get_returned_value()
             current_installed_config_path = output[installed_file]['path']
             current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete()
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete().verify_result()
             if file_type == 'chassis_mapping' and is_bug_active(4222718):
                 continue
             initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
