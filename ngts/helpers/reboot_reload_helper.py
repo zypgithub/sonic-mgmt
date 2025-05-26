@@ -18,9 +18,6 @@ class SupportedRebootReloadTypes:
         if '4280' in platform:
             del self.fast_reboot
             del self.warm_reboot
-        if is_redmine_issue_active([4435626])[0]:
-            del self.fast_reboot
-            del self.warm_reboot
 
 
 def get_supported_reboot_reload_types_list(platform=None):

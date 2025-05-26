@@ -19,7 +19,8 @@ CONFIG_DB_COPY_NAME = 'config_db_copy.json'
 PRE_RUNNING_CONFIG_PATH = '/tmp/pre_running_config.json'
 MAX_PORTS_TEST_LIST = [REBOOT_TEST_NAME, ACL_SCALE_TEST_NAME]
 INDEPENDENT_MODULE_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR,
-                                PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_LEOPARD_DC]
+                                PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.BISON_PLATFORMS,
+                                PlatformTypesConstants.PLATFORM_LEOPARD_DC]
 
 
 def pytest_addoption(parser):
@@ -93,12 +94,7 @@ def pytest_collection_modifyitems(session, config, items):
             skip = pytest.mark.skip(reason=f'{platform} platform does not support split to maximum ports')
             add_marker(items, skip)
             return
-        # TODO: need to remove once the ticket closed.
-        from infra.tools.redmine.redmine_api import is_redmine_issue_active
-        if is_redmine_issue_active([4435626])[0]:
-            skip = pytest.mark.skip(reason='https://redmine.mellanox.com/issues/4435626')
-            add_marker(items, skip)
-            return
+
         platform_max_ports_num = max_ports_num_per_platform[platform]
         if config.option.ports_number == "max":
             expected_ports_num = platform_max_ports_num

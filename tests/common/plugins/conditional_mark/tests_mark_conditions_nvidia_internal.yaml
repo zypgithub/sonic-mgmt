@@ -391,11 +391,6 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
     - "'r-bison-22' in testbed"
     - "'sn6600' in platform and 'simx' in platform"
 
-tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_policer:
-  skip:
-    reason: "Testcase ignored for 5640 platform"
-    conditions:
-    - "'5640' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_component_version_check:
   skip:
