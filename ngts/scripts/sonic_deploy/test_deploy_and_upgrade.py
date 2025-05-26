@@ -33,6 +33,7 @@ from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployMethods
 from ngts.tools.infra import get_platform_info
 from ngts.common.util import save_specified_installed_dpus, get_specified_installed_dpus_from_noga, \
     get_installed_dpu_info
+from ngts.scripts.sonic_deploy.os_upgrade_flag import set_os_upgrade_flag
 
 logger = logging.getLogger()
 
@@ -190,6 +191,11 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             # Remove .pytest_cache folder after deploy - otherwise  - cached info from old image will be used in skip tests
             cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
             shutil.rmtree(cache_full_path, ignore_errors=True)
+
+        # set the OS upgrade flag
+        if base_version and target_version and not deploy_only_target:
+            if not set_os_upgrade_flag():
+                logger.warning("Failed to set the OS upgrade flag")
 
     except Exception as err:
         raise AssertionError(err)

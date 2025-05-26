@@ -24,6 +24,7 @@ from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tests.nightly.conftest import convert_speed_format_to_m_speed
 from ngts.tools.ports_modifier import reload_config, MAX_PORTS_TEST_LIST
+from ngts.scripts.sonic_deploy.os_upgrade_flag import is_os_upgraded
 
 logger = logging.getLogger()
 RAM_SYNCD_USAGE_ASAN_COEFFICIENT = 4
@@ -510,16 +511,14 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
             else:
                 cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
             if isinstance(cli_objects.dut.general, SonicGeneralCliDefault) and \
-                    cli_objects.dut.general.get_image_sonic_release() == "none":
-                # Check if the switch OS was upgraded from a previous version to master RC
-                base_image, target_image = cli_objects.dut.general.get_base_and_target_images()
-                logging.info(f"base image: {base_image}, target image: {target_image}")
-                if base_image is not None:
-                    logger.warning(
-                        "config check is disabled when upgrading to master RC, check the failure->\n"
-                        f"{config_check_error_message}"
-                    )
-                    return
+                    cli_objects.dut.general.get_image_sonic_release() == "none" and \
+                    is_os_upgraded():
+                # Current OS release is master RC and was upgraded in "Upgrade switch" step
+                logger.warning(
+                    "config check is disabled when upgrading to master RC, check the failure->\n"
+                    f"{config_check_error_message}"
+                )
+                return
             raise Exception(config_check_error_message)
         else:
             logger.info("Config check passed for {}".format(module_name))
