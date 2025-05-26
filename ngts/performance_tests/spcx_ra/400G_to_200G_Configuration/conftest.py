@@ -53,7 +53,7 @@ def conf_args():
     """
     conf_args = {"run_fw_latency_optimization": "False",
                  "auto_buffer_mode": "False",
-                 "congestion_thresh_lo": 400,
+                 "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "is_ipv6": False,
                  "split_right": 4,
                  "split_left": 2,

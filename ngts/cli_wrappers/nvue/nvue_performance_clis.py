@@ -66,13 +66,13 @@ class NvuePerformanceCli(PerformanceCommon):
     def set_ibm(self, scenario, conf_args):
         ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
         if conf_args['params']:
-            ctl = conf_args.get('params', {}).get("low_ar_thresh", Cl_Consts.LOW_AR_THRESHOLD)
-            ctm = conf_args.get('params', {}).get("med_ar_thresh", Cl_Consts.MED_AR_THRESHOLD)
-            cth = conf_args.get('params', {}).get("high_ar_thresh", Cl_Consts.HIGH_AR_THRESHOLD)
+            ctl = conf_args.get('params', {}).get("low_ar_thresh", PerfConsts.LOW_AR_THRESHOLD)
+            ctm = conf_args.get('params', {}).get("med_ar_thresh", PerfConsts.MED_AR_THRESHOLD)
+            cth = conf_args.get('params', {}).get("high_ar_thresh", PerfConsts.HIGH_AR_THRESHOLD)
         else:
-            ctl = Cl_Consts.LOW_AR_THRESHOLD
-            ctm = Cl_Consts.MED_AR_THRESHOLD
-            cth = Cl_Consts.HIGH_AR_THRESHOLD
+            ctl = PerfConsts.LOW_AR_THRESHOLD
+            ctm = PerfConsts.MED_AR_THRESHOLD
+            cth = PerfConsts.HIGH_AR_THRESHOLD
 
         logging.info(f"Set IBM mode to {ibm_mode}")
         if ibm_mode:

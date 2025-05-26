@@ -107,7 +107,7 @@ def conf_args(players):
 
     all_ports_after_split = get_all_players_ports(players, split_right, split_left)
 
-    conf_args = {"congestion_thresh_lo": 400,
+    conf_args = {"congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "auto_buffer_mode": "False",
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "is_ipv6": False,

@@ -30,7 +30,7 @@ def skip_test_conditionally(players):
 def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario):
     conf_args = {"run_fw_latency_optimization": "False",
                  "auto_buffer_mode": "False",
-                 "congestion_thresh_lo": 400,
+                 "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "two_sided_ar": False,
                  "is_ipv6": False,
                  "split_right": 2,

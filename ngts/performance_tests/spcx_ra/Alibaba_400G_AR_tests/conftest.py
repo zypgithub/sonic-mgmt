@@ -50,7 +50,7 @@ def conf_args(is_ipv6):
     conf_args = {
         "run_fw_latency_optimization": "False",
         "auto_buffer_mode": "False",
-        "congestion_thresh_lo": 400,
+        "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
         "is_ipv6": is_ipv6,
         "host": "right_tg",
         "spine": "left_tg",

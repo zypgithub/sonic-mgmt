@@ -47,7 +47,7 @@ def conf_args(players):
     split_left = 2
     split_right = 2
 
-    conf_args = {"congestion_thresh_lo": 400,
+    conf_args = {"congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "auto_buffer_mode": "False",
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "is_ipv6": False,
