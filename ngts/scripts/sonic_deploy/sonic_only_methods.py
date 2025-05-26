@@ -559,7 +559,7 @@ class SonicInstallationSteps:
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):
                     try:
-                        retry_call(fetch_dash_api_package, tries=3, delay=2, logger=logger)
+                        retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
                         os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                     except Exception as e:
                         logger.error(f"Failed to update the dash api in sonic-mgmt: {e}")
@@ -621,7 +621,7 @@ class SonicInstallationSteps:
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):
                     try:
-                        retry_call(fetch_dash_api_package, tries=3, delay=2, logger=logger)
+                        retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
                         os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                     except Exception as e:
                         logger.error(f"Failed to update the dash api in sonic-mgmt: {e}")
