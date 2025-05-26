@@ -34,6 +34,14 @@ class DvsGeneralCli(GeneralCliCommon):
             self.engine.disconnect()
             self.remote_reboot(topology_obj, boot_into_onie=True, dut_alias=dut_alias)
 
+    def _install_sdk_and_fw(self, sdk_version, fw_version, debian_enabled):
+        """
+        Internal method to install SDK and FW with debian flag control
+        """
+        di_flag = "-di" if debian_enabled else ""
+        install_cmd = "sdk_install -v {} {} && fw_burn -v {} -f --ocr".format(sdk_version, di_flag, fw_version)
+        self.engine.run_cmd(install_cmd, validate=True)
+
     def install_sdk_and_burn_fw_flow(self, sdk_version):
         """
         install SDK on the switch and burn fw to it, with dedicated script
@@ -44,8 +52,13 @@ class DvsGeneralCli(GeneralCliCommon):
             self.set_aliases()
             fw_version = self.get_fw_version_from_sdk(sdk_version)
             logger.info(f"Starting installation of SDK version: {sdk_version} and FW version: {fw_version}")
-            install_cmd = "sdk_install -v {} -di && fw_burn -v {} -f --ocr".format(sdk_version, fw_version)
-            self.engine.run_cmd(install_cmd, validate=True)
+
+            try:
+                self._install_sdk_and_fw(sdk_version, fw_version, debian_enabled=True)
+            except Exception as e:
+                logger.warning(f"Installation with debian enabled failed: {str(e)}. Trying without debian...")
+                self._install_sdk_and_fw(sdk_version, fw_version, debian_enabled=False)
+
             self.dvs_restart()
             logger.info("SDK and FW installation has ended successfully!")
 
