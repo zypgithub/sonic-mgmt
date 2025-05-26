@@ -162,8 +162,8 @@ def test_verify_fec_stats_counters(duthosts, enum_rand_one_per_hwsku_frontend_ho
 
         # FEC correctable codeword errors should always be less than actual FEC symbol errors, check it
         if fec_corr_int > 0 and fec_corr_int > fec_symbol_err_int:
-            pytest.fail("FEC symbol errors:{} are higher than FEC correctable errors:{} for interface {}"
-                        .format(fec_symbol_err_int, fec_corr_int, intf_name))
+            pytest.fail("FEC correctable errors:{} are higher than FEC symbol errors:{} for interface {}"
+                        .format(fec_corr_int, fec_symbol_err_int, intf_name))
 
         if skip_ber_counters_test(intf):
             continue
