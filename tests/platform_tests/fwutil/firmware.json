@@ -311,6 +311,33 @@
 					}
 				]
 			}
+		},
+		"SN5640": {
+			"component": {
+				"BIOS": [
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.012/Release/0ACTV.cab",
+						"version": "0ACTV_00.01.012",
+						"reboot": ["cold"]
+					}
+				],
+				"ONIE": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2024.08-5.3.0015-115200-dev",
+						"reboot": ["cold"]
+					}
+				],
+				"CPLD2": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5610N/FUI000414/FUI000414.mpfa",
+						"version": "CPLD000398_REV0601",
+						"reboot": ["power off", "cold"]
+					}
+				]
+			}
 		}
 	},
 	"host": {

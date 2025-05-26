@@ -773,7 +773,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         fanout_engine_type, fanout_name, fanout = self.get_fanout_info(topology_obj, dut_alias)
 
-        if fanout:
+        if fanout and 'r-moose-06' not in fanout_name:
             if fanout_engine_type == CliType.SONIC:
                 fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info, threads_dict,
                                            platform_params, fanout_name, dut_alias)

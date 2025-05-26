@@ -5074,7 +5074,7 @@
       <DevicePowerControlInfo Hostname="pdu-10-208-0-191" HwSku="Vertiv" ManagementIp="10.208.0.191" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-208-0-181" HwSku="Sentry" ManagementIp="10.208.0.181" Protocol="snmp" Type="CDU"/>
       <DevicePowerControlInfo Hostname="pdu-10-208-2-14" HwSku="Emerson" ManagementIp="10.208.2.14" Protocol="snmp" Type="Pdu"/>
-
+      <DevicePowerControlInfo Hostname="pdu-10-245-2-50" HwSku="Vertiv" ManagementIp="10.245.2.50" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-75-68-211" HwSku="ApcRPDU" ManagementIp="10.75.68.211" Protocol="snmp" Type="Pdu"/>
       <DevicePowerControlInfo Hostname="pdu-10-75-68-210" HwSku="Sentry" ManagementIp="10.75.68.210" Protocol="snmp" Type="CDU"/>
 

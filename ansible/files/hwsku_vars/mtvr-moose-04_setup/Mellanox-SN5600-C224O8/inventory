@@ -1,17 +1,17 @@
 [sonic_latest]
 # MTVR community testbed mtvr-moose-04_setup topologies
-mtvr-moose-04  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t0  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t0-64  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t0-64-256  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1-lag  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1-lag-c224o8  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1-isolated-d28u1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1-isolated-d224u8 ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-t1-isolated-d254u2s1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-ptf32  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-49 console_baudrate=115200
-mtvr-moose-04-ptf-any  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-pdu-10-245-2-49 console_baudrate=115200
+mtvr-moose-04  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t0  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t0-64  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t0-64-256  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1-lag  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1-lag-c224o8  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1-isolated-d28u1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1-isolated-d224u8 ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-t1-isolated-d254u2s1  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-ptf32  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-10-245-2-23 console_baudrate=115200
+mtvr-moose-04-ptf-any  ansible_host=10.245.20.42 sonic_version=v2  sonic_hwsku=Mellanox-SN5600-C224O8 iface_speed=100000 serial_console="ssh -l rcon:7012 10.245.2.8" ptf_host=ptf-mtvr-moose-04 ptf_portmap="roles/test/files/mlnx/mtvr-moose-04_interface_to_front_map.ini" pdu_host=pdu-pdu-10-245-2-23 console_baudrate=115200
 
 mtvr-moose-15 ansible_host=mtvr-moose-15 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
 
@@ -35,7 +35,7 @@ mtvr-moose-04-t1-isolated-d28u1
 mtvr-moose-04-t1-isolated-d224u8
 mtvr-moose-04-t1-isolated-d254u2s1
 mtvr-moose-04-ptf32
-mtvr-moose-040-ptf-any
+mtvr-moose-04-ptf-any
 
 [ptf]
 # MTVR mtvr-moose-04 PTF host
@@ -43,4 +43,4 @@ ptf-mtvr-moose-04 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','P
 10.245.20.62 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
-pdu-10-245-2-49 ansible_host=10.245.2.49 protocol=snmp
+pdu-10-245-2-23 ansible_host=10.245.2.23 protocol=snmp

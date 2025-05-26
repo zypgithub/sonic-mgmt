@@ -1,0 +1,72 @@
+[sonic_latest]
+# MTVR community testbed r-bison-06_setup topologies
+r-bison-06  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200 base_mac=50:00:E6:23:EE:DA serial=MT2512602H0T model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H0T', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:EE:DA', '0x25': u'03/21/2025 17:41:52', '0xfe': u'0x7D6093B2', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-06-t0  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t0-64  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t0-64-256  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t0-isolated-d16u16s2  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200 base_mac=50:00:E6:23:EE:DA serial=MT2512602H0T model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H0T', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:EE:DA', '0x25': u'03/21/2025 17:41:52', '0xfe': u'0x7D6093B2', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-06-t0-isolated-d32u32s2  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200 base_mac=50:00:E6:23:EE:DA serial=MT2512602H0T model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H0T', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:EE:DA', '0x25': u'03/21/2025 17:41:52', '0xfe': u'0x7D6093B2', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-06-t0-isolated-v6-d32u32s2  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200 base_mac=50:00:E6:23:EE:DA serial=MT2512602H0T model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H0T', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:EE:DA', '0x25': u'03/21/2025 17:41:52', '0xfe': u'0x7D6093B2', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-06-t0-isolated-d2u254s1  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t1  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t1-lag  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t1-lag-c224o8  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-ptf32  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-ptf-any  ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t0-isolated-d256u256s2 ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t0-isolated-d2u510s2 ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+r-bison-06-t1-isolated-d510u2 ansible_host=10.210.25.16 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2 iface_speed=100000 serial_console="ssh -l rcon:7047 10.208.0.80" ptf_host=ptf-r-bison-06 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-189,pdu-10-208-2-47" console_baudrate=115200
+
+r-bison-07 ansible_host=r-bison-07 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+r-moose-06 ansible_host=r-moose-06 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+r-bison-06
+r-bison-06-t0
+r-bison-06-t0-64
+r-bison-06-t0-64-256
+r-bison-06-t0-isolated-d16u16s2
+r-bison-06-t0-isolated-d32u32s2
+r-bison-06-t0-isolated-v6-d32u32s2
+r-bison-06-t0-isolated-d2u254s1
+r-bison-06-t1
+r-bison-06-t1-lag
+r-bison-06-t1-lag-c224o8
+r-bison-06-ptf32
+r-bison-06-ptf-any
+r-bison-06-t0-isolated-d256u256s2
+r-bison-06-t0-isolated-d2u510s2
+r-bison-06-t1-isolated-d510u2
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+r-bison-06
+r-bison-06-t0
+r-bison-06-t0-64
+r-bison-06-t0-64-256
+r-bison-06-t0-isolated-d16u16s2
+r-bison-06-t0-isolated-d32u32s2
+r-bison-06-t0-isolated-v6-d32u32s2
+r-bison-06-t0-isolated-d2u254s1
+r-bison-06-t1
+r-bison-06-t1-lag
+r-bison-06-t1-lag-c224o8
+r-bison-06-ptf32
+r-bison-06-ptf-any
+r-bison-06-t0-isolated-d256u256s2
+r-bison-06-t0-isolated-d2u510s2
+r-bison-06-t1-isolated-d510u2
+
+[ptf]
+# MTVR r-bison-06 PTF host
+ptf-r-bison-06 ansible_host=10.215.49.42 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.49.42 ansible_host=10.215.49.42 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-2-47  ansible_host=10.208.2.47 protocol=snmp
+pdu-10-208-0-189 ansible_host=10.208.0.189 protocol=snmp

@@ -23,9 +23,9 @@ r-moose-01,Ethernet160,r-moose-04,Ethernet160,800000,121,Access,on
 r-moose-01,Ethernet168,r-moose-04,Ethernet168,800000,122,Access,on
 r-moose-01,Ethernet176,r-moose-04,Ethernet176,800000,123,Access,on
 r-moose-01,Ethernet184,r-moose-04,Ethernet184,800000,124,Access,on
-r-moose-01,Ethernet192,r-moose-04,Ethernet192,800000,125,Access,off
+r-moose-01,Ethernet192,r-moose-04,Ethernet192,800000,125,Access,on
 r-moose-01,Ethernet200,r-moose-04,Ethernet200,800000,126,Access,on
-r-moose-01,Ethernet208,r-moose-04,Ethernet208,800000,127,Access,off
+r-moose-01,Ethernet208,r-moose-04,Ethernet208,800000,127,Access,on
 r-moose-01,Ethernet216,r-moose-04,Ethernet216,800000,128,Access,on
 r-moose-01,Ethernet224,r-moose-04,Ethernet224,800000,129,Access,on
 r-moose-01,Ethernet232,r-moose-04,Ethernet232,800000,130,Access,on

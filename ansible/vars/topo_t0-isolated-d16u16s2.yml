@@ -83,11 +83,11 @@ topology:
       vm_offset: 15
     ARISTA01PT0:
       vlans:
-        - 256
+        - 512
       vm_offset: 16
     ARISTA02PT0:
       vlans:
-        - 257
+        - 513
       vm_offset: 17
   DUT:
     vlan_configs:

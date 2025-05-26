@@ -35,7 +35,8 @@ mtvr-moose-04-t0-isolated-d128u128s1
 mtvr-moose-04-t1
 mtvr-moose-04-t1-lag
 mtvr-moose-04-ptf32
-mtvr-moose-040-ptf-any
+mtvr-moose-04-ptf-any
+mtvr-moose-04-ptp-256
 
 [ptf]
 # MTVR mtvr-moose-04 PTF host
@@ -43,4 +44,4 @@ ptf-mtvr-moose-04 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','P
 10.245.20.62 ansible_host=10.245.20.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
-pdu-10-245-2-49 ansible_host=10.245.2.49 protocol=snmp
+pdu-10-245-2-23 ansible_host=10.245.2.23 protocol=snmp

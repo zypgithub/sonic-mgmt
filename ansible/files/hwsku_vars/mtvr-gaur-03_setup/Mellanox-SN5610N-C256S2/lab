@@ -15,4 +15,8 @@ fanout
 mgmt_subnet_mask_length="20"
 
 [fanout]
+<<<<<<< HEAD
 mtvr-moose-12       ansible_host=10.245.21.104 os=sonic
+=======
+mtvr-gaur-12       ansible_host=10.245.21.104 os=sonic
+>>>>>>> develop-202412

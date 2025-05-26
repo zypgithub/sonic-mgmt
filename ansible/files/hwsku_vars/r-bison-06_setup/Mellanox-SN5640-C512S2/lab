@@ -1,0 +1,19 @@
+[sonic_latest]
+r-bison-06     ansible_host=10.210.25.16 ansible_hostv6="fe80::bae9:24ff:fea1:33d6" sonic_version=v2 hwsku="Mellanox-SN5640-C512S2" iface_speed=100000  mgmt_subnet_mask_length=22 vm_base=VM6325
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-r-bison-06  ansible_host=10.215.49.42 ansible_ssh_usr=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="20"
+
+[fanout]
+r-bison-07       ansible_host=10.210.25.17 os=sonic
+r-moose-06       ansible_host=10.210.25.6 os=sonic

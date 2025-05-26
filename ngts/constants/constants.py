@@ -273,7 +273,7 @@ class AutonegCommandConstants:
     REGEX_PARSE_EXPRESSION_FOR_MLXLINK = {
         ADMIN: (r"State\s*:\s*(\w*)", "Active", "up", "down", None),
         OPER: (r"Physical state\s*:\s*(.*)", "LinkUp|ENABLE", "up", "down", None),
-        SPEED: (r"Speed\s*:\s*(?:BaseT|BaseTx)?(\d*M|\d*G)", None, None, None, None),
+        SPEED: (r"Speed\s*:\s*(?:BaseT|BaseTx)?(\d*(?:M|Mbps|G|GbE|Gbps))", None, None, None, None),
         WIDTH: (r"Width\s*:\s*(\d+)x", None, None, None, None),
         FEC: (r"FEC\s*:\s*(.*)", "No FEC", "none", None, None),
         AUTONEG_MODE: (r"Auto Negotiation\s*:\s*(\w*\s*-*\s*\d*\w_*\d*X*|ON)",
@@ -288,6 +288,11 @@ class AutonegCommandConstants:
 class DefaultCredentialConstants:
     OTHER_SONIC_USER = "admin"
     OTHER_SONIC_PASSWORD_LIST = ["password"]
+
+
+class CometConsts:
+    COMET_FILE_PATH = '/auto/sw/tools/comet/sonic/ver'
+    FULL_COMMANDS_PATH = '/auto/sw/tools/comet/sonic/full_command_lists/'
 
 
 class PlatformTypesConstants:
@@ -1366,10 +1371,15 @@ class MarsConstants:
     VER_SDK_PATH = "/opt/ver_sdk"
     EXTRA_PACKAGE_PATH_LIST = ["/usr/lib64/python2.7/site-packages"]
 
-    TOPO_ARRAY = ("t0-56-po2vlan", "t0", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32", "t0-64", "t0-64-256", "t0-c256",
-                  "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120", "t0-256", "t1-56-lag", "t1-isolated-d82u1", "t1-isolated-d224u8",
-                  "t0-isolated-d128u128s1", "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64",
-                  "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout", "dualtor-aa-64-breakout", "t0-88-o8c80")
+    TOPO_ARRAY = (
+        "t0-56-po2vlan", "t0", "t1-lag", "t1-lag-c224o8", "t1-28-lag", "t1-32-lag", "ptf32",
+        "t0-64", "t0-64-256", "t0-c256", "t1-64-lag", "t0-56", "t0-56-o8v48", "t0-120",
+        "t0-256", "t1-56-lag", "t1-isolated-d82u1", "t1-isolated-d224u8", "t0-isolated-d128u128s1",
+        "t0-isolated-d16u16s1", "t0-isolated-d16u16s2", "t0-28", "dualtor", "dualtor-64",
+        "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout",
+        "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "t1-isolated-d28u1", "t1-isolated-d56u2",
+        "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t1-isolated-v6-d56u2"
+    )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     REBOOT_TYPES = {
         "reboot": "reboot",
@@ -1459,6 +1469,10 @@ class SonicDeployConstants:
     UN_SUPPORT_BRANCH_MAP = {"r-alligator-04": ["201911", "202012"]}
     DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
     PRODUCTION_DUTS = ['mtvr-moose-10']
+    ADD_TOPO_TIMEOUT = 3600
+    ADD_TOPO_TIMEOUT_FACTOR = 1
+    ADD_TOPO_TIMEOUT_FACTOR_SCALE = 3
+    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8']
 
 
 class RebootTestConstants:

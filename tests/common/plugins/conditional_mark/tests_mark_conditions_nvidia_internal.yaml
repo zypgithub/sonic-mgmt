@@ -1488,3 +1488,57 @@ platform_tests/api/test_watchdog.py::TestWatchdogApi::test_arm_different_timeout
     - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
 
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
+tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
+  skip:
+    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    conditions_logical_operator: or
+    conditions:
+      - "'r-bison-01' in testbed"
+      - "'r-bison-04' in testbed"
+      - "'r-bison-16' in testbed"
+
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status_wrong_check:
+  skip:
+    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    conditions_logical_operator: or
+    conditions:
+      - "'r-bison-01' in testbed"
+      - "'r-bison-04' in testbed"
+      - "'r-bison-16' in testbed"
+
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
+  skip:
+    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    conditions_logical_operator: or
+    conditions:
+      - "'r-bison-01' in testbed"
+      - "'r-bison-04' in testbed"
+      - "'r-bison-16' in testbed"
+
+tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_policer:
+  skip:
+    reason: "Testcase ignored for 5640 platform"
+    conditions:
+    - "'5640' in platform"
+
+########################## NVIDIA INTERNAL BISON BRING UP IGNORE END ############################
+
+packet_trimming/test_packet_trimming.py::TestPacketTrimming::test_trimming_with_srv6:
+  skip:
+    reason: "Testcase ignored due to https://redmine.mellanox.com/issues/4440356"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4440356 and 't0' in topo_name"
+
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_between_dut_and_fanout_check:
+  skip:
+    reason: "Testcase ignored all bison community setups due to having additional fanout"
+    conditions_logical_operator: or
+    conditions:
+      - "'r-bison-01' in testbed"
+      - "'r-bison-04' in testbed"
+      - "'r-bison-06' in testbed"
+      - "'r-bison-08' in testbed"
+      - "'r-bison-16' in testbed"

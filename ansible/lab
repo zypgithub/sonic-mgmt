@@ -151,7 +151,7 @@ r-leopard-50      ansible_host=10.210.25.201 ansible_hostv6="fe80::e42:a1ff:fe44
 mtbc-3700c-01      ansible_host=10.75.67.50 ansible_hostv6="fe80::ba59:9fff:febd:791e" sonic_version=v2 hwsku="ACS-MSN3700C" iface_speed=100000 mgmt_subnet_mask_length=25 vm_base=VM1301
 dev-r-vrt-232-010  ansible_host=10.212.232.10 ansible_hostv6="" type=simx sonic_version=v2 hwsku="ACS-MSN3700" iface_speed=40000 mgmt_subnet_mask_length=16 vm_base=VM5001
 dev-r-vrt-233-010  ansible_host=10.212.233.10 ansible_hostv6="" type=simx sonic_version=v2 hwsku="ACS-MSN2700" iface_speed=40000 mgmt_subnet_mask_length=16 vm_base=VM5201
-dev-simx-host01-vm01  ansible_host=10.75.206.118 ansible_hostv6="" type=simx sonic_version=v2 hwsku="ACS-MSN4700" iface_speed=40000 mgmt_subnet_mask_length=24 vm_base=VM5401
+dev-simx-host01-vm01  ansible_host=10.75.206.118 ansible_hostv6="" type=simx sonic_version=v2 hwsku="ACS-MSN4700" iface_speed=40000 mgmt_subnet_mask_length=24 vm_base=VM9401
 jaguar-119      ansible_host=10.7.144.119 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 jaguar-25      ansible_host=10.7.144.25 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-jaguar-03      ansible_host=10.210.25.99 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000

@@ -1,5 +1,5 @@
 [sonic_latest]
-mtvr-leopard-09      ansible_host=10.245.20.250 ansible_hostv6="fe80::c670:bdff:fed6:81d6" sonic_version=v2 hwsku="Mellanox-SN4700-O8V48" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM5301
+mtvr-leopard-09      ansible_host=10.245.20.250 ansible_hostv6="fe80::c670:bdff:fed6:81d6" sonic_version=v2 hwsku="Mellanox-SN4700-O8V48" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM7349
 
 [sonic:children]
 sonic_latest
