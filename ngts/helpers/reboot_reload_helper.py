@@ -4,7 +4,7 @@ import allure
 import re
 import logging
 
-from ngts.constants.constants import PlatformTypesConstants, PytestConst, PlatformTypesConstants
+from ngts.constants.constants import PytestConst
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
@@ -15,8 +15,9 @@ class SupportedRebootReloadTypes:
         self.fast_reboot = 'fast-reboot'
         self.warm_reboot = 'warm-reboot'
         self.config_reload = 'config reload -y'
-        if platform == PlatformTypesConstants.PLATFORM_BOXER:
+        if is_redmine_issue_active([4435626])[0]:
             del self.fast_reboot
+            del self.warm_reboot
 
 
 def get_supported_reboot_reload_types_list(platform=None):
