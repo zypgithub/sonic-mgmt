@@ -7269,8 +7269,8 @@ sensors_checks:
         - mp2891-i2c-5-6e/PMIC-11 DVDD_M ADJ Rail (out2)/in3_alarm
         - mp2891-i2c-5-6e/PMIC-11 13V5 VDDSCC DVDD_M (in)/power1_alarm
         - mp2891-i2c-5-6e/PMIC-11 13V5 VDDSCC DVDD_M Rail Curr (in1)/curr1_alarm
-        - mp2891-i2c-5-6e/PMIC-11 VDDSCC Rail Curr (out1)/curr2_alarm
-        - mp2891-i2c-5-6e/PMIC-11 DVDD_M Rail Curr (out2)/curr3_alarm
+        - mp2891-i2c-5-6e/PMIC-11 DVDD_M Rail Curr (out1)/curr2_alarm
+        - mp2891-i2c-5-6e/PMIC-11 VDDSCC Rail Curr (out2)/curr3_alarm
 
         - mp2891-i2c-5-62/PMIC-1 PSU 13V5 Rail (in1)/in1_alarm
         - mp2891-i2c-5-62/PMIC-1 VDD_M ADJ Rail (out1)/in2_alarm
