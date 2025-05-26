@@ -26,6 +26,7 @@ def access_redmine_cache(redmine_issues_list, use_active_status=True):
 
     missing_issues = []
     try:
+        logger.info(f"Reading from cache: {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE}")
         with open(Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE, "r") as file:
             redmine_cache_issues = json.load(file)
         issues_status_dict = {}
