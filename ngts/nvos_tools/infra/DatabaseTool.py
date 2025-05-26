@@ -1,4 +1,5 @@
 import logging
+import socket
 
 logger = logging.getLogger()
 
@@ -56,7 +57,13 @@ class DatabaseTool:
 
     @staticmethod
     def sonic_db_cli_hgetall(engine, asic, db_name, table_name):
-        return engine.run_cmd(DatabaseTool._get_hgetall_cmd(asic, db_name, table_name))
+        try:
+            cmd = DatabaseTool._get_hgetall_cmd(asic, db_name, table_name)
+            return engine.run_cmd(cmd)
+        except socket.error as e:
+            logging.info('Got "OSError: Socket is closed" - Current engine was also disconnected')
+            engine.disconnect()
+            return "Action succeeded"
 
     @staticmethod
     def sonic_db_cli_hgetall_serial(engine, asic, db_name, table_name):
