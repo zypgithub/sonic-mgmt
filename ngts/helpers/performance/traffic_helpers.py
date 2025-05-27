@@ -1,8 +1,10 @@
+import netaddr
 import allure
 import json
 import ipaddress
 import random
 import pandas as pd
+from netaddr import EUI
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -739,3 +741,30 @@ def convert_to_percentage(value):
         return value * 100
     else:
         raise ValueError(f"Value {value} is not between 0 and 1")
+
+
+def generate_incremental_addresses(initial_mac, initial_ip, num_addresses, jump=1):
+    """
+    Generate a list of MAC and IP addresses with incremental values.
+
+    Args:
+        initial_mac (str): Initial MAC address in format 'XX:XX:XX:XX:XX:XX'
+        initial_ip (str): Initial IP address in format 'X.X.X.X' (IPv4) or 'XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX' (IPv6)
+        num_addresses (int): Number of address pairs to generate
+        jump (int): Value to increment by for each address
+
+    Returns:
+        list: List of dictionaries containing MAC and IP address pairs
+    """
+    ip_mac_list = []
+
+    mac_obj = EUI(initial_mac)
+    ip_obj = ipaddress.ip_address(initial_ip)
+
+    for i in range(num_addresses):
+        # Convert MAC to integer, add increment, and convert back to EUI with colon format
+        current_mac = EUI(int(mac_obj) + (i * jump), dialect=netaddr.mac_unix)
+        current_ip = ip_obj + (i * jump)
+        ip_mac_list.append((str(current_ip), str(current_mac)))
+
+    return ip_mac_list

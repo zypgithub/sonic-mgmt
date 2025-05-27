@@ -1,0 +1,93 @@
+{
+    {# Test configuration metadata #}
+    "sdk_test_info": {
+        "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/alibaba_performance/alibaba_dut_scenarios.py",
+        "sdk_test_name": "AlibabaDUT"
+    },
+    "{{ PerfConsts.SDK_TEST_CONF }}": {
+        {# VLAN configuration #}
+        "left_side_vlan": 3,
+        "right_side_vlan": 5,
+
+        {# Port configuration setup #}
+        {% set ports = right_left_ports_dict %}
+        {% set right_ports = ports["right_ports"] %}
+        {% set left_ports = ports["left_ports"] %}
+
+        {# Split configuration based on left/right split settings #}
+        {% if conf_args.split_left != conf_args.split_right %}
+        "split_dict": {
+            "{{ conf_args.split_left }}": {{ left_ports | tojson }},
+            "{{ conf_args.split_right }}": {{ right_ports | tojson }}
+        },
+        {% else %}
+        {% set split_for_all_ports = conf_args.split_left %}
+        {% set all_ports = left_ports + right_ports %}
+        "split_dict": {
+            "{{ split_for_all_ports }}": {{ all_ports | tojson }}
+        },
+        {% endif %}
+
+        {# Buffer and congestion settings #}
+        "auto_buffer_mode": "{{ conf_args.auto_buffer_mode }}",
+        "congestion_thresh_lo": {{ conf_args.congestion_thresh_lo }},
+        "left_ingress_dmac": "{{ conf_args.left_ingress_dmac }}",
+        "right_ingress_dmac": "{{ conf_args.right_ingress_dmac }}",
+        "is_leaf_scenario": "{{ conf_args.is_leaf_scenario }}",
+
+        {# Split ports configuration #}
+        {% set split_left = conf_args.split_left %}
+        {% set split_right = conf_args.split_right %}
+        {% set split_ports = get_split_ports(split_right, split_left) %}
+        {% set right_split_ports = split_ports["right_split_ports"] %}
+        {% set left_split_ports = split_ports["left_split_ports"] %}
+
+        "split_ports": {{ split_ports | tojson }},
+
+        {# Configure port groups - either from provided config or default mapping #}
+        {% if conf_args.port_groups is defined %}
+        "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.DUT_ALIAS] | tojson }},
+        {% else %}
+        "{{ PerfConsts.PORT_GROUPS }}": {
+            "left_ports": {{ left_split_ports | tojson }},
+            "right_ports": {{ right_split_ports | tojson }}
+        },
+        {% endif %}
+
+        {# Port to IP mapping configuration#}
+        "ip_to_mac_dict": {{ conf_args.ip_to_mac_dict | default([]) | tojson }},
+
+        {# MAC configuration #}
+        "left_mac": "00:01:02:03:04:06",
+        "right_mac": "00:00:00:00:10:60",
+
+        {# ECMP configuration #}
+        {% if conf_args.ecmp_type_stateless is defined %}
+        "ecmp_type_stateless": "{{ conf_args.ecmp_type_stateless }}",
+        {% else %}
+        "ecmp_type_stateless": "False",
+        {% endif %}
+
+        {% if conf_args.ecmp_size is defined %}
+        "ecmp_size": {{ conf_args.ecmp_size }},
+        {% else %}
+        "ecmp_size": 4096,
+        {% endif %}
+
+        {# ACL configuration, for legacy SPCX RA #}
+        "create_acls": "False",
+        "create_goto_acl": "False",
+        "goto_acl_destination_port": 0,
+
+        {# Hash type configuration for load balancing #}
+        {% if conf_args.hash_type is defined %}
+        "hash_type": "{{ conf_args.hash_type }}",
+        {% else %}
+        "hash_type": "crc",
+        {% endif %}
+
+        {# LPM root configuration #}
+        "set_lpm_root": "{{ conf_args.set_lpm_root }}",
+        "disable_locality": "{{ conf_args.disable_locality }}"
+    }
+}

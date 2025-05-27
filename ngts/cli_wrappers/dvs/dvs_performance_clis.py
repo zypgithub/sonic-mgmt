@@ -24,6 +24,9 @@ class DvsPerformance(PerformanceCommon):
         """
         return cmd
 
+    def update_player_ports(self):
+        self.connected_ports, self.unconnected_ports = self.get_player_ports()
+
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         self.base_ports, self.ports_lanes = self.get_base_ports()
         self.right_left_ports_dict = self.get_right_left_ports_dict()
@@ -33,7 +36,7 @@ class DvsPerformance(PerformanceCommon):
         logging.info(f"Applying the configuration on {self.dut_alias}")
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {test_name}"
         self.execute_cmd(cmd)
-        self.connected_ports, self.unconnected_ports = self.get_player_ports()
+        self.update_player_ports()
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
