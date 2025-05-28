@@ -82,27 +82,27 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, skip_config, d
         **pl.VM_SUBNET_ROUTE_CONFIG
     }
     logger.info(route_and_mapping_messages)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index)
 
     meter_rule_messages = {
         **pl.METER_RULE1_V4_CONFIG,
         **pl.METER_RULE2_V4_CONFIG,
     }
     logger.info(meter_rule_messages)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index)
 
     logger.info(pl.ENI_CONFIG)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpuhost.dpu_index)
 
     logger.info(pl.ENI_ROUTE_GROUP1_CONFIG)
     apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index, False)
+    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, False)
 
     if str(VXLAN_UDP_BASE_SRC_PORT) in dpuhost.shell("redis-cli -n 0 hget SWITCH_TABLE:switch vxlan_sport")['stdout']:
         config_reload(dpuhost, safe_reload=True)

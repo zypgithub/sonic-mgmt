@@ -13,7 +13,7 @@ from constants import ENI, VM_VNI, VNET1_VNI, VNET2_VNI, REMOTE_CA_IP, LOCAL_CA_
 from dash_utils import render_template_to_host, apply_swssconfig_file
 from gnmi_utils import generate_gnmi_cert, apply_gnmi_cert, recover_gnmi_cert, apply_gnmi_file
 from dash_acl import AclGroup, DEFAULT_ACL_GROUP, WAIT_AFTER_CONFIG, DefaultAclRule
-from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost
+from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost # noqa F401
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ def get_interface_ip(duthost, interface):
     cmd = f"ip addr show {interface} | grep -w inet | awk '{{print $2}}'"
     output = duthost.shell(cmd)["stdout"].strip()
     return ip_interface(output)
+
 
 def pytest_addoption(parser):
     """
