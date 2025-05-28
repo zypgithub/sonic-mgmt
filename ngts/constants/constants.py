@@ -1468,7 +1468,7 @@ class PerformanceSetupConstants:
 class SonicDeployConstants:
     UN_SUPPORT_BRANCH_MAP = {"r-alligator-04": ["201911", "202012"]}
     DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
-    PRODUCTION_DUTS = ['mtvr-moose-10']
+    PRODUCTION_DUTS = []
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
     ADD_TOPO_TIMEOUT_FACTOR_SCALE = 3
