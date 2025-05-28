@@ -36,6 +36,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.infra import get_topology_from_noga
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
+from ngts.nvos_tools.infra import IpTool
 
 logger = logging.getLogger()
 
@@ -158,6 +159,7 @@ def pytest_addoption(parser):
                           'analyze, analyze_and_open_bugs')
     parser.addoption('--store_dump_on_fail', required=False, action='store_true', default=False,
                      help='Store techsupport dump on test fail during manual run')
+    parser.addoption("--ipv6_add", action="store", default=None, help="Provide static ipv6 address")
 
 
 def pytest_runtest_call(item):
@@ -243,6 +245,16 @@ def downgrade_version(request):
     :return: downgrade_version argument value
     """
     return request.config.getoption('--downgrade_version')
+
+
+@pytest.fixture(scope="session")
+def is_ipv6(request):
+    """
+    Method for getting is_ipv6 from pytest arguments
+    :param request: pytest builtin
+    :return: is_ipv6 argument value
+    """
+    return request.config.getoption('--is_ipv6')
 
 
 @pytest.fixture(scope="session")
@@ -397,11 +409,34 @@ def update_default_password(dut, request):
                                        dut_password)
 
 
-def update_topology_for_mlnxos_setups(topology):
+def update_topology_for_mlnxos_setups(topology, request):
     if 'sl_serial' in topology.players.keys():
         topology.players['dut_serial'] = topology.players.pop('sl_serial')
     if 'vm_player' in topology.players.keys():
         topology.players['server'] = topology.players.pop('vm_player')
+
+    if request.config.getoption("--is_ipv6"):
+        logger.info("IPv6 testing mode enabled")
+        _update_ipv6_add(topology,
+                         request.config.getoption("--ipv6_add", None))
+
+
+def _update_ipv6_add(topology, ipv6_addr=None):
+    """
+    Update the IPv6 address for the given engine.
+    """
+    if not ipv6_addr:
+        logger.info("No IPv6 address provided, attempting to get from DUT")
+        ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli("eth0",
+                                                                                 topology.players['dut']['engine'])
+
+    if ipv6_addr:
+        logger.info(f"Setting DUT IP to IPv6 address: {ipv6_addr}")
+        topology.players['dut']['engine'].ip = ipv6_addr
+    else:
+        error_msg = "IPv6 testing enabled but no valid IPv6 address found for DUT"
+        logger.error(error_msg)
+        raise Exception(error_msg)
 
 
 @pytest.fixture(scope='session')
@@ -453,7 +488,7 @@ def update_topology_with_cli_class(topology, request=None):
             player_info.update({'stub_cli': LinuxCliStub(player_info['engine'])})
 
     if nvos_setup:
-        update_topology_for_mlnxos_setups(topology)  # for NVOS setups only
+        update_topology_for_mlnxos_setups(topology, request)  # for NVOS setups only
 
 
 def update_nvos_topology(topology, player_key, player_info, request):

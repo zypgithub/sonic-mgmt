@@ -123,9 +123,10 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         with allure.step('Upload nvos to switch with scp'):
             if not image_path.startswith('/auto'):
                 image_path = f'/auto/{image_path.split("/auto/")[1]}'
-            scp_engine = LinuxSshEngine(ssh_engine.ip, DefaultConnectionValues.ONIE_USERNAME,
+            scp_engine = LinuxSshEngine(ssh_engine.ip,
+                                        DefaultConnectionValues.ONIE_USERNAME,
                                         DefaultConnectionValues.ONIE_PASSWORD)
-            scp_file(scp_engine, image_path, file_name_on_switch)
+            scp_file(scp_engine, image_path, file_name_on_switch, print_output=True)
 
     def _install_image_on_onie(self, serial_engine, ssh_engine, image_path, image_url):
         wget_error = False

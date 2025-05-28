@@ -56,7 +56,7 @@ def test_extract_gcov_coverage(topology_obj, dest, engines):
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(NvosConsts.NVOS_SOURCE_PATH, validate=True)
         with allure.step('Extract c coverage for NVOS'):
-            extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj)
+            extract_c_coverage_for_nvos(dest if dest else NvosConsts.DEST_PATH, engines, engine, cli_obj, topology_obj)
     else:
         with allure.step('Check that sources exist on the switch'):
             cli_obj.general.ls(SharedConsts.SONIC_SOURCES_PATH[0], validate=True)

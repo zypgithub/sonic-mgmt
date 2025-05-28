@@ -93,7 +93,7 @@ class NvosConsts:
                                     'syncd-ibv00': '/src/sonic_syncd_src_cov.tar.gz',
                                     'swss-ibv01': '/src/sonic_swss_src_cov.tar.gz',
                                     'syncd-ibv01': '/src/sonic_syncd_src_cov.tar.gz'}
-    DEST_PATH = "/.autodirect/sw_regression/system/NVOS/MARS/results/coverage_report/"
+    DEST_PATH = "/auto/sw_system_project/NVOS_INFRA/coverage/"
 
 
 class SonicConsts:
