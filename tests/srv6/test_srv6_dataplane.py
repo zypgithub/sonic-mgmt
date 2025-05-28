@@ -3,6 +3,7 @@ import time
 import random
 import logging
 import string
+import json
 from scapy.all import Raw
 from scapy.layers.inet6 import IPv6, UDP
 from scapy.layers.l2 import Ether
@@ -27,6 +28,33 @@ pytestmark = [
     pytest.mark.asic("mellanox", "broadcom"),
     pytest.mark.topology("t0", "t1")
 ]
+
+
+def is_bgp_route_synced(duthost):
+    cmd = 'vtysh -c "show ip bgp neighbors json"'
+    output = duthost.command(cmd)['stdout']
+    bgp_info = json.loads(output)
+    for neighbor, info in bgp_info.items():
+        if 'gracefulRestartInfo' in info:
+            if "ipv4Unicast" in info['gracefulRestartInfo']:
+                if not info['gracefulRestartInfo']["ipv4Unicast"]['endOfRibStatus']['endOfRibSend']:
+                    logger.info(f"BGP neighbor {neighbor} is sending updates")
+                    return False
+                if not info['gracefulRestartInfo']["ipv4Unicast"]['endOfRibStatus']['endOfRibRecv']:
+                    logger.info(
+                        f"BGP neighbor {neighbor} is receiving updates")
+                    return False
+
+            if "ipv6Unicast" in info['gracefulRestartInfo']:
+                if not info['gracefulRestartInfo']["ipv6Unicast"]['endOfRibStatus']['endOfRibSend']:
+                    logger.info(f"BGP neighbor {neighbor} is sending updates")
+                    return False
+                if not info['gracefulRestartInfo']["ipv6Unicast"]['endOfRibStatus']['endOfRibRecv']:
+                    logger.info(
+                        f"BGP neighbor {neighbor} is receiving updates")
+                    return False
+    logger.info("BGP routes are synced")
+    return True
 
 
 def get_ptf_src_port_and_dut_port_and_neighbor(dut, tbinfo):
@@ -292,6 +320,13 @@ class TestSRv6DataPlaneBase(SRv6Base):
                 else:
                     config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
 
+                with allure.step('Validate BGP sessions UP'):
+                    self._validate_bgp_session(rand_selected_dut)
+
+                with allure.step('Validate BGP route sync'):
+                    pytest_assert(wait_until(60, 5, 0, is_bgp_route_synced,
+                                             rand_selected_dut), "BGP route is not synced")
+
                 with allure.step('Validate SRv6 packet process'):
                     self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
 
@@ -314,6 +349,10 @@ class TestSRv6DataPlaneBase(SRv6Base):
 
                 with allure.step('Validate BGP sessions UP'):
                     self._validate_bgp_session(rand_selected_dut)
+
+                with allure.step('Validate BGP route sync'):
+                    pytest_assert(wait_until(60, 5, 0, is_bgp_route_synced,
+                                             rand_selected_dut), "BGP route is not synced")
 
                 with allure.step('Validate SRv6 packet process'):
                     self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
