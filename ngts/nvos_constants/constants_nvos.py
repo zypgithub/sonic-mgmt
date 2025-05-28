@@ -1419,6 +1419,7 @@ class RebootConsts:
     FAST = "fast"
     FACTORY_RESET = 'factory-reset'
     POWER_BUTTON = SystemConsts.REBOOT_REASON_POWER_BUTTON
+    PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
 
     DEFAULT_MODES = [POWER_CYCLE]
@@ -1428,11 +1429,12 @@ class RebootConsts:
 
     REBOOT_REASON_MAP = {
         HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_NA),
-        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_NA),
+        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_ADMIN),
         COLD: ("reboot", REBOOT_USER_ADMIN),
         IMMEDIATE: ("Immediate reboot", REBOOT_USER_ADMIN),
         FACTORY_RESET: ("reboot", REBOOT_USER_ADMIN),
-        POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, REBOOT_USER_NA)
+        POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, REBOOT_USER_NA),
+        PSU_OFF: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_NA)
     }
     POWER_CYCLE_NOT_SUPPORTED_ERR_MSG = "Power cycle mode is not supported on this system"
 

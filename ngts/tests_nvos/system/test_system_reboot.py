@@ -141,7 +141,7 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
         2. Validate reboot reason in system events
     """
     system = System()
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.POWER_CYCLE]
+    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.PSU_OFF]
     dhcp_hostname = ''
 
     with allure.step("Get name from NOGA"):
