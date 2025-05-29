@@ -1803,7 +1803,7 @@ class IndependentModuleConst:
     IM_INTERFACE_SETTINGS_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}"
     PLATFORM_GENERATION = ['4280', '4700', '5600', '5610']
     AOC_VENDOR_PN = ['MMS1V00-WM', 'MMS4X00-NS', 'MFA7U10-H003', 'MMA4Z00-NS', '7123-G78-09', 'ALQA9N11ADLA1580',
-                     'T-OH8CNT-NMT']
+                     'ALQA9N03ADLA1580', 'T-OH8CNT-NMT']
 
 
 class SSHConsts:
