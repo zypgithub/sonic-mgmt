@@ -13,6 +13,7 @@ from ngts.tests.nightly.conftest import cleanup
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from ngts.constants.constants import AutonegCommandConstants
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+from ngts.tests.nightly.fec.test_fec import is_port_pam4
 from tests.common.plugins.loganalyzer.bug_handler_helper import get_bughandler_instance
 
 logger = logging.getLogger()
@@ -87,6 +88,13 @@ class TestAutoNegNegative(TestAutoNegBase):
 
             verify_show_cmd(output, [(INVALID_PORT_ERR_REGEX, True)])
 
+    def skip_test_for_pam4(self, conf):
+        with allure.step("Skip test for PAM4 ports"):
+            for port in conf.keys():
+                if is_port_pam4(conf[port]['Width'], conf[port]['Speed']):
+                    logger.info("port {} is PAM4".format(port))
+                    pytest.skip("Disable autoneg is not supported on PAM4 ports")
+
     def test_negative_config_advertised_speeds(self, cleanup_list):
         """
         Test command config interface advertised-speeds <interface_name> <speed_list>.
@@ -105,6 +113,8 @@ class TestAutoNegNegative(TestAutoNegBase):
         first_lb = 0
         lb = self.tested_lb_dict[split_mode][first_lb]
         lb_mutual_speeds = get_lb_mutual_speed(lb, split_mode, self.split_mode_supported_speeds)
+        conf = self.get_mismatch_speed_conf(split_mode, lb, lb_mutual_speeds)
+        self.skip_test_for_pam4(conf)
         with allure.step("Verify the command return error if given invalid speed list"):
             logger.info("Verify the command return error if given invalid speed list")
             output = self.cli_objects.dut.interface.config_advertised_speeds(lb[0], INVALID_SPEED)
@@ -116,7 +126,6 @@ class TestAutoNegNegative(TestAutoNegBase):
             verify_show_cmd(output, [(INVALID_PORT_ERR_REGEX, True)])
         with allure.step("Verify auto-negotiation fails in case of mismatch advertised speeds"):
             logger.info("Verify auto-negotiation fails in case of mismatch advertised speeds")
-            conf = self.get_mismatch_speed_conf(split_mode, lb, lb_mutual_speeds)
             self.verify_auto_neg_failure_scenario(lb, conf, cleanup_list)
 
     def get_mismatch_speed_conf(self, split_mode, lb, lb_mutual_speeds):
@@ -201,6 +210,7 @@ class TestAutoNegNegative(TestAutoNegBase):
         lb_mutual_types = get_matched_types(self.ports_lanes_dict[lb[0]], lb_mutual_speeds,
                                             types_dict=self.interfaces_types_port_dict[lb[0]])
         conf = self.get_mismatch_type_conf(split_mode, lb, list(lb_mutual_types))
+        self.skip_test_for_pam4(conf)
         with allure.step("verify auto-negotiation fails in case of mismatch advertised types"):
             logger.info("verify auto-negotiation fails in case of mismatch advertised types")
             self.verify_auto_neg_failure_scenario(lb, conf, cleanup_list)
@@ -236,6 +246,7 @@ class TestAutoNegNegative(TestAutoNegBase):
         lb = self.tested_lb_dict[split_mode][first_lb]
         tested_lb_dict = {1: [lb]}
         conf = self.get_mismatch_speed_type_conf(lb, split_mode, tested_lb_dict)
+        self.skip_test_for_pam4(conf)
         for port in lb:
             self.cli_objects.dut.interface.config_advertised_speeds(port, "all")
             self.cli_objects.dut.interface.config_advertised_interface_types(port, "all")

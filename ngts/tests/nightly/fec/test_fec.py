@@ -20,6 +20,10 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 logger = logging.getLogger()
 
 
+def is_port_pam4(n_active_lanes, speed):
+    return (speed_string_to_int_in_mb(speed) / n_active_lanes) >= AutonegCommandConstants.PAM4_MIN_LANE_SPEED_MB
+
+
 class TestFec(TestAutoFecBase):
 
     @pytest.fixture(autouse=True)
@@ -534,10 +538,6 @@ class TestFec(TestAutoFecBase):
         else:
             return 1
 
-    @staticmethod
-    def is_port_pam4(n_active_lanes, speed):
-        return (speed_string_to_int_in_mb(speed) / n_active_lanes) >= AutonegCommandConstants.PAM4_MIN_LANE_SPEED_MB
-
     def set_speed_fec_cleanup(self, port, cleanup_list):
         cleanup_list.append((self.cli_objects.dut.interface.disable_interface, (port,)))
         base_speed = self.dut_ports_basic_speeds_configuration[port]
@@ -594,7 +594,7 @@ class TestFec(TestAutoFecBase):
         :param interface_width: The interface width to be configured on the port (used to check if the port is pam4).
         :return: A boolean stating whether the port should have autoneg enabled before configuring fec
         """
-        return port in self.ports_support_autoneg and self.is_port_pam4(interface_width, speed)
+        return port in self.ports_support_autoneg and is_port_pam4(interface_width, speed)
 
     def pop_autoneg_enabled_from_cleanup_list(self, tested_ports, cleanup_list):
         """
