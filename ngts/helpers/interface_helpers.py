@@ -1,4 +1,5 @@
 import re
+from ngts.constants.constants import PlatformTypesConstants
 
 
 def get_speed_in_G_format(speed):
@@ -83,3 +84,11 @@ def speed_string_to_int_in_mb(speed):
         except ValueError:
             raise Exception(f'Can not match speed in Mbits/Gbits from: {speed}')
     return speed_int
+
+
+def get_service_port(platform):
+    if platform == PlatformTypesConstants.PLATFORM_MOOSE:
+        return ['Ethernet512']
+    if platform == PlatformTypesConstants.PLATFORM_BISON:
+        return ['Ethernet512', 'Ethernet520']
+    return []

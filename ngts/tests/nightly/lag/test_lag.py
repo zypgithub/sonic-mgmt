@@ -21,6 +21,7 @@ from ngts.helpers.interface_helpers import speed_string_to_int_in_mb
 from ngts.helpers.sonic_branch_helper import is_sanitizer_image
 from ngts.helpers import json_file_helper
 from ngts.constants.constants import SonicConst
+from ngts.helpers.interface_helpers import get_service_port
 
 logger = logging.getLogger()
 PORTCHANNEL_NAME = 'PortChannel1111'
@@ -337,9 +338,13 @@ def test_lag_min_links(topology_obj, traffic_type, interfaces, engines, cleanup_
         raise AssertionError(err)
 
 
+def exclude_service_ports(interfaces_info, service_ports):
+    return {iface: info for iface, info in interfaces_info.items() if iface not in service_ports}
+
+
 @pytest.mark.reboot_reload
 @allure.title('LAG members scale Test')
-def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list):
+def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, platform_params):
     """
     This test case will check the configuration of 1 port channel with max number of members.
     :param topology_obj: topology object
@@ -355,6 +360,8 @@ def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list):
         chip_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['chip_type']
         max_lag_members = CHIP_LAG_MEMBERS_LIM[chip_type]
         all_ifaces_info = dut_cli.interface.parse_interfaces_status()
+        service_ports = get_service_port(platform_params.platform)
+        all_ifaces_info = exclude_service_ports(all_ifaces_info, service_ports)
         # We need to create bond on ifaces with the same type, choose list with ifaces with the same type
         interfaces_types_dict = get_interfaces_by_type_dict(all_ifaces_info)
         test_ifaces_type = get_ifaces_type_which_has_bigger_ifaces_list(interfaces_types_dict)
