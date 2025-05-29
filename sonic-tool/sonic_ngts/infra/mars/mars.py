@@ -27,7 +27,7 @@ def call_mars_rest_api_with_retry(url):
     :param url: base api command
     :return: query data
     """
-    return retry_call(call_mars_rest_api, fargs=[url],  tries=3, delay=5, logger=logger)
+    return retry_call(call_mars_rest_api, fargs=[url],  tries=10, delay=5, logger=logger)
 
 
 def call_mars_rest_api(url):
@@ -36,7 +36,7 @@ def call_mars_rest_api(url):
     :param url: base api command
     :return: query data
     """
-    response = requests.get(url)
+    response = requests.get(url, timeout=5)
     response.raise_for_status()
     root = ET.fromstring(response.text)
     return root
