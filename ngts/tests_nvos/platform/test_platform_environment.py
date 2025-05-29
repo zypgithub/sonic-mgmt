@@ -376,7 +376,8 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
             time.sleep(130)
 
         with allure.step('Run show system events command & validate there is 1 FAN direction issue per FAN'):
-            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(
+                SystemConsts.SYSTEM_LAST_EVENT, '10000')).get_returned_value()
             fan_error_set = set()
             for events_no in output:
                 output_err_msg = str(output[events_no])
