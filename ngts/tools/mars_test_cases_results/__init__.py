@@ -207,7 +207,7 @@ def export_data(session_id, mars_key_id, cli_type):
         .format(SESSION_ID=session_id, MARS_KEY_ID=mars_key_id, CLI_TYPE=cli_type)
     try:
         logger.info("Exporting json tests data with command:\n{}".format(export_data_cmd))
-        subprocess.run(export_data_cmd, shell=True, stderr=subprocess.STDOUT, timeout=120)
+        subprocess.run(export_data_cmd, shell=True, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         logger.error(e.output.decode())
         raise Exception(f"Failed to export data to mars db using the command '{export_data_cmd}', "
