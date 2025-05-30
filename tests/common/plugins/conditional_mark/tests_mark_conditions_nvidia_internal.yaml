@@ -472,6 +472,18 @@ dash/platform/test_dpu_show_platform_temperature.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3923171"
 
+dash/test_dash_eni_counter.py::TestEniCounter::test_inbound_pkt_eni_counter:
+  skip:
+    reason: "ENI inbound testcase ignored due to the RM issue: https://redmine.mellanox.com/issues/4469742"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4469742"
+
+dash/test_dash_privatelink.py::test_privatelink_basic_transform:
+  skip:
+    reason: "ENI inbound testcase ignored due to the RM issue: https://redmine.mellanox.com/issues/4469742"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4469742"
+
 platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
   regex: true
   skip:
