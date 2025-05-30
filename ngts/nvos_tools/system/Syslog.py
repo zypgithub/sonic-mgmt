@@ -194,8 +194,10 @@ class Server(Syslog):
             selector_priority = {str(priority_id): {SyslogConsts.SELECTOR_ID: selector_id}}
         else:
             selector_priority = f"{priority_id} {SyslogConsts.SELECTOR_ID} {selector_id}"
-        self.set(op_param_name=SyslogConsts.SELECTOR, op_param_value=selector_priority, expected_str=expected_str,
-                 apply=apply, ask_for_confirmation=ask_for_confirmation)
+        result = self.set(op_param_name=SyslogConsts.SELECTOR, op_param_value=selector_priority, expected_str=expected_str,
+                          apply=apply, ask_for_confirmation=ask_for_confirmation)
+        if expected_str:
+            result.verify_result(False, expected_value=expected_str)
         selector_priority = SelectorName(self, priority_id)
         self.selector_priority.update({priority_id: selector_priority})
         return selector_priority
@@ -287,13 +289,14 @@ class Selectors(BaseComponent):
         with allure.step("Set selector with id : {}".format(selector_id)):
             logging.info("Set selector with id : {}".format(selector_id))
             selector_value = {} if TestToolkit.tested_api == ApiType.OPENAPI else ""
-            self.set(op_param_name=selector_id, op_param_value=selector_value, expected_str=expected_str,
-                     apply=apply, ask_for_confirmation=ask_for_confirmation)
+            result = self.set(op_param_name=selector_id, op_param_value=selector_value, expected_str=expected_str,
+                              apply=apply, ask_for_confirmation=ask_for_confirmation)
+            if expected_str:
+                result.verify_result(False, expected_value=expected_str)
             return self.selectors_dict[selector_id]
 
     def unset_selector(self, selector_id, apply=False, ask_for_confirmation=False):
         result_obj = self.selectors_dict[selector_id].unset(apply=apply, ask_for_confirmation=ask_for_confirmation)
-        self.selectors_dict.pop(selector_id)
         return result_obj
 
     def verify_show_selector_list(self, expected_selectors_list):
@@ -341,6 +344,28 @@ class Selector(BaseComponent):
                 result.verify_result(False, expected_value=expected_str)
             return result
 
+    def unset_severity(self, apply=False, ask_for_confirmation=False):
+        """
+        Unset the severity level.
+
+        Args:
+            apply: Whether to apply the change
+            ask_for_confirmation: Whether to ask for confirmation
+
+        Returns:
+            ResultObj: Result of the operation
+        """
+        try:
+            return self.unset(SyslogConsts.SEVERITY, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        except Exception as e:
+            if "Invalid config" in str(e):
+                # If severity cannot be unset, return a ResultObj with error
+                return ResultObj(False, returned_value=None, issue_type=IssueType.PossibleBug,
+                                 info=("Command output contains error message/keywords.",
+                                       "invalid keywords found: ['Invalid config']",
+                                       f"full output: {str(e)}"))
+            raise
+
     def set_program_name(self, program_name, expected_str='', apply=False, ask_for_confirmation=False):
         return self.set(op_param_name=SyslogConsts.PROGRAM_NAME, op_param_value=program_name, expected_str=expected_str,
                         apply=apply, ask_for_confirmation=ask_for_confirmation)
@@ -374,6 +399,32 @@ class Selector(BaseComponent):
         output = self.get_selector_field_values()
         logger.info("Selector {} filter options:\n {}".format(self.selector_id, output))
         ValidationTool.compare_dictionary_content(output, expected_filter_options).verify_result()
+
+    def verify_rate_limit_config(self, expected_selector):
+        """Verify rate limit configuration for the selector.
+
+        Args:
+            expected_selector (dict): Dictionary containing expected rate limit configuration.
+                Expected format: {'rate-limit': {'interval': value, 'burst': value}} or {'rate-limit': None}
+        """
+        output = self.get_selector_field_values()
+        logger.info("Selector {} rate limit configuration:\n {}".format(self.selector_id, output))
+
+        if expected_selector.get('rate-limit') is None:
+            assert output.get('rate-limit') is None, "Rate limit should be None but got {}".format(output.get('rate-limit'))
+        else:
+            expected_rate_limit = expected_selector['rate-limit']
+            actual_rate_limit = output.get('rate-limit', {})
+
+            if 'interval' in expected_rate_limit:
+                assert str(actual_rate_limit.get('interval')) == str(expected_rate_limit['interval']), \
+                    "Rate limit interval mismatch. Expected: {}, Got: {}".format(
+                        expected_rate_limit['interval'], actual_rate_limit.get('interval'))
+
+            if 'burst' in expected_rate_limit:
+                assert str(actual_rate_limit.get('burst')) == str(expected_rate_limit['burst']), \
+                    "Rate limit burst mismatch. Expected: {}, Got: {}".format(
+                        expected_rate_limit['burst'], actual_rate_limit.get('burst'))
 
     def unset(self, apply=False, ask_for_confirmation=False):
         """
