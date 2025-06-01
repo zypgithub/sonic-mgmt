@@ -124,7 +124,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             pre_install_threads = {}
             pre_installation_steps(
                 sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                pre_install_threads, destination_hwsku, chip_type, request)
+                pre_install_threads, destination_hwsku, chip_type, request, is_performance)
 
         with allure.step('installation'):
             install_threads = []
@@ -203,7 +203,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
 
 
 def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx,
-                           threads_dict, destination_hwsku, chip_type, request):
+                           threads_dict, destination_hwsku, chip_type, request, is_performance):
     """
     Pre-installation steps
     :param sonic_topo: sonic_topo fixture
@@ -216,6 +216,7 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
     :param threads_dict: dict, contain threads which will run in background
     :param destination_hwsku: the destination hwsku value
     :param request: request plugin
+    :param is_performance: is_performance fixture, True in case when setup is performance
     """
     cli_type = setup_info['duts'][0]['cli_obj']
     if isinstance(cli_type, CumulusGeneralCli):
@@ -226,7 +227,8 @@ def pre_installation_steps(sonic_topo, neighbor_type, base_version, target_versi
         DvsInstallationSteps.pre_installation_steps(setup_info)
     elif isinstance(cli_type, SonicGeneralCliDefault):
         SonicInstallationSteps.pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version,
-                                                      setup_info, port_number, is_simx, threads_dict, destination_hwsku)
+                                                      setup_info, port_number, is_simx,
+                                                      threads_dict, destination_hwsku, is_performance)
     else:
         raise AssertionError(f"CLI type {cli_type} is not supported")
 

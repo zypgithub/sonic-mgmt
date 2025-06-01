@@ -24,7 +24,7 @@ class SonicInstallationSteps:
     @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
-            destination_hwsku):
+            destination_hwsku, is_performance=False):
         """
         Pre-installation steps for SONIC
         :param sonic_topo: the topo for SONiC testing, for example: t0, t1, t1-lag, ptf32
@@ -36,6 +36,7 @@ class SonicInstallationSteps:
         :param is_simx: fixture, True if setup is SIMX, else False
         :param threads_dict: dict, contain threads which will run in background
         :param destination_hwsku: the destination hwsku value
+        :param is_performance: True if setup is performance, else False
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
@@ -74,6 +75,8 @@ class SonicInstallationSteps:
                                                                       ansible_path, setup_info, destination_hwsku)
             if is_dualtor_topo(sonic_topo) and "sonic-dual-tor-leopard" not in setup_name:
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
+        elif is_performance:
+            pass
         else:
             SonicInstallationSteps.start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx)
 
@@ -533,7 +536,7 @@ class SonicInstallationSteps:
 
         cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
 
-        if not is_community(sonic_topo):
+        if not is_community(sonic_topo) and not is_performance:
             # Enable Port Init Profile for Canonical setups
             logger.info("Prepare sai.xml files for Port Init feature testing")
             cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
