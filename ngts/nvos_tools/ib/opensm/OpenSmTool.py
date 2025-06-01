@@ -13,7 +13,7 @@ from retry import retry
 
 logger = logging.getLogger()
 
-OPEN_SM_PATH = "opensm"
+OPEN_SM_PATH = "/opt/ufm/opensm/sbin/opensm"
 OPEN_SM_CFG_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/issu/opensm.cfg"
 MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 
@@ -62,10 +62,6 @@ class OpenSmTool:
                     engines.hfnm.run_cmd(
                         f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
 
-                opensm_path = '/opt/ufm/opensm/sbin/opensm'
-            else:
-                opensm_path = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
-
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
             for line in output.splitlines():
@@ -77,8 +73,7 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with (allure.step("Start OpenSM")):
-            # todo: remove when we get opensm 5.22 or later
-            engines.hfnm.run_cmd(f"{opensm_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
+            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
