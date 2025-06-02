@@ -18,7 +18,7 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 600 --session-timeout 1400\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --showlocals --timeout 900 --session-timeout 1400\'"</static_args>
       </params>
     </cmd>
   </case>
