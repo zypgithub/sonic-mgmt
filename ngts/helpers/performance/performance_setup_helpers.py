@@ -278,8 +278,8 @@ def run_validation(config: ValidationConfig, ignore_violations=False):
                     validations[name] = validation
 
             # Log validation execution plan
-            logger.info(f"Skipped validations: {skipped_validations}\n")
-            logger.info(f"Validations to run: {list(validations.keys())}\n")
+            logging.info(f"Skipped validations: {skipped_validations}\n")
+            logging.info(f"Validations to run: {list(validations.keys())}\n")
 
             for name, validation in validations.items():
                 # Run validation function with its extra arguments and collect violations

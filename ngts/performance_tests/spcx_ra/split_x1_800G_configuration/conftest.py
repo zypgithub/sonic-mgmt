@@ -9,9 +9,10 @@ import pytest
 import logging
 import allure
 import copy
+from infra.tools.topology_tools.topology_setup_utils import CliType
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
-                                                                apply_test_configuration)
+                                                                apply_test_configuration, skip_test_on_unsupported_os)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 logger = logging.getLogger()
@@ -78,3 +79,9 @@ def update_test_mongo_metadata(request, players, is_ipv6, port_group_df):
 def set_ibm(players, conf_args):
     with allure.step("Set IBM in accordance with the test configuration"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
