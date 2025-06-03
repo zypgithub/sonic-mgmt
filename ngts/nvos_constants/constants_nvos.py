@@ -850,6 +850,13 @@ class ConfigConsts:
     APPLY_CONFIRM_STATUS = '--confirm-status'
     CONFIG_LABELS = ['date', 'message', 'reason', 'type', 'user']
 
+    EXPECTED_HISTORY_FIELDS = {
+        'message': 'Config update by admin',
+        'reason': 'Config update',
+        'type': 'CLI',
+        'user': 'admin'
+    }
+
 
 class PlatformConsts:
     PLATFORM_FW = "firmware"

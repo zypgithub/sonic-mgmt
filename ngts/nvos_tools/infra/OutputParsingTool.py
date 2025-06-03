@@ -346,50 +346,45 @@ class OutputParsingTool:
     @staticmethod
     def parse_config_history(output_json):
         """
+        Parse the output from 'nv config history --output json' command.
 
         :param output_json: the output after running nv config history --output json
         :return: list of dictionaries
         Example:
         input =
             {
-                'rev_8_apply_1':
-                    {
-                        date': '2023-09-05 10:29:25',
-                        'interface': 'CLI',
-                        'message': 'Config update by admin',
-                        'reason': 'Config update',
-                        'rev-id': '8',
-                        'user': 'admin'
-                    },
-                'rev_7_apply_1':
-                    {
-                        'date': '2023-09-05 10:29:02',
-                        'interface': 'CLI',
-                        'message': 'Config update by admin',
-                        'reason': 'Config update',
-                        'rev-id': '7',
-                        'user': 'admin'
-                    }
+                'rev_428_apply_1': {
+                    'date': '2025-06-03T07:36:14+03:00',
+                    'message': 'Config update by admin',
+                    'reason': 'Config update',
+                    'type': 'CLI',
+                    'user': 'admin'
+                },
+                '427': {
+                    'date': '2025-06-03T07:36:09+03:00',
+                    'message': 'Config update by admin',
+                    'reason': 'Config update',
+                    'type': 'CLI',
+                    'user': 'admin'
+                }
             }
 
         output:
         [
             {
-                'ref': 'rev_8_apply_1',
-                date': '2023-09-05 10:29:25',
-                'interface': 'CLI',
+                'ref': 'rev_428_apply_1',
+                'date': '2025-06-03T07:36:14+03:00',
                 'message': 'Config update by admin',
                 'reason': 'Config update',
-                'rev-id': '8',
+                'type': 'CLI',
                 'user': 'admin'
             },
             {
-                'ref': 'rev_7_apply_1'',
-                date': '2023-09-05 10:29:02',
-                'interface': 'CLI', 'message':
-                'Config update by admin',
+                'ref': '427',
+                'date': '2025-06-03T07:36:09+03:00',
+                'message': 'Config update by admin',
                 'reason': 'Config update',
-                'rev-id': '7',
+                'type': 'CLI',
                 'user': 'admin'
             }
         ]

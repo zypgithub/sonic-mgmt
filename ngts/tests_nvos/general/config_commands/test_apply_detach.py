@@ -144,30 +144,35 @@ def test_apply_rev_id(engines):
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE, "TESTING_002").verify_result()
         assert 'applied' in apply_output, "failed to apply using ref"
 
-    if not is_bug_active(3553769):
-        with allure.step('run nv config history'):
-            history_output = OutputParsingTool.parse_config_history(
-                TestToolkit.GeneralApi[TestToolkit.tested_api].history_config(engines.dut)).get_returned_value()
-            configs_list = [history_output[0], history_output[1]]
-            expected_id = [rev_id_2, rev_id_1]
-            expected_ref = [ref_2, ref_1]
-        with allure.step('verify the history output'):
-            verify_history_value(configs_list, expected_id, expected_ref)
+    with allure.step('run nv config history'):
+        history_output = OutputParsingTool.parse_config_history(
+            TestToolkit.GeneralApi[TestToolkit.tested_api].history_config(engines.dut)).get_returned_value()
+        configs_list = [history_output[0], history_output[1]]
+        expected_ref = [ref_2, rev_id_1]
+    with allure.step('verify the history output'):
+        verify_history_value(configs_list, expected_ref)
 
 
-def verify_history_value(configs_list, expected_id, expected_ref):
+def verify_history_value(configs_list, expected_ref):
     """
+    Verify that the history entries match the expected fields and references.
+    Uses ValidationTool.compare_dictionaries() to compare the fields.
 
-    :param configs_list:
-    :param expected_id:
-    :param expected_ref:
-    :return:
+    :param configs_list: List of config history entries
+    :param expected_ref: List of expected references
+    :return: None, raises AssertionError if verification fails
     """
-    err_msg = ""
-    for rev, id, ref in zip(configs_list, expected_id, expected_ref):
-        if rev[ConfigConsts.REVISION_ID] != id:
-            err_msg += "the expected rev id = {} but the value now = {}\n".format(id, rev[ConfigConsts.REVISION_ID])
-        if rev[ConfigConsts.REF] != ref:
-            err_msg += "the expected rev ref = {} but the value now = {}\n".format(id, rev[ConfigConsts.REF])
+    for rev, ref in zip(configs_list, expected_ref):
+        # Create a dictionary with only the fields we want to verify
+        actual_fields = {
+            'message': rev['message'],
+            'reason': rev['reason'],
+            'type': rev['type'],
+            'user': rev['user']
+        }
 
-    assert not err_msg, err_msg
+        with allure.step('verify history fields match expected values'):
+            ValidationTool.compare_dictionaries(actual_fields, ConfigConsts.EXPECTED_HISTORY_FIELDS).verify_result()
+
+        with allure.step('verify the history ref matches expected value'):
+            assert rev['ref'] == ref, f"Expected ref {ref} but got {rev['ref']}"

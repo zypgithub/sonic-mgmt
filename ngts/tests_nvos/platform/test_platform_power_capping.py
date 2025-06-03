@@ -16,6 +16,16 @@ from ngts.nvos_constants.constants_nvos import ApiType, PowerProfileConsts
 logger = logging.getLogger()
 
 
+@pytest.fixture(scope='function', autouse=True)
+def enable_power_capping_state():
+    platform = NvCommand().platform
+    platform.power_profile.set(op_param_name=PowerProfileConsts.STATE,
+                               op_param_value=PowerProfileConsts.State.ENABLED.value, apply=True).verify_result()
+    yield
+
+    platform.power_profile.unset(op_param=PowerProfileConsts.STATE, apply=True).verify_result()
+
+
 @pytest.fixture(scope='function')
 def cleanup_profiles(engines):
     yield
@@ -23,8 +33,8 @@ def cleanup_profiles(engines):
     fae = NvCommand().fae
     with allure.step('return to default config after test'):
         NvueGeneralCli.detach_config(engines.dut)
-        platform.power_profile.unset_active_profile(apply=True)
-        fae.platform.power_profile.unset(apply=True)
+        platform.power_profile.unset_active_profile(apply=True).verify_result()
+        fae.platform.power_profile.unset(apply=True).verify_result()
 
 
 @pytest.mark.platform
