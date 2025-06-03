@@ -1884,3 +1884,13 @@
   Conditions:
   - Platform:
     - simx
+
+- Errors_list:
+  - '.* ERR syncd#SDK: \[SAI_PORT.ERR\] .\/src\/mlnx_sai_port.c\[\d+\]- mlnx_get_port_stats_ext: Failed to prepare bulk counter for port stats.*'
+  - '.* ERR syncd#SDK: :- collectData: Failed to get stats of Port Counter.*'
+  - '.* ERR syncd#SDK: \[SAI_OBJECT.ERR\] .\/src\/mlnx_sai_object.c\[\d+\]- mlnx_wait_for_bulk_read_event: Bulk read event status is not OK.*'
+  Conditions:
+  - Redmine:
+    - 4410748
+  - Platform:
+    - simx
