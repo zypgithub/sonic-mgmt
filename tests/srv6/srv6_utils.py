@@ -16,7 +16,7 @@ ROUTE_BASE = '2001'
 class MyLocators():
     # Generate 128 locators with incrementing IPv6 addresses
     my_locator_list = [
-        [f'locator_{i + 1}', f'{ROUTE_BASE}:{1001 + i}:{1 + i}::', f'{1 + i}'] for i in range(LOCATOR_NUM)
+        [f'locator_{i + 1}', f'{ROUTE_BASE}:1001:{1 + i}::', f'{1 + i}'] for i in range(LOCATOR_NUM)
     ]
 
 

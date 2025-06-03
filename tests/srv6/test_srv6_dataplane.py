@@ -312,35 +312,22 @@ class TestSRv6DataPlaneBase(SRv6Base):
                 reboot_type = request.config.getoption("--srv6_reboot_type")
 
                 if reboot_type == "random":
-                    reboot_type = random.choice(["cold", "reload"])
+                    reboot_type = random.choice(["cold", "reload", "bgp"])
 
                 if reboot_type == "cold":
-                    reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
-                           safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
+                    with allure.step('Execute cold reboot'):
+                        reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
+                            safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
+                elif reboot_type == "reload":
+                    with allure.step('Execute config reload'):
+                        config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
                 else:
-                    config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
-
-                with allure.step('Validate BGP sessions UP'):
-                    self._validate_bgp_session(rand_selected_dut)
-
-                with allure.step('Validate BGP route sync'):
-                    pytest_assert(wait_until(60, 5, 0, is_bgp_route_synced,
-                                             rand_selected_dut), "BGP route is not synced")
-
-                with allure.step('Validate SRv6 packet process'):
-                    self._validate_srv6_function(rand_selected_dut, ptfadapter, config_setup)
-
-                with allure.step('Validate SRv6 counters'):
-                    validate_srv6_counters(rand_selected_dut, srv6_pkt_list, MySIDs.MY_SID_LIST,
-                                           self.params['packet_num'])
-
-            with allure.step('Validate SRv6 function after BGP restart'):
-
-                with allure.step('Execute BGP restart'):
-                    if rand_selected_dut.is_multi_asic:
-                        rand_selected_dut.command(f"systemctl restart bgp@{enum_frontend_asic_index}")
-                    else:
-                        rand_selected_dut.command("systemctl restart bgp")
+                    with allure.step('Execute BGP restart'):
+                        if rand_selected_dut.is_multi_asic:
+                            rand_selected_dut.command(
+                                f"systemctl restart bgp@{enum_frontend_asic_index}")
+                        else:
+                            rand_selected_dut.command("systemctl restart bgp")
 
                 with allure.step('Validate BGP docker UP'):
                     pytest_assert(wait_until(100, 10, 0, rand_selected_dut.is_service_fully_started_per_asic_or_host,

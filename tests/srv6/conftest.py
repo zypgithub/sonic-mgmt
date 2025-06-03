@@ -141,13 +141,26 @@ def pytest_addoption(parser):
     parser.addoption(
         "--srv6_reboot_type",
         action="store",
-        choices=['random', 'reload', 'cold'],
+        choices=['random', 'reload', 'cold', 'bgp'],
         default='random',
         required=False,
-        help="reboot type such as random, reload, cold"
+        help="reboot type such as random, reload, cold, bgp"
+    )
+
+    parser.addoption(
+        "--srv6_packet_type",
+        action="store",
+        default="srh,no_srh",
+        help="SRv6 test parameters, comma separated values, default: srh,no_srh"
     )
 
 
-@pytest.fixture(scope="class", params=['srh', 'no_srh'])
+def pytest_generate_tests(metafunc):
+    if "srv6_packet_type" in metafunc.fixturenames:
+        params = metafunc.config.getoption('--srv6_packet_type').split(',')
+        metafunc.parametrize("srv6_packet_type", [param.strip() for param in params], scope="class")
+
+
+@pytest.fixture(scope="class")
 def srv6_packet_type(request):
     return request.param

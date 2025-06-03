@@ -197,7 +197,7 @@ class SRv6Packets():
             packet['outer_src_ipv6'] = '1000:1000::1'
             packet['dst_ipv6'] = current_sid_container
             next_sid_index = (i + 1) % len(my_locator_list)
-            next_usid = my_locator_list[next_sid_index][2]
+            next_usid = 1000 + int(my_locator_list[next_sid_index][2])
 
             if base_type['validate_dip_shift']:
                 # Prepare the expected destination IPv6 address for DIP shift validation
