@@ -13,7 +13,7 @@ from tests.packet_trimming.constants import (VALID_TRIMMING_CONFIGS, TRIM_SIZE, 
 from tests.packet_trimming.packet_trimming_helper import (configure_trimming_global, verify_packet_trimming,
                                                           verify_trimming_config, configure_trimming_action,
                                                           configure_trimming_acl, verify_srv6_packet_with_trimming,
-                                                          cleanup_trimming_acl, reboot_dut)
+                                                          cleanup_trimming_acl, reboot_dut, check_connected_route_ready)
 
 
 pytestmark = [
@@ -259,6 +259,10 @@ class TestPacketTrimming:
 
             # Perform the reboot/reload
             reboot_dut(duthost, localhost, reboot_type=reboot_type)
+
+        with allure.step("Verify connected route is ready after reload/cold reboot"):
+            pytest_assert(wait_until(30, 5, 0, check_connected_route_ready, duthost, test_params['uplink_port']),
+                          "Connected route is not ready")
 
         if is_mellanox_device(duthost):
             with allure.step("Disable packet aging for mellanox device after config reload"):

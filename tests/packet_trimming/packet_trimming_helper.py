@@ -1689,6 +1689,22 @@ def send_verify_srv6_packet_for_trimming(
         raise detail
 
 
+def check_connected_route_ready(duthost, interface_name):
+    """
+    Check if the route for the specified interface is ready.
+
+    Args:
+        duthost: DUT host object
+        interface_name (str): Interface name, e.g., "Ethernet64"
+
+    Returns:
+        bool: True if the route is ready, False otherwise
+    """
+    output = duthost.shell(f"show ip route connected | grep {interface_name}")['stdout']
+    logger.info(f"Connected route output: {output}")
+    return bool(output and output.strip())
+
+
 def reboot_dut(duthost, localhost, reboot_type):
     """
     Perform a reboot operation based on the specified type
@@ -1701,7 +1717,7 @@ def reboot_dut(duthost, localhost, reboot_type):
     # Perform the selected reboot
     if reboot_type == "reload":
         logger.info('Performing config reload')
-        config_reload(duthost, safe_reload=True, check_intf_up_ports=True)
+        config_reload(duthost, safe_reload=True, check_intf_up_ports=True, wait_for_bgp=True)
     else:  # cold reboot
         logger.info('Performing cold reboot')
         reboot(duthost, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
