@@ -5,6 +5,7 @@ import os
 import time
 import pytest
 import json
+import shutil
 from ngts.helpers import system_helpers
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.constants.constants import NvosCliTypes
@@ -311,7 +312,7 @@ def install_gcov(cli_obj):
 def get_dest_path(engine, coverage_path):
     with allure.step("Get nvos version"):
         output = json.loads(engine.run_cmd("nv show system version -o json"))
-        nvos_version = output['image']
+        nvos_version = output['image']["build-id"]
         release = TestToolkit.version_to_release(nvos_version)
         nvos_version = nvos_version.replace("nvos-", "")
 
@@ -431,3 +432,54 @@ def nvos_pre_step(engine):
                                           listening_address='all')
     except BaseException as ex:
         logging.info("NVOS pre step failed")
+
+
+def _get_coverage_path_from_target_version(target_version):
+    """
+    Transforms a target version path into a coverage path.
+    Example input: /auto/sw_system_release/nos/nvos/25.02.4934-024/amd64/dev/nvos-amd64-25.02.4934-024.bin
+    Example output: /auto/sw_system_release/nos/nvos/25.02.4934-024/amd64/dev/coverage
+    """
+    path_parts = target_version.split('/')
+    path_parts.pop()
+    coverage_path = '/'.join(path_parts) + '/coverage'
+    return coverage_path
+
+
+def test_copy_unitests_results(engines, target_version, topology_obj):
+    """
+    Copies unitests coverage XML files from the coverage directory to the destination path.
+    The function finds all XML files in the coverage directory and its sub-directories
+    and copies them to the destination path.
+
+    Args:
+        engines: Test engines object containing DUT information
+        target_version: Path to the target version, used to determine the coverage path
+        topology_obj: Topology object containing DUT information
+    """
+    with allure.step("Copy unitests results"):
+        with allure.step("Get coverage path from target version"):
+            coverage_path = _get_coverage_path_from_target_version(target_version)
+
+        with allure.step("Check if destination path exists"):
+            with allure.step("Create device object if needed"):
+                devices = DeviceFactory.create_devices_object(topology_obj)
+                TestToolkit.update_devices(devices)
+            dest = get_dest_path(engines.dut, NvosConsts.DEST_PATH) + SharedConsts.PYTHON_DIR
+
+        with allure.step("Copy unitests results"):
+            xml_files = []
+            for root, _, files in os.walk(coverage_path):
+                for file in files:
+                    if file.endswith('.xml'):
+                        xml_files.append(os.path.join(root, file))
+
+            for xml_file in xml_files:
+                rel_path = os.path.relpath(xml_file, coverage_path)
+                dir_path = os.path.dirname(rel_path).replace('/', '_')
+                filename = os.path.basename(xml_file)
+
+                new_filename = f"{dir_path}-{filename}" if dir_path else filename
+                dest_file = os.path.join(dest, new_filename)
+
+                shutil.copy2(xml_file, dest_file)
