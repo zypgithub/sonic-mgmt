@@ -1091,6 +1091,7 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show ib device ASIC4",
                                           "nv show system profile",
                                           "nv show ib ibdiagnet"]
+        self.mgmt_ports = ['eth0', 'eth1']
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -1110,6 +1111,7 @@ class JulietSwitch(NvLinkSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
+        self.mgmt_ports = ['eth0', 'eth1']
 
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
