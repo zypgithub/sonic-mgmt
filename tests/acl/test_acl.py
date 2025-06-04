@@ -17,9 +17,9 @@ from datetime import timedelta
 
 from tests.common import reboot, port_toggle
 from tests.common.helpers.assertions import pytest_require, pytest_assert
+from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError
 from tests.common.config_reload import config_reload
-from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 from tests.common.fixtures.ptfhost_utils import \
     copy_arp_responder_py, run_garp_service, change_mac_addresses   # noqa: F401
 from tests.common.dualtor.dual_tor_mock import mock_server_base_ip_addr     # noqa: F401
@@ -644,7 +644,6 @@ def acl_table(duthosts, rand_one_dut_hostname, setup, stage, ip_version, tbinfo,
     with SafeThreadPoolExecutor(max_workers=8) as executor:
         for duthost in duthosts:
             executor.submit(set_up_acl_table_single_dut, acl_table_config, dut_to_analyzer_map, duthost, setup, topo)
-
     try:
         yield acl_table_config
     finally:
@@ -747,7 +746,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 
         """
         dut_to_analyzer_map = {}
-        with SafeThreadPoolExecutor(max_workers=8) as executor:
+        with SafeThreadPoolExecutor\
+                    (max_workers=8) as executor:
             for duthost in duthosts:
                 executor.submit(self.set_up_acl_rules_single_dut, acl_table, conn_graph_facts,
                                 dut_to_analyzer_map, duthost, ip_version, localhost,
@@ -794,6 +794,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
 
             self.post_setup_hook(duthost, localhost, populate_vlan_arp_entries, tbinfo, conn_graph_facts)
 
+            assert self.check_rule_counters(duthost), "Rule counters should be ready!"
+
         except LogAnalyzerError as err:
             # Cleanup Config DB if rule creation failed
             logger.error("ACL rule application failed, attempting to clean-up...")
@@ -837,6 +839,9 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         time.sleep(self.ACL_COUNTERS_UPDATE_INTERVAL_SECS)
 
         for duthost in duthosts:
+            if duthost.facts["asic_type"] == 'vs':
+                logger.info('Skip checking rule counters for vs platform')
+                return
             if duthost.is_supervisor_node():
                 continue
             acl_facts[duthost]['after'] = \
@@ -871,10 +876,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
                     continue
                 counters_after[PACKETS_COUNT] += acl_facts[duthost]['after'][rule][PACKETS_COUNT]
                 counters_after[BYTES_COUNT] += acl_facts[duthost]['after'][rule][BYTES_COUNT]
-                if (duthost.facts["hwsku"] == "Cisco-8111-O64" or
-                        duthost.facts["hwsku"] == "Cisco-8111-O32" or
-                        duthost.facts["hwsku"] == "Cisco-8111-C32" or
-                        duthost.facts["hwsku"] == "Cisco-8111-O62C2"):
+                if duthost.facts["platform"] in ["x86_64-8111_32eh_o-r0",
+                                                 "x86_64-8122_64eh_o-r0", "x86_64-8122_64ehf_o-r0"]:
                     skip_byte_accounting = True
 
             logger.info("Counters for ACL rule \"{}\" after traffic:\n{}"
@@ -895,8 +898,11 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         return request.param
 
     def check_rule_counters(self, duthost):
-        logger.info('Wait all rule counters are ready')
+        if duthost.facts['asic_type'] == 'vs':
+            logger.info('Skip checking rule counters for vs platform')
+            return True
 
+        logger.info('Wait all rule counters are ready')
         return wait_until(60, 2, 0, self.check_rule_counters_internal, duthost)
 
     def check_rule_counters_internal(self, duthost):
@@ -1050,7 +1056,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version)
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
 
-    def test_source_ip_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_source_ip_match_forwarded(self, setup, direction, ptfadapter,
+                                       counters_sanity_check, ip_version):
         """Verify that we can match and forward a packet on source IP."""
         src_ip = "20.0.0.2" if ip_version == "ipv4" else "60c0:a800::6"
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1076,7 +1083,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(7)
 
-    def test_dest_ip_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version, vlan_name):
+    def test_dest_ip_match_forwarded(self, setup, direction, ptfadapter,
+                                     counters_sanity_check, ip_version, vlan_name):
         """Verify that we can match and forward a packet on destination IP."""
         dst_ip = DOWNSTREAM_IP_TO_ALLOW[ip_version] \
             if direction == "uplink->downlink" else UPSTREAM_IP_TO_ALLOW[ip_version]
@@ -1103,7 +1111,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             rule_id = 3
         counters_sanity_check.append(rule_id)
 
-    def test_dest_ip_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version, vlan_name):
+    def test_dest_ip_match_dropped(self, setup, direction, ptfadapter,
+                                   counters_sanity_check, ip_version, vlan_name):
         """Verify that we can match and drop a packet on destination IP."""
         dst_ip = DOWNSTREAM_IP_TO_BLOCK[ip_version] \
             if direction == "uplink->downlink" else UPSTREAM_IP_TO_BLOCK[ip_version]
@@ -1130,7 +1139,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             rule_id = 16
         counters_sanity_check.append(rule_id)
 
-    def test_source_ip_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_source_ip_match_dropped(self, setup, direction, ptfadapter,
+                                     counters_sanity_check, ip_version):
         """Verify that we can match and drop a packet on source IP."""
         src_ip = "20.0.0.6" if ip_version == "ipv4" else "60c0:a800::3"
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1138,7 +1148,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(14)
 
-    def test_udp_source_ip_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_udp_source_ip_match_forwarded(self, setup, direction, ptfadapter,
+                                           counters_sanity_check, ip_version):
         """Verify that we can match and forward a UDP packet on source IP."""
         src_ip = "20.0.0.4" if ip_version == "ipv4" else "60c0:a800::8"
         pkt = self.udp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1146,7 +1157,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(13)
 
-    def test_udp_source_ip_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_udp_source_ip_match_dropped(self, setup, direction, ptfadapter,
+                                         counters_sanity_check, ip_version):
         """Verify that we can match and drop a UDP packet on source IP."""
         src_ip = "20.0.0.8" if ip_version == "ipv4" else "60c0:a800::2"
         pkt = self.udp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1154,7 +1166,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(26)
 
-    def test_icmp_source_ip_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_icmp_source_ip_match_dropped(self, setup, direction, ptfadapter,
+                                          counters_sanity_check, ip_version):
         """Verify that we can match and drop an ICMP packet on source IP."""
         src_ip = "20.0.0.8" if ip_version == "ipv4" else "60c0:a800::2"
         pkt = self.icmp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1162,7 +1175,8 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(25)
 
-    def test_icmp_source_ip_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_icmp_source_ip_match_forwarded(self, setup, direction, ptfadapter,
+                                            counters_sanity_check, ip_version):
         """Verify that we can match and forward an ICMP packet on source IP."""
         src_ip = "20.0.0.4" if ip_version == "ipv4" else "60c0:a800::8"
         pkt = self.icmp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip)
@@ -1170,91 +1184,104 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(12)
 
-    def test_l4_dport_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_dport_match_forwarded(self, setup, direction, ptfadapter,
+                                      counters_sanity_check, ip_version):
         """Verify that we can match and forward on L4 destination port."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dport=0x1217)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(9)
 
-    def test_l4_sport_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_sport_match_forwarded(self, setup, direction, ptfadapter,
+                                      counters_sanity_check, ip_version):
         """Verify that we can match and forward on L4 source port."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, sport=0x120D)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(4)
 
-    def test_l4_dport_range_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_dport_range_match_forwarded(self, setup, direction, ptfadapter,
+                                            counters_sanity_check, ip_version):
         """Verify that we can match and forward on a range of L4 destination ports."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dport=0x123B)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(11)
 
-    def test_l4_sport_range_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_sport_range_match_forwarded(self, setup, direction, ptfadapter,
+                                            counters_sanity_check, ip_version):
         """Verify that we can match and forward on a range of L4 source ports."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, sport=0x123A)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(10)
 
-    def test_l4_dport_range_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_dport_range_match_dropped(self, setup, direction, ptfadapter,
+                                          counters_sanity_check, ip_version):
         """Verify that we can match and drop on a range of L4 destination ports."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dport=0x127B)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(22)
 
-    def test_l4_sport_range_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_sport_range_match_dropped(self, setup, direction, ptfadapter,
+                                          counters_sanity_check, ip_version):
         """Verify that we can match and drop on a range of L4 source ports."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, sport=0x1271)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(17)
 
-    def test_ip_proto_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_ip_proto_match_forwarded(self, setup, direction, ptfadapter,
+                                      counters_sanity_check, ip_version):
         """Verify that we can match and forward on the IP protocol."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, proto=0x7E)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(5)
 
-    def test_tcp_flags_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_tcp_flags_match_forwarded(self, setup, direction, ptfadapter,
+                                       counters_sanity_check, ip_version):
         """Verify that we can match and forward on the TCP flags."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, flags=0x1B)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, False, ip_version)
         counters_sanity_check.append(6)
 
-    def test_l4_dport_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_dport_match_dropped(self, setup, direction, ptfadapter,
+                                    counters_sanity_check, ip_version):
         """Verify that we can match and drop on L4 destination port."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, dport=0x127B)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(22)
 
-    def test_l4_sport_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_l4_sport_match_dropped(self, setup, direction, ptfadapter,
+                                    counters_sanity_check, ip_version):
         """Verify that we can match and drop on L4 source port."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, sport=0x1271)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(17)
 
-    def test_ip_proto_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_ip_proto_match_dropped(self, setup, direction, ptfadapter,
+                                    counters_sanity_check, ip_version):
         """Verify that we can match and drop on the IP protocol."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, proto=0x7F)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(18)
 
-    def test_tcp_flags_match_dropped(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_tcp_flags_match_dropped(self, setup, direction, ptfadapter,
+                                     counters_sanity_check, ip_version):
         """Verify that we can match and drop on the TCP flags."""
         pkt = self.tcp_packet(setup, direction, ptfadapter, ip_version, flags=0x24)
 
         self._verify_acl_traffic(setup, direction, ptfadapter, pkt, True, ip_version)
         counters_sanity_check.append(19)
 
-    def test_icmp_match_forwarded(self, setup, direction, ptfadapter, counters_sanity_check, ip_version):
+    def test_icmp_match_forwarded(self, setup, direction, ptfadapter,
+                                  counters_sanity_check, ip_version):
         """Verify that we can match and drop on the TCP flags."""
         src_ip = "20.0.0.10" if ip_version == "ipv4" else "60c0:a800::10"
         pkt = self.icmp_packet(setup, direction, ptfadapter, ip_version, src_ip=src_ip, icmp_type=3, icmp_code=1)
@@ -1269,6 +1296,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             downstream_dst_port = DOWNSTREAM_IP_PORT_MAP.get(pkt[packet.IP].dst)
         else:
             downstream_dst_port = DOWNSTREAM_IP_PORT_MAP.get(pkt[packet.IPv6].dst)
+
         ptfadapter.dataplane.flush()
         testutils.send(ptfadapter, self.src_port, pkt)
         if direction == "uplink->downlink" and downstream_dst_port:
