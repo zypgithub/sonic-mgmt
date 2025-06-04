@@ -1,10 +1,7 @@
 [sonic_latest]
 # MTR testbed r-panther-40 topologies
 r-panther-40 ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
-r-panther-40-t0  ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
 r-panther-40-t0-56  ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
-r-panther-40-t1  ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
-r-panther-40-t1-lag  ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
 r-panther-40-ptf32   ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
 r-panther-40-ptf-any   ansible_host=10.210.25.49  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7013 10.208.0.80" ptf_host=ptf-r-panther-40 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-192
 
@@ -16,10 +13,7 @@ sonic_latest
 [leaf_topo_1]
 # MTR r-panther-40 topologies
 r-panther-40
-r-panther-40-t0
 r-panther-40-t0-56
-r-panther-40-t1
-r-panther-40-t1-lag
 r-panther-40-ptf32
 r-panther-40-ptf-any
 
@@ -29,10 +23,7 @@ podset_number=200
 [lab]
 # MTR r-panther-40 topologies
 r-panther-40
-r-panther-40-t0
 r-panther-40-t0-56
-r-panther-40-t1
-r-panther-40-t1-lag
 r-panther-40-ptf32
 r-panther-40-ptf-any
 
