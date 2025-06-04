@@ -82,7 +82,7 @@ class PxeTool:
                 time.sleep(cls.KEY_STROKE_SLEEP)
                 out2, resp = serial_engine.run_cmd(
                     cls.ENTER,
-                    [cls.INVALID_PASSWORD_PROMPT, cls.PXE_FIRST_TITLE],
+                    [cls.INVALID_PASSWORD_PROMPT, cls.SUCCESSFUL_DOWNLOAD],
                     timeout=10,
                     send_without_enter=True
                 )
