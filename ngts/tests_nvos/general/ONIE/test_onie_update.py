@@ -10,6 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.ONIE.constants import OnieConsts
+from ngts.nvos_constants.constants_nvos import ApiType
 
 logger = logging.getLogger()
 
@@ -32,7 +33,7 @@ def test_update_onie_via_grub_menu(topology_obj, engines, devices):
      @param devices:     device objects (devices.dut, etc.)
      @raises AssertionError: if any step fails (will reboot DUT in finally)
      """
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = ApiType.NVUE
     nvue_cli_obj = NvueGeneralCli(engine=engines.dut, device=devices.dut)
     with allure.step("Get ONIE updater url path"):
         url = OnieTool.get_onie_updater_path(topology_obj)

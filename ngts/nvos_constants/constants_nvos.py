@@ -1,4 +1,5 @@
 import os
+import json
 from enum import Enum
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
@@ -115,6 +116,7 @@ class NvosConst:
     ROOT_PASSWORD = os.getenv("VM_PASSWORD")
 
     SONIC_MGMT = 'sonic_mgmt'
+    FIT70 = 'fit70'
 
     OLD_PASS = os.getenv("NVU_SWITCH_PASSWORD")
 
@@ -2082,3 +2084,39 @@ class RemarkableLogsConsts:
                                ERROR_LOGS_TIME_WINDOW, FIRST_SAVED_BOOT_LOGS, REQUESTED_BY_DAEMON_LOGS,
                                STATE, STORM_LOGS_CLEAN_TIME, STORM_LOGS_NUMBER,
                                STORM_LOGS_RATE, STORM_LOGS_TIME_WINDOW]
+
+
+class SecureConfig:
+    """Secure configuration management for sensitive environment variables"""
+    _instance = None
+    _config = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SecureConfig, cls).__new__(cls)
+            cls._load_config()
+        return cls._instance
+
+    @classmethod
+    def _load_config(cls):
+        """Load configuration from secure source"""
+        # Load from secure configuration file or environment
+        # This is a placeholder - implement your preferred secure storage method
+        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cls._config = json.load(f)
+
+    @classmethod
+    def get(cls, key, default=None):
+        """Get a configuration value securely"""
+        return cls._config.get(key, default)
+
+    @classmethod
+    def set(cls, key, value):
+        """Set a configuration value securely"""
+        cls._config[key] = value
+        # Implement secure storage of the updated configuration
+        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
+        with open(config_path, 'w') as f:
+            json.dump(cls._config, f, indent=4)

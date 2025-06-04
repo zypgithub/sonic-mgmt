@@ -18,6 +18,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.ONIE.constants import OnieConsts
+from ngts.nvos_constants.constants_nvos import ApiType
 
 logger = logging.getLogger()
 
@@ -41,7 +42,7 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine
     @param serial_engine: Serial connection object to the DUT.
     @raises AssertionError: If any critical step fails during the installation process.
     """
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = ApiType.NVUE
     nvue_cli_obj = NvueGeneralCli(engine=engines.dut, device=devices.dut)
 
     with allure.step("Get PXE menu step count based on device OPN/IPN type"):
