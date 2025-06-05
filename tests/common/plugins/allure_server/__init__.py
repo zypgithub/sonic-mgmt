@@ -313,10 +313,10 @@ class AllureServer:
         This method creates new project(if need) on allure server, uploads test results to server and generates report
         """
         self.create_project_on_allure_server()
+        self.clean_results_on_allure_server()
         self.upload_results_to_allure_server()
         report_url = self.generate_report_on_allure_server()
         logger.info('Allure report URL: {}'.format(report_url))
-        self.clean_results_on_allure_server()
         return report_url
 
     @retry(Exception, tries=2, delay=5)
