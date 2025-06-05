@@ -10,7 +10,9 @@ import ptf.testutils as testutils
 
 from ptf.mask import Mask
 from tests.common.config_reload import config_reload
-from tests.common.helpers.srv6_helper import dump_packet_detail
+from tests.common.helpers.assertions import pytest_assert
+from tests.common.utilities import wait_until
+from tests.common.helpers.srv6_helper import dump_packet_detail, validate_srv6_in_appl_db, validate_srv6_in_asic_db
 from tests.common.reboot import reboot
 from tests.packet_trimming.constants import (DEFAULT_SRC_PORT, DEFAULT_DST_PORT, DEFAULT_TTL, DUMMY_MAC, DUMMY_IPV6,
                                              DUMMY_IP, BATCH_PACKET_COUNT, PACKET_COUNT, BLOCK_QUEUE_PROFILE,
@@ -1368,9 +1370,12 @@ def validate_srv6_function(duthost, ptfadapter, dscp_mode, test_param, send_pkt_
         recv_pkt_dscp (int): Expected DSCP value in the received packet
     """
     logger.info('Validate SRv6 table in APPL DB')
-    for entry in SRV6_MY_SID_LIST:
-        prefix = entry[1]
-        duthost.shell(f'sonic-db-cli APPL_DB HGET "SRV6_MY_SID_TABLE:32:16:0:0:{prefix}" action')
+    pytest_assert(wait_until(60, 5, 0, validate_srv6_in_appl_db, duthost, SRV6_MY_SID_LIST),
+                  "SRv6 table in APPL DB is not as expected")
+
+    logger.info('Validate SRv6 table in ASIC DB')
+    pytest_assert(wait_until(60, 5, 0, validate_srv6_in_asic_db, duthost, SRV6_MY_SID_LIST),
+                  "SRv6 table in ASIC DB is not as expected")
 
     router_mac = duthost.facts["router_mac"]
 
