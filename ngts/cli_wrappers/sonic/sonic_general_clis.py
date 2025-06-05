@@ -1796,7 +1796,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         command = f"cat /auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{sdk_version}/SDK_BRANCH.txt"
         sdk_branch = os.popen(command).read().strip()
         if sdk_branch.startswith("sx_sdk_"):
-            sdk_branch = re.search(r"sx_sdk_(\d+_\d+_\d{4})", sdk_branch).group(1)
+            sdk_branch = re.search(r"(sx_sdk_\d+_\d+_\d{4})", sdk_branch).group(1)
         return sdk_branch
 
     def startup_dpu(self, dpu_index_list):
