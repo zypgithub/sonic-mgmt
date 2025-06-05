@@ -2,6 +2,7 @@ import logging
 
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+import time
 
 
 logger = logging.getLogger()
@@ -85,8 +86,7 @@ class SonicAppExtensionCli:
         self.engine.run_cmd('sudo config feature state {} disabled'.format(app_name), validate=validate)
         # TODO: WA for issue RM#3943532, remove after it's fixed
         if is_redmine_issue_active([3943532])[0]:
-            import time
-            time.sleep(10)
+            time.sleep(15)
 
     def install_app_from_tarball(self, tarball_name):
         self.engine.run_cmd("sudo spm install -y --from-tarball {}".format(tarball_name), validate=True)
