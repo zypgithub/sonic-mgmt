@@ -1894,3 +1894,25 @@
     - 4410748
   - Platform:
     - simx
+
+- Errors_list:
+  - '.*ERR swss#orchagent.*resolveTunnelQosMap: Failed to resolve QoS map for table TUNNEL_DECAP_TABLE tunnel IPINIP_TUNNEL type decap_dscp_to_tc_map.*'
+  Conditions:
+  - Redmine:
+    - 4461287
+
+- Errors_list:
+  - '.*ERR pmon#thermalctld: Failed to update module.*thermal data - too many values to unpack.*'
+  Conditions:
+  - Redmine:
+    - 4470668
+
+- Errors_list:
+  - '.*ERR pmon#xcvrd.*Failed to confirm VDM freeze status for port.*'
+  - '.*ERR pmon#xcvrd.*Failed to freeze VDM stats in contextmanager for port.*'
+  - '.*ERR pmon#xcvrd.*DOM-INFO-UPDATE: Failed to freeze VDM stats for port.*'
+  - '.*ERR pmon#xcvrd.*Failed to confirm VDM unfreeze status for port.*'
+  - '.*ERR pmon#xcvrd.*Failed to unfreeze VDM stats in contextmanager for port.*'
+  Conditions:
+  - Redmine:
+    - 4396617
