@@ -285,8 +285,11 @@ def update_exception_from_la_error(tests_exceptions, test_case_name, la_redmine_
             log_error_without_prefix_ind = 1
             for log_error in test_case_la_exception:
                 match = log_error_prefix_pattern.match(log_error)
-                log_error_regex = generalize_exception(match.group(log_error_without_prefix_ind))
-                test_exception_error_list.append(log_error_regex)
+                if match is not None:
+                    log_error_regex = generalize_exception(match.group(log_error_without_prefix_ind))
+                    test_exception_error_list.append(log_error_regex)
+                else:
+                    logger.warning(f"Skipping. Log error {log_error} doesn't match the pattern: {log_error_prefix_pattern.pattern}")
             test_case_exception = test_case_la_exception_str
             test_exception_regex = "Log Analyzer Errors: " + "\n" + str(test_exception_error_list)
 
