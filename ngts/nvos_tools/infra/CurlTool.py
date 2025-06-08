@@ -1,8 +1,9 @@
 import logging
 import os
 import subprocess
+import time
 from typing import Tuple, List
-
+from ngts.nvos_tools.infra import ExceptionTool
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts
@@ -95,6 +96,60 @@ class CurlTool:
             data = f'-d \'{data}\''
         curl_cmd = f"curl -k -w '\\n' -u {username}:{password} -H 'Content-Type:application/json' -X {rest_op} {data} https://{self.server_host}/redfish/v1{path}"
         return dut_engine.run_cmd(curl_cmd)
+
+    def wait_for_bmc_available(self, username: str = '', password: str = '',
+                               timeout: int = 3 * 60, retry_interval: int = 10,
+                               dut_engine=None) -> bool:
+        """
+        Wait until BMC is available and responding to requests.
+
+        Args:
+            username: BMC username (uses instance default if empty)
+            password: BMC password (uses instance default if empty)
+            timeout: Maximum time to wait in seconds (default: 180)
+            retry_interval: Time between retry attempts in seconds (default: 10)
+            dut_engine: SSH engine to use for commands (uses default if None)
+
+        Returns:
+            bool: True if BMC becomes available within timeout, False otherwise
+        """
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.engines.dut
+        username = username or self.username
+        password = password or self.password
+
+        start_time = time.time()
+        attempt = 1
+
+        with allure.step(f'Wait for BMC to be available (timeout: {timeout}s)'):
+            while time.time() - start_time < timeout:
+                try:
+                    self._log(f"Attempt {attempt}: Checking BMC availability")
+
+                    curl_cmd = (f"curl -k -m 10 -s -w '\\n' -u {username}:{password} "
+                                f"https://{self.server_host}/redfish/v1/Managers/BMC_0")
+
+                    output = dut_engine.run_cmd(curl_cmd)
+                    auth_success = all(err_msg not in output.lower() for err_msg in ['fail', 'error'])
+
+                    if auth_success:
+                        self._log(f"BMC is available after {time.time() - start_time:.1f}s")
+                        return True
+
+                    self._log(f"BMC not ready yet. HTTP response: {output}")
+
+                except Exception as e:
+                    self._log(f"Exception while checking BMC availability: {ExceptionTool.format_exception(e)}")
+
+                if time.time() - start_time + retry_interval < timeout:
+                    self._log(f"Waiting {retry_interval}s before next attempt...")
+                    time.sleep(retry_interval)
+                    attempt += 1
+                else:
+                    break
+
+            elapsed_time = time.time() - start_time
+            self._log(f"BMC did not become available within {timeout}s (elapsed: {elapsed_time:.1f}s)")
+            return False
 
     def _verify_curl_installed(self):
         cmd = 'curl -version'

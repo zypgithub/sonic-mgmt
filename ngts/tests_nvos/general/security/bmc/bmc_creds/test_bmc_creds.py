@@ -52,7 +52,7 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
         client.change_root_password(password=BmcUsers.root.default_password)
         client.reset_bmc_to_factory()
         with allure.independent_step("Wait for BMC to boot after factory reset"):
-            time.sleep(120)
+            client.wait_for_bmc_available(username=BmcUsers.root.username, password=BmcUsers.root.default_password)
         client.change_root_password(password=BmcUsers.root.default_password)
 
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):

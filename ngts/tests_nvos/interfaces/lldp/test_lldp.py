@@ -287,7 +287,7 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                 mgmt_interface.interface.ip.address.set(op_param_name=ip_address_full, apply=True,
                                                         ask_for_confirmation=True,
                                                         dut_engine=serial_engine).verify_result()
-                check_port_status_till_alive(False, engine.ip, engine.ssh_port)
+                LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine)
 
             with allure.step("Verify ipv6 address is in the lldp frame"):
                 output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
