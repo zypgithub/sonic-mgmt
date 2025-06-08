@@ -47,7 +47,6 @@ def _power_off_reboot_helper(kwargs, power_on_event=None):
     """
     pdu_ctrl = kwargs["pdu_ctrl"]
     all_outlets = kwargs["all_outlets"]
-    power_on_seq = kwargs["power_on_seq"]
     for outlet in all_outlets:
         logging.debug("turning off {}".format(outlet))
         pdu_ctrl.turn_off_outlet(outlet)
