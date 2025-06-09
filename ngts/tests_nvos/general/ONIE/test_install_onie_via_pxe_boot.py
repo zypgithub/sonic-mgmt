@@ -59,9 +59,9 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine
             PxeTool.pxe_select_by_steps(serial_engine, step_count)
 
         with allure.step("Wait for successful installation msg"):
-            PxeTool.wait_for_onie_success_msg(serial_engine)
+            onie_version = PxeTool.wait_for_onie_success_msg(serial_engine)
 
-        with allure.step("Wait for grub menu after installation"):
+        with allure.step(f"Wait for grub menu after installation of ONIE version: {onie_version}"):
             PxeTool.wait_for_grub_menu(serial_engine)
 
     except Exception as err:

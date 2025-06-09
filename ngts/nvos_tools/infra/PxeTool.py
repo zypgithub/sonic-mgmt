@@ -1,5 +1,6 @@
 import logging
 import time
+import re
 
 import pexpect
 
@@ -75,19 +76,24 @@ class PxeTool:
                 # consume ENTER to clear the prompt
                 serial_engine.run_cmd(cls.ENTER, '.*', timeout=5, send_without_enter=True)
                 raise Exception("Secure Boot Violation: enable PXE boot on the system.")
-                # Handle password prompt
+            # Handle password prompt
             if idx == 1:
                 logger.info(f"Password prompt detected; sending default password '{cls.DEFAULT_PASSWORD}'")
                 serial_engine.run_cmd(cls.DEFAULT_PASSWORD, '.*', timeout=10, send_without_enter=True)
                 time.sleep(cls.KEY_STROKE_SLEEP)
                 out2, resp = serial_engine.run_cmd(
                     cls.ENTER,
-                    [cls.INVALID_PASSWORD_PROMPT, cls.SUCCESSFUL_DOWNLOAD],
+                    [cls.INVALID_PASSWORD_PROMPT, cls.SUCCESSFUL_DOWNLOAD, cls.SECURE_BOOT_VIOLATION],
                     timeout=10,
                     send_without_enter=True
                 )
                 if resp == 0:
                     raise Exception("Invalid PXE password; could not enter PXE menu.")
+                elif resp == 2:
+                    logger.info("Secure Boot Violation detected after password; PXE boot is blocked.")
+                    # consume ENTER to clear the prompt
+                    serial_engine.run_cmd(cls.ENTER, '.*', timeout=5, send_without_enter=True)
+                    raise Exception("Secure Boot Violation: enable PXE boot on the system.")
                 logger.info("Entered PXE menu with password.")
             else:
                 logger.info("Entered PXE menu without password.")
@@ -162,12 +168,23 @@ class PxeTool:
         serial_engine.run_cmd('', ['ONIE: Install OS'], timeout=240, send_without_enter=True)
 
     @classmethod
-    def wait_for_onie_success_msg(cls, serial_engine):
+    def wait_for_onie_success_msg(cls, serial_engine) -> str:
         """
-        Wait for the ONIE installer GRUB menu to appear after PXE boot.
+        Wait for the ONIE installer GRUB menu to appear after PXE boot and return the ONIE version.
 
         :param serial_engine: the serial engine connected to the DUT
+        :return: The ONIE version string
         :raises pexpect.TIMEOUT: if the GRUB menu does not appear in time
         """
         logger.info(f"Waiting for prompt to see 'ONIE: Success'")
-        serial_engine.run_cmd('', ['ONIE: Success'], timeout=240, send_without_enter=True)
+        output, _ = serial_engine.run_cmd('', ['ONIE: Success'], timeout=240, send_without_enter=True)
+
+        # Extract ONIE version using regex
+        version_match = re.search(r'ONIE: Version\s+:\s+([^\n]+)', output)
+        if version_match:
+            onie_version = version_match.group(1).strip()
+            logger.info(f"Found ONIE version: {onie_version}")
+            return onie_version
+        else:
+            logger.warning("Could not find ONIE version in output")
+            return None

@@ -26,7 +26,7 @@ def test_update_onie_via_grub_menu(topology_obj, engines, devices):
        4. Download the ONIE updater via wget.
        5. Run the onie‑self‑update tool and confirm success.
        6. Wait for the NOS to come back online.
-       7. Verify that the last firmware update entry shows Success and today’s date.
+       7. Verify that the last firmware update entry shows Success and today's date.
 
      @param topology_obj: testbed topology (players, attributes, etc.)
      @param engines:     CLI/serial engine handles (engines.dut, etc.)
