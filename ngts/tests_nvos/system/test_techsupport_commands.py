@@ -1,5 +1,4 @@
 import datetime
-import random
 
 import pytest
 
@@ -15,7 +14,7 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_techsupport_show(engines, test_name, test_api, devices):
+def test_techsupport_show(engines, test_name, test_api, devices, serial_log_analyzers):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -32,14 +31,17 @@ def test_techsupport_show(engines, test_name, test_api, devices):
     operation = devices.dut.generate_tech_support
     TestToolkit.tested_api = test_api
     duration = 0
+    serial_analyzer, = serial_log_analyzers.values()
     with allure.step('Run show/action system tech-support and verify that each results updated as expected'):
         output_dictionary_before_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
             system.techsupport.show()).get_returned_value().values())
-        folder, duration = system.techsupport.action_generate(test_name=test_name)
+        with serial_analyzer.stage('Generate tech-support 1'):
+            folder, duration = system.techsupport.action_generate(test_name=test_name)
 
         OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file1 = system.techsupport.file_name
-        folder, duration = system.techsupport.action_generate()
+        with serial_analyzer.stage('Generate tech-support 2'):
+            folder, duration = system.techsupport.action_generate()
         OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file2 = system.techsupport.file_name
         output_dictionary_after_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
@@ -221,8 +223,7 @@ def test_techsupport_upload(engines):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_techsupport_multiple_times(engines, test_name, test_api, devices):
+def test_techsupport_multiple_times(engines, test_name, random_api, devices, serial_log_analyzers):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -232,12 +233,13 @@ def test_techsupport_multiple_times(engines, test_name, test_api, devices):
     """
     system = System(None)
     operation = devices.dut.generate_tech_support
-    TestToolkit.tested_api = test_api
     files_names = []
+    serial_analyzer, = serial_log_analyzers.values()
     with allure.step('Run show/action system tech-support 4 times in a row'):
         for i in range(0, 4):
             with allure.step("Generate Tech-Support for the {} time".format(i)):
-                folder, duration = system.techsupport.action_generate(test_name=test_name)
+                with serial_analyzer.stage(f'Generate tech-support {i}'):
+                    folder, duration = system.techsupport.action_generate(test_name=test_name)
                 OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
                 files_names.append(system.techsupport.file_name)
 

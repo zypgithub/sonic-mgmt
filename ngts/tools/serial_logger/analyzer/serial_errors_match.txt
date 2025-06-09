@@ -10,3 +10,4 @@ s target is busy
 s An error occurred
 r (?<![a-z])oops(?![a-z])
 s -E-
+i panic
