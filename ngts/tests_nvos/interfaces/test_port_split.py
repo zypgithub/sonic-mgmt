@@ -17,10 +17,17 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from retry.api import retry_call
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import PortRequirements
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 invalid_cmd_str = ['Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found', "unrecognized arguments",
                    "error: unrecognized arguments", "invalid choice", "Action failed", "Invalid Command",
                    "You do not have permission", "The requested item does not exist."]
+
+MIN_PACKET_INCREASE = 5  # Minimum number of packets we expect to see increase
+
+logger = logging.getLogger()
 
 
 @pytest.mark.ib_interfaces
@@ -113,8 +120,8 @@ def test_ib_split_port_no_breakout_profile(engines, interfaces, start_sm, device
         assert not output, "config not detached"
 
     with allure.step("Check traffic port up"):
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        port_names = [port.name for port in active_ports]
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step("Split splitter port"):
         parent_port = split_ports[0]
@@ -159,8 +166,8 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
     system = System(None)
     with allure.step("Check traffic port up"):
         active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        port_names = [port.name for port in active_ports]
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step('Verify breakout values'):
         system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
@@ -245,12 +252,14 @@ def test_ib_split_port_default_values(engines, interfaces, start_sm, devices):
 def test_split_port_counters(engines, players, interfaces, start_sm, devices, setup_name):
     """
     Test flow:
-        1. Send traffic
-        2. Split port, check counters changed to 0
-        3. Send traffic
-        4. Check counters changed
-        5. Unset port
-        6. Send traffic and check it pass
+        1. Get split ports and clear counters for parent port
+        2. Send traffic and verify counters increased on parent port
+        3. Split port and get child ports
+        4. Verify child ports are up and ready for traffic
+        5. Send traffic and verify counters increased on s1 port
+        6. Bring down s1 port and verify traffic still passes through s2
+        7. Unset parent port and verify it returns to original state
+        8. Send traffic again and verify it passes through the original parent port
     """
     if not devices.dut.split_ports_supported:
         pytest.skip("Split is not supported on this setup")
@@ -258,52 +267,92 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
     with allure.step("Verify correct Noga setup"):
         assert engines.ha and engines.hb, "Traffic hosts details can't be found in Noga setup"
 
+    with allure.step("Get split ports"):
+        split_ports, active_ports = _get_split_ports()
+        parent_port = split_ports[0]
+
+    with allure.step("Clear counters before first traffic run"):
+        parent_port.interface.action_clear_counter_for_interface(interface_name=parent_port.name).verify_result()
+        logger.info(f"Cleared counters for parent port {parent_port.name}")
+
     with allure.step("Run traffic"):
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
-    with allure.step("Check counters before split, should be not 0"):
-        split_ports, active_ports = _get_split_ports()
-        parent_port = split_ports[0]
+    with allure.step("Check counters increased after first traffic run"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
             parent_port.interface.link.stats.show()).get_returned_value()
-        assert (output_dictionary['in-pkts'] == output_dictionary['out-pkts']) != 0
+        logger.info(f"Parent port ({parent_port.name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
+
+        # Check that counters increased from 0 (since we cleared them)
+        assert output_dictionary['in-pkts'] >= MIN_PACKET_INCREASE, f"Parent port {parent_port.name} in-pkts should be at least {MIN_PACKET_INCREASE}, got {output_dictionary['in-pkts']}"
+        assert output_dictionary['out-pkts'] >= MIN_PACKET_INCREASE, f"Parent port {parent_port.name} out-pkts should be at least {MIN_PACKET_INCREASE}, got {output_dictionary['out-pkts']}"
 
     with allure.step("Split port"):
         parent_port.interface.link.set(op_param_name='breakout', op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
-    with allure.step("Get child port"):
+    with allure.step("Get child ports"):
         list_of_all_ports = Port.get_list_of_ports()
         child_ports = []
         for port in list_of_all_ports:
             if parent_port.name in port.name and port.name[-2] == 's':
                 child_ports.append(port)
 
-    with allure.step("Check counters after split port, should be 0"):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            child_ports[0].interface.link.stats.show()).get_returned_value()
-        assert output_dictionary['out-pkts'] == 0
+    with allure.step("Get baseline counters for child ports"):
+        child_baseline_counters = []
+        for child_port in child_ports:
+            counters = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
+                child_port.interface.link.stats.show()).get_returned_value()
+            child_baseline_counters.append(counters)
+            logger.info(f"Child port {child_port.name} baseline counters: in-pkts={counters['in-pkts']}, out-pkts={counters['out-pkts']}")
 
     with allure.step("Check traffic port up"):
-        active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
+        # Replace parent port with its child ports in the active ports list
+        port_names = []
         for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+            if port.name == parent_port.name:  # If this is the parent port that was split
+                port_names.extend([f"{port.name}s1", f"{port.name}s2"])
+            else:
+                port_names.append(port.name)
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step("Run traffic"):
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
-    with allure.step("Check counters after traffic on child port, should be not 0"):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            child_ports[0].interface.link.stats.show()).get_returned_value()
-        assert (output_dictionary['in-pkts'] == output_dictionary['out-pkts']) != 0
+    with allure.step("Test first child port (s1)"):
+        with allure.step("Run traffic and verify counters on s1"):
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
+                child_ports[0].interface.link.stats.show()).get_returned_value()
+            logger.info(f"Child port s1 ({child_ports[0].name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
+            assert output_dictionary['in-pkts'] >= child_baseline_counters[0]['in-pkts'] + MIN_PACKET_INCREASE, \
+                f"Child port s1 {child_ports[0].name} in-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[0]['in-pkts']}, got {output_dictionary['in-pkts']}"
+            assert output_dictionary['out-pkts'] >= child_baseline_counters[0]['out-pkts'] + MIN_PACKET_INCREASE, \
+                f"Child port s1 {child_ports[0].name} out-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[0]['out-pkts']}, got {output_dictionary['out-pkts']}"
+
+        with allure.step("Set s1 to down"):
+            toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_DOWN)
+
+    with allure.step("Test second child port (s2)"):
+        with allure.step("Run traffic and verify counters on s2"):
+            Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
+                child_ports[1].interface.link.stats.show()).get_returned_value()
+            logger.info(f"Child port s2 ({child_ports[1].name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
+            assert output_dictionary['in-pkts'] >= child_baseline_counters[1]['in-pkts'] + MIN_PACKET_INCREASE, \
+                f"Child port s2 {child_ports[1].name} in-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[1]['in-pkts']}, got {output_dictionary['in-pkts']}"
+            assert output_dictionary['out-pkts'] >= child_baseline_counters[1]['out-pkts'] + MIN_PACKET_INCREASE, \
+                f"Child port s2 {child_ports[1].name} out-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[1]['out-pkts']}, got {output_dictionary['out-pkts']}"
+
+    with allure.step("Set s1 back to up"):
+        toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_UP)
 
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Check traffic port up"):
-        active_ports = Tools.RandomizationTool.get_random_active_port(number_of_values_to_select=0).get_returned_value()
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        port_names = [port.name for port in active_ports]
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step("Run traffic"):
         Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
@@ -489,7 +538,7 @@ def test_ib_split_port_stress(engines, interfaces, start_sm, devices):
             system.profile.action_profile_change(params_dict={'adaptive-routing': 'enabled',
                                                               'breakout-mode': 'enabled'})
 
-        with allure.step("Start OpenSm"):
+        with allure.step("Start OpenSM"):
             OpenSmTool.start_open_sm(engines).verify_result()
 
         with allure.step('Verify changed values'):
@@ -523,8 +572,8 @@ def test_ib_split_port_stress(engines, interfaces, start_sm, devices):
 
     with allure.step("Check traffic port up"):
         split_ports, active_ports = _get_split_ports()
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        port_names = [port.name for port in active_ports]
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step('Check that we can split/unsplit port during stress test'):
         with allure.step("Split splitter port"):
@@ -552,8 +601,8 @@ def test_split_port_redis_db_crash(engines, interfaces, start_sm, devices):
     system = System(None)
     with allure.step("Check traffic port up"):
         split_ports, active_ports = _get_split_ports()
-        for port in active_ports:
-            port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=30).verify_result()
+        port_names = [port.name for port in active_ports]
+        retry_call(validate_list_ports_state, [port_names], exceptions=AssertionError, tries=6, delay=10)
 
     with allure.step("Split splitter port"):
         parent_port = split_ports[0]
@@ -623,3 +672,21 @@ def _get_split_ports():
     if not split_ports and not active_ports:
         raise Exception("Can't find any active port to split")
     return split_ports, active_ports
+
+
+def validate_list_ports_state(expected_ports: list, state=NvosConsts.LINK_STATE_UP):
+    port_requirements = PortRequirements()
+    port_requirements.set_port_state(state)
+    actual_ports = [port.name for port in Port.get_list_of_ports(port_requirements_object=port_requirements)]
+
+    ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()
+
+
+def toggle_port_state(selected_port, port_state, test_name=''):
+    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+    with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
+        res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
+                                                        selected_port.interface.wait_for_port_state, port_state,
+                                                        sleep_time=0.2)
+        res_obj.verify_result()
+        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
