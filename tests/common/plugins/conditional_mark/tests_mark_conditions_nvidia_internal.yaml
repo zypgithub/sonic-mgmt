@@ -1265,6 +1265,12 @@ smartswitch/platform_tests/test_reload_dpu.py::test_dpu_check_post_dpu_mem_exhau
     conditions:
       - https://redmine.mellanox.com/issues/4362877
 
+smartswitch/platform_tests/test_platform_dpu.py::test_pcie_link:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4490249"
+
 container_hardening/test_container_hardening.py::test_container_privileged.*what-just-happened:
   regex: true
   skip:
