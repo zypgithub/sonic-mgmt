@@ -166,6 +166,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 350
+    orchagent: 68
     thermalctld: 107
     telemetry: 90
     dialout: 90
