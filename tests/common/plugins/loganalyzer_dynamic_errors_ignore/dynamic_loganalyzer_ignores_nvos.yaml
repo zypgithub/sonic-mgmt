@@ -834,6 +834,7 @@
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_port
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_server_unreachable
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_timeout
+        - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_secret
 
 - Errors_list:
     - '.*ERR .*: pam_radius_auth: packet from RADIUS server.*failed verification: The shared secret is probably incorrect.*'
