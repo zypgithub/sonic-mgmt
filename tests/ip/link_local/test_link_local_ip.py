@@ -14,7 +14,7 @@ from tests.common import utilities
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.portstat_utilities import parse_portstat
 from tests.ip.ip_util import parse_rif_counters, sum_ifaces_counts
-from tests.syslog.syslog_utils import TCPDUMP_CAPTURE_TIME
+from tests.syslog.syslog_utils import syslogUtilsConst
 
 pytestmark = [
     pytest.mark.topology('any')
@@ -262,7 +262,7 @@ class TestLinkLocalIPacket:
         pytest_assert(rx_ok >= PKT_NUM,
                       "Received {} packets in rx counters, expected >= {}".format(rx_ok, PKT_NUM))
         # Sleep to ensure all packets will be captured
-        time.sleep(TCPDUMP_CAPTURE_TIME)
+        time.sleep(syslogUtilsConst.TCPDUMP_CAPTURE_TIME)
         duthost.shell(stop_pcap, module_ignore_errors=True)
 
         tmp_pcap = tempfile.NamedTemporaryFile()
