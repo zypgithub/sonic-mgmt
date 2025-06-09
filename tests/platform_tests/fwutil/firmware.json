@@ -285,33 +285,6 @@
 				]
 			}
 		},
-		"SN5610N": {
-			"component": {
-				"BIOS": [
-					{
-						"force_reboot": true,
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.012/Release/0ACTV.cab",
-						"version": "0ACTV_00.01.012",
-						"reboot": ["cold"]
-					}
-				],
-				"ONIE": [
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
-						"force_reboot": true,
-						"version": "2024.08-5.3.0015-115200-dev",
-						"reboot": ["cold"]
-					}
-				],
-				"CPLD2": [
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5610N/FUI000386/FUI000386.mpfa",
-						"version": "CPLD000398_REV0500",
-						"reboot": ["power off", "cold"]
-					}
-				]
-			}
-		},
 		"SN5640": {
 			"component": {
 				"BIOS": [
@@ -359,25 +332,6 @@
 							"power off",
 							"cold"
 						]
-					}
-				]
-			}
-		},
-		"mtvr-moose-10": {
-			"component": {
-				"ONIE": [
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0010/115200/onie-updater-x86_64-mlnx_x86-r0",
-						"force_reboot": true,
-						"version": "2022.08-5.3.0010-115200",
-						"reboot": ["cold"]
-					}
-				],
-				"CPLD2": [
-					{
-						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000240/FUI000240.mpfa",
-						"version": "CPLD000330_REV0700",
-						"reboot": ["power off", "cold"]
 					}
 				]
 			}
