@@ -176,10 +176,10 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             self.raw_options = self.raw_options + ' --allure_server_addr="allure.nvidia.com" '
         self.raw_options += ' --allure_server_port="" '
 
-        # Handle target_image_list parameter
-        if '--target_image_list=' in self.raw_options:
-            # Use regex to find the value of target_image_list
-            match = re.search(r'--target_image_list=(?:"([^"]+)"|\'([^\']+)\'|([^\s]+))', self.raw_options)
+        # Handle secure_boot_image parameter
+        if '--secure_boot_image=' in self.raw_options:
+            # Use regex to find the value of secure_boot_image
+            match = re.search(r'--secure_boot_image=(?:"([^"]+)"|\'([^\']+)\'|([^\s]+))', self.raw_options)
             if match:
                 image_type = match.group(1) or match.group(2) or match.group(3)
                 self.Logger.info(f"The image type is {image_type}")
@@ -196,10 +196,13 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
                 http_image_path = HTTP_SERVER_NBU_NFS + image_path
                 self.Logger.info(f"The target image path is {http_image_path}")
-                self.raw_options = self.raw_options.replace(
-                    f'--target_image_list={image_type}',
-                    f'--target_image_list={http_image_path}'
-                )
+
+                # Add the target_image_list to the raw options
+                self.raw_options += f' --target_image_list={http_image_path}'
+
+                # Remove the secure_boot_image option
+                self.raw_options = re.sub(r'--secure_boot_image=(?:"[^"]+"|\'[^\']+\'|[^\s]+)', '', self.raw_options)
+
                 self.Logger.info(f"The raw options is {self.raw_options}")
 
         if self.test_type:

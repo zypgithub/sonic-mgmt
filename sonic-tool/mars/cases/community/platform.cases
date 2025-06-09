@@ -447,7 +447,7 @@
         <name> test_secure_upgrade_non_signed </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" --target_image_list=non_signed_image\'" --test-scripts platform_tests/test_secure_upgrade.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" --secure_boot_image=non_signed_image\'" --test-scripts platform_tests/test_secure_upgrade.py </static_args>
              </params>
         </cmd>
     </case>
@@ -465,7 +465,7 @@
         <name> test_secure_upgrade_mismatched_signed </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" --target_image_list=[[conf:extra_info.sig_mismatch_image:sig_mismatch_prod_image]]\'" --test-scripts platform_tests/test_secure_upgrade.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" --secure_boot_image=[[conf:extra_info.sig_mismatch_image:sig_mismatch_prod_image]]\'" --test-scripts platform_tests/test_secure_upgrade.py </static_args>
              </params>
         </cmd>
     </case>
