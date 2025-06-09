@@ -1908,11 +1908,11 @@
     - 4470668
 
 - Errors_list:
-  - '.*ERR pmon#xcvrd.*Failed to confirm VDM freeze status for port.*'
-  - '.*ERR pmon#xcvrd.*Failed to freeze VDM stats in contextmanager for port.*'
-  - '.*ERR pmon#xcvrd.*DOM-INFO-UPDATE: Failed to freeze VDM stats for port.*'
-  - '.*ERR pmon#xcvrd.*Failed to confirm VDM unfreeze status for port.*'
-  - '.*ERR pmon#xcvrd.*Failed to unfreeze VDM stats in contextmanager for port.*'
+  - '.*ERR pmon.*Failed to confirm VDM freeze status for port.*'
+  - '.*ERR pmon.*Failed to freeze VDM stats in contextmanager for port.*'
+  - '.*ERR pmon.*DOM-INFO-UPDATE: Failed to freeze VDM stats for port.*'
+  - '.*ERR pmon.*Failed to confirm VDM unfreeze status for port.*'
+  - '.*ERR pmon.*Failed to unfreeze VDM stats in contextmanager for port.*'
   Conditions:
   - Redmine:
     - 4396617
