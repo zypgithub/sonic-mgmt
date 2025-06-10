@@ -343,6 +343,15 @@ def test_force_speed(enum_speed_per_dutport_fixture):
     with shutdown_port_on_duthost(duthost, dut_port):
         success = fanout.set_auto_negotiation_mode(fanout_port, False)
         pytest_require(success, 'Failed to set port autoneg on fanout port {}'.format(fanout_port))
+        pytest_assert(
+            wait_until(
+            SINGLE_PORT_WAIT_TIME,
+            PORT_STATUS_CHECK_INTERVAL,
+            0,
+            lambda: fanout.get_auto_negotiation_mode(fanout_port) == False,
+            ),
+            'Auto negotiation mode is not disabled on fanout port {}'.format(fanout_port)
+        )
 
         success = fanout.set_speed(fanout_port, speed)
         pytest_require(success, 'Failed to speed on fanout port {}, speed {}'.format(fanout_port, speed))
