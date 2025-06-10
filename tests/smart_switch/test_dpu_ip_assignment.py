@@ -7,7 +7,8 @@ from tests.common.utilities import wait_until
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
 
 IP_ADDRESS_LIST = {"ACS-SN4280": ["169.254.200.1", "169.254.200.2", "169.254.200.3", "169.254.200.4"],
-                   "Mellanox-SN4280-O28": ["169.254.200.1", "169.254.200.2", "169.254.200.3", "169.254.200.4"]}
+                   "Mellanox-SN4280-O28": ["169.254.200.1", "169.254.200.2", "169.254.200.3", "169.254.200.4"],
+                   "Mellanox-SN4280-O8C40": ["169.254.200.1", "169.254.200.2", "169.254.200.3", "169.254.200.4"]}
 
 logger = logging.getLogger(__name__)
 

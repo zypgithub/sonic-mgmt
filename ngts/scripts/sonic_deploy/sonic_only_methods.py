@@ -470,7 +470,7 @@ class SonicInstallationSteps:
             hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
             need_gen_mingraph = True
         if "bobcat" in setup_name:
-            hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28', 'Mellanox-SN4280-O8C80']
+            hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28', 'Mellanox-SN4280-O8C80', 'Mellanox-SN4280-O8C40']
             need_gen_mingraph = True
         if "r-tigon-04" in setup_name:
             hwskus = ['Mellanox-SN4600C-D24C52']
@@ -544,14 +544,16 @@ class SonicInstallationSteps:
                                       cli_obj=general_cli_obj, deploy_dpu=deploy_dpu)
                     if deploy_dpu:
                         dut['engine'].run_cmd('sudo config save -y')
-
+            logger.info("Deploying DASH API")
             with allure.step('Apply DNS servers configuration'):
+                logger.info("Applying DNS servers configuration")
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
                     general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
                     general_cli_obj.save_configuration()
             if deploy_dpu:
+                logger.info("Deploying DASH API")
                 with allure.step('Update the dash api in sonic-mgmt'):
                     try:
                         retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
@@ -561,16 +563,16 @@ class SonicInstallationSteps:
                         logger.info("Copying the dash api to sonic-mgmt and try install again")
                         os.system("scp /auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb ./libdashapi_1.0.0_amd64.deb")
                         os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-
+                logger.info("Validating DPU configuration")
                 if dut_engine.run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) != 'dpu.conf':
                     with allure.step('Startup dpu and save config'):
                         _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
                         general_cli_obj.startup_dpu(dpu_index_list)
                         general_cli_obj.save_configuration()
-
+                logger.info("Applying NAT config to smartSwitch")
                 with allure.step('Apply NAT config to smartSwitch'):
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
-
+            logger.info("Validating Post InstallDUT configuration")
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
                                                                 ansible_path=ansible_path)
@@ -874,7 +876,10 @@ def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
 
 
 def fetch_dash_api_package():
-    rc = os.system("wget 'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
+    timeout = 15
+    tries = 1
+    rc = os.system(f"timeout {timeout} wget -t {tries} "
+                   "'https://sonic-build.azurewebsites.net/api/sonic/artifacts?branchName=master&"
                    "definitionId=1055&artifactName=sonic-buildimage.amd64.ubuntu20_04&"
                    "target=libdashapi_1.0.0_amd64.deb' -O libdashapi_1.0.0_amd64.deb")
     assert rc == 0, "Failed to fetch the dash api package"

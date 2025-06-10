@@ -14,7 +14,7 @@ pytestmark = [
 ]
 
 DPU_LIST = ["dpu0", "dpu1", "dpu2", "dpu3"]
-SKU_SUPPORT_DPU_CTL_LIST = ["Mellanox-SN4280-O28"]
+SKU_SUPPORT_DPU_CTL_LIST = ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C40"]
 
 DPU_PIC_ID_RISHIM_MAP = {
     "dpu0": {"pci_id": "0000:08:00.0", "rshim": "rshim@0"},

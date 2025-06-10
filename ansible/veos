@@ -1461,6 +1461,18 @@ VM3429 ansible_host=10.215.28.211
 VM3430 ansible_host=10.215.28.212
 VM3431 ansible_host=10.215.28.213
 VM3432 ansible_host=10.215.28.214
+VM3433 ansible_host=10.215.28.215
+VM3434 ansible_host=10.215.28.216
+VM3435 ansible_host=10.215.210.22
+VM3436 ansible_host=10.215.210.23
+VM3437 ansible_host=10.215.210.24
+VM3438 ansible_host=10.215.210.25
+VM3439 ansible_host=10.215.210.26
+VM3440 ansible_host=10.215.210.27
+VM3441 ansible_host=10.215.210.28
+VM3442 ansible_host=10.215.210.29
+VM3443 ansible_host=10.215.210.30
+VM3444 ansible_host=10.215.210.31
 
 [vms_70]
 VM3501 ansible_host=10.215.34.122
@@ -1554,15 +1566,27 @@ VM3720 ansible_host=10.215.28.236
 VM3721 ansible_host=10.215.28.237
 VM3722 ansible_host=10.215.28.238
 VM3723 ansible_host=10.215.28.239
-VM3724 ansible_host=10.215.28.240
-VM3725 ansible_host=10.215.28.241
-VM3726 ansible_host=10.215.28.242
-VM3727 ansible_host=10.215.28.243
-VM3728 ansible_host=10.215.28.244
-VM3729 ansible_host=10.215.28.245
-VM3730 ansible_host=10.215.28.246
-VM3731 ansible_host=10.215.28.247
-VM3732 ansible_host=10.215.28.248
+VM3724 ansible_host=10.215.210.1
+VM3725 ansible_host=10.215.210.2
+VM3726 ansible_host=10.215.210.3
+VM3727 ansible_host=10.215.210.4
+VM3728 ansible_host=10.215.210.5
+VM3709 ansible_host=10.215.210.6
+VM3730 ansible_host=10.215.210.7
+VM3731 ansible_host=10.215.210.8
+VM3732 ansible_host=10.215.210.9
+VM3733 ansible_host=10.215.210.10
+VM3734 ansible_host=10.215.210.11
+VM3735 ansible_host=10.215.210.12
+VM3736 ansible_host=10.215.210.13
+VM3737 ansible_host=10.215.210.14
+VM3738 ansible_host=10.215.210.15
+VM3739 ansible_host=10.215.210.16
+VM3740 ansible_host=10.215.210.17
+VM3741 ansible_host=10.215.210.18
+VM3742 ansible_host=10.215.210.19
+VM3743 ansible_host=10.215.210.20
+VM3744 ansible_host=10.215.210.21
 
 [vms_73]
 VM3801 ansible_host=10.245.34.123
@@ -2234,6 +2258,30 @@ VM5121 ansible_host=10.245.44.143
 VM5122 ansible_host=10.245.44.144
 VM5123 ansible_host=10.245.44.145
 VM5124 ansible_host=10.245.44.146
+VM5125 ansible_host=10.245.32.36
+VM5126 ansible_host=10.245.32.37
+VM5127 ansible_host=10.245.32.38
+VM5128 ansible_host=10.245.32.39
+VM5129 ansible_host=10.245.32.40
+VM5130 ansible_host=10.245.32.41
+VM5131 ansible_host=10.245.32.42
+VM5132 ansible_host=10.245.32.43
+VM5133 ansible_host=10.245.32.44
+VM5134 ansible_host=10.245.32.45
+VM5135 ansible_host=10.245.32.46
+VM5136 ansible_host=10.245.32.47
+VM5137 ansible_host=10.245.32.48
+VM5138 ansible_host=10.245.32.49
+VM5139 ansible_host=10.245.32.50
+VM5140 ansible_host=10.245.32.51
+VM5141 ansible_host=10.245.32.52
+VM5142 ansible_host=10.245.32.53
+VM5143 ansible_host=10.245.32.54
+VM5144 ansible_host=10.245.32.55
+VM5145 ansible_host=10.245.32.56
+VM5146 ansible_host=10.245.32.57
+VM5147 ansible_host=10.245.32.58
+VM5148 ansible_host=10.245.32.59
 
 [vms_87]
 VM5233 ansible_host=10.245.44.153
@@ -2260,6 +2308,26 @@ VM5253 ansible_host=10.245.44.173
 VM5254 ansible_host=10.245.44.174
 VM5255 ansible_host=10.245.44.175
 VM5256 ansible_host=10.245.44.176
+VM5257 ansible_host=10.245.32.240
+VM5258 ansible_host=10.245.32.241
+VM5259 ansible_host=10.245.32.242
+VM5260 ansible_host=10.245.32.243
+VM5261 ansible_host=10.245.32.244
+VM5262 ansible_host=10.245.32.245
+VM5263 ansible_host=10.245.32.246
+VM5264 ansible_host=10.245.32.247
+VM5265 ansible_host=10.245.32.248
+VM5266 ansible_host=10.245.32.249
+VM5267 ansible_host=10.245.32.250
+VM5268 ansible_host=10.245.32.251
+VM5269 ansible_host=10.245.32.252
+VM5270 ansible_host=10.245.32.253
+VM5271 ansible_host=10.245.32.254
+VM5272 ansible_host=10.245.34.250
+VM5273 ansible_host=10.245.34.251
+VM5274 ansible_host=10.245.34.252
+VM5275 ansible_host=10.245.34.253
+VM5276 ansible_host=10.245.34.254
 
 [vms_88]
 VM7349 ansible_host=10.245.46.4
@@ -5170,7 +5238,7 @@ server_93
 server_94
 
 [servers:vars]
-topologies=['dualtor', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-aa-64-breakout', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-32-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-88-o8c80', 'ptp-256', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d56u2', 't1-isolated-v6-d56u2', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d32u32s2', 't0-isolated-v6-d32u32s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-isolated-d2u254s2', 't0-isolated-d2u510']
+topologies=['dualtor', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-aa-64-breakout', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-32-lag', 't1-48-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-88-o8c80', 'ptp-256', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d56u2', 't1-isolated-v6-d56u2', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d32u32s2', 't0-isolated-v6-d32u32s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-isolated-d2u254s2', 't0-isolated-d2u510']
 
 [sonic_latest]
 dev-r-vrt-233-010  ansible_host=10.212.233.10 type=simx sonic_version=v2 hwsku="ACS-MSN2700" iface_speed=40000 mgmt_subnet_mask_length=16 vm_base=VM5201
