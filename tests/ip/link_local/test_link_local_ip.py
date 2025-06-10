@@ -14,7 +14,6 @@ from tests.common import utilities
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.portstat_utilities import parse_portstat
 from tests.ip.ip_util import parse_rif_counters, sum_ifaces_counts
-from tests.syslog.syslog_utils import syslogUtilsConst
 
 pytestmark = [
     pytest.mark.topology('any')
@@ -29,6 +28,7 @@ VLAN_ID = 10
 PKT_NUM = 500
 PKT_NUM_ZERO = 0
 PACKET_SAVE_PATH = "/tmp/link_local.pcap"
+TCPDUMP_WAIT_TIME = 50
 
 
 def cleanup(cleanup_list):
@@ -262,7 +262,7 @@ class TestLinkLocalIPacket:
         pytest_assert(rx_ok >= PKT_NUM,
                       "Received {} packets in rx counters, expected >= {}".format(rx_ok, PKT_NUM))
         # Sleep to ensure all packets will be captured
-        time.sleep(syslogUtilsConst.TCPDUMP_CAPTURE_TIME)
+        time.sleep(TCPDUMP_WAIT_TIME)
         duthost.shell(stop_pcap, module_ignore_errors=True)
 
         tmp_pcap = tempfile.NamedTemporaryFile()
