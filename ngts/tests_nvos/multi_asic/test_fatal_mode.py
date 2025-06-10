@@ -24,7 +24,7 @@ from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 logger = logging.getLogger()
 fatal_event_timestamps = []
 
-SETTINGS = {"clear_time": 1}
+SETTINGS = {"clear_time": 2}
 NUM_TRIES_TO_RECOVER_AT_TEARDOWN = 4
 SAI_LOG_STRING = 'Health-Check: new failure'
 SAI_LOG_TIME_WINDOW_SECONDS = 3
@@ -183,6 +183,8 @@ def test_flow_until_reboot(engines, devices, random_api, random_asic, test_name,
         elapsed = datetime.now() - start_time
         to_wait = 4 * 60 - elapsed.seconds
         logger.info(f'{start_time=}, {elapsed=}, {to_wait=}')
+        if to_wait < 0:
+            to_wait = 0
         _wait_to_exit_fatal(1 + to_wait // 60)
 
 
