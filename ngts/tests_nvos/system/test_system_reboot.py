@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+from retry import retry
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
@@ -11,7 +12,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, ping_device
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -28,6 +29,9 @@ def test_reboot_command(engines, devices, test_name):
     """
     system = System(None)
     expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.COLD]
+
+    with allure.step('Clear system events to remove older reboot system events'):
+        system.events.action(ActionConsts.CLEAR)
 
     with allure.step('Run nv action reboot system'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
@@ -117,7 +121,11 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
         pytest.skip(f"{mode} not supported")
     system = System()
     TestToolkit.tested_api = ApiType.NVUE
+
     try:
+        with allure.step('Clear system events to remove older reboot system events'):
+            system.events.action(ActionConsts.CLEAR)
+
         result_obj = _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode)
         result_obj.verify_result()
         expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
@@ -142,7 +150,9 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
     """
     system = System()
     expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.PSU_OFF]
-    dhcp_hostname = ''
+
+    with allure.step('Clear system events to remove older reboot system events'):
+        system.events.action(ActionConsts.CLEAR)
 
     with allure.step("Get name from NOGA"):
         noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
@@ -157,6 +167,7 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
     validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
 
+@retry(Exception, tries=6, delay=10)
 def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
     with allure.step("Check reboot reason event in system events"):
         reboot_reason, reboot_user = OutputParsingTool.get_reboot_reason_and_user_from_system_events(system)
