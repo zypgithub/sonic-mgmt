@@ -106,7 +106,17 @@ class TransceiversConsts:
             downgrade_version_name="fw_70_230_01036_dev_signed_WOLVERINE_DK.bin",
             upgrade_version_number="70.230.1040",
             downgrade_version_number="70.230.1036",
-            installation_time=360
+            installation_time=480
+        ),
+        '130': Transceiver(
+            transceiver_type='Sian2',
+            last_release_path=f"TODO",
+            test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}Sian2/",
+            upgrade_version_name="fw_130_245_0000_dev_signed_SIAN2_DK.bin",
+            downgrade_version_name="fw_130_245_0000_dev_signed_SIAN2_DK.bin",
+            upgrade_version_number="130.245.0",
+            downgrade_version_number="130.245.0",
+            installation_time=480
         ),
         '46': Transceiver(
             transceiver_type='Bagheera',
@@ -116,7 +126,7 @@ class TransceiversConsts:
             downgrade_version_name="fw_46_230_00014_dev_signed.bin",
             upgrade_version_number="46.230.18",
             downgrade_version_number="46.230.14",
-            installation_time=180
+            installation_time=270
         ),
         '47': Transceiver(
             transceiver_type='Louie',
@@ -126,6 +136,6 @@ class TransceiversConsts:
             downgrade_version_name="fw_47_230_01014_dev_signed.bin",
             upgrade_version_number="47.230.18",
             downgrade_version_number="47.230.14",
-            installation_time=180
+            installation_time=60
         )
     }
