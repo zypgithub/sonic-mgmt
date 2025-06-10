@@ -169,6 +169,7 @@ def analyze_structure(data):
             structure[key] = type(value).__name__  # Store the data type for non-dictionaries
     return structure
 
+
 def get_db_keys(key_name, data):
     """
     Get all keys from a data structure that contain the specified key name.
@@ -180,4 +181,4 @@ def get_db_keys(key_name, data):
     Returns:
         list: A list of keys that contain the specified key_name
     """
-    return[item for item in data if key_name in item]
+    return [item for item in data if key_name in item]

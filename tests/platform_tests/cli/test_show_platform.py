@@ -288,7 +288,7 @@ def test_show_platform_syseeprom(duthosts, enum_rand_one_per_hwsku_hostname, dut
                                                   db_value_data[value_name] not in expected_fields):
                     validation_errors.append(
                         f"EEPROM parameter name '{db_value_data[value_name]}' from Redis key '{db_key}' "
-                        f"not found in syseeprom CLI output or not in expected fields"
+                        f"not found in syseeprom CLI output or not in expected fields"  # noqa: E713
                     )
 
             # Get all 'Value' fields from the value structure
@@ -299,7 +299,7 @@ def test_show_platform_syseeprom(duthosts, enum_rand_one_per_hwsku_hostname, dut
                 if db_value_data[param_value] and db_value_data[param_value] not in syseeprom_output:
                     validation_errors.append(
                         f"EEPROM value '{db_value_data[param_value]}' from Redis key '{db_key}' "
-                        f"not found in syseeprom CLI output"
+                        f"not found in syseeprom CLI output"  # noqa: E713
                     )
 
         # If any validation errors occurred, format and report them all at once
