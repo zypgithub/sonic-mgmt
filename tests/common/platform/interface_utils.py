@@ -330,10 +330,42 @@ def get_interfaces_info(duthost):
     return interfaces_info
 
 
+def get_alias_number(port_alias):
+    """
+    :param port_alias:  the sonic port alias, e.g. 'etp1', 'etp1a' etc.
+    :return: the number in the alias, e.g. 1
+    """
+    return re.search(r'etp(\d+)', port_alias).group(1)
+
+
+def get_alias_letter(port_alias):
+    """
+    :param port_alias:  the sonic port alias, e.g. 'etp1', 'etp1a' etc.
+    :return: empty string for etp<number> (no split) or the letter in the alias for etp<number><letter>
+    """
+    match = re.search(r'etp(\d+)([a-z])?', port_alias)
+    if match and match.group(2):
+        return match.group(2)
+    return ''
+
+
+def convert_letter_to_number(letter):
+    """
+    :param letter: a single letter (a-z)
+    :return: corresponding number (1-26)
+    """
+    if letter == '':
+        return '0'
+    return str(ord(letter.lower()) - ord('a') + 1)
+
+
 @functools.lru_cache(maxsize=1)
 def get_interface_index_and_subport(duthost, interface):
     interfaces_info = get_interfaces_info(duthost)
-    return interfaces_info[interface]["index"], interfaces_info[interface].get("subport", "")
+    interface_alias = interfaces_info[interface]["alias"]
+    interface_index = get_alias_number(interface_alias)
+    interface_subport = convert_letter_to_number(get_alias_letter(interface_alias))
+    return interface_index, interface_subport
 
 
 def get_interfaces_physical_path(duthost,interfaces):
@@ -363,12 +395,12 @@ def get_physical_index_to_interfaces_map(duthost, only_ports_index_up=False):
 
 def get_first_port_in_split(duthost):
     interfaces_info = get_interfaces_info(duthost)
-    no_split_indication = ['', '0']
+    no_split_indication = '0'
     split_first_lane = '1'
     first_port_in_split = []
     for port in interfaces_info.keys():
         index, subport = get_interface_index_and_subport(duthost, port)
-        is_first_port_in_split = (subport in no_split_indication) or (subport == split_first_lane)
+        is_first_port_in_split = (subport == no_split_indication) or (subport == split_first_lane)
         if is_first_port_in_split:
             first_port_in_split.append(port)
     return first_port_in_split
