@@ -173,6 +173,9 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
                     with allure.step('Enable autoneg on copper cable ports if SW controlled'):
                         cli_objects.dut.im.enable_autoneg_on_passive_copper(copper_cables)
 
+    with allure.step('Apply DNS servers configuration'):
+        cli_objects.dut.ip.apply_dns_servers_into_resolv_conf()
+
     if expected_topo != "ptp-256":
         with allure.step("Post upgrade checks"):
             cmd = "ansible-playbook -i inventory --limit {SWITCH} post_upgrade_check.yml " \
