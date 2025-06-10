@@ -73,7 +73,7 @@ class SonicInstallationSteps:
                                                                       dut_name, sonic_topo, neighbor_type,
                                                                       ptf_tag, port_number,
                                                                       ansible_path, setup_info, destination_hwsku)
-            if is_dualtor_topo(sonic_topo) and "sonic-dual-tor-leopard" not in setup_name:
+            if is_dualtor_topo(sonic_topo):
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
         elif is_performance:
             pass
@@ -479,9 +479,6 @@ class SonicInstallationSteps:
         if "r-leopard-01" in setup_name or "r-leopard-58" in setup_name:
             hwskus = ['Mellanox-SN4700-O32', 'Mellanox-SN4700-V64']
             need_gen_mingraph = True
-        if "sonic-dual-tor-leopard" in setup_name:
-            hwskus = ['Mellanox-SN4700-V64']
-            need_gen_mingraph = True
         if "mtvr-gaur-02" in setup_name or "mtvr-gaur-03" in setup_name:
             hwskus = ['Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
             need_gen_mingraph = True
@@ -527,12 +524,7 @@ class SonicInstallationSteps:
                 execute_script(f'sed -i "s/400000/100000/g" {sonic_mgmt_hwsku_path}/{c224o8}/port_config.ini',
                                ansible_path)
         if need_gen_mingraph:
-            if "sonic-dual-tor-leopard" in setup_name:
-                if not setup_info.get('setup_name', None):
-                    setup_info['setup_name'] = setup_name
-                generate_minigraph(ansible_path, setup_info, setup_name, sonic_topo, None)
-            else:
-                generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
+            generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
 
         cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
 
@@ -548,13 +540,18 @@ class SonicInstallationSteps:
                 config_y_cable_simulator(ansible_path=ansible_path, setup_name=setup_name, sonic_topo=sonic_topo)
                 for dut in setup_info['duts']:
                     add_host_for_y_cable_simulator(dut, setup_info)
-            for dut in setup_info['duts']:
-                general_cli_obj = dut['cli_obj']
-                deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
-                                  recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
-                                  cli_obj=general_cli_obj, deploy_dpu=deploy_dpu)
-                if deploy_dpu:
-                    dut['engine'].run_cmd('sudo config save -y')
+            if is_dualtor_topo(sonic_topo):
+                deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
+                                  recover_by_reboot=False, topology_obj=topology_obj,
+                                  cli_obj=cli)
+            else:
+                for dut in setup_info['duts']:
+                    general_cli_obj = dut['cli_obj']
+                    deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
+                                      recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
+                                      cli_obj=general_cli_obj, deploy_dpu=deploy_dpu)
+                    if deploy_dpu:
+                        dut['engine'].run_cmd('sudo config save -y')
 
             with allure.step('Apply DNS servers configuration'):
                 for dut in setup_info['duts']:

@@ -32,28 +32,24 @@ def get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number):
     """
     Method which doing minigraph generation
     """
-    testbed_file = ''
-    if is_dualtor_topo(sonic_topo):
-        dut_name = setup_info['setup_name']
-        if is_dualtor_aa_topo(sonic_topo):
-            testbed_file = '-t testbed.yaml'
-    cmd = "./testbed-cli.sh {TESTBED_FILE} gen-mg {SWITCH}-{TOPO} lab vault".format(TESTBED_FILE=testbed_file,
-                                                                                    SWITCH=dut_name, TOPO=sonic_topo)
+    cmd = "./testbed-cli.sh gen-mg {SWITCH}-{TOPO} lab vault".format(SWITCH=dut_name, TOPO=sonic_topo)
     if port_number:
         cmd += " -e port_number={}".format(port_number)
 
     return cmd
 
 
-def get_deploy_minigraph_cmd(deploy_dpu=False):
+def get_deploy_minigraph_cmd(use_community=True):
     """
     Method which returns the deploy minigraph command.
-    For Bluefield devices used the method which generating and deploy the minigraph in one cmd with additional parameter
     """
-    cmd = "ansible-playbook -i inventory --limit {SWITCH} deploy_minigraph.yml " \
-          "-e dut_minigraph={SWITCH}.{TOPO}.xml -b -vvv"
-    if deploy_dpu:
+    if use_community:
         cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault"
+    else:
+        # TODO: this is kept only for the smartswitch "dark mode", the community method checks DPU
+        # and it fails with dark mode regression. Remove this when we stop running dark mode regression
+        cmd = "ansible-playbook -i inventory --limit {SWITCH} deploy_minigraph.yml " \
+            "-e dut_minigraph={SWITCH}.{TOPO}.xml -b -vvv"
     return cmd
 
 
@@ -70,7 +66,10 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
     Method which doing minigraph deploy on DUT
     """
     with allure.step('Deploy Minigraph'):
-        cmd_temp = get_deploy_minigraph_cmd(deploy_dpu)
+        use_community = True
+        if 'bobcat' in dut_name and not deploy_dpu:
+            use_community = False
+        cmd_temp = get_deploy_minigraph_cmd(use_community)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
         if recover_by_reboot:
