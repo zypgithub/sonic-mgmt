@@ -436,6 +436,12 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4202758"
     conditions:
       - "https://redmine.mellanox.com/issues/4202758 and 'sn5610n' in platform"
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_core_check:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4486371 and 'bobcat' in testbed"
 ########################## NGTS IGNORE END ##########################
 
 
@@ -1270,6 +1276,12 @@ smartswitch/platform_tests/test_platform_dpu.py::test_pcie_link:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
     conditions:
       - "https://redmine.mellanox.com/issues/4490249"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_system_health_summary:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4492386"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4492386 and 'bobcat' in testbed"
 
 container_hardening/test_container_hardening.py::test_container_privileged.*what-just-happened:
   regex: true
