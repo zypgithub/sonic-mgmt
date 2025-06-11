@@ -22,6 +22,7 @@ FAST_REBOOT = "fast"
 
 DEVICES_PATH = "usr/share/sonic/device"
 TIMEOUT = 1200
+COMMON_REBOOT_TIMEOUT = 600
 
 REBOOT_TYPES = {
     COLD_REBOOT: "reboot",
@@ -70,8 +71,8 @@ def reboot(duthost, pdu_ctrl, reboot_type, pdu_delay=60):
     duthost.command(REBOOT_TYPES[reboot_type], module_ignore_errors=True, module_async=True)
 
 
-def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot=False, current=None, next_image=None,
-                     timeout=TIMEOUT, pdu_delay=60):
+def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, auto_reboot=False, current=None, 
+                     next_image=None, timeout=TIMEOUT, pdu_delay=60):
     hn = duthost.mgmt_ip
 
     if boot_type != "none":
@@ -88,17 +89,25 @@ def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot=F
             # Wait for 30s in case there is ssh flap
             time.sleep(30)
             logger.info("Waiting on switch to come up in SONiC....")
-            localhost.wait_for(host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10, timeout=600)
+            localhost.wait_for(
+                host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10, timeout=COMMON_REBOOT_TIMEOUT)
         else:
             # For auto reboot scenario, it takes some time in ONIE to update the firmware
             logger.info("Waiting on switch to shutdown after auto reboot...")
-            # Need wait longer for CPLD/FPGA which requires power off reboot
-            auto_reboot_timeout = timeout if boot_type == 'power off' else 120
-            localhost.wait_for(host=hn, port=22, state='stopped', delay=1, timeout=auto_reboot_timeout)
+            if 'CPLD' in component or 'FPGA' in component:
+                # For CPLD/FPGA update, most time is spend before the reboot
+                pre_reboot_timeout = timeout
+                post_reboot_timeout = COMMON_REBOOT_TIMEOUT
+            else:
+                # For BIOS/ONIE, most time is spend after the reboot in ONIE
+                pre_reboot_timeout = 120
+                post_reboot_timeout = timeout
+            localhost.wait_for(host=hn, port=22, state='stopped', delay=1, timeout=pre_reboot_timeout)
             # Wait for 30s in case there is ssh flap
             time.sleep(30)
             logger.info("Waiting on switch to come up in SONiC....")
-            localhost.wait_for(host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10, timeout=1200)
+            localhost.wait_for(
+                host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10, timeout=post_reboot_timeout)
 
         logger.info("Waiting on critical systems to come online...")
         wait_until(300, 30, 0, duthost.critical_services_fully_started)
@@ -299,7 +308,7 @@ def call_fwutil(request, duthost, localhost, pdu_ctrl, fw_pkg,
     allure.step("Perform Neccesary Reboot")
     timeout = max([v.get("timeout", TIMEOUT) for k, v in list(paths.items())])
     pdu_delay = fw_pkg["chassis"][chassis].get("power_cycle_delay", 60)
-    complete_install(duthost, localhost, boot_type, res, pdu_ctrl, auto_reboot, current, next_image, timeout, pdu_delay)
+    complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, auto_reboot, current, next_image, timeout, pdu_delay)
 
     allure.step("Collect Updated Firmware Versions")
     time.sleep(2)  # Give a little bit of time in case of no-op install for mounts to complete
