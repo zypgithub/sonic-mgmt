@@ -194,7 +194,8 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
 
 @pytest.mark.reboot_reload
 @allure.title('Test port cannot be added to LAG')
-def test_port_cannot_be_added_to_lag(topology_obj, traffic_type, interfaces, engines, cleanup_list):
+def test_port_cannot_be_added_to_lag(topology_obj, traffic_type, interfaces, engines, cleanup_list,
+                                     lag_lacp_config_with_two_bonds):
     """
     This test case will check the interop of the port channel.
     Check 'ip', 'speed', 'other_lag', 'vlan' dependencies.

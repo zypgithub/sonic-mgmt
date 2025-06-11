@@ -84,6 +84,43 @@ def lag_lacp_base_configuration(topology_obj, interfaces, engines):
     logger.info('Lag LACP Test Common cleanup completed')
 
 
+@pytest.fixture()
+def lag_lacp_config_with_two_bonds(topology_obj, interfaces):
+    """
+    Pytest fixture which are doing configuration with twp bonds
+    :param topology_obj: topology object fixture
+    :param interfaces: interfaces fixture
+    """
+    lag_lacp_config_dict_one_bond = {
+        'hb': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.hb_dut_1, interfaces.hb_dut_2]}]
+    }
+
+    lag_lacp_config_dict_two_bonds = {
+        'hb': [{'type': 'lacp', 'name': 'bond0', 'members': [interfaces.hb_dut_1]},
+               {'type': 'lacp', 'name': 'bond1', 'members': [interfaces.hb_dut_2]}]
+    }
+
+    vlan_config_dict = {
+        'hb': [{'vlan_id': 50, 'vlan_members': [{'bond0': None}]}]
+    }
+
+    ip_config_dict = {
+        'hb': [{'iface': 'bond0.50', 'ips': [('50.0.0.3', '24')]}]
+    }
+
+    LagLacpConfigTemplate.cleanup(topology_obj, lag_lacp_config_dict_one_bond)
+    LagLacpConfigTemplate.configuration(topology_obj, lag_lacp_config_dict_two_bonds)
+    VlanConfigTemplate.configuration(topology_obj, vlan_config_dict)
+    IpConfigTemplate.configuration(topology_obj, ip_config_dict)
+
+    yield
+
+    LagLacpConfigTemplate.cleanup(topology_obj, lag_lacp_config_dict_two_bonds)
+    LagLacpConfigTemplate.configuration(topology_obj, lag_lacp_config_dict_one_bond)
+    VlanConfigTemplate.configuration(topology_obj, vlan_config_dict)
+    IpConfigTemplate.configuration(topology_obj, ip_config_dict)
+
+
 def cleanup(cleanup_list):
     """
     execute all the functions in the cleanup list
