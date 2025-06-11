@@ -1275,7 +1275,7 @@ class PerformanceSetupConstants:
 
 class SonicDeployConstants:
     DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
-    PRODUCTION_DUTS = ["bobcat-10"]
+    PRODUCTION_DUTS = ["bobcat-10", "mtvr-moose-11"]
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
     ADD_TOPO_TIMEOUT_FACTOR_SCALE = 3
