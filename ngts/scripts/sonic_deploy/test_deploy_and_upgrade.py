@@ -172,7 +172,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             except AssertionError:
                 # Give it another try if the background processes in the pre-installation steps fail
                 pre_installation_steps(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number,
-                                       is_simx, pre_install_threads, destination_hwsku, chip_type, request)
+                                       is_simx, pre_install_threads, destination_hwsku, chip_type, request, is_performance)
                 wait_until_background_procs_done(pre_install_threads)
             logger.info("Pre-installation background processes are done")
 
