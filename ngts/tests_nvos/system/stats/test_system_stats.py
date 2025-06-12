@@ -956,7 +956,8 @@ def test_validate_category_file_values(engines, devices, test_api):
         with allure.step("Clear all system stats and delete stats files"):
             system_show = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
             start_time = datetime.strptime(system_show['date-time'], StatsConsts.SYSTEM_TIME_FORMAT)
-            hostname = system_show['hostname']
+            # Remove mgmt port number if present in hostname
+            hostname = system_show['hostname'].replace('-mgmt2', '')
             clear_all_internal_and_external_files(engine, system, category_list)
 
         with allure.step("Restart process..."):
@@ -1061,8 +1062,10 @@ def validate_external_file_header_and_data(name, file_path, hostname, start_time
         reader = csv.reader(csv_file)
         next(reader)
         row = next(reader)
-        assert row[0] == StatsConsts.HEADER_HOSTNAME + hostname, \
-            f"unexpected hostname in file header, {row[0]} instead of {hostname}"
+        # Remove mgmt port number if present in hostname
+        hostname_from_file_name = row[0].replace('-mgmt2', '')
+        assert hostname_from_file_name == StatsConsts.HEADER_HOSTNAME + hostname, \
+            f"unexpected hostname in file header, {hostname_from_file_name} instead of {hostname}"
         row = next(reader)
         assert row[0] == StatsConsts.HEADER_GROUP + name, \
             f"unexpected group in file header, {row[0]} instead of {name}"
