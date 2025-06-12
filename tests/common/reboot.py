@@ -196,7 +196,7 @@ def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res):
         raise Exception('DUT {} did not shutdown'.format(hostname))
 
 
-def wait_for_startup(duthost, localhost, delay, timeout):
+def wait_for_startup(duthost, localhost, delay, timeout, port=SONIC_SSH_PORT):
     # TODO: add serial output during reboot for better debuggability
     #       This feature requires serial information to be present in
     #       testbed information
@@ -206,7 +206,7 @@ def wait_for_startup(duthost, localhost, delay, timeout):
     is_ssh_connected, res, num_tries = ssh_connection_with_retry(
         localhost=localhost,
         host_ip=dut_ip,
-        port=SONIC_SSH_PORT,
+        port=port,
         delay=delay,
         timeout=timeout,
     )
@@ -216,6 +216,7 @@ def wait_for_startup(duthost, localhost, delay, timeout):
             raise Exception(f'DUT {hostname} did not startup. res: {res}')
         else:
             raise Exception(f'DUT {hostname} did not startup at first try. res: {res}')
+
     logger.info('ssh has started up on {}'.format(hostname))
 
 
@@ -632,103 +633,6 @@ def check_reboot_cause_history(dut, reboot_type_history_queue):
     return False
 
 
-def try_create_dut_console(duthost, localhost, conn_graph_facts, creds):
-    try:
-        dut_sonsole = create_duthost_console(duthost, localhost, conn_graph_facts, creds)
-    except Exception:
-        logger.warning("Fail to create dut console. Please check console config or if console works ro not")
-        return None
-    logger.info("creating dut console succeeds")
-    return dut_sonsole
-
-
-def collect_console_log(duthost, localhost, timeout):
-    logger.info("start: collect console log")
-    creds = creds_on_dut(duthost)
-    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
-    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
-    if dut_console:
-        logger.info(f"sleep {timeout} to collect console log....")
-        time.sleep(timeout)
-        dut_console.disconnect()
-        logger.info('end: collect console log')
-    else:
-        logger.warning("dut console is not ready, we can get log by console")
-
-
-def check_ssh_connection(localhost,host_ip,port,delay,timeout,search_regex):
-    res = localhost.wait_for(host=host_ip,
-                             port=port,
-                             state='started',
-                             search_regex=search_regex,
-                             delay=delay,
-                             timeout=timeout,
-                             module_ignore_errors=True)
-    is_connected = not (res.is_failed or ('msg' in res and 'Timeout' in res['msg']))
-    return is_connected, res
-
-def ssh_connection_with_retry(localhost, host_ip, port, delay, timeout):
-    '''
-    Connects to the DUT via SSH. If the connection attempt fails,
-    a retry is performed with a reduced timeout and without expecting any specific message (`search_regex=None`).
-
-    :param localhost:  local host object
-    :param host_ip: dut ip
-    :param delay: delay between ssh availability checks
-    :param delay: sonic ssh port
-    :param timeout: timeout for waiting ssh port state change
-
-    :return: A tuple containing two elements:
-    - A boolean indicating the result of the SSH connection attempt.
-    - The result of the SSH connection last attempt.
-    '''
-    default_connection_params = {
-        'host_ip': host_ip,
-        'port': port,
-        'delay': delay,
-        'timeout': timeout,
-        'search_regex': SONIC_SSH_REGEX
-    }
-    short_timeout = 40
-    params_to_update_list=[{},{'search_regex': None, 'timeout':short_timeout}]
-    for num_try,params_to_update in enumerate(params_to_update_list):
-        iter_connection_params = default_connection_params.copy()
-        iter_connection_params.update(params_to_update)
-        logger.info(f"Checking ssh connection using the following params: {iter_connection_params}")
-        is_ssh_connected,ssh_retry_res = check_ssh_connection(
-            localhost=localhost,
-            **iter_connection_params
-        )
-        if is_ssh_connected:
-            logger.info(f"Connection succeeded")
-            break
-        logger.info(f"Connection failed")
-        logger.info("Check if dut pingable")
-        ping_result = localhost.shell(f"ping -c 3 {host_ip}", module_ignore_errors=True)
-        if ping_result['rc'] == 0:
-            logger.info("Ping to dut was successful")
-        else:
-            logger.info("Ping to dut failed")
-    num_tries = num_try + 1
-    return is_ssh_connected, ssh_retry_res, num_tries
-
-def collect_mgmt_config_by_console(duthost, localhost):
-    logger.info("check if dut is pingable")
-    localhost.shell(f"ping -c 5 {duthost.mgmt_ip}", module_ignore_errors=True)
-
-    logger.info("Start: collect mgmt config by console")
-    creds = creds_on_dut(duthost)
-    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
-    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
-    if dut_console:
-        dut_console.send_command("ip a s eth0")
-        dut_console.send_command("show ip int")
-        dut_console.disconnect()
-        logger.info('End: collect mgmt config by  console  ...')
-    else:
-        logger.warning("dut console is not ready, we can get mgmt config by console")
-
-
 def check_determine_reboot_cause_service(dut):
     """
     @summary: This function verifies the status of the 'determine-reboot-cause' service on the device under test (DUT).
@@ -748,3 +652,99 @@ def check_determine_reboot_cause_service(dut):
     assert sub_state == "exited", f"Service 'determine-reboot-cause' did not exit cleanly. \
             Current sub-state: {sub_state}"
 
+
+def try_create_dut_console(duthost, localhost, conn_graph_facts, creds):
+    try:
+        dut_sonsole = create_duthost_console(duthost, localhost, conn_graph_facts, creds)
+    except Exception as err:
+        logger.warning(f"Fail to create dut console. Please check console config or if console works ro not. {err}")
+        return None
+    logger.info("creating dut console succeeds")
+    return dut_sonsole
+
+
+def collect_console_log(duthost, localhost, timeout):
+    logger.info("start: collect console log")
+    creds = creds_on_dut(duthost)
+    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
+    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
+    if dut_console:
+        logger.info(f"sleep {timeout} to collect console log....")
+        time.sleep(timeout)
+        dut_console.disconnect()
+        logger.info('end: collect console log')
+    else:
+        logger.warning("dut console is not ready, we cannot get log by console")
+
+
+def check_ssh_connection(localhost, host_ip, port, delay, timeout, search_regex):
+    res = localhost.wait_for(host=host_ip,
+                             port=port,
+                             state='started',
+                             search_regex=search_regex,
+                             delay=delay,
+                             timeout=timeout,
+                             module_ignore_errors=True)
+    is_connected = not (res.is_failed or ('msg' in res and 'Timeout' in res['msg']))
+    return is_connected, res
+
+
+def ssh_connection_with_retry(localhost, host_ip, port, delay, timeout):
+    '''
+    Connects to the DUT via SSH. If the connection attempt fails,
+    a retry is performed with a reduced timeout and without expecting any specific message (`search_regex=None`).
+    :param localhost:  local host object
+    :param host_ip: dut ip
+    :param delay: delay between ssh availability checks
+    :param delay: sonic ssh port
+    :param timeout: timeout for waiting ssh port state change
+    :return: A tuple containing two elements:
+    - A boolean indicating the result of the SSH connection attempt.
+    - The result of the SSH connection last attempt.
+    '''
+    default_connection_params = {
+        'host_ip': host_ip,
+        'port': port,
+        'delay': delay,
+        'timeout': timeout,
+        'search_regex': SONIC_SSH_REGEX
+    }
+    short_timeout = 40
+    params_to_update_list = [{}, {'search_regex': None, 'timeout': short_timeout}]
+    for num_try, params_to_update in enumerate(params_to_update_list):
+        iter_connection_params = default_connection_params.copy()
+        iter_connection_params.update(params_to_update)
+        logger.info(f"Checking ssh connection using the following params: {iter_connection_params}")
+        is_ssh_connected, ssh_retry_res = check_ssh_connection(
+            localhost=localhost,
+            **iter_connection_params
+        )
+        if is_ssh_connected:
+            logger.info("Connection succeeded")
+            break
+        logger.info("Connection failed")
+        logger.info("Check if dut pingable")
+        ping_result = localhost.shell(f"ping -c 3 {host_ip}", module_ignore_errors=True)
+        if ping_result['rc'] == 0:
+            logger.info("Ping to dut was successful")
+        else:
+            logger.info("Ping to dut failed")
+    num_tries = num_try + 1
+    return is_ssh_connected, ssh_retry_res, num_tries
+
+
+def collect_mgmt_config_by_console(duthost, localhost):
+    logger.info("check if dut is pingable")
+    localhost.shell(f"ping -c 5 {duthost.mgmt_ip}", module_ignore_errors=True)
+
+    logger.info("Start: collect mgmt config by console")
+    creds = creds_on_dut(duthost)
+    conn_graph_facts = get_graph_facts(duthost, localhost, [duthost.hostname])
+    dut_console = try_create_dut_console(duthost, localhost, conn_graph_facts, creds)
+    if dut_console:
+        dut_console.send_command("ip a s eth0")
+        dut_console.send_command("show ip int")
+        dut_console.disconnect()
+        logger.info('End: collect mgmt config by  console  ...')
+    else:
+        logger.warning("dut console is not ready, we can get mgmt config by console")
