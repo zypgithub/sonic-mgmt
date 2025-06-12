@@ -5,6 +5,7 @@ import pytest
 import random
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, configure_mloops, create_acl_dump, run_traffic, run_validation,
                                                                 get_topology_obj)
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.constants import InfraConst
 from ngts.performance_tests.spcx_ra.Alibaba_400G_AR_tests.conftest import AlibabaScenarioToconfiguration, get_alibaba_traffic, extract_acl_counters
@@ -54,7 +55,9 @@ class Test_Alibaba_x2Split_400G:
                               for hash_type in ["crc", "random"]])
     @allure.title('test_Alibaba_scenario - {scenario_name} with {packet_size}B packets and {hash_type} hash')
     @allure.description('Added dynamically in test body')
-    def test_alibaba_scenario(self, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture):
+    def test_alibaba_scenario(self, request, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture):
+        test_name = get_perf_test_name(request, False)
+
         with allure.step("Adding dynamic description to allure report"):
             allure.dynamic.description(f"Test Alibaba scenario {scenario_name} with packet size {packet_size}B and {hash_type} hash type. "
                                        f"ECMP type: {'stateless' if scenario_configuration.ecmp_type_stateless else 'stateful'}, "
@@ -74,7 +77,7 @@ class Test_Alibaba_x2Split_400G:
                 skip_first_counters_iteration = False
             else:
                 skip_first_counters_iteration = True
-            config = ValidationConfig(players=self.players, test_name=scenario_name, scenario=self.scenario,
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_LIST[0]],
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,

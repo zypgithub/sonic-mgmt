@@ -7,7 +7,7 @@ from ngts.helpers.performance.performance_setup_helpers import (restore_basic_co
                                                                 run_traffic, run_validation, get_topology_obj,
                                                                 skip_test_on_unsupported_os, set_allure_title,
                                                                 ValidationConfig)
-from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.ar_vs_random.conftest import get_ar_vs_random_traffic
 from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
@@ -43,7 +43,9 @@ class TestARvsRandom:
     @allure.title('test_ar_vs_random_leaf. Added dynamically in test body')
     @allure.description('Added dynamically in test body')
     def test_ar_vs_random_leaf(self, request, bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario, conf_args):
-        test_name = (
+        test_name = get_perf_test_name(request, False)
+
+        scenario_name = (
             f'test_ar_vs_random_leaf_'
             f'{"with" if bisection_traffic else "without"}_bisection_traffic_and_'
             f'{"AR" if ecmp_type_ar else "Random"}_ecmp_type'
@@ -55,7 +57,7 @@ class TestARvsRandom:
         skip_first_counters_iteration = True
 
         with allure.step("Adding dynamic description to allure report"):
-            allure.dynamic.title(test_name)
+            allure.dynamic.title(scenario_name)
             allure.dynamic.description(
                 f"Test AR vs Random leaf scenario with "
                 f"{'with' if bisection_traffic else 'without'} bisection traffic and "
