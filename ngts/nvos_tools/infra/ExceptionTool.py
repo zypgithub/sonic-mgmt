@@ -22,8 +22,11 @@ def format_stack() -> List[str]:
     return traceback.format_stack()
 
 
-def log_exception(exception: BaseException, level=logging.ERROR):
-    logging.log(level, format_exception(exception))
+def log_exception(exception: BaseException, prelude='', level=logging.ERROR):
+    msg = format_exception(exception)
+    if prelude:
+        msg = prelude + ': ' + msg
+    logging.log(level, msg)
 
 
 def log_traceback(level=logging.ERROR):

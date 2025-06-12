@@ -49,7 +49,11 @@ class GeneralCliCommon(GeneralCliInterface):
         output = self.engine.run_cmd(f'sudo systemctl stop {service}', validate=True)
         return output
 
-    def systemctl_restart(self, service):
+    def systemctl_restart(self, service, daemon_reload=False):
+        if not isinstance(service, str):
+            service = ' '.join(service)
+        if daemon_reload:
+            self.engine.run_cmd("sudo systemctl daemon-reload", validate=True)
         output = self.engine.run_cmd(f'sudo systemctl restart {service}', validate=True)
         return output
 

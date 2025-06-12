@@ -1,12 +1,20 @@
 #!/usr/bin/env python
-import allure
+import re
+
 import logging
 import os
 import pytest
 import json
+
+from exceptiongroup import BaseExceptionGroup
+
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCli
 from ngts.helpers import system_helpers
+from ngts.nvos_tools.infra import ExceptionTool
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -18,10 +26,19 @@ VALGRIND_RUNNER_STAMP = '# VALGRIND_RUNNER'  # Used to differentiate between the
 VALGRIND_RUNNER_STAMP_LINE_NUM = 2  # The line number where the stamp is expected
 VALGRIND_RUNNER_SRC_PATH = os.path.join(SRC_DIR, VALGRIND_RUNNER)
 VALGRIND_RUNNER_PATH = os.path.join(VALGRIND_DIR, VALGRIND_RUNNER)
+BACKUP_EXTENSION = '.backup'
 
 HOST_PROCESSES_KEY = 'host_processes'
 DOCKER_PROCESSES_KEY = 'docker_processes'
 NO_SERVICE_KEY = 'null'  # For processes that are not associated with any service
+
+# These are all services on croc/mamba where we successfully run valgrind
+SERVICE_LIST = ('haveged.service', 'pam-auth.service', 'smartmontools.service', 'health-statsd.service', 'ssh.service',
+                'nginx-authenticator.service', 'hw-management-tc.service', 'portsyncmgrd.service', 'statemgrd.service',
+                'countermgrd.service', 'configmgrd.service', 'hostcfgd.service', 'ntp.service', 'featured.service',
+                'dbus.service', 'serial-getty@ttyS0.service', 'rasdaemon.service', 'nginx.service', 'rsyslog.service',
+                'stats-reportd.service', 'getty@tty1.service', 'nvued.service', 'aaastatsd.service', 'cron.service',
+                'uuidd.service', 'hw-management-sync.service', 'containerd.service')
 
 
 @pytest.fixture
@@ -42,7 +59,76 @@ def valgrind_config():
 
 
 @pytest.mark.disable_loganalyzer
-@allure.title('Install valgrind')
+def test_start_valgrind(engines):
+    """ Configures the services in SERVICE_LIST to run through valgrind, and restarts them. """
+    engine = engines.dut
+    sudo_engine = system_helpers.PrefixEngine(engine, 'sudo')
+    clear_valgrind_dir(sudo_engine)
+    install_valgrind_package(sudo_engine)
+
+    failed_to_edit_service = []
+    with allure.step("Edit all .service files"):
+        for service in SERVICE_LIST:
+            try:
+                configure_service_to_valgrind(sudo_engine, service)
+            except BaseException as e:
+                ExceptionTool.log_exception(e)
+                failed_to_edit_service.append(service)
+
+    if failed_to_edit_service:
+        logger.error("Failed to edit the following services, check log for details: " + ' '.join(failed_to_edit_service))
+    services_to_restart = list(set(SERVICE_LIST) - set(failed_to_edit_service))
+
+    try:
+        with allure.step("Restart services"):
+            SonicGeneralCli(engine=sudo_engine).systemctl_restart(services_to_restart, daemon_reload=True)
+    except TestIssue as e:
+        ExceptionTool.log_exception(e, "Some services failed to restart")
+        with allure.step(f"Attempting to restore services that failed to run with valgrind"):
+            failed_services = re.findall(r'Job for (\S+) failed', str(e))
+            for service in failed_services:
+                restore_service(sudo_engine, service)
+                try:
+                    fail_log = engine.run_cmd(f"journalctl -xu {service}", validate=True)
+                except BaseException as e:
+                    fail_log = "Failed to collect journal: " + ExceptionTool.format_exception(e)
+                allure.attach(service + ".log", fail_log)
+            SonicGeneralCli(engine=sudo_engine).systemctl_restart(failed_services, daemon_reload=True)
+
+
+@pytest.mark.disable_loganalyzer
+def test_stop_valgrind(engines):
+    """
+    Restores the services in SERVICE_LIST to non-valgrind operation and restarts them.
+    Also attaches all valgrind output files to the allure report, under Valgrind Results step.
+    """
+    engine = engines.dut
+    sudo_engine = system_helpers.PrefixEngine(engine, 'sudo')
+    cli = SonicGeneralCli(engine=sudo_engine)
+    try:
+        with allure.step("Restore all services to non-valgrind"):
+            for service in SERVICE_LIST:
+                restore_service(sudo_engine, service)
+            cli.systemctl_restart(SERVICE_LIST, daemon_reload=True)
+    finally:
+        errors = []
+        with allure.step("Valgrind output"):
+            for f in engine.run_cmd(f"ls {VALGRIND_DIR}", validate=True).split():
+                try:
+                    out_path = VALGRIND_DIR + f
+                    engine.copy_file(source_file=out_path, dest_file=f'/tmp/{f}', file_system='/',
+                                     direction='get', overwrite=True, verify_file=False)
+                    # todo: save valgrind results in the MARS session dir
+                    with open(f'/tmp/{f}') as out_file:
+                        content = out_file.read()
+                    allure.attach(f, content, log=False)
+                except BaseException as e:
+                    errors.append(e)
+            if errors:
+                raise BaseExceptionGroup("Failed to get some valgrind log files", errors)
+
+
+@pytest.mark.disable_loganalyzer
 def test_install_valgrind(topology_obj, valgrind_config):
     """
     Wraps the requested processes by a valgrind runner.
@@ -56,7 +142,6 @@ def test_install_valgrind(topology_obj, valgrind_config):
 
 
 @pytest.mark.disable_loganalyzer
-@allure.title('Uninstall valgrind')
 def test_uninstall_valgrind(topology_obj, valgrind_config):
     """
     Returns the requested processes to run their original binaries.
@@ -169,6 +254,8 @@ def install_valgrind_package(engine):
             logger.info('Valgrind package is already installed, skipping...')
         else:
             GeneralCliCommon(engine=engine).apt_update()
+            # due to a Debian dependency bug, libc6 must be downgraded to install valgrind
+            GeneralCliCommon(engine=engine).apt_install('libc6=2.31-13+deb11u10', '-y --allow-downgrades')
             GeneralCliCommon(engine=engine).apt_install('valgrind', '-y')
             get_process_path(engine, 'valgrind')  # sanity check
 
@@ -263,3 +350,76 @@ def restart_services(engine, services_to_restart):
             for service in services_to_restart:
                 GeneralCliCommon(engine=engine).start_service(service)
                 system_helpers.wait_for_all_jobs_done(engine)
+
+
+def get_services_and_dockers(engine: LinuxSshEngine):
+    """
+    A helper function to get all systemctl services, and to differentiate between services that run on dockers and
+    those that don't. Valgrind should not run on the docker services because it should instead run inside the docker
+    itself. Anyway this function is not currently used in code because the SERVICE_LIST const lists all the services
+    for which we want to run valgrind.
+    """
+    services = engine.run_cmd("systemctl list-units --state=running | grep \\.service | awk '{print $1}'",
+                              validate=True).splitlines()
+    dockers = dict(line.split() for line in
+                   engine.run_cmd("docker ps --format '{{.Names}} {{.Command}}' --no-trunc", validate=True
+                                  ).splitlines())
+    non_dockers = [s for s in services if not any([d in s.replace('@', '') for d in dockers])]
+    logger.info(f"{services=}")
+    logger.info(f"{dockers=}")
+    logger.info(f"{non_dockers=}")
+    return services, dockers, non_dockers
+
+
+def configure_service_to_valgrind(engine, service_name):
+    """
+    Edits the .service file to run valgrind. After calling this function, one must restart the service for it to
+    actually run valgrind.
+    """
+    with allure.step(f"Configure {service_name} file to run valgrind"):
+        conf_file = get_conf_file(engine, service_name)
+        line_number = engine.run_cmd(f"grep -nx '\\[Service]'  {conf_file} | cut -f1 -d:", validate=True)
+        engine.run_cmd(f"""sed -i{BACKUP_EXTENSION} '{line_number}a Environment="PYTHONMALLOC=malloc"' {conf_file}""",
+                       validate=True)
+        engine.run_cmd(
+            fr"sed -i -E 's|ExecStart=(.+)|ExecStart=valgrind --tool=memcheck --leak-check=full "
+            fr"--log-file=/valgrind/vg.{service_name}.out \1|' {conf_file}",
+            validate=True)
+        try:
+            engine.run_cmd(fr"sed -i -E 's|(ExecStart=.+) --daemon|\1|' {conf_file}", validate=True)
+        except BaseException:
+            restore_service(engine, service_name, conf_file)
+            raise
+
+
+def get_conf_file(engine, service):
+    """Uses systemctl to obtain the service's .service file path."""
+    out = engine.run_cmd(f"systemctl show {service} -P FragmentPath", validate=True).splitlines()[-1]
+    allure.attach(out)
+    return out
+
+
+def restore_service(engine, service, conf_file=None):
+    """Restores the .service file using the .backup file. This does not restart the service."""
+    with allure.step(f"Restore {service} using {BACKUP_EXTENSION} file"):
+        if not conf_file:
+            conf_file = get_conf_file(engine, service)
+        engine.run_cmd(f"ls {conf_file}{BACKUP_EXTENSION}", validate=True)  # assert .backup file exists
+        engine.run_cmd(f"rm -f {conf_file}", validate=True)
+        engine.run_cmd(f"mv {conf_file}{BACKUP_EXTENSION} {conf_file}", validate=True)
+
+
+def restore_services(engine, services):
+    """Restore all .service files using their .backup files. This does not restart the services."""
+    restored = []
+    failed = {}
+    for service in services:
+        conf_file = get_conf_file(engine, service)
+        try:
+            restore_service(engine, service, conf_file)
+            restored.append(service)
+        except Exception as e:
+            failed[service] = ExceptionTool.format_exception(e)
+    for s, e in failed.items():
+        logger.error(f"{s}: {e}")
+    return restored
