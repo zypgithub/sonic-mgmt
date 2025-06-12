@@ -236,6 +236,7 @@ croc-chipsim-71      ansible_host=10.237.211.71 ansible_hostv6="" sonic_version=
 croc-chipsim-73      ansible_host=10.237.211.73 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-75      ansible_host=10.237.211.75 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-77      ansible_host=10.237.211.77 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+rosalind-simx-93      ansible_host=10.237.6.93 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 jaguar-113      ansible_host=10.7.144.113 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 jaguar-112      ansible_host=10.7.144.112 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 gorilla-126      ansible_host=10.7.144.126 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000

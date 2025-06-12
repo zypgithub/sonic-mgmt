@@ -1849,3 +1849,14 @@ class CaimanSwitch(NvLinkSwitch):
         self.core_count = 4
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
+
+
+# -------------------------- Rosalind Switch ----------------------------
+
+class RosalindSwitch(NvLinkSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=4)
+
+    def _init_constants(self):
+        super()._init_constants()

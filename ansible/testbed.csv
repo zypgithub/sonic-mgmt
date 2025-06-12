@@ -739,6 +739,7 @@ croc-chipsim-71-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,serv
 croc-chipsim-73-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-73,Mellanox MTR testbed
 croc-chipsim-75-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-75,Mellanox MTR testbed
 croc-chipsim-77-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-77,Mellanox MTR testbed
+rosalind-simx-93-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-77,Mellanox MTR testbed
 jaguar-113-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,jaguar-113,Mellanox MTR testbed
 jaguar-112-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,jaguar-112,Mellanox MTR testbed
 gorilla-126-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,gorilla-126,Mellanox MTR testbed
