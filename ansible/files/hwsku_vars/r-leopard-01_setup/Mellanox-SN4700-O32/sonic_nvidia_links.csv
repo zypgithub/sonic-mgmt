@@ -1,7 +1,7 @@
 StartDevice,StartPort,EndDevice,EndPort,BandWidth,VlanID,VlanMode,AutoNeg
-r-leopard-01,Ethernet0,r-leopard-20,Ethernet0,400000,101,Access,on
-r-leopard-01,Ethernet8,r-leopard-20,Ethernet8,400000,102,Access,on
-r-leopard-01,Ethernet16,r-leopard-20,Ethernet16,400000,103,Access,on
+r-leopard-01,Ethernet0,r-leopard-20,Ethernet0,400000,101,Access,off
+r-leopard-01,Ethernet8,r-leopard-20,Ethernet8,400000,102,Access,off
+r-leopard-01,Ethernet16,r-leopard-20,Ethernet16,400000,103,Access,off
 r-leopard-01,Ethernet24,r-leopard-20,Ethernet24,400000,104,Access,on
 r-leopard-01,Ethernet32,r-leopard-20,Ethernet32,400000,105,Access,on
 r-leopard-01,Ethernet40,r-leopard-20,Ethernet40,400000,106,Access,on
