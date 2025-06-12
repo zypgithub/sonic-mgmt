@@ -918,7 +918,6 @@ platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
-    - "https://redmine.mellanox.com/issues/4495541 and 'mtvr-bobcat-07' in testbed"
 
 platform_tests/api/test_watchdog.py:
   skip:
