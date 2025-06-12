@@ -23,7 +23,7 @@ from ngts.constants.constants import PytestConst
 from ngts.helpers import json_file_helper
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.tests.nightly.conftest import convert_speed_format_to_m_speed
-from ngts.tools.ports_modifier import reload_config, MAX_PORTS_TEST_LIST
+from ngts.tools.ports_modifier import MAX_PORTS_TEST_LIST
 from ngts.scripts.sonic_deploy.os_upgrade_flag import is_os_upgraded
 
 logger = logging.getLogger()
@@ -412,7 +412,7 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
         yield dut_data
 
         if request.session.items[0].name in MAX_PORTS_TEST_LIST:
-            reload_config(request.session, platform_params, chip_type)
+            cli_objects.dut.general.reload_flow(ports_list=None, topology_obj=topology_obj, reload_force=True)
 
         with allure.step(f"Collecting running config after test on {dut_hostname}"):
             logger.info(f"Collecting running config after test on {dut_hostname}, config info save in fixture config_check attachment")
