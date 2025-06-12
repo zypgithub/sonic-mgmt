@@ -12,6 +12,7 @@ from ngts.performance_tests.lossy_lossless.conftest import get_lossy_lossless_ba
 logger = logging.getLogger()
 
 PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
+results_dict = {}
 
 
 class TestOptimizeLossyLossless:
@@ -53,10 +54,8 @@ class TestOptimizeLossyLossless:
                                                                          scenario=self.scenario,
                                                                          samples_params_dict=PerfConsts.SAMPLES_PARAMS)
             with allure.step("Save the validation results"):
-                result_dict = {
-                    test_name: {}
-                }
-                result_dict[test_name]['Bandwidth_samples'] = traffic_validation_jsons_list[0]['Bandwidth_samples']
-                result_dict[test_name]['TC_samples'] = traffic_validation_jsons_list[0]['TC_samples']
+                results_dict[test_name] = {}
+                results_dict[test_name]['Bandwidth_samples'] = traffic_validation_jsons_list[0]['Bandwidth_samples']
+                results_dict[test_name]['TC_samples'] = traffic_validation_jsons_list[0]['TC_samples']
                 with open(self.conf_args['result_file_location'], 'w') as f:
-                    json.dump(result_dict, f)
+                    json.dump(results_dict, f)
