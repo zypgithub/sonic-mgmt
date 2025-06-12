@@ -36,7 +36,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.infra import get_topology_from_noga
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
-from ngts.nvos_tools.infra import IpTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 logger = logging.getLogger()
 
