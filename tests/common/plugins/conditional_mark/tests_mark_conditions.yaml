@@ -1236,6 +1236,12 @@ gnmi/test_gnmi_smartswitch.py::test_gnmi_appldb_01:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/18453"
 
+gnmi/test_gnoi_system_reboot.py::test_gnoi_system_reboot_warm:
+  skip:
+    reason: "Warm reboot should only run on t0 topology"
+    conditions:
+      - "topo_type not in ['t0']"
+
 #######################################
 #####           hash              #####
 #######################################
