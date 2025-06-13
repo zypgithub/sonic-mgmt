@@ -64,6 +64,8 @@ class CumulusConsts:
     ROLE_SYSTEM_ADMIN = "system-admin"
     ROLE_NVUE_ADMIN = "nvue-admin"
     ROLE_NVUE_MONITOR = "nvue-monitor"
+    TECHSUPPORT_FILES_PATH = "/var/support/"
+    TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE = "File Delete Succeeded"
 
 
 class TestConsts:

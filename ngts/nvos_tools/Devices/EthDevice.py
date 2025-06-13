@@ -89,6 +89,10 @@ class EthSwitch(BaseSwitch):
         self.disk_minimum_free_space = 5.5  # Gig
         self.ib_ports_num = 32
         self.supports_tpm_testing = False
+        self.expected_operation_durations = {}
+        self.expected_operation_durations.update({
+            self.generate_tech_support: 130
+        })
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)

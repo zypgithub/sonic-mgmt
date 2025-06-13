@@ -1,7 +1,7 @@
 import logging
 import re
 
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -23,8 +23,12 @@ class TechSupport(BaseComponent):
 
     def action_delete(self, file_name):
         with allure.step("Delete tech-support: {}".format(file_name)):
+            if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE and TestToolkit.tested_api == ApiType.OPENAPI:
+                resource_path = self.get_resource_path() + '/\\{file-name\\}'
+            else:
+                resource_path = self.get_resource_path()
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_delete, TestToolkit.engines.dut,
-                                                   self.get_resource_path(), file_name)
+                                                   resource_path, file_name)
 
     def action_generate(self, engine="", option="", since_time="", test_name=''):
         """
@@ -33,6 +37,7 @@ class TechSupport(BaseComponent):
             update self._resource_path in the init method
             remove self.get_resource_path().replace('/files', ' ') in this method
         """
+        switch_type = TestToolkit.devices.dut.switch_type
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
                 engine = TestToolkit.engines.dut
@@ -43,14 +48,29 @@ class TechSupport(BaseComponent):
             cmd_out.ignore_result()
             if 'failed' in cmd_out.info or 'error' in cmd_out.info:
                 return cmd_out.info, duration
-            self.parse_techsupport_folder_name(cmd_out)
-            return SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration
+            if TestToolkit.devices.dut.is_eth():
+                self.parse_eth_techsupport_folder_name(cmd_out)
+                return CumulusConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration
+            else:
+                self.parse_ib_techsupport_folder_name(cmd_out)
+                return SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration
 
-    def parse_techsupport_folder_name(self, techsupport_res):
+    def parse_ib_techsupport_folder_name(self, techsupport_res):
         techsupport_res_list = techsupport_res.returned_value.split('\n')
         files_name = "".join([name for name in techsupport_res_list if '.tar.gz' in name])
         files_name = files_name.replace('Generated tech-support', '').split(' ')
         self.file_name = files_name[-1]
+
+    def parse_eth_techsupport_folder_name(self, techsupport_res):
+        techsupport_res_list = techsupport_res.returned_value.split('\n')
+        for line in techsupport_res_list:
+            if "Please send" in line:
+                path = line.split("Please send")[-1].strip()
+                if ".txz" in path:
+                    self.file_name = path.split(".txz")[0].split("/")[-1] + ".txz"
+                else:
+                    self.file_name = path.split("/")[-1].split()[0]
+                return
 
     def extract_techsupport_files(self, engine):
         with allure.step(f"extract {self.file_name}"):

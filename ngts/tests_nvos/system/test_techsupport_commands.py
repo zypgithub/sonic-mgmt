@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
@@ -126,7 +126,9 @@ def test_techsupport_since_invalid_date(engines, test_api):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_delete(engines):
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_techsupport_delete(engines, test_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -142,7 +144,12 @@ def test_techsupport_delete(engines):
         8. File not found: <first_file>
     """
     system = System(None)
-    success_message = 'File delete successfully'
+    if devices.dut.is_eth():
+        path = CumulusConsts.TECHSUPPORT_FILES_PATH
+        success_message = CumulusConsts.TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE
+    else:
+        path = SystemConsts.TECHSUPPORT_FILES_PATH
+        success_message = 'File delete successfully'
     with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
 
         with allure.step('Generate two tech-support files'):
@@ -152,7 +159,7 @@ def test_techsupport_delete(engines):
             system.techsupport.show()
 
         with allure.step('Delete the first created tech-support file'):
-            output = system.techsupport.action_delete(first_file.replace('/host/dump/', '')).get_returned_value()
+            output = system.techsupport.action_delete(first_file.replace(path, '')).get_returned_value()
 
         assert success_message in output, 'failed to delete'
         output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
@@ -163,14 +170,19 @@ def test_techsupport_delete(engines):
             assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
 
         with allure.step('Delete non exist tech-support file {}'.format(first_file)):
-            res_obj = system.techsupport.action_delete(first_file.replace('/host/dump/', ''))
+            res_obj = system.techsupport.action_delete(first_file.replace(path, ''))
             res_obj.verify_result(should_succeed=False)
             assert 'Action failed with the following issue:' in res_obj.info, "Can not delete non exist file!"
+
+        with allure.step('Delete the second created tech-support file'):
+            system.techsupport.action_delete(second_file.replace(path, '')).get_returned_value()
 
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_upload(engines):
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_techsupport_upload(engines, test_api, devices):
     """
     Test flow:
         1. upload non exist tech-support file
@@ -187,11 +199,16 @@ def test_techsupport_upload(engines):
     :return:
     """
     system = System(None)
+    if devices.dut.is_eth():
+        path = CumulusConsts.TECHSUPPORT_FILES_PATH
+        success_message = 'Successfully uploaded the file'
+    else:
+        path = SystemConsts.TECHSUPPORT_FILES_PATH
+        success_message = 'File upload successfully'
     with allure.step('generate valid and invalid urls'):
-        player = engines['sonic_mgmt']
-        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
-        invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        invalid_url_1 = "\'scp://{}:{}{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        invalid_url_2 = "\'ffff://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        upload_path = "\'scp://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
 
     with allure.step('Try to upload non exist tech-support file'):
         output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
@@ -199,15 +216,15 @@ def test_techsupport_upload(engines):
 
     with allure.step('Generate tech-support file'):
         tech_file, duration = system.techsupport.action_generate()
-        tech_file = tech_file.replace('/host/dump/', '')
+        tech_file = tech_file.replace(path, '')
 
     with allure.step('try to upload techsupport {} to {} - Positive Flow'.format(tech_file, upload_path)):
         output = system.techsupport.action_upload(upload_path, tech_file).verify_result()
         with allure.step('verify the upload message'):
-            assert "File upload successfully" in output, "Failed to upload the techsupport file"
+            assert success_message in output, "Failed to upload the techsupport file"
 
         with allure.step('verify the uploaded file exist in target path'):
-            output = player.run_cmd('ls /tmp/')
+            output = engines.dut.run_cmd('ls /tmp/')
             assert tech_file in output
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
@@ -223,7 +240,9 @@ def test_techsupport_upload(engines):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_multiple_times(engines, test_name, random_api, devices, serial_log_analyzers):
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_techsupport_multiple_times(engines, test_name, random_api, devices, serial_log_analyzers, test_api):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -249,6 +268,7 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
 
 @pytest.mark.system
 @pytest.mark.tech_support
+@pytest.mark.cumulus
 def test_techsupport_size(engines, test_name):
     """
     Run nv action generate system tech-support and verify output file size

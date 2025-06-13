@@ -7,7 +7,7 @@ from typing import Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
-    DiskConsts, DateTimeConsts
+    DiskConsts, DateTimeConsts, CumulusConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -297,6 +297,12 @@ class BaseDevice(ABC):
 
     def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
         pass
+
+    def is_eth(self):
+        return self.switch_type == CumulusConsts.ETH_SWITCH_TYPE
+
+    def is_ib(self):
+        return self.switch_type == NvosConst.IB_SWITCH_TYPE
 
 # -------------------------- Base Appliance ----------------------------
 
