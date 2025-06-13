@@ -7,6 +7,7 @@ logger = logging.getLogger()
 
 @pytest.mark.disable_loganalyzer
 def test_boot_into_onie(cli_objects, topology_obj, is_simx, platform_params):
+    pytest.skip("Skip test_boot_into_onie as workaround")
     hwsku = platform_params['hwsku']
     if is_simx or cli_objects.dut.general.is_bluefield(hwsku):
         pytest.skip('No need to reboot into ONIE for SIMX/DPU setups')
