@@ -441,7 +441,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371"
     conditions:
-      - "https://redmine.mellanox.com/issues/4486371 and 'bobcat' in testbed"
+      - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
 ########################## NGTS IGNORE END ##########################
 
 
