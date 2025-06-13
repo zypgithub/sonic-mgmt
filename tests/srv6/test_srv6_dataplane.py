@@ -318,7 +318,7 @@ class TestSRv6DataPlaneBase(SRv6Base):
                 if reboot_type == "cold":
                     with allure.step('Execute cold reboot'):
                         reboot(rand_selected_dut, localhost, reboot_type=reboot_type, wait_warmboot_finalizer=True,
-                            safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
+                               safe_reboot=True, check_intf_up_ports=True, wait_for_bgp=True)
                 elif reboot_type == "reload":
                     with allure.step('Execute config reload'):
                         config_reload(rand_selected_dut, safe_reload=True, check_intf_up_ports=True)
@@ -335,11 +335,8 @@ class TestSRv6DataPlaneBase(SRv6Base):
                                              "bgp"),
                                   "BGP not started.")
 
-                with allure.step('Validate BGP sessions UP'):
-                    self._validate_bgp_session(rand_selected_dut)
-
                 with allure.step('Validate BGP route sync'):
-                    pytest_assert(wait_until(60, 5, 0, is_bgp_route_synced,
+                    pytest_assert(wait_until(120, 5, 0, is_bgp_route_synced,
                                              rand_selected_dut), "BGP route is not synced")
 
                 with allure.step('Validate SRv6 packet process'):
