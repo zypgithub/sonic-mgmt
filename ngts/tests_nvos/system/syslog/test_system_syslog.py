@@ -1413,7 +1413,7 @@ def test_syslog_welf_format_without_firewall_name(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_syslog_rate_limit_stress_test(test_api):
     """

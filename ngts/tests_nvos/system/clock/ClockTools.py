@@ -45,8 +45,9 @@ class ClockTools:
             Extract timezone value from 'timedatectl' raw output
         @return: timezone as a string
         """
-        return OutputParsingTool.parse_linux_cmd_output_to_dic(timedatectl_output)\
+        timezone = OutputParsingTool.parse_linux_cmd_output_to_dic(timedatectl_output)\
             .get_returned_value()[ClockConsts.TIMEDATECTL_TIMEZONE_FIELD_NAME]
+        return ClockTools.normalize_timezone(timezone)
 
     @staticmethod
     def get_datetime_from_timedatectl_output(timedatectl_output):

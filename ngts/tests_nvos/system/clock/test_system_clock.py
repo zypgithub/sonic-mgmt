@@ -46,11 +46,13 @@ def test_show_system_date_time(test_api, engines, devices, nv_command):
     with allure.step("Validate timezone value"):
         # verify that timezones are the same
         timedatectl_output_str = engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD)
-        ValidationTool.compare_values(date_time_output[DateTimeConsts.TIMEZONE], ClockTools
-                                      .get_timezone_from_timedatectl_output(timedatectl_output_str)).verify_result()
+        nv_timezone = ClockTools.normalize_timezone(date_time_output[DateTimeConsts.TIMEZONE])
+        timedatectl_timezone = ClockTools.get_timezone_from_timedatectl_output(timedatectl_output_str)
+        ValidationTool.compare_values(nv_timezone, timedatectl_timezone).verify_result()
 
     with allure.step("Validate date-time value"):
         # extract date-time value from outputs
+        timedatectl_output_str = engines.dut.run_cmd(ClockConsts.TIMEDATECTL_CMD)
         show_system_datetime = date_time_output[DateTimeConsts.LOCAL_TIME]
         timedatectl_datetime = ClockTools.get_datetime_from_timedatectl_output(timedatectl_output_str)
         # verify both date-time values are the same
