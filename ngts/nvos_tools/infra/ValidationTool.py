@@ -587,7 +587,7 @@ class ValidationTool:
     @staticmethod
     def assert_expected_value(expected, actual, description=''):
         """Assert that expected value equals actual value."""
-        assert expected == actual, f"{description} Expected: {expected}, Actual: {actual}"
+        assert expected == actual, f'{description} wrong value: {expected=}, {actual=}'
 
     @staticmethod
     def validate_subset_in_superset(subset: Iterable, superset: Iterable, should_be_included=True) -> ResultObj:

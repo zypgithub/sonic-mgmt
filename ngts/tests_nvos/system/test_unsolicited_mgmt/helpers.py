@@ -55,6 +55,9 @@ def replace_two_ip_addresses(engine):
 
             NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
 
+        with allure.step("sleep 3 second"):
+            time.sleep(3)
+
     return eth0_gateway, eth0_ip, eth1_ip
 
 

@@ -781,6 +781,8 @@
     - Affected_test_cases:
       - tests_nvos/general/security/authentication_restrictions/test_authentication_restrictions.py::test_auth_restrictions_remote_counting
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_auth
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_priority
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_basic
       - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
       - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
@@ -834,6 +836,7 @@
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_port
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_server_unreachable
         - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_timeout
+        - tests_nvos/general/security/radius/test_aaa_radius.py::test_radius_bad_secret
 
 - Errors_list:
     - '.*ERR .*: pam_radius_auth: packet from RADIUS server.*failed verification: The shared secret is probably incorrect.*'

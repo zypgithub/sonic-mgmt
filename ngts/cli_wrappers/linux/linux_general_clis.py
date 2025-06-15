@@ -66,5 +66,5 @@ class LinuxGeneralCli(GeneralCliCommon):
         clear history
         :return: command output
         """
-        logger.info("Running 'history -c' on dut")
-        return self.engine.run_cmd("history -c")
+        logger.info("Running 'history -c && history -w && > ~/.bash_history' on dut")
+        return self.engine.run_cmd("history -c && history -w && > ~/.bash_history")
