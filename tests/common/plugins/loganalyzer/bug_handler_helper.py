@@ -100,12 +100,18 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                         with allure.step("Run Bug Handler on Log Analyzer error"):
                             logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
                             error_dict = {BugHandlerConst.LA_ERROR: error_group}
-                            error_dict.update(bug_handler_wrapper_err_msg(conf_path, redmine_project, branch,
-                                                                          yaml_file_path,
-                                                                          BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
-                                                                          BugHandlerConst.BUG_HANDLER_SCRIPT,
-                                                                          bug_handler_action,
-                                                                          bug_handler_params))
+                            error_dict.update(
+                                bug_handler_wrapper_err_msg(
+                                    conf_path,
+                                    redmine_project,
+                                    branch,
+                                    yaml_file_path,
+                                    BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
+                                    BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"]),
+                                    bug_handler_action,
+                                    bug_handler_params
+                                )
+                            )
                             bug_handler_dumps_results.append(error_dict)
         except Exception as err:
             logger.error("Bug handler failed")

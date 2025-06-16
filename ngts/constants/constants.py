@@ -1470,9 +1470,18 @@ class BugHandlerConst:
                              "SONiC-Verification": SONIC_BUG_HANDLER_CONF_FILE,
                              "'NVOS - Design'": os.path.join(NGTS_PATH, "helpers/bug_handler/nvos_bug_handler.conf")}
     BUG_HANDLER_PYTHON_PATH = "/mswg/projects/swvt/MARS/scripts/python37_wrapper.sh"
-    BUG_HANDLER_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_2/bin/"
-    BUG_HANDLER_SCRIPT = BUG_HANDLER_PATH + "handle_bug.py"
-    BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT = BUG_HANDLER_PATH + "upload_attachment_to_bug.py"
+    BH_1_5_2_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_2/bin/"
+    BUG_HANDLER_PATH = {
+        "SONiC-Design": BH_1_5_2_PATH,
+        "SONiC-Verification": BH_1_5_2_PATH,
+        "'NVOS - Design'": BH_1_5_2_PATH,
+        "default": BH_1_5_2_PATH
+    }
+    BUG_HANDLER_SCRIPT = {}
+    BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT = {}
+    for key in BUG_HANDLER_PATH:
+        BUG_HANDLER_SCRIPT[key] = os.path.join(BUG_HANDLER_PATH[key], "handle_bug.py")
+        BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT[key] = os.path.join(BUG_HANDLER_PATH[key], "upload_attachment_to_bug.py")
     BUG_HANDLER_SANITIZER_USER = "asan"
     BUG_HANDLER_LOG_ANALYZER_USER = "log_analyzer"
     SANITIZER_PARSED_DUMPS_FOLDER = "/tmp/parsed_sanitizer_dumps/"

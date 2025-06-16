@@ -93,11 +93,17 @@ def handle_sanitizer_dump(conf_path, dump_path, redmine_project, branch, version
     yaml_parsed_files_dict = parse_sanitizer_dump(dump_path, redmine_project, version, setup_name)
     for sanitizer_file_name, yaml_parsed_file in yaml_parsed_files_dict.items():
         with allure.step(f"Run Bug Handler on sanitizer file: {sanitizer_file_name}"):
-            bug_handler_dump_result["results"].append(bug_handler_wrapper(conf_path,
-                                                                          redmine_project, branch, sanitizer_file_name,
-                                                                          yaml_parsed_file,
-                                                                          BugHandlerConst.BUG_HANDLER_SANITIZER_USER,
-                                                                          BugHandlerConst.BUG_HANDLER_SCRIPT))
+            bug_handler_dump_result["results"].append(
+                bug_handler_wrapper(
+                    conf_path,
+                    redmine_project,
+                    branch,
+                    sanitizer_file_name,
+                    yaml_parsed_file,
+                    BugHandlerConst.BUG_HANDLER_SANITIZER_USER,
+                    BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"])
+                )
+            )
     return bug_handler_dump_result
 
 
@@ -253,8 +259,8 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
 
     update_only = not bug_handler_action["create"] and bug_handler_action["update"]
     update_only_mode = '--update_only' if update_only else ''
-
-    if bug_handler_params.get("cli_type", '') == "Sonic":
+    cli_type = bug_handler_params.get("cli_type", '')
+    if cli_type == "Sonic":
 
         bug_handler_file_result = run_bug_handler_with_no_action(
             conf_path, redmine_project, branch, yaml_parsed_file, user, bug_handler_path)
@@ -274,7 +280,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
                 if bug_handler_file_result["action"] == BugHandlerConst.BUG_HANDLER_DECISION_UPDATE:
                     bug_handler_file_result["status"] = "done"
 
-    if not bug_handler_no_action or bug_handler_params.get("cli_type", '') != "Sonic":
+    if not bug_handler_no_action or cli_type != "Sonic":
         bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
             f"--user {user} --branch {branch} --debug_level 2 " \
             f"--parsed_data '{yaml_parsed_file}' {no_action} {update_only_mode}"
@@ -291,7 +297,7 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
         # Note: Executed commands are now included directly in the ticket description via get_nvue_additional_info
         # No longer attaching the commands file separately
         tar_file_path_list = [handle_file_size_exceedance(tar_file_path) for tar_file_path in tar_file_path_list]
-        upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT
+        upload_script = BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_UPLOAD_ATTACHMENT_SCRIPT["default"])
         upload_cmd = f"env LOG_FORMAT_JSON=1 {upload_script} --bug_id {ticket_id}  --attachments {' '.join(tar_file_path_list)}"
         logger.info(f"Running uploading attachment command: {upload_cmd}")
         upload_attachment_output = subprocess.run(upload_cmd, shell=True, capture_output=True)
