@@ -161,6 +161,7 @@ def pytest_addoption(parser):
     parser.addoption('--store_dump_on_fail', required=False, action='store_true', default=False,
                      help='Store techsupport dump on test fail during manual run')
     parser.addoption("--ipv6_add", action="store", default=None, help="Provide static ipv6 address")
+    parser.addoption("--skip_coredump_check", action="store_true", default=False, help="Skip coredump check fixture")
 
 
 def pytest_runtest_call(item):
