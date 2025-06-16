@@ -61,7 +61,7 @@
                 {% endif %}>
                 <td>{{ loop.index }}</td>
                 <td>
-                    {{ commit.subject | link_pr_in_subject }}
+                    {{ commit.subject | link_pr_in_subject(branch) }}
                 </td>
                 <td>{{ commit.hash[:8] }}</td>
                 <td>{{ commit.ct | format_ts }}</td>

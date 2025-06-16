@@ -30,12 +30,15 @@ def extract_pr_number(commit_subject: str) -> list[str]:
     return re.findall(r'#(\d+)', commit_subject)
 
 
-def link_pr_in_subject(commit_subject: str) -> str:
+def link_pr_in_subject(commit_subject: str, branch: str) -> str:
+    base_url = "https://github.com/sonic-net/sonic-mgmt/pull"
+    if branch == "202412":
+        base_url = "https://github.com/Azure/sonic-mgmt.msft/pull"
     pr_number = extract_pr_number(commit_subject)
     if pr_number:
         return commit_subject.replace(
             f'#{pr_number[-1]}',
-            f'<a href="https://github.com/sonic-net/sonic-mgmt/pull/{pr_number[-1]}">'
+            f'<a href="{base_url}/{pr_number[-1]}">'
             f'#{pr_number[-1]}</a>'
         )
     return commit_subject
@@ -71,6 +74,7 @@ def send_email(recipients: list[str], branch: str, **kwargs) -> None:
     html_content = report_template.render(
         kwargs,
         build_url=os.environ.get('BUILD_URL', ''),
+        branch=branch,
     )
     # logger.debug(f"html content: \n{html_content}")
     text_part = MIMEText(html_content, 'html')
