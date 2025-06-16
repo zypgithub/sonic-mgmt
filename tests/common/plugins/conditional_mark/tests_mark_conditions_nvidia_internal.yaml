@@ -252,6 +252,12 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_ap
     conditions:
     - "'simx' in platform"
 
+tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump:
+  skip:
+    reason: "After feature 4251468 was implemented, the testcase is not relevant for simx platform anymore"
+    conditions:
+    - "'simx' in platform"
+
 tests/nightly/secure:
   skip:
     reason: "Skipped on gaur testbeds"
