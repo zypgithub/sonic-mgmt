@@ -141,7 +141,7 @@ class Events(BaseComponent):
         if events_count:
             events_count_api = '=' + str(events_count)
         else:
-            events_count_api = str(events_count) + '/'
+            events_count_api = '=' + str(20)  # default value for openapi as "system events --last" is not supported as in RM-4396664
         events_count_nvue = ' ' + str(events_count)
         with allure.step("Show system event --last/--recent"):
             logging.info("Show system event --last/--recent")

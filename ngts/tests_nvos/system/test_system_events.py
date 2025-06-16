@@ -48,11 +48,8 @@ def test_show_system_events(test_api, engines):
 
     with allure.step('Run show system events last command & validate there are 20(default) events in the output'):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '')).get_returned_value()
-        if test_api == ApiType.OPENAPI and is_bug_active(4396664):
-            pytest.skip("Skipping this test due to Rm bug for OpenApi: https://redmine.mellanox.com/issues/4396664")
-        else:
-            no_of_events = len(output)
-            assert no_of_events is 20, 'No of events in show output is {} instead of {}'.format(no_of_events, 20)
+        no_of_events = len(output)
+        assert no_of_events is 20, 'No of events in show output is {} instead of {}'.format(no_of_events, 20)
 
     with allure.step('Run show system events last 25 command, validate there are 25 events in the output'):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '25')).get_returned_value()
