@@ -1510,6 +1510,18 @@ platform_tests/api/test_watchdog.py::TestWatchdogApi::test_arm_different_timeout
     conditions:
     - "https://redmine.mellanox.com/issues/4417277 and 'bf3comdpu' in platform"
 
+platform_tests/daemon/test_pcied.py::test_pmon_pcied_running_status:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_pcieinfo:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
 tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
   skip:
