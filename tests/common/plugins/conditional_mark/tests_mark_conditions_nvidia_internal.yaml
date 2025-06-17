@@ -45,6 +45,18 @@ tests/nightly/routing/test_routing.py::TestRouting::test_reboot:
     conditions:
     - "https://redmine.mellanox.com/issues/4222104 and 'sn5640_simx' in platform"
 
+tests/nightly/routing/test_routing.py::TestRouting::test_routing:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4500318"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4500318"
+
+tests/nightly/routing/test_routing.py::TestRouting::test_check_existing_network_show_commands:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4500318"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4500318"
+
 tests/nightly/component_versions/test_component_versions.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4411856"
