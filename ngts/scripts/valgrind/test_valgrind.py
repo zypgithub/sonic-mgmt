@@ -33,12 +33,12 @@ DOCKER_PROCESSES_KEY = 'docker_processes'
 NO_SERVICE_KEY = 'null'  # For processes that are not associated with any service
 
 # These are all services on croc/mamba where we successfully run valgrind
-SERVICE_LIST = ('haveged.service', 'pam-auth.service', 'smartmontools.service', 'health-statsd.service', 'ssh.service',
-                'nginx-authenticator.service', 'hw-management-tc.service', 'portsyncmgrd.service', 'statemgrd.service',
-                'countermgrd.service', 'configmgrd.service', 'hostcfgd.service', 'ntp.service', 'featured.service',
-                'dbus.service', 'serial-getty@ttyS0.service', 'rasdaemon.service', 'nginx.service', 'rsyslog.service',
-                'stats-reportd.service', 'getty@tty1.service', 'nvued.service', 'aaastatsd.service', 'cron.service',
-                'uuidd.service', 'hw-management-sync.service', 'containerd.service')
+SERVICE_LIST = ('aaastatsd.service', 'configmgrd.service', 'containerd.service', 'countermgrd.service', 'cron.service',
+                'dbus.service', 'featured.service', 'getty@tty1.service', 'haveged.service', 'health-statsd.service',
+                'hostcfgd.service', 'hw-management-sync.service', 'hw-management-tc.service',
+                'nginx-authenticator.service', 'nginx.service', 'ntp.service', 'nvued.service', 'pam-auth.service',
+                'portsyncmgrd.service', 'rasdaemon.service', 'rsyslog.service', 'serial-getty@ttyS0.service',
+                'smartmontools.service', 'ssh.service', 'statemgrd.service', 'stats-reportd.service', 'uuidd.service')
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def test_start_valgrind(engines):
 
     if failed_to_edit_service:
         logger.error("Failed to edit the following services, check log for details: " + ' '.join(failed_to_edit_service))
-    services_to_restart = list(set(SERVICE_LIST) - set(failed_to_edit_service))
+    services_to_restart = sorted(set(SERVICE_LIST) - set(failed_to_edit_service))
 
     try:
         with allure.step("Restart services"):
@@ -85,7 +85,7 @@ def test_start_valgrind(engines):
     except TestIssue as e:
         ExceptionTool.log_exception(e, "Some services failed to restart")
         with allure.step(f"Attempting to restore services that failed to run with valgrind"):
-            failed_services = re.findall(r'Job for (\S+) failed', str(e))
+            failed_services = sorted(re.findall(r'Job for (\S+) failed', str(e), re.IGNORECASE))
             for service in failed_services:
                 restore_service(sudo_engine, service)
                 try:
@@ -108,8 +108,10 @@ def test_stop_valgrind(engines):
     try:
         with allure.step("Restore all services to non-valgrind"):
             for service in SERVICE_LIST:
-                restore_service(sudo_engine, service)
-            cli.systemctl_restart(SERVICE_LIST, daemon_reload=True)
+                with allure.independent_step(service):
+                    restore_service(sudo_engine, service)
+            with allure.independent_step("run systemctl restart"):
+                cli.systemctl_restart(SERVICE_LIST, daemon_reload=True)
     finally:
         errors = []
         with allure.step("Valgrind output"):
@@ -255,7 +257,7 @@ def install_valgrind_package(engine):
         else:
             GeneralCliCommon(engine=engine).apt_update()
             # due to a Debian dependency bug, libc6 must be downgraded to install valgrind
-            GeneralCliCommon(engine=engine).apt_install('libc6=2.31-13+deb11u10', '-y --allow-downgrades')
+            GeneralCliCommon(engine=engine).apt_install('libc6=2.36-9+deb12u9', '-y --allow-downgrades')
             GeneralCliCommon(engine=engine).apt_install('valgrind', '-y')
             get_process_path(engine, 'valgrind')  # sanity check
 

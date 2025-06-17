@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<DBDEF>
+	<global>
+		<default_params_type> extended_setup_step_params </default_params_type>
+		<DB>
+			<info> </info>
+			<owner> Tamuz Ofer </owner>
+			<group> NVOS </group>
+			<dimension> VER </dimension>
+
+            <pre>
+            </pre>
+
+		</DB>
+		<Test>
+			<post> </post>
+		</Test>
+	</global>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/nvos_valgrind.cases </cases>
+	</test>
+</DBDEF>
