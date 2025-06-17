@@ -341,7 +341,7 @@ def generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, req
         pwh.set(PwhConsts.LEN_MIN, 19, dut_engine=remote_user_engine).ignore_result()
 
     with allure.step(f'Turn authentication order to local,{remote_aaa_type}'):
-        System().aaa.authentication.set(AuthConsts.ORDER, f'local,{remote_aaa_type}', apply=True).verify_result()
+        System().aaa.authentication.set(AuthConsts.ORDER, f'local {remote_aaa_type}', apply=True).verify_result()
         if remote_aaa_type == RemoteAaaType.LDAP:
             wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 

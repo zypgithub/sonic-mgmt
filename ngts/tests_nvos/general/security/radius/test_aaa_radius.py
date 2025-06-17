@@ -291,7 +291,7 @@ def test_radius_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
 
         with allure.step('Set radius in authentication order and failthrough off'):
             configure_resource(engines, resource_obj=aaa.authentication, conf={
-                AuthConsts.ORDER: f'{AuthConsts.RADIUS},{AuthConsts.LOCAL}',
+                AuthConsts.ORDER: f'{AuthConsts.RADIUS} {AuthConsts.LOCAL}',
                 AuthConsts.FAILTHROUGH: AaaConsts.DISABLED
             }, apply=True, verify_apply=False)
 

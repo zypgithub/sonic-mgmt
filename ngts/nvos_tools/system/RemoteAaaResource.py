@@ -23,7 +23,7 @@ class NVOSRemoteAaaResource(AbstractRemoteAaaResource):
 
     def enable(self, failthrough=False, apply=False, engine=None, verify_res=True):
         authentication: BaseComponent = self.parent_obj.authentication
-        authentication.set(AuthConsts.ORDER, f'{self._remote_aaa_type_name},{AuthConsts.LOCAL}',
+        authentication.set(AuthConsts.ORDER, f'{self._remote_aaa_type_name} {AuthConsts.LOCAL}',
                            dut_engine=engine).verify_result()
         failthrough_val = AaaConsts.ENABLED if failthrough else AaaConsts.DISABLED
         res = authentication.set(AuthConsts.FAILTHROUGH, failthrough_val, apply=apply, dut_engine=engine)
