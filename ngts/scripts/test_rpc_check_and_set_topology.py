@@ -144,7 +144,7 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
 
     sonic_branch = topology_obj.players['dut']['branch']
     logger.info('SONiC branch is: {}'.format(sonic_branch))
-    ptf_tag = BRANCH_PTF_MAPPING.get(sonic_branch, 'latest')
+    ptf_tag = BRANCH_PTF_MAPPING.get(sonic_branch, '877728')
 
     with allure.step("Remove topo {}".format(current_topo)):
         cmd = "./testbed-cli.sh -k ceos remove-topo {SWITCH}-{TOPO} vault".format(SWITCH=dut_name, TOPO=current_topo)

@@ -395,14 +395,14 @@ def get_ptf_docker_tag(image_path):
     :param image_path: example: /auto/sw_system_release/sonic/master.234-27a6641fb_Internal/Mellanox/sonic-mellanox.bin
     :return: ptf docker tag, example: '42007'
     """
-    ptf_tag = 'latest'
+    ptf_tag = '877728'
     try:
         if is_url(image_path):
             file_path_index = 3
             image_path = '/' + '/'.join(image_path.split('/')[file_path_index:])
         branch = get_sonic_branch(image_path)
         logger.info('SONiC branch is: {}'.format(branch))
-        ptf_tag = constants.BRANCH_PTF_MAPPING.get(branch, 'latest')
+        ptf_tag = constants.BRANCH_PTF_MAPPING.get(branch, '877728')
     except Exception as err:
         logger.error('Can not get SONiC branch and PTF tag from path: {}, using "latest". Error: {}'.format(image_path,
                                                                                                             err))
