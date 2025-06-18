@@ -350,7 +350,7 @@ def skip_weekend_cases(request):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def topology_obj(setup_name, request):
+def topology_obj(setup_name, request, is_performance):
     """
     Fixture which create topology object before run tests and doing cleanup for ssh engines after test executed
     :param setup_name: example: sonic_tigris_r-tigris-06
@@ -371,7 +371,7 @@ def topology_obj(setup_name, request):
         logger.info(f"is_sanitizer: {is_sanitizer}")
 
     with allure.step("Update CLI types in topology"):
-        update_topology_with_cli_class(topology, request)
+        update_topology_with_cli_class(topology, request, is_performance)
         export_cli_type_to_cache(topology, request)
         enable_record_cmds(topology)
 
@@ -459,7 +459,7 @@ def export_cli_type_to_cache(topology, request):
     os.environ['CLI_TYPE'] = cli_type
 
 
-def update_topology_with_cli_class(topology, request=None):
+def update_topology_with_cli_class(topology, request=None, is_performance=False):
     # TODO: determine player type by topology attribute, rather than alias
     nvos_setup = False
     for player_key, player_info in topology.players.items():
@@ -489,6 +489,8 @@ def update_topology_with_cli_class(topology, request=None):
             player_info.update({'stub_cli': LinuxCliStub(player_info['engine'])})
 
     if nvos_setup:
+        if is_performance:
+            return
         update_topology_for_mlnxos_setups(topology, request)  # for NVOS setups only
 
 
@@ -723,9 +725,9 @@ def is_simx(platform_params, is_air):
 
 
 @pytest.fixture(scope="session")
-def is_performance(platform_params):
+def is_performance(request):
     is_perf_setup = False
-    if re.search('performance', platform_params.setup_name):
+    if re.search('performance', request.config.getoption('--setup_name')):
         is_perf_setup = True
     return is_perf_setup
 
