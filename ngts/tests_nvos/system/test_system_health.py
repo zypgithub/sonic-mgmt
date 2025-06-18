@@ -441,6 +441,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
                 HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
 
 
+@pytest.mark.disable_loganalyzer
 @pytest.mark.system
 @pytest.mark.health
 def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
