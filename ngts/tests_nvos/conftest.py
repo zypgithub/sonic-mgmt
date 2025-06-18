@@ -561,9 +561,21 @@ def list_of_executed_commands(engines, run_cli_coverage_flow, request):
             engines.dut.run_cmd(
                 f"history | sudo tee {file_path} > /dev/null && "
                 f"sudo sed -i '$d' {file_path} && "
-                f"sudo sed -i 's/^ *//' {file_path} && "
-                f"sudo sed -i '1i === Executed Commands ===' {file_path}"
+                f"sudo sed -i 's/^ *//' {file_path}"
             )
+
+        # Copy the commands file to local for bug handler access
+        with allure.step("Copy commands file to local host"):
+            from pathlib import Path
+
+            # Create a local path for the commands file
+            local_commands_dir = Path("/tmp/executed_commands")
+            local_commands_dir.mkdir(exist_ok=True)
+            local_file_path = local_commands_dir / "executed_commands.txt"
+
+            # Copy from remote to local
+            scp_file(engines.dut, file_path, str(local_file_path), download_from_remote=True)
+
     except BaseException as err:
         logging.warning(f"Failed to get list of executed commands - {err}")
 

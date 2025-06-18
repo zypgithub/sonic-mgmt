@@ -13,6 +13,7 @@ from tests.common.helpers.parallel import parallel_run
 from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes
+from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
     create_log_analyzer_yaml_file, group_log_errors_by_timestamp, summarize_la_bug_handler
 from ngts.scripts.allure_reporter import predict_allure_report_link
@@ -430,7 +431,6 @@ def get_nvue_additional_info(duthost, request):
             "nv show platform firmware",
         ]
 
-
         # Run commands on the remote duthost
         results = duthost.shell_cmds(cmds=commands, continue_on_fail=True, timeout=30)['results']
         # Parse results
@@ -446,11 +446,37 @@ def get_nvue_additional_info(duthost, request):
         # Populate nvue_info
         nvue_info['show_system'] = command_results.get("nv show system reboot history", {}).get('stdout', '')
         nvue_info['show_platform_firmware'] = command_results.get("nv show platform firmware", {}).get('stdout', '')
+        
+        # Read executed commands from local file that was copied by list_of_executed_commands fixture
+        try:
+            from pathlib import Path
+            
+            # Use predictable local path
+            local_commands_dir = Path("/tmp/executed_commands")
+            
+            # Try the fixed filename first
+            local_file_path = local_commands_dir / "executed_commands.txt"
+            
+            # If fixed filename doesn't exist, try hostname-based filename
+            if not local_file_path.exists() and hasattr(duthost, 'hostname'):
+                hostname_based_path = local_commands_dir / f"executed_commands_{duthost.hostname}.txt"
+                if hostname_based_path.exists():
+                    local_file_path = hostname_based_path
+            
+            if local_file_path.exists():
+                commands_content = local_file_path.read_text().strip()
+                nvue_info['executed_commands'] = commands_content
+            else:
+                nvue_info['executed_commands'] = f"Error: Local commands file not found at {local_file_path}"
+            
+        except Exception as file_error:
+            nvue_info['executed_commands'] = f"Error: Unable to read executed commands from local file - {str(file_error)}"
 
     except Exception as e:
         logging.error(f"Failed to retrieve NVUE information from {duthost}: {e}")
         nvue_info['show_system'] = "Error: Unable to fetch 'nv show system reboot history' output"
         nvue_info['show_platform_firmware'] = "Error: Unable to fetch 'nv show platform firmware' output"
+        nvue_info['executed_commands'] = f"Error: Unable to read executed commands from local file"
 
     return nvue_info
 
