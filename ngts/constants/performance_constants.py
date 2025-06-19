@@ -68,6 +68,7 @@ class PerfConsts:
         "COUNTERS_SAMPLE_DELAY": 15
     }
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
+    SHAPER_VALUE = 0.99
     OCC_AVG_TH = 400
     TC_NUM = 6 if is_redmine_issue_active([4393276])[0] else 7
     # Thresholds
@@ -317,6 +318,12 @@ class MRCConsts:
                  "spine": "Mellanox-SN5600-C224O8"},
         "SPC5": {"leaf": "Mellanox-SN5640-C512S2",
                  "spine": "Mellanox-SN5640-C448O16"}
+    }
+    HWSKU_SWITCH_TYPE = {
+        "Mellanox-SN5600-C256S1": 'ToRRouter',
+        "Mellanox-SN5600-C224O8": 'LeafRouter',
+        "Mellanox-SN5640-C512S2": 'ToRRouter',
+        "Mellanox-SN5640-C448O16": 'LeafRouter'
     }
     UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE = {
         "SPC4": 128,

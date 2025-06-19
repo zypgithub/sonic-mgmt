@@ -1542,3 +1542,35 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_betwe
       - "'r-bison-06' in testbed"
       - "'r-bison-08' in testbed"
       - "'r-bison-16' in testbed"
+
+performance_tests/srv6/leaf/test_srv6_leaf.py::TestSRv6Leaf::test_optimal_trimming_value_with_srv6:
+  skip:
+    reason: "Testcase ignored on regression testbed"
+    conditions:
+    - "'spc4' in platform"
+    - "'spc5' in platform"
+
+performance_tests/srv6/leaf/test_srv6_leaf.py::TestSRv6Leaf::test_leaf_srv6_trimming_many_to_few:
+  skip:
+    reason: "Testcase ignored due to trimming tests not yet supported on spc4 platform"
+    conditions:
+    - "'spc4' in platform"
+
+
+performance_tests/srv6/leaf/test_srv6_leaf.py::TestSRv6Leaf::test_leaf_srv6_trimming_many_to_one:
+  skip:
+    reason: "Testcase ignored due to trimming tests not yet supported on spc4 platform"
+    conditions:
+    - "'spc4' in platform"
+
+performance_tests/srv6/spine/test_srv6_spine.py::TestSRv6Spine::test_spine_srv6_trimming_many_to_few:
+  skip:
+    reason: "Testcase ignored due to trimming tests not yet supported on spc4 platform"
+    conditions:
+    - "'spc4' in platform"
+
+performance_tests/srv6/spine/test_srv6_spine.py::TestSRv6Spine::test_spine_srv6_trimming_many_to_one:
+  skip:
+    reason: "Testcase ignored due to trimming tests not yet supported on spc4 platform"
+    conditions:
+    - "'spc4' in platform"

@@ -298,7 +298,7 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def apply_sku(self, sku, sku_type, chip_type):
         hwsku_json = self.cli_obj.general.load_sku_init_conf(sku)
-        self.update_sku(hwsku_json)
+        self.update_sku(sku, hwsku_json)
         self.update_connected_unconnected_ports(sku, hwsku_json, sku_type, chip_type)
 
     def get_spine_downstream_ports(self, sku, sku_ports_dict):
@@ -356,9 +356,11 @@ class SonicPerformanceCli(PerformanceCommon):
             service_port2 = ports_list.pop(self.service_port_idx)
             self.service_ports += [service_port1, service_port2]
 
-    def update_sku(self, hwsku_json):
+    def update_sku(self, sku, hwsku_json):
+        switch_type = MRCConsts.HWSKU_SWITCH_TYPE[sku]
         self.update_sku_port_admin_status(hwsku_json)
         self.update_mac(hwsku_json)
+        self.update_switch_type(hwsku_json, switch_type)
         save_config_db_json(self.engine, hwsku_json, remove_json_path=False)
 
     def update_sku_port_admin_status(self, hwsku_json):
@@ -367,6 +369,9 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def update_mac(self, hwsku_json):
         hwsku_json["DEVICE_METADATA"]["localhost"]["mac"] = self.mac
+
+    def update_switch_type(self, hwsku_json, switch_type):
+        hwsku_json["DEVICE_METADATA"]["localhost"]["type"] = switch_type
 
     def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
         save_config_db_json(self.engine, conf_json, conf_path, remove_json_path=False)
@@ -391,6 +396,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
         self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.connected_ports)
+        self.configure_ports_shaper(shaper_value=PerfConsts.SHAPER_VALUE)
 
     def update_mloops_conf_on_syncd(self):
         mloops = list(zip(self.get_hex_int_sdk_ports(self.unconnected_ports),
@@ -637,5 +643,4 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def configure_ports_shaper(self, shaper_value):
         configure_ports_shaper_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names ConfigureShaperOnAllPorts"
-        self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd))
         self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd, env_variables=[f'{PerfConsts.SHAPER_VALUE_ENV_VAR}={shaper_value}']))

@@ -1,16 +1,31 @@
 {
     "BUFFER_PROFILE": {
-        "queue1_lossy_profile": {
+        "queue1_uplink_lossy_profile": {
             "pool": "egress_lossy_pool",
             "size": "0",
             "packet_discard_action": "trim"
         },
-        "queue2_lossy_profile": {
+        "queue1_downlink_lossy_profile": {
             "pool": "egress_lossy_pool",
             "size": "0",
             "packet_discard_action": "trim"
         },
-        "queue3_lossy_profile": {
+        "queue2_uplink_lossy_profile": {
+            "pool": "egress_lossy_pool",
+            "size": "0",
+            "packet_discard_action": "trim"
+        },
+        "queue2_downlink_lossy_profile": {
+            "pool": "egress_lossy_pool",
+            "size": "0",
+            "packet_discard_action": "trim"
+        },
+        "queue3_uplink_lossy_profile": {
+            "pool": "egress_lossy_pool",
+            "size": "0",
+            "packet_discard_action": "trim"
+        },
+        "queue3_downlink_lossy_profile": {
             "pool": "egress_lossy_pool",
             "size": "0",
             "packet_discard_action": "trim"
