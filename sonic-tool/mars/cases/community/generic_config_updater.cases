@@ -357,7 +357,7 @@
         </cmd>
     </case>
 
-   <case>
+    <case>
         <ignore>
             <!-- daily case  -->
             <condition>
@@ -393,7 +393,7 @@
         </cmd>
     </case>
 
-   <case>
+    <case>
         <ignore>
             <!-- weekend case  -->
             <condition>
@@ -411,7 +411,7 @@
         </cmd>
     </case>
 
-   <case>
+    <case>
         <ignore>
             <!-- weekend case  -->
             <condition>
@@ -425,6 +425,24 @@
         <cmd>
             <params>
                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts configlet/test_add_rack.py::test_add_rack </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> packet_trimming </info>
+        <name> packet_trimming </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts generic_config_updater/test_packet_trimming_config.py </static_args>
             </params>
         </cmd>
     </case>
