@@ -373,6 +373,16 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
     # Get interfaces oid
     port_oid = get_oid_for_interface(duthost, COUNTERS_PORT_NAME_MAP, port_interface)
     rif_oid = get_oid_for_interface(duthost, COUNTERS_RIF_NAME_MAP, rif_interface)
+    # Clear the counters from the cache to make test stable
+    # if "sonic-clear counters" was done before the test, /tmp/cache/intfstat and /tmp/cache/portstat will be created.
+    # if /tmp/cache/portstat exist, show interfaces counters will calculate the counters that get from redis-db and the
+    # value saved in the cache file. then the value will not be the number that get from the redis db
+    # if /tmp/cache/intfstat exist, show interfaces counters rif will calculate the counters that get from redis-db and
+    # the value saved in the cache file. then the value will not be the number that get from the redis db
+    # Clear the cache file to make sure that the "show interfaces counters" and "show interfaces counters rif" return
+    # the number that set in the redis-db.
+    duthost.shell("rm -rf /tmp/cache/intfstat", module_ignore_errors=True)
+    duthost.shell("rm -rf /tmp/cache/portstat", module_ignore_errors=True)
 
     logger.info(f'Set port and rif counters in COUNTERS DB')
     logger.info(f'Set port {port_interface} {SAI_PORT_STAT_IF_IN_ERRORS} counter to {COUNTER_VALUE}')
@@ -409,3 +419,6 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
 
     pytest_assert(wait_until(60, 10, 0, verify_snmp_counter, duthost, localhost, creds_all_duts, hostip, mg_facts,
                              rif_interface, rif_counters, port_counters), "SNMP counter validate Failure")
+    # clear all counters after the test
+    duthost.shell('sonic-clear counters')
+    duthost.shell('sonic-clear rifcounters')
