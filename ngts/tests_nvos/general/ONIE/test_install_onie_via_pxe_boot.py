@@ -29,7 +29,7 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine
 
     This test verifies the PXE-based ONIE installation process by:
       1. Determining the number of PXE menu steps to reach the correct ONIE entry
-         based on the device type (OPN = 1 step, IPN = 6 steps).
+         based on the device type (OPN = 1 step, IPN = 3 steps).
       2. Rebooting the device remotely via NVUE.
       3. Entering the PXE boot menu via serial console.
       4. Navigating to the correct ONIE installer entry using a fixed number of arrow down presses.
