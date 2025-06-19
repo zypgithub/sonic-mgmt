@@ -143,7 +143,7 @@ def add_marker(items, skip):
         return
 
 
-def reload_config(session, platform_params, chip_type):
+def reload_config(session, platform_params, chip_type, dut_cli_object):
     # Reload the original configuration
     topology = get_topology_by_setup_name_and_aliases(session.config.option.setup_name, slow_cli=False)
     dut_engine = topology.players['dut']['engine']
@@ -164,7 +164,7 @@ def reload_config(session, platform_params, chip_type):
         cli_object.im.enable_cmis_mgr_in_pmon_file(platform_params)
 
     # reload config for original config_db.json and IM configuration
-    cli_object.general.reload_configuration(force=True)
+    dut_cli_object.general.reload_flow(ports_list=None, topology_obj=topology, reload_force=True)
 
 
 def read_config_db_from_shared_location(config_db_path):
