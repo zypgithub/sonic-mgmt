@@ -5,6 +5,7 @@ import time
 import pytest
 from retry import retry
 
+from ngts.helpers.memory_helper import MemoryValidatorFactory, build_memory_stats
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
@@ -13,8 +14,13 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.system.test_system_factory_reset import execute_reset_factory
+from ngts.tests_nvos.system.factory_reset.helpers import verify_the_setup_is_functional
+
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
 
@@ -22,7 +28,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
     Run show system message command and verify the required message
@@ -55,8 +61,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
 
     with allure.step('get default hostname value'):
         output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, dut_device.cur_mgmt_port_name).show()).get_returned_value()
-        eth0_output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, 'eth0').show()).get_returned_value()
-        eth0_dhcp_hostname = eth0_output.get('ipv4', {}).get('dhcp-client', {}).get('lease', {}).get('host-name')
+
         dhcp_enabled = 'state' in output and output['state'] == "enabled"
         if dhcp_enabled:
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
@@ -65,7 +70,6 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
                 assert system_output[SystemConsts.HOSTNAME] in [dhcp_hostname, f'{dhcp_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[dhcp_hostname, f"{dhcp_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
             default_hostname = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()[SystemConsts.HOSTNAME]
         else:
-            dhcp_hostname = None
             default_hostname = dut_device.system_default_value_dict[SystemConsts.HOSTNAME]
 
     with allure.step('set system hostname command and verify that hostname is updated'):
@@ -92,10 +96,9 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             time.sleep(3)
             valid_hostnames = [default_hostname, f'{default_hostname}-mgmt2']
-            if eth0_dhcp_hostname:
-                valid_hostnames.extend([eth0_dhcp_hostname, f'{eth0_dhcp_hostname}-mgmt2'])
-            assert system_output[SystemConsts.HOSTNAME] in valid_hostnames, \
+            assert system_output[SystemConsts.HOSTNAME] in valid_hostnames, (
                 f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected one of: {valid_hostnames}\nactual: {system_output[SystemConsts.HOSTNAME]}'
+            )
 
 
 @pytest.mark.system
@@ -209,33 +212,25 @@ def test_show_system_memory(test_api, engines, devices, nv_command):
 
     with allure.step('Run show system memory command and verify that each field has a value'):
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("memory")).get_returned_value()
+        assert set(output_dictionary.keys()) == {
+            SystemConsts.MEMORY_PHYSICAL_KEY,
+            SystemConsts.MEMORY_SWAP_KEY,
+        }, "Unexpected memory keys"
 
-        assert len(output_dictionary.keys()) == 2, "Unexpected Number of keys"
-        assert list(output_dictionary.keys())[0] == SystemConsts.MEMORY_PHYSICAL_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[1] == SystemConsts.MEMORY_SWAP_KEY, "Unexpected Key value"
+        physical, swap = build_memory_stats(output_dictionary)
 
-        total_sum = output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["free"] + \
-            output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["used"]
+    with allure.step('Validate memory statistics'):
+        validator = MemoryValidatorFactory.get_validator(devices)
+        validator.validate(physical, swap)
 
-        assert 0 < output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["total"] == total_sum, \
-            "Total number of bytes must be equal to calculated total sum and greater than 0"
+    with allure.step('Validate utilization thresholds'):
+        for name, mem in [("Physical", physical), ("Swap", swap)]:
+            assert SystemConsts.MEMORY_PERCENT_THRESH_MIN <= mem.utilization < \
+                SystemConsts.MEMORY_PERCENT_THRESH_MAX, \
+                f"{name} utilization out of range"
 
-        utilization = output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["utilization"]
-        utilization_calc = (output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["used"] /
-                            output_dictionary[SystemConsts.MEMORY_PHYSICAL_KEY]["total"]) * 100
-        assert SystemConsts.MEMORY_PERCENT_THRESH_MIN < utilization < SystemConsts.MEMORY_PERCENT_THRESH_MAX, \
-            "Physical utilization percentage is out of range"
-        assert abs(utilization - utilization_calc) < 0.000001, \
-            f"Mismatch between Physical utilization: {utilization}% to calculated utilization: {utilization_calc}%"
-
-        utilization = output_dictionary[SystemConsts.MEMORY_SWAP_KEY]["utilization"]
-        assert SystemConsts.MEMORY_PERCENT_THRESH_MIN <= utilization < SystemConsts.MEMORY_PERCENT_THRESH_MAX, \
-            "Swap utilization percentage is out of range"
-        if output_dictionary[SystemConsts.MEMORY_SWAP_KEY]["total"] > 0:
-            utilization_calc = (output_dictionary[SystemConsts.MEMORY_SWAP_KEY]["used"] /
-                                output_dictionary[SystemConsts.MEMORY_SWAP_KEY]["total"]) * 100
-            assert abs(utilization - utilization_calc) < 0.000001, \
-                f"Mismatch between Swap utilization: {utilization}% to calculated utilization: {utilization_calc}%"
+            if mem.total > 0:
+                mem.validate_utilization(name)
 
 
 @pytest.mark.system
@@ -255,16 +250,21 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system cpu command and verify that each field has a value'):
-        time.sleep(10)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("cpu")).get_returned_value()
 
-        assert len(output_dictionary.keys()) == 5, "Unexpected Number of keys"
-        assert list(output_dictionary.keys())[0] == SystemConsts.CPU_CORE_COUNT_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[1] == SystemConsts.CPU_CORES, "Unexpected Key value"
-        assert list(output_dictionary.keys())[2] == SystemConsts.CPU_LOAD_AVERAGE_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[3] == SystemConsts.CPU_MODEL_KEY, "Unexpected Key value"
-        assert list(output_dictionary.keys())[4] == SystemConsts.CPU_TOTAL_UTILIZATION_KEY, "Unexpected Key value"
+        for key, value in output_dictionary.items():
+            assert value is not None and value != "", f"Field '{key}' is empty or None"
 
+        expected_keys = {
+            SystemConsts.CPU_CORE_COUNT_KEY,
+            SystemConsts.CPU_CORES,
+            SystemConsts.CPU_LOAD_AVERAGE_KEY,
+            SystemConsts.CPU_MODEL_KEY,
+            SystemConsts.CPU_TOTAL_UTILIZATION_KEY,
+        }
+        assert set(output_dictionary.keys()) == expected_keys, (
+            f"Unexpected keys: {output_dictionary.keys()}"
+        )
         with allure.step('Verify core-count'):
             verify_core_count(devices, output_dictionary)
 
@@ -330,6 +330,8 @@ def test_factory_reset_for_system_contact_location(engines, nv_command, devices)
             5. Run system factory reset
             6. Run 'nv show system' and verify systems contact and location fields are removed
     """
+    test_name = "test_factory_reset_for_system_contact_location"
+    system = System()
 
     try:
         with allure.step('Run set system contact command and apply config'):
@@ -349,9 +351,12 @@ def test_factory_reset_for_system_contact_location(engines, nv_command, devices)
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
                 verify_result()
-
+        current_time = time.strftime("%Y-%m-%d %H:%M:%S")
         with allure.step("Run reset factory with keep basic param"):
-            nv_command.system.factory_default.action_reset(param="keep basic").verify_result()
+            execute_reset_factory(engines, system, devices.dut.reset_factory, "keep basic", current_time, test_name=test_name)
+
+        with allure.step("Verify the setup is functional"):
+            verify_the_setup_is_functional(system, engines)
 
         with allure.step('Validate system contact is back to default'):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
