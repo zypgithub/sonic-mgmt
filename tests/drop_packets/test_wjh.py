@@ -197,6 +197,7 @@ def verify_drop_on_wjh_rule_table(pkt_entry, rules_table, drop_information):
 
 
 def verify_drop_on_wjh_raw_table(duthost, pkt, discard_group, drop_information=None):
+    logger.info(f"The discard group is {discard_group}, the drop information is {drop_information}")
     if discard_group in ["ACL"]:
         tables = get_raw_tables_output(duthost, command="show what-just-happened poll {}".format(discard_group.lower()))
     else:
@@ -208,10 +209,15 @@ def verify_drop_on_wjh_raw_table(duthost, pkt, discard_group, drop_information=N
             if discard_group == 'ACL':
                 return verify_drop_on_wjh_rule_table(entry, tables[1], drop_information)
             return True
+        else:
+            logger.info(f"The discard group is {discard_group}, the drop information is {drop_information}, the entry "
+                        f"is {entry}")
     return False
 
 
 def verify_drop_on_agg_wjh_table(duthost, pkt, num_packets, discard_group, drop_information=None):
+    logger.info(f"The discard group is {discard_group}, the drop information is {drop_information}, the num_packets "
+                f"is {num_packets}")
     if discard_group in ["ACL"]:
         tables = get_agg_tables_output(duthost, command="show what-just-happened poll {} --aggregate".format(
             discard_group.lower()))
@@ -224,6 +230,8 @@ def verify_drop_on_agg_wjh_table(duthost, pkt, num_packets, discard_group, drop_
             if discard_group == 'ACL':
                 return verify_drop_on_wjh_rule_table(entry, tables[1], drop_information)
             return True
+        else:
+            logger.info(f"Count not match, actual: {entry['Count']}, expected: {num_packets}, entry: {entry}")
     return False
 
 
