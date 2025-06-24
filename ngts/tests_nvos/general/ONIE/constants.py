@@ -11,13 +11,13 @@ class OnieConsts:
     UPDATE_SUCCESS_PATTERN = '.*ONIE: Success.*'
 
     ONIE_FILES_DICT = {
-        'OPN': "http://nbu-nfs.mellanox.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/115200/onie-updater-x86_64-mlnx_x86-r0",
-        'IPN': "http://nbu-nfs.mellanox.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+        'OPN': "http://nbu-nfs.mellanox.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/prod/115200/onie-updater-x86_64-mlnx_x86-r0",
+        'IPN': "http://nbu-nfs.mellanox.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
     }
 
     ONIE_VERSIONS_PXE_DICT = {
-        'OPN': "ONIE_r5.3.0015-115200",
-        'IPN': "ONIE_r5.3.0015-115200-dev",
+        'OPN': "ONIE_r5.3.0017-115200",
+        'IPN': "ONIE_r5.3.0017-115200-dev",
     }
 
     WGET_ERROR = "wget:.*"
