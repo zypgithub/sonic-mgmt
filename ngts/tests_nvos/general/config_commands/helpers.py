@@ -1,4 +1,5 @@
 import logging
+import re
 
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -28,6 +29,11 @@ default_values_dict = {
         }
     }
 }
+
+
+def verify_new_config_output(output):
+    expected_pattern = r"created \[rev_id: \d+\]"
+    assert re.search(expected_pattern, output), f"Failed to perform config operation - output '{output}' does not match expected pattern '{expected_pattern}'"
 
 
 class RevisionStatus:

@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.general.config_commands.helpers import verify_new_config_output
 
 
 @pytest.mark.cumulus
@@ -94,8 +95,7 @@ def test_replace_positive(engines, devices):
                                                                             '"password": "{passw}"'.format(passw=devices.dut.default_password))
         file = create_file_with_content(engines.dut, 'replace', 'yaml', config_after_hostname_change)
         output = TestToolkit.GeneralApi[TestToolkit.tested_api].replace_config(engines.dut, file)
-        expected_pattern = r"created \[rev_id: \d+\]"
-        assert re.search(expected_pattern, output), f"Failed to replace config - output '{output}' does not match expected pattern '{expected_pattern}'"
+        verify_new_config_output(output)
 
     with allure.step("Delete created yaml file: {}".format(file)):
         engines.dut.run_cmd('sudo rm {file}'.format(file=file))
@@ -227,7 +227,8 @@ def test_patch_positive(engines, devices):
         file_name = 'patch'
         file_type = 'yaml'
         file = create_file_with_content(engines.dut, file_name, file_type, diff_after_hostname_change)
-        TestToolkit.GeneralApi[TestToolkit.tested_api].patch_config(engines.dut, file)
+        output = TestToolkit.GeneralApi[TestToolkit.tested_api].patch_config(engines.dut, file)
+        verify_new_config_output(output)
 
         engines.dut.run_cmd('sudo rm {file}'.format(file=file))
         NvueGeneralCli.apply_config(engines.dut, True)

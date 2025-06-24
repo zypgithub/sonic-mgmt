@@ -1,5 +1,6 @@
 import logging
 import string
+import re
 
 import pytest
 
@@ -13,6 +14,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+from ngts.tests_nvos.general.config_commands.helpers import verify_new_config_output
 
 logger = logging.getLogger()
 YAML_FILES_PATH = MarsConstants.SONIC_MGMT_DIR + "/ngts/tests_nvos/general/config_commands/yaml_files/"
@@ -188,20 +190,14 @@ def test_patch_replace_delete(engines):
 
     with allure.step('run nv config replace'):
         output = TestToolkit.GeneralApi[TestToolkit.tested_api].replace_config(engines.dut, YAML_FILES_LIST[0])
-        with allure.step('verify the replace command output'):
-            assert "Loading config file: {} from configuration files directory.".format(
-                YAML_FILES_LIST[0]) in output, "the message after replace is not as expected"
+        verify_new_config_output(output)
 
         diff_output_after_replace = NvueGeneralCli.diff_config(engines.dut)
         with allure.step('verify the diff command after replace'):
             assert "hostname" in diff_output_after_replace, ""
 
     with allure.step('run nv config patch'):
-        output = TestToolkit.GeneralApi[TestToolkit.tested_api].patch_config(engines.dut, YAML_FILES_LIST[2])
-        with allure.step('verify the replace command output'):
-            assert "Loading config file: {} from configuration files directory.".format(
-                YAML_FILES_LIST[2]) in output, "the message after replace is not as expected"
-
+        TestToolkit.GeneralApi[TestToolkit.tested_api].patch_config(engines.dut, YAML_FILES_LIST[2])
         diff_output_after_patch = NvueGeneralCli.diff_config(engines.dut)
         with allure.step('verify the diff command after patch'):
             assert "pre-login" in diff_output_after_patch, ""
