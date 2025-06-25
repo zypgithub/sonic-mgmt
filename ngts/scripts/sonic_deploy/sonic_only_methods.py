@@ -469,7 +469,7 @@ class SonicInstallationSteps:
                 "mtvr-moose-14" in setup_name):
             hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
             need_gen_mingraph = True
-        if "bobcat" in setup_name:
+        if "bobcat" in setup_name and "bobcat-10" not in setup_name:
             hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28', 'Mellanox-SN4280-O8C80', 'Mellanox-SN4280-O8C40']
             need_gen_mingraph = True
         if "r-tigon-04" in setup_name:
