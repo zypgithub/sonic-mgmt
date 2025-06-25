@@ -29,7 +29,7 @@ class CliCoverage:
 
     def get_config_data(self):
         with table_data_lock:
-            config_db = self.dut_engine("show runningconfiguration all")
+            config_db = self.dut_engine("sudo show runningconfiguration all")
             if self.is_canonical_setup:
                 self.config_db = json.loads(config_db)
             else:
