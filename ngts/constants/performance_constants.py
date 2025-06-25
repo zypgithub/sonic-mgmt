@@ -45,6 +45,8 @@ class ValidationConsts:
     UNTRIMMED_PRECENTAGE = "untrimmedPrecentage"
     TRIMMING_PRECENTAGE = "trimmingPrecentage"
     DROPPED_WITHOUT_TRIMMING_PRECENTAGE = "droppedWithoutTrimmingPrecentage"
+    UNTRIMMED_BYTES_PRECENTAGE = "untrimmedBytesPrecentage"
+    TRIMMING_BYTES_PRECENTAGE = "trimmingBytesPrecentage"
     POWER_SAMPLES = "Power_samples"
     TEMPERATURE_SAMPLES = "Temperature_samples"
     TEMPERATURE = "temperature"
@@ -62,11 +64,13 @@ class PerfConsts:
     ECN_CAPABLE_TRANSPORT = 1
     # Sample Parameters
     SAMPLES_PARAMS = {
-        "SAMPLE_DURATION": 60,
-        "BW_SAMPLE_DELAY": 10,
-        "TC_SAMPLE_DELAY": 1,
-        "COUNTERS_SAMPLE_DELAY": 15
+        "SAMPLE_DURATION": 30,
+        "BW_SAMPLE_DELAY": 5,
+        "TC_SAMPLE_DELAY": 5,
+        "COUNTERS_SAMPLE_DELAY": 5,
+        "CLEAR_COUNTERS": "True"
     }
+    CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SHAPER_VALUE = 0.99
     OCC_AVG_TH = 400
@@ -146,9 +150,9 @@ class PerfConsts:
     # Sample Times
     DEFAULT_SAMPLE_TIME_IN_SEC = 20
     EXTENDED_SAMPLE_TIME_IN_SEC = 60
-
+    PACKET_SIZE_4K = 4096
     # Packet Sizes and Utilization Thresholds
-    PACKET_SIZE_LIST = [4096]
+    PACKET_SIZE_LIST = [PACKET_SIZE_4K]
     TG_TX_UTIL_TH = 95
     ROCE_ACK_SIZE = 64
     RTT_PROB_SIZE = 138
@@ -310,9 +314,9 @@ class MongoDbConsts:
 
 
 class MRCConsts:
-    MIN_INGRESS_PORTS_NUM = 2
-    MAX_INGRESS_PORTS_NUM = 11
-    INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM + 1))
+    MIN_INGRESS_PORTS_NUM = 4
+    MAX_INGRESS_PORTS_NUM = 5
+    INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM))
     HWSKU_BY_CHIP_TYPE = {
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},
@@ -330,13 +334,20 @@ class MRCConsts:
         "SPC5": 180
     }
     VICTIM_PORTS_NUM = 90
-    ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
-        "SPC4": (16, 8),
-        "SPC5": (10, 18)
+    LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
+        "SPC4": {'group_size': 16, 'group_num': 8},
+        "SPC5": {'group_size': 10, 'group_num': 18}
+    }
+    SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE = {
+        "SPC4": {'group_size': 16, 'group_num': 7},
+        "SPC5": {'group_size': 14, 'group_num': 16}
     }
     TRAFFIC_TYPE_IPV6 = "IPv6"
     TRAFFIC_TYPE_SRV6 = "SRv6"
-    TRAFFIC_TYPE_LIST = [TRAFFIC_TYPE_IPV6, TRAFFIC_TYPE_SRV6]
+    WEEKEND_TRAFFIC_TYPE_LIST = [TRAFFIC_TYPE_IPV6, TRAFFIC_TYPE_SRV6]
+    WEEKDAY_TRAFFIC_TYPE_LIST = [TRAFFIC_TYPE_SRV6]
+    # In case of running weekend regression, this list can be changed with 'if' statement checking os.environ.get('SKIP_WEEKEND_CASES') == 'yes'
+    REGRESSION_TRAFFIC_TYPE_LIST = WEEKEND_TRAFFIC_TYPE_LIST
     INGRESS_PORT_SEQUENCE_CONSECUTIVE = 'consecutive'
     INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE = 'non_consecutive'
     INGRESS_PORT_SEQUENCE = [INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE]
@@ -375,16 +386,17 @@ class MRCConsts:
     MRC1_DATA_TC = '1'
     MRC2_DATA_TC = '2'
     MRC_RETRANSMISSION_TC = '3'
+    TRIMMING_ELEGABLE_QUEUE_NUM = [MRC1_DATA_TC, MRC2_DATA_TC, MRC_RETRANSMISSION_TC]
     MRC_CONTROL_TC = '4'
     GFP_DATA_TC = '5'
     WORKLOAD_1_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC)]
     WORKLOAD_2_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC), int(GFP_DATA_TC)]
-    MRC_DATA_ONLY_WORKLOAD_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC)]
+    MRC_DATA_ONLY_WORKLOAD_TC_LIST = [int(MRC2_DATA_TC)]
     WORKLOAD1_NAME = 'workload_1'
     WORKLOAD2_NAME = 'workload_2'
-    MRC_DATA_ONLY_WORKLOAD_NAME = 'mrc_data_only'
+    MRC1_DATA_ONLY_WORKLOAD_NAME = 'mrc1_data_only'
+    MRC2_DATA_ONLY_WORKLOAD_NAME = 'mrc2_data_only'
     MRC_REGRESSION_WORKLOADS_LIST = [WORKLOAD1_NAME]
-    MRC_DATA_ONLY_WORKLOADS_LIST = [MRC_DATA_ONLY_WORKLOAD_NAME]
     SHAPER_VALUE = 0.975
     SHAPER_VALUE_AFTER_TEST = 1.0
 

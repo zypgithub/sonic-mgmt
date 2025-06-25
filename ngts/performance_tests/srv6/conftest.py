@@ -4,6 +4,7 @@ import random
 import pytest
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
 from ngts.constants.constants import CliType
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
 
 
@@ -91,12 +92,26 @@ def get_leaf_many_to_few_port_group_df(players, M, num_of_ingress_ports):
     left_ports = copy.deepcopy(ports["left_ports"])
     right_ports = copy.deepcopy(ports["right_ports"])
     egress_ports_num = num_of_ingress_ports // M
-    egress_ports_start_index = random.randint(0, len(left_ports) - egress_ports_num)
-    egress_ports_end_index = egress_ports_start_index + egress_ports_num
-    ingress_ports_start_index = random.randint(0, len(right_ports) - num_of_ingress_ports)
-    ingress_ports_end_index = ingress_ports_start_index + num_of_ingress_ports
-    egress_ports = left_ports[egress_ports_start_index:egress_ports_end_index]
-    ingress_ports = right_ports[ingress_ports_start_index:ingress_ports_end_index]
+    num_of_egress_ports_for_each_tg = egress_ports_num // 2
+    num_of_ingress_ports_for_each_tg = num_of_ingress_ports // 2
+    total_num_of_ports_for_each_tg = num_of_egress_ports_for_each_tg + num_of_ingress_ports_for_each_tg
+    plus_egress_ports_num = 0 if egress_ports_num % 2 == 0 else 1
+    left_start_index = random.randint(0, len(left_ports) - total_num_of_ports_for_each_tg - plus_egress_ports_num)
+    right_start_index = random.randint(0, len(right_ports) - total_num_of_ports_for_each_tg)
+    left_egress_ports_start_index = left_start_index
+    right_egress_ports_start_index = right_start_index
+    left_egress_ports_end_index = left_egress_ports_start_index + num_of_egress_ports_for_each_tg + plus_egress_ports_num
+    right_egress_ports_end_index = right_egress_ports_start_index + num_of_egress_ports_for_each_tg
+    left_ingress_ports_start_index = left_egress_ports_end_index
+    right_ingress_ports_start_index = right_egress_ports_end_index
+    left_ingress_ports_end_index = left_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
+    right_ingress_ports_end_index = right_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
+    left_egress_ports, right_egress_ports = left_ports[left_egress_ports_start_index:left_egress_ports_end_index], \
+        right_ports[right_egress_ports_start_index:right_egress_ports_end_index]
+    left_ingress_ports, right_ingress_ports = left_ports[left_ingress_ports_start_index:left_ingress_ports_end_index], \
+        right_ports[right_ingress_ports_start_index:right_ingress_ports_end_index]
+    egress_ports = left_egress_ports + right_egress_ports
+    ingress_ports = left_ingress_ports + right_ingress_ports
     for port in egress_ports:
         port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
     for port in ingress_ports:
@@ -162,14 +177,11 @@ def get_spine_downstream_groups_port_group_df(players, downstream_ports_num, num
     return downstream_groups_1, downstream_groups_2, port_group_df
 
 
-@pytest.fixture(scope="class", autouse=True)
-def config_optimal_trimming_size(request, chip_type, cli_objects):
-    request.getfixturevalue('basic_setup_configuration')
+def config_optimal_trimming_size(chip_type, cli_objects):
     if chip_type == "SPC5":
         opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
         cli_objects.dut.trimming.enable_trimming_on_lossy_queue()
         cli_objects.dut.trimming.configure_trimming_size(opt_ts)
-    yield
 
 
 @pytest.fixture(scope="function", autouse=False)
@@ -177,3 +189,9 @@ def cleanup_ports_shaper(cli_objects):
     yield
     for tg_alias in PerfConsts.TG_ALIAS_LIST:
         cli_objects[tg_alias].performance.configure_ports_shaper(shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
+
+
+def get_trimming_tests_skip_condition(cli_obj, actual_chip_type, unsupported_chip_type):
+    condition = actual_chip_type == unsupported_chip_type and isinstance(cli_obj, SonicCli)
+    skip_message = f"This test is not supported on {unsupported_chip_type} on SONiC OS"
+    return condition, skip_message

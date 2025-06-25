@@ -10,10 +10,15 @@
             "PACKET_ACTION": "DROP",
             "PRIORITY": "9987"
         },
-        "table2|DROP_ICMP_IPV6": {
+        "table2|DROP_ROUTER_AD": {
             "ICMPV6_TYPE": "128",
             "PACKET_ACTION": "DROP",
             "PRIORITY": "9988"
+        },
+        "table2|DROP_ICMPV6": {
+            "IP_PROTOCOL": "58",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "9989"
         }
     },
     "ACL_TABLE": {
@@ -60,22 +65,5 @@
             "tagging_mode": "untagged"
         }{% if not loop.last %},{% endif %}
         {% endfor %}
-    },
-    "BUFFER_POOL": {
-        "ingress_lossless_pool": {"type": "ingress", "mode": "dynamic"},
-        "egress_lossy_pool":    {"type": "egress",  "mode": "dynamic"},
-        "egress_lossless_pool":    {"type": "egress",  "mode": "dynamic"}
-    },
-    "BUFFER_PROFILE": {
-        "front_small_size_queue_profile": {"dynamic_th": "2", "pool": "egress_lossy_pool", "size": "1500"},
-        "front_large_size_queue_profile": {"dynamic_th": "3", "pool": "egress_lossy_pool", "size": "90000"},
-        "lpbk_small_size_queue_profile":  {"dynamic_th": "2", "pool": "egress_lossy_pool", "size": "1500"},
-        "lpbk_large_size_queue_profile":  {"dynamic_th": "3", "pool": "egress_lossy_pool", "size": "310000"},
-        "egress_lossy_profile":           {"dynamic_th": "3", "pool": "egress_lossy_pool", "size": "0"},
-        "ingress_lossless_profile":       {"dynamic_th": "3", "pool": "ingress_lossless_pool", "size": "0"}
-    },
-    "SCHEDULER": {
-        "small_packet_dwrr": {"type": "DWRR", "weight": "1"},
-        "large_packet_dwrr": {"type": "DWRR", "weight": "64"}
     }
 }

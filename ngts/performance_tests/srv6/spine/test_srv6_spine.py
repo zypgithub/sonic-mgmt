@@ -3,12 +3,15 @@ import allure
 import logging
 import pytest
 from ngts.helpers.performance.traffic_helpers import is_ipv6
-from ngts.helpers.performance.performance_setup_helpers import (add_test_mongo_metadata)
+from ngts.helpers.performance.performance_setup_helpers import (add_test_mongo_metadata, skip_performance_test_conditionally)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.performance_tests.srv6.conftest import get_spine_many_to_few_port_group_df, get_spine_downstream_groups_port_group_df
+from ngts.performance_tests.srv6.conftest import (get_spine_many_to_few_port_group_df,
+                                                  get_spine_downstream_groups_port_group_df,
+                                                  config_optimal_trimming_size,
+                                                  get_trimming_tests_skip_condition)
 
 logger = logging.getLogger()
 
@@ -32,10 +35,11 @@ class TestSRv6Spine(TestSRv6Base):
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
         self.configure_interfaces_mac_neighbor()
+        config_optimal_trimming_size(self.chip_type, self.cli_objects)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 
-    @pytest.mark.parametrize("traffic_type", MRCConsts.TRAFFIC_TYPE_LIST)
-    def test_spine_round_robin_srv6(self, request, traffic_type, workload, packet_size=4096):
+    @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
+    def test_spine_round_robin_srv6(self, request, traffic_type):
         """
         All to all Full mesh (spine)-
 
@@ -57,23 +61,25 @@ class TestSRv6Spine(TestSRv6Base):
         downstream and upstream this way get the traffic pattern as seen above.
         """
         test_name = get_perf_test_name(request, self.ip)
-        round_robin_ports_num, round_robin_groups_num = MRCConsts.ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
+        round_robin_dict = MRCConsts.SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
+        round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
         downstream_group1, downstream_group2, port_group_df = get_spine_downstream_groups_port_group_df(self.players, round_robin_ports_num, round_robin_groups_num)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME: f"spine-round-robin",
-                                     MongoDbConsts.TEST_WORKLOAD: workload,
                                      MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                      MongoDbConsts.PORT_GROUP_DF: port_group_df})
-        self.round_robin_traffic_test_runner(test_name, traffic_type, upstream=downstream_group1,
-                                             downstream=downstream_group2, packet_size=packet_size)
+        self.round_robin_traffic_test_runner(test_name, traffic_type, downstream_group1,
+                                             downstream_group2)
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
-    @pytest.mark.parametrize("traffic_type", MRCConsts.TRAFFIC_TYPE_LIST)
+    @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     @pytest.mark.parametrize("ingress_port_sequence", MRCConsts.INGRESS_PORT_SEQUENCE)
     @pytest.mark.parametrize("ingress_ports_num", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_one(self, request,
                                              traffic_type, workload, ingress_port_sequence, ingress_ports_num, get_ports_from_start=False):
+        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request, self.ip)
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
         with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
@@ -86,9 +92,11 @@ class TestSRv6Spine(TestSRv6Base):
         self.many_to_one_traffic_test_runner(test_name, traffic_type, workload, egress_port, ingress_ports)
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
-    @pytest.mark.parametrize("traffic_type", MRCConsts.TRAFFIC_TYPE_LIST)
+    @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     @pytest.mark.parametrize("M", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
+        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request, self.ip)
         egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, M)
         with allure.step(f"Set test configuration description"):

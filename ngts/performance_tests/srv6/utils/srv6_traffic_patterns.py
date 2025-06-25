@@ -23,8 +23,10 @@ def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_ty
     traffic_jsons[player_alias] = json_path
 
 
-def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstream, bisection_traffic,
-                            dut_interfaces_ipv6_configuration_dict, template_suite="traffic_packets_json_files"):
+def get_round_robin_traffic(players, conf_args, traffic_type,
+                            upstream_downstream_group, bisection_traffic,
+                            dut_interfaces_ipv6_configuration_dict,
+                            template_suite="traffic_packets_json_files"):
     """
     First round (port i↔ port j: Means 1 packet ingress port i and egress port j, 1 packet ingress port j and egress port i):
     Port 0 ↔ 180
@@ -41,8 +43,6 @@ def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstre
     Port 179 ↔ 180.
 
     """
-    cycle_ports_pairs = get_cycle_ports_pairs(upstream, downstream)
-    round_len = len(upstream)
     traffic_jsons = {}
     ports = players['dut']['cli'].performance.get_right_left_ports_dict()
     left_ports, right_ports = ports["left_ports"], ports["right_ports"]
@@ -52,15 +52,15 @@ def get_round_robin_traffic(players, conf_args, traffic_type, upstream, downstre
         get_tg_round_robin_traffic_params(players, tg_alias, conf_args,
                                           traffic_type, template_suite,
                                           dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                          cycle_ports_pairs, src_ports=src_ports, dst_ports=dst_ports,
-                                          bisection_traffic=bisection_traffic, round_len=round_len)
+                                          upstream_downstream_group, src_ports=src_ports, dst_ports=dst_ports,
+                                          bisection_traffic=bisection_traffic)
     return traffic_jsons
 
 
 def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_type, template_suite,
                                       dut_interfaces_ipv6_configuration_dict, traffic_jsons,
-                                      cycle_ports_pairs, src_ports, dst_ports,
-                                      bisection_traffic, round_len, send_control_packets=False):
+                                      upstream_downstream_group, src_ports, dst_ports,
+                                      bisection_traffic, send_control_packets=False):
     player_cli_obj = players[player_alias]['cli']
     traffic_parameters = player_cli_obj.performance.get_traffic_parameters(scenario=conf_args["scenario"],
                                                                            conf_args=conf_args)
@@ -68,20 +68,23 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_round_robin.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
-    for (port1, port2) in cycle_ports_pairs:
-        ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
-        for (src_port, dst_port) in ports_cycle_flow:
-            create_round_robin_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
-                                      mloops_dict, dut_interfaces_ipv6_configuration_dict,
-                                      stream_list=stream_list, send_data=True, send_ack=False, mrc_num_packets=1)
-    if send_control_packets:
-        last_round = cycle_ports_pairs[-round_len:]
-        for (port1, port2) in last_round:
+    for upstream_ports, downstream_ports in upstream_downstream_group:
+        cycle_ports_pairs = get_cycle_ports_pairs(upstream_ports, downstream_ports)
+        round_len = len(upstream_ports)
+        for (port1, port2) in cycle_ports_pairs:
             ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
             for (src_port, dst_port) in ports_cycle_flow:
                 create_round_robin_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
                                           mloops_dict, dut_interfaces_ipv6_configuration_dict,
-                                          stream_list=stream_list, send_data=False, send_ack=True)
+                                          stream_list=stream_list, send_data=True, send_ack=False, mrc_num_packets=1)
+        if send_control_packets:
+            last_round = cycle_ports_pairs[-round_len:]
+            for (port1, port2) in last_round:
+                ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
+                for (src_port, dst_port) in ports_cycle_flow:
+                    create_round_robin_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
+                                              mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                              stream_list=stream_list, send_data=False, send_ack=True)
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
     traffic_jsons[player_alias] = json_path
 

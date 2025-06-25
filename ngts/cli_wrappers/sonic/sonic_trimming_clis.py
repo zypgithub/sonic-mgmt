@@ -79,11 +79,16 @@ class SonicTrimmingCli(PerformanceCommon):
                               )
         self.execute_cmd("sonic-cfggen -w -j /tmp/zero_scheduler.json")
 
-    def enable_trimming_on_lossy_queue(self):
-        file_name = "enable_queue_trimming.json"
+    def configure_custom_dwrr_weights(self):
+        file_name = "configure_custom_dwrr_weights.json"
         full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, file_name)
         self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system='/tmp', direction='put')
         self.execute_cmd(f"sonic-cfggen -w -j /tmp/{file_name}")
+
+    def enable_trimming_on_lossy_queue(self):
+        for queue_num in MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM:
+            self.execute_cmd(f"sudo config mmu -p queue{queue_num}_uplink_lossy_profile -t on")
+            self.execute_cmd(f"sudo config mmu -p queue{queue_num}_downlink_lossy_profile -t on")
 
     def configure_trimming_size(self, trimming_size):
         with allure.step(f"Configure trimming size to {trimming_size}"):

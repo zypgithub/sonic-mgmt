@@ -81,11 +81,15 @@ def is_ipv6(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
+def disable_sysdump_at_test_faliure(request):
+    with allure.step('Disable default sysdump generation'):
+        os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
+
+
+@pytest.fixture(scope='function', autouse=True)
 def basic_test_configuration(request, players):
     request.getfixturevalue('basic_setup_configuration')
     try:
-        with allure.step('Disable default sysdump generation'):
-            os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
         with allure.step('Configure Mloops on Traffic Generators'):
             configure_mloops(players)
         yield

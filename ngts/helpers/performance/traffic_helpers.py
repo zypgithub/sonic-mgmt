@@ -234,7 +234,7 @@ def validate_no_drops_on_tg_ports(traffic_json, players, violations_list):
             violations_list.extend(violations)
 
 
-def validate_bw(traffic_json, bw_threshold, violations_list):
+def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
     with allure.step(f"Validate all bandwidth samples minimal value is above {bw_threshold} threshold"):
         bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
         bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
@@ -244,7 +244,7 @@ def validate_bw(traffic_json, bw_threshold, violations_list):
             bw_stats = bw_sample[ValidationConsts.BW_STATS]
             if bw_stats[ValidationConsts.TX_RATE_MIN] < bw_threshold:
                 lower_tx_bw_sample.append(sample_id)
-            if bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
+            if validate_bw_rx and bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
                 lower_rx_bw_sample.append(sample_id)
         if lower_tx_bw_sample:
             violations_list.append(f"Not all tx bandwidth samples were higher than threshold {bw_threshold}, "
@@ -252,6 +252,30 @@ def validate_bw(traffic_json, bw_threshold, violations_list):
         if lower_rx_bw_sample:
             violations_list.append(f"Not all rx bandwidth samples were higher than threshold {bw_threshold}, "
                                    f"please check {lower_rx_bw_sample}")
+
+
+def get_ports_avg_bw(traffic_json):
+    bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
+    samples = list(traffic_json[ValidationConsts.BW_SAMPLES].keys())
+    last_sample = bw_samples[samples[-1]]
+    bw_samples_stats = last_sample[ValidationConsts.BW_STATS]
+    avg_ports_tx = bw_samples_stats[ValidationConsts.TX_BW_AVG]
+    avg_ports_rx = bw_samples_stats[ValidationConsts.RX_BW_AVG]
+    return avg_ports_tx, avg_ports_rx
+
+
+def get_tc_occ(traffic_json, tc_list, key=ValidationConsts.TC_OCC_AVG):
+    tc_occ_dict = {}
+    tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+    samples = list(tc_samples.keys())
+    last_sample = tc_samples[samples[-1]]
+    tc_df = last_sample[ValidationConsts.TC_DATAFRAME]
+    for tc_dict in tc_df:
+        tc_name = tc_dict[ValidationConsts.TC_NAME]
+        if tc_name in tc_list:
+            tc_occ = tc_dict[key]
+            tc_occ_dict[tc_name] = tc_occ
+    return tc_occ_dict
 
 
 def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_list):
@@ -421,42 +445,27 @@ def pick_random_consecutive_ports(ports_list, port_number):
     return selected_ports
 
 
-def validate_no_dropped_packets_on_queue(traffic_json, cli_obj, interface_list, queue_list, violations_list):
+def validate_no_dropped_packets_on_queue(cli_obj, interface_list, queue_list, violations_list):
     for interface in interface_list:
         with allure.step(f"Validate no dropped packets on queues {queue_list} for {interface}"):
             show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
             logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
             for queue in queue_list:
-                if int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"]) > 0:
+                queue_counter_pkts, queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, queue)
+                if queue_drop_pkts > 0:
                     violations_list.append(f"Dropped packets on {interface} queue {queue}")
-
-
-def validate_no_untrimmed_packets(traffic_json, cli_obj, interface_list, trimming_queue, drop_queues, violations_list):
-    """
-    validate all packets sent to queue drop_queue are dropped and trimmed on queue trimming_queue for all interfaces
-    :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
-    :param trimming_queue: trimming queue, i.e 'UC4'
-    :param drop_queues: list of drop queues, i.e ['UC1', 'UC2']
-    """
-    for interface in interface_list:
-        total_drop_queue_counter_pkts = 0
-        total_drop_queue_drop_pkts = 0
-        with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
-            show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
-        logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
-        for drop_queue in drop_queues:
-            drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
-            total_drop_queue_counter_pkts += drop_queue_counter_pkts
-            total_drop_queue_drop_pkts += drop_queue_drop_pkts
-        trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
-        if not is_no_untrimmed_packets(total_drop_queue_counter_pkts, total_drop_queue_drop_pkts, trimming_queue_counter_pkts, trimming_queue_drop_pkts):
-            violations_list.append(f"Untrimmed packets detected on {interface}")
 
 
 def get_counters_for_queue(show_queue_counters_dict, queue):
     queue_counter_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Counter/pkts"].replace(",", ""))
     queue_drop_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"].replace(",", ""))
     return queue_counter_pkts, queue_drop_pkts
+
+
+def get_counters_for_queue_bytes(show_queue_counters_dict, queue, packet_size):
+    queue_counter_bytes = int(show_queue_counters_dict[f"UC{queue}"]["Counter/bytes"].replace(",", ""))
+    queue_drop_bytes = int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"].replace(",", "")) * packet_size
+    return queue_counter_bytes, queue_drop_bytes
 
 
 def is_no_untrimmed_packets(drop_queue_counter_pkts, drop_queue_drop_pkts, trimming_queue_counter_pkts, trimming_queue_drop_pkts):
@@ -469,74 +478,80 @@ def is_no_untrimmed_packets(drop_queue_counter_pkts, drop_queue_drop_pkts, trimm
         return False
 
 
-def validate_trimmed_untrimmed_percentages(traffic_json, cli_obj, interface_list, trimming_queue, drop_queues, violations_list):
+def get_queue_packet_percentages(cli_obj, interface_list, queues_list):
+    queue_packet_percentages = {}
+    for interface in interface_list:
+        total_queue_counter_pkts = 0
+        show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
+        logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+        for queue in queues_list:
+            queue_counter_pkts, queue_counter_drop_pkts = get_counters_for_queue(show_queue_counters_dict, queue)
+            total_queue_counter_pkts += queue_counter_pkts
+        for queue in queues_list:
+            queue_counter_pkts, queue_counter_drop_pkts = get_counters_for_queue(show_queue_counters_dict, queue)
+            queue_packet_percentage = round(queue_counter_pkts / total_queue_counter_pkts, 2)
+            queue_packet_percentages[f"Queue{queue}"] = queue_packet_percentage
+    return queue_packet_percentages
+
+
+def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
     """
     validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
     :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
     :param trimming_queue: trimming queue, i.e 'UC4'
-    :param drop_queues: list of drop queues, i.e ['UC1', 'UC2']
+    :param drop_queues: drop queue, i.e 'UC1'
     """
     queue_packet_percentages = []
-    with allure.step(f"Validate all packets sent to queues {drop_queues} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
+    with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
         for interface in interface_list:
-            with allure.step(f"Validate all packets sent to queues {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+            with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+                total_drop_queue_counter_pkts = 0
                 total_packets_egress_port = 0
                 total_packets_egress_port_dropped = 0
+                total_drop_queue_counter_pkts_bytes = 0
+                total_packets_egress_port_bytes = 0
+                total_packets_egress_port_dropped_bytes = 0
                 show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
                 logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
                 for drop_queue in drop_queues:
-                    drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
-                    total_packets_egress_port += drop_queue_counter_pkts
-                    total_packets_egress_port_dropped += drop_queue_drop_pkts
+                    update_queue_counters(show_queue_counters_dict, drop_queue,
+                                          total_drop_queue_counter_pkts, total_packets_egress_port_dropped,
+                                          total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes)
+                total_packets_egress_port = total_drop_queue_counter_pkts + total_packets_egress_port_dropped
                 trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
-                total_packets_to_egress_port = total_packets_egress_port + trimming_queue_counter_pkts
-                untrimmed_percentage = round(total_packets_egress_port / total_packets_to_egress_port, 2)
-                trimming_percentage = round(trimming_queue_counter_pkts / total_packets_to_egress_port, 2)
-                queue_packet_percentages.append({ValidationConsts.PORT: interface,
-                                                 ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
-                                                 ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage})
-                if trimming_queue_drop_pkts > 0:
-                    violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
-    queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
-    average_untrimmed_percentage = queue_packet_percentages_df[ValidationConsts.UNTRIMMED_PRECENTAGE].mean()
-    average_trimming_percentage = queue_packet_percentages_df[ValidationConsts.TRIMMING_PRECENTAGE].mean()
-    new_row = pd.DataFrame([{ValidationConsts.PORT: "Average",
-                             ValidationConsts.UNTRIMMED_PRECENTAGE: average_untrimmed_percentage,
-                             ValidationConsts.TRIMMING_PRECENTAGE: average_trimming_percentage}])
-    queue_packet_percentages_df = pd.concat([queue_packet_percentages_df, new_row], ignore_index=True)
-    with allure.step(f"Attach queue packets percentages, average untrimmed percentage is {average_untrimmed_percentage} and average trimming percentage is {average_trimming_percentage}"):
-        allure.attach(queue_packet_percentages_df.to_html(), "Queue packets percentages", attachment_type=allure.attachment_type.HTML)
-
-
-def validate_trimmed_untrimmed_dropped_percentages(traffic_json, cli_obj, interface_list, trimming_queue, drop_queue, violations_list):
-    """
-    validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
-    :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
-    :param trimming_queue: trimming queue, i.e 'UC4'
-    :param drop_queue: drop queue, i.e 'UC1'
-    """
-    queue_packet_percentages = []
-    with allure.step(f"Validate all packets sent to queue {drop_queue} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
-        for interface in interface_list:
-            with allure.step(f"Validate all packets sent to queue {drop_queue} are dropped and trimmed on queue {trimming_queue} for {interface}"):
-                total_packets_egress_port = 0
-                show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
-                logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
-                drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
-                trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
-                total_packets_egress_port = drop_queue_counter_pkts + drop_queue_drop_pkts
-                dropped_without_trimming = drop_queue_drop_pkts - trimming_queue_counter_pkts
+                trimming_queue_counter_pkts_bytes, trimming_queue_drop_pkts_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, trimming_queue, PerfConsts.PACKET_SIZE_4K)
+                total_packets_egress_port_bytes = total_drop_queue_counter_pkts_bytes + trimming_queue_counter_pkts_bytes
+                dropped_without_trimming = total_packets_egress_port_dropped - trimming_queue_counter_pkts
                 if dropped_without_trimming > 0:
                     dropped_without_trimming_percentage = round(dropped_without_trimming / total_packets_egress_port, 2)
                 else:
                     dropped_without_trimming_percentage = 0
-                untrimmed_percentage = round(drop_queue_counter_pkts / total_packets_egress_port, 2)
+                untrimmed_percentage = round(total_drop_queue_counter_pkts / total_packets_egress_port, 2)
+                untrimmed_bytes_percentage = round(total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes, 2)
                 trimming_percentage = round(trimming_queue_counter_pkts / total_packets_egress_port, 2)
+                trimming_bytes_percentage = round(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes, 2)
                 queue_packet_percentages_dict = {ValidationConsts.PORT: interface,
                                                  ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
                                                  ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage,
-                                                 ValidationConsts.DROPPED_WITHOUT_TRIMMING_PRECENTAGE: dropped_without_trimming_percentage}
+                                                 ValidationConsts.DROPPED_WITHOUT_TRIMMING_PRECENTAGE: dropped_without_trimming_percentage,
+                                                 ValidationConsts.UNTRIMMED_BYTES_PRECENTAGE: untrimmed_bytes_percentage,
+                                                 ValidationConsts.TRIMMING_BYTES_PRECENTAGE: trimming_bytes_percentage}
                 queue_packet_percentages.append(queue_packet_percentages_dict)
                 if trimming_queue_drop_pkts > 0:
                     violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
-                return queue_packet_percentages_dict
+                if dropped_without_trimming_percentage > 0:
+                    violations_list.append(f"Dropped packets without trimming detected on {interface}")
+                if return_dict:
+                    return queue_packet_percentages_dict
+    queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
+    with allure.step(f"Attach queue_packet_percentages_df"):
+        allure.attach(queue_packet_percentages_df.to_html(), "Queue packet percentages dataframe", attachment_type=allure.attachment_type.HTML)
+
+
+def update_queue_counters(show_queue_counters_dict, drop_queue, total_drop_queue_counter_pkts, total_packets_egress_port_dropped, total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes):
+    drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
+    drop_queue_counter_pkts_bytes, drop_queue_drop_pkts_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, drop_queue, PerfConsts.PACKET_SIZE_4K)
+    total_drop_queue_counter_pkts += drop_queue_counter_pkts
+    total_packets_egress_port_dropped += drop_queue_drop_pkts
+    total_drop_queue_counter_pkts_bytes += drop_queue_counter_pkts_bytes
+    total_packets_egress_port_dropped_bytes += drop_queue_drop_pkts_bytes

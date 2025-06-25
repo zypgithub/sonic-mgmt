@@ -65,6 +65,7 @@ class ValidationConfig:
     chip_type: str
     run_validate_counters: bool = True
     run_validate_no_drops_on_tg_ports: bool = True
+    validate_bw_rx: bool = True
     samples_params_dict: Dict = field(default_factory=lambda: PerfConsts.SAMPLES_PARAMS)
     tc_occ_threshold: Dict = field(default_factory=lambda: PerfConsts.OCC_TH_DICT)
     temperature_threshold: float = PerfConsts.TEMPERATURE_TH
@@ -98,7 +99,7 @@ class ValidationConfig:
             # Bandwidth validation - ensures bandwidth meets threshold
             'bandwidth': Validation(
                 validate_bw,
-                {'bw_threshold': self.bw_threshold}
+                {'bw_threshold': self.bw_threshold, 'validate_bw_rx': self.validate_bw_rx}
             ) if self.bw_threshold is not None else None,
 
             # Traffic class validation - checks occupancy levels
@@ -360,6 +361,16 @@ def skip_test_on_unsupported_os(cli_obj, unsupported_os):
             pytest.skip(f"This test is not supported in {CliType.DVS}")
         elif unsupported_os == CliType.SONIC and isinstance(cli_obj, SonicCli):
             pytest.skip(f"This test is not supported in {CliType.SONIC}")
+
+
+def skip_test_on_unsupported_chip_type(current_chip_type, unsupported_chip_type):
+    if current_chip_type == unsupported_chip_type:
+        pytest.skip(f"This test is not supported in {unsupported_chip_type}")
+
+
+def skip_performance_test_conditionally(condition, skip_message):
+    if condition:
+        pytest.skip(skip_message)
 
 
 def get_topology_obj(players):

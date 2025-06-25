@@ -10,10 +10,9 @@ import numpy as np
 import time
 import pandas as pd
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from ngts.helpers.performance.traffic_helpers import (generate_mac_range,
+from ngts.helpers.performance.traffic_helpers import (generate_mac_range, get_ports_avg_bw,
                                                       pick_random_non_consecutive_ports,
                                                       pick_random_consecutive_ports,
-                                                      validate_trimmed_untrimmed_percentages,
                                                       validate_trimmed_untrimmed_dropped_percentages)
 from ngts.helpers.performance.performance_setup_helpers import (Validation, ValidationConfig, run_traffic,
                                                                 stop_traffic, run_validation, configure_mloops,
@@ -50,14 +49,15 @@ class TestSRv6Base:
     def round_robin_traffic_test_runner(self, test_name, traffic_type,
                                         upstream_group, downstream_group, bisection_traffic=True):
         upstream_downstream_group = list(zip(upstream_group, downstream_group))
-        all_ports_in_test = []
-        for upstream, downstream in upstream_downstream_group:
-            with allure.step(f"Run round-robin traffic pattern on {len(upstream)} upstream ports and {len(downstream)} downstream ports"):
-                traffic_jsons = get_round_robin_traffic(self.players, self.conf_args, traffic_type,
-                                                        upstream, downstream, bisection_traffic,
-                                                        self.dut_interfaces_ipv6_configuration_dict)
-                run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
-                all_ports_in_test.extend(upstream + downstream)
+        all_ports_in_test, group_size, num_of_groups = self.get_all_ports_in_test(upstream_downstream_group)
+        with allure.step(f"Run round-robin traffic pattern on {group_size}<-->{group_size} ports in {num_of_groups} groups"):
+            traffic_jsons = get_round_robin_traffic(players=self.players,
+                                                    conf_args=self.conf_args,
+                                                    traffic_type=traffic_type,
+                                                    upstream_downstream_group=upstream_downstream_group,
+                                                    bisection_traffic=bisection_traffic,
+                                                    dut_interfaces_ipv6_configuration_dict=self.dut_interfaces_ipv6_configuration_dict)
+            run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         with allure.step(f"Verifying round-robin traffic pattern on all upstream ports and all downstream ports"):
             half_ports_num = len(all_ports_in_test) // 2
             round_robin_occ_th_dict = {ValidationConsts.TC_OCC_AVG: 11 * half_ports_num,
@@ -95,23 +95,51 @@ class TestSRv6Base:
                 self.cli_object.interface.clear_queue_counters()
             with allure.step(f"Run traffic"):
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
-            with allure.step(f"Verifying the traffic on egress port: {egress_port}"):
-                self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_port)
-                run_validate_counters = self.is_run_validate_counters_enabled(M=len(ingress_ports)) or workload == MRCConsts.WORKLOAD1_NAME
+            samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
+            samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
+            with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress ports"):
+                self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=ingress_ports)
                 config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                           chip_type=self.chip_type,
-                                          run_validate_counters=run_validate_counters,
+                                          run_validate_counters=False,
                                           bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                          validate_bw_rx=False,
                                           tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
                                           power_threshold=self.power_thresholds_by_chip_type,
-                                          counters_list=MRCConsts.COUNTERS_WITH_ECN)
-                run_validation(config)
-
-    def is_run_validate_counters_enabled(self, M):
-        return True if M != MRCConsts.MAX_INGRESS_PORTS_NUM else False
+                                          counters_list=MRCConsts.COUNTERS_WITH_ECN,
+                                          samples_params_dict=samples_params_dict)
+                traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
+                traffic_validation_json = traffic_validation_jsons_list.pop()
+                avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
+            with allure.step(f"Verifying the traffic on egress port: {egress_port}"):
+                self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_port)
+                config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                          chip_type=self.chip_type,
+                                          run_validate_counters=False,
+                                          bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                          validate_bw_rx=False,
+                                          tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
+                                          power_threshold=self.power_thresholds_by_chip_type,
+                                          counters_list=MRCConsts.COUNTERS_WITH_ECN,
+                                          samples_params_dict=samples_params_dict)
+                traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
+            with allure.step(f"stop traffic"):
+                stop_traffic(self.players)
+            with allure.step(f"validate trimmed untrimmed dropped percentages"):
+                validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_port, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                               drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
+                                                               violations_list=violations_list)
+            if avg_ports_rx < PerfConsts.SHAPER_VALUE:
+                violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
+        if violations_list:
+            raise TestIssue("\n".join(violations_list))
 
     def many_to_few_traffic_test_runner(self, test_name, traffic_type, workload,
                                         egress_ports, ingress_ports, tc_threshold, M, get_ports_from_start=False):
+        total_violations_list = []
+        with allure.step(f"Clear counters"):
+            self.cli_object.interface.clear_counters()
+            self.cli_object.interface.clear_queue_counters()
         with allure.step(f"Run many to few traffic on {len(ingress_ports)} ingress ports and {len(egress_ports)} egress ports, M={M}"):
             traffic_jsons = get_many_to_few_traffic(self.players, self.conf_args, traffic_type,
                                                     self.dut_interfaces_ipv6_configuration_dict,
@@ -120,18 +148,44 @@ class TestSRv6Base:
                                                     congestion=True)
 
             run_traffic(self.players, self.scenario, traffic_jsons)
-        with allure.step(f"Verifying the traffic on selected {len(egress_ports)} egress ports"):
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
-            run_validate_counters = self.is_run_validate_counters_enabled(M)
-
+        samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
+        samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
+        with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress ports"):
+            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=ingress_ports)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      run_validate_counters=run_validate_counters,
+                                      run_validate_counters=False,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      validate_bw_rx=False,
+                                      tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      counters_list=MRCConsts.COUNTERS_WITH_ECN,
+                                      samples_params_dict=samples_params_dict)
+            traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
+            traffic_validation_json = traffic_validation_jsons_list.pop()
+            avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
+        with allure.step(f"Verifying the traffic on selected {len(egress_ports)} egress ports"):
+            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      run_validate_counters=False,
+                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      validate_bw_rx=False,
                                       tc_occ_threshold=tc_threshold,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN)
-            run_validation(config)
+                                      counters_list=MRCConsts.COUNTERS_WITH_ECN,
+                                      samples_params_dict=samples_params_dict)
+            traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
+        with allure.step(f"stop traffic"):
+            stop_traffic(self.players)
+        with allure.step(f"validate trimmed untrimmed dropped percentages"):
+            validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                           drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
+                                                           violations_list=violations_list)
+        if avg_ports_rx < PerfConsts.SHAPER_VALUE:
+            violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
+        if violations_list:
+            raise TestIssue("\n".join(violations_list))
 
     def configure_interfaces_mac_neighbor(self):
         """
@@ -196,3 +250,11 @@ class TestSRv6Base:
         if get_ports_from_start:
             egress_ports = egress_ports_candidates[:egress_ports_num]
         return egress_ports
+
+    def get_all_ports_in_test(self, upstream_downstream_group):
+        all_ports_in_test = []
+        for upstream_ports, downstream_ports in upstream_downstream_group:
+            all_ports_in_test.extend(upstream_ports + downstream_ports)
+        group_size = len(upstream_downstream_group[0][0])
+        num_of_groups = len(upstream_downstream_group)
+        return all_ports_in_test, group_size, num_of_groups

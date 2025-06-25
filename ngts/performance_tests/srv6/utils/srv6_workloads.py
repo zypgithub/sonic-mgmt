@@ -20,8 +20,8 @@ def get_mloop_ports(mloops_dict, ports):
 def get_workload_method(workload):
     workload_to_method_dict = {
         MRCConsts.WORKLOAD1_NAME: create_workload1_stream,
-        MRCConsts.WORKLOAD2_NAME: create_workload2_stream,
-        MRCConsts.MRC_DATA_ONLY_WORKLOAD_NAME: create_mrc_data_only_workload_stream,
+        MRCConsts.MRC1_DATA_ONLY_WORKLOAD_NAME: create_mrc1_data_only_workload_stream,
+        MRCConsts.MRC2_DATA_ONLY_WORKLOAD_NAME: create_mrc2_data_only_workload_stream,
     }
     return workload_to_method_dict[workload]
 
@@ -110,87 +110,56 @@ def create_workload1_stream(player_alias, cli_obj, src_ports, dst_port, traffic_
         stream_list.extend([mrc1_retransmit_stream, mrc2_retransmit_stream])
 
 
-def create_mrc_data_only_workload_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
-                                         mloops_dict, dut_interfaces_ipv6_configuration_dict,
-                                         stream_list, send_roce_ack=False,
-                                         send_rtt_and_probe_ack=False, congestion=False, send_retransmission=False):
+def create_mrc1_data_only_workload_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
+                                          mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                          stream_list, send_roce_ack=False,
+                                          send_rtt_and_probe_ack=False, congestion=False, send_retransmission=False):
     """
     packet breakdown:
     +------------------------+------------------+
     | Packet Type           | Number of Packets |
     +------------------------+------------------+
-    | MRC1 data packets     | 5                 |
-    | MRC2 data packets     | 5                 |
+    | MRC1 data packets     | 10                |
     +------------------------+------------------+
     | Total                 | 10                |
     +------------------------+------------------+
     """
-    create_workload1_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
-                            mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list,
-                            mrc1_num_packets=5, mrc2_num_packets=5, send_roce_ack=send_roce_ack,
-                            send_rtt_and_probe_ack=send_rtt_and_probe_ack, congestion=congestion,
-                            send_retransmission=send_retransmission)
+    set_workload_traffic_parameters(cli_obj, traffic_parameters, mloops_dict, src_ports, dst_port,
+                                    dut_interfaces_ipv6_configuration_dict, traffic_type)
+    get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,
+                        mrc_num_packets=10,
+                        mrc_dscp=MRCConsts.MRC1_DSCP, rtt_dscp=MRCConsts.MRC1_RTT_DSCP,
+                        stream_list=stream_list,
+                        send_roce_ack=False,
+                        send_rtt_and_probe_ack=False,
+                        congestion=False,
+                        stream_num=1)
 
 
-def create_workload2_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
-                            mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list, mrc1_num_packets=4,
-                            mrc2_num_packets=4, congestion=False):
+def create_mrc2_data_only_workload_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
+                                          mloops_dict, dut_interfaces_ipv6_configuration_dict,
+                                          stream_list, send_roce_ack=False,
+                                          send_rtt_and_probe_ack=False, congestion=False, send_retransmission=False):
     """
     packet breakdown:
     +------------------------+------------------+
     | Packet Type           | Number of Packets |
     +------------------------+------------------+
-    | MRC1 data packets      | 5                |
-    | MRC2 data packets      | 5                |
-    | GFP data               | 1                |
-    | GFP control            | 1                |
-    | RTT probe packet       | 1                |
-    | ProbeAck packet        | 1                |
-    | RoCE ack packets       | 1                |
-    | CNP packets            | 1                |
-    | MRC trimmed            | 1                |
-    | SACK                   | 1                |
-    | NACK                   | 1                |
-    | MRC retransmission     | 1                |
+    | MRC2 data packets     | 10                |
     +------------------------+------------------+
-    | Total                  | 19               |
+    | Total                 | 10                |
     +------------------------+------------------+
-    * When scenario includes congestion
     """
     set_workload_traffic_parameters(cli_obj, traffic_parameters, mloops_dict, src_ports, dst_port,
                                     dut_interfaces_ipv6_configuration_dict, traffic_type)
     get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,
-                        mrc_num_packets=mrc1_num_packets,
-                        mrc_dscp=MRCConsts.MRC1_DSCP, rtt_dscp=MRCConsts.MRC1_RTT_DSCP,
-                        stream_list=stream_list,
-                        send_roce_ack=True,
-                        send_rtt_and_probe_ack=True,
-                        congestion=congestion,
-                        stream_num=1, roce_num_packets=1, cnp_num_packets=1)
-    get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,
-                        mrc_num_packets=mrc2_num_packets,
+                        mrc_num_packets=10,
                         mrc_dscp=MRCConsts.MRC2_DSCP, rtt_dscp=MRCConsts.MRC2_RTT_DSCP,
                         stream_list=stream_list,
                         send_roce_ack=False,
                         send_rtt_and_probe_ack=False,
                         congestion=False,
                         stream_num=2)
-    mrc_trimmed_stream = get_mrc_stream(player_alias, traffic_parameters, 1, src_ports, dst_port,
-                                        mrc_dscp=MRCConsts.MRC_TRIMMED_DSCP, mrc_stream_name="_TRIMMED",
-                                        packet_size=os.environ.get("OPT_TS", MRCConsts.OPT_TS_DEFAULT),
-                                        payload=True)
-    sack_stream = get_sack_stream(player_alias, traffic_parameters, src_ports, dst_port)
-    nack_stream = get_nack_stream(player_alias, traffic_parameters, src_ports, dst_port)
-    mrc_retransmit_dscp = random.choice([MRCConsts.MRC1_RETRANSMISSION_DSCP, MRCConsts.MRC2_RETRANSMISSION_DSCP])
-    mrc_retransmit_stream_num = "1_RETRANSMIT" if mrc_retransmit_dscp == MRCConsts.MRC1_RETRANSMISSION_DSCP else "2_RETRANSMIT"
-    mrc_retransmit_stream = get_mrc_stream(player_alias, traffic_parameters, 1, src_ports, dst_port,
-                                           mrc_dscp=mrc_retransmit_dscp,
-                                           mrc_stream_name=mrc_retransmit_stream_num)
-    stream_list.extend([mrc_trimmed_stream, sack_stream, nack_stream, mrc_retransmit_stream])
-    set_workload_traffic_parameters(cli_obj, traffic_parameters, mloops_dict, src_ports, dst_port,
-                                    dut_interfaces_ipv6_configuration_dict, traffic_type=MRCConsts.TRAFFIC_TYPE_IPV6)
-    gfp_streams = get_gfp_streams(player_alias, traffic_parameters, src_ports, dst_port)
-    stream_list.extend(gfp_streams)
 
 
 def get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,

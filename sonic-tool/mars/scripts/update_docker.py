@@ -52,6 +52,8 @@ def _parse_args():
                                                              "notification to all the active terminals and wait for "
                                                              "a predefined period before starting the deployment",
                         dest="send_takeover_notification", default='no', choices=["yes", "no"])
+    parser.add_argument("--skip_weekend_cases", help="If set to yes, the script will set the env variable SKIP_WEEKEND_CASES to yes",
+                        dest="skip_weekend_cases", default='yes', choices=["yes", "no"])
     return parser.parse_args()
 
 
@@ -147,20 +149,21 @@ def create_mgmt_network(conn):
         logger.info('macvlan network \"%s\" - already exist', NETWORK_NAME)
 
 
-def create_secrets_vars_script(conn, mars_docker_env_secrets, container_name):
+def create_secrets_vars_script(conn, mars_docker_env_secrets, container_name, skip_weekend_cases):
     export_env_var_script_path = "/tmp/{CONTAINER_NAME}_export_env_var.sh".format(CONTAINER_NAME=container_name)
     if os.path.exists(export_env_var_script_path):
         conn.run("rm -f {SCRIPT_PATH}".format(SCRIPT_PATH=export_env_var_script_path), warn=True)
     regex = r"[\w|_]+=[|\'\w\d$!-\.\/\-:~\(\)@=]*"
     env_vars = re.findall(regex, mars_docker_env_secrets)
     script_content = ["export {0}".format(env_var.replace("$", r"\$")) for env_var in env_vars]
+    script_content.append("export SKIP_WEEKEND_CASES={}".format(skip_weekend_cases))
     script_content = ["#!/bin/bash"] + script_content
     for line in script_content:
         conn.run("echo \"{LINE}\" >> {SCRIPT_PATH}".format(LINE=line, SCRIPT_PATH=export_env_var_script_path), warn=True)
     return export_env_var_script_path
 
 
-def create_and_start_container(conn, image_name, image_tag, container_name, mac_address):
+def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases):
     """
     @summary: Create and start specified container from specified image
     @param conn: Fabric connection to the host server
@@ -187,10 +190,11 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     container_mountpoints = " ".join(container_mountpoints_list)
 
     mars_docker_env_secrets = os.getenv("MARS_DOCKER_ENV_SECRETS")
-    secrets_vars_script_path = create_secrets_vars_script(conn, mars_docker_env_secrets, container_name)
+    secrets_vars_script_path = create_secrets_vars_script(conn, mars_docker_env_secrets, container_name, skip_weekend_cases)
     cmd_tmplt = "docker run --init -d -t --cap-add=NET_ADMIN {CONTAINER_MOUNTPOINTS} " \
                 "--privileged --network=containers_network --mac-address={MAC_ADDRESS} " \
                 "--env ANSIBLE_CONFIG=/root/mars/workspace/sonic-mgmt/ansible/ansible.cfg {MARS_DOCKER_ENV_SECRETS} " \
+                "--env SKIP_WEEKEND_CASES={SKIP_WEEKEND_CASES} " \
                 "--name {CONTAINER_NAME} {IMAGE_NAME}:{IMAGE_TAG} /bin/bash"
     cmd = cmd_tmplt.format(
         CONTAINER_MOUNTPOINTS=container_mountpoints,
@@ -198,7 +202,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         CONTAINER_NAME=container_name,
         IMAGE_NAME=image_name,
         IMAGE_TAG=image_tag,
-        MARS_DOCKER_ENV_SECRETS=mars_docker_env_secrets
+        MARS_DOCKER_ENV_SECRETS=mars_docker_env_secrets,
+        SKIP_WEEKEND_CASES=skip_weekend_cases
     )
 
     logger.info("Try to remove existing docker container anyway")
@@ -390,7 +395,7 @@ def main():
 
     logger.info("Need to create and start sonic-mgmt container")
     create_and_start_container(test_server, "{}/{}".format(registry_url, docker_image_name),
-                               docker_tag, container_name, mac)
+                               docker_tag, container_name, mac, args.skip_weekend_cases)
 
     logger.info("Try to delete dangling docker images to save space")
     cleanup_dangling_docker_images(test_server)

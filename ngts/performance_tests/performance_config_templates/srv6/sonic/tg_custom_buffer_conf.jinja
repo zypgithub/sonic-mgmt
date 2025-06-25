@@ -11,6 +11,74 @@
             "56": "4", "57": "4", "58": "4", "59": "4", "60": "4", "61": "4", "62": "4", "63": "4"
         }
     },
-    "TC_TO_QUEUE_MAP": {"AZURE": {"0": "0", "1": "1", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7"}},
-    "TC_TO_PG_MAP":   {"AZURE": {"0": "0", "1": "0", "2": "0", "3": "0", "4": "0", "5": "0", "6": "0", "7": "0"}}
+    "SCHEDULER": {
+        "scheduler_q0_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q0_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q1_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q1_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q2_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q2_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q3_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q3_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q4_downlink": {
+            "type": "DWRR",
+            "weight": "100"
+        },
+        "scheduler_q4_uplink": {
+            "type": "DWRR",
+            "weight": "100"
+        },
+        "scheduler_q5_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q5_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q6_downlink": {
+            "type": "DWRR",
+            "weight": "1"
+        },
+        "scheduler_q6_uplink": {
+            "type": "DWRR",
+            "weight": "1"
+        }
+    },
+    "BUFFER_PROFILE": {
+        "queue4_downlink_lossy_profile": {
+            "dynamic_th": "1",
+            "pool": "egress_lossy_pool",
+            "size": "320000"
+        },
+        "queue4_uplink_lossy_profile": {
+            "dynamic_th": "1",
+            "pool": "egress_lossy_pool",
+            "size": "320000"
+        }
+    }
 }

@@ -6,6 +6,8 @@ import time
 from retry import retry
 from collections import defaultdict
 from infra.tools.exceptions.test_issue import TestIssue
+from jsonmerge import merge
+from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts
@@ -27,10 +29,13 @@ class SonicPerformanceCli(PerformanceCommon):
         self.topology_obj = topology_obj
         self.engine = engine
         self.dut_alias = dut_alias
-        self.hostname = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Common']['Name']
+        self.hostname = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Common'][
+            'Name']
         self.cli_obj = cli_obj
-        self.chip_type = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['chip_type']
-        self.mac = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['mac_address'].lower()
+        self.chip_type = \
+            self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific']['chip_type']
+        self.mac = self.topology_obj.players[self.dut_alias]['attributes'].noga_query_data['attributes']['Specific'][
+            'mac_address'].lower()
         self.service_port_idx = -1
         self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
@@ -52,7 +57,8 @@ class SonicPerformanceCli(PerformanceCommon):
         for port in ports_list:
             tx_drop_counter = counters_dict[port]['TX_DRP'].replace(",", "")
             if int(tx_drop_counter) > 0:
-                violations.append(f"{port_type} Port {port} on {self.dut_alias}-{self.hostname} has {tx_drop_counter} TX_DRP")
+                violations.append(
+                    f"{port_type} Port {port} on {self.dut_alias}-{self.hostname} has {tx_drop_counter} TX_DRP")
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
         docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
@@ -167,6 +173,8 @@ class SonicPerformanceCli(PerformanceCommon):
             match = re.search(regex, full_info)
             if match:
                 dut_system_information[key] = match.group(1)
+        updated_fw_version = dut_system_information["fwVersion"].replace(".", "_")
+        dut_system_information["fwVersion"] = updated_fw_version
         return dut_system_information
 
     def get_test_specific_values(self, testname):
@@ -233,8 +241,9 @@ class SonicPerformanceCli(PerformanceCommon):
         template_string = jinja_template.render(connected_ports=self.connected_ports,
                                                 unconnected_ports=self.unconnected_ports)
         tg_custom_buffer_conf = json.loads(template_string)
-        for key, value in tg_custom_buffer_conf.items():
-            updated_config_db[key] = value
+        for key, dict_value in tg_custom_buffer_conf.items():
+            for inner_dict_key, inner_dict_value in dict_value.items():
+                updated_config_db[key][inner_dict_key] = inner_dict_value
         return updated_config_db
 
     def load_qos_config_on_dut(self):
@@ -469,7 +478,8 @@ class SonicPerformanceCli(PerformanceCommon):
             lane_map_hex_port_tuple = (int(lane_map, PerfConsts.HEX_BASE), hex_port)
             sdk_port_mapping_dict[port_number].append(lane_map_hex_port_tuple)
         for port_number, hex_ports in sdk_port_mapping_dict.items():
-            sorted_hex_ports_by_lane_map = sorted(hex_ports, key=lambda lane_map_hex_port_tuple: lane_map_hex_port_tuple[0])
+            sorted_hex_ports_by_lane_map = sorted(hex_ports,
+                                                  key=lambda lane_map_hex_port_tuple: lane_map_hex_port_tuple[0])
             sorted_hex_ports = [lane_map_hex_port_tuple[1] for lane_map_hex_port_tuple in sorted_hex_ports_by_lane_map]
             sdk_port_mapping_dict[port_number] = sorted_hex_ports
         return sdk_port_mapping_dict
@@ -641,4 +651,5 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def configure_ports_shaper(self, shaper_value):
         configure_ports_shaper_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names ConfigureShaperOnAllPorts"
-        self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd, env_variables=[f'{PerfConsts.SHAPER_VALUE_ENV_VAR}={shaper_value}']))
+        self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd,
+                                              env_variables=[f'{PerfConsts.SHAPER_VALUE_ENV_VAR}={shaper_value}']))
