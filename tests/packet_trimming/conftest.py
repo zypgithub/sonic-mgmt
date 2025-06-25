@@ -51,13 +51,13 @@ def skip_if_packet_trimming_not_supported(duthost):
 
 @pytest.fixture(scope="module")
 def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links, service_links, tbinfo):
-    # noqa F401
     """
     Prepare test parameters for packet trimming tests.
 
     ingress_port: The first downlink port
     egress_port_1: The first uplink port
-    egress_port_2: The second downlink port (For T0 topology no egress_port_2, because downlink interface does not have BGP neighbor in T0 topology)
+    egress_port_2: The second downlink port (For T0 topology no egress_port_2, because downlink interface does not
+    have BGP neighbor in T0 topology)
 
     Returns:
         dict: Dictionary containing test parameters needed for packet trimming tests
