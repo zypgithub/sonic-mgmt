@@ -197,8 +197,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.nvl_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_nvl5_port_configuration(engines, devices, test_api):
+def test_nvl5_port_configuration(engines, devices, random_api):
     """
     Validate configuration applied on interface
 
@@ -207,7 +206,11 @@ def test_nvl5_port_configuration(engines, devices, test_api):
     2. Unset nvl5 interface and validate
     """
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
+
+    if is_bug_active(4502930) and TestToolkit.tested_api == ApiType.OPENAPI:
+        logger.info("Bug 4502930 is open and API is OpenApi, replacing with NVUE")
+        TestToolkit.tested_api = ApiType.NVUE
 
     try:
         with allure_step("Select nvl5 port"):

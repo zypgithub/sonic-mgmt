@@ -12,6 +12,7 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -20,10 +21,14 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.nvl_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = test_api
+def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
+
+    if is_bug_active(4502930) and TestToolkit.tested_api == ApiType.OPENAPI:
+        logger.info("Bug 4502930 is open and API is OpenApi, replacing with NVUE")
+        TestToolkit.tested_api = ApiType.NVUE
+
     output_format = OutputFormat.json
 
     try:
