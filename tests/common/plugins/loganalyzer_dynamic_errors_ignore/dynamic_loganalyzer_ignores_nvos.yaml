@@ -2026,4 +2026,13 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative
+
+# NVOS: Expected logs when SSD is full
+- Errors_list:
+    - '.*ERR kernel:.* I/O error.*'
+    - '.*WARNING kernel:.* EXT4-fs warning.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_reboot_with_high_ssd_usage
+
 # --------------------------------------------------
