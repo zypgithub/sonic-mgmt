@@ -451,7 +451,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
-                                      setup_info=None, dut_alias=None, is_air=False):
+                                      setup_info=None, dut_alias=None, is_air=False, use_custom_config_db_air=False):
 
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up()
@@ -477,7 +477,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.update_platform_params(platform_params, setup_name)
             with allure.step("Apply basic config"):
                 self.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=disable_ztp,
-                                        configure_dns=configure_dns, is_air=is_air)
+                                        configure_dns=configure_dns, is_air=is_air, use_custom_config_db_air=use_custom_config_db_air)
         else:
             self.disable_ztp(disable_ztp)
 
@@ -857,10 +857,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 logger.info(f'Updated platform_params: \n{platform_params}')
 
     def apply_basic_config(self, topology_obj, setup_name, platform_params, reload_before_qos=False,
-                           disable_ztp=False, configure_dns=True, is_air=False):
+                           disable_ztp=False, configure_dns=True, is_air=False, use_custom_config_db_air=False):
         with allure.step("Upload port_config.ini and config_db.json with reboot of dut"):
             retry_call(self.apply_config_files,
-                       fargs=[topology_obj, setup_name, platform_params, is_air],
+                       fargs=[topology_obj, setup_name, platform_params, is_air, use_custom_config_db_air],
                        tries=3,
                        delay=10,
                        logger=logger)
@@ -901,13 +901,23 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         chip_gen = int((re.search(r'SN(\d)', platform_params['hwsku']).group(1))) - 1
         return f"SPC{chip_gen}"
 
-    def apply_config_files(self, topology_obj, setup_name, platform_params, is_air):
+    def is_config_db_json_exists(self, setup_name):
+        config_db_path = os.path.join(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name, SonicConst.CONFIG_DB_JSON)
+        return os.path.exists(config_db_path)
+
+    def apply_config_files(self, topology_obj, setup_name, platform_params, is_air, use_custom_config_db_air=False):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
 
         if is_air:
-            self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
+            if use_custom_config_db_air:
+                if not self.is_config_db_json_exists(setup_name):
+                    raise Exception(f"User did not provide config_db.json file for {setup_name}\n"
+                                    f"with use_custom_config_db_air flag, config_db.json file should be in {InfraConst.MARS_TOPO_FOLDER_PATH}/{setup_name}")
+                logger.info(f"Using custom config_db.json file for {setup_name} from {InfraConst.MARS_TOPO_FOLDER_PATH}/{setup_name}")
+            else:
+                self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
         elif not self.is_performance_setup(setup_name):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)

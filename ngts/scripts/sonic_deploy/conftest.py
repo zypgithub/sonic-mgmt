@@ -95,6 +95,10 @@ def pytest_addoption(parser):
     logger.info('Parsing fanout_target_version')
     parser.addoption("--fanout_target_version", help="The target version of fanout. Only for SONiC.", default=None)
 
+    logger.info('Parsing use_custom_config_db_air')
+    parser.addoption('--use_custom_config_db_air', action='store_true', required=False, default=False,
+                     help='Use custom config_db.json file for AIR simulations')
+
 
 @pytest.fixture(scope="module")
 def workspace_path(request):
@@ -339,3 +343,13 @@ def deploy_dpu(base_version_dpu, platform_params):
     :return: deploy_dpu
     """
     return base_version_dpu and '4280' in platform_params['platform']
+
+
+@pytest.fixture(scope="module")
+def use_custom_config_db_air(request):
+    """
+    Method for getting use_custom_config_db_air from pytest arguments
+    :param request: pytest builtin
+    :return: use_custom_config_db_air (True or False)
+    """
+    return request.config.getoption('--use_custom_config_db_air')

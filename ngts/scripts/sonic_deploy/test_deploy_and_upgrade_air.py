@@ -17,7 +17,7 @@ from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 @allure.title('Deploy and upgrade image - Air')
 def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy_only_target, setup_name,
                                 platform_params, reboot_after_install, fw_pkg_path, recover_by_reboot, reboot,
-                                additional_apps, workspace_path, chip_type):
+                                additional_apps, workspace_path, chip_type, use_custom_config_db_air):
     try:
         with allure.step('Collecting setup info'):
             setup_info = get_info_from_topology(topology_obj, workspace_path)
@@ -43,7 +43,8 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
                                                                fw_pkg_path=fw_pkg_path, reboot=reboot,
                                                                additional_apps=additional_apps, setup_info=setup_info,
                                                                dut_alias=dut['dut_alias'], is_performance=False,
-                                                               chip_type=chip_type, deploy_dpu=False, is_air=True)
+                                                               chip_type=chip_type, deploy_dpu=False, is_air=True,
+                                                               use_custom_config_db_air=use_custom_config_db_air)
 
             # Remove .pytest_cache folder after deploy - otherwise  - cached info from old image will be used in skip tests
             cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
