@@ -87,8 +87,8 @@ def speed_string_to_int_in_mb(speed):
 
 
 def get_service_port(platform):
-    if platform == PlatformTypesConstants.PLATFORM_MOOSE:
+    if platform in [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_MOOSE_SIMX]:
         return ['Ethernet512']
-    if platform == PlatformTypesConstants.PLATFORM_BISON:
+    if platform in [PlatformTypesConstants.PLATFORM_BISON, PlatformTypesConstants.PLATFORM_BISON_SIMX]:
         return ['Ethernet512', 'Ethernet520']
     return []

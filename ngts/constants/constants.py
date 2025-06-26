@@ -316,6 +316,7 @@ class PlatformTypesConstants:
     PLATFORM_PANTHER_A1 = 'x86_64-mlnx_msn2700a1-r0'
     PLATFORM_TIGON = 'x86_64-mlnx_msn4600c-r0'
     PLATFORM_MOOSE = 'x86_64-nvidia_sn5600-r0'
+    PLATFORM_MOOSE_SIMX = 'x86_64-nvidia_sn5600_simx-r0'
     PLATFORM_BISON = 'x86_64-nvidia_sn5640-r0'
     PLATFORM_BISON_SIMX = 'x86_64-nvidia_sn5640_simx-r0'
     PLATFORM_GAUR = 'x86_64-nvidia_sn5610n-r0'
