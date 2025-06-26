@@ -258,12 +258,28 @@ def do_raw_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports
 def do_agg_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports, tx_dut_ports=None, comparable_pkt=None,
                 skip_counter_check=False, drop_information=None, ip_ver='ipv4'):
     num_packets = random.randint(2,100)
+    # start: debug info , will remove it after debug
+    logger.info(f"num_packets: {num_packets}, ports_info: {ports_info}")
+    duthost.shell("sudo portstat -c")
+    logger.info(f"Check portstat before sending packets")
+    duthost.shell(f"sudo portstat -i {ports_info['dut_iface']}")
+    duthost.shell(f"sudo portstat ")
+    # end: debug info , will remove it after debug
+
     send_packets(pkt, ptfadapter, ports_info["ptf_tx_port_id"], num_packets=num_packets)
+
     # verify packet is dropped
     exp_pkt = expected_packet_mask(pkt, ip_ver=ip_ver)
     testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports, timeout=1)
 
-    time.sleep(1)
+    time.sleep(2)
+
+    # start: debug info , will remove it after debug
+    logger.info(f"Check portstat after sending packets")
+    duthost.shell(f"sudo portstat -i {ports_info['dut_iface']}")
+    duthost.shell(f"sudo portstat ")
+    # end: debug info , will remove it after debug
+
     # Some test cases will not increase the drop counter consistently on certain platforms
     if skip_counter_check:
         logger.info("Skipping counter check")
@@ -273,6 +289,11 @@ def do_agg_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports
     if comparable_pkt:
         pkt = comparable_pkt
     if not verify_drop_on_agg_wjh_table(duthost, pkt, num_packets, discard_group, drop_information):
+        # start: debug info , will remove it after debug
+        logger.info(f"Check portstat after failed")
+        duthost.shell(f"sudo portstat -i {ports_info['dut_iface']}")
+        duthost.shell(f"sudo portstat ")
+        # end: debug info , will remove it after debug
         pytest.fail("Could not find drop on aggregation WJH table. packet: {}".format(pkt.command()))
 
 
