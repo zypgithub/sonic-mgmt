@@ -76,7 +76,7 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
         with allure.step("Apply a non defined state"):
             output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.UNDEFINED_STATE).get_returned_value(should_succeed=False)
             output = output.split('\n')[-1]
-            assert ClusterConsts.UNDEFINED_STATE_DICT[test_api] in output, f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[test_api]}, " \
+            assert ClusterConsts.UNDEFINED_STATE_DICT[TestToolkit.tested_api] in output, f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[TestToolkit.tested_api]}, " \
                 f"actual message received {output}"
 
         with allure.step("Running 'nv set cluster state enabled' and validating state changed"):
