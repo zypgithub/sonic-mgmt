@@ -71,7 +71,7 @@ def reboot(duthost, pdu_ctrl, reboot_type, pdu_delay=60):
     duthost.command(REBOOT_TYPES[reboot_type], module_ignore_errors=True, module_async=True)
 
 
-def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, auto_reboot=False, current=None, 
+def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, auto_reboot=False, current=None,
                      next_image=None, timeout=TIMEOUT, pdu_delay=60):
     hn = duthost.mgmt_ip
 
@@ -90,7 +90,8 @@ def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, au
             time.sleep(30)
             logger.info("Waiting on switch to come up in SONiC....")
             localhost.wait_for(
-                host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10, timeout=COMMON_REBOOT_TIMEOUT)
+                host=hn, port=22, state='started', search_regex=SONIC_SSH_REGEX, delay=10,
+                timeout=COMMON_REBOOT_TIMEOUT)
         else:
             # For auto reboot scenario, it takes some time in ONIE to update the firmware
             logger.info("Waiting on switch to shutdown after auto reboot...")
@@ -308,7 +309,8 @@ def call_fwutil(request, duthost, localhost, pdu_ctrl, fw_pkg,
     allure.step("Perform Neccesary Reboot")
     timeout = max([v.get("timeout", TIMEOUT) for k, v in list(paths.items())])
     pdu_delay = fw_pkg["chassis"][chassis].get("power_cycle_delay", 60)
-    complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, auto_reboot, current, next_image, timeout, pdu_delay)
+    complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component,
+                     auto_reboot, current, next_image, timeout, pdu_delay)
 
     allure.step("Collect Updated Firmware Versions")
     time.sleep(2)  # Give a little bit of time in case of no-op install for mounts to complete
