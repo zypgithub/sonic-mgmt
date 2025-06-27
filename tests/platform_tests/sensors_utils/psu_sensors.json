@@ -369,7 +369,7 @@
 			}
 		}
 	},
-	"x86_64-nvidia_sn5640-r0": {
+    "x86_64-nvidia_sn5640-r0": {
 		"default": {
 			"bus": [
 				"i2c-4",
@@ -387,7 +387,7 @@
 			}
 		}
 	},
-	"x86_64-nvidia_sn5610n-r0": {
+	"x86_64-nvidia_sn5600-r0": {
 		"default": {
 			"bus": [
 				"i2c-4",
