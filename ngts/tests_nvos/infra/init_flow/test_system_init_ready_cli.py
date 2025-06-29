@@ -44,7 +44,7 @@ def test_fae_system_ready_invalid_value():
         1. run nv set fae system ready <invalid> - <invalid> not in {enabled, disabled}
         2. validate the error message
     """
-    err_message = "Error: At state: '{}' is not one of ['enabled', 'disabled']".format('INVALID')
+    err_message = "Error: '{}' is not one of ['enabled', 'disabled']".format('INVALID')
     with step("test the invalid value of system init done"):
         fae = Fae()
         with step("verify the fae default values using nv show fae system"):

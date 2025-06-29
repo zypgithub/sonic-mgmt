@@ -422,7 +422,6 @@ class IbSwitch(BaseSwitch):
                                           "nv show platform boot-policy",
                                           "nv show platform cable-cartridge",
                                           "nv show platform chassis-location",
-                                          "nv show system cli",
                                           "nv show cluster",
                                           "nv show sdn"]
 
