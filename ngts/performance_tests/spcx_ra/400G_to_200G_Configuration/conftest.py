@@ -59,6 +59,7 @@ def conf_args():
                  "split_left": 2,
                  "host": "right_tg",
                  "spine": "left_tg",
+                 "shaper_value": 0.975,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "left_num_packets": 1,
                  "right_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,

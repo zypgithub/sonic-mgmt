@@ -1,3 +1,4 @@
+import copy
 from struct import pack
 import allure
 import logging
@@ -5,7 +6,7 @@ import pytest
 import random
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, validate_counters_sample
-from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj,
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, restore_basic_configuration, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method,
@@ -24,7 +25,7 @@ PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6, set_ibm):
+    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -38,15 +39,33 @@ class TestSPCXRA_x2Split_400G:
         self.chip_type = chip_type
         self.conf_args = conf_args
 
+    def apply_custom_configuration(self, scenario_config=None):
+        """Apply the custom configuration for this test class"""
+        restore_basic_configuration(players=self.players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES)
+
+        # Apply configuration with auto_buffer_mode if requested
+        config_to_apply = copy.deepcopy(self.conf_args)
+
+        # Update conf_args based on scenario_config
+        if scenario_config:
+            config_to_apply.update(scenario_config)
+
+        apply_test_configuration(players=self.players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
+                                 scenario=self.scenario, conf_args=config_to_apply)
+        configure_mloops(players=self.players)
+
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth')
-    @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
-    def test_ar_perf_max_bandwidth(self, request, packet_size, ibm_fixture):
+    @allure.title('test_ar_perf_max_bandwidth_rebalancer_enabled')
+    @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile. Rebalancer enabled == auto buffer mode.')
+    def test_ar_perf_max_bandwidth_rebalancer_enabled(self, request, packet_size):
         if isinstance(self.cli_object, NvueCli):
             pytest.mark.xfail(reason="test_ar_perf_max_bandwidth expected to fail on Nvue")
 
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)
+
+        with allure.step("Apply custom configuration: Enable rebalancer - auto buffer mode is true"):
+            self.apply_custom_configuration({"auto_buffer_mode": "True"})
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -59,8 +78,11 @@ class TestSPCXRA_x2Split_400G:
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
 
+        with allure.step("Apply custom configuration: Disable rebalancer - auto buffer mode is false"):
+            self.apply_custom_configuration()
+
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth_ibm')
+    @allure.title('test_ar_perf_max_bandwidth_rebalancer_enabled')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
 

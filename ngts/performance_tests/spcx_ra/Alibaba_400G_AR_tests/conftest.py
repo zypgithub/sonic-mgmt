@@ -47,6 +47,11 @@ def skip_test_conditionally(players):
 
 @pytest.fixture(scope='class', autouse=True)
 def conf_args(is_ipv6):
+    """
+    Config args for the test.
+    Note that unlike must tests, those test perform DVS_START at the end. Then, we override some variables according
+    to the new test.
+    """
     conf_args = {
         "run_fw_latency_optimization": "False",
         "auto_buffer_mode": "False",
@@ -58,16 +63,17 @@ def conf_args(is_ipv6):
         "split_left": 2,
         "scenario": TESTS_SCENARIO,
         "hash_type": "crc",
+        "shaper_value": 0.975,
         "goto_acl_destination_port": 81,
         "params": None,
-        "two_sided_ar": None,  # overridden in fixture
-        "packet_size": None,  # overridden in fixture
-        "left_num_packets": None,  # overridden in fixture
-        "right_num_packets": None,  # overridden in fixture
-        "ecmp_type_stateless": None,  # overridden in fixture
-        "ecmp_size": None,  # overridden in fixture
-        "create_acls": None,  # overridden in fixture
-        "create_goto_acl": None  # overridden in fixture
+        "two_sided_ar": True,  # overridden in fixture
+        "packet_size": PerfConsts.PACKET_SIZE_LIST[0],  # overridden in fixture
+        "left_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,  # overridden in fixture
+        "right_num_packets": SPCXRAConsts.PACKET_NUM_400G_x2,  # overridden in fixture
+        "ecmp_type_stateless": True,  # overridden in fixture
+        "ecmp_size": 4096,  # overridden in fixture
+        "create_acls": False,  # overridden in fixture
+        "create_goto_acl": False  # overridden in fixture
     }
     return conf_args
 
@@ -77,6 +83,8 @@ def basic_setup_configuration(players, conf_args):
     try:
         with allure.step('Save Players initial Configuration'):
             save_base_configuration(players)
+        with allure.step("Apply Test configuration on all Players"):
+            apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
         yield
     except Exception as e:
         raise e
@@ -85,7 +93,7 @@ def basic_setup_configuration(players, conf_args):
             restore_basic_configuration(players)
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='function', autouse=False)
 def alibaba_scenarios_fixture(players, conf_args, scenario_configuration, hash_type):
     """
     Fixture to apply scenario-specific configuration for each test case.
@@ -196,3 +204,15 @@ def extract_acl_counters(acl_dump, create_acls, create_goto_acl):
         goto_percentage = 0
 
     return acl_ar_counter, acl_goto_counter, goto_percentage
+
+
+@pytest.fixture(scope='function', autouse=True)
+def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, scenario_name):
+    """
+    Fixture to update test metadata in MongoDB.
+    Requires scenario_name parameter to be present in the test function.
+    """
+    test_name = get_perf_test_name(request, is_ipv6)
+    add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: scenario_name,
+                                        MongoDbConsts.PORT_GROUP_DF: port_group_df})
+    yield

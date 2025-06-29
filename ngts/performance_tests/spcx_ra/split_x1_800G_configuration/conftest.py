@@ -37,6 +37,7 @@ def conf_args(is_ipv6):
                  "split_left": 1,
                  "host": "right_tg",
                  "spine": "left_tg",
+                 "shaper_value": 0.975,
                  "scenario": TESTS_SCENARIO,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "left_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1,

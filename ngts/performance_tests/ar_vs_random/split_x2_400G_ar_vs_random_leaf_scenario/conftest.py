@@ -37,6 +37,7 @@ def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario):
                  "split_left": 2,
                  "host": "right_tg",
                  "spine": "left_tg",
+                 "shaper_value": 0.975,
                  "scenario": TESTS_SCENARIO,
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "left_num_packets": 2,

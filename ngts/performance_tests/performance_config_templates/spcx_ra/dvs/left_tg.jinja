@@ -12,7 +12,7 @@
             "split_dict": { "{{conf_args.split_left}}": {{all_ports | tojson}}},
             "fws_base_vlan": 200,
             "is_ipv6": "{{conf_args.is_ipv6}}",
-            "shaper_val": 0.975,
+            "shaper_val": "{{conf_args.shaper_value}}",
             "key_un_fws": "un_fws_port_{}",
             "smac": "00:01:02:03:04:05",
             "left_mac": "00:01:02:03:04:06",
