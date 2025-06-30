@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import pytest
 
 # this code is necessary for the imports below to work
 path = os.path.abspath(__file__)
@@ -23,6 +24,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 logger = logging.getLogger()
 
 
+@pytest.mark.no_cli_coverage_run
 def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine):
     """
     @summary: Verify that the device can install ONIE via PXE boot menu.
