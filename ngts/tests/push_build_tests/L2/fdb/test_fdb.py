@@ -8,6 +8,9 @@ from infra.tools.validations.traffic_validations.ping.ping_runner import PingChe
 logger = logging.getLogger()
 
 
+PORT_CHANNEL = 'PortChannel0002'
+
+
 @pytest.mark.build
 @pytest.mark.push_gate
 @allure.title('PushGate FDB test case')
@@ -19,20 +22,39 @@ def test_push_gate_fdb(cli_objects, players):
     try:
         src_iface = 'bond0.40'
         dst_ip = '40.0.0.1'
-        with allure.step('Check that PortChannel0002 link in UP state'):
-            retry_call(cli_objects.dut.interface.check_ports_status, fargs=[['PortChannel0002']], tries=12,
+        with allure.step(f'Check that {PORT_CHANNEL} link in UP state'):
+            retry_call(cli_objects.dut.interface.check_ports_status, fargs=[[PORT_CHANNEL]], tries=12,
                        delay=5, logger=logger)
 
-        with allure.step('Sending 3 ping packets to {} from interface {}'.format(dst_ip, src_iface)):
+        with allure.step(f'Sending 3 ping packets to {dst_ip} from interface {src_iface}'):
             validation = {'sender': 'hb', 'args': {'interface': src_iface, 'count': 3, 'dst': dst_ip}}
             ping = PingChecker(players, validation)
-            logger.info('Sending 3 ping packets to {} from interface {}'.format(dst_ip, src_iface))
+            logger.info(f'Sending 3 ping packets to {dst_ip} from interface {src_iface}')
             ping.run_validation()
 
         send_port_mac = cli_objects.hb.mac.get_mac_address_for_interface(src_iface)
-        logger.info('Checking that host src mac address in FDB output')
-        # TODO: enable validation(disabled due to bug) and validation should be more precise
-        # assert str(send_port_mac).upper() in cli_objects.dut.mac.show_mac()
+        msg = 'Verify MAC address is learned in FDB table with correct port'
+        logger.info(msg)
+        with allure.step(msg):
+            fdb_table = cli_objects.dut.mac.parse_mac_table()
+            mac_upper = str(send_port_mac).upper()
+            found_entry = None
+            for entry in fdb_table.values():
+                if entry.get('MacAddress', '').upper() == mac_upper:
+                    found_entry = entry
+                    break
+            if not found_entry:
+                logger.error(f'MAC {mac_upper} not found in FDB table. Available MACs: {[e.get("MacAddress") for e in fdb_table.values()]}')
+                assert False, f"MAC address {mac_upper} not found in FDB table"
+            logger.info(f'MAC {mac_upper} found in FDB table')
+            logger.info(f'FDB entry for MAC {mac_upper}: {found_entry}')
+            logger.info(f'Verifying MAC {mac_upper} is associated with {PORT_CHANNEL}...')
+            if found_entry['Port'] != PORT_CHANNEL:
+                logger.error(f'MAC {mac_upper} is associated with wrong port. Expected: {PORT_CHANNEL}, Got: {found_entry["Port"]}')
+                assert found_entry['Port'] == PORT_CHANNEL, \
+                    f"MAC {mac_upper} is associated with wrong port. Expected: {PORT_CHANNEL}, Got: {found_entry['Port']}"
+            logger.info(f'Successfully verified MAC {mac_upper} is learned on {PORT_CHANNEL}')
 
     except Exception as err:
+        logger.error(f'Test failed with error: {str(err)}')
         raise AssertionError(err)
