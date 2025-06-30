@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import sys
 import requests
 import argparse
@@ -26,6 +27,7 @@ REPORT_URL = 'report_url'
 DUT_HWSKU = 'dut_hwsku'
 SESSION_ID = 'session_id'
 PATH_TO_UPLOAD_URL = '/auto/sw_system_project/NVOS_INFRA/verification_files/'
+BRANCH = 'branch'
 
 
 def get_logger():
@@ -48,13 +50,32 @@ def parse_args():
     parser.add_argument('--setup_name', dest='setup_name', help='Setup name')
     parser.add_argument('--session_id', default="", dest='session_id', help='Session id')
     parser.add_argument('--target-version', default="", dest='target_version', help='Target version')
+    parser.add_argument('--tarball', default="", dest='tarball', help='Tarball')
     parser.add_argument('--dut_hwsku', default="", dest='dut_hwsku', help='Switch Type')
 
     return parser.parse_args()
 
 
+def parse_branch_name(tarball_name):
+    res = ""
+    match = re.search(r'nvos_ver-\d{2}-\d{2}-\d{4}', tarball_name)
+    if not match:
+        match = re.search(r'develop', tarball_name)
+    if match:
+        res = match.group(0)
+    return res
+
+
+def parse_version(version_file_path):
+    version = version_file_path.split("/")[-1].split(".bin")[0]
+    marker = "nvos-amd64-"
+    if marker in version:
+        version = version.split(marker)[1]
+    return version
+
+
 @retry(Exception, tries=3, delay=3)
-def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summary, dut_hwsku):
+def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summary, dut_hwsku, branch):
     if not version:
         return
     try:
@@ -66,29 +87,29 @@ def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summa
         logger.info("Insert results to test_analytics DB")
         values = ""
         for result in parsed_results:
-            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{summary['report_url']}')"
+            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{result['test_url']}', '{branch}', '{version}')"
             values = f"{values}, {value}" if values else value
 
         if values:
-            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL})"
+            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL}, {BRANCH}, {VERSION})"
             query = "INSERT test_analytics {columns} values {values};".format(columns=columns, values=values)
             logger.info("Inserting data to test_analytics table")
             try:
                 mssql_connection_obj.query_insert(query)
+                logger.info("--------- insert to test_analytics DB table successfully ---------\n")
             except Exception as e:
                 print(f"FAILED TO INSERT DATA TO TEST_ANALYTICS, ERROR: {e}")
-            logger.info("--------- insert to test_analytics DB table successfully ---------\n")
 
         logger.info("Insert results to regression_matrix DB")
-        values = f"('{setup_name}', '{summary['pass_rate']}', '{version}', '{summary['executed']}', '{session_id}', '{summary['report_url']}', '{datetime.date.today()}', '{dut_hwsku}')"
-        columns = f"({OperationTimeConsts.SETUP_COL}, {PASS_RATE}, {VERSION}, {EXECUTED}, {SESSION_ID}, {REPORT_URL}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU})"
+        values = f"('{setup_name}', '{summary['pass_rate']}', '{version}', '{summary['executed']}', '{session_id}', '{summary['report_url']}', '{datetime.date.today()}', '{dut_hwsku}', '{branch}')"
+        columns = f"({OperationTimeConsts.SETUP_COL}, {PASS_RATE}, {VERSION}, {EXECUTED}, {SESSION_ID}, {REPORT_URL}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {BRANCH})"
         query = "INSERT regression_matrix {columns} values {values};".format(columns=columns, values=values)
         logger.info("Inserting data to regression_matrix table")
         try:
             mssql_connection_obj.query_insert(query)
+            logger.info("--------- insert to regression_matrix DB table successfully ---------\n")
         except Exception as e:
             print(f"FAILED TO INSERT DATA TO REGRESSION_MATRIX, ERROR: {e}")
-        logger.info("--------- insert to regression_matrix DB table successfully ---------\n")
 
     finally:
         mssql_connection_obj.disconnect_db()
@@ -163,7 +184,7 @@ def summarize_test_run(tests, report_url):
     }
 
 
-def summarize_results_and_upload(report_url, allure_project, session_id, target_version, setup_name, dut_hwsku):
+def summarize_results_and_upload(report_url, allure_project, session_id, target_version, setup_name, dut_hwsku, branch):
     if TopologyConsts.NVOS.lower() in allure_project.lower():
         try:
             base_url = os.path.dirname(report_url.rstrip('/'))
@@ -177,7 +198,7 @@ def summarize_results_and_upload(report_url, allure_project, session_id, target_
             logger.info("Summarize run's results:")
             summary = summarize_test_run(parsed_results, report_url)
 
-            insert_data_to_pbi_db(setup_name, target_version, session_id, parsed_results, summary, dut_hwsku)
+            insert_data_to_pbi_db(setup_name, target_version, session_id, parsed_results, summary, dut_hwsku, branch)
         except Exception as e:
             logger.info(f"Failed with the following issue: {e}")
 
@@ -187,8 +208,9 @@ if __name__ == "__main__":
     allure_server_addr = InfraConst.ALLURE_SERVER_URL
     setup_name = args.setup_name
     session_id = args.session_id
-    target_version = args.target_version.split("/")[-1].split(".bin")[0]
+    target_version = parse_version(args.target_version)
     dut_hwsku = args.dut_hwsku
+    branch = parse_branch_name(args.tarball)
     allure_project_id = setup_name.replace('_', '-').lower()
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
@@ -201,4 +223,4 @@ if __name__ == "__main__":
     os.remove(file_path)
 
     if report_url:
-        summarize_results_and_upload(report_url, allure_project_id, session_id, target_version, setup_name, dut_hwsku)
+        summarize_results_and_upload(report_url, allure_project_id, session_id, target_version, setup_name, dut_hwsku, branch)
