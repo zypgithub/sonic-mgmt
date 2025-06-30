@@ -247,7 +247,7 @@ class NmxCrlClient(CrlClient):
 
         payload: Dict[str, str] = {"gatewayId": "sasha",
                                    "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
-        grpc = GrpcCmdBuilder(self.host, port)
+        grpc = GrpcCmdBuilder(self.ip, port)
         if user:
             grpc.user_creds(user.username, user.password)
         if client_cert:

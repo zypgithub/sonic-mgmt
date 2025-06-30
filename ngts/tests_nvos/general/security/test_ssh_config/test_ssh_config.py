@@ -19,6 +19,7 @@ from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine, \
 from ngts.tests_nvos.general.security.test_login_ssh_notification.constants import LoginSSHNotificationConsts
 from ngts.tests_nvos.general.security.test_ssh_config.constants import SshConfigConsts
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +69,13 @@ def test_ssh_config_good_flow(engines, devices, rand_ssh_port):
                 out = engines.dut.run_cmd('sudo cat /etc/ssh/sshd_config | grep MaxAuthTries')
                 pattern = r'.*MaxAuthTries\s+(\d+)'
                 matches = re.findall(pattern, out)
-                assert len(matches) == 1, (f'could not match pattern to find MaxAuthTries value in sshd_config file.\n'
-                                           f'pattern: {pattern}\n'
-                                           f'out: {out}\n'
-                                           f'matches: {matches}')
+                if not is_bug_active(4420446):
+                    assert len(matches) == 1, (f'could not match pattern to find MaxAuthTries value in sshd_config file.\n'
+                                               f'pattern: {pattern}\n'
+                                               f'out: {out}\n'
+                                               f'matches: {matches}')
+                else:
+                    logger.info(f'bug 4420446 is active, skipping check for MaxAuthTries length in sshd_config file')
                 assert matches[0].strip() == str(auth_retries)
 
         with allure.step("Failing to Connect {} times to get logged out of session".format(auth_retries)):
