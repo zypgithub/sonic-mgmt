@@ -20,12 +20,13 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.general.ONIE.constants import OnieConsts
 from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 
 logger = logging.getLogger()
 
 
 @pytest.mark.no_cli_coverage_run
-def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine):
+def test_install_onie_via_pxe_boot(topology_obj, engines, devices):
     """
     @summary: Verify that the device can install ONIE via PXE boot menu.
 
@@ -41,7 +42,6 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine
     @param topology_obj: Testbed topology object containing player/device mappings and metadata.
     @param engines:      Dictionary containing CLI and serial engine handles.
     @param devices:      Dictionary containing DUT device objects.
-    @param serial_engine: Serial connection object to the DUT.
     @raises AssertionError: If any critical step fails during the installation process.
     """
     TestToolkit.tested_api = ApiType.NVUE
@@ -54,6 +54,8 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices, serial_engine
         nvue_cli_obj.remote_reboot_nvue(topology_obj)
 
     try:
+        serial_engine = ConnectionTool.create_serial_connection(topology_obj, devices)
+
         with allure.step("Enter PXE boot menu"):
             PxeTool.enter_pxe(serial_engine)
 
