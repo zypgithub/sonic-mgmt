@@ -71,13 +71,13 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
         engine.run_cmd(cmd_disable_lldp)
 
     enable_lldp(engines.fanout)
-    if "dual" in request.config.getoption("--setup_name"):
+    if 'fanout_b' in engines:
         enable_lldp(engines.fanout_b)
 
     yield
 
     disable_lldp(engines.fanout)
-    if "dual" in request.config.getoption("--setup_name"):
+    if 'fanout_b' in engines:
         disable_lldp(engines.fanout_b)
 
 
@@ -170,7 +170,7 @@ def test_device_asic_check(engines, platform_params):
     assert pci_device_name, "device asic is not up"
 
 
-@pytest.mark.flaky(reruns=30, reruns_delay=4)
+@pytest.mark.flaky(reruns=2, reruns_delay=10)
 @pytest.mark.sanity_checker_community
 def test_cable_connection_between_dut_and_fanout_check(engines, topology_obj, request, enable_and_disable_fanout_lldp):
     """
