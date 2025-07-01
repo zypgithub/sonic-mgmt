@@ -602,16 +602,14 @@ def clear_config(request, devices, engines, default_config_yml_path, root_dir, m
     test_result = request.node.rep_call.outcome
     logging.info(f"------- Test '{request.node.name}' {test_result} -------")
 
-    if test_result == TestConsts.SKIPPED:
-        pass
-
     try:
-        with allure.step(f"Clear config for test {request.node.name}"):
-            """ if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
-                 clear_security_config(item)
-            if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
-                security_cleanup(item.security_pexpect_ssh_session)"""
-            devices.dut.clear_config(engines.dut, markers, default_config_yml_path, root_dir)
+        if test_result != TestConsts.SKIPPED and not is_cur_test_has_marker(request, 'skip_clear_config'):
+            with allure.step(f"Clear config for test {request.node.name}"):
+                """ if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
+                     clear_security_config(item)
+                if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
+                    security_cleanup(item.security_pexpect_ssh_session)"""
+                devices.dut.clear_config(engines.dut, markers, default_config_yml_path, root_dir)
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:
