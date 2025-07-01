@@ -7,6 +7,7 @@ import smtplib
 import time
 from email.mime.text import MIMEText
 from typing import Dict
+import requests_cache
 
 import pexpect
 import pytest
@@ -255,6 +256,19 @@ def sonic_mgmt_ipv6_addr(engines):
     sonic_mgmt_ipv6_addr = IpTool.get_player_ipv6_addr(engines.sonic_mgmt.ip, engines.sonic_mgmt)
     logging.info(f'sonic_mgmt ipv6 address: {sonic_mgmt_ipv6_addr}')
     return sonic_mgmt_ipv6_addr
+
+
+@pytest.fixture(scope="session", autouse=True)
+def uninstall_requests_cache():
+    """
+    Uninstall requests cache for all tests to prevent interference with OpenAPI calls.
+    This is needed because NOGA functions enable global caching that affects all requests.
+    """
+    try:
+        requests_cache.uninstall_cache()
+        logger.info("Uninstalled requests cache for session")
+    except Exception as e:
+        ExceptionTool.log_exception(e, "Failed to uninstall requests cache")
 
 
 def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):

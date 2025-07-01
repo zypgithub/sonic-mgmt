@@ -336,7 +336,7 @@ class ApiType:
     NVUE = "NVUE"
     OPENAPI = "OpenApi"
     # list of all api types
-    ALL_TYPES = [NVUE]
+    ALL_TYPES = [NVUE, OPENAPI]
 
 
 class TestFlowType:
