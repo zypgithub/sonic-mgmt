@@ -69,6 +69,9 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
         use_community = True
         if 'bobcat' in dut_name and not deploy_dpu:
             use_community = False
+            logger.info("Restarting MST for the dark mode, avoid MST driver issues on powered down DPUs. ETA ~1 min")
+            cli_obj.engine.reload(['nohup sudo mst restart'], wait_after_ping=5)
+            logger.info("MST Restarted")
         cmd_temp = get_deploy_minigraph_cmd(use_community)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
