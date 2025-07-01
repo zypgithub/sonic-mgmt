@@ -718,6 +718,7 @@ def disabled_access_ports(func):
         has_loopbox = bound_args.arguments.get('has_loopbox', None)
         standalone_system = bound_args.arguments.get('standalone_system', None)
         setup_name = bound_args.arguments.get('setup_name', None)
+        perform_cleanup = bound_args.arguments.get('perform_cleanup', True)
         has_access_ports = True
         interface_wa_called = False
         try:
@@ -753,30 +754,31 @@ def disabled_access_ports(func):
                 # Execute the test function
             return func(*args, **kwargs)
         finally:
-            if isinstance(devices.dut, JulietSwitch):
-                if has_access_ports and standalone_system and not has_loopbox:
-                    port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
-                    selected_port = Port(port_name, "", "")
-                    port_state = NvosConsts.LINK_STATE_UP
-                    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-                if not standalone_system:
-                    for port in Configurations.ports_to_disable[setup_name]:
-                        selected_port = Port(port, "", "")
+            if perform_cleanup:
+                if isinstance(devices.dut, JulietSwitch):
+                    if has_access_ports and standalone_system and not has_loopbox:
+                        port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                        selected_port = Port(port_name, "", "")
                         port_state = NvosConsts.LINK_STATE_UP
                         selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
-                if interface_wa_called:
-                    try:
-                        next(interfaces_wa)
-                    except StopIteration:
-                        pass  # Or handle it if necessary
-                if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
-                    refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
-                with allure.step("Reset cluster state"):
-                    if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
-                        cluster.unset(apply=True)
-                        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                    if not standalone_system:
+                        for port in Configurations.ports_to_disable[setup_name]:
+                            selected_port = Port(port, "", "")
+                            port_state = NvosConsts.LINK_STATE_UP
+                            selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                    if interface_wa_called:
+                        try:
+                            next(interfaces_wa)
+                        except StopIteration:
+                            pass  # Or handle it if necessary
+                    if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
+                        refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
+                    with allure.step("Reset cluster state"):
+                        if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
+                            cluster.unset(apply=True)
+                            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
     return wrapper
 
 
