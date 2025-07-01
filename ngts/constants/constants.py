@@ -1475,7 +1475,7 @@ class BugHandlerConst:
     BUG_HANDLER_PATH = {
         "SONiC-Design": BH_1_5_2_PATH,
         "SONiC-Verification": BH_1_5_2_PATH,
-        "'NVOS - Design'": BH_1_5_2_PATH,
+        "'NVOS - Design'": "/auto/sw_tools/Internal/BugHandling/RELEASES/1_4_3/bin/",
         "default": BH_1_5_2_PATH
     }
     BUG_HANDLER_SCRIPT = {}
