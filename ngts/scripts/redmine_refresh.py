@@ -124,6 +124,94 @@ def conditions_per_branch(client, branch):
     return conditional_mark_dict
 
 
+def get_service_env_vars():
+    """
+    Get the service account environment variables from the environment file.
+    """
+    HOST_SERVER_IP = os.getenv("HOST_SERVER_IP", "10.215.19.80")
+    SERVICE_ACCOUNT_USER = os.getenv("SERVICE_ACCOUNT_USER", "svc-nbu-sws-sonic")
+    SERVICE_ACCOUNT_PASSWORD = os.getenv("TEST_SERVER_PASSWORD")
+    if not SERVICE_ACCOUNT_PASSWORD or not SERVICE_ACCOUNT_USER:
+        logger.error("SERVICE_ACCOUNT_PASSWORD environment variable is not set")
+        raise ValueError("SERVICE_ACCOUNT_PASSWORD environment variable is required")
+    return HOST_SERVER_IP, SERVICE_ACCOUNT_USER, SERVICE_ACCOUNT_PASSWORD
+
+
+def copy_cache_to_host_server(combined_issues_status, temp_file, remote_temp_file):
+    """
+    Copy the redmine cache to the host server.
+    """
+    HOST_SERVER_IP, SERVICE_ACCOUNT_USER, SERVICE_ACCOUNT_PASSWORD = get_service_env_vars()
+    try:
+        with open(temp_file, 'w') as f:
+            json.dump(combined_issues_status, f, indent=2)
+
+        scp_cmd = [
+            "sshpass", "-p", SERVICE_ACCOUNT_PASSWORD,
+            "scp",
+            "-o", "StrictHostKeyChecking=no",
+            "-o", "UserKnownHostsFile=/dev/null",
+            temp_file,
+            f"{SERVICE_ACCOUNT_USER}@{HOST_SERVER_IP}:{remote_temp_file}"
+        ]
+        logger.info(f"Copying cache from container to /tmp on host server {HOST_SERVER_IP}")
+        result = subprocess.run(scp_cmd, capture_output=True, text=True, timeout=300)
+
+        if result.returncode != 0:
+            logger.error(f"Failed to copy cache to host server /tmp: {result.stderr}")
+            raise RuntimeError(f"SCP failed: {result.stderr}")
+    except Exception as e:
+        logger.error(f"Error in copy_cache_to_host_server: {str(e)}")
+        raise
+
+
+def copy_cache_to_target_path(combined_issues_status, remote_temp_file):
+    """
+    Copy the redmine cache to the target path.
+    """
+    HOST_SERVER_IP, SERVICE_ACCOUNT_USER, SERVICE_ACCOUNT_PASSWORD = get_service_env_vars()
+    remote_temp_file = "/tmp/redmine_cache_temp.json"
+    ssh_cmd = [
+        "sshpass", "-p", SERVICE_ACCOUNT_PASSWORD,
+        "ssh",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        f"{SERVICE_ACCOUNT_USER}@{HOST_SERVER_IP}",
+        f"sudo cp {remote_temp_file} {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE} && sudo chmod 644 {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE} && rm {remote_temp_file}"
+    ]
+
+    logger.info(f"Service account copying from /tmp to {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE}")
+    result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=300)
+
+    if result.returncode != 0:
+        logger.error(f"Failed to copy from /tmp to final location: {result.stderr}")
+        raise RuntimeError(f"SSH command failed: {result.stderr}")
+
+    logger.info(f"Successfully wrote redmine cache to {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE} on host server")
+
+
+def write_redmine_cache(combined_issues_status):
+    """
+    Write the redmine cache to the target server using service account with password authentication.
+    This function runs from within a container and writes to a host server.
+    """
+    temp_file = "/tmp/redmine_cache_temp.json"
+    remote_temp_file = "/tmp/redmine_cache_temp.json"
+    try:
+        copy_cache_to_host_server(combined_issues_status, temp_file, remote_temp_file)
+        copy_cache_to_target_path(combined_issues_status, remote_temp_file)
+    except subprocess.TimeoutExpired:
+        logger.error("Timeout while copying cache to host server")
+        raise
+    except Exception as e:
+        logger.error(f"Error writing cache to host server: {str(e)}")
+        raise
+    finally:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+        logger.info("Successfully wrote redmine cache to target server")
+
+
 def generate_redmine_cache():
     """
     Generate the JSON file containing the redmine issues status for all active branches.
@@ -144,9 +232,7 @@ def generate_redmine_cache():
         branch_redmine_issues = merge_dicts(la_issues_active_status_dict, conditional_mark_dict)
         combined_issues_status.update(branch_redmine_issues)
 
-    with open(Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE, "w") as f:
-        logger.info("Writing redmine_issues.json...")
-        json.dump(combined_issues_status, f, indent=2)
+    write_redmine_cache(combined_issues_status)
 
     return combined_issues_status
 
