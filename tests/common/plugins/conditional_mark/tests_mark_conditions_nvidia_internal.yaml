@@ -1487,6 +1487,12 @@ platform_tests/cli/test_show_platform.py::test_show_platform_pcieinfo:
     conditions:
     - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
 
+platform_tests/cli/test_show_platform.py::test_show_platform_summary:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4499192"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4499192 and 'sn2700' in platform"
+
 ########################## NVIDIA INTERNAL HIPPO BRINGUP IGNORE END ############################
 tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
   skip:
