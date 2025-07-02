@@ -91,4 +91,7 @@ def get_service_port(platform):
         return ['Ethernet512']
     if platform in [PlatformTypesConstants.PLATFORM_BISON, PlatformTypesConstants.PLATFORM_BISON_SIMX]:
         return ['Ethernet512', 'Ethernet520']
+    if platform in PlatformTypesConstants.SALAMANDRA_PLATFORMS:
+        return ['Ethernet512', 'Ethernet520', 'Ethernet528', 'Ethernet536']
+
     return []

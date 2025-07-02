@@ -31,14 +31,16 @@ CHIP_LAGS_LIM = {
     'SPC2': 110,    # TODO SDK support 128, but currently 128 doesn't work
     'SPC3': 110,     # TODO SDK support 128, but currently 128 doesn't work
     'SPC4': 110,     # TODO SDK support 128, but currently 128 doesn't work
-    'SPC5': 110     # TODO SDK support 128, but currently 128 doesn't work
+    'SPC5': 110,     # TODO SDK support 128, but currently 128 doesn't work
+    'SPC6': 235       # TODO SDK support 512, but currently 236 doesn't work
 }
 CHIP_LAG_MEMBERS_LIM = {
     'SPC': 32,
     'SPC2': 64,
     'SPC3': 64,
     'SPC4': 64,
-    'SPC5': 64
+    'SPC5': 64,
+    'SPC6': 128
 }
 
 
