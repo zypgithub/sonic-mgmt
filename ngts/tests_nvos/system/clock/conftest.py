@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 
 @pytest.fixture(scope='session')
@@ -98,13 +99,13 @@ def ntp_off(system):
 
     if should_change:
         with allure.step('Changing ntp state from "{}" to "{}"'.format(ClockConsts.ENABLED, ClockConsts.DISABLED)):
-            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.DISABLED, apply=True).verify_result()
+            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.DISABLED, apply=True, ask_for_confirmation=TestToolkit.devices.dut.ask_for_confirmation).verify_result()
 
     yield should_change
 
     if should_change:
         with allure.step('Changing back ntp state from "{}" to "{}"'.format(ClockConsts.DISABLED, ClockConsts.ENABLED)):
-            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.ENABLED, apply=True).verify_result()
+            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.ENABLED, apply=True, ask_for_confirmation=TestToolkit.devices.dut.ask_for_confirmation).verify_result()
             time.sleep(10)
 
 
@@ -121,13 +122,13 @@ def ntp_on(system):
 
     if should_change:
         with allure.step('Changing ntp state from "{}" to "{}"'.format(ClockConsts.DISABLED, ClockConsts.ENABLED)):
-            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.ENABLED, apply=True).verify_result()
+            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.ENABLED, apply=True, ask_for_confirmation=TestToolkit.devices.dut.ask_for_confirmation).verify_result()
 
     yield
 
     if should_change:
         with allure.step('Changing back ntp state from "{}" to "{}"'.format(ClockConsts.ENABLED, ClockConsts.DISABLED)):
-            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.DISABLED, apply=True).verify_result()
+            system.ntp.set(op_param_name=ClockConsts.STATE, op_param_value=ClockConsts.DISABLED, apply=True, ask_for_confirmation=TestToolkit.devices.dut.ask_for_confirmation).verify_result()
 
 
 @pytest.fixture(scope='function')

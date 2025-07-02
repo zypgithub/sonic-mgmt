@@ -178,8 +178,12 @@ class NvosConst:
 
     REBOOT_CMD_TO_RUN = "ipmitool -I lanplus -H {ip} -U {username} -P {password} chassis power cycle"
 
-    DATE_TIME_REGEX = ["\\w{3}\\s{1,2}\\d{1,2} \\d\\d:\\d\\d:\\d\\d(?:.\\d+)?",
-                       "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"]
+    # [0] syslog e.g. "Jan  1 12:34:56"; [1] space-separated e.g. "2026-02-18 12:34:56"; [2] ISO with T (optional .microseconds, optional Z or +HH:MM)
+    DATE_TIME_REGEX = [
+        r"\w{3}\s{1,2}\d{1,2} \d\d:\d\d:\d\d(?:.\d+)?",
+        r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}",
+        r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|\+\d{2}:\d{2})?",
+    ]
 
     TIMESTAMP_REGEX = (
         r'(?P<year>\d{4})'

@@ -20,6 +20,7 @@ from retry.api import retry_call
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_date_time(test_api, engines, devices, nv_command):
     """
@@ -63,6 +64,7 @@ def test_show_system_date_time(test_api, engines, devices, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, orig_timezone, ntp_off):
     """
@@ -95,8 +97,9 @@ def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, 
         with allure.independent_step("Verify new timezone in 'nv show system date-time' and in 'timedatectl'"):
             ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
 
-        with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
-            ClockTools.verify_ntp_fields(system, False)
+        if not TestToolkit.devices.dut.is_eth():
+            with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
+                ClockTools.verify_ntp_fields(system, False)
 
     with allure.step("Unset the timezone with 'nv unset system date-time timezone'"):
         ClockTools.unset_timezone(system, apply=True).verify_result()
@@ -108,6 +111,7 @@ def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, 
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, orig_timezone, ntp_on):
     """
@@ -141,9 +145,9 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
     with allure.step("Verify 'nv show system date-time' output"):
         with allure.independent_step("Verify new timezone in 'nv show system date-time' and in 'timedatectl'"):
             ClockTools.verify_timezone(engines, system, expected_timezone=new_timezone)
-
-        with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
-            ClockTools.verify_ntp_fields(system, True)
+        if not TestToolkit.devices.dut.is_eth():
+            with allure.independent_step(f"Verify NTP related values in 'nv show system date-time'"):
+                ClockTools.verify_ntp_fields(system, True)
 
     with allure.step("Unset the timezone with 'nv unset system date-time timezone'"):
         ClockTools.unset_timezone(system, apply=True).verify_result()
@@ -155,6 +159,7 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetime, pwh_off, ntp_off):
     """
@@ -239,6 +244,7 @@ def test_action_change_time_only_ntp_off(engines, system, datetime_backup_restor
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 def test_rtc_in_local_tz(engines, nv_command):
     """
     @summary:
@@ -266,6 +272,7 @@ def test_rtc_in_local_tz(engines, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_system_invalid_timezone_ntp_off_error_flow(test_api, engines, system, valid_timezones, orig_timezone, ntp_off):
     """
@@ -302,6 +309,7 @@ def test_set_system_invalid_timezone_ntp_off_error_flow(test_api, engines, syste
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_system_invalid_timezone_ntp_on_error_flow(test_api, engines, system, valid_timezones, orig_timezone, ntp_on):
     """
@@ -369,6 +377,7 @@ def test_change_valid_datetime_ntp_on_error_flow(test_api, engines, system, ntp_
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_change_invalid_datetime_ntp_off_error_flow(test_api, engines, system, ntp_off):
     """
@@ -394,6 +403,7 @@ def test_change_invalid_datetime_ntp_off_error_flow(test_api, engines, system, n
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_change_invalid_datetime_ntp_on_error_flow(test_api, engines, system, ntp_on):
     """
@@ -455,6 +465,7 @@ def _change_invalid_datetime_test_flow(test_api, engines, system):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
+@pytest.mark.cumulus
 def test_new_time_in_logs(engines, system, orig_timezone, valid_timezones, init_datetime, ntp_off, pwh_off):
     """
     @summary:
@@ -509,3 +520,4 @@ def test_new_time_in_logs(engines, system, orig_timezone, valid_timezones, init_
 
 def _set_new_date_time(system, new_datetime):
     system.datetime.action_change(params=new_datetime).verify_result()
+    ClockTools.verify_show_and_log_times(system)

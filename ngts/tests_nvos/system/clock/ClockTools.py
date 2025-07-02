@@ -14,7 +14,8 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, DateTimeConsts
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, DateTimeConsts, SyslogConsts
+from ngts.nvos_tools.infra.SudoScope import sudo_scope_if
 
 
 class ClockTools:
@@ -69,6 +70,16 @@ class ClockTools:
         """
         return OutputParsingTool.parse_json_str_to_dictionary(show_system_date_time_output) \
             .get_returned_value()[DateTimeConsts.LOCAL_TIME]
+
+    @staticmethod
+    def get_universal_time_from_show_system_date_time_output(show_system_date_time_output):
+        """
+        @summary:
+            Extract date-time value from 'nv show system date-time' raw output
+        @return: date-time as a string of the format 'YYYY-MM-DD hh:mm:ss'
+        """
+        return OutputParsingTool.parse_json_str_to_dictionary(show_system_date_time_output) \
+            .get_returned_value()[DateTimeConsts.UNIVERSAL_TIME]
 
     @staticmethod
     def get_local_time_object_from_show_system_date_time_output(show_system_date_time_output):
@@ -484,47 +495,64 @@ class ClockTools:
         with allure.step('Take date-time from show and from last log timestamp'):
             system.log.rotate_logs()
             show_system_datetime = system.datetime.show()
-            logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
+            with sudo_scope_if(TestToolkit.devices.dut.is_eth()):
+                logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
             if not logs or ("q: command not found" in logs):
                 # this is a workaround: sometimes `nv show system log` just doesn't do anything
                 logging.warning(f"'nv show system log' did not work, retrying once")
                 time.sleep(5)
                 logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
-
-            last_log_datetime = ' '.join((re.findall(NvosConst.DATE_TIME_REGEX[0], logs)[-1]).split(' '))
+            # Support both syslog-style and ISO-style timestamps; take the last occurrence in the log
+            last_log_datetime = None
+            for pattern in NvosConst.DATE_TIME_REGEX:
+                for m in re.finditer(pattern, logs):
+                    last_log_datetime = m.group()
+            if not last_log_datetime:
+                snippet = (logs[-2000:] if len(logs) > 2000 else logs).replace('\n', ' ')
+                raise AssertionError(
+                    "No date-time pattern found in system log output. Expected syslog (e.g. 'Jan  1 12:34:56'), "
+                    "space-separated ('2026-02-18 12:34:56'), or ISO ('2026-02-18T12:34:56' or with Z/+00:00). "
+                    "Log tail (last 2000 chars): ...{}".format(snippet[-500:])
+                )
+            if 'T' not in last_log_datetime:
+                last_log_datetime = ' '.join(last_log_datetime.split())
             show_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_system_datetime)
-            log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime)
+            # Log may be in UTC (ISO); show is local. Get DUT timezone so we can convert log timestamp to local.
+            show_dic = OutputParsingTool.parse_json_str_to_dictionary(show_system_datetime).get_returned_value()
+            dut_timezone = ClockTools.normalize_timezone(show_dic[ClockConsts.TIMEZONE]) if ClockConsts.TIMEZONE in show_dic else None
+            log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime, local_timezone=dut_timezone)
             logging.info('show date-time: {}\nlogs date-time: {}'.format(show_datetime, log_datetime))
 
         with allure.step('Verify log timestamp similar to show date-time'):
             ClockTools.verify_same_datetimes(show_datetime, log_datetime)
 
     @staticmethod
-    def get_datetime_of_system_log_line(log_line):
+    def get_datetime_of_system_log_line(log_line, local_timezone=None):
         """
         @summary:
             Return the timestamp from a log line in the format "YYYY-MM-DD hh:mm:ss"
-        @param log_line: a line from system log
+        @param log_line: a line from system log (syslog-style e.g. "Jan  1 12:34:56" or ISO-style e.g. "2026-02-18T10:25:11.674358+00:00")
+        @param local_timezone: optional DUT timezone (e.g. "America/New_York"); when set, ISO log timestamps (UTC) are converted to this timezone for comparison with show (local). Used only for ISO-style lines; syslog-style is unchanged (safe for devices like IbDevice that use syslog).
         @return: the timestamp (str)
         """
         with allure.step('Take timestamp from a single log line'):
+            logging.info('Take timestamp from a single log line: {}'.format(log_line))
+            if 'T' in log_line:
+                # ISO-style e.g. 2026-02-18T10:25:11.674358+00:00 (typically UTC); convert to local if timezone given
+                dt = datetime.fromisoformat(log_line.replace('Z', '+00:00'))
+                if local_timezone:
+                    dt = dt.astimezone(pytz.timezone(local_timezone))
+                res = dt.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
+                logging.info('Result date-time: {}'.format(res))
+                return res
             log_timestamp = log_line.split('.')[0].split(' ')  # remove .<microseconds>
             log_timestamp = ' '.join([substr for substr in log_timestamp if substr != ''])  # clean from double spaces
-            logging.info('Take timestamp from a single log line: {}'.format(log_timestamp))
-
             current_year = datetime.now().year
-            logging.info('Take current year: {}'.format(current_year))
-
-            # convert date string to datetime object
-            datetime_obj = datetime.strptime(log_timestamp, "%b %d %H:%M:%S")  # [.%f] if need .<microseconds> optional
-
-            # replace year in datetime object
+            # convert date string to datetime object (syslog-style)
+            datetime_obj = datetime.strptime(log_timestamp, "%b %d %H:%M:%S")
             new_datetime_obj = datetime_obj.replace(year=current_year)
-
-            # format datetime object to string
             res = new_datetime_obj.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
-
             return res
 
     @staticmethod

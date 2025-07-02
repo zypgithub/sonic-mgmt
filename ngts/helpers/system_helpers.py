@@ -1,6 +1,7 @@
 import logging
 import os
 from retry.api import retry_call
+from typing import List, Any
 
 logger = logging.getLogger()
 
@@ -14,8 +15,26 @@ class PrefixEngine():
         self.engine = engine
         self.prefix = prefix
 
-    def run_cmd(self, cmd, validate=False):
-        return self.engine.run_cmd(f'{self.prefix} {cmd}', validate=validate)
+    def _prefixed(self, cmd: str) -> str:
+        return f'{self.prefix} {cmd}' if self.prefix else cmd
+
+    def run_cmd(self, cmd, validate=False, **kwargs):
+        return self.engine.run_cmd(self._prefixed(cmd), validate=validate, **kwargs)
+
+    def run_cmd_after_cmd(self, cmd_set: List[str], **kwargs) -> str:
+        if not cmd_set:
+            return self.engine.run_cmd_after_cmd(cmd_set, **kwargs)
+        new_cmd_set = [self._prefixed(cmd_set[0])] + list(cmd_set[1:])
+        return self.engine.run_cmd_after_cmd(new_cmd_set, **kwargs)
+
+    def run_cmd_set(self, cmd_set: List[str], **kwargs) -> str:
+        if not cmd_set:
+            return self.engine.run_cmd_set(cmd_set, **kwargs)
+        new_cmd_set = [self._prefixed(c) for c in cmd_set]
+        return self.engine.run_cmd_set(new_cmd_set, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.engine, name)
 
 
 def verify_empty_job_queue(engine):
