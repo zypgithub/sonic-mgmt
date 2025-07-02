@@ -330,11 +330,9 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     - "https://redmine.mellanox.com/issues/4597093 and 'bison' in testbed"
     - "https://redmine.mellanox.com/issues/4597093 and 'moose' in testbed"
 
-tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evpn_vxlan_basic:
+tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py:
   skip:
-    reason: "Skip due to bug of https://redmine.mellanox.com/issues/4200858"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4200858"
+    reason: "EVPN VXLAN is not supported in 202411 and greater releases"
 
 tests/push_build_tests/L3/static_route/test_static_route.py::test_basic_static_route:
   xfail:
