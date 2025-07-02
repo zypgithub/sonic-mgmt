@@ -53,6 +53,21 @@ def setup_env(duthost):
         delete_checkpoint(duthost)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def skip_if_packet_trimming_not_supported(duthost):
+    """
+    Check if the current device supports packet trimming feature.
+    """
+    platform = duthost.facts["platform"]
+    logger.info(f"Checking packet trimming support for platform: {platform}")
+
+    # Check if the SWITCH_TRIMMING_CAPABLE capability is true
+    trimming_capable = duthost.command('redis-cli -n 6 HGET "SWITCH_CAPABILITY|switch" "SWITCH_TRIMMING_CAPABLE"')[
+        'stdout'].strip()
+    if trimming_capable.lower() != 'true':
+        pytest.skip("Packet trimming is not supported")
+
+
 def trimming_global_config_sym_add(duthost):
     """ Test add packet trimming global config in sym mode
     """
