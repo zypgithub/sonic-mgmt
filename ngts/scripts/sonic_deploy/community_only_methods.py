@@ -61,6 +61,18 @@ def generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, port_numb
         return execute_script(cmd, ansible_path)
 
 
+def check_mst_dark_mode(cli_obj):
+    logger.info("Checking MST status")
+    mst_status = cli_obj.engine.run_cmd('sudo mst status')
+    if any(s.startswith("Failed to open (") and s.endswith(") for reading: No such file or directory")
+           for s in mst_status.split("\n")):
+        logger.info("Restarting MST for the dark mode, avoid MST driver issues on powered down DPUs. ETA ~1 min")
+        cli_obj.engine.reload('sudo nohup mst restart')
+        logger.info("MST Restarted")
+    else:
+        logger.info("MST is healthy, no need to restart")
+
+
 def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_obj, deploy_dpu=False):
     """
     Method which doing minigraph deploy on DUT
@@ -69,9 +81,9 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
         use_community = True
         if 'bobcat' in dut_name and not deploy_dpu:
             use_community = False
-            logger.info("Restarting MST for the dark mode, avoid MST driver issues on powered down DPUs. ETA ~1 min")
-            cli_obj.engine.reload(['nohup sudo mst restart'], wait_after_ping=5)
-            logger.info("MST Restarted")
+            from infra.tools.redmine.redmine_api import is_redmine_issue_active
+            if is_redmine_issue_active([4518602])[0]:
+                check_mst_dark_mode(cli_obj)
         cmd_temp = get_deploy_minigraph_cmd(use_community)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
