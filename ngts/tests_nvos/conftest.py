@@ -327,8 +327,10 @@ def devices(topology_obj):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def update_open_api_port(devices):
-    TestToolkit.update_open_api_port(devices.dut.open_api_port)
+def update_open_api_port(devices, topology_obj):
+    topology_conn = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']
+    open_api_port = topology_conn.get('OPEN_API_PORT', devices.dut.open_api_port)
+    TestToolkit.update_open_api_port(open_api_port)
 
 
 @pytest.fixture
