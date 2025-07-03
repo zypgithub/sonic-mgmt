@@ -282,12 +282,6 @@ tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
     reason: "DoRoCE is not supported on 202411 and greater releases"
 
-tests/nightly/rj45/test_rj45.py:
-  skip:
-    reason: "Testcase is only for alligator"
-    conditions:
-    - "'x86_64-mlnx_msn' in platform or 'x86_64-nvidia_sn4' in platform or 'x86_64-nvidia_sn5' in platform"
-
 tests/nightly/p4/examples_application/p4_gtp_parser/test_gtp_parser.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3016336"

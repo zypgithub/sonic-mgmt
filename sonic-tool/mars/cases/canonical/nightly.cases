@@ -396,23 +396,6 @@
         <value> no </value>
       </condition>
     </ignore>
-    <name> RJ45 </name>
-    <info> </info>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/rj45/test_rj45.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\" --showlocals --timeout 600 --session-timeout 600\'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <ignore>
-      <!-- daily case  -->
-      <condition>
-        <key> skip_weekend_cases </key>
-        <op> == </op>
-        <value> no </value>
-      </condition>
-    </ignore>
     <name> Routing </name>
     <info> </info>
     <cmd>
