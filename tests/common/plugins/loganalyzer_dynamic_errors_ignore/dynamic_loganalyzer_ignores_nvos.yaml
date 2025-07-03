@@ -698,9 +698,13 @@
 
 # NVOS
 - Errors_list:
-    - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed to run timedatectl#012Traceback \(most recent call last\):#012  File.*'
+    - '.*ERR nvued:   ERROR: lifecycle.py:\d+ Failed to run timedatectl#012Traceback \(most recent call last\):#012  File.*'
     - '.*ERR systemd-timedated\[\d+\]: Failed to set local time: Invalid argument.*'
     - '.*Failed to run timedatectl.*'
+    - '.*ERR nvued:   ERROR: repo.py:\d+ Could not parse git commit timestamp.*'
+    - '.*WARNING ntpd\[\d+\]: CLOCK: time stepped by.*'
+    - '.*WARNING ntpd\[\d+\]: CLOCK: time changed.*'
+    - '.*ERR ntpd\[\d+\]: CLOCK: leapsecond file (.*): expired less than 4367 days ago.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/clock/test_system_clock.py::test_change_invalid_datetime_ntp_off_error_flow_openapi
