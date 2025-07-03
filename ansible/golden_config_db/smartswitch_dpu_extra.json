@@ -7,12 +7,6 @@
             "type": "SmartSwitchDPU"
         }
     },
-    "GNMI": {
-        "gnmi": {
-            "log_level": "2",
-            "port": "50052"
-        }
-    },
     "INTERFACE": {
             "Ethernet0": {},
             "Ethernet0|18.0.202.1/31": {}
