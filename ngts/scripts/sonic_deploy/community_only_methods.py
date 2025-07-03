@@ -67,7 +67,18 @@ def check_mst_dark_mode(cli_obj):
     if any(s.startswith("Failed to open (") and s.endswith(") for reading: No such file or directory")
            for s in mst_status.split("\n")):
         logger.info("Restarting MST for the dark mode, avoid MST driver issues on powered down DPUs. ETA ~1 min")
-        cli_obj.engine.reload('sudo nohup mst restart')
+        # Starting timestamp
+        # stop sshd
+        # hangup all ssh connections
+        # restart MST
+        # wait 10 seconds
+        # start sshd
+        # output is saved to nohup.out in the DUT
+        cli_obj.engine.reload('sudo nohup bash -c "date; '
+                              'systemctl stop sshd; systemctl kill -s HUP sshd; '
+                              'mst restart; '
+                              'echo wait 10s; sleep 10; echo done waiting; '
+                              'systemctl start sshd"')
         logger.info("MST Restarted")
     else:
         logger.info("MST is healthy, no need to restart")
