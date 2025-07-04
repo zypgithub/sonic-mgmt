@@ -636,6 +636,10 @@ platform_tests/test_service_warm_restart.py:
   skip:
     reason: "The warm service restart is not supported on 202411 and greater releases"
 
+platform_tests/test_auto_negotiation.py:
+  skip:
+    reason: "The auto negotiation is not supported on 202411 and greater releases"
+
 pfcwd/test_pfcwd_warm_reboot.py:
   skip:
     reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
@@ -902,10 +906,7 @@ sub_port_interfaces/:
 
 sflow/test_sflow.py:
   skip:
-    reason: "Testcase ignored due to community sflow test had not been adapted to the dualtor setup"
-    conditions_logical_operator: or
-    conditions:
-    - "'dualtor' in topo_name"
+    reason: "Sflow is not supported on 202411 and greater releases"
 
 sflow/test_sflow.py::TestReboot::testFastreboot:
   skip:
