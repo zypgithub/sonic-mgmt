@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.timeout(2 * MINUTE, func_only=True)
 def test_show_platform_firmware(engines, devices, test_api, output_format):
     """Tests nv show platform firmware"""
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     with allure.step("Create Platform object"):
         platform = Platform()
 

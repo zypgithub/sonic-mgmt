@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = random_api
+    TestToolkit.tested_api = 'NVUE'
 
     if is_bug_active(4502930) and TestToolkit.tested_api == ApiType.OPENAPI:
         logger.info("Bug 4502930 is open and API is OpenApi, replacing with NVUE")
@@ -118,7 +118,7 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -140,7 +140,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):

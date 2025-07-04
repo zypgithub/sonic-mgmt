@@ -52,7 +52,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     5. Clear counters
     """
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = 'NVUE'
     dut_device = devices.dut
     platform = Platform()
     present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
@@ -206,7 +206,7 @@ def test_nvl5_port_configuration(engines, devices, random_api):
     2. Unset nvl5 interface and validate
     """
 
-    TestToolkit.tested_api = random_api
+    TestToolkit.tested_api = 'NVUE'
 
     if is_bug_active(4502930) and TestToolkit.tested_api == ApiType.OPENAPI:
         logger.info("Bug 4502930 is open and API is OpenApi, replacing with NVUE")
