@@ -829,13 +829,6 @@ platform_tests/fw_utility/test_fwutil.py:
     conditions:
     - "'msn4' in platform"
 
-platform_tests/link_flap/test_cont_link_flap.py::test_cont_link_flap:
-  skip:
-    reason: "Testcase ignored due to RM issue 4497317 on t1-lag topo and 2700 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4497317 and 't1-lag' in topo_name and '2700' in platform"
-
-
 platform_tests/test_sensors.py::test_sensors:
   skip:
     reason: "Testcase ignored due to RM 4261914 on sn5610n"
