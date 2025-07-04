@@ -1297,19 +1297,19 @@ def update_service_port_qos_map(duthost, service_port):
     logger.info(f"Service port {service_port} QoS map configuration updated successfully")
 
 
-def get_test_ports(upstream_links, downstream_links, service_links):
+def get_test_ports(upstream_links, downstream_links, peer_links):
     """
     Select test ports for packet trimming test.
 
     Args:
         upstream_links (dict): Dictionary of upstream links with interfaces as keys
         downstream_links (dict): Dictionary of downstream links with interfaces as keys
-        service_links (dict): Dictionary of service links with interfaces as keys
+        peer_links (dict): Dictionary of service links with interfaces as keys
 
     Returns:
         dict: Dictionary containing selected test ports:
             - 'ingress_port': dict, the first interface in downstream_links
-            - 'egress_port_1': dict, randomly selected from all interfaces in upstream_links and service_links
+            - 'egress_port_1': dict, randomly selected from all interfaces in upstream_links and peer_links
             - 'egress_port_2': dict, randomly selected from all interfaces in downstream_links except the first one
 
     Example:
@@ -1323,18 +1323,18 @@ def get_test_ports(upstream_links, downstream_links, service_links):
     logger.info("Selecting test ports")
     logger.info(f"upstream_links: {upstream_links}")
     logger.info(f"downstream_links: {downstream_links}")
-    logger.info(f"service_links: {service_links}")
+    logger.info(f"peer_links: {peer_links}")
 
     # ingress_port: the first downlink
     ingress_key = list(downstream_links.keys())[0]
     ingress_port = {ingress_key: downstream_links[ingress_key]}
     logger.info(f"Selected ingress_port: {ingress_port}")
 
-    # egress_port_1: all interfaces in upstream_links and service_links are combined and randomly selected
-    combined_links = {**upstream_links, **service_links}
+    # egress_port_1: all interfaces in upstream_links and peer_links are combined and randomly selected
+    combined_links = {**upstream_links, **peer_links}
     combined_keys = list(combined_links.keys())
     if not combined_keys:
-        raise ValueError("No available interfaces in upstream_links and service_links for egress_port_1")
+        raise ValueError("No available interfaces in upstream_links and peer_links for egress_port_1")
     egress1_key = random.choice(combined_keys)
     egress_port_1 = {egress1_key: combined_links[egress1_key]}
     logger.info(f"Selected egress_port_1: {egress_port_1}")

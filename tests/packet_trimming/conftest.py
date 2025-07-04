@@ -3,7 +3,7 @@ import pytest
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.utilities import get_dscp_to_queue_value, configure_packet_aging
-from tests.common.helpers.ptf_tests_helper import downstream_links, upstream_links, service_links    # noqa F401
+from tests.common.helpers.ptf_tests_helper import downstream_links, upstream_links, peer_links    # noqa F401
 from tests.common.mellanox_data import is_mellanox_device
 from tests.common.helpers.srv6_helper import create_srv6_locator, del_srv6_locator, create_srv6_sid, del_srv6_sid
 from tests.packet_trimming.constants import (SERVICE_PORT, COUNTERPOLL_INTERVAL, DEFAULT_DSCP,
@@ -50,7 +50,7 @@ def skip_if_packet_trimming_not_supported(duthost):
 
 
 @pytest.fixture(scope="module")
-def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links, service_links, tbinfo):
+def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links, peer_links, tbinfo):
     """
     Prepare test parameters for packet trimming tests.
 
@@ -65,7 +65,7 @@ def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstre
     logger.info("Preparing test parameters for packet trimming tests")
 
     with allure.step("Get trimming test ports"):
-        ports = get_test_ports(upstream_links, downstream_links, service_links)
+        ports = get_test_ports(upstream_links, downstream_links, peer_links)
         logger.info(f"The test ports: {ports}")
 
         ingress_port = ports["ingress_port"]
@@ -218,7 +218,7 @@ def setup_trimming(duthost, test_params):
 
 
 @pytest.fixture(params=SRV6_TUNNEL_MODE)
-def setup_srv6(duthost, request, rand_selected_dut, upstream_links, service_links, test_params):
+def setup_srv6(duthost, request, rand_selected_dut, upstream_links, peer_links, test_params):
     """
     Configure 10 instances of SRV6_MY_SIDS
     """
@@ -239,7 +239,7 @@ def setup_srv6(duthost, request, rand_selected_dut, upstream_links, service_link
     # be sent out through a randomly selected interface. For trimming with SRv6 test, we use the first
     # uplink interface as the test interface and shutdown all other interfaces to ensure packet forwarding.
     egress_port_1_name = test_params['egress_ports'][0]['name']
-    all_ports = set(upstream_links.keys()) | set(service_links.keys())
+    all_ports = set(upstream_links.keys()) | set(peer_links.keys())
     shutdown_ports = [k for k in all_ports if k != egress_port_1_name]
     logger.info(f"Shutting down ports: {shutdown_ports}")
 

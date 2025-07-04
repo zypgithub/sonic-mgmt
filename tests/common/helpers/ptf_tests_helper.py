@@ -105,7 +105,7 @@ def upstream_links(rand_selected_dut, tbinfo, nbrhosts):
 
 
 @pytest.fixture(scope="module")
-def service_links(rand_selected_dut, tbinfo, nbrhosts):
+def peer_links(rand_selected_dut, tbinfo, nbrhosts):
     """
     Returns a dictionary of all the links that are service ports from the DUT.
 
@@ -121,6 +121,8 @@ def service_links(rand_selected_dut, tbinfo, nbrhosts):
 
     def filter(interface, neighbor, mg_facts, tbinfo):
         if "PT0" in neighbor["name"]:
+            local_ipv4_addr = None
+            peer_ipv4_addr = None
             for item in mg_facts["minigraph_bgp"]:
                 if item["name"] == neighbor["name"]:
                     if isinstance(ip_address(item["addr"]), IPv4Address):
