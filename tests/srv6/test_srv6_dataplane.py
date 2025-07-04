@@ -191,14 +191,6 @@ class SRv6Base():
     def use_param(self, prepare_param):
         self.params = prepare_param
 
-    def _validate_bgp_session(self, duthost):
-        config_facts = duthost.config_facts(host=duthost.hostname, source="running")['ansible_facts']
-        bgp_neighbors = config_facts.get('BGP_NEIGHBOR', {})
-        pytest_assert(
-            wait_until(300, 10, 0, duthost.check_bgp_session_state, bgp_neighbors),
-            "bgp sessions {} are not up".format(bgp_neighbors)
-        )
-
     def _validate_srv6_function(self, duthost, ptfadapter, dscp_mode):
         srv6_pkt_list = []
         logger.info('Clear the SRv6 counters')
