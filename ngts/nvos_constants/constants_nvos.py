@@ -80,6 +80,21 @@ class CumulusConsts:
     DISK_MODE_USAGE = 'usage'
     DEFAULT_USER_CUMULUS = "cumulus"
 
+    DNS_PRIORITIES = [10, 20, 30, 40]
+    DNS_SERVER_IDS_V4_LIST = ["10.245.1.124", "10.245.1.121", "10.7.77.135"]
+    DNS_SEARCHES_LIST = ["nvidia.com", "mellanox.com", "lab2300.nbulabs.nvidia.com", "mvlab.labs.mlnx"]
+    DNS_SERVER_IDS_V6_LIST = ["2001:4860:4860::8888", "2606:4700:4700::1111", "fd00:2002:192:168::1"]
+    DNS_DOMAIN_LIST = ["nvidia.com", "confluence", "redmine"]
+    DNS_VRF = "vrf"
+    DNS_SEARCH = "search"
+    DNS_VRF_MGMT = "mgmt"
+    DNS_DOMAIN = "domain"
+    DNS_PRIORITY = "priority"
+    DNS_VRF_LIST = ['default', 'RED']
+    INTERFACE_IP_VRF = 'vrf'
+    FETCH_SUCCESS_MESSAGE = "File has been successfully fetched"
+    FETCH_ERROR_MESSAGE = "Failed to fetch file due to the following error"
+
 
 class TestConsts:
     PASSED = "passed"
@@ -329,6 +344,8 @@ class NvosConst:
     NO_CONFIG_DIFF_APPLY_MSG = "config apply executed with no config diff"
     DECLINED_APPLY_MSG = 'Declined apply after warnings'
     Y_COMMAND_NOT_FOUND = 'y: command not found'
+    FETCH_SUCCESS_MESSAGE = "File fetched successfully"
+    FETCH_ERROR_MESSAGE = "Failed to create file"
 
 
 class TopologyConsts:

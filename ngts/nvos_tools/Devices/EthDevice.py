@@ -131,6 +131,9 @@ class EthSwitch(BaseSwitch):
         self.expected_operation_durations.update({
             self.generate_tech_support: 130
         })
+        self.fetch_success_message = CumulusConsts.FETCH_SUCCESS_MESSAGE
+        self.fetch_error_message = CumulusConsts.FETCH_ERROR_MESSAGE
+        self.ask_for_confirmation = True
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         with allure.step('Wait for OS to become functional'):

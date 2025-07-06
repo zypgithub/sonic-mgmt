@@ -1,15 +1,19 @@
 from typing import Dict
-
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.system.DnsServer import Server
+from ngts.nvos_tools.system.DnsSearch import Search
 
 
 class Dns(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/dns')
+        self.server = Server(self)
+        self.search = Search(self)
 
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,
             dut_engine=None, client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True) -> 'ResultObj':

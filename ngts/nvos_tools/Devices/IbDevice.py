@@ -499,6 +499,9 @@ class IbSwitch(BaseSwitch):
             SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI,
             SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006
         ]
+        self.fetch_success_message = NvosConst.FETCH_SUCCESS_MESSAGE
+        self.fetch_error_message = NvosConst.FETCH_ERROR_MESSAGE
+        self.ask_for_confirmation = False
 
         # Initialize link error counters for traffic validation
 
