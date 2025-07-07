@@ -21,6 +21,7 @@ logger = logging.getLogger()
 
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
@@ -65,7 +66,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
             default_hostname = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()[SystemConsts.HOSTNAME]
         else:
             dhcp_hostname = None
-            default_hostname = SystemConsts.HOSTNAME_DEFAULT_VALUE
+            default_hostname = dut_device.system_default_value_dict[SystemConsts.HOSTNAME]
 
     with allure.step('set system hostname command and verify that hostname is updated'):
         with allure.step('set new hostname'):
@@ -270,6 +271,7 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
 
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_contact_set(test_api, engines, nv_command):
     """
@@ -284,9 +286,6 @@ def test_system_contact_set(test_api, engines, nv_command):
     """
     TestToolkit.tested_api = test_api
 
-    if test_api == ApiType.NVUE and is_bug_active(4362872):
-        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
-
     try:
         help_system_contact_location(engines, nv_command.system, SystemConsts.CONTACT)
 
@@ -296,6 +295,7 @@ def test_system_contact_set(test_api, engines, nv_command):
 
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_location_set(test_api, engines, nv_command):
     """
@@ -310,9 +310,6 @@ def test_system_location_set(test_api, engines, nv_command):
     """
     TestToolkit.tested_api = test_api
 
-    if test_api == ApiType.NVUE and is_bug_active(4362872):
-        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
-
     try:
         help_system_contact_location(engines, nv_command.system, SystemConsts.LOCATION)
 
@@ -322,7 +319,8 @@ def test_system_location_set(test_api, engines, nv_command):
 
 @pytest.mark.system
 @pytest.mark.simx
-def test_factory_reset_for_system_contact_location(engines, nv_command):
+@pytest.mark.cumulus
+def test_factory_reset_for_system_contact_location(engines, nv_command, devices):
     """
     Run factory reset system command and verify the system contact and location fields are removed from system show
         Test flow:
@@ -332,9 +330,6 @@ def test_factory_reset_for_system_contact_location(engines, nv_command):
             5. Run system factory reset
             6. Run 'nv show system' and verify systems contact and location fields are removed
     """
-
-    if is_bug_active(4362872):
-        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
 
     try:
         with allure.step('Run set system contact command and apply config'):
@@ -358,39 +353,40 @@ def test_factory_reset_for_system_contact_location(engines, nv_command):
         with allure.step("Run reset factory with keep basic param"):
             nv_command.system.factory_default.action_reset(param="keep basic").verify_result()
 
-        with allure.step('Validate system contact is back to default (Null)'):
+        with allure.step('Validate system contact is back to default'):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
-            assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null".\
-                format(system_output[SystemConsts.CONTACT])
+            assert system_output[SystemConsts.CONTACT] == devices.dut.system_default_value_dict[SystemConsts.CONTACT], "System contact in system show is {} instead of default value".\
+                format(devices.dut.system_default_value_dict[SystemConsts.CONTACT])
 
-        with allure.step('Validate system location is back to default (Null)'):
-            assert system_output[SystemConsts.LOCATION] is None, "System location in system show is {} instead of" \
-                                                                 "Null".format(system_output[SystemConsts.LOCATION])
+        with allure.step('Validate system location is back to default'):
+            assert system_output[SystemConsts.LOCATION] == devices.dut.system_default_value_dict[SystemConsts.LOCATION], "System location in system show is {} instead of" \
+                "default value".format(devices.dut.system_default_value_dict[SystemConsts.LOCATION])
 
     finally:
         clear_system_contact_and_location(nv_command.system)
 
 
 def clear_system_contact_and_location(system):
-
+    device = TestToolkit.get_device()
     with allure.step('Unset the system contact'):
         system.unset(SystemConsts.CONTACT, apply=True).verify_result()
 
     with allure.step('Unset the system location'):
         system.unset(SystemConsts.LOCATION, apply=True).verify_result()
 
-    with allure.step('Validate system contact is back to default (Null)'):
+    with allure.step('Validate system contact is back to default'):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null". \
-            format(system_output[SystemConsts.CONTACT])
+        assert system_output[SystemConsts.CONTACT] == device.system_default_value_dict[SystemConsts.CONTACT], "System contact in system show is {} instead of default value". \
+            format(device.system_default_value_dict[SystemConsts.CONTACT])
 
-    with allure.step('Validate system location is back to default (Null)'):
+    with allure.step('Validate system location is back to default'):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert system_output[SystemConsts.LOCATION] is None, "System location in system show is {} instead of Null". \
-            format(system_output[SystemConsts.LOCATION])
+        assert system_output[SystemConsts.LOCATION] == device.system_default_value_dict[SystemConsts.LOCATION], "System location in system show is {} instead of default value". \
+            format(device.system_default_value_dict[SystemConsts.LOCATION])
 
 
 def help_system_contact_location(engines, system, field_name):
+    device = TestToolkit.get_device()
     with allure.step('Set system {} command and verify that contact is updated'.format(field_name)):
         with allure.step('Set new system {}'.format(field_name)):
             field_info = field_name + "info"
@@ -402,14 +398,14 @@ def help_system_contact_location(engines, system, field_name):
             ValidationTool.verify_field_value_in_output(system_output, field_name, field_info).\
                 verify_result()
 
-    with allure.step('Unset system {} command and verify that {} field is Null'.format(field_name, field_name)):
+    with allure.step('Unset system {} command and verify that {} field is default'.format(field_name, field_name)):
         with allure.step('Unset the system {}'.format(field_name)):
             system.unset(field_name, apply=True).verify_result()
 
-        with allure.step('Validate system {} is back to default (Null)'.format(field_name)):
+        with allure.step('Validate system {} is back to default'.format(field_name)):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-            assert system_output[field_name] is None, "System {} in system show is {} instead of Null".\
-                format(field_name, system_output[field_name])
+            assert system_output[field_name] == device.system_default_value_dict[field_name], "System {} in system show is {} instead of default value".\
+                format(field_name, device.system_default_value_dict[field_name])
 
 
 def verify_core_count(devices, output_dictionary):

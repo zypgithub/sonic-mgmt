@@ -125,6 +125,16 @@ class EthSwitch(BaseSwitch):
         self.supports_tpm_testing = False
         # Note: expected_operation_durations is populated via _init_expected_operation_durations()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
+        self.constants.system['system'].remove(SystemConsts.PRODUCT_RELEASE)
+        self.constants.system['system'].remove(SystemConsts.STATUS)
+        self.constants.system['system'].append(SystemConsts.GLOBAL)
+        self.constants.system['system'].append(SystemConsts.DNS)
+        self.constants.system['system'].append(SystemConsts.FQDN)
+        self.system_default_value_dict = {
+            SystemConsts.HOSTNAME: NvosConst.DEFAULT_CL_CONFIG['system']['hostname'],
+            SystemConsts.CONTACT: "",
+            SystemConsts.LOCATION: ""
+        }
 
     def _init_expected_operation_durations(self):
         """Initialize expected operation durations for Ethernet devices."""

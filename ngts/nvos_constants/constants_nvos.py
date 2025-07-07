@@ -946,6 +946,9 @@ class SystemConsts:
     CLUSTER_APP_STATE_UP = 'up'
 
     DISK: str = 'disk'
+    GLOBAL = 'global'
+    DNS = 'dns'
+    FQDN = 'fqdn'
 
     class ApiConsts:
         class CompressionT:
