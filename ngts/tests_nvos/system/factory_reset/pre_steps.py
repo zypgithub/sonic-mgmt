@@ -162,3 +162,39 @@ def factory_reset_general_pre_steps(engines, devices, system):
 def get_health_status(system):
     system_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
     return system_output[SystemConsts.STATUS]
+
+
+def factory_reset_system_message_pre_steps(engines, devices, system):
+    port_type = devices.dut.switch_type.lower()
+    new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
+    new_post_login_msg = "Testing POST LOGIN MESSAGE"
+    new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
+    with allure.step('Get health status'):
+        health_status = get_health_status(system)
+
+    with allure.step('Run set system message pre-login command and apply config'):
+        system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"{new_pre_login_msg}"',
+                           apply=True, dut_engine=engines.dut).verify_result()
+
+    with allure.step('Run set system message post-login command and apply config'):
+        system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE, op_param_value=f'"{new_post_login_msg}"',
+                           apply=True, dut_engine=engines.dut).verify_result()
+
+    with allure.step('Run set system message post-logout command and apply config'):
+        system.message.set(op_param_name=SystemConsts.POST_LOGOUT_MESSAGE, op_param_value=f'"{new_post_logout_msg}"',
+                           apply=True, dut_engine=engines.dut).verify_result()
+
+    with allure.step('Verify system messages are changed to new messages in show system'):
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        fields_to_verify = [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE, SystemConsts.POST_LOGOUT_MESSAGE]
+        values_to_verify = [new_pre_login_msg, new_post_login_msg, new_post_logout_msg]
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, message_output).verify_result()
+
+    with allure.step("Add data before reset factory"):
+        username = add_verification_data(engines.dut, system)
+
+    with allure.step("Get current time"):
+        update_timezone(system)
+        current_time = get_current_time(engines)
+
+    return health_status, current_time, username

@@ -30,14 +30,18 @@ class User(BaseComponent):
         output = engine.run_cmd(f'who | grep {username} | wc -l')
         return int(output.strip())
 
-    def set_new_user(self, username=None, password=None, role=None, engine=None, apply=False):
+    def set_new_user(self, username=None, password=None, role=None, engine=None, hashed_password=None, apply=False):
         username = username if username else User.generate_username()
         password = password if password else generate_strong_password()
 
         if role:
             self.user_id[username].set('role', role, dut_engine=engine).verify_result()
-        self.user_id[username].set('password', password, dut_engine=engine, apply=apply,
-                                   ask_for_confirmation=True).verify_result()
+        if hashed_password:
+            self.user_id[username].set('hashed-password', hashed_password, dut_engine=engine, apply=apply,
+                                       ask_for_confirmation=True).verify_result()
+        else:
+            self.user_id[username].set('password', password, dut_engine=engine, apply=apply,
+                                       ask_for_confirmation=True).verify_result()
 
         return username, password
 

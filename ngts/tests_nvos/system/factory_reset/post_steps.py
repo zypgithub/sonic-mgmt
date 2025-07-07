@@ -5,6 +5,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 
 # @disabled_access_ports
@@ -53,3 +54,11 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
             link_output = apply_and_save_port.interface.link.show(output_format="auto")
             ValidationTool.verify_fec_config_in_auto_output(link_output, LinkDetectionConsts.FEC_MODE_DEFAULT)
         TestToolkit.tested_api = tested_api
+
+
+def factory_reset_system_message_post_steps(engines, devices, system):
+    with allure.step('Verify system messages are changed to default in show system'):
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        fields_to_verify = [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE, SystemConsts.POST_LOGOUT_MESSAGE]
+        values_to_verify = [devices.dut.pre_login_message, devices.dut.post_login_message, devices.dut.post_logout_message]
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, message_output).verify_result()

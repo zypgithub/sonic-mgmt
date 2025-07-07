@@ -350,6 +350,9 @@ class IbSwitch(BaseSwitch):
         self.techsupport_file_not_found_message = SystemConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
         # Note: techsupport_threshold is set after _init_expected_operation_durations() is called
 
+        # System message constants for IB devices - set after pre/post login messages are initialized
+        self.default_user_name = SystemConsts.DEFAULT_USER_ADMIN
+
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
@@ -459,6 +462,10 @@ class IbSwitch(BaseSwitch):
                                   "\u2588\u2588\u2588\u2588\u2551\n \u255a\u2550\u255d  \u255a\u2550\u2550" \
                                   "\u2550\u255d  \u255a\u2550\u2550\u2550\u255d   \u255a\u2550\u2550\u2550" \
                                   "\u2550\u2550\u255d \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u255d\n"
+
+        # Set system message default and test values
+        self.post_logout_message = SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE
+
         self.ssd_image_per_ssd_model = {
             'StorFly VSFBM4XC016G-MLX2':
                 BaseSwitch.SsdImageConsts(

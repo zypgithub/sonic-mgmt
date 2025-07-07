@@ -78,6 +78,7 @@ class CumulusConsts:
 
     DISK_MODE_FULL_DISK = 'full-disk'
     DISK_MODE_USAGE = 'usage'
+    DEFAULT_USER_CUMULUS = "cumulus"
 
 
 class TestConsts:
@@ -546,6 +547,9 @@ class SystemConsts:
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
     POST_LOGOUT_MESSAGE = 'post-logout'
+    PRE_LOGIN_MESSAGE_DEFAULT_VALUE = "Welcome to NVIDIA Cumulus (R) Linux (R)"
+    POST_LOGIN_MESSAGE_DEFAULT_VALUE = "Welcome to NVIDIA Cumulus (R) Linux (R)\nFor support and online technical documentation, visit https://www.nvidia.com/en-us/support\nThe registered trademark Linux (R) is used pursuant to a sublicense from LMI, the exclusive licensee of Linus Torvalds, owner of the mark on a world-wide basis.\n"
+    POST_LOGOUT_MESSAGE_DEFAULT_VALUE = ""
 
     REBOOT_HISTORY = 'history'
     REBOOT_REASON = 'reason'

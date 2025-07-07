@@ -1,3 +1,4 @@
+import crypt
 import logging
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
@@ -11,6 +12,13 @@ from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.general.security.conftest import ssh_to_device_and_retrieve_raw_login_ssh_notification
+from ngts.nvos_constants.constants_nvos import CumulusConsts
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from infra.tools.connection_tools.utils import generate_strong_password
+from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from retry.api import retry_call
+
 
 logger = logging.getLogger()
 
@@ -28,6 +36,7 @@ def clear_system_messages(system, engines):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_message(engines, devices, test_api):
     """
@@ -84,8 +93,7 @@ def test_show_system_message(engines, devices, test_api):
                 time.sleep(1)
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
-                                                        SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
-
+                                                        devices.dut.post_logout_message).verify_result()
     finally:
         clear_system_messages(system, engines)
 
@@ -93,6 +101,7 @@ def test_show_system_message(engines, devices, test_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_system_message_pre_login(engines, devices, test_api):
     """
@@ -128,7 +137,7 @@ def test_set_system_message_pre_login(engines, devices, test_api):
 
         with allure.step('Verify pre-login changed to new message upon connecting via SSH'):
             output = ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-                                                                           username=SystemConsts.DEFAULT_USER_ADMIN,
+                                                                           username=devices.dut.default_user_name,
                                                                            password=engines.dut.password)
             pre_login_output = output.split('\n')[1].strip()
             assert new_pre_login_msg == pre_login_output, \
@@ -158,10 +167,10 @@ def test_set_system_message_pre_login(engines, devices, test_api):
 
         with allure.step('Verify pre-login changed to default upon connecting via SSH'):
             output = ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-                                                                           username=SystemConsts.DEFAULT_USER_ADMIN,
+                                                                           username=devices.dut.default_user_name,
                                                                            password=engines.dut.password)
             pre_login_output = output.split('\n')[1].strip()
-            assert pre_login_output == devices.dut.pre_login_message, \
+            assert pre_login_output == devices.dut.pre_login_message.strip(), \
                 "Failed to set pre-login message to {pre_login}".format(pre_login=pre_login_output)
 
     finally:
@@ -171,6 +180,7 @@ def test_set_system_message_pre_login(engines, devices, test_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_system_message_post_login(engines, devices, test_api):
     """
@@ -206,7 +216,7 @@ def test_set_system_message_post_login(engines, devices, test_api):
 
         with allure.step('Verify post-login changed to new message upon connecting via SSH'):
             output = ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-                                                                           username=SystemConsts.DEFAULT_USER_ADMIN,
+                                                                           username=devices.dut.default_user_name,
                                                                            password=engines.dut.password)
             assert new_post_login_msg in output, \
                 "Failed to set post-login message to {post_login}\n post_login_output={post_login_output}".format(
@@ -238,6 +248,7 @@ def test_set_system_message_post_login(engines, devices, test_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_set_system_message_post_logout(engines, devices, test_api):
     """
@@ -347,13 +358,14 @@ def test_unset_system_message(engines, devices, test_api):
         with allure.step('Verify system messages are changed to default in show system'):
             time.sleep(1)
             TestToolkit.tested_api = ApiType.NVUE
+
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                         devices.dut.pre_login_message).verify_result()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
                                                         devices.dut.post_login_message).verify_result()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
-                                                        SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
+                                                        devices.dut.post_logout_message).verify_result()
             TestToolkit.tested_api = test_api
 
     finally:
@@ -363,6 +375,7 @@ def test_unset_system_message(engines, devices, test_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_system_reload_for_system_message(engines, devices, random_api):
     """
     Run reload system  command and verify the system messages are changed to default
@@ -414,13 +427,153 @@ def test_system_reload_for_system_message(engines, devices, random_api):
         with allure.step('Verify system messages are changed to default in show system'):
             TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
-                                                        devices.dut.pre_login_message).verify_result()
-            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
-                                                        devices.dut.post_login_message).verify_result()
-            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
-                                                        SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
+            fields_to_verify = [SystemConsts.PRE_LOGIN_MESSAGE, SystemConsts.POST_LOGIN_MESSAGE, SystemConsts.POST_LOGOUT_MESSAGE]
+            if devices.dut.is_eth():
+                values_to_verify = [new_pre_login_msg, new_post_login_msg, new_post_logout_msg]
+            else:
+                values_to_verify = [devices.dut.pre_login_message, devices.dut.post_login_message, devices.dut.post_logout_message]
+            ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, message_output).verify_result()
             TestToolkit.tested_api = random_api
 
     finally:
         clear_system_messages(system, engines)
+
+
+@pytest.mark.banner
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.cumulus_only
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_post_logout_message_multiple_users(engines, devices, test_api, system_message_cleanup):
+    """
+    Description:
+    ===============================================
+    Verify switching between different users should not affect logout msg.
+
+    Steps:
+    ===============================================
+    1. Configure user user1
+    2. Configure post logout message
+    3. Verify after logout custom message is as expected
+    4. Login as cumulus user and verify the custom message
+    5. Login as user 1 and after logout verify custom message
+    """
+    TestToolkit.tested_api = test_api
+    new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
+    system = system_message_cleanup
+
+    with allure.step('Create a new user '):
+        user1_plain_password = generate_strong_password()
+        salt = crypt.mksalt(crypt.METHOD_SHA512)
+        user_local_hashpw = f"'{crypt.crypt(user1_plain_password, salt)}'"
+        system.aaa.user.set_new_user(username='user1', role='nvue-admin', hashed_password=user_local_hashpw, apply=True)
+
+    with allure.step('Run set system message post-logout command and apply config'):
+        system.message.set(op_param_name=SystemConsts.POST_LOGOUT_MESSAGE, op_param_value=f'"{new_post_logout_msg}"',
+                           apply=True, dut_engine=engines.dut).verify_result()
+
+    with allure.step('Verify post logout messages in show system'):
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+
+        ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
+                                                    new_post_logout_msg).verify_result()
+
+    with allure.step('Switch to cumulus user and verify post logout messages in show system'):
+
+        _, _, cumulus_login_message = SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success(return_output=True)
+
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(message_output, 'post-logout',
+                                                    new_post_logout_msg).verify_result()
+
+    with allure.step('Switch back to user1 and verify post logout messages in show system'):
+        _, _, user_login_message = SshAuthenticator('user1', user1_plain_password, engines.dut.ip).attempt_login_success(return_output=True)
+        logger.info(user_login_message)
+
+        user_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(user_output, 'post-logout',
+                                                    new_post_logout_msg).verify_result()
+
+
+@pytest.mark.banner
+@pytest.mark.system
+@pytest.mark.simx
+@pytest.mark.cumulus_only
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_post_logout_message_after_nvued_restart(engines, devices, test_api, topology_obj, system_message_cleanup):
+    """
+    Description:
+    ===============================================
+    Verify that after nvued service restart the post-logout message still works.
+
+    Steps:
+    ===============================================
+    1. Configure post-log out message
+    2. Verify the output display configured message
+    3. Do nvued service restart
+    4. Log out from the command prompt by running "logout"
+    5. Verify that the post-logout message is displayed after the logout command
+    """
+    # Set post-logout message
+    TestToolkit.tested_api = test_api
+    new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
+    system = system_message_cleanup
+
+    with allure.step('Run set system message post-logout command and apply config'):
+        system.message.set(op_param_name=SystemConsts.POST_LOGOUT_MESSAGE, op_param_value=f'"{new_post_logout_msg}"',
+                           apply=True, dut_engine=engines.dut).verify_result()
+
+    # Restart nvued service
+    with allure.step('Restart nvued services'):
+        engines.dut.run_cmd('sudo systemctl restart nvued')
+
+    # Poll until nvued service is active
+    with allure.step('Wait for nvued service to become active'):
+        retry_call(
+            lambda: 'active' in engines.dut.run_cmd('systemctl is-active nvued'),
+            tries=12,
+            delay=2,
+            logger=logger
+        )
+
+    with allure.step('Verify system message persists after service restart'):
+        message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
+                                                    new_post_logout_msg).verify_result()
+
+    with allure.step('Logout from device and check for post-logout message'):
+        # Use pexpect to capture logout message
+        logout_output = capture_logout_message_via_ssh_with_pexpect(engines)
+        logger.info(f"Logout output: {logout_output}")
+
+        # Check for post-logout message in output
+        assert new_post_logout_msg in logout_output, f"Expected Post-logout message: '{new_post_logout_msg}' not found in output"
+        logger.info(f"Post-logout message found: {new_post_logout_msg}")
+
+
+def capture_logout_message_via_ssh_with_pexpect(engines):
+    """
+    Helper function to capture logout message using pexpect with SSH
+    """
+    import pexpect
+
+    ssh_cmd = f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {engines.dut.username}@{engines.dut.ip}"
+
+    try:
+        child = pexpect.spawn(ssh_cmd, timeout=60)
+
+        # Login
+        child.expect("password:")
+        child.sendline(engines.dut.password)
+        child.expect(['$', '#'])
+
+        # Send logout and capture everything before connection closes
+        child.sendline('logout')
+        child.expect([pexpect.EOF, 'closed', 'Connection.*closed'], timeout=30)
+
+        output = child.before.decode('utf-8', errors='ignore')
+        return output
+
+    except Exception as e:
+        logger.error(f"Failed to capture logout message: {e}")
+        return ""

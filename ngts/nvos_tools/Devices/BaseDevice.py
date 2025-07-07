@@ -202,6 +202,13 @@ class BaseDevice(ABC):
     def is_ib(self):
         return self.switch_type == NvosConst.IB_SWITCH_TYPE
 
+    def post_reload_actions(self, engine):
+        """
+        Optional actions to run after a reload (e.g. factory reset).
+        Override in subclasses (e.g. EthDevice) when device-specific setup is needed.
+        """
+        pass
+
     def _relevant_config_filename_by_version(self, version: str) -> str:
         version_num, _ = get_version_info(version)
         if version_num:

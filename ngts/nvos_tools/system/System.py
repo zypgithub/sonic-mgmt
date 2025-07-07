@@ -232,6 +232,8 @@ class FactoryDefault(BaseComponent):
                     result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
             if log_analyzer_marker:
+                if device:
+                    device.post_reload_actions(engine)
                 TestToolkit.add_loganalyzer_marker_at_beginning(engine, log_analyzer_marker)
             logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
             res_obj.duration = duration

@@ -14,6 +14,7 @@ from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_config_utils import clear_cl_conf
+from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 
 logger = logging.getLogger()
 
@@ -65,6 +66,10 @@ class EthSwitch(BaseSwitch):
         with allure.step('Clear config'):
             clear_cl_conf(dut_engine, markers, self)
 
+    def post_reload_actions(self, engine):
+        """Update sudoers for nopasswd after reload (e.g. factory reset) so log-analyzer can run."""
+        CumulusGeneralCli(engine, self).update_sudoers_nopasswd()
+
     def _init_constants(self):
         super()._init_constants()
         self.pre_login_message = "Welcome to NVIDIA Cumulus (R) Linux (R)\n"
@@ -92,6 +97,10 @@ class EthSwitch(BaseSwitch):
         self.ntp_server1_values_dict = NtpConsts.CUMULUS_SERVER1_DEFAULT_VALUES_DICT
         self.ntp_server_none_values_dict = NtpConsts.CUMULUS_SERVER_NONE_DEFAULT_VALUES_DICT
         self.ntp_multiple_servers_values_dict = NtpConsts.CUMULUS_MULTIPLE_SERVERS_CONFIG_DICT
+
+        # System message constants for ETH devices
+        self.default_user_name = CumulusConsts.DEFAULT_USER_CUMULUS
+        self.post_logout_message = SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE
 
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",
@@ -129,7 +138,22 @@ class EthSwitch(BaseSwitch):
 
     def reload_device(self, engine, cmd_set, validate=False):
         with allure.step('Reload device'):
-            engine.run_cmd_set(cmd_set, validate=False)
+            # If cmd_set has multiple commands (command + confirmation), handle interactively
+            if isinstance(cmd_set, list) and len(cmd_set) > 1:
+                command = cmd_set[0]
+                confirmation = cmd_set[1]
+                # Send command and wait for confirmation prompt
+                output = engine.engine.send_command_expect(
+                    command,
+                    expect_string="Do you want to continue?",
+                    max_loops=40
+                )
+                # Send confirmation response
+                engine.engine.write_channel(f"{confirmation}\n".encode())
+                return output
+            else:
+                # Single command, no confirmation needed
+                return engine.run_cmd_set(cmd_set, validate=False)
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports

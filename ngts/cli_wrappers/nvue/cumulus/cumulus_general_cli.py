@@ -159,6 +159,14 @@ class CumulusGeneralCli(NvueGeneralCli):
             sudoers_content = self.read_file('/etc/sudoers', is_sudo=True)
             assert "cumulus ALL=(ALL) NOPASSWD: ALL" in sudoers_content, "Failed to add cumulus user to sudoers file"
 
+    def update_sudoers_nopasswd(self):
+        """Replace %sudo line in /etc/sudoers to add NOPASSWD so sudo does not prompt for password."""
+        with allure.step('Update sudoers: NOPASSWD for %sudo group'):
+            self.engine.run_cmd(
+                f'echo "{self.engine.password}" | sudo -S '
+                'sed -i "s/^%sudo\\s\\+ALL=(ALL:ALL) ALL/%sudo  ALL=(ALL:ALL) NOPASSWD: ALL/" /etc/sudoers'
+            )
+
     def init_telemetry_keys(self):
         pass
 
