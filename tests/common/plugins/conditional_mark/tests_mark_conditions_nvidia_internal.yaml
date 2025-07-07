@@ -387,6 +387,12 @@ tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_polic
     conditions:
     - "'5640' in platform"
 
+tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_core_check:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
+
 ########################## NGTS IGNORE END ##########################
 
 ########################## Community IGNORE START ##########################
@@ -760,6 +766,18 @@ platform_tests/daemon/test_pcied.py::test_pmon_pcied_kill_and_start_status:
     conditions:
     - "https://redmine.mellanox.com/issues/4398394"
 
+platform_tests/daemon/test_pcied.py::test_pmon_pcied_running_status:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_pcieinfo:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4490249 and 'sn4280' in platform"
+
 platform_tests/daemon/test_syseepromd.py::test_pmon_syseepromd_kill_and_start_status:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4398394"
@@ -965,12 +983,6 @@ span/test_port_mirroring.py:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4497373"
     conditions:
     - "https://redmine.mellanox.com/issues/4497373"
-
-system_health/test_system_health.py::test_device_checker:
-  skip:
-    reason: "Test fails on r-bobcat-01 due to bad psu"
-    conditions:
-    - "'r-bobcat-01' in testbed"
 
 system_health/test_system_health.py::test_service_checker:
   skip:
