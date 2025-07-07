@@ -1603,6 +1603,13 @@
 
 # NVOS
 - Errors_list:
+    - '.*interface (\w+) speed (\d+G) is not part of the supported speeds \(supported speeds: \[200000, 400000\], preset: nvl\).*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+
+# NVOS
+- Errors_list:
     - '.*WARNING kernel: \[.*\d*\.\d*\] ext4 filesystem being mounted at .* supports timestamps until 2038.*'
   Conditions:
     - Affected_test_cases:
