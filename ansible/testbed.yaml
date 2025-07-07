@@ -2583,11 +2583,19 @@
   group-name: vm-t1
   topo: t0-isolated-d32u32s2
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bison-01
-  ptf_ip: 10.215.45.3/20
-  ptf_ipv6:
-  server: server_90
-  vm_base: VM5301
+  servers:
+    server_88:
+      ptf: ptf-r-bison-01-1
+      ptf_ip: 10.215.45.3/20
+      ptf_ipv6:
+      vm_base: VM5301
+      dut_interfaces: 0-319
+    server_95:
+      ptf: ptf-r-bison-01-2
+      ptf_ip: 10.215.40.182/20
+      ptf_ipv6:
+      vm_base: VM5557
+      dut_interfaces: 320-513
   dut:
     - r-bison-01
   inv_name: lab
@@ -2611,11 +2619,19 @@
   group-name: vm-t1
   topo: t0-isolated-d256u256s2
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bison-01
-  ptf_ip: 10.215.45.3/20
-  ptf_ipv6:
-  server: server_88
-  vm_base: VM5301
+  servers:
+    server_88:
+      ptf: ptf-r-bison-01-1
+      ptf_ip: 10.215.45.3/20
+      ptf_ipv6:
+      vm_base: VM5301
+      dut_interfaces: 0-320
+    server_95:
+      ptf: ptf-r-bison-01-2
+      ptf_ip: 10.215.40.182/20
+      ptf_ipv6:
+      vm_base: VM5557
+      dut_interfaces: 321-513
   dut:
     - r-bison-01
   inv_name: lab
@@ -2644,6 +2660,51 @@
   ptf_ipv6:
   server: server_90
   vm_base: VM5301
+  dut:
+    - r-bison-01
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-01-t0-isolated-d2u510s2
+  group-name: vm-t1
+  topo: t0-isolated-d2u510s2
+  ptf_image_name: docker-ptf-mlnx
+  servers:
+    server_88:
+      ptf: ptf-r-bison-01-1
+      ptf_ip: 10.215.45.3/20
+      ptf_ipv6:
+      vm_base: VM5301
+      dut_interfaces: 0-257
+    server_95:
+      ptf: ptf-r-bison-01-2
+      ptf_ip: 10.215.40.182/20
+      ptf_ipv6:
+      vm_base: VM5557
+      dut_interfaces: 258-513
+  dut:
+    - r-bison-01
+  inv_name: lab
+  upstream_neighbor_groups: 2
+  comment: Mellanox MTR testbed
+
+- conf-name: r-bison-01-t1-isolated-d510u2
+  group-name: vm-t1
+  topo: t1-isolated-d510u2
+  ptf_image_name: docker-ptf-mlnx
+  servers:
+    server_88:
+      ptf: ptf-r-bison-01-1
+      ptf_ip: 10.215.45.3/20
+      ptf_ipv6:
+      vm_base: VM5301
+      dut_interfaces: 0-255
+    server_95:
+      ptf: ptf-r-bison-01-2
+      ptf_ip: 10.215.40.182/20
+      ptf_ipv6:
+      vm_base: VM5557
+      dut_interfaces: 256-511
   dut:
     - r-bison-01
   inv_name: lab
