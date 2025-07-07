@@ -241,7 +241,7 @@ class ClusterTools:
         present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
 
         for transceiver in present_transceivers:
-            interfaces.extend([interface for interface in devices.dut.nvl5_trunk_ports_list if interface.startswith(f"{transceiver}p")])
+            interfaces.extend([interface for interface in devices.dut.nvl_trunk_ports_list if interface.startswith(f"{transceiver}p")])
             # This way, if sw1 is present and sw10 is not, we will not take sw10. because we force sw1p so sw10p falls.
         return interfaces
 
@@ -724,10 +724,10 @@ def disabled_access_ports(func):
         try:
             if isinstance(devices.dut, JulietSwitch):
                 TestToolkit.tested_api = 'NVUE'
-                if not hasattr(devices.dut, 'nvl5_access_ports_list'):
+                if not hasattr(devices.dut, 'nvl_access_ports_list'):
                     has_access_ports = False
                 if has_access_ports and standalone_system and not has_loopbox:
-                    port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                    port_name = summarize_ports(devices.dut.nvl_access_ports_list)
                     selected_port = Port(port_name, "", "")
                     port_state = NvosConsts.LINK_STATE_DOWN
                     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
@@ -757,7 +757,7 @@ def disabled_access_ports(func):
             if perform_cleanup:
                 if isinstance(devices.dut, JulietSwitch):
                     if has_access_ports and standalone_system and not has_loopbox:
-                        port_name = summarize_ports(devices.dut.nvl5_access_ports_list)
+                        port_name = summarize_ports(devices.dut.nvl_access_ports_list)
                         selected_port = Port(port_name, "", "")
                         port_state = NvosConsts.LINK_STATE_UP
                         selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
@@ -773,8 +773,8 @@ def disabled_access_ports(func):
                             next(interfaces_wa)
                         except StopIteration:
                             pass  # Or handle it if necessary
-                    if hasattr(devices.dut, 'nvl5_trunk_ports_list') and devices.dut.nvl5_trunk_ports_list:
-                        refresh_switch_ports(devices.dut.nvl5_trunk_ports_list, engines)
+                    if hasattr(devices.dut, 'nvl_trunk_ports_list') and devices.dut.nvl_trunk_ports_list:
+                        refresh_switch_ports(devices.dut.nvl_trunk_ports_list, engines)
                     with allure.step("Reset cluster state"):
                         if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
                             cluster.unset(apply=True)

@@ -1281,8 +1281,8 @@ class JulietSwitch(NvLinkSwitch):
 # -------------------------- JulietScaleout Switch ----------------------------
 class JulietScaleoutSwitch(JulietSwitch):
 
-    def __init__(self):
-        super().__init__(asic_amount=2)
+    def __init__(self, asic_amount=2):
+        super().__init__(asic_amount=asic_amount)
 
     def _init_constants(self):
         super()._init_constants()
@@ -1357,48 +1357,49 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.allow_cpld_update = True
 
         # Port 1-36 is from asic1/ Port 37-72 is from asic2
-        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
-                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
-                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
-                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
-                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
-                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
-                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
-                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
-                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
-                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
-                                       'acp71', 'acp72']
+        self.nvl_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                      'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                      'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                      'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                      'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                      'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                      'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                      'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                      'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                      'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                      'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                      'acp71', 'acp72']
 
-        self.nvl5_trunk_ports_list = ['sw1p1s1', 'sw1p1s2', 'sw1p2s1', 'sw1p2s2',
-                                      'sw2p1s1', 'sw2p1s2', 'sw2p2s1', 'sw2p2s2',
-                                      'sw3p1s1', 'sw3p1s2', 'sw3p2s1', 'sw3p2s2',
-                                      'sw4p1s1', 'sw4p1s2', 'sw4p2s1', 'sw4p2s2',
-                                      'sw5p1s1', 'sw5p1s2', 'sw5p2s1', 'sw5p2s2',
-                                      'sw6p1s1', 'sw6p1s2', 'sw6p2s1', 'sw6p2s2',
-                                      'sw7p1s1', 'sw7p1s2', 'sw7p2s1', 'sw7p2s2',
-                                      'sw8p1s1', 'sw8p1s2', 'sw8p2s1', 'sw8p2s2',
-                                      'sw9p1s1', 'sw9p1s2', 'sw9p2s1', 'sw9p2s2',
-                                      'sw10p1s1', 'sw10p1s2', 'sw10p2s1', 'sw10p2s2',
-                                      'sw11p1s1', 'sw11p1s2', 'sw11p2s1', 'sw11p2s2',
-                                      'sw12p1s1', 'sw12p1s2', 'sw12p2s1', 'sw12p2s2',
-                                      'sw13p1s1', 'sw13p1s2', 'sw13p2s1', 'sw13p2s2',
-                                      'sw14p1s1', 'sw14p1s2', 'sw14p2s1', 'sw14p2s2',
-                                      'sw15p1s1', 'sw15p1s2', 'sw15p2s1', 'sw15p2s2',
-                                      'sw16p1s1', 'sw16p1s2', 'sw16p2s1', 'sw16p2s2',
-                                      'sw17p1s1', 'sw17p1s2', 'sw17p2s1', 'sw17p2s2',
-                                      'sw18p1s1', 'sw18p1s2', 'sw18p2s1', 'sw18p2s2'
-                                      ]
+        self.nvl_trunk_ports_list = ['sw1p1s1', 'sw1p1s2', 'sw1p2s1', 'sw1p2s2',
+                                     'sw2p1s1', 'sw2p1s2', 'sw2p2s1', 'sw2p2s2',
+                                     'sw3p1s1', 'sw3p1s2', 'sw3p2s1', 'sw3p2s2',
+                                     'sw4p1s1', 'sw4p1s2', 'sw4p2s1', 'sw4p2s2',
+                                     'sw5p1s1', 'sw5p1s2', 'sw5p2s1', 'sw5p2s2',
+                                     'sw6p1s1', 'sw6p1s2', 'sw6p2s1', 'sw6p2s2',
+                                     'sw7p1s1', 'sw7p1s2', 'sw7p2s1', 'sw7p2s2',
+                                     'sw8p1s1', 'sw8p1s2', 'sw8p2s1', 'sw8p2s2',
+                                     'sw9p1s1', 'sw9p1s2', 'sw9p2s1', 'sw9p2s2',
+                                     'sw10p1s1', 'sw10p1s2', 'sw10p2s1', 'sw10p2s2',
+                                     'sw11p1s1', 'sw11p1s2', 'sw11p2s1', 'sw11p2s2',
+                                     'sw12p1s1', 'sw12p1s2', 'sw12p2s1', 'sw12p2s2',
+                                     'sw13p1s1', 'sw13p1s2', 'sw13p2s1', 'sw13p2s2',
+                                     'sw14p1s1', 'sw14p1s2', 'sw14p2s1', 'sw14p2s2',
+                                     'sw15p1s1', 'sw15p1s2', 'sw15p2s1', 'sw15p2s2',
+                                     'sw16p1s1', 'sw16p1s2', 'sw16p2s1', 'sw16p2s2',
+                                     'sw17p1s1', 'sw17p1s2', 'sw17p2s1', 'sw17p2s2',
+                                     'sw18p1s1', 'sw18p1s2', 'sw18p2s1', 'sw18p2s2'
+                                     ]
         self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
-        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
-        self.nvl5_port = ['sw1p1s1']
-        self.nvl5_port_speed = '400G'
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.nvl_port = ['sw1p1s1']
+        self.nvl_trunk_port_speed = '400G'
+        self.access_port_speed = '400G'
         self.fnm_link_speed = '100G'
         self.fnm_fae_link_speed = '100G'
-        self.nvl5_port_type = 'nvl'
+        self.nvl_port_type = 'nvl'
         self.num_of_cartridges = 4
         # will be updated
 
@@ -1478,20 +1479,20 @@ class JulietAriel(JulietTTMSwitch):
             "asic-model": self.asic_type,
         })
         self.num_of_cartridges = 2
-        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
-                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
-                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
-                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
-                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
-                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
-                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
-                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
-                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
-                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
-                                       'acp71', 'acp72']
+        self.nvl_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                      'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                      'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                      'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                      'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                      'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                      'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                      'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                      'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                      'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                      'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                      'acp71', 'acp72']
 
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -1532,20 +1533,20 @@ class JulietArielPS(JulietTTMSwitch):
                                 'PMIC-6-ASIC2-HVDD-PL1-Out-1', 'PMIC-7-12V-MAIN-In-1', 'PMIC-7-CEX-VDD-Out-1',
                                 'PMIC-8-COMEX-VDD-MEM-In-1', 'PMIC-8-COMEX-VDD-MEM-Out-1']
 
-        self.nvl5_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-                                       'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
-                                       'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
-                                       'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
-                                       'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
-                                       'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
-                                       'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
-                                       'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
-                                       'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
-                                       'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
-                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
-                                       'acp71', 'acp72']
+        self.nvl_access_ports_list = ['acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+                                      'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12', 'acp13', 'acp14',
+                                      'acp15', 'acp16', 'acp17', 'acp18', 'acp19', 'acp20',
+                                      'acp21', 'acp22', 'acp23', 'acp24', 'acp25', 'acp26',
+                                      'acp27', 'acp28', 'acp29', 'acp30', 'acp31', 'acp32',
+                                      'acp33', 'acp34', 'acp35', 'acp36', 'acp37', 'acp38', 'acp39', 'acp40',
+                                      'acp41', 'acp42', 'acp43', 'acp44', 'acp45', 'acp46',
+                                      'acp47', 'acp48', 'acp49', 'acp50', 'acp51', 'acp52',
+                                      'acp53', 'acp54', 'acp55', 'acp56', 'acp57', 'acp58',
+                                      'acp59', 'acp60', 'acp61', 'acp62', 'acp63', 'acp64',
+                                      'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
+                                      'acp71', 'acp72']
 
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
 
     def _init_temperature(self):
         super()._init_temperature()
@@ -1563,13 +1564,13 @@ class JulietArielPS(JulietTTMSwitch):
 
 class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, asic_amount=2):
+        super().__init__(asic_amount=asic_amount)
 
     def _init_constants(self):
         super()._init_constants()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
-        self.nvl5_access_ports_list = [
+        self.nvl_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
             'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
@@ -1595,17 +1596,18 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
             'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
             'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
         ]
-        self.nvl5_trunk_ports_list = []
+        self.nvl_trunk_ports_list = []
         self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
-        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
-        self.nvl5_port = ['sw1p1s1']
-        self.nvl5_port_speed = '400G'
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.nvl_port = ['sw1p1s1']
+        self.nvl_trunk_port_speed = '400G'
+        self.access_port_speed = '400G'
         self.fnm_link_speed = '100G'
         self.fnm_fae_link_speed = '100G'
-        self.nvl5_port_type = 'nvl'
+        self.nvl_port_type = 'nvl'
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5100_ld-r0")
@@ -1740,7 +1742,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
-        self.nvl5_access_ports_list = [
+        self.nvl_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
             'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
@@ -1766,17 +1768,18 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
             'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
             'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
         ]
-        self.nvl5_trunk_ports_list = []
+        self.nvl_trunk_ports_list = []
         self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl5_ports_list = self.nvl5_access_ports_list + self.nvl5_trunk_ports_list + self.network_ports
-        self.nvl5_fnm_ports = ['fnm1', 'fnm2']
-        self.nvl5_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl5_ports_list = self.all_nvl5_ports_list + self.nvl5_fnm_ports
-        self.nvl5_port = ['sw1p1s1']
-        self.nvl5_port_speed = '400G'
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = ['fnm1', 'fnm2']
+        self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.nvl_port = ['sw1p1s1']
+        self.nvl_trunk_port_speed = '400G'
+        self.access_port_speed = '400G'
         self.fnm_link_speed = '100G'
         self.fnm_fae_link_speed = '100G'
-        self.nvl5_port_type = 'nvl'
+        self.nvl_port_type = 'nvl'
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n5200_ld-r0")
@@ -1841,6 +1844,330 @@ class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="692-9K33R-00MV-JS0")})
 
+
+# -------------------------- RosalindSurrogate Switch ----------------------------
+
+
+class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
+
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=4)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL5
+        self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
+        self.category_disabled_dict = {
+            self.category_list[0]: self.category_default_disabled_dict,
+            self.category_list[1]: self.category_default_disabled_dict,
+            self.category_list[2]: self.category_disk_default_disable_dict,
+            self.category_list[3]: self.category_default_disabled_dict,
+            self.category_list[3]: self.category_default_disabled_dict
+        }
+        self.category_list_default_dict = {
+            self.category_list[0]: self.category_default_dict,
+            self.category_list[1]: self.category_default_dict,
+            self.category_list[2]: self.category_disk_default_dict,
+            self.category_list[3]: self.category_default_dict,
+            self.category_list[4]: self.category_default_dict
+        }
+        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6150_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N6150_LD",
+            "asic-model": self.asic_type,
+        })
+        self.cpld_amount = 2
+        self._extend_firmware_by_cpld_amount()
+        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
+                            "temperature.csv.gz", "voltage.csv.gz"]
+        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
+        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+                          "firewall_packet_capture.log.gz", "health_history.gz",
+                          "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
+        self.constants = self.constants._replace(log_dump_files=log_dump_files)
+        self.voltage_sensors = [
+            "PDB+PwrConv1+Vol+In+1",
+            "PDB+PwrConv1+Vol+Out+1",
+            "PDB+PwrConv1+Curr+In+1",
+            "PDB-PwrConv1+Curr+Out+1",
+            "PDB+PwrConv2+Vol+In+1",
+            "PDB+PwrConv2+Vol+Out+1",
+            "PDB+PwrConv2+Curr+In+1",
+            "PDB-PwrConv2+Curr+Out+1",
+            "PDB+HSC+VinDC+Volt+In",
+            "PDB+HSC+VinDC+Volt+Out",
+            "PDB+HSC+VinDC+Curr+In",
+            "PDB+HSC+VinDC+Pwr+In",
+            "PMIC-1+PVIN1_VDD_ASIC1+Vol+In+1",
+            "PMIC-1+ASIC1_VDD+Vol+Out+1",
+            "PMIC-1+PVIN1_VDD_ASIC1+Pwr+In+1",
+            "PMIC-1+ASIC1_VDD+Pwr+Out+1",
+            "PMIC-1+PVIN1_VDD_ASIC1+Curr+In+1",
+            "PMIC-1+ASIC1_VDD+Curr+Out+1",
+            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Vol+Out+1",
+            "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
+            "PMIC-2+PVIN1_AVDD_ASIC1+Pwr+In+1",
+            "PMIC-2+PVIN1_DVDD_ASIC1+Pwr+In+2",
+            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+2",
+            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Curr+In+1",
+            "PMIC-2+PVIN1_DVDD_ASIC1+Curr+In+2",
+            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+2",
+            "PMIC-3+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
+            "PMIC-3+ASIC1_AVDD_PL1+Vol+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Vol+Out+2",
+            "PMIC-3+PVIN1_AVDD_ASIC1+Pwr+In+1",
+            "PMIC-3+PVIN1_DVDD_ASIC1+Pwr+In+2",
+            "PMIC-3+ASIC1_AVDD_PL1+Pwr+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Pwr+Out+2",
+            "PMIC-3+PVIN1_AVDD_ASIC1+Curr+In+1",
+            "PMIC-3+PVIN1_DVDD_ASIC1+Curr+In+2",
+            "PMIC-3+ASIC1_AVDD_PL1+Curr+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Curr+Out+2",
+            "PMIC-4+PVIN1_AVCC_HVDD_ASIC1+Vol+In+1",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-4+PVIN1_AVCC_ASIC1+Pwr+In+1",
+            "PMIC-4+PVIN1_HVDD_ASIC1+Pwr+In+2",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-4+PVIN1_AVCC_ASIC1+Curr+In+1",
+            "PMIC-4+PVIN1_HVDD_ASIC1+Curr+In+2",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-5+PVIN1_VDD_ASIC2+Vol+In+1",
+            "PMIC-5+ASIC2_VDD+Vol+Out+1",
+            "PMIC-5+PVIN1_VDD_ASIC2+Pwr+In+1",
+            "PMIC-5+ASIC2_VDD+Pwr+Out+1",
+            "PMIC-5+PVIN1_VDD_ASIC2+Curr+In+1",
+            "PMIC-5+ASIC2_VDD+Curr+Out+1",
+            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Vol+Out+1",
+            "PMIC-6+ASIC2_DVDD_PL0+Vol+Out+2",
+            "PMIC-6+PVIN1_AVDD_ASIC2+Pwr+In+1",
+            "PMIC-6+PVIN1_DVDD_ASIC2+Pwr+In+2",
+            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+2",
+            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Curr+In+1",
+            "PMIC-6+PVIN1_DVDD_ASIC2+Curr+In+2",
+            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+2",
+            "PMIC-7+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
+            "PMIC-7+ASIC2_AVDD_PL1+Vol+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Vol+Out+2",
+            "PMIC-7+PVIN1_AVDD_ASIC2+Pwr+In+1",
+            "PMIC-7+PVIN1_DVDD_ASIC2+Pwr+In+2",
+            "PMIC-7+ASIC2_AVDD_PL1+Pwr+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Pwr+Out+2",
+            "PMIC-7+PVIN1_AVDD_ASIC2+Curr+In+1",
+            "PMIC-7+PVIN1_DVDD_ASIC2+Curr+In+2",
+            "PMIC-7+ASIC2_AVDD_PL1+Curr+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Curr+Out+2",
+            "PMIC-8+PVIN1_AVCC_HVDD_ASIC2+Vol+In+1",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-8+PVIN1_AVCC_ASIC2+Pwr+In+1",
+            "PMIC-8+PVIN1_HVDD_ASIC2+Pwr+In+2",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-8+PVIN1_AVCC_ASIC2+Curr+In+1",
+            "PMIC-8+PVIN1_HVDD_ASIC2+Curr+In+2",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-9+PVIN1_VDD_ASIC3+Vol+In+1",
+            "PMIC-9+ASIC3_VDD+Vol+Out+1",
+            "PMIC-9+PVIN1_VDD_ASIC3+Pwr+In+1",
+            "PMIC-9+ASIC3_VDD+Pwr+Out+1",
+            "PMIC-9+PVIN1_VDD_ASIC3+Curr+In+1",
+            "PMIC-9+ASIC3_VDD+Curr+Out+1",
+            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Vol+Out+1",
+            "PMIC-10+ASIC3_DVDD_PL0+Vol+Out+2",
+            "PMIC-10+PVIN1_AVDD_ASIC3+Pwr+In+1",
+            "PMIC-10+PVIN1_DVDD_ASIC3+Pwr+In+2",
+            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+2",
+            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Curr+In+1",
+            "PMIC-10+PVIN1_DVDD_ASIC3+Curr+In+2",
+            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+2",
+            "PMIC-11+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
+            "PMIC-11+ASIC3_AVDD_PL1+Vol+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Vol+Out+2",
+            "PMIC-11+PVIN1_AVDD_ASIC3+Pwr+In+1",
+            "PMIC-11+PVIN1_DVDD_ASIC3+Pwr+In+2",
+            "PMIC-11+ASIC3_AVDD_PL1+Pwr+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Pwr+Out+2",
+            "PMIC-11+PVIN1_AVDD_ASIC3+Curr+In+1",
+            "PMIC-11+PVIN1_DVDD_ASIC3+Curr+In+2",
+            "PMIC-11+ASIC3_AVDD_PL1+Curr+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Curr+Out+2",
+            "PMIC-12+PVIN1_AVCC_HVDD_ASIC3+Vol+In+1",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-12+PVIN1_AVCC_ASIC3+Pwr+In+1",
+            "PMIC-12+PVIN1_HVDD_ASIC3+Pwr+In+2",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-12+PVIN1_AVCC_ASIC3+Curr+In+1",
+            "PMIC-12+PVIN1_HVDD_ASIC3+Curr+In+2",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-13+PVIN1_VDD_ASIC4+Vol+In+1",
+            "PMIC-13+ASIC4_VDD+Vol+Out+1",
+            "PMIC-13+PVIN1_VDD_ASIC4+Pwr+In+1",
+            "PMIC-13+ASIC4_VDD+Pwr+Out+1",
+            "PMIC-13+PVIN1_VDD_ASIC4+Curr+In+1",
+            "PMIC-13+ASIC4_VDD+Curr+Out+1",
+            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Vol+Out+1",
+            "PMIC-14+ASIC4_DVDD_PL0+Vol+Out+2",
+            "PMIC-14+PVIN1_AVDD_ASIC4+Pwr+In+1",
+            "PMIC-14+PVIN1_DVDD_ASIC4+Pwr+In+2",
+            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+2",
+            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Curr+In+1",
+            "PMIC-14+PVIN1_DVDD_ASIC4+Curr+In+2",
+            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+2",
+            "PMIC-15+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
+            "PMIC-15+ASIC4_AVDD_PL1+Vol+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Vol+Out+2",
+            "PMIC-15+PVIN1_AVDD_ASIC4+Pwr+In+1",
+            "PMIC-15+PVIN1_DVDD_ASIC4+Pwr+In+2",
+            "PMIC-15+ASIC4_AVDD_PL1+Pwr+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Pwr+Out+2",
+            "PMIC-15+PVIN1_AVDD_ASIC4+Curr+In+1",
+            "PMIC-15+PVIN1_DVDD_ASIC4+Curr+In+2",
+            "PMIC-15+ASIC4_AVDD_PL1+Curr+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Curr+Out+2",
+            "PMIC-16+PVIN1_AVCC_HVDD_ASIC4+Vol+In+1",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-16+PVIN1_AVCC_ASIC4+Pwr+In+1",
+            "PMIC-16+PVIN1_HVDD_ASIC4+Pwr+In+2",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-16+PVIN1_AVCC_ASIC4+Curr+In+1",
+            "PMIC-16+PVIN1_HVDD_ASIC4+Curr+In+2",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-17+12V_MAIN+Vol+In+1",
+            "PMIC-17+CPU+Vol+Out+1",
+            "PMIC-17+SOC+Vol+Out+2",
+            "PMIC-17+12V_MAIN+Pwr+In+1",
+            "PMIC-17+CEX_VDD+Pwr+Out+1",
+            "PMIC-17+12V_MAIN+Curr+In+1",
+            "PMIC-17+CPU+Curr+Out+1",
+            "PMIC-17+SOC+Curr+Out+2",
+            "PMIC-18+COMEX_VDD_MEM+Vol+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Vol+Out+1",
+            "PMIC-18+COMEX_VDD_MEM+Pwr+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Pwr+Out+1",
+            "PMIC-18+COMEX_VDD_MEM+Curr+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Curr+Out+1"
+        ]
+
+        self.leakage_sensors_count = 2
+        self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
+
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = []
+        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.nvl_port = ['sw1p1s1']
+        self.nvl_trunk_port_speed = '400G'
+        self.access_port_speed = '375G'
+        self.fnm_link_speed = '100G'
+        self.fnm_fae_link_speed = '100G'
+        self.nvl_port_type = 'nvl'
+        self.num_of_cartridges = 4
+
+    def _init_fan_list(self):
+        # GB300 is 100% liquid cooled
+        self.fan_list = []
+        self.fan_led_list = []
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="920-9K42W-00L6-SR0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+    def _init_led_list(self):
+        super()._init_led_list()
+        self.led_list = ["STATUS", "UID"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "PDB+PwrConv1+Temp",
+            "PDB+PwrConv2+Temp",
+            "PDB+HSC+VinDC+Temp",
+            "PMIC-17+Temp+1",
+            "PMIC-18+Temp+1",
+            "SSD+Temp"
+        ]
+
+
+# -------------------------- RosalindSims Switch ----------------------------
+
+
+class RosalindSimx(RosalindSurrogateSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+
+# -------------------------- Rosalind Switch ----------------------------
+
+
+class RosalindSwitch(RosalindSurrogateSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=4)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+
+        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+        self.cpld_amount = 2
+        self._extend_firmware_by_cpld_amount()
+        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="920-9K42W-00L6-GS0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+
 # -------------------------- Caiman Switch ----------------------------
 
 
@@ -1855,14 +2182,3 @@ class CaimanSwitch(NvLinkSwitch):
         self.core_count = 4
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_mqm9700-r0")
-
-
-# -------------------------- Rosalind Switch ----------------------------
-
-class RosalindSwitch(NvLinkSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=4)
-
-    def _init_constants(self):
-        super()._init_constants()

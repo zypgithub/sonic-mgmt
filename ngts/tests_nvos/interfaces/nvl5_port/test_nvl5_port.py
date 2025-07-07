@@ -17,7 +17,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links, skip_if_no_access_links
+from ngts.tests_nvos.interfaces.nvl_port_type.helpers import skip_if_no_trunk_links, skip_if_no_access_links
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
@@ -57,19 +57,19 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     platform = Platform()
     present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
     with allure_step("Select nvl5 port"):
-        port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
+        port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
         selected_fae_port = Fae(port_name=port_name)
-        fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_fnm_ports).get_returned_value()
-        fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl5_internal_fnm_ports).get_returned_value()
+        fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl_fnm_ports).get_returned_value()
+        fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl_internal_fnm_ports).get_returned_value()
         fnm_port = Port(fnm_port_name)
         fnm_fae_port = Fae(port_name=fnm_fae_port_name)
 
     with allure_step("Validate show interface command with all nvl5 interfaces"):
-        show_interface_and_validate(engines, devices, devices.dut.all_nvl5_ports_list)
+        show_interface_and_validate(engines, devices, devices.dut.all_nvl_ports_list)
 
     with allure_step("Validate show fae interface command with all nvl5 interfaces"):
-        show_interface_and_validate(engines, devices, devices.dut.all_fae_nvl5_ports_list, 'fae')
+        show_interface_and_validate(engines, devices, devices.dut.all_fae_nvl_ports_list, 'fae')
 
     with allure_step("Validate all multi planar fields exist and port {} type nvl, port speed 400G"
                      .format(selected_port.name)):
@@ -78,17 +78,17 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
         fae_port_keys = list(output_fae_port.keys())
         ValidationTool.validate_all_values_exists_in_list(MultiPlanarConsts.MULTI_PLANAR_KEYS, fae_port_keys). \
             verify_result()
-        ValidationTool.compare_values(output_fae_port['type'], devices.dut.nvl5_port_type).verify_result()
+        ValidationTool.compare_values(output_fae_port['type'], devices.dut.nvl_port_type).verify_result()
 
     with allure_step('Check if device is not a JulietNonScaleoutSwitch Device'):
         if not isinstance(dut_device, JulietNonScaleoutSwitch):
             with allure_step("Verify switch port speed"):
-                if devices.dut.nvl5_trunk_ports_list != [] and present_transceivers != []:
+                if devices.dut.nvl_trunk_ports_list != [] and present_transceivers != []:
                     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, interface_type='sw').get_returned_value()
                     output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                         selected_port.interface.link.show()).get_returned_value()
-                    assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
-                        f"port speed should be {dut_device.nvl5_port_speed} instead of" \
+                    assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl_trunk_port_speed, \
+                        f"port speed should be {dut_device.nvl_trunk_port_speed} instead of" \
                         f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify access ports speed"):
@@ -96,8 +96,8 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE, interface_type='acp').get_returned_value()
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 selected_port.interface.link.show()).get_returned_value()
-            assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.nvl5_port_speed, \
-                f"port speed should be {dut_device.nvl5_port_speed} instead of" \
+            assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.access_port_speed, \
+                f"port speed should be {dut_device.access_port_speed} instead of" \
                 f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify fnm port speed"):
@@ -115,7 +115,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
             f"port speed should be {dut_device.fnm_fae_link_speed} instead of" \
             f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
-        # ValidationTool.compare_values(output_fae_port['link']['speed'], devices.dut.nvl5_port_speed).verify_result()
+        # ValidationTool.compare_values(output_fae_port['link']['speed'], devices.dut.nvl_trunk_port_speed).verify_result()
         # [TBD] will work only on real system,  when system arrived, bug 3730650
 
     # with allure_step("Validate link diagnostics on nvl5"):
@@ -162,7 +162,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
         toggleable_interface.remove('sw')
     try:
         for interface_type in toggleable_interface:
-            if devices.dut.nvl5_trunk_ports_list == [] and interface_type == 'sw':
+            if devices.dut.nvl_trunk_ports_list == [] and interface_type == 'sw':
                 continue
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
@@ -214,7 +214,7 @@ def test_nvl5_port_configuration(engines, devices, random_api):
 
     try:
         with allure_step("Select nvl5 port"):
-            port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
+            port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
             selected_port = Port(port_name)
 
         with allure_step("Set nvl5 {} port description and validate".format(selected_port.name)):
@@ -245,7 +245,7 @@ def test_nvl5_negative(engines, devices, test_api):
     TestToolkit.tested_api = test_api
 
     with allure_step("Select nvl5 port"):
-        port_name = RandomizationTool.select_random_value(devices.dut.nvl5_access_ports_list + devices.dut.nvl5_trunk_ports_list).get_returned_value()
+        port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
 
     try:
@@ -280,7 +280,7 @@ def test_nvl5_negative(engines, devices, test_api):
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_interface_xdr_slow_speed_access_ports(engines, devices, test_api, setup_name, standalone_system, has_loopbox):
     skip_if_no_access_links(has_loopbox, standalone_system)
-    acp_ports_range = f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}'
+    acp_ports_range = f'acp1-{str(len(devices.dut.nvl_access_ports_list))}'
     _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
                                         standalone_system, acp_ports_range, prefix='acp')
 
@@ -289,7 +289,7 @@ def test_interface_xdr_slow_speed_access_ports(engines, devices, test_api, setup
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 def test_interface_xdr_slow_speed_trunk_ports(engines, devices, test_api, setup_name, standalone_system):
     skip_if_no_trunk_links(devices)
-    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl_trunk_ports_list)
     _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
                                         standalone_system, summarized_switch_ports, prefix='sw')
 
@@ -311,8 +311,8 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
     5. Verify the default value (400G) is restored.
     """
     TestToolkit.tested_api = test_api
-    with allure.step(f"Select {devices.dut.nvl5_port_type} ports"):
-        port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl5_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith(prefix)]
+    with allure.step(f"Select {devices.dut.nvl_port_type} ports"):
+        port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith(prefix)]
         up_ports = [Port(port_name) for port_name in port_names]
         selected_port = random.choice(up_ports)
 
@@ -348,7 +348,7 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
             with allure.step(f"Validate unset xdr slow speed on ports"):
-                retry_call(validate_ports_state_and_speed, [devices.dut.nvl5_port_speed, port_names, prefix], exceptions=AssertionError, tries=6,
+                retry_call(validate_ports_state_and_speed, [devices.dut.nvl_trunk_port_speed, port_names, prefix], exceptions=AssertionError, tries=6,
                            delay=30)
 
         with allure.step('verify that client received the xdr speed in the existing streaming session'):

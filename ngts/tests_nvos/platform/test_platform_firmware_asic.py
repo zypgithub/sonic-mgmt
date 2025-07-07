@@ -246,6 +246,8 @@ def get_image_data(platform, dut) -> Tuple[str, str]:
             default_firmware = 'fw-QTM2.mfa'
         elif dut.asic_type in [NvosConst.QTM3, NvosConst.NVL5]:
             default_firmware = 'fw-QTM3.mfa'
+        elif dut.asic_type in [NvosConst.QTM4, NvosConst.NVL6]:
+            default_firmware = 'fw-QTM4.mfa'
         else:
             raise Exception(f"Unsupported ASIC: {dut.asic_type}")
         logging.info("Actual firmware: {}".format(original_image))

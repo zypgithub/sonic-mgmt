@@ -85,7 +85,10 @@ class NvosConst:
     GORILLA_SWITCH = "GORILLA"
     QTM2 = "Quantum2"
     QTM3 = "Quantum3"
+    QTM4 = "Quantum4"
     NVL5 = 'NVLink-5 switch'
+    NVL6 = 'NVLink-6 switch'
+    QTM3_AND_NEWER = [QTM3, QTM4]
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
     PORT_STATUS_DOWN = 'down'
@@ -1763,7 +1766,7 @@ class MultiPlanarConsts:
     SIMULATION_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/xdr/simulation/"
     A_PORT_SPLIT_SIMULATION_FILE = "split_sw10p1_aport.json"
     FNM_PORT_SPLIT_SIMULATION_FILE = 'fnm_split_platform.json'
-    NVL5_SIMULATION_FILE = 'nvl5_platform.json'
+    NVL_SIMULATION_FILE = 'nvl_platform.json'
     ORIGIN_FILE = "platform_origin.json"
     ORIGIN_FULL_PATH = SIMULATION_PATH + ORIGIN_FILE
     AGGREGATED_PORT_SIMULATION_FILE = "aggregated_port_platform.json"
