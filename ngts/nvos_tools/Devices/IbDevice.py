@@ -115,12 +115,13 @@ class IbSwitch(BaseSwitch):
                 path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
 
                 logging.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
+                logging.info(f"engine.ip:{engine.ip}")
                 logging.info(f"switch_class:{self.switch_class}")
 
                 for file_name in os.listdir(path_to_config_ymls):
                     if self.switch_class in file_name:
                         default_config_name = file_name
-                    if TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name:
+                    if (TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name) or (engine.ip in file_name):
                         default_config_name = file_name
                         break
 
