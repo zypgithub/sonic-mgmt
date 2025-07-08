@@ -9,7 +9,7 @@ import json
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from ngts.constants.constants import CometConsts
-from ngts.tools.infra import get_infra_type, CANONICAL_INFRA_TYPE
+from ngts.tools.infra import get_infra_type, CANONICAL_INFRA_TYPE, NVOS_INFRA_TYPE
 from tests.common.plugins.cli_coverage.cli_coverage import CliCoverage
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 
@@ -93,6 +93,12 @@ if os.environ.get("REGRESSION_TYPE") == "regression":
          initialize data for Comet JSON file and creates it with updated data at the end of the session.
         :param request:
         """
+        test_type = get_infra_type(request)
+        if test_type == NVOS_INFRA_TYPE:
+            logger.info("NVOS infra type, skipping CLI coverage plugin.")
+            yield None
+            return
+        
         if is_test_deploy_and_upgrade():
             if is_dut_in_onie(request):
                 logger.info("DUT is in ONIE mode, skipping CLI coverage plugin.")
@@ -110,7 +116,6 @@ if os.environ.get("REGRESSION_TYPE") == "regression":
             yield None
             return
 
-        test_type = get_infra_type(request)
         start_time = time.time()
         full_json = OrderedDict([
                 ("project", "Sonic"),

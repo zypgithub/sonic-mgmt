@@ -15,6 +15,7 @@ DEVICE_PLATFORM_INFO_PATH = os.path.join(os.path.dirname(__file__), '../../commo
 INVENTORY_FILE_PATH = os.path.join(os.path.dirname(__file__), '../../../ansible/inventory')
 CANONICAL_INFRA_TYPE = 'Canonical'
 COMMUNITY_INFRA_TYPE = 'Community'
+NVOS_INFRA_TYPE = 'NVOS'
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -32,8 +33,17 @@ def session_id(request):
 
 
 def get_infra_type(request):
+    # NVOS: Only for NVUE devices that are not Cumulus
+    if hasattr(request.session.config, "topology_obj") and request.session.config.topology_obj:
+        cli_type = request.session.config.topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+        if cli_type == "NVUE":
+            switch_type = request.session.config.topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['TYPE']
+            if switch_type != NvosConst.CUMULUS_SWITCH:
+                return NVOS_INFRA_TYPE
+    # Canonical: If path matches
     if 'sonic-mgmt/ngts' in str(request.node.fspath):
         return CANONICAL_INFRA_TYPE
+    # Default: Community
     return COMMUNITY_INFRA_TYPE
 
 
