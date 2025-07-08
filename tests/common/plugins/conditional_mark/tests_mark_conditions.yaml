@@ -253,13 +253,6 @@ bgp/test_startup_tsa_tsb_service.py::test_user_init_tsb_on_sup_while_service_run
     conditions:
       - "'t2_single_node' in topo_name"
 
-bgp/test_traffic_shift.py:
-  skip:
-    reason: "Skipped dut to test issue https://github.com/sonic-net/sonic-buildimage/issues/21721"
-    conditions:
-      - "https://github.com/sonic-net/sonic-buildimage/issues/21721"
-      - "'4280' in platform"
-
 bgp/test_traffic_shift.py::test_load_minigraph_with_traffic_shift_away:
   skip:
     reason: "Test is flaky and causing PR test to fail unnecessarily"
@@ -1024,7 +1017,7 @@ fdb/test_fdb_mac_expire.py:
     conditions:
       - "topo_type not in ['t0', 'm0', 'mx']"
 
-fdb/test_fdb_mac_learning.py::TestFdbMacLearning:
+fdb/test_fdb_mac_learning.py::TestFdbMacLearning::testFdbMacLearning:
   skip:
     reason: "Skip at dualtor-aa topology due to github issue https://github.com/sonic-net/sonic-mgmt/issues/16110"
     conditions:
@@ -1461,6 +1454,13 @@ hash/test_generic_hash.py::test_reboot[CRC_CCITT-IP_PROTOCOL-ipv4:
     reason: "With IP Protocol alone, we don't have enough entropy to distribute the packets evenly"
     conditions:
       - "asic_type in ['cisco-8000']"
+
+#######################################
+#####           http              #####
+#######################################
+http/test_http_copy.py:
+  skip:
+    reason: "Test doesn't clean up the files in /tmp, it will cause the subsequent cases in /tmp fail, skipping until the issue is addressed"
 
 #######################################
 #####    iface_loopback_action    #####
@@ -2807,10 +2807,8 @@ vxlan/test_vnet_vxlan.py:
 vxlan/test_vxlan_bfd_tsa.py:
   skip:
     reason: "VxLAN ECMP BFD TSA test is not yet supported on multi-ASIC platform. Also this test can only run on some platforms."
-    conditions_logical_operator: OR
     conditions:
       - "(is_multi_asic == True) or (platform not in ['x86_64-8102_64h_o-r0', 'x86_64-8101_32fh_o-r0', 'x86_64-mlnx_msn4600c-r0', 'x86_64-mlnx_msn2700-r0', 'x86_64-mlnx_msn2700a1-r0', 'x86_64-kvm_x86_64-r0', 'x86_64-mlnx_msn4700-r0', 'x86_64-nvidia_sn4280-r0', 'x86_64-8102_28fh_dpu_o-r0'])"
-      - "https://github.com/sonic-net/sonic-buildimage/issues/21721 and '4280' in platform"
 
 vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case4:
   skip:
@@ -2913,9 +2911,9 @@ vxlan/test_vxlan_ecmp_switchover.py:
 
 vxlan/test_vxlan_route_advertisement.py:
   skip:
-    reason: "VxLAN route advertisement can only run on cisco , mnlx and marvell-teralynx platforms. "
+    reason: "VxLAN route advertisement can only run on cisco and mnlx platforms."
     conditions:
-      - "asic_type not in ['cisco-8000', 'mellanox' , 'marvell-teralynx' , 'vs']"
+      - "asic_type not in ['cisco-8000', 'mellanox', 'vs']"
 
 #######################################
 #####           wan_lacp          #####
