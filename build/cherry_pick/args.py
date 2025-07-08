@@ -5,7 +5,7 @@ from pathlib import Path
 
 from logger import logger
 
-_SUPPORTED_BRANCHES = ["master", "202411", "202412", "202505"]
+_SUPPORTED_BRANCHES = ["master", "202411", "202412", "202505", "202506"]
 _LOG_LEVEL_MAPPING = {
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,

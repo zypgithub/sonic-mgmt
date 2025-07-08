@@ -32,7 +32,7 @@ def extract_pr_number(commit_subject: str) -> list[str]:
 
 def link_pr_in_subject(commit_subject: str, branch: str) -> str:
     base_url = "https://github.com/sonic-net/sonic-mgmt/pull"
-    if branch == "202412":
+    if branch in ["202412", "202506"]:
         base_url = "https://github.com/Azure/sonic-mgmt.msft/pull"
     pr_number = extract_pr_number(commit_subject)
     if pr_number:
