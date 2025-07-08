@@ -1273,8 +1273,7 @@ def test_syslog_multiple_selectors_same_server(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_rate_limit_burst(test_api):
+def test_syslog_rate_limit_burst(random_api):
     """
     Test Objective:
     Verify rate limiting behavior with burst limit configuration.
@@ -1290,7 +1289,6 @@ def test_syslog_rate_limit_burst(test_api):
     8. Send new message again
     9. Clean up configuration
     """
-    TestToolkit.tested_api = test_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
