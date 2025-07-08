@@ -132,6 +132,12 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.020/Release_9600/0ACTV.rom",
+						"version": "0ACTV_00.01.020_9600",
+						"reboot": ["cold"]
+					},
+					{
+						"force_reboot": true,
 						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.013/Release_9600/0ACTV.rom",
 						"version": "0ACTV_00.01.013_9600",
 						"reboot": ["cold"]
