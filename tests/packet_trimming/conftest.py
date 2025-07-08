@@ -54,7 +54,7 @@ def skip_if_packet_trimming_not_supported(duthost):
 
 
 @pytest.fixture(scope="module")
-def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links, peer_links, tbinfo):
+def test_params(duthost, mg_facts, dut_qos_maps_module, downstream_links, upstream_links, peer_links, tbinfo):  # noqa: F811
     """
     Prepare test parameters for packet trimming tests.
 
@@ -222,7 +222,7 @@ def setup_trimming(duthost, test_params):
 
 
 @pytest.fixture(params=SRV6_TUNNEL_MODE)
-def setup_srv6(duthost, request, rand_selected_dut, upstream_links, peer_links, test_params):
+def setup_srv6(duthost, request, rand_selected_dut, upstream_links, peer_links, test_params):  # noqa: F811
     """
     Configure 10 instances of SRV6_MY_SIDS
     """
