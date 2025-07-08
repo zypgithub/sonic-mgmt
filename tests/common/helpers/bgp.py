@@ -2,8 +2,7 @@ import jinja2
 import logging
 import requests
 
-from tests.common.utilities import wait_tcp_connection
-
+from tests.common.utilities import wait_tcp_connection, wait_until
 
 NEIGHBOR_SAVE_DEST_TMPL = "/tmp/neighbor_%s.j2"
 BGP_SAVE_DEST_TMPL = "/tmp/bgp_%s.j2"
@@ -145,8 +144,8 @@ class BGPNeighbor(object):
             port=self.port,
             debug=self.debug
         )
-        if not wait_tcp_connection(self.ptfhost, self.ptfip, self.port, timeout_s=60):
-            raise RuntimeError("Failed to start BGP neighbor %s" % self.name)
+        if not wait_until(180, 60, 0, wait_tcp_connection, self.ptfhost, self.ptfip, self.port, timeout_s=60):
+            raise RuntimeError("Failed to start BGP neighbor %s after 3 retries: %s" % (self.name, str(e)))
 
         if self.is_multihop:
             allow_ebgp_multihop_cmd = (
