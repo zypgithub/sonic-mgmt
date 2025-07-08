@@ -1276,7 +1276,7 @@ hash/test_generic_hash.py::test_ecmp_hash:
   skip:
     reason: 'ECMP hash not supported in broadcom SAI and Cisco 8000'
     conditions:
-      - "asic_type in ['broadcom', 'cisco-8000', 'mellanox']"
+      - "asic_type in ['broadcom', 'cisco-8000']"
 
 hash/test_generic_hash.py::test_ecmp_hash[CRC-INNER_IP_PROTOCOL:
   skip:
