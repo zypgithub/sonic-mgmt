@@ -68,6 +68,11 @@ class EthSwitch(BaseSwitch):
                                  CumulusConsts.LOGIN_BOOT_PATTERN: 2}
         self.install_success_patterns = list(self.install_patterns.keys())
 
+        # Techsupport constants for ETH devices
+        self.techsupport_files_path = CumulusConsts.TECHSUPPORT_FILES_PATH
+        self.techsupport_upload_success_message = 'Successfully uploaded the file'
+        self.techsupport_delete_success_message = CumulusConsts.TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE
+
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",
                                 "PMIC-3-ASIC-1.8V_T0_3-RAIL-OUT2", "PMIC-3-COMEX-1.05V-RAIL-OUT",

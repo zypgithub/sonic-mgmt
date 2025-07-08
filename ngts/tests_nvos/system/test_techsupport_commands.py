@@ -144,12 +144,10 @@ def test_techsupport_delete(engines, test_api, devices):
         8. File not found: <first_file>
     """
     system = System(None)
-    if devices.dut.is_eth():
-        path = CumulusConsts.TECHSUPPORT_FILES_PATH
-        success_message = CumulusConsts.TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE
-    else:
-        path = SystemConsts.TECHSUPPORT_FILES_PATH
-        success_message = 'File delete successfully'
+
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_delete_success_message
+
     with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
 
         with allure.step('Generate two tech-support files'):
@@ -159,23 +157,21 @@ def test_techsupport_delete(engines, test_api, devices):
             system.techsupport.show()
 
         with allure.step('Delete the first created tech-support file'):
-            output = system.techsupport.action_delete(first_file.replace(path, '')).get_returned_value()
+            system.techsupport.action_delete(first_file.replace(path, '')).verify_result(expected_value=success_message)
 
-        assert success_message in output, 'failed to delete'
-        output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
+                system.techsupport.show()).get_returned_value().values())
 
-        with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
-            assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(first_file)
-            assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
+            with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
+                assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(first_file)
+                assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
 
         with allure.step('Delete non exist tech-support file {}'.format(first_file)):
-            res_obj = system.techsupport.action_delete(first_file.replace(path, ''))
-            res_obj.verify_result(should_succeed=False)
-            assert 'Action failed with the following issue:' in res_obj.info, "Can not delete non exist file!"
+            system.techsupport.action_delete(first_file.replace(path, '')).verify_result(should_succeed=False,
+                                                                                         expected_value="File not found")
 
         with allure.step('Delete the second created tech-support file'):
-            system.techsupport.action_delete(second_file.replace(path, '')).get_returned_value()
+            system.techsupport.action_delete(second_file.replace(path, '')).verify_result()
 
 
 @pytest.mark.system
@@ -199,41 +195,32 @@ def test_techsupport_upload(engines, test_api, devices):
     :return:
     """
     system = System(None)
-    if devices.dut.is_eth():
-        path = CumulusConsts.TECHSUPPORT_FILES_PATH
-        success_message = 'Successfully uploaded the file'
-    else:
-        path = SystemConsts.TECHSUPPORT_FILES_PATH
-        success_message = 'File upload successfully'
-    with allure.step('generate valid and invalid urls'):
-        invalid_url_1 = "\'scp://{}:{}{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
-        invalid_url_2 = "\'ffff://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
-        upload_path = "\'scp://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_upload_success_message
+
+    # Use helper function to create upload URLs based on device type
+    invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices)
 
     with allure.step('Try to upload non exist tech-support file'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
-        assert "File not found: nonexist" in output.get_info(False), "we can not upload a non exist file!"
+        system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path).verify_result(False, expected_value="File not found: nonexist")
 
     with allure.step('Generate tech-support file'):
         tech_file, duration = system.techsupport.action_generate()
         tech_file = tech_file.replace(path, '')
 
     with allure.step('try to upload techsupport {} to {} - Positive Flow'.format(tech_file, upload_path)):
-        output = system.techsupport.action_upload(upload_path, tech_file).verify_result()
-        with allure.step('verify the upload message'):
-            assert success_message in output, "Failed to upload the techsupport file"
+        system.techsupport.action_upload(upload_path, tech_file).verify_result(expected_value=success_message)
 
         with allure.step('verify the uploaded file exist in target path'):
-            output = engines.dut.run_cmd('ls /tmp/')
+            output = target_engine.run_cmd('ls /tmp/')
             assert tech_file in output
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_1)
-        assert "is not a" in output.get_info(False), "URL was not in the right format"
+        system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_1).verify_result(False, expected_value="is not a")
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_2)
-        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
+        system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_2).verify_result(False, expected_value="is not a")
 
     system.techsupport.action_delete(system.techsupport.file_name)
 
@@ -328,3 +315,31 @@ def find_latest_key(tech_support_dict):
         # result -> "/host/dump/nvos_dump_mtvr-croc-19-mgmt2_20241119_001126.tar.gz"
     """
     return SystemConsts.TECHSUPPORT_FILES_PATH + max(tech_support_dict.keys(), key=lambda x: x.split('_')[-2:])
+
+
+def _create_upload_urls(engines, devices):
+    """
+    Helper function to create upload URLs based on device type.
+
+    Args:
+        engines: The engines object containing device connections
+        devices: The devices object containing device information
+
+    Returns:
+        tuple: (invalid_url_1, invalid_url_2, upload_path, target_engine)
+    """
+    if devices.dut.is_ib():
+        # For IB devices, use player (sonic_mgmt)
+        player = engines['sonic_mgmt']
+        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
+        invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        target_engine = player
+    else:
+        # For ETH devices, use engines.dut
+        invalid_url_1 = "\'scp://{}:{}{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        invalid_url_2 = "\'ffff://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        upload_path = "\'scp://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        target_engine = engines.dut
+
+    return invalid_url_1, invalid_url_2, upload_path, target_engine

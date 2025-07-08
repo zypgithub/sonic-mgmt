@@ -9,7 +9,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts)
+                                                DocumentsConsts, SystemConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -315,6 +315,12 @@ class IbSwitch(BaseSwitch):
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
             version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
                            'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
+
+        # Techsupport constants for IB devices
+        self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
+        self.techsupport_upload_success_message = 'File upload successfully'
+        self.techsupport_delete_success_message = 'File delete successfully'
+
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
             StatsConsts.INTERVAL: StatsConsts.INTERVAL_DEFAULT,
