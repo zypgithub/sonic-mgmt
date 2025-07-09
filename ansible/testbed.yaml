@@ -2734,11 +2734,11 @@
       ptf_ipv6:
       vm_base: VM5301
       dut_interfaces: 0-319
-    server_95:
+    server_89:
       ptf: ptf-r-bison-01-2
-      ptf_ip: 10.215.40.182/20
+      ptf_ip: 10.215.47.22/20
       ptf_ipv6:
-      vm_base: VM5557
+      vm_base: VM5813
       dut_interfaces: 320-513
   dut:
     - r-bison-01
@@ -2770,11 +2770,11 @@
       ptf_ipv6:
       vm_base: VM5301
       dut_interfaces: 0-320
-    server_95:
+    server_89:
       ptf: ptf-r-bison-01-2
-      ptf_ip: 10.215.40.182/20
+      ptf_ip: 10.215.47.22/20
       ptf_ipv6:
-      vm_base: VM5557
+      vm_base: VM5813
       dut_interfaces: 321-513
   dut:
     - r-bison-01
@@ -2820,11 +2820,11 @@
       ptf_ipv6:
       vm_base: VM5301
       dut_interfaces: 0-257
-    server_95:
+    server_89:
       ptf: ptf-r-bison-01-2
-      ptf_ip: 10.215.40.182/20
+      ptf_ip: 10.215.47.22/20
       ptf_ipv6:
-      vm_base: VM5557
+      vm_base: VM5813
       dut_interfaces: 258-513
   dut:
     - r-bison-01
@@ -2843,15 +2843,16 @@
       ptf_ipv6:
       vm_base: VM5301
       dut_interfaces: 0-255
-    server_95:
+    server_89:
       ptf: ptf-r-bison-01-2
-      ptf_ip: 10.215.40.182/20
+      ptf_ip: 10.215.47.22/20
       ptf_ipv6:
-      vm_base: VM5557
+      vm_base: VM5813
       dut_interfaces: 256-511
   dut:
     - r-bison-01
   inv_name: lab
+  downstream_neighbor_groups: 2
   comment: Mellanox MTR testbed
 
 - conf-name: r-bison-01-t1
@@ -2957,10 +2958,10 @@
   topo: t0
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -2971,10 +2972,10 @@
   topo: t0-64
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -2985,10 +2986,10 @@
   topo: t0-isolated-d16u16s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -2999,10 +3000,10 @@
   topo: t0-isolated-d32u32s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3013,10 +3014,10 @@
   topo: t0-isolated-v6-d32u32s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3027,10 +3028,10 @@
   topo: t0-isolated-d256u256s2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3041,10 +3042,10 @@
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3055,10 +3056,10 @@
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3069,10 +3070,10 @@
   topo: t1-isolated-d28u1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3083,10 +3084,10 @@
   topo: t1-isolated-d56u2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3097,10 +3098,10 @@
   topo: t1-isolated-d224u8
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3111,10 +3112,10 @@
   topo: t1-isolated-v6-d56u2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3125,10 +3126,10 @@
   topo: t1-isolated-d510u2
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3139,10 +3140,10 @@
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab
@@ -3153,10 +3154,10 @@
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
-  ptf_ip: 10.215.47.22/20
+  ptf_ip: 10.215.40.182/20
   ptf_ipv6:
-  server: server_91
-  vm_base: VM5813
+  server: server_95
+  vm_base: VM5557
   dut:
     - r-bison-04
   inv_name: lab

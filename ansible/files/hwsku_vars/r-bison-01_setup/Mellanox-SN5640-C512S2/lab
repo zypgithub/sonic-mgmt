@@ -22,7 +22,7 @@ all:
           ansible_ssh_usr: root
           ansible_ssh_pass: root
         ptf-r-bison-01-2:
-          ansible_host: 10.215.40.182
+          ansible_host: 10.215.47.22
           ansible_ssh_usr: root
           ansible_ssh_pass: root
 
