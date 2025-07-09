@@ -370,6 +370,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
                 retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
+@pytest.mark.disable_loganalyzer
 @pytest.mark.system
 @pytest.mark.health
 def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
