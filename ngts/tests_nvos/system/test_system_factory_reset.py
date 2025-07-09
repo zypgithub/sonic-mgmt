@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -22,9 +24,9 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, random_api, has_loopbox,
-                                      setup_name, standalone_system, test_name, serial_log_analyzers,
-                                      handle_la_marker_in_manufacture):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox,
+                                      setup_name, standalone_system, test_name):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -41,10 +43,10 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
+    TestToolkit.tested_api = test_api
     system = System()
     cluster = Cluster()
     expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.FACTORY_RESET]
-    serial_analyzer, = serial_log_analyzers.values()
 
     with allure.step('pre factory reset steps'):
         apply_and_save_port, current_time, just_apply_port, health_status, machine_type, not_apply_port, \
@@ -52,9 +54,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                                                                               has_loopbox, setup_name, standalone_system)
 
     with allure.step("Run reset factory without params"):
-        with serial_analyzer.stage('Reset-Factory'):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time,
-                                             test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time, test_name=test_name)
 
     validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
@@ -82,8 +82,8 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_basic(engines, devices, random_api, test_name, handle_la_marker_in_manufacture,
-                                  serial_log_analyzers):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -100,7 +100,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, handl
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
-    serial_analyzer, = serial_log_analyzers.values()
+    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -109,9 +109,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, handl
             output_dictionary_mgmt_show = factory_reset_keep_basic_pre_steps(engines, system)
 
     with allure.step("Run reset factory with keep basic param"):
-        with serial_analyzer.stage('Reset-Factory'):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_BASIC, current_time,
-                                             test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_BASIC, current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -140,8 +138,8 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, handl
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, handle_la_marker_in_manufacture,
-                                       serial_log_analyzers):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_all_config(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -158,7 +156,7 @@ def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, 
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
-    serial_analyzer, = serial_log_analyzers.values()
+    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -167,9 +165,7 @@ def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, 
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory with keep all-config param"):
-        with serial_analyzer.stage('Reset-Factory'):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ALL_CONFIG, current_time,
-                                             test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ALL_CONFIG, current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -196,7 +192,8 @@ def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, 
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_only_files(engines, devices, test_name, serial_log_analyzers):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_reset_factory_keep_only_files(engines, devices, test_api, test_name):
     """
     Validate reset factory with keep only files param cleanup done as expected
 
@@ -213,7 +210,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_name, serial_log_a
                 6.1.	Run several show commands
                 6.2.    Run set command & apply
     """
-    serial_analyzer, = serial_log_analyzers.values()
+    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -222,9 +219,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_name, serial_log_a
             not_apply_port, username = factory_reset_general_pre_steps(engines, devices, system)
 
     with allure.step("Run reset factory keep only-files"):
-        with serial_analyzer.stage('Reset-Factory'):
-            duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ONLY_FILES, current_time,
-                                             test_name=test_name)
+        duration = execute_reset_factory(engines, system, devices.dut.reset_factory, KEEP_ONLY_FILES, current_time, test_name=test_name)
 
     update_timezone(system)
 
@@ -243,11 +238,13 @@ def test_reset_factory_keep_only_files(engines, devices, test_name, serial_log_a
 
 @pytest.mark.system
 @pytest.mark.checklist
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_error_flow_reset_factory_with_params(test_api, engines, devices, topology_obj):
     """
     This test is a temporary test - will be changed for GA
     :return:
     """
+    TestToolkit.tested_api = test_api
     with allure.step("Run reset factory with params - expect failure"):
         logging.info("Run reset factory with params - expect failure")
         output = engines.dut.run_cmd("nv action reset system factory-default only-config")

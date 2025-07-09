@@ -725,7 +725,7 @@ def test_rsyslog_format(engines, test_api):
             expected_syslog_dictionary = create_syslog_output_dictionary(
                 server_dict={SyslogConsts.SERVER: expected_server_dictionary})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
-            system.syslog.verify_show_syslog_format_output({SyslogConsts.FORMAT: {SyslogConsts.STANDARD: {}}})
+            system.syslog.verify_show_syslog_format_output({SyslogConsts.STANDARD: {}})
             send_random_msg_and_validate_format(remote_server_ip, remote_server_engine, expect_welf_format=False)
 
         with allure.step("Set welf format and validate"):
@@ -735,9 +735,9 @@ def test_rsyslog_format(engines, test_api):
         with allure.step("Set firewall name and validate"):
             firewall_name = RandomizationTool.get_random_string(6, ascii_letters=string.ascii_letters)
             system.syslog.format.welf.set_firewall_name(firewall_name, apply=True)
-            system.syslog.verify_show_syslog_format_output({SyslogConsts.FORMAT: {SyslogConsts.WELF:
-                                                                                  {SyslogConsts.FIREWAL_NAME:
-                                                                                   firewall_name}}})
+            system.syslog.verify_show_syslog_format_output({SyslogConsts.WELF:
+                                                            {SyslogConsts.FIREWAL_NAME:
+                                                             firewall_name}})
             send_random_msg_and_validate_format(remote_server_ip, remote_server_engine, expect_welf_format=True,
                                                 firewall_name=firewall_name)
 
@@ -745,7 +745,7 @@ def test_rsyslog_format(engines, test_api):
             system.syslog.format.welf.unset(apply=True)
             expected_syslog_dictionary[SyslogConsts.FORMAT] = {SyslogConsts.STANDARD: {}}
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
-            system.syslog.verify_show_syslog_format_output({SyslogConsts.FORMAT: {SyslogConsts.STANDARD: {}}})
+            system.syslog.verify_show_syslog_format_output({SyslogConsts.STANDARD: {}})
             send_random_msg_and_validate_format(remote_server_ip, remote_server_engine, expect_welf_format=False)
 
     finally:
