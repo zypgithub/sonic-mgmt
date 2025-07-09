@@ -1,10 +1,14 @@
 import re
 import allure
 import pandas as pd
+import logging
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_base_df, calculate_avg_on_all_samples
 from infra.tools.exceptions.test_issue import TestIssue
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+
+logger = logging.getLogger()
 
 
 def validate_temperature(traffic_json, temperature_threshold, violations_list):
@@ -183,9 +187,16 @@ def validate_power_df_by_collectors(power_df, collectors_power_threshold, violat
         for power_supply_regex, collector_th in collectors_power_threshold.items():
             if re.search(power_supply_regex, collector_name):
                 if collector_power > collector_th:
-                    violations_list.append(f"Power for {collector_name}: {collector_power} W,  "
-                                           f"was higher than threshold {collector_th}, "
-                                           f"please check table \"Power full dataframe\" in allure attachments")
+                    # TODO: remove this 'if' statement once FW bug #4526752 is fixed. Keep only the 'else' part.
+                    if collector_name == "HVDD TILES (HVDD_T03)" and is_redmine_issue_active([4526752])[0]:
+                        logger.info(f"Power for {collector_name}: {collector_power} W,  "
+                                    f"was higher than threshold {collector_th}, "
+                                    f"please check table \"Power full dataframe\" in allure attachments. "
+                                    f"Not failing test, due to bug FW #4526752")
+                    else:
+                        violations_list.append(f"Power for {collector_name}: {collector_power} W,  "
+                                               f"was higher than threshold {collector_th}, "
+                                               f"please check table \"Power full dataframe\" in allure attachments")
 
     if total_power > power_total_th:
         violations_list.append(f"Total power {total_power} W was higher than total power threshold {power_total_th}, "

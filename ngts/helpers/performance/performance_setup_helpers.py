@@ -72,7 +72,7 @@ class ValidationConfig:
     bw_threshold: Optional[float] = None
     power_threshold: Optional[float] = None
     port_list: Optional[List[str]] = None
-    counters_list: List = field(default_factory=lambda: PerfConsts.COUNTERS)
+    ignore_counter_list: List = field(default_factory=list)
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
 
@@ -93,7 +93,7 @@ class ValidationConfig:
             # Counter validation - checks for drops and other counters (such as POC)
             'counters': Validation(
                 validate_counters,
-                {'skip_first_counters_iteration': self.skip_first_counters_iteration, 'counters_list': self.counters_list}
+                {'skip_first_counters_iteration': self.skip_first_counters_iteration, 'ignore_counter_list': self.ignore_counter_list}
             ) if self.run_validate_counters else None,
 
             # Bandwidth validation - ensures bandwidth meets threshold

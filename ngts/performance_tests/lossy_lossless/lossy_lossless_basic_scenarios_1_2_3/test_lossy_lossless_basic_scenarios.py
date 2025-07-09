@@ -48,8 +48,11 @@ class TestLossyLossless:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
+            # Note that ECN counters are expected, due to required low ECN thresholds, due to mix of lossy and lossless traffic
+            # to make sure packets aren't dropped on RED.
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type, bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
-                                      power_threshold=self.power_thresholds_by_chip_type)
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      ignore_counter_list=['tx_ecn_marked_tc_3', 'tx_ecn_marked_tc_4'])
             run_validation(config)

@@ -67,8 +67,7 @@ class TestSRv6Base:
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
                                       tc_occ_threshold=round_robin_occ_th_dict,
-                                      power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN)
+                                      power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
 
     def many_to_one_traffic_test_runner(self, test_name, traffic_type, workload, egress_port, ingress_ports):
@@ -120,7 +119,6 @@ class TestSRv6Base:
                                           validate_bw_rx=False,
                                           tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
                                           power_threshold=self.power_thresholds_by_chip_type,
-                                          counters_list=MRCConsts.COUNTERS_WITH_ECN,
                                           samples_params_dict=samples_params_dict)
                 traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
             with allure.step(f"stop traffic"):
@@ -173,7 +171,6 @@ class TestSRv6Base:
                                       validate_bw_rx=False,
                                       tc_occ_threshold=tc_threshold,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN,
                                       samples_params_dict=samples_params_dict)
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
         with allure.step(f"stop traffic"):

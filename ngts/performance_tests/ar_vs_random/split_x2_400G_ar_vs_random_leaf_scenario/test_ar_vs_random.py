@@ -81,10 +81,12 @@ class TestARvsRandom:
             f"{'with' if bisection_traffic else 'without'} bisection traffic, "
             f"and {'AR' if ecmp_type_ar else 'Random'} ecmp type"
         ):
+            # Note that ECN counters are expected, due to required low ECN thresholds, to make sure packets aren't dropped on RED.
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      skip_first_counters_iteration=skip_first_counters_iteration)
+                                      skip_first_counters_iteration=skip_first_counters_iteration,
+                                      ignore_counter_list=['tx_ecn_marked_tc_3'])
 
             run_validation(config)

@@ -332,14 +332,14 @@ def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, violations_l
                                    f"please check {higher_tc_samples}")
 
 
-def validate_counters(traffic_json, skip_first_counters_iteration, counters_list, violations_list):
+def validate_counters(traffic_json, skip_first_counters_iteration, ignore_counter_list, violations_list):
     """
     Validates counter samples from traffic data, optionally skipping the first iteration.
 
     Args:
         traffic_json (dict): JSON containing traffic counter samples
         skip_first_counters_iteration (bool): Whether to skip validating the first counter sample
-        counters_list (list): list of counters to validate
+        ignore_counter_list (list): list of counters to ignore during validation
         violations_list (list): List to store any validation violations found
     """
     counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
@@ -352,25 +352,26 @@ def validate_counters(traffic_json, skip_first_counters_iteration, counters_list
 
     # Process each counter sample
     for sample_id, counters_sample in counters_samples.items():
-        validate_counters_sample(sample_id, counters_sample, counters_list, violations_list)
+        validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list)
 
 
-def validate_counters_sample(sample_id, counters_sample, counters_list, violations_list):
+def validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list):
     """
     Validates a single counter sample for any non-zero counter values.
 
     Args:
         sample_id (str): Identifier for the counter sample
         counters_sample (dict): Sample data containing counter values
-        counters_list (list): list of counters to validate
+        ignore_counter_list (list): list of counters to ignore during validation
         violations_list (list): List to store any validation violations found
     """
     counters_df = pd.DataFrame(counters_sample[ValidationConsts.COUNTERS_DATAFRAME])
 
     ports_with_counters = counters_df.loc[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].any(axis=1), ValidationConsts.PORT].to_list()
     counters_with_values = counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].columns[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].gt(0).any()].tolist()
+    counters_with_values = [counter for counter in counters_with_values if counter not in ignore_counter_list]
 
-    if ports_with_counters or counters_with_values:
+    if counters_with_values:
         violations_list.append(f"Ports: {ports_with_counters} had one or more of the following counters:\n"
                                f"{counters_with_values} with values > 0,\n "
                                f"please check {sample_id}")

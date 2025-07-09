@@ -81,8 +81,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
-                                      power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN)
+                                      power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -146,8 +145,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                                   run_validate_counters=False,
                                                   bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
                                                   tc_occ_threshold=None,
-                                                  power_threshold=self.power_thresholds_by_chip_type,
-                                                  counters_list=MRCConsts.COUNTERS_WITH_ECN)
+                                                  power_threshold=self.power_thresholds_by_chip_type)
                         traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
                         traffic_validation_json = traffic_validation_jsons_list.pop()
                         comparison_value = self.get_comparison_value(traffic_validation_json, trimming_size)
@@ -316,7 +314,6 @@ class TestSRv6Leaf(TestSRv6Base):
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN,
                                       samples_params_dict=samples_params_dict)
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
         with allure.step(f"stop traffic"):
