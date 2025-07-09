@@ -327,3 +327,48 @@ def wait_for_specific_regex_in_logs(engine, regex, timeout=70):
         connection = ConnectHandler(**device)
         connection.send_command('nv show system log file follow', expect_string=regex)
         return
+
+
+def run_ssh_command(command, ip_address, username, password):
+    '''
+    @Summary: This function inits ssh connection to the server, and runs commands on it.
+              It will print the output of the command gradually (line by line).
+    @param command: The command we want to run on the server using ssh connection, example: "ll"
+    @return: full_output, which is the output of the command the was run.
+    '''
+    logger.info("Initializing connection to server {}".format(ip_address))
+
+    ssh_command = [
+        'sshpass', '-p', password,
+        'ssh', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no',
+        '-o', 'TCPKeepAlive=yes', '-o', 'ServerAliveInterval=60', '-o', 'ConnectTimeout=30',
+        '{}@{}'.format(username, ip_address), command
+    ]
+
+    try:
+        output_lines = []
+        # Run the SSH command and capture live output
+        process = subprocess.Popen(
+            ssh_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Redirect stderr to stdout
+            bufsize=1,  # Line-buffered
+            universal_newlines=True  # Use universal newlines to treat output as string
+        )
+
+        # Read output line by line
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            print(line.strip())
+            output_lines.append(line)
+
+        # Wait for the subprocess to finish and get the return code
+        process.wait()
+        full_output = ''.join(output_lines)
+        return full_output
+
+    except Exception as e:
+        logger.error("An error occurred: {}".format(e))
+        return None

@@ -423,7 +423,7 @@ def verify_ufm_mad_configuration(fae, dut_engine, port_name, devices_dut, engine
         ipv6_res = mads_response[IpConsts.IPV6]
 
     with allure.step("Get MAD from IBSNI register"):
-        output = RegisterTool.get_mst_register_value(dut_engine, devices_dut.mst_dev_name, UfmMadConsts.IBSNI_REGISTER)
+        output = RegisterTool.get_mst_register_value(dut_engine, devices_dut.mst_dev_name[0], UfmMadConsts.IBSNI_REGISTER)
         ibsni_response = parse_ibsni_register(output, port_name)
         ipv4_reg = ibsni_response[IpConsts.IPV4]
         ipv6_reg = ibsni_response[IpConsts.IPV6]

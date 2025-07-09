@@ -683,13 +683,7 @@ def test_log_idle(engines):
     with allure.step("Do nothing for 10 min"):
         time.sleep(600)
 
-    with (allure.step("Check the log file size")):
-        syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
-        assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
-            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , \
-                after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
-
-    with (allure.step("Check the log file content")):
+    with allure.step("Check the log file content"):
         syslog_idle_output: str = engines.dut.run_cmd(f'cat {SyslogConsts.SYSLOG_LOG_PATH}')
         # Filter out logs
         logs_after_check: str = syslog_idle_output
@@ -697,6 +691,12 @@ def test_log_idle(engines):
             logs_after_check = re.sub(pattern, '', logs_after_check)
         assert len(logs_after_check) == 0, f'These unexpected logs found during idle: \n {logs_after_check} \n \
             No logs should be recorded during idle'
+
+    with allure.step("Check the log file size"):
+        syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
+        assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
+            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , \
+                after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
 
 
 def get_random_component(system):

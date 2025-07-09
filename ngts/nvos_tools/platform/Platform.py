@@ -8,7 +8,7 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.platform.CableCartridge import CableCartridge
 from ngts.nvos_tools.platform.Environment import Environment
 from ngts.nvos_tools.platform.Inventory import Inventory
-from ngts.nvos_tools.platform.PowerProfile import PowerProfile
+from ngts.nvos_tools.platform.PowerCapping import PowerCapping
 from ngts.nvos_tools.system.Firmware import Firmware
 from ngts.nvos_tools.system.Transceiver import Transceiver
 from ngts.nvos_tools.platform.PSRedundancy import PSRedundancy
@@ -31,7 +31,7 @@ class Platform(BaseComponent):
         self.chassis_location = BaseComponent(self, path='/chassis-location')
         self.bmc_password = Bmc_password(self)
         self.cable_cartridge = CableCartridge(self)
-        self.power_profile = PowerProfile(self)
+        self.power_capping = PowerCapping(self)
         self.boot_policy = BaseComponent(self, path='/boot-policy')
 
     def set(self, op_param_name="", op_param_value=""):

@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 import time
-
+import copy
 import yaml
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -181,11 +181,12 @@ class NvosInstallationSteps:
             with open(config_file_path, 'r') as file:
                 expected_config = yaml.safe_load(file)
                 expected_config = [item for item in expected_config if 'set' in item][0]
+            normalized_expected_config = NvosInstallationSteps.normalize_config(expected_config)
         with allure.step('Check differences between expected and actual configurations'):
-            logger.info(f'config before upgrade (expected):\n{expected_config}')
+            logger.info(f'config before upgrade (expected):\n{normalized_expected_config}')
             logger.info(f'config after upgrade (actual):\n{actual_config}')
             exceptions = {"secret": "*", "password": "*", "readonly-community": None}
-            dicts_diff = ValidationTool.get_dictionaries_diff(expected_config, actual_config, exceptions=exceptions)
+            dicts_diff = ValidationTool.get_dictionaries_diff(normalized_expected_config, actual_config, exceptions=exceptions)
             logger.info(f'configs diff:\n{dicts_diff}')
             upgrade_status_file_path_dut = UPGRADE_STATUS_FILE_PATH
             if not dicts_diff:
@@ -267,3 +268,21 @@ class NvosInstallationSteps:
                              platform_params=platform_params, deploy_type=deploy_type,
                              reboot_after_install=reboot_after_install, fw_pkg_path=fw_pkg_path, set_timezone=None,
                              dut_alias=dut_alias)
+
+    @staticmethod
+    def normalize_config(old_config: dict):
+        """
+        Normalize the config to match the format of the config after upgrade
+        :param config: config
+        :return: normalized config
+        """
+        normalized_config = copy.deepcopy(old_config)
+
+        tacacs_path_old = normalized_config["set"]["system"]["aaa"]["tacacs"]
+        if "hostname" in tacacs_path_old:
+            tacacs_path_old["server"] = tacacs_path_old.pop("hostname")
+            for _, config in tacacs_path_old["server"].items():
+                if "auth-type" in config:
+                    config["auth-mode"] = config.pop("auth-type")
+
+        return normalized_config

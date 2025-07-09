@@ -97,8 +97,13 @@ class OpenApiBaseCli(BaseCli):
 
         url = OpenApiBaseCli._resource_path_to_rest_path(resource_path, suffix)
         data = {'state': 'start'}
-        if param_name:
-            data['parameters'] = {param_name: (True if (param_value == '') else param_value)}
+        if isinstance(param_name, list):
+            data['parameters'] = {}
+            for param, value in zip(param_name, param_value):
+                data['parameters'][param] = True if (value == '') else value
+        else:
+            if param_name:
+                data['parameters'] = {param_name: (True if (param_value == '') else param_value)}
         if not expected_output and (action_type == 'reboot' or expect_reboot):
             # Temporary workaround before refactoring action()
             expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES

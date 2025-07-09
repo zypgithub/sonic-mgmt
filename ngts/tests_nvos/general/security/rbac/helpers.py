@@ -4,6 +4,7 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tests_nvos.general.security.rbac.command_testers import InterfaceCommandTester, SystemCommandTester, \
     PlatformCommandTester
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -72,7 +73,7 @@ def verify_user_permissions_on_system(engines, devices, username, password, perm
     results = verify_user_permissions_generic(engines, username, password, permission, run_commands_on_system)
 
     with allure.step("Testing additional capabilities"):
-        platform_results = run_commands_on_platform(create_user_connection(engines, username, password))
+        platform_results = run_commands_on_platform(create_user_connection(engines, username, password), devices)
         assert not any(platform_results.values()), "User should not be able to perform any actions on platform"
 
 
@@ -86,8 +87,8 @@ def run_commands_on_system(user_engine):
     return tester.test_commands()
 
 
-def run_commands_on_platform(user_engine):
-    tester = PlatformCommandTester(user_engine)
+def run_commands_on_platform(user_engine, devices):
+    tester = PlatformCommandTester(user_engine, isinstance(devices.dut, JulietNonScaleoutSwitch))
     return tester.test_commands()
 
 

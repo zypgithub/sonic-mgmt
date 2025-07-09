@@ -31,6 +31,13 @@ class DatabaseTool:
         return engine.run_cmd(cmd)
 
     @staticmethod
+    def sonic_db_cli_hdel(engine, asic, db_name, db_config, param):
+        asic = f"-n {asic} " if asic else ""
+        cmd = f'sonic-db-cli {asic}{db_name} hdel "{db_config}" "{param}"'
+        logging.info(f'Running {cmd}')
+        return engine.run_cmd(cmd)
+
+    @staticmethod
     def sonic_db_cli_get_keys(engine, asic, db_name, grep_str=None):
         asic = f"-n {asic} " if asic else ""
         cmd = f"sonic-db-cli {asic}{db_name} keys \\*"

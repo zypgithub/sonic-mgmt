@@ -3,7 +3,7 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> NVOS ngci </name>
+      <name> NVOS NMX cluster </name>
       <info> </info>
       <owner> Elias Abboud </owner>
     </Test>

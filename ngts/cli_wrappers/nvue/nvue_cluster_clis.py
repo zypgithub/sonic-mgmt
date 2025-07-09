@@ -1,5 +1,5 @@
+import logging
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
-from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.nvos_constants.constants_nvos import ActionType
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
@@ -130,3 +130,19 @@ class NvueClusterCli(NvueBaseCli):
     @staticmethod
     def action_restore_sdn_transceiver_maintenance_state(engine, path):
         return NvueClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)
+
+    @staticmethod
+    @check_output
+    def action_import_rbac_file(engine, resource_path, remote_url):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f"nv action import {path} {remote_url}"
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_delete_rbac_file(engine, resource_path):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f"nv action delete {path}"
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)

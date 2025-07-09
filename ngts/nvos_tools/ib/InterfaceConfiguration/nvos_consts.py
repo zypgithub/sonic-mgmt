@@ -1,3 +1,6 @@
+from enum import Enum
+
+
 class InternalNvosConsts:
     # Output dictionary
     OPERATIONAL_INDEX = 0
@@ -161,7 +164,84 @@ class IbInterfaceConsts:
     IB0_DHCP_STATE_DEFAULT_VALUE = 'disabled'
     MAX_COUNTERS_AFTER_CLEAR = 700
     PLANARIZED_PORTS = "planarized-ports"
-    PRIMARY_ASIC_DEVICE = "primary-asic-device"
+    PC_VL15_DROPPED_F = "SAI_PORT_STAT_INFINIBAND_PC_VL15_DROPPED_F"
+    RCV_DISCARD_EXTERNAL_CONTAIN = "SAI_PORT_STAT_INFINIBAND_RCV_DISCARD_EXTERNAL_CONTAIN"
+    TOTAL_IN_DROPS = "PORT_STAT_INFINIBAND_TOTAL_IN_DROPS"
+    PC_XMT_DISCARDS_F = "SAI_PORT_STAT_INFINIBAND_PC_XMT_DISCARDS_F"
+    XMT_DISCARD_EXTERNAL_CONTAIN = "SAI_PORT_STAT_INFINIBAND_XMT_DISCARD_EXTERNAL_CONTAIN"
+    TOTAL_OUT_DROPS = "PORT_STAT_INFINIBAND_TOTAL_OUT_DROPS"
+
+
+class FWRecoveryConsts:
+    # Define constants for recovery event fields
+    TOTAL_SUCCESSFUL_RECOVERY_EVENTS = 'total-successful-recovery-events'
+    TIME_IN_LAST_LOGIC_RECOVERY_EVENT = 'time-in-last-logic-recovery-event'
+    TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT = 'time-in-last-serdes-eq-recovery-event'
+    TIME_SINCE_LAST_RECOVERY = 'time-since-last-recovery'
+    LAST_LOGIC_RECOVERY_ATTEMPTS = 'last-logic-recovery-attempts'
+    LAST_SERDES_EQ_RECOVERY_ATTEMPTS = 'last-serdes-eq-recovery-attempts'
+    TIME_BETWEEN_LAST_TWO_RECOVERIES = 'time-between-last-two-recoveries'
+
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    FW_DEFAULT = 'fw-default'
+
+    # Default expected values
+    DEFAULT_FW_RECOVERY_COUNTERS = {
+        TOTAL_SUCCESSFUL_RECOVERY_EVENTS: 0,
+        TIME_IN_LAST_LOGIC_RECOVERY_EVENT: 0,
+        TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT: 0,
+        TIME_SINCE_LAST_RECOVERY: 0,
+        LAST_LOGIC_RECOVERY_ATTEMPTS: 0,
+        LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0,
+        TIME_BETWEEN_LAST_TWO_RECOVERIES: 0,
+    }
+
+    class SerdesEQMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class LogicRelockMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+    class SerdesEQ:
+        MODE = "serdes-eq-mode"
+        TIMEOUT = "serdes-eq-timeout"
+        SETTING_PREFIX = "serdes-eq"
+
+    class LogicRelock:
+        MODE = "logic-relock-mode"
+        TIMEOUT = "logic-relock-timeout"
+        SETTING_PREFIX = "logic-relock"
+
+    DEFAULT_PHY_RECOVERY_DICT = {
+        SerdesEQ.MODE: SerdesEQMode.DISABLED.value,
+        SerdesEQ.TIMEOUT: str(0),
+    }
+
+    MODES = ['disabled', 'fw-default', 'enabled']
+
+    negative_test_cases = {
+        SerdesEQ.MODE: {
+            "bad_value": "bad-mode",
+            "expected_error": "'bad-mode' is not one of"
+        },
+        SerdesEQ.TIMEOUT: {
+            "bad_value": "-1",
+            "expected_error": "'-1' is not of type 'integer'"
+        },
+        LogicRelock.MODE: {
+            "bad_value": "bad-mode",
+            "expected_error": "'bad-mode' is not one of"
+        },
+        LogicRelock.TIMEOUT: {
+            "bad_value": "100000",
+            "expected_error": "logic-relock-timeout must match one of the following:"
+        }
+    }
 
 
 class DataBaseNames:

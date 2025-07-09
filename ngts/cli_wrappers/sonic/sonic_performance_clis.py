@@ -5,8 +5,6 @@ import re
 import time
 from retry import retry
 from collections import defaultdict
-from jsonmerge import merge
-from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst

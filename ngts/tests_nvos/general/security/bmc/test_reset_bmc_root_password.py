@@ -2,6 +2,7 @@ import logging
 import random
 import pytest
 import time
+from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import PlatformConsts, ApiType
@@ -16,6 +17,8 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.BmcSshEngine import BmcSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from ngts.nvos_tools.infra.NvCommand import NvCommand
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 
 logger = logging.getLogger()
 BMC_DEFAULT_KNOWN_PASSWORD = 'ABYX12#14artb'
@@ -110,7 +113,7 @@ def test_reset_bmc_password_to_default_while_locked_out(engines, topology_obj, t
 
 @pytest.mark.bmc
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, test_api):
+def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, test_api, nv_command: NvCommand):
     """
     1. factory reset the BMC
     2. verify bmc admin can login only with default password
@@ -139,13 +142,14 @@ def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, 
                     output = platform.bmc_password.action_reset().verify_result(should_succeed=False)
                     failed_to_connect_err = "Failed to reset password: Can't connect to BMC"
                     assert failed_to_connect_err in output, f'output expected to contain {failed_to_connect_err}, but instead got {output}'
-                with allure.step('Ping BMC until back alive'):
-                    time.sleep(15)
-                    output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
-                    while "Connected to" not in output:
-                        output = engines.sonic_mgmt.run_cmd(f"timeout 3 telnet {bmc_ip_address} 22")
-                    logger.info("Wait for 30 seconds before trying to reset bmc root password")
-                    time.sleep(30)
+                with allure.step("Wait for BMC to boot after factory reset"):
+                    with allure.step("Wait 10s for BMC to start factory reset after sending command"):
+                        time.sleep(10)
+                    with allure.step("Wait for BMC to boot after factory reset"):
+                        client.wait_for_bmc_available(username=BmcUsers.root.username,
+                                                      password=BmcUsers.root.default_password)
+                    with allure.step("Wait for CPU to see that BMC has booted"):
+                        BmcTool.wait_for_cpu_to_detect_bmc(dut, nv_command)
 
             with allure.step("Reset BMC Password to default - using nvos command"):
                 output = platform.bmc_password.action_reset().verify_result()

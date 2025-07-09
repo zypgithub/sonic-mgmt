@@ -69,9 +69,10 @@ class SystemCommandTester(CommandTester):
 
 
 class PlatformCommandTester(CommandTester):
-    def __init__(self, user_engine):
+    def __init__(self, user_engine, is_nso_system: bool = False):
         super().__init__(user_engine)
         self.platform = Platform()
+        self.is_nso_system = is_nso_system
 
     def test_commands(self):
         with allure.step("Testing commands on platform"):
@@ -81,9 +82,13 @@ class PlatformCommandTester(CommandTester):
             self.test_operation('set', self.platform.firmware.asic.set, PlatformConsts.FW_SOURCE,
                                 PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
             self.test_operation('unset', self.platform.firmware.asic.unset, PlatformConsts.FW_SOURCE, apply=True)
-            list_of_transceivers = list(self.platform.transceiver.get_dict_of_transceivers(cable_type=None))
-            transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
-            self.test_operation('action', self.platform.transceiver.action_reset,
-                                transceiver_name=transceiver_name)
+
+            if self.is_nso_system:
+                logger.info("NSO system detected, skipping transceiver actions")
+            else:
+                list_of_transceivers = list(self.platform.transceiver.get_dict_of_transceivers(cable_type=None))
+                transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
+                self.test_operation('action', self.platform.transceiver.action_reset,
+                                    transceiver_name=transceiver_name)
 
         return self.get_results()

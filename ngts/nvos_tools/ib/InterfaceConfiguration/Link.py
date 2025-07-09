@@ -12,3 +12,5 @@ class LinkMgmt(BaseComponent):
         self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.connection_mode = BaseComponent(self, path='/connection-mode')
         self.phy_diag = BaseComponent(self, path='/phy-diag')
+        self.phy_recovery = BaseComponent(self, path='/phy-recovery')
+        self.kr = BaseComponent(self, path='/link-training')

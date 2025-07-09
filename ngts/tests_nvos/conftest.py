@@ -601,7 +601,7 @@ def clear_config(request, devices, engines, default_config_yml_path, root_dir, m
     yield
 
     TestToolkit.tested_api = ApiType.NVUE
-    test_result = request.node.rep_call.outcome
+    test_result = request.node.rep_call.outcome if hasattr(request.node, 'rep_call') else request.node.rep_setup.outcome
     logging.info(f"------- Test '{request.node.name}' {test_result} -------")
 
     try:

@@ -51,14 +51,14 @@ class AuthVerifier:
         try:
             system = System()
             with allure.step(f'Run show command. Expect success: True'):
-                system.version.show(dut_engine=self.engine)
+                system.version.show(dut_engine=self.engine, check_engine_connectivity=False)
             with allure.step(f'Run set command. Expect success: {user_is_admin}'):
                 system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value='"NVOS TESTS"',
-                                   dut_engine=self.engine).verify_result(should_succeed=user_is_admin)
+                                   dut_engine=self.engine, check_engine_connectivity=False).verify_result(should_succeed=user_is_admin)
 
             with allure.step(f'Run unset command. Expect success: {user_is_admin}'):
                 system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE,
-                                     dut_engine=self.engine).verify_result(should_succeed=user_is_admin)
+                                     dut_engine=self.engine, check_engine_connectivity=False).verify_result(should_succeed=user_is_admin)
         finally:
             with allure.step('cleanup after authorization check'):
                 with allure.step('Clear global OpenApi changeset and payload'):

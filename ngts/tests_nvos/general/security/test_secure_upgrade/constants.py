@@ -2,8 +2,8 @@
 TEST_DIR = '/auto/sw_system_project/NVOS_INFRA/security/verification/secure_upgrade'
 NON_SECURED_IMG_FILE = f'{TEST_DIR}/nvos_not_signed.bin'
 
-PROD_IMG_FILE = '/auto/sw_system_release/nos/nvos/25.02.2931/amd64/prod/nvos-amd64-25.02.2931.bin'
-DEV_IMG_FILE = '/auto/sw_system_release/nos/nvos/25.02.2931/amd64/dev/nvos-amd64-25.02.2931.bin'
+PROD_IMG_FILE = '/auto/sw_system_release/nos/nvos/25.02.4234/amd64/prod/nvos-amd64-25.02.4234.bin'
+DEV_IMG_FILE = '/auto/sw_system_release/nos/nvos/25.02.4234/amd64/dev/nvos-amd64-25.02.4234.bin'
 
 BEGIN_CMS = '-----BEGIN CMS-----'
 

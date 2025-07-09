@@ -1,11 +1,14 @@
+import json
 import logging
 import re
 import random
 import time
+import os
 
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
-
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
@@ -18,6 +21,10 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
+from infra.tools.general_constants.constants import DefaultConnectionValues
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
 
@@ -152,8 +159,8 @@ def test_ib_show_interface_all_state_down(engines, devices, has_loopbox, setup_n
     3. Verify the required fields are presented in the output
     """
 
-    if not has_loopbox and 'juliet' in setup_name:
-        pytest.skip("Cannot run test for Juliet system without loopbox")
+    if has_loopbox and isinstance(devices.dut, JulietNonScaleoutSwitch):
+        pytest.skip("Cannot run test for Juliet NonScaleout system with loopbox")
 
     output_dictionary = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
         Port.show_interface()).get_returned_value()
@@ -312,6 +319,190 @@ def test_show_interface_filter(engines, test_api):
         filter_name = 'filter_not_exist'
         output_dict_filtered = interface.filter(filter_name=filter_name, value=value).verify_result(False)
         assert re.search(r'No match found for filter depth of \d+\.', output_dict_filtered)
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.ib
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_validate_discard_counters_fields(engines, test_api):
+    """
+    Run show interface command and verify the required fields are exist
+    command: nv show interface <name>
+
+    flow:
+    1. Select a random port
+    2. Get the OID of the port
+    3. Validate that in-drops and out-drops fields are present in show output
+    4. Validate that in-drops and out-drops fields are present in Sonic DB
+    5. Validate that in-drops and out-drops fields are present in GNMI
+    """
+    TestToolkit.tested_api = test_api
+    server = 'fit-build-240'
+    server_user = os.getenv("BUILD_SERVER_USER")
+    server_password = os.getenv("BUILD_SERVER_PASSWORD")
+    gnmi_engine = LinuxSshEngine(server, server_user, server_password)
+    system = System()
+    system_show = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+    host = system_show['hostname']
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+    TestToolkit.update_tested_ports([selected_port])
+    port = selected_port.name
+    port_oid = get_port_oid(engines, port)
+    logging.info("Selected Port:{}, OID:{}".format(port, port_oid))
+
+    with allure.step('Validate that in-drops and out-drops fields are present in show output'):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
+            selected_port.interface.show()).get_returned_value()
+        assert IbInterfaceConsts.LINK_STATS_IN_DROPS in output_dictionary["link"]["counters"].keys(), \
+            "{} field not available in show interface".format(IbInterfaceConsts.LINK_STATS_IN_DROPS)
+        assert IbInterfaceConsts.LINK_STATS_OUT_DROPS in output_dictionary["link"]["counters"].keys(), \
+            "{} field not available in show interface".format(IbInterfaceConsts.LINK_STATS_OUT_DROPS)
+
+    with allure.step('Validate that in-drop counter fields are present in Sonic-DB'):
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.PC_VL15_DROPPED_F)
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.RCV_DISCARD_EXTERNAL_CONTAIN)
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_IN_DROPS)
+
+    with allure.step('Validate that out-drop counter fields are present in Sonic-DB'):
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.PC_XMT_DISCARDS_F)
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.XMT_DISCARD_EXTERNAL_CONTAIN)
+        validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_OUT_DROPS)
+
+    with allure.step('Validate that total-in-drops and total-out-drops fields are present via GNMI'):
+        validate_field_from_gnmi(gnmi_engine, host, port, "in-discards")
+        validate_field_from_gnmi(gnmi_engine, host, port, "out-discards")
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.ib
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_validate_total_counters_in_out_drops(engines, test_api):
+    """
+    Validate that total in and out drops counters are a sum of two other counters
+
+    flow:
+    1. Select a random port (status of which is up)
+    2. Get the OID of the port
+    3. Validate total in drop counters are a sum of two counters in Sonic-DB
+    4. Validate total out drop counters are a sum of two counters in Sonic-DB
+    """
+    TestToolkit.tested_api = test_api
+
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+    TestToolkit.update_tested_ports([selected_port])
+    port = selected_port.name
+    port_oid = get_port_oid(engines, port)
+    logging.info("Selected Port:{}, OID:{}".format(port, port_oid))
+
+    with allure.step('Validate total in drop counters are a sum of two counters in Sonic-DB'):
+        pc_vl15_dropped_f = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.PC_VL15_DROPPED_F)
+        rcv_discard_ext_cont = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.
+                                                            RCV_DISCARD_EXTERNAL_CONTAIN)
+        total_in_drops = pc_vl15_dropped_f + rcv_discard_ext_cont
+
+        output = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_IN_DROPS)
+        assert total_in_drops == output, f"Total in drops is not equal to sum of " \
+            f"{IbInterfaceConsts.PC_VL15_DROPPED_F} and " \
+            f"{IbInterfaceConsts.RCV_DISCARD_EXTERNAL_CONTAIN}"
+
+    with allure.step('Validate total out drop counters are a sum of two counters in Sonic-DB'):
+        pc_xmt_discards_f = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.PC_XMT_DISCARDS_F)
+        xmt_discard_ext_cont = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.
+                                                            XMT_DISCARD_EXTERNAL_CONTAIN)
+        total_out_drops = pc_xmt_discards_f + xmt_discard_ext_cont
+
+        output = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_OUT_DROPS)
+        assert total_out_drops == output, f"Total out drops is {output} instead of {total_out_drops} which is not " \
+            f"equal to sum of {IbInterfaceConsts.PC_XMT_DISCARDS_F} and " \
+            f"{IbInterfaceConsts.XMT_DISCARD_EXTERNAL_CONTAIN}"
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.ib
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
+    """
+    Validate total in drop and out drop counters are same across show, Sonic DB and GNMI
+
+    flow:
+    1. Select a random port
+    2. Get the OID of the port
+    3. Retrieve the required fields: in-drops and out-drops are present from the show output
+    4. Retrieve the required fields: in-drops and out-drops are present from the sonic DB
+    5. Retrieve the required fields: in-drops and out-drops are present from GNMI
+    6. Compare in/out drops counters across show CLI, Sonic DB and GNMI server
+    """
+    TestToolkit.tested_api = test_api
+    server = 'fit-build-240'
+    server_user = os.getenv("BUILD_SERVER_USER")
+    server_password = os.getenv("BUILD_SERVER_PASSWORD")
+    gnmi_engine = LinuxSshEngine(server, server_user, server_password)
+    system = System()
+    system_show = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+    host = system_show['hostname']
+    in_drop_mismatch_err = ""
+    out_drop_mismatch_err = ""
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+    TestToolkit.update_tested_ports([selected_port])
+    port = selected_port.name
+    logging.info("Selected Port:{}".format(port))
+    port_oid = get_port_oid(engines, selected_port.name)
+
+    with allure.step('Retrieve in-drops and out-drops fields from show output'):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
+            selected_port.interface.show()).get_returned_value()
+        in_drops_show = output_dictionary["link"]["counters"][IbInterfaceConsts.LINK_STATS_IN_DROPS]
+        out_drops_show = output_dictionary["link"]["counters"][IbInterfaceConsts.LINK_STATS_OUT_DROPS]
+
+    with allure.step('Retrieve in-drops and out-drops fields from Sonic-DB'):
+        in_drops_sonic_db = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_IN_DROPS)
+        out_drops_sonic_db = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_OUT_DROPS)
+
+    with allure.step('Validate that in-drops and out-drops fields are present via GNMI'):
+        in_drops_gnmi = validate_field_from_gnmi(gnmi_engine, host, port, "in-discards")
+        out_drops_gnmi = validate_field_from_gnmi(gnmi_engine, host, port, "out-discards")
+
+    with allure.step('Compare in/out drops counters across show CLI, Sonic DB and GNMI server'):
+        if (in_drops_show != in_drops_sonic_db) or (in_drops_show != in_drops_gnmi):
+            in_drop_mismatch_err = "In drop counter mismatch: show:{}, DB:{}, GNMI:{}".format(
+                in_drops_show, in_drops_sonic_db, in_drops_gnmi)
+        if (out_drops_show != out_drops_sonic_db) | (out_drops_show != out_drops_gnmi):
+            out_drop_mismatch_err = "Out drop counter mismatch: show:{}, DB:{}, GNMI:{}".format(
+                out_drops_show, out_drops_sonic_db, out_drops_gnmi)
+        assert not ((in_drop_mismatch_err != "") or (out_drop_mismatch_err != "")), "{}, {}".format(
+            in_drop_mismatch_err, out_drop_mismatch_err)
+
+
+def get_port_oid(engines, port_name):
+    fae = Fae(port_name=f'{port_name}')
+    output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
+        fae.interface.show()).get_returned_value()
+    port_key = output_dictionary["plan-ports"][port_name]["key"]
+    port_to_oid_cmd = f'sonic-db-cli COUNTERS_DB hgetall "COUNTERS_PORT_NAME_MAP"'
+    output = engines.dut.run_cmd(port_to_oid_cmd)
+    # change output string to match json format
+    output = output.replace("'", '"')
+    port_oid_details_dict = json.loads(output)
+    output = port_oid_details_dict[f'{port_key}']
+    port_oid = output.split(":")[1]
+    return port_oid
+
+
+def validate_field_from_sonic_db(engines, port_oid, field_name):
+    output_sonic_db = engines.dut.run_cmd(f'sonic-db-cli COUNTERS_DB hget "COUNTERS:oid:{port_oid}" "{field_name}"')
+    assert output_sonic_db != "", f"Field {field_name} not present in sonic db for port oid {port_oid}"
+    value = int(output_sonic_db)
+    logger.info(f"Sonic DB Port OID:{port_oid}, Field:{field_name}, Value:{value}")
+    return value
+
+
+def validate_field_from_gnmi(gnmi_engine, host, port, field):
+    gnmi_cmd = f'gnmic -a {host} --port 9339 subscribe --path "interfaces/interface[name={port}]/state/' \
+        f'counters/{field}" --target nvos -u admin -p admin --mode once --skip-verify --format flat'
+    output = gnmi_engine.run_cmd(gnmi_cmd)
+    value = int(output.split(":")[-1].strip())
+    logging.info("Port: {}, Field {}: {}".format(port, field, value))
+    return value
 
 
 def validate_interface_fields(output_dictionary):

@@ -44,4 +44,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_multi_planar.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_fw_recovery.cases </cases>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
+	</test>
 </DBDEF>

@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 
 import pytest
 from retry import retry
@@ -79,6 +79,8 @@ class System(BaseComponent):
         self.ptp = BaseComponent(self, path='/ptp')
         self.lldp = Lldp(self)
         self.disk = Disk(self)
+        self.memory = BaseComponent(self, path='/memory')
+        self.cpu = BaseComponent(self, path='/cpu')
 
     @staticmethod
     def get_expected_fields(device, resource):
@@ -134,7 +136,7 @@ class Events(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/events')
 
-    def show_events_last_recent_entries(self, query_param, events_count='1'):
+    def show_events_last_recent_entries(self, query_param, events_count='1') -> str:
         system = System()
         query_param_api = '?' + query_param
         query_param_nvue = '--' + query_param
@@ -154,6 +156,11 @@ class Events(BaseComponent):
 
     def action_clear(self):
         return self.action(ActionConsts.CLEAR)
+
+    def get_last(self) -> Dict[str, str]:
+        return tuple(OutputParsingTool.parse_json_str_to_dictionary(
+            self.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT, '1')
+        ).get_returned_value().values())[0]
 
 
 class Documentation(BaseComponent):

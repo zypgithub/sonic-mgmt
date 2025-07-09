@@ -66,8 +66,8 @@ class CrlValidator:
             self.configured_client_ca = client_ca_cert
             self.configured_server_cert = server_cert
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True):
-        self.app.bind_crl(dest, crl_name, should_succeed)
+    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
+        self.app.bind_crl(dest, crl_name, should_succeed, should_import, ask_for_confirmation)
 
     def run_client(
         self,
@@ -127,7 +127,7 @@ class CrlClient(ABC):
     ) -> Tuple[CertInfo, CertInfo]: ...
 
     @abstractmethod
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True): ...
+    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False): ...
 
     @abstractmethod
     def run_client(

@@ -23,7 +23,7 @@ from ngts.tests_nvos.general.security.test_api_server_security.constants import 
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.conftest import scp_player
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
+from ngts.tools.test_utils.nvos_general_utils import generate_file_location_uri, generate_scp_uri_using_player
 from tests.platform_tests.test_first_time_boot_password_change.conftest import dut_hostname
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 
@@ -388,6 +388,57 @@ def test_cert_mgmt_use_cert_for_rest_api_tls(test_api, test_flow, engines, scp_p
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.security
+def test_cert_mgmt_import_cert_from_file(engines, random_api, dut_hostname):
+    """
+    Verify that cert can be imported from file
+    1. Copy cert to dut
+    2. Import cert from file no localhost
+    3. Import cert from file with localhost
+    4. Verify cert is imported
+    """
+    TestToolkit.tested_api = random_api
+    security = System().security
+    test_dir = '/tmp/test_cert_mgmt_import_cert_from_file'
+    cert_filename = 'sasha_cert'
+    cert_pass = 'sasha_pass'
+    cert_dir = f'{test_dir}/sasha_cert'
+    ca_dir = f'{test_dir}/sasha_ca'
+    ca_filename = 'sasha_cert'
+    cert_id = 'sasha_cert'
+
+    with allure.step('generate cert on dut'):
+        cert_generator = CertificateGeneratorOnRemoteHost(engines.dut)
+        cert_generator.generate_cert(
+            cert_dir, cert_filename, 'sasha', engines.dut.ip, dut_hostname,
+            ca_dir, ca_filename, cert_pass
+        )
+        bundle_uri = generate_file_location_uri(f'{cert_dir}/{cert_filename}.p12')
+        cert_uri_localhost = generate_file_location_uri(f'{cert_dir}/{cert_filename}.pem', localhost=True)
+        key_uri = generate_file_location_uri(f'{cert_dir}/{cert_filename}.key', localhost=True)
+    cert_name = f"{cert_id}_no_localhost"
+    cert_name_localhost = f"{cert_id}_localhost"
+
+    with allure.step('test importing certs from file protocol'):
+        with allure.independent_step(f'import cert from file no localhost'):
+            security.certificate.cert_id[cert_name].action_import(uri_bundle=bundle_uri,
+                                                                  passphrase=cert_pass).verify_result()
+        with allure.independent_step(f'import cert from file with localhost'):
+            security.certificate.cert_id[cert_name_localhost].action_import(uri_private_key=key_uri,
+                                                                            uri_public_key=cert_uri_localhost).verify_result()
+    with allure.step('show certificates'):
+        out = OutputParsingTool.parse_json_str_to_dictionary(security.certificate.show()).get_returned_value()
+    with allure.step('verify existence of all certs'):
+        with allure.independent_step('verify in show'):
+            assert cert_name in out, f'cert {cert_name} does not appear in certificate show output but expected to exist\n{out}'
+            assert cert_name_localhost in out, f'cert {cert_name_localhost} does not appear in certificate show output but expected to exist\n{out}'
+        with allure.independent_step('verify files'):
+            verify_cert_in_expected_locations(cert_name, engines.dut)
+            verify_cert_in_expected_locations(cert_name_localhost, engines.dut)
+
+
+@pytest.mark.system
+@pytest.mark.certificate
+@pytest.mark.security
 def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
     """
     Case of customer bug that tried to configure locally generated cert after timezone changed to PST
@@ -416,7 +467,7 @@ def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
         clear_existing_certs()
     with allure.step('change timezone'):
         system = System()
-        system.set('timezone', client_timezone, apply=True).verify_result()
+        system.datetime.set('timezone', client_timezone, apply=True).verify_result()
     with allure.step('generate cert on dut'):
         cert_generator = CertificateGeneratorOnRemoteHost(engines.dut)
         cert_generator.generate_cert(

@@ -170,9 +170,8 @@ class IbSwitch(BaseSwitch):
 
     def _init_security_lists(self):
         super()._init_security_lists()
-        self.kex_algorithms = ['diffie-hellman-group18-sha512', 'diffie-hellman-group16-sha512',
-                               'kex-strict-s-v00@openssh.com', 'diffie-hellman-group14-sha256',
-                               'curve25519-sha256', 'curve25519-sha256@libssh.org']
+        self.kex_algorithms = ['curve25519-sha256', 'curve25519-sha256@libssh.org', 'diffie-hellman-group16-sha512',
+                               'diffie-hellman-group18-sha512', 'diffie-hellman-group14-sha256', 'kex-strict-s-v00@openssh.com']
         self.aaa_cleanup_cmds = ['nv config detach', 'nv unset system aaa authentication order',
                                  'nv unset system aaa authentication failthrough', 'nv config apply -y']
 
@@ -262,8 +261,7 @@ class IbSwitch(BaseSwitch):
     def _init_services(self):
         super()._init_services()
         self.available_services.extend((
-            'docker.service', 'database.service', 'hw-management.service', 'config-setup.service',
-            'ntpsec.service', 'hostname-config.service', 'ntp-config.service',
+            'docker.service', 'database.service', 'hw-management.service', 'config-setup.service', 'ntpsec.service', 'hostname-config.service', 'ntp-config.service',
             'rsyslog-config.service', 'procdockerstatsd.service',
             'configmgrd.service', 'countermgrd.service', 'portsyncmgrd.service'
         ))
@@ -306,7 +304,7 @@ class IbSwitch(BaseSwitch):
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
         self.install_patterns = {self.login_pattern: 0, "NOS install successful": 1}
         self.install_success_patterns = list(self.install_patterns.keys())
-        self.mst_dev_name = '/dev/mst/mt54002_pciconf0'  # TODO update
+        self.mst_dev_name = ('/dev/mst/mt54002_pciconf0')
         self.category_list = ['temperature', 'cpu', 'disk', 'power', 'fan', 'mgmt-interface', 'voltage']
         self.category_disk_interval_default = '30'
         self.system_profile_default_values = ['enabled', '2048', 'disabled', 'disabled', '1']
@@ -429,6 +427,7 @@ class IbSwitch(BaseSwitch):
                                           "nv show platform boot-policy",
                                           "nv show platform cable-cartridge",
                                           "nv show platform chassis-location",
+                                          "nv show system cli",
                                           "nv show cluster",
                                           "nv show sdn"]
 
@@ -746,7 +745,7 @@ class BlackMambaSwitch(IbSwitch):
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_versions.json"
         self.allow_cpld_update = True
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
-        self.mst_dev_name = '/dev/mst/mt54004_pciconf2'
+        self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [2, 1, 0, 3])
         self.ztp_prod_json = 'uninstall_prod.json'
         self.ztp_dev_json = 'uninstall.json'
         self.ztp_complex_prod_json = 'complex_prod.json'
@@ -940,7 +939,7 @@ class CrocodileSwitch(IbSwitch):
             version="35.2014.2012",
             filename="fw-QTM3-rel-35_2014_2012.mfa"
         )
-        self.mst_dev_name = '/dev/mst/mt54004_pciconf0'  # TODO update
+        self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [1, 0])
         self.ztp_prod_json = 'uninstall_prod.json'
         self.ztp_dev_json = 'uninstall.json'
         self.ztp_complex_prod_json = 'complex_prod.json'
@@ -1171,16 +1170,8 @@ class JulietSwitch(NvLinkSwitch):
             [PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME, PlatformConsts.EROT_FPGA_PATH_NAME,
              PlatformConsts.EROT_ASIC1_PATH_NAME, PlatformConsts.EROT_ASIC2_PATH_NAME])
 
-        self.nmx_cluster_apps_versions = self.NmxClusterAppsConsts(
-            burn_path={
-                ClusterConsts.NMX_CONTROLLER: "/auto/sw/release/NMX/NMX-controller/package/1.0.0/nmx-c-nvlink_1.0.0_2025-03-20_13-56.tar.gz",
-                ClusterConsts.NMX_TELEMETRY: "/auto/sw/release/NMX/NMX-telemetry/nmx-telemetry_1.0.4_2025-03-14.tgz"
-            },
-            burn_version_names={
-                ClusterConsts.NMX_CONTROLLER: "1.0.0",
-                ClusterConsts.NMX_TELEMETRY: "1.0.4"
-            }
-        )
+        self.nmx_cluster_apps_versions_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/nmx-versions/4300_versions.json"
+
         self.supported_commands.extend([ActionConsts.POWER_CYCLE])
         self.asic_version = BaseSwitch.AsicImageConsts(
             version="35.2014.1492",
@@ -1213,6 +1204,7 @@ class JulietSwitch(NvLinkSwitch):
             'install cpld': 720,
         })
         self.num_of_plane_ports = 1
+        self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1300,8 +1292,13 @@ class JulietScaleoutSwitch(JulietSwitch):
                 'manager': {
                     "ca-certificate": "",
                     "certificate": "",
+                    "crl": "",
                     "encryption": "disabled",
                     "state": "disabled"
+                },
+                "rbac": {
+                    "rbac-file": "",
+                    "rbac-mode": ""
                 }
             },
             'nmx-telemetry': {
@@ -1313,8 +1310,13 @@ class JulietScaleoutSwitch(JulietSwitch):
                 'manager': {
                     "ca-certificate": "",
                     "certificate": "",
+                    "crl": "",
                     "encryption": "disabled",
                     "state": "disabled"
+                },
+                "rbac": {
+                    "rbac-file": "",
+                    "rbac-mode": ""
                 }
             }
         }
@@ -1433,7 +1435,7 @@ class JulietScaleoutSwitch(JulietSwitch):
 
     @classmethod
     def _get_lane_bmap(cls, port):
-        return (0x3 if port.split_number == 1 else 0xc) * (10 if port.local_port == 2 else 1)
+        return (0x3 if port.split_number == 1 else 0xc) * (0x10 if port.local_port == 2 else 1)
 
 # -------------------------- JulietTTM Switch ----------------------------
 
@@ -1643,20 +1645,22 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
+        self.category_list = ['asic-power', 'cpu', 'disk', 'mgmt-interface', 'temperature', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
             self.category_list[1]: self.category_default_disabled_dict,
             self.category_list[2]: self.category_disk_default_disable_dict,
             self.category_list[3]: self.category_default_disabled_dict,
-            self.category_list[3]: self.category_default_disabled_dict
+            self.category_list[4]: self.category_default_disabled_dict,
+            self.category_list[5]: self.category_default_disabled_dict,
         }
         self.category_list_default_dict = {
             self.category_list[0]: self.category_default_dict,
             self.category_list[1]: self.category_default_dict,
             self.category_list[2]: self.category_disk_default_dict,
             self.category_list[3]: self.category_default_dict,
-            self.category_list[4]: self.category_default_dict
+            self.category_list[4]: self.category_default_dict,
+            self.category_list[5]: self.category_default_dict,
         }
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_gb300_versions.json"
         # will be updated
@@ -1666,6 +1670,9 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             PlatformConsts.SYSTEM_TYPE: "N5500_LD",
             "asic-model": self.asic_type,
         })
+        self.stats_disk_header_num_of_lines = 16
+        self.stats_cpu_header_num_of_lines = 12
+        self.stats_temperature_header_num_of_lines = 17
         self.cpld_amount = 3
         self._extend_firmware_by_cpld_amount()
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
@@ -1700,8 +1707,12 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             "PMIC-7-CPU-Out-1",
             "PMIC-7-SOC-Out-2"
         ]
-        self.leakage_sensors_count = 4
+        self.leakage_sensors_count = 2
         self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
+        self.ztp_prod_json = 'uninstall_juliet_prod_gb300.json'
+        self.ztp_dev_json = 'uninstall_juliet_gb300.json'
+        self.ztp_complex_prod_json = 'complex_prod_juliet_gb300.json'
+        self.ztp_complex_dev_json = 'complex_juliet_gb300.json'
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled
@@ -1730,6 +1741,30 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
             "PMIC-7-Temp",
             "SODIMM-1-Temp"
         ]
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.components_gnmi_xpath = [self.bmc_xpath, self.bios_xpath, self.erot_xpath, self.fpga_xpath,
+                                      self.cpld1_xpath, self.cpld2_xpath, self.cpld3_xpath]
+
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        return 'nvos_config_nvl5_gb300.yml'
+
+
+# -------------------------- JulietNonScaleoutSwitchGB300QS Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchGB300QS(JulietNonScaleoutSwitchGB300):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JQS")})
+
 
 # -------------------------- JulietNonScaleoutNoNCISwitch Switch ----------------------------
 

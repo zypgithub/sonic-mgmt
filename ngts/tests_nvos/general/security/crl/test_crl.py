@@ -5,7 +5,8 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import GnmiConsts
 from ngts.tests_nvos.conftest import dut_hostname, get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.helpers import generate_certs, get_test_certs_dir_location, prepare_tmp_test_certs, set_new_random_users
+from ngts.tests_nvos.general.security.constants import SecurityConsts
+from ngts.tests_nvos.general.security.helpers import generate_certs, get_test_certs_dir_location, set_new_random_users
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 import pytest
@@ -19,7 +20,6 @@ from ngts.nvos_tools.infra.CrlValidator import CrlValidator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -520,40 +520,52 @@ def test_crl_with_no_ca(engines, dut_hostname, system_with_cleanup):
 @pytest.mark.system
 @pytest.mark.crl
 @pytest.mark.security_ci
-def test_import_expired_crl(engines, dut_hostname, system_with_cleanup):
+def test_import_expired_crl(engines, validator_with_cleanup):
     """
     Validate that importing expired crl does not work
 
-    1. Generate CA and certs both for client and server
-    2. Generate CRL with expired date
-    3. Import CRL and verify it fails
-
+    1. Prepare mtls
+    2. Import expired CRL
+    3. Bind expired CRL and expect failure
 
     """
-    ip = engines.dut.ip
-    crl_validator = CrlValidator(app=ApiCrlClient(host=dut_hostname, ip=ip))
+    crl_validator: CrlValidator = validator_with_cleanup
     certs = crl_validator.setup_certs(
         engines=engines, dest="crl-expired", cert_names=["client", "server"]
     )
     revoked_cert = certs[0]
     server_cert = certs[-1]
 
+    crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[revoked_cert])
     crl_name = "test_expired_crl"
-    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=revoked_cert)
-    system = system_with_cleanup
-    crl_resource = system.security.crl
-    scp_player = get_scp_player(engines)
+    crl_path = SecurityConsts.CRL_EXPIRED_FILE_PATH
 
-    # with allure.step("Generate an already expired CRL"):
-    #     crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=revoked_cert, days_valid=-1)
+    with allure.step("Attempt to bind the expired CRL and verify success"):
+        crl_validator.bind_crl(crl_path, crl_name, should_succeed=True, ask_for_confirmation=True)
 
-    # with allure.step("Attempt to import the expired CRL and verify failure"):
-    #     import_uri = generate_scp_uri_using_player(scp_player, crl_path)
-    #     crl_resource.crl_id[crl_name].action_import(uri=import_uri).verify_result(should_succeed=False)
 
-    # with allure.step("Verify expired CRL is not listed in show output"):
-    #     output = crl_resource.parse_show()
-    #     assert crl_name not in output, f"Expired CRL '{crl_name}' should not be present in show output after failed import"
+@pytest.mark.system
+@pytest.mark.crl
+@pytest.mark.security_ci
+def test_crl_bad_name(engines, validator_with_cleanup):
+    """
+    Validate crl with bad name does not work (not imported)
+
+    1. Prepare mtls
+    2. Bind crl with bad name and expect failure
+    """
+    crl_validator: CrlValidator = validator_with_cleanup
+    certs = crl_validator.setup_certs(
+        engines=engines, dest="crl-sasha", cert_names=["client", "server"]
+    )
+    revoked_cert = certs[0]
+    server_cert = certs[-1]
+
+    crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[revoked_cert])
+    bad_crl_name = "bad_crl"
+    crl_path = crl_validator.revoke_cert(crl_name=bad_crl_name, cert=revoked_cert)
+    with allure.step("Bind crl with bad name and expect failure"):
+        crl_validator.bind_crl(crl_path, bad_crl_name, should_succeed=False, should_import=False)
 
 
 def _combine_crls(crl1_path: str, crl2_path: str) -> str:

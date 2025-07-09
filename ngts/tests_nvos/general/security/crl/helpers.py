@@ -44,26 +44,28 @@ class ApiCrlClient(CrlClient):
             feature_resource._general_cli_wrapper.apply_config(dut)
             return server_cert, client_ca_cert
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True):
+    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
         system = self.system
         engines = TestToolkit.engines
         scp_player = get_scp_player(engines)
         crl_file_path = dest
 
-        with allure.step("import test crl"):
-            import_crl_safely(crl_name, crl_file_path, scp_player)
+        if should_import:
+            with allure.step("import test crl"):
+                import_crl_safely(crl_name, crl_file_path, scp_player)
 
         with allure.step("verifies the CRL is imported"):
             output = system.security.crl.parse_show()
             assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
 
         with allure.step("bind crl"):
-            system.api.mtls.set("crl", crl_name, apply=True).verify_result(should_succeed=should_succeed)
+            system.api.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
 
-        with allure.step("verify crl shown in mtls"):
-            output = system.api.mtls.parse_show()
-            assert 'crl' in output, "No crl found in output"
-            assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
+        if should_succeed:
+            with allure.step("verify crl shown in mtls"):
+                output = system.api.mtls.parse_show()
+                assert 'crl' in output, "No crl found in output"
+                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
 
     def run_client(
         self,
@@ -117,27 +119,29 @@ class GnmiCrlClient(CrlClient):
             feature_resource._general_cli_wrapper.apply_config(dut)
             return server_cert, client_ca_cert
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True):
+    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
         system = self.system
         engines = TestToolkit.engines
         scp_player = get_scp_player(engines)
         crl_file_path = dest
 
-        with allure.step("import test crl"):
-            import_crl_safely(crl_name, crl_file_path, scp_player)
+        if should_import:
+            with allure.step("import test crl"):
+                import_crl_safely(crl_name, crl_file_path, scp_player)
 
         with allure.step("verifies the CRL is imported"):
             output = system.security.crl.parse_show()
             assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
 
         with allure.step("bind crl and wait 5 sec"):
-            system.gnmi_server.mtls.set("crl", crl_name, apply=True).verify_result()
+            system.gnmi_server.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
             time.sleep(5)
 
-        with allure.step("verify crl shown in mtls"):
-            output = system.gnmi_server.mtls.parse_show()
-            assert 'crl' in output, "No crl found in output"
-            assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
+        if should_succeed:
+            with allure.step("verify crl shown in mtls"):
+                output = system.gnmi_server.mtls.parse_show()
+                assert 'crl' in output, "No crl found in output"
+                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
 
     def run_client(
         self,
@@ -201,14 +205,15 @@ class NmxCrlClient(CrlClient):
             nmx_app.manager.encryption.action_update(EncryptionMode.MTLS).verify_result()
         return server_cert, client_ca_cert
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True):
+    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
         system = self.system
         scp_player = get_scp_player(TestToolkit.engines)
         nmx_app = self.cluster.apps.app_name[self.app_name]
         crl_file_path = dest
 
-        with allure.step("import test crl"):
-            import_crl_safely(crl_name, crl_file_path, scp_player)
+        if should_import:
+            with allure.step("import test crl"):
+                import_crl_safely(crl_name, crl_file_path, scp_player)
 
         with allure.step("verifies the CRL is imported"):
             output = system.security.crl.parse_show()
@@ -217,14 +222,15 @@ class NmxCrlClient(CrlClient):
         with allure.step("bind crl"):
             nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)
 
-        with allure.step("verify crl shown in mtls"):
-            with allure.independent_step("verify crl shown in nmx app manager output"):
-                output = nmx_app.manager.parse_show()
-                assert 'crl' in output, "No crl found in output"
-            with allure.independent_step("verify crl shown in nmx app manager crl output"):
-                output = nmx_app.manager.crl.parse_show()
-                assert 'crl' in output, "No crl found in output"
-                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
+        if should_succeed:
+            with allure.step("verify crl shown in mtls"):
+                with allure.independent_step("verify crl shown in nmx app manager output"):
+                    output = nmx_app.manager.parse_show()
+                    assert 'crl' in output, "No crl found in output"
+                with allure.independent_step("verify crl shown in nmx app manager crl output"):
+                    output = nmx_app.manager.crl.parse_show()
+                    assert 'crl' in output, "No crl found in output"
+                    assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
 
     def run_client(
         self,

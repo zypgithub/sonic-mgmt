@@ -19,6 +19,6 @@ class SecurityMode:
     ALL_MODES = [UNSECURED, TLS, MTLS]
 
 
-BAD_RESPONSE_KEYWORDS = ['401 Authorization Required', "You don't have the permission to access the requested resource",
-                         '403', 'Forbidden', 'The server could not verify that you are authorized to access the URL requested',
-                         '401', 'Unauthorized', '400', 'No required SSL certificate was sent']
+BAD_RESPONSE_KEYWORDS = ['Authorization Required', "You don't have the permission to access the requested resource",
+                         'Forbidden', 'The server could not verify that you are authorized to access the URL requested',
+                         'Unauthorized', 'Bad Request', 'No required SSL certificate was sent']

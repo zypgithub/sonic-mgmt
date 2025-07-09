@@ -183,3 +183,29 @@ class OpenApiClusterCli(OpenApiBaseCli):
     @staticmethod
     def action_restore_sdn_transceiver_maintenance_state(engine, path):
         return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=path, param_name=ClusterConsts.MAINTENANCE_STATE)
+
+    @staticmethod
+    def action_import_rbac_file(engine, resource_path, remote_url):
+        logging.info(f"Running action: import rbac file {resource_path} on dut using OpenApi")
+        parameters = {
+            "url": remote_url
+        }
+        params = \
+            {
+                "state": "start",
+                "parameters": parameters
+            }
+
+        return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_delete_rbac_file(engine, resource_path):
+        logging.info(f"Running action: delete rbac file {resource_path} on dut using OpenApi")
+        params = \
+            {
+                "state": "start",
+                "parameters": {}
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)

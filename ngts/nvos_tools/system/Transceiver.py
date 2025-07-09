@@ -50,4 +50,4 @@ class Transceiver(BaseComponent):
 
     def get_list_of_connected_transceivers(self):
         dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show()).get_returned_value()
-        return [tarnsceiver for tarnsceiver, info in dict_of_transceivers.items() if info.get("status") == "Inserted"]
+        return list(dict_of_transceivers.keys())

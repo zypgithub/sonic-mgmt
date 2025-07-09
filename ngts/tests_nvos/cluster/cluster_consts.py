@@ -25,7 +25,7 @@ class ClusterConsts:
     NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
     INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
     UNDEFINED_STATE = 'undefined'
-    UNDEFINED_STATE_ERR_MSG_NVUE = "'undefined' is not one of ['enabled', 'disabled']"
+    UNDEFINED_STATE_ERR_MSG_NVUE = '\'undefined\' is not one of ["enabled", "disabled"]'
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}
     RESET_FACTORY_CLUSTER_DISABLED_NVUE = 'Error: Action failed with the following issue:\n  cluster is not enabled'
@@ -47,7 +47,7 @@ class ClusterConsts:
     UNDEFINED_LOG_LEVEL = "'undefined' is not one of ['critical', 'error', 'warn', 'notice', 'info', 'debug']"
     SLEEP_AFTER_LOG_ROTATE = 20
     PARTITIONS_NAMES = ['test_partition1', 'test_partition2', 'test_partition3']
-    RESILIENCY_MODES = ['adaptive_bandwidth', 'full_bandwidth', 'user_action']
+    RESILIENCY_MODES = ['adaptive_bandwidth', 'full_bandwidth', 'user_action_required']
     CONFIDENTIAL_COMPUTE = [True, False]
     DEFAULT_PARTITION = 1
     APP_VERSION = 'app-ver'
@@ -92,3 +92,41 @@ class ClusterConsts:
     # maintenance state constants
     MAINTENANCE_STATE = 'maintenance-state'
     MAINTENANCE_STATE_OPTIONS = ['up', 'diag', 'down']
+
+
+class AnsbilePlaybooksConsts:
+    USER = 'user'
+    PASS = 'pass'
+    ANSIBLE_MACHINES = ['10.237.246.70']
+    ANSIBLE_MACHINES_CREDENTIALS = {
+        '10.237.246.70': {USER: NvosConst.ROOT_USER, PASS: NvosConst.ROOT_PASSWORD}
+    }
+    USER_CONFIG_FILE = '~/.ansible/user_config_file.yml'
+    PATH_TO_NVIDIA_CLUSTER_MGMT = '/root/.ansible/collections/ansible_collections/nvidia/NVlinkClusterManagement/'
+    CONFIG_FILE = '~/.ansible/user_config_file.yml'
+    RM_VERSION = 'rm_version'
+    COMPUTE_BMC = 'compute_bmc'
+    COMPUTE_CPLD = 'compute_cpld'
+    COMPUTE_HMC = 'compute_hmc'
+    CUDA_PACKAGE = 'cuda_package'
+    COMPUTE_NODE_FW_PATH = 'compute_node_fw_path'
+    CUDA_AARCH64_DOWNLOAD_URL = 'cuda_aarch64_download_url'
+    BUILD_VERSION = 'build_version'
+    COMPONENTS = [RM_VERSION, COMPUTE_BMC, COMPUTE_CPLD, COMPUTE_HMC, CUDA_PACKAGE]
+    CONFIG_FILE_UPDATE_PER_COMPONENT = {RM_VERSION: BUILD_VERSION,
+                                        COMPUTE_BMC: COMPUTE_NODE_FW_PATH,
+                                        COMPUTE_CPLD: COMPUTE_NODE_FW_PATH,
+                                        COMPUTE_HMC: COMPUTE_NODE_FW_PATH,
+                                        CUDA_PACKAGE: CUDA_AARCH64_DOWNLOAD_URL}
+
+    PLAYBOOKS_ARGUMENTS = {RM_VERSION: '',
+                           COMPUTE_BMC: '',
+                           COMPUTE_CPLD: '',
+                           COMPUTE_HMC: '',
+                           CUDA_PACKAGE: "--skip-tags 'cuda_rm_assert'"}
+
+    PLAYBOOKS_NAMES = {RM_VERSION: 'provision_compute_node_software_nvl5.yml',
+                       COMPUTE_BMC: 'provision_compute_node_firmware_bmc.yml',
+                       COMPUTE_CPLD: 'provision_compute_node_firmware_cpld.yml',
+                       COMPUTE_HMC: 'provision_compute_node_firmware_hmc.yml',
+                       CUDA_PACKAGE: "install_cuda_tests.yml"}

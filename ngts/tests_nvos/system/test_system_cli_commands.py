@@ -1,7 +1,9 @@
+import re
 import time
 import pytest
 import logging
 from ngts.nvos_tools.system.System import System
+from retry import retry
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
@@ -141,9 +143,8 @@ def test_set_inactivity_timeout(engines, devices, topology_obj):
     with allure.step("Open new ssh and serial connection"):
         logger.info("Open new ssh and serial connection")
 
-        with allure.step("Check user count by default with our infra"):
-            output = engines.dut.run_cmd("w")
-            assert not output or "2 users" in output, "By default in our infra we have 2 users"
+        with allure.step("Get number of current users"):
+            users_num = _get_users_num(engines)
 
         connection = None
         try:
@@ -157,12 +158,13 @@ def test_set_inactivity_timeout(engines, devices, topology_obj):
             if respond == 0:
                 connection.sendline(devices.dut.default_password)
                 connection.expect(DefaultConnectionValues.DEFAULT_PROMPTS[0])
-            output = engines.dut.run_cmd("w")
-            assert not output or "4 users" in output, "The value of users will be 4"
-            time.sleep(60)
-            output = engines.dut.run_cmd("w")
-            assert not output or "2 users" in output, "The value of users will be 2, because it logged off serial " \
-                                                      "and ssh which we created"
+
+            with allure.step("Verify we have 2 new users connected"):
+                assert users_num == _get_users_num(engines) - 2, f"Current users number is not as expected.\nExpected: {users_num + 2}\nGot: {_get_users_num(engines)}"
+
+            with allure.step("Wait 60 seconds and verify 2 users disconnected by inactivity timeout"):
+                time.sleep(60)
+                assert _get_users_num(engines) == users_num, f"Current users number is not as expected.\nExpected: {users_num},\nGot: {_get_users_num(engines)}"
         except BaseException as ex:
             raise Exception("Failed on {}".format(str(ex)))
         finally:
@@ -227,3 +229,13 @@ def test_set_sysrq_capabilities(engines):
         ValidationTool.verify_field_value_in_output(serial_output, SystemConsts.SERIAL_CONSOLE_SYSRQ_CAPABILITIES,
                                                     SystemConsts.SERIAL_CONSOLE_DEFAULT_SYSRQ_CAPABILITIES
                                                     ).verify_result()
+
+
+def _get_users_num(engines):
+    users_num = 0
+    output = engines.dut.run_cmd("w")
+    pattern = r"(\d+)\s+users?"
+    match = re.search(pattern, output)
+    if match:
+        users_num = int(match.group(1))
+    return users_num

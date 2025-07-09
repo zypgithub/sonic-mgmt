@@ -6,7 +6,7 @@ from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst
-from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -19,6 +19,8 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BMC_USER_BACKUP_PASSWORD, ROOT
 from ngts.nvos_constants.constants_nvos import OpenApiReqType
+from ngts.nvos_constants.constants_nvos import FansConsts, PlatformConsts, SystemConsts
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 
 logger = logging.getLogger()
 
@@ -50,12 +52,20 @@ class BmcTool:
             raise Exception("Shutdown command failed with the following response:\n" + response)
 
     @staticmethod
-    def fetch_and_install_platform_component(platform_component, path, name, filename, topology_obj, test_name) -> ResultObj:
+    def fetch_and_install_platform_component(platform_component, path, name, filename, topology_obj, test_name, skip_version_check=False) -> ResultObj:
         with allure.step(f'Fetch {name} image from: {path}'):
             platform_component.action_fetch(path).verify_result()
 
         with allure.step(f'installing image {name}'):
-            return BmcTool.install_fw_image(platform_component, test_name, filename, topology_obj, name)
+            return BmcTool.install_fw_image(platform_component, test_name, filename, topology_obj, name, skip_version_check)
+
+    @staticmethod
+    def fetch_and_install_platform_component_without_reboot(platform_component, path, name, filename, test_name, skip_version_check=False) -> ResultObj:
+        with allure.step(f'Fetch {name} image from: {path}'):
+            platform_component.action_fetch(path).verify_result()
+
+        with allure.step(f'installing image {name}'):
+            return BmcTool.install_fw_image_without_reboot(platform_component, test_name, filename, skip_version_check)
 
     @staticmethod
     def verify_platform_component_version(platform_component, expected_version: str):
@@ -67,6 +77,15 @@ class BmcTool:
 
             assert output_version == expected_version, \
                 f"firmware is {output_version}, expected {expected_version} after the install"
+
+    @staticmethod
+    def verify_cpld_versions(image_details: Dict[str, Dict[str, str]]):
+        firmware_shown = OutputParsingTool.parse_json_str_to_dictionary(Platform().firmware.show()).get_returned_value()
+        with allure.step('validate cpld firmware versions'):
+            for cpld_number, expected_version in image_details.items():
+                with allure.independent_step(f"Checking {cpld_number}"):
+                    actual_firmware = firmware_shown[cpld_number][PlatformConsts.FW_ACTUAL]
+                    assert actual_firmware == expected_version, f"{cpld_number} version mismatch: Expected '{expected_version}', Got '{actual_firmware}'"
 
     @staticmethod
     def compare_bmc_version_issu_module(engines, expected_version: str):
@@ -114,6 +133,13 @@ class BmcTool:
             assert background_copy_status.lower() == "Completed".lower(), "Background copy status is not completed"
 
     @staticmethod
+    @retry(AssertionError, tries=3, delay=15)
+    def wait_for_cpu_to_detect_bmc(dut_engine: LinuxSshEngine, nv_command: NvCommand):
+        bmc_inventory: dict = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.inventory.show("BMC")).get_returned_value()
+        assert bmc_inventory.get(SystemConsts.STATE) == FansConsts.STATE_OK, "BMC is not detected by CPU"
+
+    @staticmethod
     def get_fw_component_version_latest(component_name):
         return BmcTool._get_fw_component_version_info(component_name, "latest")
 
@@ -148,13 +174,22 @@ class BmcTool:
             return ip_addresses
 
     @staticmethod
-    def install_fw_image(platform_component, test_name, filename, topology_obj, name) -> ResultObj:
+    def install_fw_image(platform_component, test_name, filename, topology_obj, name, skip_version_check=False) -> ResultObj:
         component_name = platform_component.get_resource_basename().lower()
         res_obj, duration = OperationTime.save_duration(f'{component_name} install with reboot', '',
                                                         test_name,
                                                         platform_component.files.file_name[
                                                             filename].action_file_install_with_reboot,
-                                                        topology_obj=topology_obj)
+                                                        topology_obj=topology_obj, skip_version_check=skip_version_check)
+        return res_obj
+
+    @staticmethod
+    def install_fw_image_without_reboot(platform_component, test_name, filename, skip_version_check=False) -> ResultObj:
+        component_name = platform_component.get_resource_basename().lower()
+        res_obj, duration = OperationTime.save_duration(f'{component_name} install without reboot', '',
+                                                        test_name,
+                                                        platform_component.files.file_name[filename].action_file_install,
+                                                        force=False, skip_version_check=skip_version_check)
         return res_obj
 
     @staticmethod

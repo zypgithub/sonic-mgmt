@@ -1,12 +1,18 @@
+import re
 import logging
 from typing import Dict
+from datetime import datetime
+
 
 import allure
+
+from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
+from ngts.constants.constants import BugHandlerConst
 
 logger = logging.getLogger()
 
@@ -61,12 +67,54 @@ class Log(BaseLog):
                 if not log_search_errors:
                     break
 
-                output = self.file.file_id[log_file].show(op_param=f'| grep -E "{grep_logs}"', output_format='',
+                output = self.file.file_id[log_file].show(op_param=f'| grep -E -a "{grep_logs}"', output_format='',
                                                           dut_engine=engine)
                 if output:
                     for log in logs_to_find:
-                        if log in output and log in log_search_errors:
+                        if re.search(log, output) and log in log_search_errors:
                             del log_search_errors[log]
+
+            err = ',\n'.join(list(log_search_errors.values()))
+            assert not log_search_errors, f"The following logs weren't found:\n{err}"
+
+    def verify_expected_logs_by_time(self, logs_to_find, engine=None, only_latest_log=False, start_time=None):
+        """
+        :param logs_to_find: list of logs to find
+        :param engine: system engine
+        :param only_latest_log: verify in only latest log file, instead of all in log files.
+        :param start_time: only logs printed after this time are relevant
+        :return:
+        """
+        with allure.step('Verify expected logs'):
+            log_search_errors: Dict[str, str] = {log: f'log "{log}" was not found' for log in logs_to_find}
+            grep_logs = '|'.join(logs_to_find)
+
+            if only_latest_log:
+                log_files = ['syslog']
+            else:
+                log_files = OutputParsingTool.parse_json_str_to_dictionary(
+                    self.file.show()).get_returned_value().keys()
+
+            for log_file in log_files:
+                if not log_search_errors:
+                    break
+
+                output = engine.run_cmd(f'sudo cat /var/log/{log_file} | grep -E -a "{grep_logs}"')
+
+                if output:
+                    lines = output.splitlines()
+                    for log in logs_to_find:
+                        for line in lines:
+                            matched_value = re.search(log, line)
+                            if matched_value:
+                                date_match = re.search(fr'{NvosConst.DATE_TIME_REGEX[0]}', line)
+                                date_str = date_match.group()
+                                parsed_time = datetime.strptime(date_str, BugHandlerConst.TIMESTAMP_FORMATS[3])
+                                current_year = datetime.now().year
+                                parsed_time = parsed_time.replace(year=current_year)
+                                if start_time <= parsed_time and log in log_search_errors:
+                                    del log_search_errors[log]
+                                    break
 
             err = ',\n'.join(list(log_search_errors.values()))
             assert not log_search_errors, f"The following logs weren't found:\n{err}"

@@ -212,7 +212,7 @@ class ClusterTools:
     def verify_interface_up(devices, has_loopbox, setup_name):
         if setup_name in Configurations.non_standalone_systems:
             interface_types = ['acp']
-        if setup_name not in Configurations.non_standalone_systems and has_loopbox:
+        elif setup_name not in Configurations.non_standalone_systems and has_loopbox:
             interface_types = ['fnm', 'acp']
         else:
             interface_types = []

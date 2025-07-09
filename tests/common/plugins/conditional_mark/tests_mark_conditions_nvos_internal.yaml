@@ -530,11 +530,6 @@ tests_nvos/system/test_system_profile_change.py:
     conditions:
       - https://redmine.mellanox.com/issues/3924104
 
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason:  "Testcase skipped on Juliet systems due to missing auto-update field"
-    conditions:
-      - "'juliet' in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py:
   skip:
@@ -626,6 +621,12 @@ tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_env
       - "'juliet' in testbed"
       - https://redmine.mellanox.com/issues/4259913
 
+tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_traffic:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4276503
+
 tests_nvos/system/test_system_health.py::test_ignore_health_issue:
   skip:
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
@@ -637,6 +638,12 @@ tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_si
     reason: "Testcase skipped on Juliet systems, Juliet Does not have PSU"
     conditions:
       - "'juliet' in testbed"
+
+tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4334449
 
 tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
   skip:
@@ -674,4 +681,88 @@ tests_nvos/system/test_system_image:
     conditions:
       - https://redmine.mellanox.com/issues/4517764
 
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_hidden_non_nvlink:
+  skip:
+    reason: "Testcase skipped on Juliet systems, "
+    conditions:
+      - "'juliet' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_flow:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_config_removal:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_invalid_kr_mode_rejected:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_interface_range_sequential_actions:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_link_transition_timing:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+tests_nvos/cluster/test_start_stop_cluster.py::test_cluster_app_start_stop:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4468309"
+    conditions:
+      - https://redmine.mellanox.com/issues/4468309
+
+ngts/tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
+  skip:
+    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
+
+ngts/tests_nvos/checklist/test_bmc_install.py:
+  skip:
+    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
+
+ngts/tests_nvos/checklist/test_firmware_install_same_version.py:
+  skip:
+    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
 ########################## NVOS IGNORE END ##########################

@@ -222,7 +222,7 @@ def test_ssh_pka_invalid_values(engines, generate_new_admin_keys):
 
             with allure.independent_step("Bad flow: try to set invalid key type"):
                 admin_key_obj.set(op_param_name='type', op_param_value='dsa',
-                                  expected_str="Error: At type: 'dsa' is not one of [")
+                                  expected_str="Error: 'dsa' is not one of [")
 
             with allure.independent_step("Bad flow: try to set invalid key id"):
                 invalid_key = 'Invalid@'

@@ -29,9 +29,11 @@ def test_fw_dump_me(engines, devices):
     syncd_ibv = "syncd-ibv0{}".format(ibv_num)
     sdk_dump_folder = "/var/log/mellanox/sdk-dumps/"
 
-    if is_bug_active(4387308):
-        dev = "_dev{}".format(ibv_num) if devices.dut.switch_class == NvosConst.JULIET_SWITCH else ""
-        sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
+    list_file = engines.dut.run_cmd("ls /var/log/mellanox/")
+    if "sdk-dumps" not in list_file.split():
+        if is_bug_active(4387308):
+            dev = "_dev{}".format(ibv_num) if devices.dut.switch_class == NvosConst.JULIET_SWITCH else ""
+            sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
 
     with allure.step('Upload sdk fw crush file to switch'):
         player_engine = engines['sonic_mgmt']

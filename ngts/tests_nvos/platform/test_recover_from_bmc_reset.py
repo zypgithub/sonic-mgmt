@@ -66,6 +66,14 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
             assert final_bmc_status == initial_bmc_status
 
         with allure.step("Check general system status"):
+            with allure.independent_step("Assert logs aren't flooded with BMC error messages"):
+                bmc_log_lines = grep_log_lines_after_datetime(engine, 'bmc', start_time)
+                assert len(bmc_log_lines) < BMC_LOG_LINES_MAX, (
+                    f'BMC reset causes log flooding: logs contain {len(bmc_log_lines)} lines regarding BMC, more '
+                    f'than the threshold of {BMC_LOG_LINES_MAX}:\n\n' +
+                    '\n'.join(bmc_log_lines)
+                )
+
             with allure.independent_step("Assert health ok"):
                 final_health_issues = OutputParsingTool.parse_json_str_to_dictionary(
                     system.health.show()).get_returned_value()[HealthConsts.ISSUES].keys()
@@ -80,14 +88,6 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
                 cpu_output = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
                 cpu_utilization = cpu_output[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
                 assert cpu_utilization <= CPU_MAX_UTILIZATION
-
-            with allure.independent_step("Assert logs aren't flooded with BMC error messages"):
-                bmc_log_lines = grep_log_lines_after_datetime(engine, 'bmc', start_time)
-                assert len(bmc_log_lines) < BMC_LOG_LINES_MAX, (
-                    f'BMC reset causes log flooding: logs contain {len(bmc_log_lines)} lines regarding BMC, more '
-                    f'than the threshold of {BMC_LOG_LINES_MAX}:\n\n' +
-                    '\n'.join(bmc_log_lines)
-                )
 
     except Exception:
         with allure.step("Failed to recover from BMC reset. Fixing device by remote-reboot."):

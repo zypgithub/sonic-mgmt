@@ -4,12 +4,27 @@
     rev-id: 1.0                       # Provided revision ID
     version: 25.02.0504-001           # Provided version
 - set:
+    cluster:
+      state: enabled
     interface:
       eth0:
         description: PORTI1
         type: eth
     system:
       aaa:
+        authentication:
+          failthrough: enabled
+          order: tacacs,local
+          restrictions:
+            fail-delay: 0
+            lockout-state: disabled
+        tacacs:
+          hostname:
+            fdfd:fdfd:10:237:240:56ff:fe1b:56:
+              auth-type: login
+              port: 52
+              secret: secret
+              timeout: 5
         user:
           eabboud:
             password: $y$j9T$pUsDr8V55akJ6WgfjVvze.$gperjLnCy0onUXxsu4h5lwy2ZlxryUBWV56eK21lTxD
@@ -43,4 +58,7 @@
         server:
           10.7.49.202:
             protocol: tcp
-          192.168.1.2: { }
+          192.168.1.2:
+            filter:
+              include: b+
+            trap: debug

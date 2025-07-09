@@ -1517,7 +1517,8 @@ class BugHandlerConst:
                                         BUG_HANDLER_DECISION_SKIP]
     BUG_TITLE_LIMIT = 230
     BUG_HANDLER_SKIP_BRNACH = ['202305']
-    TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"]
+    TIMESTAMP_FORMATS = ["%b %d %H:%M:%S", "%Y %b %d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%b %d %H:%M:%S.%f",
+                         "%Y-%m-%d %H:%M:%S"]
     TIMESTAMP_LENGTH = [len(datetime.now().strftime(format)) for format in TIMESTAMP_FORMATS]
     LOG_ERRORS_FILE_ROOT_ITEM = "log_errors"
     TAR_FILE_SIZE_RM_LIMIT = 102400000
@@ -1579,6 +1580,9 @@ class GnmiConsts:
     PART_NUMBER = 'part_number'
     DESCRIPTION = 'description'
     SYSTEM_COMPONENTS = 'SYSTEM_COMPONENTS'
+    LONG_TERM_AVERAGE_GNMI = "long-term-avg-power"
+    SHORT_TERM_AVERAGE_GNMI = "short-term-avg-power"
+    POWER_TELEMETRY_ASIC_GNMI_FIELDS = [LONG_TERM_AVERAGE_GNMI, SHORT_TERM_AVERAGE_GNMI]
 
 
 class CableComplianceConst:

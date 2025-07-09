@@ -1,4 +1,6 @@
 import base64
+import logging
+import os
 import random
 import string
 import time
@@ -267,17 +269,18 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr,
                                downgrade_version_realpath):
     """
     Check bad flow scenarios:
-    -	Fetch something that doesn’t / already exist
-    -	Delete something that doesn’t exist
-    -	Install something that doesn’t exist
+    -	Fetch something that doesn't / already exist
+    -	Delete something that doesn't exist
+    -	Install something that doesn't exist
     -	Install the same current image
-    -	Boot next something that doesn’t / already exist
-    -	Rename something that doesn’t exist
-    -	Upload image that doesn’t / already exist
+    -	Boot next something that doesn't / already exist
+    -	Rename something that doesn't exist
+    -	Upload image that doesn't / already exist
 
     """
     system = System()

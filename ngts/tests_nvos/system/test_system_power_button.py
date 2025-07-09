@@ -34,7 +34,7 @@ def test_system_power_button(engines, topology_obj):
 
     finally:
         with allure.step('Recover system with remote reboot'):
-            recover_dut_with_remote_reboot(topology_obj, engines)
+            recover_dut_with_remote_reboot(topology_obj, engines, 90)
 
         if not is_redmine_issue_active([4003176][0]):
             with allure.step('Check reboot reason'):

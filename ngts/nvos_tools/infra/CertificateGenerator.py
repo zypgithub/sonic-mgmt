@@ -37,7 +37,7 @@ class CertificateGenerator:
         openssl req -newkey rsa:2048 -nodes -keyout $CERT_FILENAME.key -subj /C=CN/ST=GD/L=SZ-Inc/CN=$CERT_DN -out $CERT_FILENAME.csr
         openssl x509 -req -in $CERT_FILENAME.csr -CA $CA_FILENAME.crt -CAkey $CA_FILENAME.key -CAcreateserial -out $CERT_FILENAME.crt -days $EXP -extfile <(printf "subjectAltName=DNS:$CERT_DN,IP:$CERT_IP,URI:$SPIFFE")
         openssl x509 -in $CERT_FILENAME.crt -out $CERT_FILENAME.pem -outform PEM
-        openssl pkcs12 -export -out $CERT_FILENAME.p12 -in $CERT_FILENAME.pem -inkey $CERT_FILENAME.key -passout pass:$P12_PASS
+        openssl pkcs12 -export -out $CERT_FILENAME.p12 -in $CERT_FILENAME.pem -inkey $CERT_FILENAME.key -keypbe AES-256-CBC -certpbe AES-256-CBC -passout pass:$P12_PASS
 
         chmod +r ./*
         -------------

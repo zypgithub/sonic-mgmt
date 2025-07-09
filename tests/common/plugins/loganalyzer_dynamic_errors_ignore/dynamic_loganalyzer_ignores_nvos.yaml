@@ -24,6 +24,12 @@
 #      - https://github.com/Azure/sonic-buildimage/issues/9811
 
 - Errors_list:
+    - '.*No kernel crashes detected.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos
+
+- Errors_list:
     - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
     - '.* ERR watchdogutil: Failed to get watchdog module'
     - '.* ERR kernel: \[\s+\d+\.\d+\] /dev/sda3: Can''t open blockdev'
@@ -2047,4 +2053,19 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_reboot_with_high_ssd_usage
 
+# NVOS: Expected logs
+- Errors_list:
+    - '.*WARNING cpu_memory_container_checker: Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+    - '.*WARNING cpu_memory_container_checker: CPU usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/test_cpu_memory_monitoring.py
+
+- Errors_list:
+    - '.*ERR healthd\: Voltage sensor reading is not available.*'
+    - '.*ERR health-statsd#health_history.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/bmc/test_reset_bmc_root_password.py
+        - tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py
 # --------------------------------------------------

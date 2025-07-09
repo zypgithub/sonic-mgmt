@@ -483,7 +483,7 @@ class ClockTools:
                 time.sleep(5)
                 logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
 
-            last_log_datetime = ' '.join((re.findall(NvosConst.DATE_TIME_REGEX, logs)[-1]).split(' '))
+            last_log_datetime = ' '.join((re.findall(NvosConst.DATE_TIME_REGEX[0], logs)[-1]).split(' '))
             show_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_system_datetime)
             log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime)
             logging.info('show date-time: {}\nlogs date-time: {}'.format(show_datetime, log_datetime))

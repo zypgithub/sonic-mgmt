@@ -14,6 +14,7 @@ from ngts.nvos_tools.nmx.Loglevel import Loglevel
 from ngts.nvos_tools.nmx.Manager import Manager
 from ngts.nvos_tools.nmx.Logstream import Logstream
 from ngts.nvos_tools.nmx.Type import Type
+from ngts.nvos_tools.nmx.RbacCluster import RbacApp
 
 logger = logging.getLogger()
 
@@ -36,6 +37,8 @@ class ClusterApp(BaseComponent):
         self.manager = Manager(self)
         self.logstream = Logstream(self)
         self.type = Type(self)
+        self.rbac = RbacApp(self)
+        self.app_name = app_name
 
     def action_start_cluster_app(self, engine=None):
         engine = engine if engine else TestToolkit.engines.dut

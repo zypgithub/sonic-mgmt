@@ -139,8 +139,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
             with allure.step("check no disk issue"):
-                with allure.step("waiting for 150 seconds, for monit and healthD"):
-                    time.sleep(150)
+                with allure.step("waiting for 170 seconds, for monit and healthD"):
+                    time.sleep(170)
                 _check_disk_issue(system)
     finally:
         _delete_all_files(engines.dut)
@@ -172,6 +172,8 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
         engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))
 
         with allure.step("Rotate logs"):
+            logger.info("Listing all current log files:")
+            engines.dut.run_cmd("ls -la /var/log")
             system.log.rotate_logs()
 
         with allure.step('Reboot the system'):

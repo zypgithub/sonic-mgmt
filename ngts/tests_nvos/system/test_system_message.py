@@ -1,6 +1,7 @@
 import logging
 from ngts.tools.test_utils import allure_utils as allure
 import pytest
+import time
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -115,6 +116,8 @@ def test_set_system_message_pre_login(engines, devices, test_api):
             system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"{new_pre_login_msg}"',
                                apply=True, dut_engine=engines.dut).verify_result()
 
+        if TestToolkit.tested_api == ApiType.OPENAPI:
+            time.sleep(1)
         message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
 
         with allure.step('Verify pre-login changed to new message in show system'):
@@ -145,6 +148,8 @@ def test_set_system_message_pre_login(engines, devices, test_api):
                                  apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify pre-login changed to default in show system'):
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                time.sleep(1)
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
                                                         devices.dut.pre_login_message).verify_result()
@@ -189,6 +194,8 @@ def test_set_system_message_post_login(engines, devices, test_api):
             system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE, op_param_value=f'"{new_post_login_msg}"',
                                apply=True, dut_engine=engines.dut).verify_result()
 
+        if TestToolkit.tested_api == ApiType.OPENAPI:
+            time.sleep(1)
         message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
 
         with allure.step('Verify post-login changed to new message in show system'):
@@ -212,6 +219,8 @@ def test_set_system_message_post_login(engines, devices, test_api):
                                  apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify post-login changed to default in show system'):
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                time.sleep(1)
             TestToolkit.tested_api = ApiType.NVUE
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,

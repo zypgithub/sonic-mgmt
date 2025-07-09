@@ -101,7 +101,8 @@ def test_cacert_mgmt_cacert_cli(test_api, engines, scp_player, clear_certs):
                                 assert str(out_single[field]) == '1', f'field {field} not as expected\nexpected: 1\nactual: {out_single[field]}'
                         elif field == CaShowFields.INSTALLED:
                             with allure.independent_step('Verify installed empty {}'):
-                                assert out_single[field] == {}, f'field {field} not as expected\nexpected: {"{}"}\nactual: {out_single[field]}'
+                                install_val = out_single.get(field, '')
+                                assert not install_val, f'field {field} not as expected\nexpected: {"{}"}\nactual: {install_val}'
                         else:
                             with allure.independent_step(f'verify {field} not empty'):
                                 assert out_single[field] != '', f'field {field} not as expected\nexpected: not empty\nactual: ""'

@@ -1,3 +1,6 @@
+from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -52,7 +55,9 @@ class DMIDecodeTool:
         """
         Verify DMI information using dmidecode
         """
-        product_name = devices.dut.show_platform_output['product-name']
+        platform_info = OutputParsingTool.parse_json_str_to_dictionary(
+            Platform().show()).get_returned_value()
+        product_name = platform_info[PlatformConsts.SYSTEM_TYPE]
 
         with allure.step("Verify DMI information"):
             dmi_tool = DMIDecodeTool(engines)

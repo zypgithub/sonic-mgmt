@@ -4,15 +4,25 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_constants.constants_nvos import OperationTimeConsts
+from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.Devices.IbDevice import NvLinkSwitch
 from typing import Tuple
-from ngts.tests_nvos.helpers import redmine_helpers
 
 logger = logging.getLogger()
+
+
+# XXX: remove after the bug is closed: https://redmine.mellanox.com/issues/4221742
+@pytest.fixture(scope='module', autouse=True)
+def _update_install_threshold(devices):
+    if isinstance(devices.dut, NvLinkSwitch) and redmine_helpers.is_bug_active(4221742):
+        OperationTimeConsts.THRESHOLDS['reboot with default FW installation'] *= 2
+        OperationTimeConsts.THRESHOLDS['reboot with new user FW'] *= 2
 
 
 @pytest.mark.checklist
@@ -52,24 +62,18 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
             with allure.step("Install firmware and verify"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
-                res_obj, duration = OperationTime.save_duration('install user FW', 'include reboot', test_name,
-                                                                install_new_image_fw, nv_command.platform, test_name,
-                                                                test_image_name, devices)
+                install_new_image_fw(nv_command.platform, test_name, test_image_name)
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_cmd(nv_command.platform, version_name)
                 nv_command.system.validate_health_status(HealthConsts.OK)
                 fw_has_changed = True
-
-            with allure.step('Verify operation time'):
-                OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
     finally:
         with allure.step("cleanup steps"):
             with allure.step("Install original system firmware file"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
 
-            OperationTime.save_duration('install default fw', 'include reboot', test_name, install_default_image_fw,
-                                        nv_command.system, test_name, fw_has_changed, devices)
+            install_default_image_fw(nv_command.system, test_name, fw_has_changed)
 
         with allure.step('Verify the firmware installed successfully'):
             verify_firmware_with_platform_cmd(nv_command.platform, actual_firmware)
@@ -88,21 +92,17 @@ def get_asic_dict(platform):
     return asic_dictionary
 
 
-def install_new_image_fw(platform, test_name, fw_file_name, devices=None):
+def install_new_image_fw(platform, test_name, fw_file_name):
     with allure.step('new fw image installation'):
         res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
                                                         platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot)
-        with allure.step('Verify operation time'):
-            # XXX: remove after the bug is closed: https://redmine.mellanox.com/issues/4221742
-            if devices.dut.switch_type == "NVL":
-                if redmine_helpers.is_bug_active(4221742):
-                    duration *= 2
-            OperationTime.verify_operation_time(duration, 'reboot with new user FW').verify_result()
+    with allure.step('Verify operation time'):
+        OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
 
     return res_obj
 
 
-def install_default_image_fw(system, test_name, fw_has_changed, devices=None):
+def install_default_image_fw(system, test_name, fw_has_changed):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
@@ -110,10 +110,6 @@ def install_default_image_fw(system, test_name, fw_has_changed, devices=None):
                                                             system.reboot.action_reboot, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
             res = res_obj
             with allure.step('Verify operation time'):
-                # XXX: remove after the bug is closed: https://redmine.mellanox.com/issues/4221742
-                if devices.dut.switch_type == "NVL":
-                    if redmine_helpers.is_bug_active(4221742):
-                        duration *= 2
                 OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
         else:
             res = system.reboot.action_reboot()

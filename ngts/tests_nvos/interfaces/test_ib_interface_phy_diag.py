@@ -4,6 +4,8 @@ from typing import Union, Dict, Tuple, List
 
 import pytest
 
+from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
@@ -13,6 +15,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links
 from ngts.tools.test_utils import allure_utils as allure
 
 LOCAL = 'local'
@@ -60,7 +63,7 @@ def test_show_phy_diag(engines, test_api, output_format):
 
 
 @pytest.mark.ib_interfaces
-def test_intentional_link_down_counter(engines):
+def test_intentional_link_down_counter(engines, devices):
     """
     Test for `nv show interface <port> link phy-diag` intentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
@@ -68,6 +71,7 @@ def test_intentional_link_down_counter(engines):
     3.  Assert the intentional- counter increased
     4.  Assert the unintentional- counter did not increase
     """
+    skip_if_no_trunk_links(devices)
     with allure.step("Get initial values"):
         selected_port: Port = RandomizationTool.select_random_port().get_returned_value()
         initial_intentional, initial_unintentional = get_counters(selected_port)
@@ -92,7 +96,7 @@ def test_intentional_link_down_counter(engines):
 
 
 @pytest.mark.ib_interfaces
-def test_unintentional_link_down_counter(engines, devices):
+def test_unintentional_link_down_counter(engines, devices, enable_asic_error_injection):
     """
     Test for `nv show interface <port> link phy-diag` unintentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
@@ -100,12 +104,14 @@ def test_unintentional_link_down_counter(engines, devices):
     3.  Assert the unintentional- counter increased
     4.  Assert the intentional- counter did not increase
     """
+    skip_if_no_trunk_links(devices)
     with allure.step("Get initial values"):
-        selected_port: Port = RandomizationTool.select_random_port().get_returned_value()
+        selected_port: Port = RandomizationTool.select_random_port(interface_type='sw').get_returned_value()
         initial_intentional, initial_unintentional = get_counters(selected_port)
 
-    IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut,
-                                               MultiPlanarTool.select_random_plane_port(Fae(port_name=selected_port.name)).port.name)
+    port_name = (selected_port.name if isinstance(devices.dut, JulietSwitch) else
+                 MultiPlanarTool.select_random_plane_port(Fae(port_name=selected_port.name)).port.name)
+    IbInterfaceTool.simulate_toggle_port_event(engines.dut, devices.dut, port_name)
 
     with allure.step("Get final values"):
         intentional, unintentional = get_counters(selected_port)
@@ -123,7 +129,7 @@ def test_unintentional_link_down_counter(engines, devices):
 
 
 @pytest.mark.ib_interfaces
-def test_link_down_reason(engines, devices, setup_name):
+def test_link_down_reason(engines, devices, setup_name, enable_asic_error_injection):
     """
     Test the 'link-down-code' field (and related fields) under `nv show interface <port> link phy-diag`.
     Flow:
@@ -136,7 +142,8 @@ def test_link_down_reason(engines, devices, setup_name):
         7. Assert also for the remote port.
         8. Assert that the other port (selected in stage 1) link-down-reason has not changed during the test.
     """
-    tested_port, tested_plane, remote_port, remote_plane, other_port = _get_test_ports(engines.dut)
+    skip_if_no_trunk_links(devices)
+    tested_port, tested_plane, remote_port, remote_plane, other_port = _get_test_ports(engines.dut, devices.dut)
     # todo: the above line will be replaced by the following once the required port selection functions are implemented
     # tested_port, [tested_plane], remote_port, [remote_plane] = get_loopback_plane_ports(engines.dut, setup_name)
     # _, other_port = RandomizationTool.get_random_transceiver_and_port(
@@ -167,7 +174,7 @@ def test_link_down_reason(engines, devices, setup_name):
         assert_reason_not_changed(other_port, other_port_initial_codes)
 
 
-def _get_test_ports(engine) -> Tuple[Port, Port, Port, Port, Port]:
+def _get_test_ports(engine, device) -> Tuple[Port, Port, Port, Port, Port]:
     # temporary function to get ports until the needed port-selection-functions are implemented
     PORTS = {
         '10.7.145.61': ('swA5p1', 'swA8p1', 'swA3p1'),
@@ -178,12 +185,46 @@ def _get_test_ports(engine) -> Tuple[Port, Port, Port, Port, Port]:
         '10.7.148.139': ('swA1p1', 'swA2p1', 'swA15p1'),
         '10.7.148.248': ('sw9p1', 'sw10p1', 'sw67p1'),
         '10.7.148.249': ('sw9p1', 'sw10p1', 'sw67p1'),
-        # todo: add juliet switches once https://redmine.mellanox.com/issues/4377334 is fixed
+
+        # juliet:
+        '10.7.145.52': ('sw2p1s1', 'sw3p1s1', 'sw17p1s1'),
+        '10.7.145.53': ('sw2p1s1', 'sw3p1s1', 'sw17p1s1'),
+        '10.7.148.126': ('sw11p1s1', 'sw12p1s1', 'sw12p2s1'),
+        '10.7.148.127': ('sw11p1s1', 'sw12p1s1', 'sw12p2s1'),
+        '10.7.148.146': ('sw7p1s1', 'sw13p1s1', 'sw13p2s1'),
+        '10.7.148.147': ('sw7p1s1', 'sw13p1s1', 'sw13p2s1'),
+        '10.7.145.52': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
+        '10.7.145.53': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
     }
     test_port, remote_port, other_port = [Port(p) for p in PORTS[engine.ip]]
-    test_plane = test_port.get_plane_port(2)
-    remote_plane = remote_port.get_plane_port(2)
+    if isinstance(device, JulietSwitch):
+        test_plane = test_port
+        remote_plane = remote_port
+    else:
+        test_plane = test_port.get_plane_port(2)
+        remote_plane = remote_port.get_plane_port(2)
     return test_port, test_plane, remote_port, remote_plane, other_port
+
+
+@pytest.fixture
+def enable_asic_error_injection(devices):
+    """
+    Enables error injection on juliet switches, then disables it when the test ends. For other switches, does nothing.
+    This is necessary because on juliet-switches error-injection is blocked by default, and needs to be enabled in
+    order to simulate link drops.
+    """
+    if 'bmc' in devices.dut.platform_inventory_items_dict:
+        fae = Fae()
+        with allure.step("Enable ASIC error injection"):
+            fae.platform.asic.error_injection.action(ActionConsts.ENABLE, expected_output='Error injection has been')
+        try:
+            yield
+        finally:
+            with allure.step("Cleanup: disable ASIC error injection"):
+                fae.platform.asic.error_injection.action(ActionConsts.DISABLE, expected_output='Error injection has been')
+    else:
+        yield
+        return
 
 
 def get_phy_diag(port):
@@ -204,11 +245,13 @@ def assert_reason_for_plane(plane_port: Port, code: int, all_planes_previous_cod
     """
     with allure.step("Check link down reasons"):
         new_codes = get_codes(plane_port.get_aggregated_port())
+        plane_index = 0 if plane_port.plane_number is None else plane_port.plane_number - 1
+        # converts the plane number (1-based) to a list index (0-based)
         with allure.independent_step(f"Check reason for downed plane {plane_port.name}"):
-            ValidationTool.assert_expected_value(code, new_codes[LOCAL][plane_port.plane_number - 1], 'link-down-reason code')
-            ValidationTool.assert_expected_value(code, new_codes[REMOTE][plane_port.plane_number - 1], 'link-down-reason code')
+            ValidationTool.assert_expected_value(code, new_codes[LOCAL][plane_index], 'link-down-reason code')
+            ValidationTool.assert_expected_value(code, new_codes[REMOTE][plane_index], 'link-down-reason code')
         for i in range(len(all_planes_previous_codes[LOCAL])):
-            if i + 1 == plane_port.plane_number:
+            if i == plane_index:
                 continue
             with allure.independent_step(f"For plane {i + 1}"):
                 for side in (LOCAL, REMOTE):

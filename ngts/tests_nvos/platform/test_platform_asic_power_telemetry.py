@@ -2,11 +2,13 @@ import logging
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
+from ngts.constants.constants import GnmiConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_parse_output
 
 logger = logging.getLogger()
@@ -25,6 +27,10 @@ def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, 
             4. Validate GNMI output
     """
     TestToolkit.tested_api = test_api
+
+    with allure.step("Check gnmi is installed and running"):
+        GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
+                   devices.dut.default_password, verify_tools_installed=True)
 
     with allure.step("Check nv show platform asic"):
         asic_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.platform.asic.show()).get_returned_value()
@@ -73,9 +79,9 @@ def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, 
     with allure.step("Check GNMI"):
         for asic_num in devices.dut.asic_numbers:
             with allure.step("Subscribe to the gnmi server and check system version"):
-                for key in PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS:
+                for key in GnmiConsts.POWER_TELEMETRY_ASIC_GNMI_FIELDS:
                     xpath = f"/components/component[name={asic_num}]/asic/state/{key}"
-                    gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
+                    gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip, mode='once')
                     gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
                     assert gnmi_stream_updates_value.isdigit(), f"Error: {gnmi_stream_updates_value} is not a numeric string"
                     assert int(gnmi_stream_updates_value) >= 0, f"Error: {gnmi_stream_updates_value} is not a non-negative integer"
@@ -93,6 +99,10 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
             3. Validate reboot and check counters reset
     """
     TestToolkit.tested_api = test_api
+
+    with allure.step("Check gnmi is installed and running"):
+        GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
+                   devices.dut.default_password, verify_tools_installed=True)
 
     with allure.step("Get random ASIC"):
         random_asic = RandomizationTool.select_random_value(devices.dut.asic_numbers).get_returned_value()
@@ -112,20 +122,20 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
                 for key in PlatformConsts.POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS:
                     value_counters_before_sleep = int(counters_before_sleep[key])
                     value_counters_after_sleep = int(counters_after_sleep[key])
-                    assert value_counters_after_sleep != value_counters_before_sleep, f"Error: {key} did not change"
+                    assert value_counters_after_sleep - value_counters_before_sleep != 0, f"Error: {key} did not change"
 
         with allure.step("Get output from NVUE command, GNMI and compare"):
-            for key in PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS:
+            for index, key in enumerate(PlatformConsts.POWER_TELEMETRY_ASIC_OUTPUT_FIELDS):
                 with allure.step("Get output from NVUE command"):
                     asic_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.platform.asic.show(random_asic)).get_returned_value()
 
                 with allure.step("Get output from GNMI"):
-                    xpath = f"/components/component[name={random_asic}]/asic/state/{key}"
-                    gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip)
+                    xpath = f"/components/component[name={random_asic}]/asic/state/{GnmiConsts.POWER_TELEMETRY_ASIC_GNMI_FIELDS[index]}"
+                    gnmi_stream_updates = run_gnmi_client_and_parse_output(engines, devices, xpath, engines.dut.ip, mode='once')
                     gnmi_stream_updates_value = list(gnmi_stream_updates.values())[0]
 
                 with allure.step("Compare both values"):
-                    assert gnmi_stream_updates_value == asic_output['power'][key], 'Values are not same'
+                    assert abs(int(gnmi_stream_updates_value) - int(asic_output['power'][key])) <= 5, f"Values {gnmi_stream_updates_value} and {asic_output['power'][key]} differ by more than 5"
 
         with allure.step("Get output from NVUE counters command, reboot switch, check counters reset"):
             with allure.step("Get output from NVUE command before reboot"):

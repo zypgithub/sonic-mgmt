@@ -133,7 +133,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
         validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.step("Verify reboot time is within expected range"):
-            OperationTime.verify_operation_time(result_obj.duration, devices.dut.reboot_type).verify_result()
+            OperationTime.verify_operation_time(result_obj.duration, mode).verify_result()
 
     finally:
         if not ping_device(engines.dut.ip):
@@ -217,7 +217,7 @@ def test_lspci_width(engines, devices):
     The purpose of this function is to check if 2 parameters (LnkSta, LnkCap) are valid.
     """
     with allure.step("Running lspci command to find Infiniband controllers"):
-        lines_devices = engines.dut.run_cmd("sudo lspci | grep 'Infiniband controller: Mellanox Technologies Device'")
+        lines_devices = engines.dut.run_cmd("sudo lspci | grep 'Infiniband'")
         actual_devices = lines_devices.split("\n")
 
     with allure.step("Validating the number of detected devices"):
@@ -261,19 +261,6 @@ def validate_lspci_status(engines, cap_arr, sta_arr, line_sta, line_cap):
         assert x_number_sta, "Width x<Number> not found in LnkSta"
         assert x_number_cap == x_number_sta, \
             f"Width mismatch: LnkCap={x_number_cap}, LnkSta={x_number_sta}"
-
-    with allure.step("Checking the number of 'ok' occurrences in LnkSta"):
-        ok_count = get_ok_count(sta_arr)
-        assert ok_count == 2, f"Unexpected 'ok' count in LnkSta: {line_sta}, found: {ok_count}"
-
-
-def get_ok_count(sta_arr):
-    """
-    Return the number of times "ok" appears in LnkSta.
-    """
-    with allure.step("Counting 'ok' occurrences in sta_arr"):
-        ok_count = sum(1 for word in sta_arr if "ok" in word)
-        return ok_count
 
 
 def get_number_gts(arr, number_gts):

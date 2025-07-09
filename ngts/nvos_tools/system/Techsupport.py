@@ -1,12 +1,16 @@
 import logging
 import re
+from datetime import datetime, timedelta
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.constants.constants import BugHandlerConst
+from ngts.nvos_constants.constants_nvos import NvosConst
 
 logger = logging.getLogger()
 
@@ -72,7 +76,8 @@ class TechSupport(BaseComponent):
                     self.file_name = path.split("/")[-1].split()[0]
                 return
 
-    def extract_techsupport_files(self, engine):
+    def extract_techsupport_files(self, engine, file_name=''):
+        self.file_name = file_name if file_name else self.file_name
         with allure.step(f"extract {self.file_name}"):
             logging.info(f"extract {self.file_name}")
             full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
@@ -92,12 +97,13 @@ class TechSupport(BaseComponent):
                 dict_files[sub_folder] = engine.run_cmd('ls ' + full_path + '/' + sub_folder).split()
             return dict_files
 
-    def get_techsupport_empty_files(self, engine, tech_folder):
+    def get_techsupport_empty_files(self, engine, test_support_file='', tech_folder=''):
         """
         :param engine: engine
         :param tech_folder: the tech_folder sub folder in techsupport .tar.gz
         :return: list of the empty files in the tech-support sub folder
         """
+        self.file_name = test_support_file if test_support_file else self.file_name
         with allure.step(f'Get all tech-support empty files from {tech_folder}'):
             logging.info(f'Get all tech-support empty files from {tech_folder}')
             full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name.replace('.tar.gz', "")
@@ -132,3 +138,23 @@ class TechSupport(BaseComponent):
             full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name.replace('.tar.gz', "")
             output = engine.run_cmd('ls ' + full_path + '/' + tech_folder)
             return output.split()
+
+    def check_techsupport_file_age(self, engine, system, tech_support_path: str = '', max_age_hours: int = 24):
+        """
+            Verify that tech-support file was generated within a specified number of hours.
+
+            :param engine: system engine
+            :param system: System() object
+            :param tech_support_path: Path to the tech-support file.
+            :param max_age_hours: Maximum allowed age of the tech-support file in hours. Default is 24 hours.
+        """
+        with allure.step(f"Run 'stat {tech_support_path}' and get tech-support file's birth-time"):
+            file_info = engine.run_cmd(f"stat {tech_support_path}")
+            birth_time_match = re.search(fr'Birth: ({NvosConst.DATE_TIME_REGEX[1]})', file_info)
+            birth_time = datetime.strptime(birth_time_match.group(1), BugHandlerConst.TIMESTAMP_FORMATS[4])
+
+            with allure.step(f"Verify last tech-support file was generated in less than 24 hours ago"):
+                current_time_str = ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show())
+                current_time = datetime.strptime(current_time_str, BugHandlerConst.TIMESTAMP_FORMATS[4])
+                assert current_time - birth_time < timedelta(
+                    hours=max_age_hours), f"The last tech-support file was generated {birth_time}, more than 24 hours ago"

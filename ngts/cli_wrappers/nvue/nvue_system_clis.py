@@ -1,6 +1,7 @@
 import logging
 
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli, check_output
+from ngts.nvos_constants.constants_nvos import RebootConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 
 logger = logging.getLogger()

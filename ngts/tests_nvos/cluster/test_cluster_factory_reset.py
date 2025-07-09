@@ -418,14 +418,14 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, setup_name, output_format)
 
+    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
+    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
+    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
+
     with allure.step("Choose random log level, and set cluster app log level to and start app"):
         log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
             cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
-
-    controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
-    telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
-    config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
 
     for file_type, file_path in config_files_paths.items():
         initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))

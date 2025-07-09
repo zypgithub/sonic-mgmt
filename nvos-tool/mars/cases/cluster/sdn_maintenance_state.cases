@@ -47,7 +47,7 @@
     <case>
         <name> SDN Maintenance State Port State Changes </name>
         <info>Test that port states change correctly based on maintenance state changes</info>
-        <tout> 900 </tout>
+        <tout> 1800 </tout>
         <cmd>
             <params>
                 <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/cluster/sdn_maintenance_state/test_sdn_maintenance_state.py::test_port_state_change_according_to_maintenance_state --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>

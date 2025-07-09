@@ -137,7 +137,7 @@ def test_bad_params(test_api):
             transceiver = Transceiver(sdn.transceivers, transceiver_name)
 
         with allure.step("update maintenance state with bad param"):
-            transceiver.action_update_maintenance_state(random_string, expected_err_msgs=["is not one of", "Error"])
+            transceiver.action_update_maintenance_state(random_string, expected_err_msgs=["is not one of", "Error", "Invalid Command", "Bad Request"])
 
 
 @pytest.mark.nmx

@@ -16,7 +16,7 @@
   </global>
 
   <case>
-    <name> Platform Transceiver </name>
+    <name> Platform Transceiver - PMPE </name>
     <info> </info>
     <tout> 10800 </tout>
     <cmd>
@@ -24,6 +24,13 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_transceiver.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+        <condition>
+          <key>dut_hwsku</key>
+          <op> in </op>
+          <value>[N5500_LD - JulietNonScaleoutSwitchGB300, N5500_LD - JulietNonScaleoutSwitchGB300QS, N5200_LD - JulietNonScaleoutSwitchNoNCI, N5600_LD - JulietNonScaleoutSwitchNoNCI]</value>
+        </condition>
+    </ignore>
   </case>
 
   <case>
@@ -46,6 +53,13 @@
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/platform/test_platform_transceiver_firmware.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
+    <ignore>
+        <condition>
+          <key>dut_hwsku</key>
+          <op> in </op>
+          <value>[N5500_LD - JulietNonScaleoutSwitchGB300, N5500_LD - JulietNonScaleoutSwitchGB300QS, N5200_LD - JulietNonScaleoutSwitchNoNCI, N5600_LD - JulietNonScaleoutSwitchNoNCI]</value>
+        </condition>
+    </ignore>
   </case>
 
 </CASEDEF>

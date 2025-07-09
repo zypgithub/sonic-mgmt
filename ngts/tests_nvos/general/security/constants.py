@@ -8,6 +8,7 @@ TMP_TEST_CERTS_DIR = '/auto/sw_system_project/NVOS_INFRA/security/verification/c
 
 class SecurityConsts:
     SED_DEFAULT_PASSWORD = "xc|[Ee4kX*a\\c/6V&57d^eP!zUOK]-*0"
+    CRL_EXPIRED_FILE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/crl/expired_crl.crl"
 
 
 ETC_HOSTS = '/etc/hosts'

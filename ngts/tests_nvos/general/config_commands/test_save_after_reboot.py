@@ -4,7 +4,7 @@ import time
 import pytest
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_constants.constants_nvos import FastRecoveryConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts, EventConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -66,7 +66,7 @@ def test_save_reboot(engines, devices):
             system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut).\
                 verify_result()
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').verify_result()
+            ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '600').verify_result()
 
         with allure.step('Simulate 10 system events'):
             output = engines.dut.run_cmd('docker exec eventd events_publish_test.py -c 10')
@@ -159,7 +159,7 @@ def test_save_reboot(engines, devices):
 
             with allure.step('Verify that system events table-size config was saved'):
                 output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-                ValidationTool.verify_field_value_in_output(output, SystemConsts.EVENTS_TABLE_SIZE, '600').\
+                ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '600').\
                     verify_result()
 
             with allure.step('Verify that the system event before the reboot is present post reboot as well'):

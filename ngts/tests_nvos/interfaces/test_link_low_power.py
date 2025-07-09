@@ -10,9 +10,11 @@ from ngts.nvos_tools.infra.RegisterTool import RegisterTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.tests_nvos.constants import MINUTE
 logger = logging.getLogger()
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.interface
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_link_low_power_disabled(engines, devices, prepare_traffic, test_api):
@@ -35,6 +37,7 @@ def test_link_low_power_disabled(engines, devices, prepare_traffic, test_api):
     #  no time difference between sending with feature enabled or disabled.
 
 
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.interface
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_link_low_power_enabled(engines, devices, topology_obj, prepare_traffic, test_api):

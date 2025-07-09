@@ -132,7 +132,7 @@ def verify_mtpcpc_register(engines_dut, devices, expected_state):
     @param expected_state: the expected ptp tc state value ('enabled'|'disabled')
     """
     corr_msg_dict = parse_mtpcpc_register(RegisterTool.get_mst_register_value(
-        engines_dut, devices.dut.mst_dev_name, PtpConsts.MTPCPC_REGISTER, PtpConsts.MTPCPC_INDEXES))
+        engines_dut, devices.dut.mst_dev_name[0], PtpConsts.MTPCPC_REGISTER, PtpConsts.MTPCPC_INDEXES))
     if (corr_msg_dict[PtpConsts.ING_CORRECTION_MSG_TYPE] == PtpConsts.REG_DISABLE_VALUE) and \
        (corr_msg_dict[PtpConsts.EGR_CORRECTION_MSG_TYPE] == PtpConsts.REG_DISABLE_VALUE):
         tc_state = PtpConsts.TcState.DISABLED.value
@@ -154,8 +154,9 @@ def verify_ptp_in_database(engines_dut, expected_state):
     output = DatabaseTool.sonic_db_cli_hgetall(engine=engines_dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
                                                table_name=PtpConsts.PTP_TABLE_TC)
     db_tc_state = list(output.replace('\'', '').split())[-1].replace('}', '')
-    assert db_tc_state == expected_state, f"tc state in CONFIG_DB PTP_TABLE is {db_tc_state} " \
-                                          f"but expected {expected_state}"
+    assert db_tc_state == expected_state, (
+        f"tc state in CONFIG_DB PTP_TABLE is {db_tc_state} but expected {expected_state}"
+    )
 
 
 def verify_ptp_state(system, engines_dut, devices, expected_state):

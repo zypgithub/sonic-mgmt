@@ -3,6 +3,7 @@ import os
 import re
 import time
 from datetime import datetime
+from dateutil import parser
 
 from ngts.constants.constants import LinuxConsts
 from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType, SystemConsts
@@ -146,6 +147,7 @@ def verify_cleanup_done(engine, time_before_rf, system, username, param=''):
     logging.info("Verify cleanup done as expected")
     errors = ""
     device = TestToolkit.devices.dut
+    time_before_rf = time_before_rf.replace(tzinfo=None)
     with allure.step("Verify NVUE reset done"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("stat /etc/sonic/nvue.d/platform/immutables.yaml | grep Birth")
@@ -339,8 +341,5 @@ def verify_the_setup_is_functional(system, engines, had_sm_before_test=True, dut
 
 def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
-    try:
-        current_time = datetime.strptime(date_time_str, '%d %b %Y %I:%M:%S %p %Z')
-    except ValueError:
-        current_time = datetime.strptime(date_time_str, '%b %d %I:%M:%S %p %Z %Y')
+    current_time = parser.parse(date_time_str)
     return current_time

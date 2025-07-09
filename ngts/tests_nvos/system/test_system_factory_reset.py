@@ -1,6 +1,7 @@
 import random
 
 import pytest
+import logging
 
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
@@ -16,8 +17,12 @@ from ngts.tests_nvos.system.test_system_profile_change import update_timezone
 from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootConsts, ApiType, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.system.System import System
+
+logger = logging.getLogger()
 
 
 @pytest.mark.timeout(50 * MINUTE)
@@ -120,9 +125,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name):
         verify_cleanup_done(engines.dut, current_time, system, username, param=KEEP_BASIC)
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary_mgmt_show,
-
                                                           field_name=NvosConst.DESCRIPTION,
-
                                                           expected_value='nvosdescription')
 
         mgmt_port.interface.unset(NvosConst.DESCRIPTION, apply=True).verify_result()

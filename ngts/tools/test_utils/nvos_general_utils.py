@@ -121,6 +121,24 @@ def generate_scp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str
     return f'scp://{player.username}:{player.password}@{player.ip}{file_path}'
 
 
+def generate_sftp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str:
+    return f'sftp://{player.username}:{player.password}@{player.ip}{file_path}'
+
+
+def generate_file_location_uri(file_path: str, localhost: bool = False) -> str:
+    """
+    Generate a file location uri for a given file path
+    - file:///home/admin/cert.p12 no localhost
+    - file://localhost/home/admin/cert.pem with localhost
+    @param file_path: the path to the file
+    @param localhost: if True, the uri will be file://localhost/file_path, otherwise file://file_path
+    @return: the file location uri
+    """
+    if localhost:
+        return f'file://localhost{file_path}'
+    return f'file://{file_path}'
+
+
 def get_switch_type(topology):
     switch_type = TopologyConsts.SONIC
     try:

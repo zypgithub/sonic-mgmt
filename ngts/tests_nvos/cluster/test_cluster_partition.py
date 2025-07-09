@@ -165,6 +165,8 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
             else:
                 output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
+            logger.info("Wait for 2 seconds until partitions are updated")
+            time.sleep(2)
             err_msg = f"failed to create partition {part_id}"
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
 
@@ -172,10 +174,14 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
                 sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result()
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
                 output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} location {location}"
             else:
                 sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
                 output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to restore partition {default_partition_id} uuid {uuid}"
             partitions_mapping[default_partition_id].remove((uuid, location))
@@ -188,10 +194,14 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
             no_reroute = random.choice(['', 'no-reroute'])
             if default_partition_type == 'location_based':
                 sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result()
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
                 output = sdn.partition.partition_id[default_partition_id].location.location_id[location].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} location {location}"
             else:
                 sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
                 output = sdn.partition.partition_id[default_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result(should_succeed=False)
                 err_msg = f"failed to update partition {default_partition_id} uuid {uuid}"
             partitions_mapping[default_partition_id].append((uuid, location))
@@ -210,7 +220,11 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
                 else:
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '1', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
-                err_msg = f"'{resiliency_mode}' is not one of ['full_bandwidth', 'adaptive_bandwidth', 'user_action']"
+
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
+
+                err_msg = f"'{resiliency_mode}' is not one of {ClusterConsts.RESILIENCY_MODES}"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
@@ -226,6 +240,10 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result(should_succeed=False)
                 else:
                     output = sdn.partition.partition_id[part_id].action_create_partition_id(name=ClusterConsts.CREATED_PARTITION_NAME + '11', resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result(should_succeed=False)
+
+                logger.info("Wait for 2 seconds until partitions are updated")
+                time.sleep(2)
+
                 err_msg = "Valid range is 0 - 1024" if test_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
@@ -279,6 +297,9 @@ def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partit
             sdn.partition.partition_id[target_partition_id].uuid.uuid_value[uuid].action_update_partition(reroute_param=no_reroute).verify_result()
         partitions_mapping[target_partition_id].append((uuid, location))
 
+        logger.info("Wait for 2 seconds until partitions are updated")
+        time.sleep(2)
+
     with allure.step("Checking newly updated partition"):
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.partition_id[target_partition_id].show(output_format=output_format),
                                                              output_format=output_format).get_returned_value()
@@ -310,6 +331,9 @@ def remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partit
         else:
             sdn.partition.partition_id[original_partition_id].uuid.uuid_value[uuid].action_restore_partition(reroute_param=no_reroute).verify_result()
 
+        logger.info("Wait for 2 seconds until partitions are updated")
+        time.sleep(2)
+
     if is_bug_active(4285786):
         time.sleep(15)
 
@@ -338,6 +362,9 @@ def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_i
             sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, location=location).verify_result()
         else:
             sdn.partition.partition_id[new_partition].action_create_partition_id(name=partition_name, resiliency_mode=resiliency_mode, mcast_limit=mcast_limit, uuid=int(uuid)).verify_result()
+
+        logger.info("Wait for 2 seconds until partitions are updated")
+        time.sleep(2)
 
     with allure.step("Checking newly created partition"):
         output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),

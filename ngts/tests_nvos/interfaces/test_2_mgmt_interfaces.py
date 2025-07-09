@@ -1,4 +1,3 @@
-import time
 import pytest
 from retry import retry
 from ngts.nvos_tools.acl.acl import Acl
@@ -7,7 +6,6 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
 from scapy.layers.inet import IP, ICMP
 from scapy.all import *
-from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.HostMethods import HostMethods
@@ -16,6 +14,8 @@ from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, AclConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+
+logger = logging.getLogger()
 
 
 RULE_CONFIG_FUNCTION = {
@@ -110,32 +110,31 @@ def test_2_mgmt_dhcp_hostname(engines, topology_obj, serial_engine, devices):
     mgmt_ports = devices.dut.get_mgmt_ports()
     system = System()
     dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
-    with allure.step('Disable 2 mgmt interfaces'):
-        for mgmt_port in mgmt_ports:
-            mgmt_port_obj = Port(mgmt_port)
-            mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
-                                                   ask_for_confirmation=True,
-                                                   dut_engine=serial_engine).verify_result(True)
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+    try:
+        with allure.step('Disable 2 mgmt interfaces'):
+            for mgmt_port in mgmt_ports:
+                mgmt_port_obj = Port(mgmt_port)
+                mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
+                                                       ask_for_confirmation=True,
+                                                       dut_engine=serial_engine).verify_result(True)
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
-    with allure.step('Set hostname'):
-        serial_engine.serial_engine.sendline("nv set system hostname {}".format(SystemConsts.HOSTNAME))
-        serial_engine.serial_engine.sendline("nv config apply")
-        serial_engine.serial_engine.expect("Are you sure?", timeout=120)
-        serial_engine.serial_engine.sendline("y")
-        serial_engine.serial_engine.expect("applied", timeout=120)
+        with allure.step('Set hostname'):
+            serial_engine.serial_engine.sendline(f"nv set system hostname {SystemConsts.HOSTNAME}")
+            serial_engine.serial_engine.sendline("nv config apply --assume-yes")
+            serial_engine.serial_engine.expect("applied", timeout=120)
 
-    with allure.step('Enable mgmt ports'):
-        for mgmt_port in mgmt_ports:
-            mgmt_port_obj = Port(mgmt_port)
-            mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True,
-                                                   ask_for_confirmation=True,
-                                                   dut_engine=serial_engine)
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
-
-    with allure.step('Check hostname received by dhcp'):
-        system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)
-        wait_for_hostname_changed(system, dhcp_hostname)
+        with allure.step('Enable mgmt ports'):
+            for mgmt_port in mgmt_ports:
+                mgmt_port_obj = Port(mgmt_port)
+                mgmt_port_obj.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True,
+                                                       ask_for_confirmation=True,
+                                                       dut_engine=serial_engine)
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+    finally:
+        with allure.step('Check hostname received by dhcp'):
+            system.unset(op_param=SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)
+            wait_for_hostname_changed(system, dhcp_hostname)
 
 
 @pytest.mark.acl

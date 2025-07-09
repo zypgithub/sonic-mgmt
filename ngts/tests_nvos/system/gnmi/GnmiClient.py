@@ -41,7 +41,8 @@ class GnmiClient:
         if not gnmic_installed:
             for i in range(3):
                 with allure.step(f'attempt {i + 1}: install gnmic on player'):
-                    self.cmd_runner.run_cmd_in_process('bash -c "$(curl -sL https://get-gnmic.openconfig.net)" -- -v 0.38.2')
+                    self.cmd_runner.run_cmd_in_process(
+                        'bash -c "$(curl -sL https://get-gnmic.openconfig.net)" -- -v 0.38.2')
                 with allure.step('verify gnmic is installed'):
                     gnmic_installed = _gnmic_is_installed()
                     if gnmic_installed:
@@ -116,7 +117,16 @@ class GnmiClient:
                                       cmd_time=None, keep_session_alive: bool = True,
                                       wait_till_done: bool = False) -> Tuple[str, str, subprocess.Popen]:
         out, err, sub_proc = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
-                                                                     debug_mode, cmd_time, keep_session_alive, wait_till_done)
+                                                                     debug_mode, cmd_time, keep_session_alive,
+                                                                     wait_till_done)
+        return out, err, sub_proc
+
+    def gnmic_subscribe_system_event(self, event_id: str, username: str = '', password: str = '',
+                                     skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
+                                     cmd_time=None, keep_session_alive: bool = True,
+                                     wait_till_done: bool = False) -> Tuple[str, str, subprocess.Popen]:
+        out, err, sub_proc = self._run_gnmic_subscribe_system_event(event_id, username, password, skip_cert_verify, cacert,
+                                                                    debug_mode, cmd_time, keep_session_alive, wait_till_done)
         return out, err, sub_proc
 
     def gnmic_capabilities(self, username: str = '', password: str = '', skip_cert_verify: bool = False, cacert='',
@@ -152,6 +162,14 @@ class GnmiClient:
                                            wait_till_done: bool = False) -> \
             Tuple[str, str, subprocess.Popen]:
         return self.gnmic_subscribe('system-events', '', mode, False, username, password, skip_cert_verify, cacert,
+                                    debug_mode, cmd_time, keep_session_alive, wait_till_done)
+
+    def _run_gnmic_subscribe_system_event(self, event_id: str, username: str = '', password: str = '',
+                                          skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
+                                          cmd_time=None, keep_session_alive: bool = False,
+                                          wait_till_done: bool = False) -> \
+            Tuple[str, str, subprocess.Popen]:
+        return self.gnmic_subscribe(f'system-events/system-event[event-id={event_id}]', '', 'once', False, username, password, skip_cert_verify, cacert,
                                     debug_mode, cmd_time, keep_session_alive, wait_till_done)
 
     def _run_gnmic_op(self, gnmi_op: str, skip_cert_verify: bool, cacert: str, debug_mode: bool, cmd_time,

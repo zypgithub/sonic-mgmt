@@ -588,15 +588,3 @@ class ValidationTool:
     def assert_expected_value(expected, actual, description=''):
         """Assert that expected value equals actual value."""
         assert expected == actual, f'{description} wrong value: {expected=}, {actual=}'
-
-    @staticmethod
-    def validate_subset_in_superset(subset: Iterable, superset: Iterable, should_be_included=True) -> ResultObj:
-        """Checks whether all elements of `subset` are present in `superset`."""
-        subset = set(subset)
-        superset = set(superset)
-        missing = subset - superset
-        is_included = not missing
-        return ResultObj(
-            (is_included == should_be_included),
-            f"Missing from superset: {missing}" if missing else "All elements are included."
-        )

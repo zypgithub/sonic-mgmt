@@ -1,3 +1,4 @@
+import json
 import random
 import re
 
@@ -13,6 +14,21 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils import allure_utils as allure
+
+
+def load_nmx_versions_from_json(devices):
+    """
+    Load NMX versions from the JSON file specified in the device configuration.
+
+    Returns:
+        dict: Dictionary containing burn_path and burn_version_names
+    """
+    try:
+        with open(devices.dut.nmx_cluster_apps_versions_file_path, 'r') as f:
+            versions_data = json.load(f)
+        return versions_data['nmx_cluster_apps_versions']
+    except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
+        raise Exception(f"Failed to load NMX versions from JSON file: {devices.dut.nmx_cluster_apps_versions_file_path}. Error: {e}")
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -40,9 +56,11 @@ def install_apps_if_needed(devices):
     output = cluster.apps.show()
     flag = True
     if not output:
+        # Load versions from JSON file
+        versions_data = load_nmx_versions_from_json(devices)
         for app in ClusterConsts.INITIAL_EXPECTED_APPS:
-            default_path = devices.dut.nmx_cluster_apps_versions.new_path[app]
-            default_version = devices.dut.nmx_cluster_apps_versions.new_version_names[app]
+            default_path = versions_data['burn_path'][app]
+            default_version = versions_data['burn_version_names'][app]
             filename = fetch_and_verify_package(fae, app, default_path)
             uninstall_install_and_verify_package(fae, app, filename, default_version)
             flag = False
@@ -76,9 +94,11 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_neede
 
     try:
         if install_apps_if_needed:
+            # Load versions from JSON file
+            versions_data = load_nmx_versions_from_json(devices)
             for app in apps:
-                new_version = devices.dut.nmx_cluster_apps_versions.burn_version_names[app]
-                new_path = devices.dut.nmx_cluster_apps_versions.burn_path[app]
+                new_version = versions_data['burn_version_names'][app]
+                new_path = versions_data['burn_path'][app]
 
                 nmx_package_flow(app, new_path, new_version)
 
@@ -193,7 +213,10 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     nmx_package = fae.cluster.package
     app_to_test = random.choice(ClusterConsts.INITIAL_EXPECTED_APPS)
     _, default_version = get_data_from_path(engines, ClusterConsts.INITIAL_APPS_PATH, app_to_test)
-    new_path = devices.dut.nmx_cluster_apps_versions.burn_path[app_to_test]
+
+    # Load versions from JSON file
+    versions_data = load_nmx_versions_from_json(devices)
+    new_path = versions_data['burn_path'][app_to_test]
     filename = new_path.split('/')[-1]
     non_exist_app = RandomizationTool.get_random_string(8)
 

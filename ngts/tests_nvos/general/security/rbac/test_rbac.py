@@ -40,7 +40,7 @@ def test_rbac_interface_single_allow(engines, test_api):
     system = System(None)
     test_class_name = "TestInterfaceClass"
     test_role_name = "TestRole"
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_DOWN).get_returned_value()
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     interface_path = f"/interface/{selected_port.name}/"
 
@@ -137,7 +137,7 @@ def test_rbac_interface_single_deny(engines, test_api):
         verify_user_permissions_on_denied_interface(engines, test_user, test_password, selected_port_deny, RbacConsts.ALL)
 
     # testing allowed class for random interface
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_DOWN).get_returned_value()
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     verify_user_permissions_on_interface(engines, test_user, test_password, selected_port, RbacConsts.ALL)
 
@@ -180,7 +180,7 @@ def test_rbac_role_update(engines, devices, test_api):
     system.aaa.role.set_new_role(test_role_name, test_system_class, apply=True)
     test_user, test_password = create_new_user(test_role_name, apply=True)
 
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_DOWN).get_returned_value()
+    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     verify_user_permissions_on_system(engines, devices, test_user, test_password, RbacConsts.ALL)
     interface_results = run_commands_on_interface(selected_port, create_user_connection(engines, test_user, test_password))

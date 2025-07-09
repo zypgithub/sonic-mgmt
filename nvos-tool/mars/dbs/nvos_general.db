@@ -53,4 +53,12 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_run_unsupported_commands.cases </cases>
 	</test>
+
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_cpu_memory_monitor.cases </cases>
+	</test>
+
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_kernel_crash.cases </cases>
+	</test>
 </DBDEF>

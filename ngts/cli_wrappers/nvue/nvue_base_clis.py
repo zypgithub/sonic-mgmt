@@ -162,8 +162,14 @@ class NvueBaseCli(BaseCli):
         if not resource_path:
             raise ValueError("resource_path must be non-empty")
 
-        command = ' '.join(['nv action', action_type, resource_path.replace('/', ' '), suffix,
-                            (param_value or param_name)])
+        command = ''
+        if isinstance(param_name, list):
+            command = ' '.join(['nv action', action_type, resource_path.replace('/', ' '), suffix])
+            for param, value in zip(param_name, param_value):
+                command = ' '.join([command, (param or value)])
+        else:
+            command = ' '.join(['nv action', action_type, resource_path.replace('/', ' '), suffix,
+                                (param_value or param_name)])
         if output_format:
             command += f" --output {output_format}"
         command = ' '.join(command.split())  # delete double-spaces

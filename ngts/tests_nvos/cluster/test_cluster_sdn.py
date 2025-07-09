@@ -181,6 +181,11 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
             for file_path in uploaded_files:
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
+        sdn.factory_default.action_reset(param='force')
+        time.sleep(4)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
+                                                         nmx_c_expected_state='up')
+
 
 def verify_all_files_are_deleted(engines, files_list):
     for file_path in files_list:

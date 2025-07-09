@@ -827,7 +827,7 @@ def validate_health_fix_or_issue(engines, system, health_issue_dict, search_sinc
             for component, issues in health_issue_dict.items():
                 issues_regex = "[" + "|".join(issues) + "]"
                 assert len(TestToolkit.search_line_after_a_specific_date_time(
-                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX, component=component, issue=issues_regex),
+                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX[0], component=component, issue=issues_regex),
                     health_history_output, search_since_datetime)) > 0
 
         with allure.independent_step("Validate health status change appears in system log"):
@@ -835,7 +835,7 @@ def validate_health_fix_or_issue(engines, system, health_issue_dict, search_sinc
             exp_summary = "HEALTH_SUMMARY_{arg}OK".format(arg="" if is_fix else "NOT_")
             log_output = system.log.file.show_log(param='| grep healthd', expected_str=exp_status)
             HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status)
-            regex_to_search = NvosConst.DATE_TIME_REGEX + HealthConsts.SYSTEM_LOG_HEALTH_STATUS_REGEX.format(
+            regex_to_search = NvosConst.DATE_TIME_REGEX[0] + HealthConsts.SYSTEM_LOG_HEALTH_STATUS_REGEX.format(
                 exp_status, exp_summary)
             assert len(TestToolkit.search_line_after_a_specific_date_time(regex_to_search,
                                                                           log_output, search_since_datetime)) > 0, \

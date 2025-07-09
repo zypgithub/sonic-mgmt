@@ -127,7 +127,16 @@ class NvosConst:
 
     REBOOT_CMD_TO_RUN = "ipmitool -I lanplus -H {ip} -U {username} -P {password} chassis power cycle"
 
-    DATE_TIME_REGEX = "\\w{3}\\s{1,2}\\d{1,2} \\d\\d:\\d\\d:\\d\\d(?:.\\d+)?"
+    DATE_TIME_REGEX = ["\\w{3}\\s{1,2}\\d{1,2} \\d\\d:\\d\\d:\\d\\d(?:.\\d+)?",
+                       "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"]
+
+    TIMESTAMP_REGEX = (
+        r'(?P<year>\d{4})'
+        r'(?P<month>1[0-2]|0?[1-9])'
+        r'(?P<day>3[01]|[12][0-9]|0?[1-9])'
+        r'(?P<hour>2[0-3]|1[0-9]|0?[0-9])'
+        r'(?P<minute>[0-5][0-9]|[0-9])'
+    )
 
     FW_DUMP_ME_SCRIPT_PATH = "/auto/sw_system_project/NVOS_INFRA/security/verification/fw_dump_me/sxd_api_crash_fw.py"
     DESTINATION_FW_SCRIPT_PATH = "/var/tmp/"
@@ -143,6 +152,9 @@ class NvosConst:
     HOST_HB_ATTR = 'hb_attr'
 
     SERVERS_USER_NAME = os.getenv("TEST_SERVER_USER")
+
+    SONIC_SERVICE_ACCOUNT = os.getenv("SONIC_SERVICE_ACCOUNT")
+    SONIC_SERVICE_ACCOUNT_API_KEY = os.getenv("SONIC_SERVICE_ACCOUNT_API_KEY")
 
     SYSTEM = "system"
     INTERFACE = "interface"
@@ -490,7 +502,9 @@ class SystemConsts:
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old']
+                                             'verification_test', 'opasswd.old', 'opasswd']
+
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log']
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -745,11 +759,6 @@ class SystemConsts:
     CONTAINER_BU_SCRIPT = '/devts/scripts/docker/containers_bringup.py'
     CONTAINER_BU_TEMPLATE = '{python_path} {container_bu_script} --setup_name {setup_name} --metrox2xc_setup'
 
-    EVENTS_TABLE_SIZE = 'table-size'
-    EVENTS_TABLE_OCCUPANCY = 'table-occupancy'
-    EVENTS_TABLE_SIZE_DEFAULT = 1000
-    EVENTS_TABLE_SIZE_MAX = 10000
-
     AUTO_SAVE_STATE = 'state'
     AUTO_SAVE_STATE_ENABLED = 'enabled'
     AUTO_SAVE_STATE_DISABLED = 'disabled'
@@ -792,6 +801,23 @@ class SystemConsts:
     DUMMY_IMAGE = 'dummy.bin'
 
     SYSTEMCTL_STATUS_CMD = "sudo systemctl is-system-running"
+
+
+class EventConsts:
+    TABLE_SIZE = 'table-size'
+    TABLE_OCCUPANCY = 'table-occupancy'
+    TABLE_SIZE_DEFAULT = 1000
+    TABLE_SIZE_MAX = 10000
+
+    # These are the json field names. In NVUE they are: Severity, Component, Description and Timestamp
+    SEVERITY = 'severity'
+    RESOURCE = 'resource'
+    TEXT = 'text'
+    TIME_CREATED = 'time-created'
+
+    # severity levels
+    INFORMATIONAL = 'INFORMATIONAL'
+    MAJOR = 'MAJOR'
 
 
 class DocumentsConsts:
@@ -974,8 +1000,7 @@ class PlatformConsts:
                                        "short-power-avg-histogram-12", "short-power-avg-histogram-13",
                                        "short-power-avg-histogram-14", "short-power-avg-histogram-15"]
 
-    POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS = ['no-shaper-bin', 'short-power-avg-histogram-0',
-                                                 'long-power-avg-histogram-0']
+    POWER_TELEMETRY_COUNTERS_CHANGABLE_FIELDS = ['short-power-avg-histogram-0', 'long-power-avg-histogram-0']
     BMC_FIRMWARE_INVENTORY_LINK = '/UpdateService/FirmwareInventory'
     BMC_FIRMWARE_BMC_LINK = 'MGX_FW_BMC_0'
     BMC_FIRMWARE_EROT_LINK = 'MGX_FW_ERoT_BMC_0'
@@ -1048,6 +1073,7 @@ class CableCartridgeConsts:
     ALLOWED_PART_NUMBERS = [
         "755-24972-0003-000",
         "HS-32836-001",
+        "HS-32836-003",
     ]
     # Error messages
     ERR_MISSING_KEY = "Missing key in cable cartridge data: {}"
@@ -1059,9 +1085,10 @@ class CableCartridgeConsts:
     ALL_KEYS = {KEY_SLOT_ID, KEY_TRAY_ID, KEY_SERIAL, KEY_PART_NUMBER, KEY_MANUFACTURING_DATE}
 
 
-class PowerProfileConsts:
+class PowerCappingConsts:
     DEFAULT_PROFILE_ID = 'compute'
     ACTIVE = 'active'
+    STATE = 'state'
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
     PROFILES_DEFAULT_DICT = {
         'compute': {
@@ -1086,9 +1113,26 @@ class PowerProfileConsts:
     ]
     FACTOR_ATTRIBUTES = ['kp-factor-1', 'kp-factor-2', 'ki-factor-1', 'ki-factor-2',
                          'kd-factor-1', 'kd-factor-2']
+
+    # New CLI limitations for power profile attributes
+    POWER_ALLOCATION_ATTRIBUTES = ['power-allocation-1', 'power-allocation-2']
+    MAX_INTEGRAL_ATTRIBUTES = ['max-integral-1', 'max-integral-2']
+
+    # Attribute value ranges
+    POWER_ALLOCATION_MIN = 300
+    POWER_ALLOCATION_MAX = 65535
+    MAX_INTEGRAL_MIN = 0
+    MAX_INTEGRAL_MAX = 65535  # uint16
+    UINT8_MIN = 0
+    UINT8_MAX = 255  # uint8 for all other attributes
+
     NUM_PROFILES_LIMIT = 5
     CHARS_LIMIT = 20
     ACTIVE_PROFILE = 'active-profile'
+
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
 
 
 class FansConsts:
@@ -1195,6 +1239,11 @@ class RbacConsts:
     USED_ROLE_MSG = 'being modified is already part of'
     CLASS_LIMIT = 64
     ROLE = 'role'
+    NMX_RBAC_FILE_USER_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/rbac_user.yml'
+    NMX_RBAC_FILE_SPIFFE_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/rbac_spiffe.yml'
+    NMX_RBAC_FILE_BAD_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/rbac_bad.yml'
+    RBAC_MODE_SPIFFE = 'spiffe'
+    RBAC_MODE_USERNAME_PASSWORD = 'username-password'
 
 
 class TcpDumpConsts:
@@ -1512,6 +1561,7 @@ class ClusterApps:
 
 
 class DateTimeConsts:
+    DATE_TIME = "date-time"
     LOCAL_TIME = "local-time"
     UNIVERSAL_TIME = "universal-time"
     RTC_TIME = "rtc-time"
@@ -1541,9 +1591,11 @@ class ClusterConsts:
     NMX_TELEMETRY = ClusterApps.NMX_TELEMETRY
     NMX_CONTROLLER_PREFIX = 'nmx-c'
     NMX_TELEMETRY_PREFIX = 'nmx-t'
+    NMX_RBAC_FILE = 'rbac-file'
     NMX_CONTROLLER_ENVOY_PORT = 9370
     NMX_TELEMETRY_ENVOY_PORT = 9351
     NMX_TELEMETRY_PROTO_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/nmx-telemetry.proto'
+    NMX_CONTROLLER_PROTO_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/nmx/nmx-c.proto'
     TELEMETRY_SERVICES = ['nmx-connector', 'ib-telemetry']
     CONTROLLER_SERVICES = ['nmxc-sdn', 'nmxc-fib', 'redis']
     INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
@@ -1552,7 +1604,6 @@ class ClusterConsts:
 
 
 class SyslogSeverityLevels:
-    NONE = 'none'
     CRIT = 'crit'
     CRITICAL = 'critical'
     ERROR = 'error'
@@ -1585,9 +1636,9 @@ class HealthConsts:
     ISSUE = "issue"
     ISSUES = "issues"
     ASIC_HEALTH_ISSUE = "ASIC-HEALTH"
-    SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX, OK)
-    SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX, NOT_OK)
-    ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX + " : Summary:.*"
+    SUMMARY_REGEX_OK = "INFO {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], OK)
+    SUMMARY_REGEX_NOT_OK = "ERROR {} : Summary: {}".format(NvosConst.DATE_TIME_REGEX[0], NOT_OK)
+    ADD_STATUS_TO_SUMMARY_REGEX = NvosConst.DATE_TIME_REGEX[0] + " : Summary:.*"
     HEALTH_ISSUE_REGEX = "ERROR {time_regex} : {component}: (?:is )?{issue}"
     HEALTH_FIX_REGEX = "INFO {time_regex} : Cleared: {component}: (?:is )?{issue}"
     SYSTEM_LOG_HEALTH_REGEX = '.* Health DB change cache.* new data.*\'summary\': \'{}\''
@@ -1610,15 +1661,15 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 380 if is_bug_active(4445141) else 330,
+                  'julietscaleout_reboot': 380 if is_bug_active(4445141) else 270,
                   'julietscaleout reset factory': 600,
                   'reset factory': 300,
-                  'install user FW': 450,
+                  'install user FW': 500,
                   'install default fw': 360,
                   'port goes up': 30,
                   'port goes down': 4,
-                  'reboot with default FW installation': 360,
-                  'reboot with new user FW': 450,
+                  'reboot with default FW installation': 500,
+                  'reboot with new user FW': 500,
                   'set hostname': 12,
                   'generate tech-support': 75,
                   'julietscaleout generate_tech_support': 120,
@@ -1633,12 +1684,13 @@ class OperationTimeConsts:
                   'install cpld': 720,
                   'install erot': 420,
                   ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 445
+                  'juliet-power-cycle': 330
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
     THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
     THRESHOLDS['julietscaleout generate_tech_support'] = THRESHOLDS['julietscaleout generate_tech_support'] * 1.1
+    THRESHOLDS['reboot with new user FW'] = THRESHOLDS['reboot with new user FW'] * 1.05
 
 
 class StatsConsts:
@@ -1720,6 +1772,8 @@ class StatsConsts:
     PWR_PSU_VOLT_MAX = 300  # [V] TODO: Update
     PWR_PSU_CUR_MIN = 0  # [A] TODO: Update
     PWR_PSU_CUR_MAX = 100  # [A] TODO: Update
+    ASIC_PWR_WATT_MIN = 400  # [Watt]
+    ASIC_PWR_WATT_MAX = 600  # [Watt]
     CPU_FREE_RAM_MIN = 30  # [%]
     CPU_FREE_RAM_MAX = 100  # [%]
     CPU_UTIL_MIN = 0  # [%]

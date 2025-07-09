@@ -3,6 +3,7 @@ import socket
 import random
 import time
 import pytest
+from retry import retry
 
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.nvos_constants.constants_nvos import ApiType, NtpConsts, NvosConst, SystemConsts
@@ -1159,6 +1160,7 @@ def verify_ntp_sync_stabilization(nv_command, expected_listen, expected_time, en
             diff_time = time.time() - start_time
 
 
+@retry(Exception, tries=10, delay=6)
 def verify_ntp_status_and_listen(nv_command, expected_listen, expected_status, engine_dut=None):
     with allure.step(f"Verify ntp status is {expected_status}, and listen to {expected_listen}"):
         ntp_show = OutputParsingTool.parse_json_str_to_dictionary(

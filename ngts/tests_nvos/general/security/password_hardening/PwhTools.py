@@ -579,7 +579,7 @@ class PwhTools:
             if num_of_days == 0:
                 return
 
-            cur_dt = ClockTools.get_datetime_from_show_system_output(system.show())
+            cur_dt = ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show())
             cur_dt_obj = datetime.datetime.fromisoformat(cur_dt)
             new_dt = (cur_dt_obj + datetime.timedelta(days=num_of_days)).strftime("%Y-%m-%d %H:%M:%S")
             system.datetime.action_change(params=new_dt).verify_result()

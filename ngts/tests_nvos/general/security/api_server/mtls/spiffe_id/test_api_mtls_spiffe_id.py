@@ -263,7 +263,7 @@ class TestSetup:
         self.spiffes_info: Dict[str, List[str]] = spiffes_info
 
 
-def setup_test(dut_hostname, engines, scp_player, save_users: bool = False) -> TestSetup:
+def setup_test(dut_hostname, engines, scp_player, save_users: bool = False, cert_name_prefix: str = 'api') -> TestSetup:
     dut_engine = engines.dut
     system = System()
     dn = dut_hostname
@@ -275,12 +275,12 @@ def setup_test(dut_hostname, engines, scp_player, save_users: bool = False) -> T
 
     with allure.step('prepare client certs'):
         cn = 'nvos-client'
-        cert_no_spif = CertInfo('cert', 'without spiffe', '', '', '', '', dn, ip, '', f'{cn}')
-        cert_2_spifs = CertInfo('cert-2-spiffs', '2 spiffs', '', '', '', '', dn, ip, '', f'{cn}-9', [spifs[0], spifs[1]])
-        cert_spif_not_exists = CertInfo('cert0', 'spiffe that no user has', '', '', '', '', dn, ip, '', f'{cn}-0', [spifs[0]])
-        cert_spif_of_user1_1 = CertInfo('cert11', 'spiffe of user1 #1', '', '', '', '', dn, ip, '', f'{cn}-11', [spifs[1]])
-        cert_spif_of_user1_2 = CertInfo('cert12', 'spiffe of user1 #2', '', '', '', '', dn, ip, '', f'{cn}-12', [spifs[2]])
-        cert_spif_of_user2 = CertInfo('cert2', 'spiffe of user2', '', '', '', '', dn, ip, '', f'{cn}-2', [spifs[3]])
+        cert_no_spif = CertInfo(f'{cert_name_prefix}-cert', 'without spiffe', '', '', '', '', dn, ip, '', f'{cn}')
+        cert_2_spifs = CertInfo(f'{cert_name_prefix}-2-spiffs', '2 spiffs', '', '', '', '', dn, ip, '', f'{cn}-9', [spifs[0], spifs[1]])
+        cert_spif_not_exists = CertInfo(f'{cert_name_prefix}-cert0', 'spiffe that no user has', '', '', '', '', dn, ip, '', f'{cn}-0', [spifs[0]])
+        cert_spif_of_user1_1 = CertInfo(f'{cert_name_prefix}-cert11', 'spiffe of user1 #1', '', '', '', '', dn, ip, '', f'{cn}-11', [spifs[1]])
+        cert_spif_of_user1_2 = CertInfo(f'{cert_name_prefix}-cert12', 'spiffe of user1 #2', '', '', '', '', dn, ip, '', f'{cn}-12', [spifs[2]])
+        cert_spif_of_user2 = CertInfo(f'{cert_name_prefix}-cert2', 'spiffe of user2', '', '', '', '', dn, ip, '', f'{cn}-2', [spifs[3]])
         clients_certs = [cert_no_spif, cert_2_spifs, cert_spif_not_exists, cert_spif_of_user1_1, cert_spif_of_user1_2,
                          cert_spif_of_user2]
         client_certs_dir = os.path.join(certs_location, 'client_certs')
@@ -289,7 +289,7 @@ def setup_test(dut_hostname, engines, scp_player, save_users: bool = False) -> T
     with allure.step('prepare server cert'):
         server_certs_dir = os.path.join(certs_location, 'server_certs')
         server_certs = [
-            CertInfo('server-cert', 'server cert', '', '', '', '', dn, ip, '', f'{dn}'),
+            CertInfo(f'{cert_name_prefix}-server-cert', 'server cert', '', '', '', '', dn, ip, '', f'{dn}'),
         ]
         server_cert: CertInfo = server_certs[0]
         generate_certs(server_certs_dir, server_certs)

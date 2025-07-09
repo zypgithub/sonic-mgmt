@@ -1,11 +1,13 @@
 import re
+from typing import Optional
 
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
+from ngts.nvos_constants.constants_nvos import IssuConsts, NtpConsts, SystemConsts, OutputFormat
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.constants import MINUTE
@@ -77,9 +79,57 @@ def test_techsupport_expected_files(engines, devices, test_name):
         1. get_expected dummy files per device
         2. get new files after configurations
         3. run nv action generate system tech-support
-        4. verify files' names of techsupport using expected_files_dict
-        5. verify files' sizes of techsupport using expected_files_dict
+        4. Verify obscurity of config files
+        5. verify files' names of techsupport using expected_files_dict
+        6. verify files' sizes of techsupport using expected_files_dict
     """
+
+    LDAP_SECRET: str = 'ldap_pass'
+    RADIUS_SECRET: str = 'radius_pass'
+    TACACS_SECRET: str = 'tacacs_pass'
+    password_pattern = r'password[^:]*: [\"\']*([^\"\'\s]+)'
+    login_cmd_pattern = r'COMMAND=/usr/sbin/usermod --password\s([^\s]+)'
+
+    config_file_secret_dict = {
+        'ldap': {
+            'secret': LDAP_SECRET,
+            'pattern': r"ldap.+\s+[\"\']*secret[^:]*:\s[\"\']*([^\"\'\s]+)",
+            'set_nv_cmd': lambda: system.aaa.ldap.set(op_param_name='secret', op_param_value=LDAP_SECRET).verify_result()
+        },
+        'radius': {
+            'secret': RADIUS_SECRET,
+            'pattern': r"radius.+\s+[\"\']*secret[^:]*:\s[\"\']*([^\"\'\s]+)",
+            'set_nv_cmd': lambda: system.aaa.radius.set(op_param_name='secret', op_param_value=RADIUS_SECRET).verify_result()
+        },
+        'tacacs': {
+            'secret': TACACS_SECRET,
+            'pattern': r"tacacs.+\s+[\"\']*secret[^:]*:\s[\"\']*([^\"\'\s]+)",
+            'set_nv_cmd': lambda: system.aaa.tacacs.set(op_param_name='secret', op_param_value=TACACS_SECRET).verify_result()
+        },
+        'ntp_key': {
+            'secret': NtpConsts.KEY_VALUE,
+            'pattern': r'key[^:]*:\s+[\"\']*([^\"\'\s]+)',
+            'set_nv_cmd': lambda: (
+                system.ntp.keys.set_resource(NtpConsts.KEY_1).verify_result(),
+                system.ntp.keys.resources_dict[NtpConsts.KEY_1].set(op_param_name=NtpConsts.VALUE, op_param_value=NtpConsts.KEY_VALUE).verify_result()
+            )
+        },
+        'snmp_community': {
+            'secret': SystemConsts.SNMP_READONLY_COMMUNITY,
+            'pattern': r'readonly\-community[^:]*:\s+[\"\']*([^\"\'\s]+)',
+            'set_nv_cmd': lambda: system.snmp_server.set(SystemConsts.SNMP_READONLY_COMMUNITY, IssuConsts.SNMP_READ_ONLY_COMMUNITY).verify_result()
+        }
+    }
+
+    """
+    Verify that sensitive information in config files is properly obscured.
+    Args: content (str): The content of the config file to verify
+    """
+    def verify_obscurity_in_config_file(content: str, file_name: str) -> None:
+        for secret_name, secret_info in config_file_secret_dict.items():
+            verify_secret_obscurity(content=content, pattern=secret_info['pattern'], file_name=file_name,
+                                    secret_name=secret_name, secret=secret_info['secret'])
+        verify_secret_obscurity(content=content, pattern=password_pattern, file_name=file_name, secret_name='password')
 
     system = System()
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
@@ -100,6 +150,11 @@ def test_techsupport_expected_files(engines, devices, test_name):
         bmc_dump_files = getattr(devices.dut.constants, 'bmc_dump_files', None)
         expected_files_dict['bmc'] = bmc_dump_files
 
+    for secret_info in config_file_secret_dict.values():
+        secret_info['set_nv_cmd']()
+    NvueGeneralCli.apply_config(engine=engines.dut)
+    NvueGeneralCli.save_config(engine=engines.dut)
+
     try:
         if devices.dut.has_nmx:
             cluster = Cluster()
@@ -113,11 +168,39 @@ def test_techsupport_expected_files(engines, devices, test_name):
                     ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         with allure.step('Run nv action generate system tech-support and validate dump files'):
-            tech_support_folder, duration = system.techsupport.action_generate(test_name=test_name)
+            tech_support_file, duration = system.techsupport.action_generate(test_name=test_name)
+            tech_support_dir = tech_support_file.replace('.tar.gz', '')
             with allure.step("Tech-support generation takes: {} seconds".format(duration)):
                 logger.info("Tech-support generation takes: {} seconds".format(duration))
             system.techsupport.extract_techsupport_files(engines.dut)
             techsupport_files_dict = system.techsupport.get_techsupport_files_names(engines.dut, expected_files_dict)
+
+        with allure.step('validate obscurity in config files'):
+            nvue_dir_path = extract_nvue_show_tech(engines.dut, tech_support_dir)
+            assert not verify_file_in_folder(engines.dut, 'startup.yaml', nvue_dir_path), 'startup.yaml exist in {nvue_dir_path}'
+            nvued_dir_path = nvue_dir_path + '/nvue.d'
+
+            with allure.step('validate obscurity in startup.yaml'):
+                assert verify_file_in_folder(engines.dut, 'startup.yaml', nvued_dir_path), 'startup.yaml exist in {nvued_dir_path}'
+                startup_content = engines.dut.run_cmd(f'cat {nvued_dir_path}/startup.yaml')
+                verify_obscurity_in_config_file(content=startup_content, file_name='startup.yaml')
+
+            with allure.step('validate obscurity in applied_configuration'):
+                assert verify_file_in_folder(engines.dut, 'applied_configuration', nvue_dir_path), 'applied_configuration exist in {nvue_dir_path}'
+                applied_config = engines.dut.run_cmd(f'cat {nvue_dir_path}/applied_configuration')
+                verify_obscurity_in_config_file(content=applied_config, file_name='applied_configuration')
+
+        with allure.step("validate obscurity in auth.log"):
+            auth_log_path = extract_auth_log(engines.dut, tech_support_dir)
+            auth_log_content = engines.dut.run_cmd(f'cat {auth_log_path}')
+            verify_secret_obscurity(content=auth_log_content, pattern=login_cmd_pattern, file_name=auth_log_path,
+                                    secret_name='login cmd', expected_obscurity='***', must_exist=False)
+
+        with allure.step("validate etc/sonic/nvue.d obscurity"):
+            assert not verify_file_in_folder(engines.dut, 'startup.yaml', f'{tech_support_dir}/etc/sonic/'), 'startup.yaml exist in /etc/sonic/'
+            assert not verify_file_in_folder(engines.dut, 'applied_configuration', f'{tech_support_dir}/etc/sonic/'), 'applied_configuration exist in /etc/sonic/'
+            assert not verify_file_in_folder(engines.dut, 'startup.yaml', f'{tech_support_dir}/etc/sonic/nvue.d'), 'startup.yaml exist in /etc/sonic/nvue.d'
+            assert not verify_file_in_folder(engines.dut, 'applied_configuration', f'{tech_support_dir}/etc/sonic/nvue.d'), 'applied_configuration exist in /etc/sonic/nvue.d'
 
         with allure.step("validate each expected file name and size"):
             with allure.independent_step('validate files names'):
@@ -212,6 +295,8 @@ def verify_techsupport_files_sizes(files_list, folder):
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE]
     elif folder == 'etc':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE]
+    elif folder == 'cluster':
+        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
 
     assert len(files_list) == 0, f"the next files are empty {files_list}"
 
@@ -227,3 +312,30 @@ def validate_techsupport_folder_name(system, tech_support_folder):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         hostname = system_output[SystemConsts.HOSTNAME]
         assert 'nvos_dump_' + hostname in tech_support_folder, 'the tech-support should be under host dump and includes hostname'
+
+
+def extract_nvue_show_tech(engine, dump_path: str) -> str:
+    engine.run_cmd(f'sudo tar -xf {dump_path}/nvue/nvue_show_tech.tar -C {dump_path}/nvue/')
+    engine.run_cmd(f'sudo chmod -R 775 {dump_path}/nvue')
+    return f'{dump_path}/nvue/'
+
+
+def extract_auth_log(engine, dump_path: str) -> str:
+    engine.run_cmd(f'sudo chmod g=rx {dump_path}/log/auth.log.gz')
+    engine.run_cmd(f'sudo gunzip -k {dump_path}/log/auth.log.gz')
+    return f'{dump_path}/log/auth.log'
+
+
+def verify_file_in_folder(engine, file_name: str, folder_path: str) -> bool:
+    return file_name in engine.run_cmd(f'ls {folder_path}')
+
+
+def verify_secret_obscurity(content: str, pattern: str, file_name: str, secret_name: str, expected_obscurity: str = 'XXX',
+                            secret: Optional[str] = None, must_exist: bool = True) -> None:
+    match = re.search(pattern, content)
+    if must_exist:
+        assert match, f'{secret_name} secret not found in {file_name}'
+    if match:
+        if secret:
+            assert match.group(1) != secret, f'{secret_name} secret is visible'
+        assert match.group(1) == expected_obscurity, f'{secret_name} secret is not obscured correctly'

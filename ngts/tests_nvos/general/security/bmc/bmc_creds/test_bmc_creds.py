@@ -2,9 +2,10 @@ import logging
 import time
 
 import pytest
+from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_constants.constants_nvos import FansConsts, PlatformConsts, HealthConsts, SystemConsts
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -15,20 +16,23 @@ from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import enable_mctp_p
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitchGB300
+from ngts.nvos_tools.infra.NvCommand import NvCommand
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 
 logger = logging.getLogger()
 
 
 @pytest.mark.bmc
 @pytest.mark.disable_loganalyzer
-def test_bmc_creds_flow(engines, devices, topology_obj):
+def test_bmc_creds_flow(engines, devices, topology_obj, nv_command: NvCommand):
     """
     1. factory reset the BMC
     2. verify bmc admin can login only with default password
     3. run show cmd - triggers bmc user password initialization via TPM
     4. verify bmc admin can login only with TPM password
     """
-    if is_bug_active(4359149) and isinstance(devices.dut, JulietNonScaleoutSwitchGB300):
+    if is_bug_active(4146744) and isinstance(devices.dut, JulietNonScaleoutSwitchGB300):
         pytest.skip("Skipping test because we have a bug in bmc reset factory for gb300.")
 
     def check_auth_with_curl(dut_engine: LinuxSshEngine, username: str, password: str, expect_success: bool):
@@ -56,11 +60,14 @@ def test_bmc_creds_flow(engines, devices, topology_obj):
         with allure.independent_step("Wait for BMC to boot after factory reset"):
             client.wait_for_bmc_available(username=BmcUsers.root.username, password=BmcUsers.root.default_password)
             client.change_root_password(password=BmcUsers.root.default_password)
-        with allure.independent_step("Wait 30s for CPU to see that BMC is booted"):
-            time.sleep(30)
+        with allure.independent_step("Wait for CPU to see that BMC has booted"):
+            BmcTool.wait_for_cpu_to_detect_bmc(dut, nv_command)
 
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):
         with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.default_password, False)
         with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + password from tpm - expect success'):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.another_password, True)
+
+    with allure.step('Verify health status is OK'):
+        nv_command.system.validate_health_status(HealthConsts.OK)

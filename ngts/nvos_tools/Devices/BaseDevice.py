@@ -80,7 +80,7 @@ class BaseDevice(ABC):
         self.core_count = 1
         self.asic_type = ""
         self.ib_ports_num = 0
-        self.mst_dev_name = ""
+        self.mst_dev_name = ()  # (device_for_asic_1, device_for_asic_2, ... )
         self.constants = None
         self.split_ports_supported = False
         self.profile_change_supported = False
@@ -229,7 +229,7 @@ class BaseDevice(ABC):
         """
         result_obj = ResultObj(True, "")
         for service in self.available_services:
-            cmd_output = dut_engine.run_cmd('systemctl --type=service | grep {}'.format(service))
+            cmd_output = dut_engine.run_cmd('systemctl --type=service | grep -E "{}"'.format(service))
             if NvosConst.SERVICE_STATUS_ACTIVE not in cmd_output:
                 result_obj.result = False
                 result_obj.info += "{} service is not active. {} \n".format(service, cmd_output)
@@ -322,7 +322,8 @@ class BaseSwitch(BaseDevice):
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
                                          'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files',
-                                         'hw_mgmt_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots'])
+                                         'hw_mgmt_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots',
+                                         'kdump_files'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
@@ -399,6 +400,7 @@ class BaseSwitch(BaseDevice):
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
         log_nmx_files = []
         etc_files = ["resolv.conf"]
+        kdump_files = ["dmesg.{}.gz", "kdump.{}", "kdump_lock.gz"]
 
         bmc_dump_files = None
         cluster_files = None
@@ -407,7 +409,7 @@ class BaseSwitch(BaseDevice):
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
                                               log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, etc_files, cluster_files,
-                                              bmc_dump_files, erots)
+                                              bmc_dump_files, erots, kdump_files)
 
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""
@@ -497,4 +499,6 @@ class BaseSwitch(BaseDevice):
 
     def _extend_firmware_by_cpld_amount(self):
         if hasattr(self, "cpld_amount"):
-            self.constants.firmware.extend(PlatformConsts.FW_CPLD + str(i) for i in range(1, self.cpld_amount + 1))
+            self.constants.firmware.extend(
+                PlatformConsts.FW_CPLD + str(i) for i in range(1, self.cpld_amount + 1)
+            )

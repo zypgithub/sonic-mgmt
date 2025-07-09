@@ -8,6 +8,7 @@ from retry.api import retry_call
 
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import ApiType, MultiPlanarConsts, NvosConst
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import validate_ports_state_and_speed, toggle_port_state, show_interface_and_validate, skip_if_no_trunk_links, skip_if_no_access_links
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.Fae import Fae
@@ -17,11 +18,9 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.tests_nvos.interfaces.nvl_port_type.helpers import skip_if_no_trunk_links, skip_if_no_access_links
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
-# from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts [TBD]
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Tools import Tools
@@ -276,21 +275,21 @@ def test_nvl5_negative(engines, devices, test_api):
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
 
 
-@pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_interface_xdr_slow_speed_access_ports(engines, devices, test_api, setup_name, standalone_system, has_loopbox):
+@pytest.mark.interface
+@pytest.mark.multiplanar
+def test_interface_xdr_slow_speed_access_ports(engines, devices, random_api, setup_name, standalone_system, has_loopbox):
     skip_if_no_access_links(has_loopbox, standalone_system)
-    acp_ports_range = f'acp1-{str(len(devices.dut.nvl_access_ports_list))}'
-    _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+    acp_ports_range = f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}'
+    _set_unset_interface_xdr_slow_speed(engines, devices, random_api, setup_name,
                                         standalone_system, acp_ports_range, prefix='acp')
 
 
-@pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_interface_xdr_slow_speed_trunk_ports(engines, devices, test_api, setup_name, standalone_system):
+@pytest.mark.interface
+@pytest.mark.multiplanar
+def test_interface_xdr_slow_speed_trunk_ports(engines, devices, random_api, setup_name, standalone_system):
     skip_if_no_trunk_links(devices)
-    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl_trunk_ports_list)
-    _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name,
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    _set_unset_interface_xdr_slow_speed(engines, devices, random_api, setup_name,
                                         standalone_system, summarized_switch_ports, prefix='sw')
 
 
@@ -356,30 +355,3 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
             verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
             with allure.independent_step(f'check that "{IbInterfaceConsts.XDR_SLOW_SPEED}" was streamed'):
                 verify_msg_in_out_or_err('200', out)
-
-
-def show_interface_and_validate(engines, devices, ports_list, command=''):
-    output_dictionary = OutputParsingTool.\
-        parse_show_all_interfaces_output_to_dictionary(Port.show_interface(engines.dut, fae_param=command))\
-        .get_returned_value()
-    output_keys = list(output_dictionary.keys())
-    ValidationTool.compare_values(output_keys.sort(), ports_list.sort()).verify_result()
-
-
-def toggle_port_state(selected_port, port_state, test_name=''):
-    selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    with allure_step("Wait till port {} is {}".format(selected_port, port_state)):
-        res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
-                                                        selected_port.interface.wait_for_port_state, port_state,
-                                                        sleep_time=0.2)
-        res_obj.verify_result()
-        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
-
-
-def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, state=NvosConsts.LINK_STATE_UP):
-    port_requirements = PortRequirements()
-    port_requirements.set_port_speed(speed)
-    port_requirements.set_port_state(state)
-    actual_ports = [port.name for port in Port.get_list_of_ports(port_requirements_object=port_requirements) if port.name.startswith(prefix)]
-
-    ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()

@@ -14,19 +14,21 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ErotComponent import ErotComponent
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.infra.Fae import Fae
 
 logger = logging.getLogger()
 
 
 def verify_installation(erot_names, expected_version):
     platform = Platform()
+    fae = Fae()
     fw_fields_to_check = [PlatformConsts.FW_ACTUAL, PlatformConsts.FW_BACKGROUND_COPY_STATUS,
                           PlatformConsts.FW_DEBUG_TOKEN_STATUS, PlatformConsts.FW_SLOT_STATUS_INACTIVE,
                           PlatformConsts.FW_SLOT_STATUS_ACTIVE, PlatformConsts.FW_AP_BOOT_STATUS]
     with allure.step(f"Asserting install was successful"):
         for erot_name in erot_names:
             firmware_shown: Dict[str, str] = OutputParsingTool.parse_json_str_to_dictionary(
-                platform.firmware.erot_id[erot_name].show()).get_returned_value()
+                fae.platform.firmware.erot_id[erot_name].show()).get_returned_value()
             with allure.independent_step(f"Check actual firmware version matches expected {expected_version}"):
                 actual_firmware = firmware_shown[PlatformConsts.FW_ACTUAL]
                 assert actual_firmware == expected_version, \

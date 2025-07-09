@@ -247,8 +247,8 @@ class OpenApiRequest:
         html_check_res = OpenApiRequest._check_html_response(r)
         if not html_check_res.result:
             return html_check_res
-        if any(err_str in getattr(r, 'text', '') for err_str in ['Bad Request', '400', 'Error', 'error']):
-            return ResultObj(False, r.text, None)
+        if r.status_code >= 400:
+            return ResultObj(False, f"HTTP {r.status_code} Error: {r.text}", None)
         return ResultObj(True, 'post request succeeded')
 
     @staticmethod
@@ -291,6 +291,7 @@ class OpenApiRequest:
         result, err = True, ''
         if OpenApiRequest.changeset is None:
             res = OpenApiRequest.create_nvue_changest(request_data)
+            res.ignore_result()
             result = res.result
             if not result:
                 logging.info(f'Failed to create revision. Abort the current request\nInfo: {res.info}')

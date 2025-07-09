@@ -13,7 +13,7 @@ import ngts.tools.test_utils.allure_utils as allure
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.constants.constants import GnmiConsts
-from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, SystemConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, DatabaseConst, ApiType, ActionConsts, EventConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -405,8 +405,8 @@ def test_gnmi_events_overload(engines, devices):
                                                          args=(i, client_proc,))
                     subscriber_monitor_process.start()
 
-        with allure.step('Set system events table-size to maximum ie {}'.format(SystemConsts.EVENTS_TABLE_SIZE_MAX)):
-            system.events.set(op_param_name='table-size', op_param_value=SystemConsts.EVENTS_TABLE_SIZE_MAX,
+        with allure.step('Set system events table-size to maximum ie {}'.format(EventConsts.TABLE_SIZE_MAX)):
+            system.events.set(op_param_name='table-size', op_param_value=EventConsts.TABLE_SIZE_MAX,
                               apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Clear system events'):

@@ -68,4 +68,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_gnmi_cli_interface_compare.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_gnmi_nvl5.cases </cases>
+	</test>
 </DBDEF>

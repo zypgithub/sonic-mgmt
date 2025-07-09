@@ -17,7 +17,7 @@ from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.fae.Asic import Asic
-from ngts.nvos_tools.fae.FaePowerProfile import FaePowerProfile
+from ngts.nvos_tools.fae.FaePowerCapping import FaePowerCapping
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -115,7 +115,7 @@ class FaePlatform(BaseComponent):
         self.eeprom = BaseComponent(self, path="/eeprom")
         self.debug = Debug(self)
         self.asic = Asic(self)
-        self.power_profile = FaePowerProfile(self)
+        self.power_capping = FaePowerCapping(self)
 
 
 class FaeFirmware(BaseComponent):
@@ -202,6 +202,9 @@ class FaeSystem(BaseComponent):
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.log = FaeLog(self)
+        self.control = BaseComponent(self, path='/control')
+        self.dockers = BaseComponent(self, path='/control/dockers')
+        self.resource_limit = BaseComponent(self, path='/control/dockers/resource-limit')
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """

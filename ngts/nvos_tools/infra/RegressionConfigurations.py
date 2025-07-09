@@ -50,7 +50,8 @@ class Configurations:
         "10.7.144.58": ['sw1p1', 'sw1p2', 'sw2p1'],
     }
 
-    juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_195", "NVOS_juliet_10_7_148_136", "NVOS_juliet_10_7_148_184", "NVOS_juliet_10_7_145_85"]
+    juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_195", "NVOS_juliet_10_7_148_136", "NVOS_juliet_10_7_148_184",
+                                   "NVOS_juliet_10_7_145_85", "NVOS_juliet_10_7_148_142"]
 
     non_standalone_systems = ['NVOS_juliet_10_7_148_148']
 

@@ -975,10 +975,11 @@ def gnmi_spiffe_factory_reset_no_params_check():
     engines = TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
+    cert_name_prefix = 'gnmi'
 
     with allure.step("setup"):
         with allure.step("prepare certs, users, spiffes"):
-            setup: TestSetup = setup_test(dut_hostname, engines, scp_player)
+            setup: TestSetup = setup_test(dut_hostname, engines, scp_player, cert_name_prefix=cert_name_prefix)
 
         with allure.step(f"setup security mode: {SecurityMode.MTLS}"):
             setup_gnmi_security_mode(
@@ -1022,10 +1023,11 @@ def gnmi_spiffe_factory_reset_keep_basic_check():
     engines = TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
+    cert_name_prefix = 'gnmi'
 
     with allure.step("setup"):
         with allure.step("prepare certs, users, spiffes"):
-            setup: TestSetup = setup_test(dut_hostname, engines, scp_player)
+            setup: TestSetup = setup_test(dut_hostname, engines, scp_player, cert_name_prefix=cert_name_prefix)
 
         with allure.step(f"setup security mode: {SecurityMode.MTLS}"):
             setup_gnmi_security_mode(
@@ -1066,10 +1068,11 @@ def gnmi_spiffe_factory_reset_keep_all_config_check():
     engines = TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
+    cert_name_prefix = 'gnmi'
 
     with allure.step("setup"):
         with allure.step("prepare certs, users, spiffes"):
-            setup: TestSetup = setup_test(dut_hostname, engines, scp_player)
+            setup: TestSetup = setup_test(dut_hostname, engines, scp_player, cert_name_prefix='gnmi')
 
         with allure.step(f"setup security mode: {SecurityMode.MTLS}"):
             setup_gnmi_security_mode(
@@ -1100,10 +1103,11 @@ def gnmi_spiffe_upgrade_check():
     engines = TestToolkit.engines
     scp_player = get_scp_player(engines)
     dut_hostname = get_dut_hostname(engines)
+    cert_name_prefix = 'gnmi'
 
     with allure.step("setup"):
         with allure.step("prepare certs, users, spiffes"):
-            setup: TestSetup = setup_test(dut_hostname, engines, scp_player)
+            setup: TestSetup = setup_test(dut_hostname, engines, scp_player, cert_name_prefix=cert_name_prefix)
 
         with allure.step(f"setup security mode: {SecurityMode.MTLS}"):
             setup_gnmi_security_mode(

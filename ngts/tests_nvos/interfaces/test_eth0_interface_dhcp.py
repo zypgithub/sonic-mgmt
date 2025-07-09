@@ -48,7 +48,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
             mgmt_port.interface.link.state.set(op_param_name='invalid_value', apply=False).verify_result(False)
 
             logger.info('Check port status, should be up')
-            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 mgmt_port.interface.link.show()).get_returned_value()
 
@@ -61,7 +61,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
                                                ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
 
             logger.info('Check port status, should be down')
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
 
@@ -73,7 +73,7 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
             mgmt_port.interface.link.state.unset(apply=True, ask_for_confirmation=True,
                                                  dut_engine=serial_engine).verify_result()
             logger.info('Check port status, should be up')
-            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
 
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 mgmt_port.interface.link.show()).get_returned_value()
@@ -305,13 +305,17 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     switch_ip = engines.dut.ip
-
     try:
         with allure.step('Run show command on mgmt port and verify default description'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ip.show()).get_returned_value()
-
             validate_interface_ip_address(switch_ip, output_dictionary, True)
+
+        with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
+            res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+            res.ignore_result()
+            assert not res.result or "is not a" in res.returned_value, \
+                "The operation succeeded while it is expected to fail"
 
         with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
             res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
@@ -325,9 +329,8 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             serial_engine.serial_engine.expect("Are you sure?", timeout=120)
             serial_engine.serial_engine.sendline("y")
             serial_engine.serial_engine.expect("applied", timeout=120)
-
             logger.info('Check port status, should be down')
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
 
         with allure.step('Select random ipv4 and set it'):
             ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
@@ -336,11 +339,13 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             serial_engine.serial_engine.expect("Are you sure?", timeout=120)
             serial_engine.serial_engine.sendline("y")
             serial_engine.serial_engine.expect("applied", timeout=120)
-
             logger.info('Check port status, should be down')
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
             serial_engine.serial_engine.expect(ip_address, timeout=120)
+    except Exception as e:
+        logger.info("Received Exception during test_ztp_json_complex: {}".format(e))
+        raise e
     finally:
         with allure.step('Unset ipv4 and dhcp and check port reachable'):
             serial_engine.serial_engine.sendline("nv unset interface {0}".format(mgmt_port_name))
@@ -350,9 +355,10 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             serial_engine.serial_engine.expect("applied", timeout=120)
 
             logger.info('Check port status, should be up')
-            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
-            serial_engine.serial_engine.sendline("nv show interface {0}".format(mgmt_port_name))
-            serial_engine.serial_engine.expect(switch_ip, timeout=120)
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ip.show()).get_returned_value()
+            validate_interface_ip_address(switch_ip, output_dictionary, True)
 
 
 @pytest.mark.eth0
@@ -631,6 +637,7 @@ def validate_dhcp_option_60_tcpdump(dut, mgmt_port_name, regex):
     assert False, "Vendor-Class Identifier (Option 60) not found in dhcp packets"
 
 
+@retry(Exception, tries=2, delay=2)
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):
     """
 

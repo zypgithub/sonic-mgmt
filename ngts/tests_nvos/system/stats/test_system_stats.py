@@ -973,17 +973,18 @@ def test_validate_category_file_values(engines, devices, test_api):
                 get_returned_value()
 
             for file_name in stats_files_show:
-                with allure.step("Upload stats file to URL"):
-                    validate_upload_stats_file(engines, system, file_name, False)
+                with allure.independent_step(f"testing {file_name} file"):
+                    with allure.step("Upload stats file to URL"):
+                        validate_upload_stats_file(engines, system, file_name, False)
 
-                with allure.step("Validate external file header"):
-                    name = file_name.split('_')[1]
-                    file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
-                    end_time = start_time + timedelta(minutes=6)
-                    validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
+                    with allure.step("Validate external file header"):
+                        name = file_name.split('_')[1]
+                        file_path = NvosConst.MARS_RESULTS_FOLDER + file_name
+                        end_time = start_time + timedelta(minutes=6)
+                        validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time)
 
-                with allure.step("Delete uploaded file"):
-                    player.run_cmd(cmd='rm -f {}'.format(file_path))
+                    with allure.step("Delete uploaded file"):
+                        player.run_cmd(cmd='rm -f {}'.format(file_path))
 
     finally:
         set_system_stats_to_default(engine, system)
@@ -1058,127 +1059,141 @@ def validate_upload_stats_file(engines, system, file, delete=True):
 
 
 def validate_external_file_header_and_data(name, file_path, hostname, start_time, end_time):
-    with open(file_path, 'r') as csv_file:
-        reader = csv.reader(csv_file)
-        next(reader)
-        row = next(reader)
-        # Remove mgmt port number if present in hostname
-        hostname_from_file_name = row[0].replace('-mgmt2', '')
-        assert hostname_from_file_name == StatsConsts.HEADER_HOSTNAME + hostname, \
-            f"unexpected hostname in file header, {hostname_from_file_name} instead of {hostname}"
-        row = next(reader)
-        assert row[0] == StatsConsts.HEADER_GROUP + name, \
-            f"unexpected group in file header, {row[0]} instead of {name}"
-        row = next(reader)
-        assert row[0].startswith(StatsConsts.HEADER_TIME), "unexpected started time text in file header"
+    with allure.step(f"validate external file header and data - {file_path}"):
+        with open(file_path, 'r') as csv_file:
+            reader = csv.reader(csv_file)
+            next(reader)
+            row = next(reader)
+            # Remove mgmt port number if present in hostname
+            hostname_from_file_name = row[0].replace('-mgmt2', '')
+            assert hostname_from_file_name == StatsConsts.HEADER_HOSTNAME + hostname, \
+                f"unexpected hostname in file header, {hostname_from_file_name} instead of {hostname}"
+            row = next(reader)
+            assert row[0] == StatsConsts.HEADER_GROUP + name, \
+                f"unexpected group in file header, {row[0]} instead of {name}"
+            row = next(reader)
+            assert row[0].startswith(StatsConsts.HEADER_TIME), "unexpected started time text in file header"
 
-        if start_time and end_time:
-            export_time = datetime.strptime(row[0].replace(StatsConsts.HEADER_TIME, ''), StatsConsts.TIMESTAMP_FORMAT)
-            assert start_time < export_time < end_time, \
-                f"External file started sampling time: {export_time} should be between {start_time}-{end_time}"
+            if start_time and end_time:
+                export_time = datetime.strptime(row[0].replace(StatsConsts.HEADER_TIME, ''), StatsConsts.TIMESTAMP_FORMAT)
+                assert start_time < export_time < end_time, \
+                    f"External file started sampling time: {export_time} should be between {start_time}-{end_time}"
 
-        idx = 4
-        start_data_idx = -1
-        header_list = []
-        for row in reader:
-            if row:
-                if row[0].startswith("Timestamp"):
-                    start_data_idx = idx + 1
+            idx = 4
+            start_data_idx = -1
+            header_list = []
+            for row in reader:
+                if row:
+                    if row[0].startswith("Timestamp"):
+                        start_data_idx = idx + 1
+                        break
+                    elif row[0].startswith("# Column"):
+                        header_list.append(row[0].split(': ')[-1])
+                idx += 1
+                if idx == StatsConsts.MAX_ROWS_TO_SCAN:
                     break
-                elif row[0].startswith("# Column"):
-                    header_list.append(row[0].split(': ')[-1])
-            idx += 1
-            if idx == StatsConsts.MAX_ROWS_TO_SCAN:
-                break
 
-        assert header_list == row, "there is a mismatch between columns in header to columns list"
-        assert start_data_idx >= 0, "did not find data start line"
-        assert len(row) == (start_data_idx - StatsConsts.CONST_HEADER_ROWS), \
-            "there is a mismatch between columns defined number"
+            assert header_list == row, "there is a mismatch between columns in header to columns list"
+            assert start_data_idx >= 0, "did not find data start line"
+            assert len(row) == (start_data_idx - StatsConsts.CONST_HEADER_ROWS), \
+                "there is a mismatch between columns defined number"
 
-        prev_sample_time = export_time - timedelta(minutes=int(StatsConsts.INTERVAL_MIN))
-        col_names = row
-        num_of_samples = 0
-        num_of_columns = len(row)
+            prev_sample_time = export_time - timedelta(minutes=int(StatsConsts.INTERVAL_MIN))
+            col_names = row
+            num_of_samples = 0
+            num_of_columns = len(row)
 
-        if name == 'cpu':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                check_in_range_without_na(col_names[1], row[1], StatsConsts.CPU_FREE_RAM_MIN,
-                                          StatsConsts.CPU_FREE_RAM_MAX, num_of_samples, name)
-                check_in_range_without_na(col_names[2], row[2], StatsConsts.CPU_UTIL_MIN,
-                                          StatsConsts.CPU_UTIL_MAX, num_of_samples, name)
-                check_in_range_without_na(col_names[3], row[3], StatsConsts.CPU_REBOOT_CNT_MIN,
-                                          StatsConsts.CPU_REBOOT_CNT_MAX, num_of_samples, name)
-        elif name == 'disk':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                check_in_range(col_names[1], row[1], StatsConsts.DISK_FREE_SPACE_MIN,
-                               StatsConsts.DISK_FREE_SPACE_MAX, num_of_samples, name)
-                check_in_range(col_names[2], row[2], StatsConsts.DISK_RMN_LIFE_MIN,
-                               StatsConsts.DISK_RMN_LIFE_MAX, num_of_samples, name)
-                check_in_range(col_names[3], row[3], StatsConsts.DISK_FAIL_CNT_MIN,
-                               StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                check_in_range(col_names[4], row[4], StatsConsts.DISK_FAIL_CNT_MIN,
-                               StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                check_in_range(col_names[5], row[5], StatsConsts.DISK_FAIL_CNT_MIN,
-                               StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
-                check_in_range(col_names[6], row[6], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
-                               StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
-                check_in_range(col_names[7], row[7], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
-                               StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
-        elif name == 'fan':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                for col in range(1, num_of_columns):
-                    check_in_range(col_names[col], row[col], StatsConsts.FAN_MIN,
-                                   StatsConsts.FAN_MAX, num_of_samples, name)
-        elif name == 'temperature':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                for col in range(1, num_of_columns):
-                    check_in_range(col_names[col], row[col], StatsConsts.TEMP_MIN,
-                                   StatsConsts.TEMP_MAX, num_of_samples, name)
-        elif name == 'mgmt-interface':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                for col in range(1, num_of_columns):
-                    check_in_range(col_names[col], row[col], StatsConsts.MGMT_INT_MIN,
-                                   StatsConsts.MGMT_INT_MAX, num_of_samples, name)
-        elif name == 'power':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                check_in_range(col_names[1], row[1], StatsConsts.PWR_PSU_VOLT_MIN,
-                               StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
-                check_in_range_without_na(col_names[2], row[2], StatsConsts.PWR_PSU_VOLT_MIN,
-                                          StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
-                check_in_range(col_names[3], row[3], StatsConsts.PWR_PSU_CUR_MIN,
-                               StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
-                check_in_range_without_na(col_names[4], row[4], StatsConsts.PWR_PSU_CUR_MIN,
-                                          StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
-        elif name == 'voltage':
-            for row in reader:
-                assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
-                num_of_samples += 1
-                prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
-                for col in range(1, num_of_columns - 2):
-                    check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_GENERAL_MIN,
-                                   StatsConsts.VOLTAGE_GENERAL_MAX, num_of_samples, name)
-                for col in range(num_of_columns - 1, num_of_columns):
-                    check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_PSU_MIN,
-                                   StatsConsts.VOLTAGE_PSU_MAX, num_of_samples, name)
+            if name == 'cpu':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    check_in_range_without_na(col_names[1], row[1], StatsConsts.CPU_FREE_RAM_MIN,
+                                              StatsConsts.CPU_FREE_RAM_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[2], row[2], StatsConsts.CPU_UTIL_MIN,
+                                              StatsConsts.CPU_UTIL_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[3], row[3], StatsConsts.CPU_REBOOT_CNT_MIN,
+                                              StatsConsts.CPU_REBOOT_CNT_MAX, num_of_samples, name)
+            elif name == 'disk':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    check_in_range(col_names[1], row[1], StatsConsts.DISK_FREE_SPACE_MIN,
+                                   StatsConsts.DISK_FREE_SPACE_MAX, num_of_samples, name)
+                    check_in_range(col_names[2], row[2], StatsConsts.DISK_RMN_LIFE_MIN,
+                                   StatsConsts.DISK_RMN_LIFE_MAX, num_of_samples, name)
+                    check_in_range(col_names[3], row[3], StatsConsts.DISK_FAIL_CNT_MIN,
+                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
+                    check_in_range(col_names[4], row[4], StatsConsts.DISK_FAIL_CNT_MIN,
+                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
+                    check_in_range(col_names[5], row[5], StatsConsts.DISK_FAIL_CNT_MIN,
+                                   StatsConsts.DISK_FAIL_CNT_MAX, num_of_samples, name)
+                    check_in_range(col_names[6], row[6], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
+                                   StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
+                    check_in_range(col_names[7], row[7], StatsConsts.DISK_TOTAL_LBA_RW_MIN,
+                                   StatsConsts.DISK_TOTAL_LBA_RW_MAX, num_of_samples, name)
+            elif name == 'fan':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    for col in range(1, num_of_columns):
+                        check_in_range(col_names[col], row[col], StatsConsts.FAN_MIN,
+                                       StatsConsts.FAN_MAX, num_of_samples, name)
+            elif name == 'temperature':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    for col in range(1, num_of_columns):
+                        check_in_range(col_names[col], row[col], StatsConsts.TEMP_MIN,
+                                       StatsConsts.TEMP_MAX, num_of_samples, name)
+            elif name == 'mgmt-interface':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    for col in range(1, num_of_columns):
+                        check_in_range(col_names[col], row[col], StatsConsts.MGMT_INT_MIN,
+                                       StatsConsts.MGMT_INT_MAX, num_of_samples, name)
+            elif name == 'power':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    check_in_range(col_names[1], row[1], StatsConsts.PWR_PSU_VOLT_MIN,
+                                   StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[2], row[2], StatsConsts.PWR_PSU_VOLT_MIN,
+                                              StatsConsts.PWR_PSU_VOLT_MAX, num_of_samples, name)
+                    check_in_range(col_names[3], row[3], StatsConsts.PWR_PSU_CUR_MIN,
+                                   StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[4], row[4], StatsConsts.PWR_PSU_CUR_MIN,
+                                              StatsConsts.PWR_PSU_CUR_MAX, num_of_samples, name)
+            elif name == 'asic-power':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    check_in_range(col_names[1], row[1], StatsConsts.ASIC_PWR_WATT_MIN,
+                                   StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[2], row[2], StatsConsts.ASIC_PWR_WATT_MIN,
+                                              StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
+                    check_in_range(col_names[3], row[3], StatsConsts.ASIC_PWR_WATT_MIN,
+                                   StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
+                    check_in_range_without_na(col_names[4], row[4], StatsConsts.ASIC_PWR_WATT_MIN,
+                                              StatsConsts.ASIC_PWR_WATT_MAX, num_of_samples, name)
+            elif name == 'voltage':
+                for row in reader:
+                    assert len(row) == num_of_columns, f"number of values ({len(row)}) are not as expected (num_of_columns)"
+                    num_of_samples += 1
+                    prev_sample_time = check_sample_timestamp(row, prev_sample_time, name)
+                    for col in range(1, num_of_columns - 2):
+                        check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_GENERAL_MIN,
+                                       StatsConsts.VOLTAGE_GENERAL_MAX, num_of_samples, name)
+                    for col in range(num_of_columns - 1, num_of_columns):
+                        check_in_range(col_names[col], row[col], StatsConsts.VOLTAGE_PSU_MIN,
+                                       StatsConsts.VOLTAGE_PSU_MAX, num_of_samples, name)
 
 
 def validate_external_file_timestamps(file_name, clear_time):

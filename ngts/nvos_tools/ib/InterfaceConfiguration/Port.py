@@ -88,7 +88,7 @@ class Port(BaseComponent):
         return f"{self.__class__.__name__}('{self.name}')"
 
     def __repr__(self):
-        return str(self)
+        return f"Port(name={self.name}, show_output_dictionary={self.show_output_dictionary}, name_in_redis={self.name_in_redis})"
 
     @staticmethod
     def get_list_of_active_ports(port_type=IbInterfaceConsts.IB_PORT_TYPE, interface_type=''):

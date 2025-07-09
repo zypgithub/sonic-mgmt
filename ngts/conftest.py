@@ -8,6 +8,7 @@ NOTE: Add here only fixtures and methods that can be used for canonical and comm
 if your methods only apply for canonical setups please add them in ngts/tests/conftest.py
 
 """
+from typing import Callable
 import json
 import logging
 import os
@@ -39,6 +40,7 @@ from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_tools.infra.IpTool import IpTool
 
 logger = logging.getLogger()
+CleanUpT = Callable[[Callable[[], None]], None]
 
 
 def pytest_sessionstart(session):
@@ -100,6 +102,7 @@ def pytest_addoption(parser):
     parser.addoption('--downgrade_version', action='store', default=None, help='Path to downgrade SONiC version')
     parser.addoption('--issu_version', action='store', default=None, help='Path to issu SONiC version')
     parser.addoption('--target_version', action='store', default=None, help='Path to target SONiC version')
+    parser.addoption('--ansible_inventory_file', action='store', default='False', help='Path to ansible inventory file - for playbooks')
     parser.addoption('--fw_versions_json_file', action='store', default=None, help='Path to component_versions json file')
     parser.addoption('--wjh_deb_url', action='store', default=None, help='URL path to WJH deb package')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
@@ -307,6 +310,19 @@ def setup_name(request):
     :return: setup name
     """
     return request.config.getoption('--setup_name')
+
+
+@pytest.fixture(scope='session')
+def ansible_inventory_file(request):
+    """
+    Method for get ansible_inventory_file from pytest arguments
+    :param request: pytest builtin
+    :return: setup name
+    """
+    value = request.config.getoption('--ansible_inventory_file')
+    if not value:
+        value = 'False'
+    return value
 
 
 @pytest.fixture(scope='session')
@@ -822,3 +838,45 @@ def show_setup_versions(topology_obj):
     _attach_setup_versions()
     yield
     _attach_setup_versions()
+
+
+@pytest.fixture
+def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
+    """
+    Fixture for registering cleanup functions
+    :param request: pytest builtin
+    :return: function for registering cleanup
+
+    Usage:
+    ```python
+    def my_cleanup():
+        print("cleanup")
+
+    def test_my_test():
+        # do something
+        register_cleanup(my_cleanup)
+        # do something
+    ```
+    for more advanced usage, consider using the `partial` function
+
+    Example:
+    ```python
+    from functools import partial
+
+    def my_cleanup(engines):
+        print("cleanup")
+
+    def test_my_test():
+        # do something
+        register_cleanup(partial(my_cleanup, engines))
+        # do something
+    ```
+    """
+    def _register(fn):
+        # Wrap the cleanup function with an allure step
+        def wrapped_fn():
+            with allure.step("Cleanup stage"):
+                fn()
+
+        request.addfinalizer(wrapped_fn)
+    return _register
