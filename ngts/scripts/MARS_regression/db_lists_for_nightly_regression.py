@@ -31,6 +31,7 @@ COMMUNITY_SET1_TEST_GROUP_MAP = {
     'community/bsl.db': PLATFORM_DEPENDENT
 }
 
+
 COMMUNITY_SET2_TEST_GROUP_MAP = {
     'community/pretest.db': PLATFORM_DEPENDENT,
     'community/acl.db': PLATFORM_AGNOSTIC_GROUP2,
@@ -56,6 +57,7 @@ COMMUNITY_SET2_TEST_GROUP_MAP = {
     'community/upgrade_related.db': PLATFORM_DEPENDENT
 }
 
+
 CANONICAL_TEST_GROUP_MAP = {
     'canonical/pretest.db': PLATFORM_DEPENDENT,
     'community/dynamic_buffer.db': PLATFORM_AGNOSTIC_GROUP2,
@@ -79,6 +81,7 @@ CONTROL_PLANE_TESTS_MAP = {
     'community': {'setups': ['r-leopard-01_setup', 'mtvr-leopard-01_setup', 'r-panther-02_setup'], 'tests': ['community/mgmtvrf.db', 'community/system.db']},
     'canonical': {'setups': ['sonic_lionfish_r-lionfish-13'], 'tests': ['community/ipv6_mgmt.db']}
 }
+
 
 SETUPS_GROUPS_MAP = {
     'community_set1': {
