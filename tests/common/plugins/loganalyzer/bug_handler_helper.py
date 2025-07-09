@@ -326,9 +326,9 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_main": True,
         "sonic_public": True,
         "sonic_dpu_build": True,
-        "sonic_ci": True,
-        "sonic_dpu_ci": True,
-        "sonic_ci_app_extension": True,
+        "sonic_ci": False,
+        "sonic_dpu_ci": False,
+        "sonic_ci_app_extension": False,
         "nvos_ci": False
     }
 
