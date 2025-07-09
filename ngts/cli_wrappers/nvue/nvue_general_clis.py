@@ -109,6 +109,67 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             image_url = nos_image
         return image_path, image_url
 
+    @retry(Exception, tries=3, delay=20)
+    def _wget_image_on_onie(self, serial_engine, image_url, filename=None):
+        """
+        Download image using wget with retry logic to handle communication failures
+        :param serial_engine: serial connection engine
+        :param image_url: URL of the image to download
+        :param filename: optional filename to save as (defaults to extracting from URL)
+        :return: filename of downloaded image
+        """
+        InstallStepsTimer.add_timestamp(InstallSteps.ONIE_NOS_INSTALL, True)
+        logger.info(f'Downloading image using wget: {image_url}')
+
+        if filename is None:
+            # Extract filename from URL
+            filename = image_url.split('/')[-1]
+
+        # Run wget command with retry logic
+        wget_cmd = f'wget {image_url}'
+        _, index = serial_engine.run_cmd(
+            wget_cmd,
+            ['100%', 'ERROR', 'failed', 'wget:'],
+            timeout=60
+        )
+
+        if index == 0:  # Success - found '100%'
+            logger.info(f'Successfully downloaded image: {filename}')
+            return filename
+        else:
+            # Wget failed - raise exception to trigger retry
+            raise Exception(f'wget failed with pattern index {index}')
+
+    @retry(Exception, tries=3, delay=20)
+    def _onie_nos_install_local_image(self, serial_engine, filename, expected_patterns):
+        """
+        Install image using onie-nos-install with local file
+        :param serial_engine: serial connection engine
+        :param filename: local filename to install
+        :param expected_patterns: patterns to expect during installation
+        :return: index of matched pattern
+        """
+        logger.info(f'Installing local image: {filename}')
+
+        # Add ASIC type mismatch pattern to expected patterns
+        asic_mismatch_pattern = "Do you still wish to install this image?"
+        extended_patterns = expected_patterns + [asic_mismatch_pattern]
+
+        _, index = serial_engine.run_cmd(
+            f'{NvosConst.ONIE_NOS_INSTALL_CMD} {filename}',
+            extended_patterns,
+            timeout=self.device.install_from_onie_timeout
+        )
+
+        # Check if ASIC type mismatch occurred
+        if index == len(expected_patterns):  # ASIC mismatch pattern matched
+            logger.info(f"ASIC type mismatch detected for image: {filename}")
+            logger.info("The image you're trying to install is of a different ASIC type as the running platform's ASIC")
+            raise Exception(f"Image {filename} is not supported on this system - ASIC type mismatch")
+
+        logger.info(f'"{expected_patterns[index]}" pattern found')
+        return index
+
     def _onie_nos_install_image(self, serial_engine, image_url, expected_patterns):
         InstallStepsTimer.add_timestamp(InstallSteps.ONIE_NOS_INSTALL, True)
         logger.info('Install image using url')
@@ -131,23 +192,31 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def _install_image_on_onie(self, serial_engine, ssh_engine, image_path, image_url):
         wget_error = False
 
-        for _ in range(3):
-            wget_error = False
-            found_pattern_index = self._onie_nos_install_image(serial_engine, image_url,
-                                                               self.device.install_success_patterns +
-                                                               [NvosConst.INSTALL_WGET_ERROR])
-            if found_pattern_index == len(self.device.install_success_patterns):  # wget error
-                logger.info('Failed for wget error. wait and retry')
-                time.sleep(20)
-                wget_error = True
-            else:
-                break
+        try:
+            # Phase 1: Download image using wget with retry logic
+            logger.info('Phase 1: Downloading image using wget with retry logic')
+            downloaded_filename = self._wget_image_on_onie(serial_engine, image_url)
+
+            # Phase 2: Install image using onie-nos-install
+            logger.info('Phase 2: Installing downloaded image using onie-nos-install')
+            found_pattern_index = self._onie_nos_install_local_image(
+                serial_engine,
+                downloaded_filename,
+                self.device.install_success_patterns
+            )
+            logger.info(f'*** Image {image_path} successfully installed ***')
+            InstallStepsTimer.add_timestamp(InstallSteps.INSTALL_SUCCESS)
+            return
+        except Exception as e:
+            logger.info('Failed for wget error. Using SCP fallback')
+            wget_error = True
 
         if wget_error:
+            logger.info('Fallback: Using SCP to upload image')
             file_on_switch = '/tmp/nos.bin'
             self._scp_image(ssh_engine, image_path, file_on_switch)
-            found_pattern_index = self._onie_nos_install_image(serial_engine, file_on_switch,
-                                                               self.device.install_success_patterns)
+            found_pattern_index = self._onie_nos_install_local_image(serial_engine, file_on_switch,
+                                                                     self.device.install_success_patterns)
             assert found_pattern_index == self.device.install_patterns[self.device.login_pattern], \
                 "Failed to install image on onie"
 
