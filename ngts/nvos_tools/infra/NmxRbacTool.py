@@ -4,7 +4,7 @@ from typing import Tuple, List, Dict
 
 from ngts.nvos_constants.constants_nvos import ClusterConsts
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
-from ngts.nvos_tools.nmx import Cluster
+from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Apps import ClusterApp
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_certs_safely

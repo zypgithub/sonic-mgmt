@@ -54,9 +54,9 @@ class ApiCrlClient(CrlClient):
             with allure.step("import test crl"):
                 import_crl_safely(crl_name, crl_file_path, scp_player)
 
-        with allure.step("verifies the CRL is imported"):
-            output = system.security.crl.parse_show()
-            assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
+            with allure.step("verifies the CRL is imported"):
+                output = system.security.crl.parse_show()
+                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
 
         with allure.step("bind crl"):
             system.api.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
@@ -129,9 +129,9 @@ class GnmiCrlClient(CrlClient):
             with allure.step("import test crl"):
                 import_crl_safely(crl_name, crl_file_path, scp_player)
 
-        with allure.step("verifies the CRL is imported"):
-            output = system.security.crl.parse_show()
-            assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
+            with allure.step("verifies the CRL is imported"):
+                output = system.security.crl.parse_show()
+                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
 
         with allure.step("bind crl and wait 5 sec"):
             system.gnmi_server.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
@@ -215,9 +215,9 @@ class NmxCrlClient(CrlClient):
             with allure.step("import test crl"):
                 import_crl_safely(crl_name, crl_file_path, scp_player)
 
-        with allure.step("verifies the CRL is imported"):
-            output = system.security.crl.parse_show()
-            assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
+            with allure.step("verifies the CRL is imported"):
+                output = system.security.crl.parse_show()
+                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
 
         with allure.step("bind crl"):
             nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)

@@ -77,6 +77,10 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_crl.cases </cases>
 	</test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx_rbac.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
 	</test>
 	<test>
