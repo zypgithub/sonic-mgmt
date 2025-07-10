@@ -500,12 +500,29 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         tmp_target_path = '/tmp/sonic-mellanox.bin'
         delimiter = self.get_installer_delimiter()
 
+        def get_file_md5sum(file_path):
+            import hashlib
+            hash_md5 = hashlib.md5()
+            with open(file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_md5.update(chunk)
+            return hash_md5.hexdigest()
+        image_path_md5sum = get_file_md5sum(image_path)
         with allure.step('Deploying image via SONiC'):
             self.configure_dhclient_if_simx()
             with allure.step('Copying image to dut'):
-                self.engine.copy_file(source_file=image_path, dest_file='sonic-mellanox.bin',
-                                      file_system='/tmp/', overwrite_file=True, verify_file=False)
-
+                retries, tmp_target_path_md5sum = 3, ""
+                while retries > 0:
+                    self.engine.copy_file(source_file=image_path, dest_file='sonic-mellanox.bin',
+                                          file_system='/tmp/', overwrite_file=True, verify_file=False)
+                    tmp_target_path_md5sum = self.engine.run_cmd(f'md5sum {tmp_target_path}|cut -d" " -f1')
+                    if tmp_target_path_md5sum == image_path_md5sum:
+                        break
+                    retries -= 1
+                assert tmp_target_path_md5sum == image_path_md5sum, \
+                    f"MD5sum of the image in local machine is not the same as the image in the dut. " \
+                    f"Local machine: {image_path_md5sum}, DUT: {tmp_target_path_md5sum}"
+                logger.info(f"image file md5sum check passed")
             with allure.step('Installing the image'):
                 self.install_image(tmp_target_path, delimiter, is_skipping_migrating_package)
 
