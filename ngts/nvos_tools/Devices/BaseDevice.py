@@ -322,7 +322,7 @@ class BaseSwitch(BaseDevice):
 
     Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
                                          'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files',
-                                         'hw_mgmt_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots',
+                                         'hw_mgmt_files', 'audit_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots',
                                          'kdump_files'])
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
@@ -390,7 +390,7 @@ class BaseSwitch(BaseDevice):
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',
                           'sdk_dump_ext_dev1_amber.hex.gz']
-        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "tc_log.gz", "wtmp.gz", "ztp.log.gz"]
         log_nginx_files = ["access.log.gz", "error.log.gz"]
@@ -398,6 +398,7 @@ class BaseSwitch(BaseDevice):
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz", "power.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         hw_mgmt_files = ['hw-mgmt-dump.tar.gz']
+        audit_files = ['audit.log.gz']
         log_nmx_files = []
         etc_files = ["resolv.conf"]
         kdump_files = ["dmesg.{}.gz", "kdump.{}", "kdump_lock.gz"]
@@ -408,7 +409,7 @@ class BaseSwitch(BaseDevice):
         firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD]
         erots = []
         self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
-                                              log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, etc_files, cluster_files,
+                                              log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, audit_files, etc_files, cluster_files,
                                               bmc_dump_files, erots, kdump_files)
 
         self.current_bios_version_name = ""

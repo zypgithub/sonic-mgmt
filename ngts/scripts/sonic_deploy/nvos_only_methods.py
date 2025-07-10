@@ -270,19 +270,51 @@ class NvosInstallationSteps:
                              dut_alias=dut_alias)
 
     @staticmethod
-    def normalize_config(old_config: dict):
+    def normalize_config(old_config: dict) -> dict:
         """
-        Normalize the config to match the format of the config after upgrade
-        :param config: config
-        :return: normalized config
+        Normalize the config to match the format of the config after upgrade.
+
+        This method handles the migration of TACACS configuration from old format
+        to new format by renaming 'hostname' to 'server' and 'auth-type' to 'auth-mode'.
+
+        :param old_config: The configuration dictionary to normalize
+        :return: Normalized configuration dictionary
+        :raises KeyError: If required configuration structure is missing
+        :raises ValueError: If configuration structure is invalid
         """
+        # Define constants for better maintainability
+        TACACS_PATH = ["set", "system", "aaa", "tacacs"]
+        OLD_HOSTNAME_KEY = "hostname"
+        NEW_SERVER_KEY = "server"
+        OLD_AUTH_TYPE_KEY = "auth-type"
+        NEW_AUTH_MODE_KEY = "auth-mode"
+
         normalized_config = copy.deepcopy(old_config)
 
-        tacacs_path_old = normalized_config["set"]["system"]["aaa"]["tacacs"]
-        if "hostname" in tacacs_path_old:
-            tacacs_path_old["server"] = tacacs_path_old.pop("hostname")
-            for _, config in tacacs_path_old["server"].items():
-                if "auth-type" in config:
-                    config["auth-mode"] = config.pop("auth-type")
+        try:
+            # Navigate to the TACACS configuration section
+            tacacs_config = normalized_config
+            for key in TACACS_PATH:
+                if key not in tacacs_config:
+                    logger.info(f"TACACS configuration path not found: {' -> '.join(TACACS_PATH)}")
+                    return normalized_config
+                tacacs_config = tacacs_config[key]
+
+            # Handle hostname to server migration
+            if OLD_HOSTNAME_KEY in tacacs_config:
+                tacacs_config[NEW_SERVER_KEY] = tacacs_config.pop(OLD_HOSTNAME_KEY)
+
+                # Handle auth-type to auth-mode migration within server config
+                if isinstance(tacacs_config[NEW_SERVER_KEY], dict):
+                    for server_config in tacacs_config[NEW_SERVER_KEY].values():
+                        if isinstance(server_config, dict) and OLD_AUTH_TYPE_KEY in server_config:
+                            server_config[NEW_AUTH_MODE_KEY] = server_config.pop(OLD_AUTH_TYPE_KEY)
+                else:
+                    logger.info(f"Expected server configuration to be a dictionary, got {type(tacacs_config[NEW_SERVER_KEY])}")
+
+        except Exception as e:
+            logger.info(f"Error normalizing configuration: {e}")
+            # Return original config if normalization fails
+            return old_config
 
         return normalized_config

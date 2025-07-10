@@ -90,8 +90,7 @@ def test_techsupport_since(engines, test_name, random_api, devices):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_techsupport_since_invalid_date(engines, test_api):
+def test_techsupport_since_invalid_date(engines, random_api):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -101,7 +100,6 @@ def test_techsupport_since_invalid_date(engines, test_api):
         2. validate Invalid date in the output
     """
     system = System(None)
-    TestToolkit.tested_api = test_api
     invalid_date_syntax = '20206610'
     with allure.step('Validating the generate command failed because '
                      'of Invalid date {invalid_date_syntax}'.format(invalid_date_syntax=invalid_date_syntax)):
@@ -119,7 +117,8 @@ def test_techsupport_since_invalid_date(engines, test_api):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_delete(engines, random_api):
+@pytest.mark.cumulus
+def test_techsupport_delete(engines, random_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -135,7 +134,8 @@ def test_techsupport_delete(engines, random_api):
         8. File not found: <first_file>
     """
     system = System(None)
-    success_message = 'File delete successfully'
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_delete_success_message
     with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
 
         with allure.step('Generate two tech-support files'):
@@ -163,7 +163,8 @@ def test_techsupport_delete(engines, random_api):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_upload(engines, random_api):
+@pytest.mark.cumulus
+def test_techsupport_upload(engines, random_api, devices):
     """
     Test flow:
         1. upload non exist tech-support file
@@ -180,11 +181,12 @@ def test_techsupport_upload(engines, random_api):
     :return:
     """
     system = System(None)
-    with allure.step('generate valid and invalid urls'):
-        player = engines['sonic_mgmt']
-        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
-        invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+    TestToolkit.tested_api = random_api
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_upload_success_message
+
+    # Use helper function to create upload URLs based on device type
+    invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices)
 
     with allure.step('Try to upload non exist tech-support file'):
         output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
@@ -216,7 +218,8 @@ def test_techsupport_upload(engines, random_api):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_multiple_times(engines, test_name, random_api, devices):
+@pytest.mark.cumulus
+def test_techsupport_multiple_times(engines, test_name, random_api, devices, serial_log_analyzers):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files

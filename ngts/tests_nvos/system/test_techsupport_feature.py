@@ -135,6 +135,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
+                           'log/audit': devices.dut.constants.audit_files,
                            'log/nginx': devices.dut.constants.log_nginx_files,
                            'stats': devices.dut.constants.stats_dump_files,
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files,
@@ -211,7 +212,7 @@ def test_techsupport_expected_files(engines, devices, test_name):
             with allure.independent_step('validate files sizes'):
                 for folder in expected_files_dict.keys():
                     if expected_files_dict[folder]:  # skip empty folders if files are not expected for a specific system
-                        files_list = system.techsupport.get_techsupport_empty_files(engines.dut, folder)
+                        files_list = system.techsupport.get_techsupport_empty_files(engines.dut, tech_folder=folder)
                         verify_techsupport_files_sizes(files_list, folder)
     finally:
         if devices.dut.has_nmx:
@@ -284,10 +285,10 @@ def verify_techsupport_files_names(files_list, expected_files):
     files = [file for file in expected_files if file not in files_list]
     if is_bug_active(36513547):
         files.remove('hdparm')
-    assert len(files) == 0, "the next files are missed {files}".format(files=files)
+    assert len(files) == 0, "the following files are missing {files}".format(files=files)
     files = [file for file in files_list if file not in expected_files]
     if len(files) != 0:
-        logger.warning("the next files are in the dump folder but not in our check list {files}".format(files=files))
+        logger.warning("the following files are in the dump folder but not in our check list {files}".format(files=files))
 
 
 def verify_techsupport_files_sizes(files_list, folder):

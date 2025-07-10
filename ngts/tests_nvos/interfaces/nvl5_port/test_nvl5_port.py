@@ -18,6 +18,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links, skip_if_no_access_links
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
@@ -196,7 +197,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox):
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.nvl_ci
-def test_nvl5_port_configuration(engines, devices, random_api):
+def test_nvl5_port_configuration(engines, devices, test_api):
     """
     Validate configuration applied on interface
 
@@ -204,13 +205,6 @@ def test_nvl5_port_configuration(engines, devices, random_api):
     1. Set nvl5 interface description and validate
     2. Unset nvl5 interface and validate
     """
-
-    TestToolkit.tested_api = 'NVUE'
-
-    if is_bug_active(4502930) and TestToolkit.tested_api == ApiType.OPENAPI:
-        logger.info("Bug 4502930 is open and API is OpenApi, replacing with NVUE")
-        TestToolkit.tested_api = ApiType.NVUE
-
     try:
         with allure_step("Select nvl5 port"):
             port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
@@ -230,7 +224,6 @@ def test_nvl5_port_configuration(engines, devices, random_api):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_nvl5_negative(engines, devices, test_api):
     """
     Validate negative testing on nvl5 port
@@ -240,9 +233,6 @@ def test_nvl5_negative(engines, devices, test_api):
     2. Validate negative testing nvl5 port lanes
     3. Validate negative testing nvl5 port speed
     """
-
-    TestToolkit.tested_api = test_api
-
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
