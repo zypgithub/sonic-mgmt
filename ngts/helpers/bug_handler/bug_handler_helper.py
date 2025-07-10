@@ -678,7 +678,7 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
 def create_bug_title(hostname_regex, hostname, first_line, is_serial_log=False):
     time_pattern = r'.*\w+\s+\d+\s+\d+:\d+:\d+\.\d+\s+'
     if not re.findall(time_pattern, first_line):
-        time_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+.*'
+        time_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+' + (r'\S*\s+' if hostname_regex == r'\S+' else r'.*')
     log_prefix = time_pattern + hostname_regex + r'\s'
     bug_title = re.sub(log_prefix, '', first_line)
     bug_title = re.sub(r'message repeated \d+ times: \[ (.*?)\]', r'\1', bug_title)
