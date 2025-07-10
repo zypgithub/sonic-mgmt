@@ -67,6 +67,10 @@ def skip_if_packet_trimming_not_supported(duthost):
     if trimming_capable.lower() != 'true':
         pytest.skip("Packet trimming is not supported")
 
+    # For Nvidia SPC1/2/3 platforms, skip the test
+    elif any(platform_id in platform.lower() for platform_id in ["sn2", "sn3", "sn4"]):
+        pytest.skip(f"Packet trimming is not supported on {platform}")
+
 
 def trimming_global_config_sym_add(duthost):
     """ Test add packet trimming global config in sym mode

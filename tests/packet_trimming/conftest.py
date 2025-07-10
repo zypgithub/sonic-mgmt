@@ -39,6 +39,10 @@ def skip_if_packet_trimming_not_supported(duthost):
     if trimming_capable.lower() != 'true':
         pytest.skip("Packet trimming is not supported")
 
+    # For Nvidia SPC1/2/3 platforms, skip the test
+    elif any(platform_id in platform.lower() for platform_id in ["sn2", "sn3", "sn4"]):
+        pytest.skip(f"Packet trimming is not supported on {platform}")
+
     # For Nvidia SPC4 platforms, check if the "SAI_ADAPTIVE_ROUTING_CIRCULATION_PORT" exists in sai.profile
     elif "sn5600" in platform:
         hwsku = duthost.facts["hwsku"]
@@ -177,13 +181,13 @@ def setup_trimming(duthost, test_params):
         # The first interface is uplink interface, use uplink buffer profile
         uplink_port = test_params['egress_ports'][0]
         set_buffer_profiles_for_block_and_trim_queues(duthost, uplink_port['name'], test_params['block_queue'],
-                                                     test_params['trim_buffer_profiles']['uplink'])
+                                                      test_params['trim_buffer_profiles']['uplink'])
 
         # The second interface is downlink interface. If the second interface exists, use downlink buffer profile
         if len(test_params['egress_ports']) > 1:
             downlink_port = test_params['egress_ports'][1]
             set_buffer_profiles_for_block_and_trim_queues(duthost, downlink_port['name'], test_params['block_queue'],
-                                                         test_params['trim_buffer_profiles']['downlink'])
+                                                          test_params['trim_buffer_profiles']['downlink'])
 
     with allure.step("Create scheduler used for blocking egress queues"):
         create_blocking_scheduler(duthost)
