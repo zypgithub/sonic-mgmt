@@ -932,7 +932,7 @@ class CrocodileSwitch(IbSwitch):
         self.asic_type = NvosConst.QTM3
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "QM3400",
+            PlatformConsts.SYSTEM_TYPE: ExpectedString(regex="(QM3400|Q3200_RA)"),
             "asic-model": self.asic_type,
         })
         self.asic_version = BaseSwitch.AsicImageConsts(
