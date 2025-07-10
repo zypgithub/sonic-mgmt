@@ -111,8 +111,6 @@ def clear_conf(engine, device, config_yml, root_dir):
                             output = NvueGeneralCli.save_config(engine)
                             allure.attach("Save output", output)
                             assert ConfState.SAVED in output, "Failed to save config"
-                        with allure.step("Wait till nvue is functional"):
-                            wait_until_cli_is_up(engine)
                     else:
                         with allure.step("Config diff is empty, no need to apply and save (detaching config)"):
                             NvueGeneralCli.detach_config(engine)

@@ -390,6 +390,12 @@ def collect_gcov_for_container_nvos(engine, cli_obj, container, gcov_filename_pr
     with allure.step("Create docker cli object"):
         docker_cli_obj = create_docker_cli_obj(engine, container)
 
+    with allure.step("Remove old src files"):
+        try:
+            docker_cli_obj.rm("/sonic/src/", flags='-rf')
+        except BaseException:
+            logging.info("Old src was not removed")
+
     with allure.step(f'Create GCOV JSON report for {container} container'):
         container_gcov_json_file = create_gcov_report_for_container(docker_cli_obj, gcov_filename_prefix, container,
                                                                     NvosConsts.GCOV_CONTAINERS_SOURCES_PATH[container])
@@ -407,7 +413,7 @@ def create_gcov_report_for_container(docker_cli_obj, gcov_filename_prefix, conta
     docker_cli_obj.tar(flags=f'xzf {source_path} -C {SharedConsts.GCOV_DIR}')
 
     flags = f'--json-pretty -r {SharedConsts.GCOV_DIR} -o {container_gcov_json_file}'
-    additional_flags = ' --exclude-unreachable-branches --exclude-throw-branches --decisions '
+    additional_flags = ' --gcov-ignore-errors=no_working_dir_found --exclude-unreachable-branches --exclude-throw-branches --decisions '
 
     for path in NvosConsts.NVOS_EXCLUDE_PATHS:
         additional_flags += f' --exclude-directories {path}'
