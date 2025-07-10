@@ -2112,13 +2112,63 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
         self.leakage_sensors_count = 2
         self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
-
+        self.nvl_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144',
+            'acp145', 'acp146', 'acp147', 'acp148', 'acp149', 'acp150',
+            'acp151', 'acp152', 'acp153', 'acp154', 'acp155', 'acp156',
+            'acp157', 'acp158', 'acp159', 'acp160', 'acp161', 'acp162',
+            'acp163', 'acp164', 'acp165', 'acp166', 'acp167', 'acp168',
+            'acp169', 'acp170', 'acp171', 'acp172', 'acp173', 'acp174',
+            'acp175', 'acp176', 'acp177', 'acp178', 'acp179', 'acp180',
+            'acp181', 'acp182', 'acp183', 'acp184', 'acp185', 'acp186',
+            'acp187', 'acp188', 'acp189', 'acp190', 'acp191', 'acp192',
+            'acp193', 'acp194', 'acp195', 'acp196', 'acp197', 'acp198',
+            'acp199', 'acp200', 'acp201', 'acp202', 'acp203', 'acp204',
+            'acp205', 'acp206', 'acp207', 'acp208', 'acp209', 'acp210',
+            'acp211', 'acp212', 'acp213', 'acp214', 'acp215', 'acp216',
+            'acp217', 'acp218', 'acp219', 'acp220', 'acp221', 'acp222',
+            'acp223', 'acp224', 'acp225', 'acp226', 'acp227', 'acp228',
+            'acp229', 'acp230', 'acp231', 'acp232', 'acp233', 'acp234',
+            'acp235', 'acp236', 'acp237', 'acp238', 'acp239', 'acp240',
+            'acp241', 'acp242', 'acp243', 'acp244', 'acp245', 'acp246',
+            'acp247', 'acp248', 'acp249', 'acp250', 'acp251', 'acp252',
+            'acp253', 'acp254', 'acp255', 'acp256', 'acp257', 'acp258',
+            'acp259', 'acp260', 'acp261', 'acp262', 'acp263', 'acp264',
+            'acp265', 'acp266', 'acp267', 'acp268', 'acp269', 'acp270',
+            'acp271', 'acp272', 'acp273', 'acp274', 'acp275', 'acp276',
+            'acp277', 'acp278', 'acp279', 'acp280', 'acp281', 'acp282',
+            'acp283', 'acp284', 'acp285', 'acp286', 'acp287', 'acp288'
+        ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = []
         self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
         self.nvl_port = ['sw1p1s1']
+
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '375G'
         self.fnm_link_speed = '100G'
