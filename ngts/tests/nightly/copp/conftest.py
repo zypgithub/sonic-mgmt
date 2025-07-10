@@ -9,6 +9,10 @@ from ngts.config_templates.ip_config_template import IpConfigTemplate
 logger = logging.getLogger()
 CONFIG_DB_COPP_CONFIG = '/etc/sonic/copp_cfg.json'
 
+# LLDP configuration constants
+LLDP_PAUSE_PROTOCOLS = ['LLDP', 'LLDP_REBOOT']
+LLDP_PAUSE_PLATFORMS = ['sn5640']
+
 
 @pytest.fixture(scope='module', autouse=True)
 def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_name, platform_params, is_air):
@@ -73,3 +77,26 @@ def flowcnt_trap_configuration(cli_objects, is_trap_counters_supported):
 
     if is_trap_counters_supported:
         cli_objects.dut.counterpoll.disable_flowcnt_trap()
+
+
+@pytest.fixture(autouse=True)
+def pause_lldp_before_copp_test(protocol, platform_params, cli_objects):
+    platform = platform_params.filtered_platform
+    if need_to_pause_lldp(protocol, platform):
+        logger.info(f"Pausing LLDP for {platform} platform")
+        cli_objects.dut.lldp.pause_lldp()
+        yield
+        logger.info(f"Enabling LLDP for {platform} platform")
+        cli_objects.dut.lldp.resume_lldp()
+    else:
+        yield
+
+
+def need_to_pause_lldp(protocol, platform):
+    return protocol.upper() in LLDP_PAUSE_PROTOCOLS and platform in LLDP_PAUSE_PLATFORMS
+
+
+def pause_lldp_after_reboot(protocol, platform, dut_cli_object):
+    if need_to_pause_lldp(protocol, platform):
+        dut_cli_object.lldp.pause_lldp()
+        logger.info(f"Pausing LLDP for {platform} platform after reboot")

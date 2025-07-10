@@ -14,6 +14,7 @@ from retry.api import retry_call
 from abc import abstractmethod
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.common.checkers import verify_deviation, verify_deviation_for_simx
+from .conftest import pause_lldp_before_copp_test, pause_lldp_after_reboot
 
 
 logger = logging.getLogger()
@@ -62,7 +63,7 @@ for protocol in PROTOCOLS_LIST:
 @allure.title('CoPP Policer test case')
 @pytest.mark.parametrize("protocol", PROTOCOLS_REBOOT_LIST)
 def test_copp_policer(topology_obj, protocol, platform_params,
-                      sonic_version, is_simx, is_trap_counters_supported):
+                      sonic_version, is_simx, is_trap_counters_supported, cli_objects, pause_lldp_before_copp_test):
     """
     Run CoPP Policer test case, which will check that the policer enforces the rate limit for protocols.
     The test flow:
@@ -97,7 +98,8 @@ def test_copp_policer(topology_obj, protocol, platform_params,
         # CBS (committed burst size) - largest burst of packets allowed by the policer
         reboot = "Reboot" in protocol
         protocol = protocol.replace("_Reboot", "")
-        tested_protocol_obj = eval(protocol + 'Test' + '(topology_obj, sonic_version, is_simx)')
+        platform = platform_params.filtered_platform
+        tested_protocol_obj = eval(protocol + 'Test' + '(topology_obj, sonic_version, is_simx, platform)')
         tested_protocol_obj.is_trap_counters_supported = is_trap_counters_supported
         if is_simx:
             tested_protocol_obj.copp_simx_test_runner(reboot)
@@ -115,7 +117,7 @@ class CoppBase:
     Base CoPP class
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
         self.topology = topology_obj
         self.sonic_version = sonic_version
         self.is_simx = is_simx
@@ -151,6 +153,7 @@ class CoppBase:
         self.canonical_threshold = 0.25
         self.simx_threshold = 10
         self.used_threshold = self.simx_threshold if self.is_simx else self.canonical_threshold
+        self.platform = platform
 
 # -------------------------------------------------------------------------------
 
@@ -253,6 +256,7 @@ class CoppBase:
         logger.info('Reboot Switch')
         self.dut_cli_object.general.save_configuration()
         self.dut_cli_object.general.reboot_reload_flow(topology_obj=self.topology)
+        pause_lldp_after_reboot(self.tested_protocol, self.platform, self.dut_cli_object)
         self.pre_rx_counts = self.dut_cli_object.ifconfig. \
             get_interface_ifconfig_details(self.dut_iface).rx_packets
 
@@ -612,8 +616,8 @@ class ARPTest(CoppBase):
     ARP class/test extends the basic CoPP class with specific validation for ARP protocol
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
@@ -657,8 +661,8 @@ class SNMPTest(CoppBase):
     SNMP class/test extends the basic CoPP class with specific validation for SNMP protocol
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         # TODO trapped as ip2me. Mellanox should add support for SNMP trap. update values accordingly
         self.default_cir = 6000
         self.default_cbs = 1000
@@ -705,8 +709,8 @@ class IP2METest(CoppBase):
     IP2ME class/test extends the basic CoPP class with specific validation for IP2ME packets type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 6000
         self.default_cbs = 1000
         self.user_limit = 600
@@ -743,8 +747,8 @@ class SSHTest(CoppBase):
     SSH class/test extends the basic CoPP class with specific validation for SSH packet type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
@@ -777,8 +781,8 @@ class LLDPTest(CoppBase):
     LLDP class/test extends the basic CoPP class with specific validation for LLDP packet type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
@@ -814,8 +818,8 @@ class LACPTest(CoppBase):
     LACP class/test extends the basic CoPP class with specific validation for LACP packet type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
@@ -848,8 +852,8 @@ class BGPTest(CoppBase):
     BGP class/test extends the basic CoPP class with specific validation for BGP packet type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
@@ -889,8 +893,8 @@ class DHCPTest(CoppBase):
     DHCP class/test extends the basic CoPP class with specific validation for DHCP packet type
     """
 
-    def __init__(self, topology_obj, sonic_version, is_simx):
-        CoppBase.__init__(self, topology_obj, sonic_version, is_simx)
+    def __init__(self, topology_obj, sonic_version, is_simx, platform):
+        CoppBase.__init__(self, topology_obj, sonic_version, is_simx, platform)
         self.default_cir = 600
         self.default_cbs = 600
         self.user_limit = 1000
