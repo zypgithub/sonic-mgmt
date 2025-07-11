@@ -20,7 +20,7 @@
         <name> Warm Upgrade test </name>
         <cmd>
             <params>
-                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --upgrade_type=warm --base_image_list=[[conf:extra_info.base_version]]  --target_image_list=[[conf:extra_info.target_version]] --restore_to_image=[[conf:extra_info.target_version]] --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts upgrade_path/test_upgrade_path.py::test_upgrade_path </static_args>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --upgrade_type=warm --base_image_list=[[conf:extra_info.base_version]]  --target_image_list=[[conf:extra_info.target_version]] --restore_to_image=[[conf:extra_info.target_version]] --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts upgrade_path/test_upgrade_path.py::test_upgrade_path </static_args>
             </params>
         </cmd>
     </case>
