@@ -43,9 +43,9 @@ r-bobcat-03,Ethernet192,r-leopard-80,Ethernet192,100000,141,Access,on
 r-bobcat-03,Ethernet196,r-leopard-80,Ethernet196,100000,142,Access,on
 r-bobcat-03,Ethernet200,r-leopard-80,Ethernet200,100000,143,Access,on
 r-bobcat-03,Ethernet204,r-leopard-80,Ethernet204,100000,144,Access,on
-r-bobcat-03,Ethernet208,r-leopard-80,Ethernet208,100000,145,Access,on
-r-bobcat-03,Ethernet212,r-leopard-80,Ethernet212,100000,146,Access,on
-r-bobcat-03,Ethernet216,r-leopard-80,Ethernet216,100000,147,Access,on
-r-bobcat-03,Ethernet220,r-leopard-80,Ethernet220,100000,148,Access,on
+r-bobcat-03,Ethernet208,r-leopard-80,Ethernet208,200000,145,Access,off
+r-bobcat-03,Ethernet212,r-leopard-80,Ethernet212,200000,146,Access,off
+r-bobcat-03,Ethernet216,r-leopard-80,Ethernet216,200000,147,Access,off
+r-bobcat-03,Ethernet220,r-leopard-80,Ethernet220,200000,148,Access,off
 r-leopard-80,Ethernet248,r-r740-14,enp21p0,100000,101-148,Trunk
 
