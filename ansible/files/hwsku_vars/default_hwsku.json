@@ -20,11 +20,11 @@
         "support_hwsku": ["Nvidia-9009d3b600CVAA-C1"]
     },
     "r-bobcat-01_setup": {
-        "default_hwsku": "Mellanox-SN4280-O28",
+        "default_hwsku": "Mellanox-SN4280-O8C40",
         "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80", "Mellanox-SN4280-O8C40"]
     },
     "r-bobcat-03_setup": {
-        "default_hwsku": "Mellanox-SN4280-O28",
+        "default_hwsku": "Mellanox-SN4280-O8C40",
         "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80", "Mellanox-SN4280-O8C40"]
     },
     "CI_sonic_COMMUNITY_SPC": {
@@ -172,11 +172,11 @@
         "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]
     },
     "mtvr-bobcat-03_setup": {
-        "default_hwsku": "Mellanox-SN4280-O28",
+        "default_hwsku": "Mellanox-SN4280-O8C40",
         "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80", "Mellanox-SN4280-O8C40"]
     },
     "mtvr-bobcat-04_setup": {
-        "default_hwsku": "Mellanox-SN4280-O28",
+        "default_hwsku": "Mellanox-SN4280-O8C40",
         "support_hwsku": ["Mellanox-SN4280-O28", "Mellanox-SN4280-O8C80", "Mellanox-SN4280-O8C40"]
     },
     "mtvr-bobcat-05_setup": {
