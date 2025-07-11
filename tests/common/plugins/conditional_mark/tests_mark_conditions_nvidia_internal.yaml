@@ -681,11 +681,6 @@ platform_tests/cli/test_show_platform.py::test_show_platform_syseeprom:
     conditions:
     - "'simx' in platform"
 
-platform_tests/cli/test_show_platform.py::test_show_platform_summary:
-  xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4499192"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4499192 and 'sn2700' in platform"
 
 platform_tests/test_memory_exhaustion.py::TestMemoryExhaustion::test_memory_exhaustion:
   skip:
