@@ -38,7 +38,7 @@ def test_event(duthost, gnxi_path, ptfhost, ptfadapter, data_dir, validate_yang)
              "if_state.json", "sonic-events-swss:if-state", tag)
     if duthost.facts["hwsku"] not in LOSSY_ONLY_HWSKUS:
         run_test(duthost, gnxi_path, ptfhost, data_dir, validate_yang, generate_pfc_storm,
-                "pfc_storm.json", "sonic-events-swss:pfc-storm", tag)
+                 "pfc_storm.json", "sonic-events-swss:pfc-storm", tag)
     run_test(duthost, gnxi_path, ptfhost, data_dir, validate_yang, trigger_crm_threshold_exceeded,
              "chk_crm_threshold.json", "sonic-events-swss:chk_crm_threshold", tag)
 
