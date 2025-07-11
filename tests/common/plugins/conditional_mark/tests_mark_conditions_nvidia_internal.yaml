@@ -853,6 +853,10 @@ platform_tests/test_sensors.py::test_sensors:
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
+  xfail:
+    reason: "Testcase ignored due to RM 4501831 on sn4280"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4501831 and 'sn4280' in platform"
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
