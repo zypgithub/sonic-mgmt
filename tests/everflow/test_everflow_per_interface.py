@@ -68,7 +68,7 @@ def build_candidate_ports(duthost, tbinfo, ns):
     return candidate_ports, unselected_ports
 
 
-def build_acl_rule_vars(candidate_ports, ip_ver, erspan_ip_ver):
+def build_acl_rule_vars(candidate_ports, ip_ver, erspan_ip_ver):  # noqa F811
     """
     Build vars for generating ACL rule
     """
