@@ -931,7 +931,7 @@ decap/test_decap.py::test_decap[ttl=pipe, dscp=pipe, vxlan=disable]:
   xfail:
     reason: "Test case has issue on the t0-isolated-d256u256s2 topo."
     conditions:
-      - "'t0-isolated-d256u256s2' in topo_name"
+      - "'t0-isolated-d256u256s2' in topo_name and platform in ['x86_64-nvidia_sn5640-r0']"
 
 decap/test_decap.py::test_decap[ttl=pipe, dscp=pipe, vxlan=set_unset]:
   skip:
@@ -943,7 +943,7 @@ decap/test_decap.py::test_decap[ttl=pipe, dscp=pipe, vxlan=set_unset]:
   xfail:
     reason: "Test case has issue on the t0-isolated-d256u256s2 topo."
     conditions:
-      - "'t0-isolated-d256u256s2' in topo_name"
+      - "'t0-isolated-d256u256s2' in topo_name and platform in ['x86_64-nvidia_sn5640-r0']"
 
 decap/test_decap.py::test_decap[ttl=pipe, dscp=uniform, vxlan=disable]:
   skip:
@@ -956,7 +956,7 @@ decap/test_decap.py::test_decap[ttl=pipe, dscp=uniform, vxlan=disable]:
   xfail:
     reason: "Test case has issue on the t0-isolated-d256u256s2 topo."
     conditions:
-      - "'t0-isolated-d256u256s2' in topo_name"
+      - "'t0-isolated-d256u256s2' in topo_name and platform in ['x86_64-nvidia_sn5640-r0']"
 
 decap/test_decap.py::test_decap[ttl=pipe, dscp=uniform, vxlan=set_unset]:
   skip:
