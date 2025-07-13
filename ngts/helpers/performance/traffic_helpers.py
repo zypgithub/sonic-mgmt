@@ -515,9 +515,9 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
                 show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
                 logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
                 for drop_queue in drop_queues:
-                    update_queue_counters(show_queue_counters_dict, drop_queue,
-                                          total_drop_queue_counter_pkts, total_packets_egress_port_dropped,
-                                          total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes)
+                    total_drop_queue_counter_pkts, total_packets_egress_port_dropped, total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes = update_queue_counters(show_queue_counters_dict, drop_queue,
+                                                                                                                                                                                           total_drop_queue_counter_pkts, total_packets_egress_port_dropped,
+                                                                                                                                                                                           total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes)
                 total_packets_egress_port = total_drop_queue_counter_pkts + total_packets_egress_port_dropped
                 trimming_queue_counter_pkts, trimming_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, trimming_queue)
                 trimming_queue_counter_pkts_bytes, trimming_queue_drop_pkts_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, trimming_queue, PerfConsts.PACKET_SIZE_4K)
@@ -549,10 +549,13 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
         allure.attach(queue_packet_percentages_df.to_html(), "Queue packet percentages dataframe", attachment_type=allure.attachment_type.HTML)
 
 
-def update_queue_counters(show_queue_counters_dict, drop_queue, total_drop_queue_counter_pkts, total_packets_egress_port_dropped, total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes):
-    drop_queue_counter_pkts, drop_queue_drop_pkts = get_counters_for_queue(show_queue_counters_dict, drop_queue)
-    drop_queue_counter_pkts_bytes, drop_queue_drop_pkts_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, drop_queue, PerfConsts.PACKET_SIZE_4K)
-    total_drop_queue_counter_pkts += drop_queue_counter_pkts
-    total_packets_egress_port_dropped += drop_queue_drop_pkts
-    total_drop_queue_counter_pkts_bytes += drop_queue_counter_pkts_bytes
-    total_packets_egress_port_dropped_bytes += drop_queue_drop_pkts_bytes
+def update_queue_counters(show_queue_counters_dict, queue,
+                          queue_pkts_counter, queue_drop_pkts_counter,
+                          queue_pkts_bytes_counter, queue_dropped_bytes_counter):
+    queue_pkts, queue_drop = get_counters_for_queue(show_queue_counters_dict, queue)
+    queue_bytes, queue_drop_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+    queue_pkts_counter += queue_pkts
+    queue_drop_pkts_counter += queue_drop
+    queue_pkts_bytes_counter += queue_bytes
+    queue_dropped_bytes_counter += queue_drop_bytes
+    return queue_pkts_counter, queue_drop_pkts_counter, queue_pkts_bytes_counter, queue_dropped_bytes_counter

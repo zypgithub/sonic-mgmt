@@ -98,8 +98,8 @@ def create_test_validation_entry_to_db(players, test_name):
     cli_object = players['dut']['cli']
     test_specific_values = cli_object.performance.get_test_specific_values(test_name)
     validation_json = test_specific_values.pop(MongoDbConsts.VALIDATOR_RESULTS, None)
-    ports_group_df = pd.DataFrame(test_specific_values.pop(MongoDbConsts.PORT_GROUP_DF))
-    os_ports_name_mapping_df = pd.DataFrame(test_specific_values.pop(ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME))
+    ports_group_df = pd.DataFrame(test_specific_values.pop(MongoDbConsts.PORT_GROUP_DF, []))
+    os_ports_name_mapping_df = pd.DataFrame(test_specific_values.pop(ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME, []))
     power_total = test_specific_values.pop(MongoDbConsts.POWER_TOTAL, [])
     power_by_collectors_group = test_specific_values.pop(MongoDbConsts.POWER_BY_COLLECTORS, [])
     if validation_json:

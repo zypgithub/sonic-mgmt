@@ -105,7 +105,6 @@ class TestSRv6Base:
                                           validate_bw_rx=False,
                                           tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
                                           power_threshold=self.power_thresholds_by_chip_type,
-                                          counters_list=MRCConsts.COUNTERS_WITH_ECN,
                                           samples_params_dict=samples_params_dict)
                 traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
                 traffic_validation_json = traffic_validation_jsons_list.pop()
@@ -157,7 +156,6 @@ class TestSRv6Base:
                                       validate_bw_rx=False,
                                       tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      counters_list=MRCConsts.COUNTERS_WITH_ECN,
                                       samples_params_dict=samples_params_dict)
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
             traffic_validation_json = traffic_validation_jsons_list.pop()
