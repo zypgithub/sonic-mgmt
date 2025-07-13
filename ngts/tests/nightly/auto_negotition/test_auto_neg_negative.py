@@ -226,6 +226,8 @@ class TestAutoNegNegative(TestAutoNegBase):
         :return: raise assertion error in case of failure
         """
         marker = local_loganalyzer_mismatch_speed_type.init()
+        if self.cli_objects.dut.im.is_im_enabled():
+            pytest.skip("Test must run while SW control feature is disabled")
         split_mode = 1
         first_lb = 0
         lb = self.tested_lb_dict[split_mode][first_lb]
