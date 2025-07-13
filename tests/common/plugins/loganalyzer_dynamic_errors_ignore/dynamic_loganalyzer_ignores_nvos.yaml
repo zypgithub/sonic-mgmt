@@ -972,6 +972,14 @@
         - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
         - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload
 
+# NVOS : Errors which should be ignored in tests nvl5 ports
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+
 - Errors_list:
     - ".*ERR sonic-ztp\\[\\d+\\]: Exception \\[Expecting ',' delimiter: line \\d+ column \\d+ \\(char \\d+\\)] encountered while verifying '\\/etc\\/sonic\\/config_db\\.json'.*"
   Conditions:
