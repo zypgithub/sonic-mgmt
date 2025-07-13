@@ -1406,15 +1406,17 @@
 
 # NVOS
 - Errors_list:
-    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*WARNING pmon#psud: PSU absence warning: PSU \d is not present.*'
     - '.*WARNING pmon#thermalctld: Fan fault warning: fan\d is not working.*'
+    - '.*ERR\\s+health\\-statsd\\#health_history:\\s+FAN\\d+/\\d+:\\s+is\\s+not\\s+working.*'
+    - '.*ERR\\s+health\\-statsd\\#health_history:\\s+PSU\\d+/FAN:\\s+is\\s+not\\s+working.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_simulator
         - tests_nvos/system/test_system_health.py::test_simulate_fan_speed_fault
+        - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_user_config_file
 
 # NVOS Security
 - Errors_list:
