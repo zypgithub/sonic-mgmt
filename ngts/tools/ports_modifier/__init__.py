@@ -266,7 +266,7 @@ def generate_config_db(config_db, engine, expected_num_of_ports, platform, dut_h
                 lane_index = port_lanes.index(lane)
                 first_port_lane = lane.split(',')[0]
                 # 4600c has specific lanes(not one by one) config: "Ethernet0 0,1,2,3", "Ethernet4 8,9,10,11"
-                if platform in [PlatformTypesConstants.PLATFORM_TIGON, PlatformTypesConstants.PLATFORM_LIGER]:
+                if platform == PlatformTypesConstants.PLATFORM_TIGON:
                     first_port_lane = int(first_port_lane) // 2
 
                 port_name = f'Ethernet{first_port_lane}'
