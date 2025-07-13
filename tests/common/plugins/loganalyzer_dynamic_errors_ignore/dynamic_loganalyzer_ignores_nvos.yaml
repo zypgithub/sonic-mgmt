@@ -1613,14 +1613,14 @@
     - '.*not support op_vls 15 max vl is 8.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/nvl5_port/test_nvl5_port.py::test_nvl5_port_configuration
+      - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_port_configuration
 
 # NVOS
 - Errors_list:
     - '.*interface (\w+) speed (\d+G) is not part of the supported speeds \(supported speeds: \[200000, 400000\], preset: nvl\).*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+      - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
 
 # NVOS
 - Errors_list:
