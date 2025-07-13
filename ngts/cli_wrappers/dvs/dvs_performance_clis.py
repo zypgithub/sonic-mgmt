@@ -13,6 +13,8 @@ class DvsPerformance(PerformanceCommon):
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
         self.base_ports, self.ports_lanes = self.get_base_ports()
+        self.right_left_ports_dict = self.get_right_left_ports_dict()
+        self.connected_ports, self.unconnected_ports = self.get_player_ports()
         self.port_groups = None
 
     def get_cmd_for_sdk(self, cmd, env_variables=None):
@@ -23,24 +25,27 @@ class DvsPerformance(PerformanceCommon):
         return cmd
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        self.base_ports, self.ports_lanes = self.get_base_ports()
+        self.right_left_ports_dict = self.get_right_left_ports_dict()
+        self.connected_ports, self.unconnected_ports = self.get_player_ports()
         test_name = self.get_configuration_file(scenario, conf_args, template_suite)
         logging.info(f"Configuration to be run {test_name}")
         logging.info(f"Applying the configuration on {self.dut_alias}")
         cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {test_name}"
         self.execute_cmd(cmd)
+        self.connected_ports, self.unconnected_ports = self.get_player_ports()
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                       template_suite, scenario, "dvs")
         env = Environment(loader=FileSystemLoader(templates_path))
         jinja_template = env.get_template(f"{self.dut_alias}.jinja")
-        func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
-                     "get_split_ports": self.get_split_ports,
+        func_dict = {"get_split_ports": self.get_split_ports,
                      "generate_ip_list": generate_ip_address_dict,
                      "get_player_unconnected_connected_after_split": self.get_player_unconnected_connected_after_split,
                      "PerfConsts": PerfConsts}
         jinja_template.globals.update(func_dict)
-        template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias)
+        template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias, right_left_ports_dict=self.right_left_ports_dict)
         logging.info(f"Template string: {template_string}")
         json_dict = json.loads(template_string)
         conf_path = os.path.join(templates_path, f"{self.dut_alias}_conf.json")
@@ -92,7 +97,9 @@ class DvsPerformance(PerformanceCommon):
                               overwrite_file=True, verify_file=False, direction='get')
         with open(get_ports_output) as f:
             player_ports = json.load(f)
-        return player_ports
+        self.connected_ports = sorted(player_ports["connected_ports"])
+        self.unconnected_ports = sorted(player_ports["unconnected_ports"])
+        return self.connected_ports, self.unconnected_ports
 
     def get_player_unconnected_connected_ports_aliases(self):
         """
@@ -102,15 +109,9 @@ class DvsPerformance(PerformanceCommon):
         "connected_ports": [('left_tg_connected_port_p1', '0x10041'),...,]
         }
         """
-        player_ports = self.get_player_ports()
         player_ports_aliases_dict = {"unconnected_ports": [], "connected_ports": []}
-        port_alias_regex = r"(u*n*connected_port)"
-        for ports_aliases, port_list in player_ports.items():
-            ports_alias = re.search(port_alias_regex, ports_aliases).group(1)
-            sorted_port_list = sorted(port_list)
-            for port_index, port in enumerate(sorted_port_list, start=1):
-                player_ports_aliases_dict[ports_aliases].append((f"{self.dut_alias}_{ports_alias}_p{port_index}",
-                                                                 hex(port)))
+        player_ports_aliases_dict["unconnected_ports"] = [(f"{self.dut_alias}_unconnected_port_p{port_index}", unconnected_port) for port_index, unconnected_port in enumerate(self.get_sdk_ports(self.unconnected_ports), start=1)]
+        player_ports_aliases_dict["connected_ports"] = [(f"{self.dut_alias}_connected_port_p{port_index}", connected_port) for port_index, connected_port in enumerate(self.get_sdk_ports(self.connected_ports), start=1)]
         return player_ports_aliases_dict
 
     def get_player_unconnected_connected_after_split(self, split_num):
@@ -131,23 +132,15 @@ class DvsPerformance(PerformanceCommon):
                 }
         """
         all_ports_after_split = {}
-
-        tg_ports = self.get_player_unconnected_connected_ports_aliases()
-        unconnected_ports_list = [port for _, port in tg_ports['unconnected_ports']]
-        connected_ports_list = [port for _, port in tg_ports['connected_ports']]
-
-        all_ports_after_split['unconnected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, unconnected_ports_list)]
-        all_ports_after_split['connected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, connected_ports_list)]
-
+        all_ports_after_split['unconnected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, self.unconnected_ports)]
+        all_ports_after_split['connected_ports'] = [int(port) for port in self.get_all_breakout_ports(split_num, self.connected_ports)]
         return all_ports_after_split
 
     def get_tg_unconnected_ports(self):
-        player_ports = self.get_player_ports()
-        return player_ports["unconnected_ports"]
+        return self.unconnected_ports
 
     def get_dut_ports(self):
-        player_ports = self.get_player_ports()
-        return player_ports["connected_ports"]
+        return self.connected_ports
 
     def get_os_ports_name_mapping(self):
         """
@@ -174,7 +167,11 @@ class DvsPerformance(PerformanceCommon):
         port_dump = self.execute_cmd('sx_api_ports_dump.py')
         port_label_tuple_list = re.findall(r"\|\s+(0x\d*\w*\d*)\|\s+\d+\|\s+\d+\|\s+(\d+)\|", port_dump)
         ports_lanes = self.get_ports_lanes(port_label_tuple_list)
-        return port_label_tuple_list[:-1], ports_lanes
+        port_label_tuple_list = port_label_tuple_list[:-1]
+        self.base_ports = port_label_tuple_list
+        self.ports_lanes = ports_lanes
+
+        return self.base_ports, self.ports_lanes
 
     @staticmethod
     def get_ports_lanes(port_label_tuple_list):
@@ -196,9 +193,8 @@ class DvsPerformance(PerformanceCommon):
         {'right_ports': ['0x10001', '0x10003', ...,], 'left_ports': ['0x10041', '0x10043',...]}
         """
         ports = {}
-        base_ports, _ = self.get_base_ports()
-        half_ports_num = len(base_ports) // 2
-        sorted_base_ports_by_label = sorted(base_ports, key=lambda port_label_tuple: int(port_label_tuple[1]))
+        half_ports_num = len(self.base_ports) // 2
+        sorted_base_ports_by_label = sorted(self.base_ports, key=lambda port_label_tuple: int(port_label_tuple[1]))
         sorted_base_ports = list(map(lambda port_label_tuple: port_label_tuple[0], sorted_base_ports_by_label))
         ports["left_ports"] = sorted_base_ports[:half_ports_num]
         ports["right_ports"] = sorted_base_ports[half_ports_num:]
@@ -236,10 +232,9 @@ class DvsPerformance(PerformanceCommon):
              }
         """
         split_ports = {}
-        ports_dict = self.get_right_left_ports_dict()
-        split_ports["left_split_ports"] = self.get_all_breakout_ports(left_split_num, ports_dict["left_ports"])
+        split_ports["left_split_ports"] = self.get_all_breakout_ports(left_split_num, self.right_left_ports_dict["left_ports"])
         split_ports["left_split_ports"].sort()
-        split_ports["right_split_ports"] = self.get_all_breakout_ports(right_split_num, ports_dict["right_ports"])
+        split_ports["right_split_ports"] = self.get_all_breakout_ports(right_split_num, self.right_left_ports_dict["right_ports"])
         split_ports["right_split_ports"].sort()
 
         return split_ports
@@ -247,10 +242,10 @@ class DvsPerformance(PerformanceCommon):
     def get_all_breakout_ports(self, split_num, ports_list):
         breakout_ports = []
         for port in ports_list:
-            lane = self.ports_lanes[port]
+            lane = self.ports_lanes[self.get_sdk_port(port)]
             num_lanes_after_breakout = lane // int(split_num)
             lanes_after_breakout = list(range(0, lane, num_lanes_after_breakout))
-            breakout_ports += [str(int(port, 16) + lane) for lane in lanes_after_breakout]
+            breakout_ports += [str(int(self.get_sdk_port(port), 16) + lane) for lane in lanes_after_breakout]
         return breakout_ports
 
     def get_traffic_parameters(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
