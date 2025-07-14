@@ -19,6 +19,8 @@ ansible/*_tmp
 .vscode/
 .idea/
 .ngci_tool/
+.env
+.devcontainer/
 
 # Creadentials for custom_skipif plugin
 tests/common/plugins/custom_skipif/credentials.yaml
