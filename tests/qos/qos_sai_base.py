@@ -236,7 +236,7 @@ class QosSaiBase(QosBase):
             table == "BUFFER_QUEUE_TABLE" else "BUFFER_PORT_INGRESS_PROFILE_LIST_TABLE"
         db = "0"
         port_profile_res = dut_asic.run_redis_cmd(
-            argv=["redis-cli", "-n", db, "HGET", f"{port_table_name}:{port}", "profile_list"]
+            argv=["redis-cli", "-n", db, "HGET", f"{port_table_name}: {port}", "profile_list"]
         )[0]
         port_profile_list = port_profile_res.split(",")
 
@@ -264,7 +264,7 @@ class QosSaiBase(QosBase):
 
             pg_q_alpha = calculate_alpha(pg_q_buffer_profile['dynamic_th'])
             port_alpha = calculate_alpha(port_dynamic_th)
-            pool = f'BUFFER_POOL_TABLE:{pg_q_buffer_profile["pool"]}'
+            pool = f'BUFFER_POOL_TABLE: {pg_q_buffer_profile["pool"]}'
             buffer_size = int(
                 dut_asic.run_redis_cmd(
                     argv=["redis-cli", "-n", db, "HGET", pool, "size"]
@@ -288,7 +288,7 @@ class QosSaiBase(QosBase):
             pg_q_buffer_profile["pg_q_alpha"] = pg_q_alpha
             pg_q_buffer_profile["port_alpha"] = port_alpha
             pg_q_buffer_profile["pool_size"] = buffer_size
-            logger.info(f'pg_q_buffer_profile:{pg_q_buffer_profile}')
+            logger.info(f'pg_q_buffer_profile: {pg_q_buffer_profile}')
         else:
             raise Exception("Not found port dynamic th")
 
@@ -1527,16 +1527,12 @@ class QosSaiBase(QosBase):
             updateFeatureState(lower_tor_host, "mux", "disabled")
 
         src_services = [
-            {"docker": src_asic.get_docker_name("lldp"), "service": "lldp-syncd"},
-            {"docker": src_asic.get_docker_name("lldp"), "service": "lldpd"},
             {"docker": src_asic.get_docker_name("radv"), "service": "radvd"},
             {"docker": src_asic.get_docker_name("swss"), "service": "arp_update"}
         ]
         dst_services = []
         if src_asic != dst_asic:
             dst_services = [
-                {"docker": dst_asic.get_docker_name("lldp"), "service": "lldp-syncd"},
-                {"docker": dst_asic.get_docker_name("lldp"), "service": "lldpd"},
                 {"docker": dst_asic.get_docker_name("radv"), "service": "radvd"},
                 {"docker": dst_asic.get_docker_name("swss"), "service": "arp_update"}
             ]
@@ -2251,7 +2247,7 @@ class QosSaiBase(QosBase):
         if is_lossy_queue_only:
             egress_lossy_profile['lossy_dscp'] = queue_to_dscp_map[queues]
             egress_lossy_profile['lossy_queue'] = queues
-        logger.info(f"queues:{queues}, egressLossyProfile: {egress_lossy_profile}")
+        logger.info(f"queues: {queues}, egressLossyProfile: {egress_lossy_profile}")
 
         yield egress_lossy_profile
 
