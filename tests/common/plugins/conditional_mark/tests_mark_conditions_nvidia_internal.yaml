@@ -952,12 +952,6 @@ pc/test_lag_2.py::test_lag:
     conditions:
     - https://redmine.mellanox.com/issues/4397221
 
-qos/test_qos_sai.py:
-  skip:
-    reason: "Skipped due to github issue https://github.com/sonic-net/sonic-mgmt/issues/16200 at dualtor aa setup"
-    conditions:
-    - "https://github.com/sonic-net/sonic-mgmt/issues/16200 and 'dualtor-aa' in topo_name"
-
 qos/test_qos_sai.py::TestQosSai::testQosSaiDwrr:
   skip:
     reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438572"
