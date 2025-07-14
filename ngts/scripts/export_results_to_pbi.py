@@ -211,7 +211,7 @@ if __name__ == "__main__":
     target_version = parse_version(args.target_version)
     dut_hwsku = args.dut_hwsku
     branch = parse_branch_name(args.tarball)
-    allure_project_id = setup_name.replace('_', '-').lower()
+    allure_project_id = setup_name.replace('_', '-').lower() + "-session-reports"
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
     report_url = ''
