@@ -1,3 +1,4 @@
+import random
 import re
 import logging
 from tests.common.portstat_utilities import parse_column_positions
@@ -80,3 +81,10 @@ def parse_rif_counters(output_lines):
             results[intf][headers[idx]] = portstats[idx].replace(',', '')
 
     return results
+
+
+def random_mac():
+    return "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255),
+                                        random.randint(0, 255),
+                                        random.randint(0, 255))
+
