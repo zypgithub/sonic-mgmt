@@ -27,8 +27,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
         interface :- interface name to find the mac address for.
         """
         cmd = f"nv sh interface {interface} link -o json"
-        logging.info(f"Running {cmd}")
-        output = engine.run_cmd(cmd)
+        output = engine.run_cmd(cmd, print_output=False)
         return output
 
     def get_interface_mac_address(self, interface, verify_execution=False):
@@ -43,6 +42,26 @@ class NvueInterfaceCli(SonicInterfaceCli):
             output = NvueInterfaceCli._get_interface_mac_address(self.engine, interface)
         output_json = json.loads(output)
         return output_json['mac-address']
+
+    @staticmethod
+    def _get_all_interfaces_mac_addresses(engine):
+        output = engine.run_cmd("nv sh interface mac -o json", print_output=False)
+        output_json = json.loads(output)
+        mac_addresses = {}
+        for interface, data in output_json.items():
+            mac_addresses[interface] = data['link']['mac-address']
+        return mac_addresses
+
+    def get_all_interfaces_mac_addresses(self, verify_execution=False):
+        if verify_execution:
+            try:
+                output = SendCommandTool.execute_command(NvueInterfaceCli._get_all_interfaces_mac_addresses, self.engine).verify_result()
+            except Exception as e:
+                logging.error(f"Error getting all interfaces mac addresses: {e}")
+                raise
+        else:
+            output = NvueInterfaceCli._get_all_interfaces_mac_addresses(self.engine)
+        return output
 
     def get_bonus_ports(self, engine) -> list:
         asic_model = self.cli_obj.general.get_asic_model(engine)
@@ -65,7 +84,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
         return lldp_neighbors
 
     def get_physical_ports(self):
-        output = self.engine.run_cmd("nv sh platform -o json")
+        output = self.engine.run_cmd("nv sh platform -o json", print_output=False)
         output = json.loads(output)
         if output['product-name'] == 'SN5640':
             # for Spectrum 5 the number of ports is 66 but reported as 130
@@ -82,20 +101,27 @@ class NvueInterfaceCli(SonicInterfaceCli):
         self.engine.run_cmd(f"nv set interface swp1-{number_of_ports} link state up")
         self.engine.run_cmd("nv config apply -y")
 
-    def filter_lldp_neighbors(self, neighbor_list):
+    def filter_lldp_neighbors(self, neighbor_list, include_neighbor_ports=False):
         lldp_neighbor = self.cli_obj.interface.get_lldp_neighbors(output_type="json")
         filtered_neighbors = {}
         for neighbor in neighbor_list:
-            filtered_neighbors[neighbor] = []
+            if include_neighbor_ports:
+                filtered_neighbors[neighbor] = {}
+            else:
+                filtered_neighbors[neighbor] = []
         for port, properties in lldp_neighbor.items():
             neighbor = [*properties['lldp']['neighbor'].keys()][0]
+            neighbor_port = properties['lldp']['neighbor'][neighbor]['port']['name']
             if neighbor in neighbor_list:
-                filtered_neighbors[neighbor].append(port)
+                if include_neighbor_ports:
+                    filtered_neighbors[neighbor][port] = neighbor_port
+                else:
+                    filtered_neighbors[neighbor].append(port)
         return filtered_neighbors
 
     def get_down_ports(self):
         loopback_port = "lo"
-        output = self.engine.run_cmd("nv sh interface down -o json")
+        output = self.engine.run_cmd("nv sh interface down -o json", print_output=False)
         output = json.loads(output)
         down_ports = [*output.keys()]
         bonus_port = self.cli_obj.interface.get_bonus_ports(self.engine)
@@ -108,7 +134,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
         return down_ports
 
     def get_interface_status(self):
-        output = self.engine.run_cmd("nv sh interface status -o json")
+        output = self.engine.run_cmd("nv sh interface status -o json", print_output=False)
         output = json.loads(output)
         return output
 

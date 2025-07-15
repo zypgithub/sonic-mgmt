@@ -39,10 +39,12 @@ def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstrea
     downstream_end_index = downstream_start_index + downstream_ports_num
     upstream = left_ports[upstream_start_index:upstream_end_index]
     downstream = right_ports[downstream_start_index:downstream_end_index]
-    for port in upstream:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "upstream"})
-    for port in downstream:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "downstream"})
+    sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream)
+    sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream)
+    for port in sdk_port_list_upstream:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "upstream"})
+    for port in sdk_port_list_downstream:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "downstream"})
     return upstream, downstream, port_group_df
 
 
@@ -75,10 +77,12 @@ def get_upstream_downstream_groups_port_group_df(players, upstream_ports_num, do
     upstream_groups = split_into_subsets(upstream, upstream_ports_num)
     downstream_groups = split_into_subsets(downstream, downstream_ports_num)
     for i in range(num_of_groups):
-        for port in upstream_groups[i]:
-            port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: f"upstream_group_{i + 1}"})
-        for port in downstream_groups[i]:
-            port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_{i + 1}"})
+        sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream_groups[i])
+        sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream_groups[i])
+        for port in sdk_port_list_upstream:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"upstream_group_{i + 1}"})
+        for port in sdk_port_list_downstream:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_{i + 1}"})
     return upstream_groups, downstream_groups, port_group_df
 
 
@@ -112,10 +116,12 @@ def get_leaf_many_to_few_port_group_df(players, M, num_of_ingress_ports):
         right_ports[right_ingress_ports_start_index:right_ingress_ports_end_index]
     egress_ports = left_egress_ports + right_egress_ports
     ingress_ports = left_ingress_ports + right_ingress_ports
-    for port in egress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
-    for port in ingress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+    sdk_port_list_egress = players['dut']['cli'].performance.get_sdk_ports(egress_ports)
+    sdk_port_list_ingress = players['dut']['cli'].performance.get_sdk_ports(ingress_ports)
+    for port in sdk_port_list_egress:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+    for port in sdk_port_list_ingress:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
     return egress_ports, ingress_ports, port_group_df
 
 
@@ -127,10 +133,12 @@ def get_spine_many_to_few_port_group_df(players, M):
     egress_ports_num = len(dut_ports) // M
     egress_ports = dut_ports[:egress_ports_num]
     ingress_ports = ports
-    for port in egress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
-    for port in ingress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+    sdk_port_list_egress = players['dut']['cli'].performance.get_sdk_ports(egress_ports)
+    sdk_port_list_ingress = players['dut']['cli'].performance.get_sdk_ports(ingress_ports)
+    for port in sdk_port_list_egress:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+    for port in sdk_port_list_ingress:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
     return egress_ports, ingress_ports, port_group_df
 
 
@@ -146,14 +154,18 @@ def victim_flow_port_group_df(request, players):
     bisection_right, many_to_one_egress_ports = right_ports[:victim_ports_num], right_ports[victim_ports_num:victim_ports_num + 1]
     egress_port = many_to_one_egress_ports[0]
     many_to_one_ingress_ports.append(egress_port)
-    for port in bisection_left:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "bisection_left"})
-    for port in bisection_right:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "bisection_right"})
-    for port in many_to_one_ingress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "many_to_one_ingress_ports"})
-    for port in many_to_one_egress_ports:
-        port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "many_to_one_egress_port"})
+    sdk_port_list_bisection_left = players['dut']['cli'].performance.get_sdk_ports(bisection_left)
+    sdk_port_list_bisection_right = players['dut']['cli'].performance.get_sdk_ports(bisection_right)
+    sdk_port_list_many_to_one_ingress_ports = players['dut']['cli'].performance.get_sdk_ports(many_to_one_ingress_ports)
+    sdk_port_list_many_to_one_egress_ports = players['dut']['cli'].performance.get_sdk_ports(many_to_one_egress_ports)
+    for port in sdk_port_list_bisection_left:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "bisection_left"})
+    for port in sdk_port_list_bisection_right:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "bisection_right"})
+    for port in sdk_port_list_many_to_one_ingress_ports:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "many_to_one_ingress_ports"})
+    for port in sdk_port_list_many_to_one_egress_ports:
+        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "many_to_one_egress_port"})
     return bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df
 
 
@@ -170,10 +182,12 @@ def get_spine_downstream_groups_port_group_df(players, downstream_ports_num, num
     downstream_groups_1 = split_into_subsets(downstream_1, downstream_ports_num)
     downstream_groups_2 = split_into_subsets(downstream_2, downstream_ports_num)
     for i in range(num_of_groups):
-        for port in downstream_groups_1[i]:
-            port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_1_{i + 1}"})
-        for port in downstream_groups_2[i]:
-            port_group_df.append({"port": players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_2_{i + 1}"})
+        sdk_port_list_downstream_groups_1 = players['dut']['cli'].performance.get_sdk_ports(downstream_groups_1[i])
+        sdk_port_list_downstream_groups_2 = players['dut']['cli'].performance.get_sdk_ports(downstream_groups_2[i])
+        for port in sdk_port_list_downstream_groups_1:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_1_{i + 1}"})
+        for port in sdk_port_list_downstream_groups_2:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_2_{i + 1}"})
     return downstream_groups_1, downstream_groups_2, port_group_df
 
 

@@ -20,8 +20,10 @@ from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import (validate_no_dropped_packets_on_queue)
+from ngts.helpers.performance.traffic_helpers import (validate_no_dropped_packets_on_queue, get_ports_avg_bw,
+                                                      validate_trimmed_untrimmed_dropped_percentages, get_tc_occ, get_queue_packet_percentages)
 from infra.tools.exceptions.test_issue import TestIssue
+
 
 logger = logging.getLogger()
 
@@ -44,7 +46,7 @@ class TestSRv6Leaf(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.configure_interfaces_mac_neighbor()
+        self.cli_object.performance.configure_interfaces_mac_neighbor()
         config_optimal_trimming_size(self.chip_type, self.cli_objects)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 

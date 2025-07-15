@@ -1,0 +1,147 @@
+{% set left_ports = get_right_left_ports_dict(bring_up_ports=False)['left_ports'] %}
+{% set right_ports = get_right_left_ports_dict(bring_up_ports=False)['right_ports'] %}
+{% set split_left = parameter_dict.split_left %}
+{% set split_right = parameter_dict.split_right %}
+{% set total_ports = parameter_dict.total_ports %}
+{% set address_list = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000",number_of_address=(total_ports * split_left)) %}
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.14.0   
+- set:
+    interface:
+      eth0:
+        ip:
+          address:
+            dhcp: {}
+          vrf: mgmt
+        type: eth
+    {% if split_left!=1 %}
+    {% for port in left_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_left }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% if split_right!=1 %}
+    {% for port in right_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_right }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% set address_list_index = namespace(value=0) %}
+    {% set counter = namespace(value=0) %}
+    {% for port in left_ports %}
+    {% for split in range(0, split_left) %}
+      {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
+      {% if split_left == 1 %}
+        link:
+          breakout:
+            1x: {}
+        {% endif %}
+        ip:
+          address:
+            {{ address_list[address_list_index.value] }}/48 : {}
+        {% set counter.value = counter.value + 1 %}
+        {% set address_list_index.value = address_list_index.value + 1 %}
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% set counter = namespace(value=0) %}
+    {% for port in right_ports %}
+      {% for split in range(0, split_right)%}
+      {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
+      {% if split_right == 1 %}
+        link:
+          breakout:
+            1x: {}
+        {% endif %}
+        ip:
+          address:
+            {{ address_list[address_list_index.value] }}/48 : {}
+        {% set counter.value = counter.value + 1 %}
+        {% set address_list_index.value = address_list_index.value + 1 %}
+        type: swp
+      {% endfor %}
+    {% endfor %}
+    qos:
+      roce:
+        enable: on
+        mode: lossy-multi-tc
+    router:
+      segment-routing:
+        srv6:
+          locator:
+            LOC1001:
+              block-length: 32
+              func-length: 0
+              node-length: 16
+              prefix: fcbb:bbbb:1::/48
+          state: enabled
+        static:
+          srv6-sid:
+            fcbb:bbbb:1::/48:
+              behavior: uN
+              locator-name: LOC1001
+    service:
+      ntp:
+        mgmt:
+          server:
+            0.cumulusnetworks.pool.ntp.org: {}
+            1.cumulusnetworks.pool.ntp.org: {}
+            2.cumulusnetworks.pool.ntp.org: {}
+            3.cumulusnetworks.pool.ntp.org: {}
+    system:
+      aaa:
+        user:
+          cumulus:
+            full-name: cumulus,,,
+            hashed-password: $y$j9T$9Cyz6WM14RJ7pTBn3vhNC1$f9Yv..6j2M98TBcNXHsephQHAwnhCQ9XNg0Sy5f7NV8
+            role: system-admin
+      api:
+        state: enabled
+      config:
+        auto-save:
+          state: enabled
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: dut
+      reboot:
+        mode: cold
+      ssh-server:
+        state: enabled
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+      wjh:
+        channel:
+          forwarding:
+            trigger:
+              l1: {}
+              l2: {}
+              l3: {}
+              tunnel: {}
+        enable: on
+    vrf:
+      default:
+        router:
+          static:
+            {% for dest_ip in address_list %}
+            {{ dest_ip | replace("aaaa", "bbbb") | replace("::2", "::/48") }}:
+              address-family: ipv6-unicast
+              via:
+                {{ dest_ip | replace("::2", "::1") }}:
+                  type: ipv6-address
+            {% endfor %}
+

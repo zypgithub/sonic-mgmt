@@ -4,6 +4,7 @@ from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list
 from ngts.performance_tests.srv6.utils.srv6_workloads import create_round_robin_stream
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 
 def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_type, template_suite, create_workload_stream,
@@ -15,7 +16,9 @@ def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_ty
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_bisection.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses(verify_execution=False)
     for (src_port, dst_port) in port_bisection_pairs:
+        player_cli_obj.performance.update_dst_mac_address(src_port, dut_mac_addresses, traffic_parameters)
         create_workload_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
                                mloops_dict, dut_interfaces_ipv6_configuration_dict,
                                stream_list=stream_list, congestion=False)
@@ -68,12 +71,14 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_round_robin.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses(verify_execution=False)
     for upstream_ports, downstream_ports in upstream_downstream_group:
         cycle_ports_pairs = get_cycle_ports_pairs(upstream_ports, downstream_ports)
         round_len = len(upstream_ports)
         for (port1, port2) in cycle_ports_pairs:
             ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
             for (src_port, dst_port) in ports_cycle_flow:
+                player_cli_obj.performance.update_dst_mac_address(src_port, dut_mac_addresses, traffic_parameters)
                 create_round_robin_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
                                           mloops_dict, dut_interfaces_ipv6_configuration_dict,
                                           stream_list=stream_list, send_data=True, send_ack=False, mrc_num_packets=1)
@@ -82,6 +87,7 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
             for (port1, port2) in last_round:
                 ports_cycle_flow = get_ports_cycle_flow_by_tg(port1, port2, src_ports, dst_ports, bisection_traffic)
                 for (src_port, dst_port) in ports_cycle_flow:
+                    player_cli_obj.performance.update_dst_mac_address(src_port, dut_mac_addresses, traffic_parameters)
                     create_round_robin_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
                                               mloops_dict, dut_interfaces_ipv6_configuration_dict,
                                               stream_list=stream_list, send_data=False, send_ack=True)
@@ -149,6 +155,7 @@ def get_tg_many_to_one_traffic_params(players, player_alias, conf_args,
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_many_to_one.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
+
     tg_ingress_ports = get_ingress_ports_by_tg(ingress_ports, src_ports)
     if tg_ingress_ports:
         for egress_port in egress_ports:

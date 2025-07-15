@@ -22,6 +22,7 @@ from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCC
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic)
 from infra.tools.exceptions.test_issue import TestIssue
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 logger = logging.getLogger()
 
@@ -181,42 +182,6 @@ class TestSRv6Base:
             violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
         if violations_list:
             raise TestIssue("\n".join(violations_list))
-
-    def configure_interfaces_mac_neighbor(self):
-        """
-        TODO: Should be done via BGP - this is temporary
-        Configure static route on dut, however this configuration eventually will be done via BGP
-        """
-        dut_ports = self.cli_object.performance.get_dut_ports()
-        mac_range = generate_mac_range("00:11:22:33:44:55", count=len(dut_ports))
-        fdb_discard_conf = []
-        cmd_list = []
-        for idx, port in enumerate(dut_ports):
-            port_ipv6_address = self.dut_interfaces_ipv6_configuration_dict[port].replace("aaaa", "bbbb")
-            port_neighbor_mac = mac_range[idx]
-            vlan = self.vlan_interface_configuration_dict[port]
-            cmd_list.append(f"sudo ip -6 route add {port_ipv6_address}/48 dev {port}")
-            cmd_list.append(f"sudo ip -6 neigh add {port_ipv6_address} lladdr {port_neighbor_mac} dev {port}")
-            fdb_discard_conf.append([self.cli_object.performance.get_hex_int_sdk_port(port), port_neighbor_mac, vlan])
-        self.engine.run_cmd_set(cmd_list)
-        self.configure_fdb_discard(fdb_discard_conf)
-
-    def configure_fdb_discard(self, fdb_discard_conf):
-        """
-        TODO: should be removed with correct ACL - this is temporary
-
-        All egress traffic going into the tg should be dropped, this should be done by ACL
-        However currently this is being done by adding correct FDB discard entries via sdk.
-        """
-        conf_file = "fdb_discard_conf.json"
-        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, conf_file)
-        with open(full_path, 'w') as f:
-            json.dump(fdb_discard_conf, f)
-        for alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-            copy_files_to_syncd(self.engines[alias], [conf_file], PerfConsts.CONFIG_FILES_DIR)
-        for alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-            tg_cli = self.cli_objects[alias]
-            tg_cli.performance.fdb_discard_creation()
 
     def get_egress_port_group_df(self, port_number, get_ports_from_start=False):
         port_group_df = []

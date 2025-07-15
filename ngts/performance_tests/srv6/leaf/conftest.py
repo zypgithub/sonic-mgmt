@@ -2,7 +2,7 @@ import allure
 import pytest
 from ngts.constants.constants import SonicConst
 from ngts.constants.performance_constants import PerfConsts, MRCConsts
-from ngts.helpers.performance.performance_setup_helpers import apply_test_configuration
+from ngts.helpers.performance.performance_setup_helpers import apply_test_configuration, restore_basic_configuration, save_base_configuration
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_tg_bisection_traffic_params
 
 
@@ -29,6 +29,8 @@ def conf_args(chip_type, players):
         "is_ipv6": True,
         "packet_size": 4096,
         "scenario": "srv6",
+        "split_left": 4,
+        "split_right": 4,
         "speed": SonicConst.HWSKU_DOWNSTREAM_PORTS_SPEED[sku],
         "hwsku": sku,
         "dut_mac": players['dut']['cli'].performance.mac,
@@ -41,9 +43,17 @@ def conf_args(chip_type, players):
 
 @pytest.fixture(scope='class', autouse=True)
 def basic_setup_configuration(players, conf_args):
-    with allure.step("Apply Test configuration on all Players"):
-        apply_test_configuration(players, scenario=conf_args["scenario"], conf_args=conf_args)
-    yield
+    try:
+        with allure.step('Save Players initial Configuration'):
+            save_base_configuration(players)
+        with allure.step("Apply Test configuration on all Players"):
+            apply_test_configuration(players, scenario=conf_args["scenario"], conf_args=conf_args)
+        yield
+    except Exception as e:
+        raise e
+    finally:
+        with allure.step('Restore Base Configuration on all Players'):
+            restore_basic_configuration(players)
 
 
 @pytest.fixture(scope='function', autouse=False)

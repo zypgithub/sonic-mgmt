@@ -814,3 +814,13 @@ class SonicInterfaceCli(InterfaceCliCommon):
         show_queue_counters_output = self.show_queue_counters(interface)
         return generic_sonic_output_parser(show_queue_counters_output, headers_ofset=2, len_ofset=3,
                                            data_ofset_from_start=4, data_ofset_from_end=None, column_ofset=2, output_key='TxQ')
+
+    def get_all_interfaces_mac_addresses(self, verify_execution=False):
+        """
+        Get all interfaces mac addresses
+        :param verify_execution: verify execution
+        :return: ETHERNET0:00:11:22:33:44:55
+        ETHERNET1:00:11:22:33:44:56
+        """
+        all_interfaces_mac_addresses = self.engine.run_cmd("sudo ip -o link show | awk '/link\\/ether/ {print $2 " " $17}'", validate=verify_execution)
+        return {line.split(":")[0]: line.split(":")[1].strip() for line in all_interfaces_mac_addresses.strip().splitlines() if line}

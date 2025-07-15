@@ -1,0 +1,168 @@
+{% set port_list = filter_ports(["dut"]) %}
+{% set total_ports = parameter_dict.total_ports %}
+{% set split_left = parameter_dict.split_left %}
+{% set address_list = generate_ip_address_list(address_start_v6 = "fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_left) %}
+{% set mloop_ports = down_ports() %}
+{% set speed = parameter_dict.speed | int %}
+- header:
+    model: sn5600
+    nvue-api-version: nvue_v1
+    rev-id: 1.0
+    version: Cumulus Linux 5.14.0
+- set:
+    acl:
+      acl-drop-arp:
+        rule:
+          '1':
+            action:
+              deny: {}
+            match:
+              mac:
+                protocol: arp
+          '2':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 1
+              mac:
+                protocol: ipv4
+          '3':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 58
+              mac:
+                protocol: ipv6
+          '4':
+            action:
+              permit: {}
+        type: mac
+    bridge:
+      domain:
+        br_default:
+          stp:
+            state:
+              down: {}
+          vlan:
+            200-800: {}
+    interface:
+      eth0:
+        ip:
+          address:
+            dhcp: {}
+          vrf: mgmt
+        type: eth
+    {% if split_left!=1 %}
+    {% for port in port_list['dut']  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_left }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% if split_left!=1 %}
+    {% for port in mloop_ports  %}
+      {{ port }}:
+        link:
+          breakout:
+            {{ split_left }}x: {}
+        type: swp
+    {% endfor %}
+    {% endif %}
+    {% set counter = namespace(value=0) %}
+    {% for port in port_list['dut'] %}
+    {% for split in range(0, split_left | int ) %}
+      {{ port }}{% if split_left != 1 %}s{{ split }}{% endif %}:
+      {% if split_left == 1 %}
+        link:
+          breakout:
+            1x: {}
+          state:
+            up: {}
+        {% endif %}
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: off
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% set counter = namespace(value=0) %}
+    {% for port in mloop_ports %}
+    {% for split in range(0, split_left | int ) %}
+      {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
+      {% if split_left == 1 %}
+        link:
+          breakout:
+            1x: {}
+          state:
+            up: {}
+        {% endif %}
+        acl:
+          acl-drop-arp:
+            inbound: {}
+        bridge:
+          domain:
+            br_default:
+              access: {{ counter.value + 200 }}
+              {% set counter.value = counter.value + 1 %}
+              learning: off
+        type: swp
+    {% endfor %}
+    {% endfor %}
+    {% for vlan in range(200, 200 + address_list|length ) %}
+      vlan{{ vlan }}:
+        base-interface: br_default
+        ip:
+          address:
+            {{ address_list[loop.index0] }}/48: {}
+        type: svi
+        vlan: {{ vlan }}
+    {% endfor %}
+    service:
+      ntp:
+        mgmt:
+          server:
+            0.cumulusnetworks.pool.ntp.org: {}
+            1.cumulusnetworks.pool.ntp.org: {}
+            2.cumulusnetworks.pool.ntp.org: {}
+            3.cumulusnetworks.pool.ntp.org: {}
+    system:
+      aaa:
+        user:
+          cumulus:
+            full-name: cumulus,,,
+            hashed-password: $y$j9T$8zsfwM2wUFOqZ6Rf3R52N1$arVIQV7VMODDweBK.amymemQTvZmugDDW6rnEF.fHS3
+            role: system-admin
+      api:
+        state: enabled
+      config:
+        auto-save:
+          state: enabled
+      control-plane:
+        acl:
+          acl-default-dos:
+            inbound: {}
+          acl-default-whitelist:
+            inbound: {}
+      hostname: left-tg
+      reboot:
+        mode: cold
+      ssh-server:
+        max-sessions-per-connection: 30
+        max-unauthenticated:
+          throttle-start: 30
+        permit-root-login: enabled
+      wjh:
+        channel:
+          forwarding:
+            trigger:
+              l2: {}
+              l3: {}
+              tunnel: {}
+        enable: on

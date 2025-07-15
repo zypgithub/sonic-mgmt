@@ -22,6 +22,8 @@ def generate_ip_address_list(address_start_v4="172.168.1.1", address_start_v6="1
         "v4": [],
         "v6": []
     }
+    if isinstance(step_v6, str):
+        step_v6 = int(step_v6, 16)
 
     if mode in ["v4", "dual"]:
         start_address_v4 = ipaddress.IPv4Address(address_start_v4)
@@ -59,6 +61,33 @@ def generate_ip_address_dict(address_start, step, mode, list_of_ports):
         address_list = generate_ip_address_list(address_start_v6=address_start, step_v6=step, number_of_address=len(list_of_ports), mode="v6")
 
     return dict(zip(list_of_ports, address_list))
+
+
+def address_calculator(address, operation="add", step=None, operand: str = None, mode="v6"):
+    if mode == "v4":
+        address = ipaddress.IPv4Address(address)
+        step = int(step)
+        if operation == "add":
+            return str(ipaddress.IPv4Address(address) + (step * operand))
+        elif operation == "sub":
+            return str(ipaddress.IPv4Address(address) - (step * operand))
+        elif operation == "mul":
+            return str(ipaddress.IPv4Address(address) * (step * operand))
+        elif operation == "div":
+            return str(ipaddress.IPv4Address(address) / (step * operand))
+    elif mode == "v6":
+        address = ipaddress.IPv6Address(address)
+        step = int(step, 16)
+        if operation == "add":
+            return str(ipaddress.IPv6Address(address) + (step * operand))
+        elif operation == "sub":
+            return str(ipaddress.IPv6Address(address) - (step * operand))
+        elif operation == "mul":
+            return str(ipaddress.IPv6Address(address) * (step * operand))
+        elif operation == "div":
+            return str(ipaddress.IPv6Address(address) / (step * operand))
+    else:
+        raise ValueError(f"Invalid mode: {mode}")
 
 
 def create_empty_json_traffic_file(json_path):

@@ -5,15 +5,15 @@ import pprint
 import tempfile
 import yaml
 import re
-from json.decoder import JSONDecodeError
+from retry import retry
 
-from infra.tools.exceptions.real_issue import RealIssue
+from infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts, ValidationConsts
 from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
-from ngts.helpers.performance.traffic_helpers import generate_ip_address_list
+from ngts.helpers.performance.traffic_helpers import generate_ip_address_list, is_ipv6, address_calculator
 from time import sleep
 import re
 
@@ -33,17 +33,34 @@ class NvuePerformanceCli(PerformanceCommon):
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
         self.port_groups = self.get_right_left_ports_dict()
+        self.mac = self.cli_obj.general.get_dut_mac_address()
+        self.dut_neighbor_dict = {}
+        self.ports = []
+        self.connected_ports = []
+        self.unconnected_ports = []
+        self.ports_mapping = {}
+        self.mloops = []
+        # self.set_class_vars()    # only for debug where we don't want to apply the config again
+
+    def set_class_vars(self):
+        self.ports = self.get_player_ports()
+        self.connected_ports = self.ports["connected_ports"]
+        self.unconnected_ports = self.ports["unconnected_ports"]
+        self.get_os_ports_name_mapping()
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
         src_file = self.get_configuration_file(scenario, conf_args, template_suite)
         logging.info(f"Applying configuration file on {self.dut_alias}")
         self.engine.copy_file(source_file=src_file, file_system=dst_dir,
                               dest_file="tmp.yaml", overwrite_file=True, verify_file=False)
-        logging.info(f"Configuration file was copied to {self.dut_alias}")
         full_path = os.path.join(dst_dir, "tmp.yaml")
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
+        self.ports = self.get_player_ports()
+        self.connected_ports = self.ports["connected_ports"]
+        self.unconnected_ports = self.ports["unconnected_ports"]
+        self.get_os_ports_name_mapping()
 
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
         logging.info(f"Saving the basic configuration on {self.dut_alias}")
@@ -112,9 +129,12 @@ class NvuePerformanceCli(PerformanceCommon):
         Returns:
         {'connected_ports': [65537, 65539, ...], 'unconnected_ports': [65659, 65661, ...]}
         """
+        self.logrotate("rsyslog")
         logging.info("Getting player connected and unconnected ports")
+        if self.ports:
+            return self.ports
         get_player_ports_cmd = f"sudo {Cl_Consts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_GET_PORTS}"
-        self.execute_cmd(get_player_ports_cmd)
+        self.retry_get_ports(get_player_ports_cmd)
         get_ports_output = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", f"{self.dut_alias}_ports.json")
         self.engine.copy_file(source_file="tg_ports.json", file_system=dst_dut_dir, dest_file=get_ports_output,
                               overwrite_file=True, verify_file=False, direction='get')
@@ -122,9 +142,21 @@ class NvuePerformanceCli(PerformanceCommon):
             player_ports = json.load(f)
         return player_ports
 
+    @retry(exceptions=Exception, tries=3, delay=1)
+    def retry_get_ports(self, get_player_ports_cmd):
+        self.execute_cmd(get_player_ports_cmd)
+        logging.info("Successfully got player ports")
+
     def get_tg_unconnected_ports(self):
         player_ports = self.get_player_ports()
         return player_ports["unconnected_ports"]
+
+    def get_mloops_tuples_list(self):
+        if self.mloops:
+            return self.mloops
+        else:
+            self.check_mloops_up()
+            return self.mloops
 
     def get_dut_ports(self, sdk_ports=False):
         mgmt_port = "eth0"
@@ -158,6 +190,7 @@ class NvuePerformanceCli(PerformanceCommon):
         dut_ports = self.get_dut_ports()
         sdk_ports = self.get_sdk_ports(dut_ports)
         for port, sdk_port in zip(dut_ports, sdk_ports):
+            self.ports_mapping[port] = sdk_port
             os_ports_name_mapping.append({ValidationConsts.PORT: sdk_port,
                                           ValidationConsts.OS_PORT_NAME: port})
         return os_ports_name_mapping
@@ -172,34 +205,47 @@ class NvuePerformanceCli(PerformanceCommon):
         self.execute_cmd(f"sudo logrotate --force /etc/logrotate.d/{daemon}")
 
     def get_traffic_parameters(self, scenario, conf_args={}):
-        tg_regex = r"(left|right)_tg"
-        tg_alias = re.search(tg_regex, self.dut_alias).group(1)
-        is_ipv6 = conf_args.get("is_ipv6", False)
-        ip_key = "IPV6" if is_ipv6 else "IP"
-        ip_dict = {
-            "IP": {
-                "left_tg": {"src": "4.4.4.4", "dst": "130.130.130.1"},
-                "right_tg": {"src": "4.4.4.4", "dst": "110.110.110.1"}
-            },
-            "IPV6": {
-                "left_tg": {"src": "4::4", "dst": "130::1"},
-                "right_tg": {"src": "4::4", "dst": "110::1"}
+        if scenario == "srv6":
+            traffic_parameters = {
+                "ports": self.get_tg_unconnected_ports(),
+                "MAC": {"src": self.mac,
+                        "dst": conf_args["dut_mac"]},
+                "IP": {},
+                "IPV6": {},
+                PerfConsts.IP_PROTOCOL_UDP: {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT},
+                PerfConsts.IP_PROTOCOL_TCP: {"sport": PerfConsts.TCP_SOURCE_PORT, "dport": PerfConsts.TCP_DOURCE_PORT},
+                "packet_size": conf_args["packet_size"],
+                "is_ipv6": conf_args["is_ipv6"],
             }
-        }
-        self.logrotate("rsyslog")
-        traffic_parameters = {}
-        if conf_args["split_left"] == 1:
-            dst = self.topology_obj[0]['dut']['cli'].interface.get_interface_mac_address("swp1", verify_execution=True)
         else:
-            dst = self.topology_obj[0]['dut']['cli'].interface.get_interface_mac_address("swp1s0", verify_execution=True)
-        traffic_parameters["MAC"] = conf_args.get("MAC", {"src": "00:11:22:33:44:55", "dst": dst})
-        traffic_parameters["IP"] = conf_args.get("IP", ip_dict[ip_key][self.dut_alias])
-        traffic_parameters["UDP"] = conf_args.get("UDP", {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT})
-        traffic_parameters["AR"] = conf_args.get("AR", PerfConsts.ADAPTIVE_ROUTING_ENABLED)
-        traffic_parameters["ports"] = self.get_tg_unconnected_ports()
-        traffic_parameters["packet_size"] = conf_args["packet_size"]
-        traffic_parameters["num_packets"] = conf_args[f"{tg_alias}_num_packets"]
-        traffic_parameters["is_ipv6"] = is_ipv6
+            tg_regex = r"(left|right)_tg"
+            tg_alias = re.search(tg_regex, self.dut_alias).group(1)
+            is_ipv6 = conf_args.get("is_ipv6", False)
+            ip_key = "IPV6" if is_ipv6 else "IP"
+            ip_dict = {
+                "IP": {
+                    "left_tg": {"src": "4.4.4.4", "dst": "130.130.130.1"},
+                    "right_tg": {"src": "4.4.4.4", "dst": "110.110.110.1"}
+                },
+                "IPV6": {
+                    "left_tg": {"src": "4::4", "dst": "130::1"},
+                    "right_tg": {"src": "4::4", "dst": "110::1"}
+                }
+            }
+            self.logrotate("rsyslog")
+            traffic_parameters = {}
+            if conf_args["split_left"] == 1:
+                dst = self.topology_obj[0]['dut']['cli'].interface.get_interface_mac_address("swp1", verify_execution=True)
+            else:
+                dst = self.topology_obj[0]['dut']['cli'].interface.get_interface_mac_address("swp1s0", verify_execution=True)
+            traffic_parameters["MAC"] = conf_args.get("MAC", {"src": "00:11:22:33:44:55", "dst": dst})
+            traffic_parameters["IP"] = conf_args.get("IP", ip_dict[ip_key][self.dut_alias])
+            traffic_parameters["UDP"] = conf_args.get("UDP", {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT})
+            traffic_parameters["AR"] = conf_args.get("AR", PerfConsts.ADAPTIVE_ROUTING_ENABLED)
+            traffic_parameters["ports"] = self.get_tg_unconnected_ports()
+            traffic_parameters["packet_size"] = conf_args["packet_size"]
+            traffic_parameters["num_packets"] = conf_args[f"{tg_alias}_num_packets"]
+            traffic_parameters["is_ipv6"] = is_ipv6
         return traffic_parameters
 
     def set_ports(self, port_list: list, port_state):
@@ -207,6 +253,8 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def get_sdk_ports(self, ports_list: list):
         ports_string = " ".join(ports_list)
+        if self.ports_mapping:
+            return [self.ports_mapping[port] for port in ports_list]
         self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
                               dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
                               file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
@@ -215,12 +263,23 @@ class NvuePerformanceCli(PerformanceCommon):
         sdk_ports = [hex(int(port)) for port in sdk_ports]
         return sdk_ports
 
+    def get_hex_int_sdk_ports(self, ports_list: list):
+        list_of_sdk_ports = []
+        if not self.ports_mapping:
+            self.get_os_ports_name_mapping()
+        for port in ports_list:
+            list_of_sdk_ports.append((int(self.ports_mapping[port], PerfConsts.HEX_BASE)))
+        return list_of_sdk_ports
+
     def get_sdk_port(self, port: str):
-        self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
-                              dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
-                              file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
-        sdk_port = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --port {port}  | egrep \"^[0-9]\"')
-        return hex(int(sdk_port))
+        try:
+            return self.ports_mapping[port]
+        except KeyError:
+            self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
+                                  dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
+                                  file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
+            sdk_port = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --port {port}  | egrep \"^[0-9]\"')
+            return hex(int(sdk_port))
 
     @staticmethod
     def get_controllers_info_dicts_list(sensors_output):
@@ -290,7 +349,8 @@ class NvuePerformanceCli(PerformanceCommon):
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,
                      "generate_ip_address_list": generate_ip_address_list,
                      "filter_ports": self.cli_obj.interface.filter_lldp_neighbors,
-                     "down_ports": self.cli_obj.interface.get_down_ports
+                     "down_ports": self.cli_obj.interface.get_down_ports,
+                     "address_calculator": address_calculator
                      }
         asic = self.cli_obj.general.get_asic_model(self.engine)
         number_of_bonus_ports = len(Cl_Consts.BONUS_PORTS[asic])
@@ -308,7 +368,7 @@ class NvuePerformanceCli(PerformanceCommon):
             "split_right": conf_args['split_right'],
             "total_ports": total_dut_ports,
             "speed": conf_args.get('speed', "400000000"),
-            "two_sided_ar": conf_args['two_sided_ar']
+            "two_sided_ar": conf_args.get('two_sided_ar', False)
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
         # TODO: Add port groups to SDK level, so validator will be able to overview them (SONiC as well)
@@ -446,3 +506,77 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def restart_daemon(self, daemon):
         self.execute_cmd(f"sudo systemctl restart {daemon}")
+
+    def get_dut_interfaces_ipv6_configuration(self):
+        output = self.execute_cmd("nv sh interface -o json")
+        interface_output = json.loads(output)
+        dut_interfaces_ipv6_configuration_dict = {}
+        for interface in interface_output:
+            if "swp" not in interface:  # skip non-switch ports
+                continue
+            else:
+                ip_addresses = interface_output[interface]["ip"]['address'].keys()
+                for ip in ip_addresses:
+                    if is_ipv6(ip) and ("fe80" not in ip):
+                        ipv6_address = ip.split("/")[0]
+                        dut_interfaces_ipv6_configuration_dict[interface] = ipv6_address
+        return dut_interfaces_ipv6_configuration_dict
+
+    def get_tg_interfaces_vlan_configuration(self):
+        output = self.execute_cmd("nv sh bridge domain br_default port vlan -o json")
+        port_vlan_info = json.loads(output)
+        vlan_interface_configuration_dict = {}
+        for port, vlan_info_dict in port_vlan_info.items():
+            vlan_interface_configuration_dict[port] = [* vlan_info_dict["vlan"].keys()][0]
+        return vlan_interface_configuration_dict
+
+    def configure_mac_neighbor(self, port, port_ipv6_address, port_neighbor_mac, vlan):
+        """
+        Configure the mac neighbor on the dut
+
+        cmd_list = []
+        fdb_discard_conf = []
+        cmd_list.append(f"nv set vrf default router static {port_ipv6_address}/120 via {port}")
+        cmd_list.append(f"nv set interface {port} neighbor ipv6 {port_ipv6_address} lladdr {port_neighbor_mac}")
+        self.engine.run_cmd_set(cmd_list)
+        """
+        pass
+
+    def add_ports_connectivity_to_dut(self, conf_args, selected_connected_ports=None):
+        ports_file = "ports.json"
+        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, ports_file)
+        connected_ports = selected_connected_ports if selected_connected_ports else self.connected_ports
+        ports_connectivity_dict = {
+            "unconnected_ports": self.get_hex_int_sdk_ports(self.unconnected_ports),
+            "connected_ports": self.get_hex_int_sdk_ports(connected_ports),
+            "speed": conf_args["speed"]}
+        with open(full_path, 'w') as f:
+            json.dump(ports_connectivity_dict, f)
+        self.engine.copy_file(source_file=full_path, file_system="/tmp",
+                              dest_file=ports_file, overwrite_file=True, verify_file=False)
+
+    @retry(exceptions=TestIssue, tries=10, delay=1)
+    def check_mloops_up(self):
+        """
+        This method is used to check if the mloops are up on the traffic generator
+        and if not, it will wait for them to be up.
+        """
+        if not self.dut_neighbor_dict:
+            self.dut_neighbor_dict = self.cli_obj.interface.filter_lldp_neighbors(neighbor_list=[PerfConsts.DUT_ALIAS],
+                                                                                  include_neighbor_ports=True)[PerfConsts.DUT_ALIAS]
+        mloops_tuples_list = []
+        if len(self.connected_ports) == len(self.unconnected_ports):
+            dut_lldp_name = self.dut_alias.replace("_", "-")
+            ports_dict = self.cli_obj.interface.filter_lldp_neighbors(neighbor_list=[dut_lldp_name, PerfConsts.DUT_ALIAS])
+            down_ports_list = ports_dict[dut_lldp_name]
+            up_ports_list = ports_dict[PerfConsts.DUT_ALIAS]
+        if len(down_ports_list) != len(self.unconnected_ports):
+            raise TestIssue(f"Not all Mloops are up yet on {self.dut_alias}")
+        for up_port, down_port in zip(up_ports_list, down_ports_list):
+            mloops_tuples_list.append((up_port, down_port))
+        self.mloops = mloops_tuples_list
+        logging.info(f"Mloops for {self.dut_alias} are up")
+
+    def update_dst_mac_address(self, src_port, dut_mac_addresses, traffic_parameters):
+        dut_port = self.dut_neighbor_dict[src_port]
+        traffic_parameters["MAC"]["dst"] = dut_mac_addresses[dut_port]

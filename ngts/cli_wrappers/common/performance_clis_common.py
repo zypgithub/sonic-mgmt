@@ -156,7 +156,14 @@ class PerformanceCommon:
         '''
         pass
 
-    def execute_cmd(self, cmd):
+    def check_mloops_up(self):
+        """
+        This method is used to check if the mloops are up on the traffic generator
+        and if not, it will wait for them to be up
+        """
+        pass
+
+    def execute_cmd(self, cmd, print_output=False):
         """
         All functions on the inheritance classes (DVS, SONiC, Cumulus) will be executed
         by a thread running on 'left_tg', 'dut' and 'right_tg' switch.
@@ -167,8 +174,8 @@ class PerformanceCommon:
         :return: None or raise error
         """
         try:
-            output = self.engine.run_cmd(cmd, validate=True)
-            logging.info(f"command output: {output}")
+            output = self.engine.run_cmd(cmd, print_output=print_output, validate=True)
+            logging.debug(f"command output: {output}")
             return output
         except TestIssue as e:
             error_msg = f"Command: {cmd} failed on {self.dut_alias} with error:\n{e}\n"
@@ -180,6 +187,7 @@ class PerformanceCommon:
         self.logrotate("rsyslog")
         configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
+        self.check_mloops_up()
 
     def run_traffic(self, scenario, traffic_jsons):
         self.cli_obj.interface.clear_counters()
@@ -271,5 +279,19 @@ class PerformanceCommon:
     def dynamic_configuration_helper(self, scenario, performance_parameters):
         """
         This method is used to apply the dynamic configuration on the dut
+        """
+        pass
+
+    def update_dst_mac_address(self, src_port, dut_mac_addresses, traffic_parameters):
+        """
+        This method is used to update the dst mac address on the traffic parameters
+        Implemented for Nvue only
+        """
+        pass
+
+    def configure_interfaces_mac_neighbor(self):
+        """
+        This method is used to configure the mac neighbor on the dut
+        Implemented for SONiC only
         """
         pass
