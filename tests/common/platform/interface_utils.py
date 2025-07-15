@@ -392,15 +392,3 @@ def get_physical_index_to_interfaces_map(duthost, only_ports_index_up=False):
         physical_index_to_interfaces_map.setdefault(physical_index, []).append(interface)
     return physical_index_to_interfaces_map
 
-
-def get_first_port_in_split(duthost):
-    interfaces_info = get_interfaces_info(duthost)
-    no_split_indication = '0'
-    split_first_lane = '1'
-    first_port_in_split = []
-    for port in interfaces_info.keys():
-        index, subport = get_interface_index_and_subport(duthost, port)
-        is_first_port_in_split = (subport == no_split_indication) or (subport == split_first_lane)
-        if is_first_port_in_split:
-            first_port_in_split.append(port)
-    return first_port_in_split
