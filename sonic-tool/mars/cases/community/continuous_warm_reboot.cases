@@ -29,7 +29,7 @@
         <tout> 10800 </tout>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v  --reboot_type=warm --continuous_reboot_count=5 --continuous_reboot_delay=600\'" --test-scripts platform_tests/test_cont_warm_reboot.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v  --reboot_type=warm --continuous_reboot_count=5 --packet_capture_location physical_port --continuous_reboot_delay=600\'" --test-scripts platform_tests/test_cont_warm_reboot.py </static_args>
              </params>
         </cmd>
 

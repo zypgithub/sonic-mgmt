@@ -1900,22 +1900,8 @@ class ReloadTest(BaseTest):
         sniffer = threading.Thread(target=self.tcpdump_sniff, kwargs={
                                    'wait': wait, 'sniff_filter': sniff_filter})
         sniffer.start()
-        # Let the scapy sniff initialize completely. Need to wait more time when capturing on the vmhost.
-        base_tcpdump_delay = 2
-        time.sleep(base_tcpdump_delay)
-        if self.test_params['packet_capture_location'] == PHYSICAL_PORT:
-            elapsed_time = 0
-            while elapsed_time < self.start_sender_delay - base_tcpdump_delay:
-                elapsed_time += 1
-                time.sleep(1)
-                stdout_lines, stderr_lines, _ = self.vmhost_connection.execCommand(f"ls {self.remote_capture_pcap}")
-                if (self.remote_capture_pcap + '\n') in stdout_lines and len(stderr_lines) == 0:
-                    self.log(f"The pcap file on the vmhost is created: {self.remote_capture_pcap}")
-                    break
-            else:
-                self.log(f"Error: the pcap file on the vmhost is not created in {self.start_sender_delay}s.")
-                raise Exception("Tcpdump on the vmhost failed to start, test is aborted.")
-
+        # Let the scapy sniff initialize completely.
+        time.sleep(2)
         sniffer.join()
         self.log("Sniffer has been running for %s" %
                  str(datetime.datetime.now() - sniffer_start))
@@ -1952,6 +1938,19 @@ class ReloadTest(BaseTest):
         cmd = f"sudo nohup tcpdump -i {interface} {tcpdump_filter} -w {pcap_path}"
         self.vmhost_connection.execCommand(cmd + " > /dev/null 2>&1 &")
         self.log(f'Tcpdump sniffer starting on vmhost interface: {interface}')
+        base_tcpdump_delay = 2
+        if self.test_params['packet_capture_location'] == PHYSICAL_PORT:
+            elapsed_time = 0
+            while elapsed_time < self.start_sender_delay - base_tcpdump_delay:
+                elapsed_time += 1
+                time.sleep(1)
+                stdout_lines, stderr_lines, _ = self.vmhost_connection.execCommand(f"ls {self.remote_capture_pcap}")
+                if (self.remote_capture_pcap + '\n') in stdout_lines and len(stderr_lines) == 0:
+                    self.log(f"The pcap file on the vmhost is created: {self.remote_capture_pcap}")
+                    break
+            else:
+                self.log(f"Error: the pcap file on the vmhost is not created in {self.start_sender_delay}s.")
+                raise Exception("Tcpdump on the vmhost failed to start, test is aborted.")
 
         # Unblock waiter for the send_in_background.
         self.sniffer_started.set()
