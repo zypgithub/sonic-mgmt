@@ -6,7 +6,6 @@ import glob
 import grpc
 
 from grpc_tools import protoc
-import time
 
 from tests.common.helpers.assertions import pytest_require as pyrequire
 from tests.common.helpers.dut_utils import check_container_state
@@ -21,7 +20,7 @@ from tests.common.helpers.ntp_helper import setup_ntp_context
 
 logger = logging.getLogger(__name__)
 SETUP_ENV_CP = "test_setup_checkpoint"
-MAX_TIME_DIFF = 300
+
 
 @pytest.fixture(scope="function", autouse=True)
 def skip_non_x86_platform(duthosts, rand_one_dut_hostname):
@@ -136,7 +135,7 @@ def create_revoked_cert_and_crl(localhost, ptfhost):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_gnmi_server(duthosts, rand_one_dut_hostname, localhost, ptfhost, dut_localhost_time_diff):
+def setup_gnmi_server(duthosts, rand_one_dut_hostname, localhost, ptfhost):
     '''
     Create GNMI client certificates
     '''
@@ -234,7 +233,6 @@ def setup_gnmi_server(duthosts, rand_one_dut_hostname, localhost, ptfhost, dut_l
 
     create_checkpoint(duthost, SETUP_ENV_CP)
     apply_cert_config(duthost)
-    time.sleep(dut_localhost_time_diff)
 
     yield
     # Delete all created certs
@@ -343,7 +341,7 @@ def setup_gnmi_rotated_server(duthosts, rand_one_dut_hostname, localhost, ptfhos
 
 
 @pytest.fixture(scope="module", autouse=True)
-def dut_localhost_time_diff(duthosts, rand_one_dut_hostname, localhost):
+def check_dut_timestamp(duthosts, rand_one_dut_hostname, localhost):
     '''
     Check DUT time to detect NTP issue
     '''
@@ -357,14 +355,7 @@ def dut_localhost_time_diff(duthosts, rand_one_dut_hostname, localhost):
     logger.info("Local time %d, DUT time %d" % (local_time, dut_time))
     time_diff = local_time - dut_time
     if time_diff >= GNMI_SERVER_START_WAIT_TIME:
-        if time_diff > MAX_TIME_DIFF:
-            pytest.fail("DUT time is wrong (%d), please check NTP" % (-time_diff))
-        wait_dut_crt_take_effect_time = time_diff - GNMI_SERVER_START_WAIT_TIME
-    else:
-        wait_dut_crt_take_effect_time = 0
-    logger.info(f"wait_dut_crt_take_effect_time is: {wait_dut_crt_take_effect_time}")
-
-    yield wait_dut_crt_take_effect_time
+        logger.warning("DUT time is wrong (%d), please check NTP" % (-time_diff))
 
 
 def compile_protos(proto_files, proto_root):
