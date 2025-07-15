@@ -1,6 +1,9 @@
 import logging
 import random
+import json
+import re
 import pytest
+from datetime import datetime
 
 logger = logging.getLogger()
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -14,6 +17,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.version
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_version(test_api, engines, devices, nv_command):
@@ -72,6 +76,7 @@ def _verify_system_show_version_sanity(devices, nv_command):
 
 
 @pytest.mark.version
+@pytest.mark.cumulus
 @pytest.mark.system
 def test_show_system_version_image(test_api, engines, devices, nv_command):
     """
@@ -84,6 +89,7 @@ def test_show_system_version_image(test_api, engines, devices, nv_command):
 
 
 @pytest.mark.version
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_version_packages(engines, test_api, output_format, nv_command):
@@ -103,6 +109,7 @@ def test_show_system_version_packages(engines, test_api, output_format, nv_comma
 
 
 @pytest.mark.version
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_version_packages_installed(engines, test_api, output_format, nv_command):
@@ -124,3 +131,81 @@ def test_show_system_version_packages_installed(engines, test_api, output_format
             nv_command.system.version.packages.installed.show(op_param=random_software, output_format=output_format),
             output_format=output_format).get_returned_value()
         ValidationTool.validate_set_equal(specific_output.keys(), SystemConsts.SW_FIELD_NAMES).verify_result()
+
+
+@pytest.mark.version
+@pytest.mark.system
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_system_info(test_api, engines, devices, nv_command):
+    """
+    Verify system information using 'nv show system' command
+
+    Test flow:
+    1. Execute 'nv show system' command
+    2. Verify system information including:
+       - Hostname
+       - Version
+       - Build information
+       - System state
+    3. Validate all system parameters are correct
+    """
+    TestToolkit.tested_api = test_api
+
+    with allure.step('Get system information from NVUE'):
+        system_out = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.show()).get_returned_value()
+        logger.info(f"NVUE system output: {json.dumps(system_out, indent=2)}")
+
+    with allure.step('Validate hostname consistency'):
+        nvue_hostname = system_out.get('hostname')
+        system_hostname = devices.dut.hostname
+        logger.info(f"NVUE hostname: {nvue_hostname}")
+        logger.info(f"System hostname: {system_hostname}")
+        assert nvue_hostname is not None, "Hostname is missing in NVUE system information"
+        assert nvue_hostname == system_hostname, f"Hostname mismatch - NVUE: {nvue_hostname}, System: {system_hostname}"
+
+    with allure.step('Get and parse /etc/image-release'):
+        image_release_out = devices.dut.run_cmd("cat /etc/image-release")
+        image_release_dict = {}
+        for line in image_release_out.splitlines():
+            if '=' in line:
+                key, value = line.split('=', 1)
+                image_release_dict[key] = value.strip('"')
+        logger.info(f"Parsed /etc/image-release: {json.dumps(image_release_dict, indent=2)}")
+
+    with allure.step('Get and parse /etc/lsb-release'):
+        lsb_release_out = devices.dut.run_cmd("cat /etc/lsb-release")
+        lsb_release_dict = {}
+        for line in lsb_release_out.splitlines():
+            if '=' in line:
+                key, value = line.split('=', 1)
+                lsb_release_dict[key] = value.strip('"')
+        logger.info(f"Parsed /etc/lsb-release: {json.dumps(lsb_release_dict, indent=2)}")
+
+    with allure.step('Validate system version information'):
+        # Get version information
+        version_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.version.show()).get_returned_value()
+        version_image_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.system.version.image.show()).get_returned_value()
+
+        # Validate product release consistency
+        nvue_release = version_output.get(SystemConsts.VERSION_PRODUCT_RELEASE)
+        image_release = image_release_dict.get('VERSION')
+        lsb_release = lsb_release_dict.get('DISTRIB_RELEASE')
+
+        assert nvue_release == image_release, f"Product release mismatch - NVUE: {nvue_release}, image-release: {image_release}"
+        assert nvue_release == lsb_release, f"Product release mismatch - NVUE: {nvue_release}, lsb-release: {lsb_release}"
+
+        # Validate build ID format and consistency
+        build_id = version_image_output.get(SystemConsts.VERSION_BUILD_ID)
+        assert build_id, "Build ID is missing in version information"
+        assert nvue_release in build_id, f"Product release {nvue_release} not found in build ID {build_id}"
+
+        # Validate build date format
+        build_date = version_image_output.get(SystemConsts.VERSION_BUILD_DATE)
+        assert build_date, "Build date is missing in version information"
+        try:
+            datetime.strptime(build_date, "%a %b %d %H:%M:%S %Z %Y")
+        except ValueError as e:
+            assert False, f"Invalid build date format: {build_date}. Expected format: 'Day Mon DD HH:MM:SS TZ YYYY'"
