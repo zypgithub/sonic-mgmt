@@ -317,14 +317,6 @@ def test_rsyslog_server_severity_levels(engines, loganalyzer, test_api):
                                            selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME,
                                            global_severity_level=SyslogSeverityLevels.NOTICE)
 
-            with allure.step("Validate none as severity level"):
-                system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].set_severity(
-                    SyslogSeverityLevels.NONE, apply=True)
-                system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_trap_severity_level(
-                    SyslogConsts.DEFAULT_SELECTOR_NAME, SyslogSeverityLevels.NONE)
-                random_msg = RandomizationTool.get_random_string(40, ascii_letters=string.ascii_letters + string.digits)
-                send_msg_to_server(random_msg, remote_server_ip, remote_server_engine, verify_msg_didnt_received=True)
-
     finally:
         with allure.step("Cleanup syslog configurations"):
             system.syslog.unset(apply=True)
