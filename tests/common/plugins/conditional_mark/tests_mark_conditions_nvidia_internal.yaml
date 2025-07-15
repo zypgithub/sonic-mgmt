@@ -1020,5 +1020,11 @@ tests/nightly/component_versions/test_component_versions.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4517284 and 'sn6600' in platform"
 
+tests/nightly/rocev2_acl_counter/test_rocev2_acl_counter.py:
+  skip:
+    reason: "RX-only mirror is not supported on sn6600 platform, need to adapt the testcase"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4537627 and 'sn6600' in platform"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
 
