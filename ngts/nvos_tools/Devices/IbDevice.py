@@ -8,7 +8,7 @@ from typing import List, Dict
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
-    ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts
+    ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -102,6 +102,10 @@ class IbSwitch(BaseSwitch):
         config_file_path = os.path.join(resources_dir, config_filename)
         logging.info(f'No exact GA config for global_build={global_build}, using closest: {config_filename}')
         return config_file_path, config_filename
+
+    def get_lldp_port_name_from_dump(self, lldp_dict):
+        """Return the port name from parsed LLDP dump; ib uses Port ID TLV."""
+        return lldp_dict[TcpDumpConsts.LLDP_PORT_ID]
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)

@@ -1,5 +1,6 @@
-import time
+import logging
 import re
+import time
 
 from retry import retry
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -40,9 +41,13 @@ class LLDPTool:
 
     @staticmethod
     @retry(AssertionError, 10, 5)
-    def verify_mgmt_ports_are_up(engine: PexpectSerialEngine):
+    def verify_mgmt_ports_are_up(engine: PexpectSerialEngine, device):
+        """Verify all mgmt ports reported by the device are up (ifconfig UP) via serial engine."""
         with allure.step("verify mgmt ports are up using ifconfig via serial engine"):
-            for mgmt_port in ['eth0', 'eth1']:
+            mgmt_ports = device.get_mgmt_ports()
+            if not mgmt_ports:
+                raise ValueError("Device has no mgmt ports")
+            for mgmt_port in mgmt_ports:
                 ifconfig_output = engine.run_cmd_and_get_output(f"sudo ifconfig {mgmt_port}")
                 ValidationTool.verify_expected_output(ifconfig_output, 'UP').verify_result()
 
@@ -54,7 +59,9 @@ class LLDPTool:
     @staticmethod
     def get_lldp_frames(engine: LinuxSshEngine, interface="eth0", interval=30):
         LLDPTool.start_dump_lldp_packets(engine, interface)
-        time.sleep(interval + 1)
+        wait_sec = interval + 1
+        logging.info("Waiting %s seconds to capture LLDP frames on %s", wait_sec, interface)
+        time.sleep(wait_sec)
         LLDPTool.finish_dump_lldp_packets(engine)
         with allure.step("Get lldp frames output"):
             output = str(engine.run_cmd(f'cat {LLDPTool.file_path}'))

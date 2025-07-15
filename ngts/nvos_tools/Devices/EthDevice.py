@@ -5,7 +5,7 @@ from typing import List
 
 from packaging.version import Version
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -47,6 +47,10 @@ class EthSwitch(BaseSwitch):
 
     def get_voltage_sensors(self, dut_engine=None):
         return self.voltage_sensors
+
+    def get_lldp_port_name_from_dump(self, lldp_dict):
+        """Return the port name from parsed LLDP dump; eth uses Port Description TLV."""
+        return lldp_dict[TcpDumpConsts.LLDP_PORT_DESCRIPTION]
 
     def get_default_nvue_config(self, dut_engine=None):
         default_conf = NvosConst.DEFAULT_CL_CONFIG

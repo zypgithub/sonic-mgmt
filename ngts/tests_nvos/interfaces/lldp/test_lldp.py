@@ -20,10 +20,23 @@ from ngts.tools.test_utils import allure_utils as allure
 
 INTERFACE_CLEANUP_DELAY = 30  # seconds - https://redmine.mellanox.com/issues/4544216
 
+# LLDP protocol and test value constants (interval * multiplier must be <= LLDP_MAX_TTL)
+LLDP_MAX_TTL = 65535
+LLDP_MAX_INTERVAL = 13107  # max interval such that interval * LLDP_MAX_MULTIPLIER <= LLDP_MAX_TTL
+LLDP_MAX_MULTIPLIER = 5
+LLDP_INVALID_INTERVAL = 32769  # above valid range for set
+LLDP_INVALID_MULTIPLIER = 8193  # above valid range for set
+LLDP_CUSTOM_INTERVAL = 5
+LLDP_DEFAULT_INTERVAL = 30
+CUSTOM_LLDP_HOSTNAME = "lldp-host"
+LLDP_STATE_CHANGE_POLL_TIMEOUT = 30
+LLDP_STATE_CHANGE_POLL_INTERVAL = 2
+
 
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 def test_lldp_enabled(engines, devices, random_api):
     """
     Verify lldp functionality is working by default.
@@ -40,6 +53,7 @@ def test_lldp_enabled(engines, devices, random_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 def test_lldp_show(engines, devices):
     """
     Verify lldp show is working as expected.
@@ -69,6 +83,7 @@ def test_lldp_show(engines, devices):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 def test_lldp_disabled(engines, devices, random_api):
     """
     Check that lldp is disabled correctly.
@@ -97,6 +112,7 @@ def test_lldp_disabled(engines, devices, random_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 def test_lldp_with_custom_interval(engines, devices, random_api):
     """
     Check that lldp frames have correct data in them.
@@ -112,11 +128,9 @@ def test_lldp_with_custom_interval(engines, devices, random_api):
 
     _verify_lldp_running(lldp, engine=engines.dut)
 
-    interval = 5
-
     try:
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        _set_lldp_state(lldp, SystemConsts.LLDP_INTERVAL, interval)
+        _set_lldp_state(lldp, SystemConsts.LLDP_INTERVAL, LLDP_CUSTOM_INTERVAL)
 
         _verify_cli_output_with_dump_output(engines.dut, devices.dut, lldp, system_output)
     finally:
@@ -126,6 +140,7 @@ def test_lldp_with_custom_interval(engines, devices, random_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_lldp_custom_hostname(engines, devices, test_api):
     """
@@ -139,7 +154,7 @@ def test_lldp_custom_hostname(engines, devices, test_api):
     system = System()
     _verify_lldp_running(system.lldp, engine=engines.dut)
 
-    custom_hostname = "lldp-host"
+    custom_hostname = CUSTOM_LLDP_HOSTNAME
     with allure.step("Get current system hostname"):
         system_dict = OutputParsingTool.parse_json_str_to_dictionary(
             system.show()).get_returned_value()
@@ -158,6 +173,7 @@ def test_lldp_custom_hostname(engines, devices, test_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_lldp_one_neighbor(engines, devices, test_api):
     """
@@ -190,6 +206,7 @@ def test_lldp_one_neighbor(engines, devices, test_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_lldp_incorrect_values(engines, devices, test_api):
     """
@@ -203,27 +220,26 @@ def test_lldp_incorrect_values(engines, devices, test_api):
     lldp = system.lldp
 
     _verify_lldp_running(lldp, engine=engines.dut)
-    wrong_interval = 32769
-    wrong_multiplier = 8193
 
-    with allure.step(f"Verify can't set interval to {wrong_interval}"):
-        lldp.set(SystemConsts.LLDP_INTERVAL, wrong_interval).verify_result(should_succeed=False)
-    with allure.step(f"Verify can't set hold-multiplier to {wrong_multiplier}"):
-        lldp.set(SystemConsts.LLDP_MULTIPLIER, wrong_multiplier).verify_result(should_succeed=False)
+    with allure.step(f"Verify can't set interval to {LLDP_INVALID_INTERVAL}"):
+        lldp.set(SystemConsts.LLDP_INTERVAL, LLDP_INVALID_INTERVAL, ask_for_confirmation=True).verify_result(should_succeed=False)
 
-    max_allowed_ttl = 65535
-    with allure.step(f"Generate random interval and multiplier, so ttl will exceed max allowed value of {max_allowed_ttl}"):
-        while True:
-            interval = random.randint(5, 32768)
-            multiplier = random.randint(1, 8192)
-            ttl = interval * multiplier
-            if ttl > max_allowed_ttl:
-                break
+    with allure.step(f"Verify can't set hold-multiplier to {LLDP_INVALID_MULTIPLIER}"):
+        lldp.set(SystemConsts.LLDP_MULTIPLIER, LLDP_INVALID_MULTIPLIER, ask_for_confirmation=True).verify_result(should_succeed=False)
 
-    with allure.step(f"Verify can't set {interval} * {multiplier} which exceeds TTL of {max_allowed_ttl}"):
-        lldp.set(SystemConsts.LLDP_INTERVAL, interval).verify_result()
-        lldp.set(SystemConsts.LLDP_MULTIPLIER, multiplier, apply=True).verify_result(should_succeed=False)
-        lldp.unset(apply=True).verify_result()
+    if TestToolkit.devices.dut.is_ib():
+        with allure.step(f"Generate random interval and multiplier, so ttl will exceed max allowed value of {LLDP_MAX_TTL}"):
+            while True:
+                interval = random.randint(5, 32768)
+                multiplier = random.randint(1, 8192)
+                ttl = interval * multiplier
+                if ttl > LLDP_MAX_TTL:
+                    break
+
+        with allure.step(f"Verify can't set {interval} * {multiplier} which exceeds TTL of {LLDP_MAX_TTL}"):
+            lldp.set(SystemConsts.LLDP_INTERVAL, interval, ask_for_confirmation=True).verify_result()
+            lldp.set(SystemConsts.LLDP_MULTIPLIER, multiplier, apply=True, ask_for_confirmation=True).verify_result(should_succeed=False)
+            lldp.unset(apply=True).verify_result()
 
 
 @pytest.mark.lldp
@@ -263,16 +279,14 @@ def test_lldp_max_values(engines, devices):
 
     finally:
         with allure.step("Return to default lldp values"):
-            lldp.unset(SystemConsts.LLDP_INTERVAL).verify_result()
-            lldp.unset(SystemConsts.LLDP_MULTIPLIER).verify_result()
-            lldp.unset(SystemConsts.STATE, apply=True).verify_result()
-            _verify_lldp_running(lldp, engine=engines.dut)
+            _restore_lldp_defaults(lldp, engine=engines.dut)
 
 
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
+@pytest.mark.cumulus
 def test_lldp_additional_ipv6(engines, devices, serial_engine):
     """
     Check that correct lldp frames sent all IpV6 addresses.
@@ -292,6 +306,7 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
         for i, interface_name in enumerate(mgmt_ports):
             mgmt_interface = Port(name=interface_name)
             with allure.independent_step(f"Testing {interface_name}"):
+                ip_address_full = None
                 try:
                     ip_address_full = IpTool.select_random_ipv6_address().verify_result()  # 40c9:7735:e23d:dd2a:ca43:c5e9:682e:decb/114
                     ip_address, prefix = ip_address_full.split("/")
@@ -304,20 +319,21 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                                                       ip_address=ip_address_full, is_ipv6=True)
 
                     with allure.step("Verify ipv6 address is in the lldp frame"):
-                        default_interval = 30
-                        output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name, interval=default_interval + 2)
+                        output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name,
+                                                          interval=LLDP_DEFAULT_INTERVAL + 2)
                         assert ip_address in output, f"The ipv6 address {ip_address} is not in lldp frame"
 
                 finally:
                     mgmt_interface.interface.ipv6.address.unset(apply=True, dut_engine=serial_engine,
                                                                 ask_for_confirmation=True).verify_result()
-                    if i < len(mgmt_ports) - 1:
-                        time.sleep(INTERFACE_CLEANUP_DELAY)
+                    if i < len(mgmt_ports) - 1 and ip_address_full is not None:
+                        _wait_until_ipv6_removed_from_interface(mgmt_interface, ip_address_full, serial_engine)
 
 
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
+@pytest.mark.cumulus
 def test_lldp_interface_flapping(engines, devices, serial_engine):
     """
     Check that correct lldp frames are sent after interface flapping
@@ -392,7 +408,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
                         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
                     with allure.step("Verify lldp frames do not contain hostname"):
-                        LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine)
+                        LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine, device=devices.dut)
                         output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
                         interface_link = OutputParsingTool.parse_json_str_to_dictionary(mgmt_interface.interface.link.show(dut_engine=serial_engine)).get_returned_value()
                         for ip_address in ip_addresses:
@@ -404,6 +420,52 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
                     check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
 
+@pytest.mark.lldp
+@pytest.mark.system
+@pytest.mark.interface
+@pytest.mark.cumulus_only
+def test_lldp_max_values_for_cumulus(engines, devices):
+    """
+    Verify lldp operates correctly with maximum allowed interval and multiplier, with full validation.
+
+    Test flow:
+    1. Verify lldp is running and config can be read.
+    2. Set interval to maximum allowed value (13107); interval * multiplier must be <= 65535.
+    3. Set multiplier to 5 and apply.
+    4. Verify configured values via lldp show (parsed output).
+    5. Verify lldp continues to send frames on all mgmt ports and neighbors are visible.
+    6. Restore default lldp values and verify lldp is still running.
+    """
+    system = System()
+    lldp = system.lldp
+
+    with allure.step("Verify lldp is running and get default configuration"):
+        _verify_lldp_running(lldp, engine=engines.dut)
+        lldp.parsed_show()  # ensure we can read config before changing it
+
+    try:
+        with allure.step(f"Set lldp interval to maximum value {LLDP_MAX_INTERVAL}"):
+            _set_lldp_state(lldp, SystemConsts.LLDP_INTERVAL, LLDP_MAX_INTERVAL, apply=False)
+
+        with allure.step(f"Set lldp hold-multiplier to {LLDP_MAX_MULTIPLIER} and apply"):
+            _set_lldp_state(lldp, SystemConsts.LLDP_MULTIPLIER, LLDP_MAX_MULTIPLIER)
+
+        with allure.step("Validate tx-interval and tx-hold-multiplier via nv show system lldp"):
+            cli_output = lldp.parsed_show()  # runs: nv show system lldp --output json
+            assert int(cli_output[SystemConsts.LLDP_INTERVAL]) == LLDP_MAX_INTERVAL, (
+                f"Expected tx-interval {LLDP_MAX_INTERVAL}, got {cli_output[SystemConsts.LLDP_INTERVAL]}"
+            )
+            assert int(cli_output[SystemConsts.LLDP_MULTIPLIER]) == LLDP_MAX_MULTIPLIER, (
+                f"Expected tx-hold-multiplier {LLDP_MAX_MULTIPLIER}, got {cli_output[SystemConsts.LLDP_MULTIPLIER]}"
+            )
+
+        with allure.step("Verify lldp is running and neighbors are present (no frame capture to avoid long wait)"):
+            _verify_lldp_running_and_neighbors_present(lldp=lldp, engine=engines.dut, device=devices.dut)
+
+    finally:
+        _restore_lldp_defaults(lldp, engine=engines.dut)
+
+
 def _verify_cli_output_with_dump_output(engine, device, lldp, system_output):
     cli_output = lldp.parsed_show()
     for interface_name in device.get_mgmt_ports():
@@ -411,20 +473,23 @@ def _verify_cli_output_with_dump_output(engine, device, lldp, system_output):
             lldp_dump = LLDPTool.get_lldp_frames(engine=engine, interface=interface_name)
             lldp_dict = LLDPTool.parse_lldp_dump(lldp_dump)
             ttl = int(cli_output[SystemConsts.LLDP_INTERVAL]) * int(cli_output[SystemConsts.LLDP_MULTIPLIER])
-            assert lldp_dict[
-                TcpDumpConsts.LLDP_PORT_ID] == interface_name, f'The {interface_name} name does not match lldp frame port id'
-            assert int(
-                lldp_dict[
-                    TcpDumpConsts.LLDP_TIME_TO_LIVE]) == ttl, 'The cli ttl does not match sent frame time to live'
+            port_name = device.get_lldp_port_name_from_dump(lldp_dict)
+            assert port_name == interface_name, f'The {interface_name} name does not match lldp frame port id'
+            ttl_in_frame = lldp_dict.get(TcpDumpConsts.LLDP_TIME_TO_LIVE)
+            assert ttl_in_frame is not None, (
+                f"No TTL found in LLDP dump for {interface_name}; parsed keys: {list(lldp_dict.keys())}."
+            )
+            assert int(ttl_in_frame) == ttl, 'The cli ttl does not match sent frame time to live'
             is_match_hostname = lldp_dict[TcpDumpConsts.LLDP_SYSTEM_NAME] in system_output[SystemConsts.HOSTNAME] or \
                 system_output[SystemConsts.HOSTNAME] in lldp_dict[TcpDumpConsts.LLDP_SYSTEM_NAME]
             assert is_match_hostname, "The hostname do not match"
 
 
 def _verify_lldp_running(lldp, engine):
-    with allure.step("Verify lldp container is running"):
-        lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
-        assert lldp_running == 'true', 'The lldp docker container is down'
+    if TestToolkit.devices.dut.is_ib():
+        with allure.step("Verify lldp container is running"):
+            lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
+            assert lldp_running == 'true', 'The lldp docker container is down'
     with allure.step("Verify lldp is running and enabled"):
         cli_output = lldp.parsed_show()
         assert cli_output[SystemConsts.LLDP_STATE] == NvosConst.ENABLED, 'The lldp is not enabled'
@@ -446,13 +511,28 @@ def _verify_lldp_is_sending_frames(lldp, engine, device):
             assert output_dict, f"The neighbors output for {interface_name} is empty"
 
 
-def _verify_lldp_not_running(lldp, engine, device):
-    def _check_lldp_container_stopped():
-        lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
-        assert lldp_running == 'false', f'The lldp docker container is still up (state: {lldp_running})'
+def _verify_lldp_running_and_neighbors_present(lldp, engine, device):
+    """
+    Verify LLDP is running and each mgmt interface has at least one neighbor.
+    Does not capture frames (no tcpdump), so avoids long wait when tx-interval is large (e.g. max 13107s).
+    """
+    _verify_lldp_running(lldp, engine)
+    with allure.step("Verify each mgmt interface has at least one LLDP neighbor"):
+        for interface_name in device.get_mgmt_ports():
+            mgmt_interface = Port(name=interface_name)
+            output_dict = OutputParsingTool.parse_json_str_to_dictionary(
+                mgmt_interface.interface.lldp.neighbor.show()).get_returned_value()
+            assert output_dict, f"The neighbors output for {interface_name} is empty"
 
-    ValidationTool.retry_until_valid(_check_lldp_container_stopped,
-                                     description="Verify lldp container is not running")
+
+def _verify_lldp_not_running(lldp, engine, device):
+    if TestToolkit.devices.dut.is_ib():
+        def _check_lldp_container_stopped():
+            lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
+            assert lldp_running == 'false', f'The lldp docker container is still up (state: {lldp_running})'
+
+        ValidationTool.retry_until_valid(_check_lldp_container_stopped,
+                                         description="Verify lldp container is not running")
     with allure.step("Verify lldp is not running and not enabled"):
         cli_output = lldp.parsed_show()
         assert cli_output[SystemConsts.LLDP_STATE] == NvosConst.DISABLED, 'The lldp is enabled'
@@ -469,7 +549,52 @@ def _verify_lldp_not_running(lldp, engine, device):
                 assert not lldp_frames_output, f"There are still lldp frames sent for {interface_name}"
 
 
-def _set_lldp_state(lldp, key, val, sleep_time=10, apply=True):
+def _wait_until_ipv6_removed_from_interface(mgmt_interface, ip_address_full, serial_engine,
+                                            timeout=INTERFACE_CLEANUP_DELAY, poll_interval=2):
+    """Poll until the given IPv6 address is no longer present on the interface (after unset)."""
+    ip_address = ip_address_full.split("/")[0] if "/" in ip_address_full else ip_address_full
+    deadline = time.monotonic() + timeout
+    with allure.step(f"Wait up to {timeout}s for interface cleanup after IPv6 unset"):
+        while time.monotonic() < deadline:
+            addrs_dict = mgmt_interface.interface.ipv6.address.parse_show(dut_engine=serial_engine)
+            if not addrs_dict or ip_address not in str(addrs_dict):
+                return
+            time.sleep(poll_interval)
+        addrs_dict = mgmt_interface.interface.ipv6.address.parse_show(dut_engine=serial_engine)
+        assert ip_address not in str(addrs_dict), (
+            f"IPv6 {ip_address} still present on interface after {timeout}s"
+        )
+
+
+def _restore_lldp_defaults(lldp, engine):
+    """Restore default LLDP interval, multiplier and state; verify LLDP is running."""
+    ask_for_confirmation = getattr(TestToolkit.devices.dut, "ask_for_confirmation", False)
+    with allure.step("Restore default lldp interval and multiplier"):
+        lldp.unset(SystemConsts.LLDP_INTERVAL).verify_result()
+        lldp.unset(SystemConsts.LLDP_MULTIPLIER).verify_result()
+        lldp.unset(SystemConsts.STATE, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result()
+    with allure.step("Verify lldp is running after restoring defaults"):
+        _verify_lldp_running(lldp, engine=engine)
+
+
+def _wait_for_lldp_state_applied(lldp, key, expected_val, timeout=LLDP_STATE_CHANGE_POLL_TIMEOUT,
+                                 poll_interval=LLDP_STATE_CHANGE_POLL_INTERVAL):
+    """Poll until lldp parsed_show shows key == expected_val or timeout."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        cli_output = lldp.parsed_show()
+        current = cli_output.get(key)
+        if current is not None and str(current) == str(expected_val):
+            return
+        time.sleep(poll_interval)
+    cli_output = lldp.parsed_show()
+    assert cli_output.get(key) == expected_val, (
+        f"LLDP {key} did not reach {expected_val} within {timeout}s; current: {cli_output.get(key)}"
+    )
+
+
+def _set_lldp_state(lldp, key, val, wait_for_state=True, apply=True):
     with allure.step(f"Set lldp {key} to {val}"):
-        lldp.set(key, val, apply=apply).verify_result()
-        time.sleep(sleep_time)  # It takes time for state to change
+        lldp.set(key, val, apply=apply, ask_for_confirmation=True).verify_result()
+        if wait_for_state and apply:
+            _wait_for_lldp_state_applied(lldp, key, val)
