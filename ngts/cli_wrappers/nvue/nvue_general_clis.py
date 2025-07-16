@@ -496,13 +496,14 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             grub_menu_pointer = 0
             onie_menu_pointer = 1
             esc_grub_pointer = 2
+            cumulus_esc_pointer = 3
 
-            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.GRUB_ESC_PATTERN]
+            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.GRUB_ESC_PATTERN, GrubMenuTool.CUMULUS_ESC_PATTERN]
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
             output, respond = serial_engine.run_cmd('', all_patterns, timeout=to, send_without_enter=True)
 
         if respond != onie_menu_pointer:
-            if respond == esc_grub_pointer:
+            if respond == esc_grub_pointer or respond == cumulus_esc_pointer:
                 with allure.step('Grub menu new style handle'):
                     logger.info('Hit ESC on grub new style')
                     output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns,
@@ -613,3 +614,8 @@ class NvueGeneralCli(SonicGeneralCliDefault):
     def get_config_db_from_running_config(self):
         config = self.engine.run_cmd('sudo sonic-cfggen -d --print-data', print_output=False)
         return json.loads(config)
+
+    def get_dut_mac_address(self):
+        output = self.engine.run_cmd("nv show platform -o json", print_output=False)
+        output = json.loads(output)
+        return output['system-mac']

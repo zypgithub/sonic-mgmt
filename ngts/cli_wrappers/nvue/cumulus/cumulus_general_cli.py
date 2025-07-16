@@ -18,7 +18,7 @@ class CumulusGeneralCli(NvueGeneralCli):
     def __init__(self, engine, device):
         super().__init__(engine, device)
 
-    def install_traffic_generator(self, latest_version=True):
+    def install_traffic_generator(self, latest_version=False):
         """
         Function verifies the traffic generator is functional post deploy on CL OS
 
@@ -113,7 +113,10 @@ class CumulusGeneralCli(NvueGeneralCli):
 
     def _wait_nos_to_become_functional(self, engine, topology_obj="", dut_alias=None, serial_engine=None):
         serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
-
+        with allure.step('wait for System is ready in serial'):
+            logger.info(f"Waiting for system to be ready")
+            system_ready_pattern = 'cumulus login:'
+            serial_engine.run_cmd('', system_ready_pattern, timeout=2 * self.device.timeout_system_is_ready, send_without_enter=True)
         with allure.step('Set default password'):
             logging.info(f"Login using default user {self.device.default_username}")
             _, index = serial_engine.run_cmd(self.device.default_username, ["Password:"], timeout=5)

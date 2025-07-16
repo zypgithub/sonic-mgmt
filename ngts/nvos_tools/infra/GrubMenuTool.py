@@ -17,6 +17,7 @@ class GrubMenuTool:
     ESCAPE_CHAR = '\x1b'
     MAX_GRUB_ITEMS_LIMIT = 100
     GRUB_ESC_PATTERN = 'Press the ESC'
+    CUMULUS_ESC_PATTERN = 'error: terminal `serial\' isn\'t found.'
     NAVIGATION_FAILED = f'Grub menu navigation tool failed'
 
     @classmethod
