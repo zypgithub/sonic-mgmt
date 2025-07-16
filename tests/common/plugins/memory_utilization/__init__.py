@@ -66,6 +66,8 @@ def pytest_runtest_setup(item):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_teardown(item, nextitem):
+    if item.rep_setup.skipped:
+        return
     logger.debug("pytest_runtest_teardown early for test {}".format(item.name))
     if "request" in item.fixturenames:
         request = item.funcargs.get("request", None)
