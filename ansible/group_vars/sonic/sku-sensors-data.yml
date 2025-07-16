@@ -6175,3 +6175,234 @@ sensors_checks:
     psu_skips: { }
     sensor_skip_per_version: { }
 
+
+  x86_64-nvidia_sn5810_ld-r0:
+    alarms:
+      fan: []
+
+      power:
+
+      - mp2891-i2c-9-69/PMIC-8 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-69/PMIC-8 DVDD_T4 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-69/PMIC-8 DVDD_T5 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-69/PMIC-8 12V DVDD_T4 DVDD_T5 (in)/power1_alarm
+      - mp2891-i2c-9-69/PMIC-8 12V DVDD_T4 DVDD_T5 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-69/PMIC-8 DVDD_T4 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-69/PMIC-8 DVDD_T5 Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-67/PMIC-6 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-67/PMIC-6 DVDD_T0 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-67/PMIC-6 DVDD_T1 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-67/PMIC-6 12V DVDD_T0 DVDD_T1 (in)/power1_alarm
+      - mp2891-i2c-9-67/PMIC-6 12V DVDD_T0 DVDD_T1 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-67/PMIC-6 DVDD_T0 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-67/PMIC-6 DVDD_T1 Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-62/PMIC-1 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-62/PMIC-1 VDD_M ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-62/PMIC-1 12V VDD_M (in)/power1_alarm
+      - mp2891-i2c-9-62/PMIC-1 12V VDD_M Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-62/PMIC-1 VDD_M Rail Curr (out1)/curr2_alarm
+
+      - mp2891-i2c-9-65/PMIC-4 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-65/PMIC-4 VDD_T4 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-65/PMIC-4 VDD_T5 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-65/PMIC-4 12V VDD_T4 VDD_T5 (in)/power1_alarm
+      - mp2891-i2c-9-65/PMIC-4 12V VDD_T4 VDD_T5 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-65/PMIC-4 VDD_T4 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-65/PMIC-4 VDD_T5 Rail Curr (out2)/curr3_alarm
+
+      - lm5066i-i2c-7-12/HSC VinDC Volt (in)/in1_min_alarm
+      - lm5066i-i2c-7-12/HSC VinDC Volt (in)/in1_max_alarm
+      - lm5066i-i2c-7-12/HSC Vout Volt (out)/in3_min_alarm
+      - lm5066i-i2c-7-12/HSC VinDC Pwr (in)/power1_alarm
+      - lm5066i-i2c-7-12/HSC VinDC Curr (in)/curr1_max_alarm
+
+      - mp2891-i2c-9-64/PMIC-3 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-64/PMIC-3 VDD_T2 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-64/PMIC-3 VDD_T3 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-64/PMIC-3 12V VDD_T2 VDD_T3 (in)/power1_alarm
+      - mp2891-i2c-9-64/PMIC-3 12V VDD_T2 VDD_T3 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-64/PMIC-3 VDD_T2 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-64/PMIC-3 VDD_T3 Rail Curr (out2)/curr3_alarm
+
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM INPUT VOLT/in1_crit_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM OUTPUT VOLT/in2_lcrit_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM OUTPUT VOLT/in2_crit_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM INPUT POWER/power1_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM INPUT CURR/curr1_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM OUTPUT CURR/curr2_alarm
+
+      - mp2891-i2c-9-6e/PMIC-11 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-6e/PMIC-11 VDDSCC 0V75 Rail (out1)/in2_alarm
+      - mp2891-i2c-9-6e/PMIC-11 DVDD_M ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-6e/PMIC-11 12V VDDSCC DVDD_M (in)/power1_alarm
+      - mp2891-i2c-9-6e/PMIC-11 12V VDDSCC DVDD_M Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-6e/PMIC-11 DVDD_M Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-6e/PMIC-11 VDDSCC Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-6a/PMIC-9 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-6a/PMIC-9 DVDD_T6 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-6a/PMIC-9 DVDD_T7 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-6a/PMIC-9 12V DVDD_T6 DVDD_T7 (in)/power1_alarm
+      - mp2891-i2c-9-6a/PMIC-9 12V DVDD_T6 DVDD_T7 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-6a/PMIC-9 DVDD_T6 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-6a/PMIC-9 DVDD_T7 Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-68/PMIC-7 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-68/PMIC-7 DVDD_T2 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-68/PMIC-7 DVDD_T3 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-68/PMIC-7 12V DVDD_T2 DVDD_T3 (in)/power1_alarm
+      - mp2891-i2c-9-68/PMIC-7 12V DVDD_T2 DVDD_T3 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-68/PMIC-7 DVDD_T2 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-68/PMIC-7 DVDD_T3 Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-63/PMIC-2 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-63/PMIC-2 VDD_T0 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-63/PMIC-2 VDD_T1 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-63/PMIC-2 12V VDD_T0 VDD_T1 (in)/power1_alarm
+      - mp2891-i2c-9-63/PMIC-2 12V VDD_T0 VDD_T1 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-63/PMIC-2 VDD_T0 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-63/PMIC-2 VDD_T1 Rail Curr (out2)/curr3_alarm
+
+      - mp2891-i2c-9-66/PMIC-5 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-66/PMIC-5 VDD_T6 ADJ Rail (out1)/in2_alarm
+      - mp2891-i2c-9-66/PMIC-5 VDD_T7 ADJ Rail (out2)/in3_alarm
+      - mp2891-i2c-9-66/PMIC-5 12V VDD_T6 VDD_T7 (in)/power1_alarm
+      - mp2891-i2c-9-66/PMIC-5 12V VDD_T6 VDD_T7 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-66/PMIC-5 VDD_T6 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-66/PMIC-5 VDD_T7 Rail Curr (out2)/curr3_alarm
+
+      - mp2855-i2c-69-69/PMIC-12 COMEX (in) VDDCR INPUT VOLT/in1_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX (out) VDDCR_CPU VOLT/in2_lcrit_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX (out) VDDCR_CPU VOLT/in2_crit_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX (out2) VDDCR_SOC VOLT/in3_lcrit_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX (out2) VDDCR_SOC VOLT/in3_crit_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_CPU CURR/curr1_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_SOC CURR/curr2_alarm
+
+      - raa228004-i2c-7-60/PWR_CONV1 VinDC Volt (in)/in1_min_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 VinDC Volt (in)/in1_max_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 VinDC Volt (in)/in1_lcrit_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 VinDC Volt (in)/in1_crit_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Vout Volt (out)/in3_lcrit_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Vout Volt (out)/in3_crit_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Curr (out)/curr2_max_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Curr (out)/curr2_crit_alarm
+
+      - mp2891-i2c-9-6c/PMIC-10 PSU 12V Rail (in1)/in1_alarm
+      - mp2891-i2c-9-6c/PMIC-10 HVDD_T03 1V2 Rail (out1)/in2_alarm
+      - mp2891-i2c-9-6c/PMIC-10 HVDD_T47 1V2 Rail (out2)/in3_alarm
+      - mp2891-i2c-9-6c/PMIC-10 12V HVDD_T03 HVDD_T47 (in)/power1_alarm
+      - mp2891-i2c-9-6c/PMIC-10 12V HVDD_T03 HVDD_T47 Rail Curr (in1)/curr1_alarm
+      - mp2891-i2c-9-6c/PMIC-10 HVDD_T03 Rail Curr (out1)/curr2_alarm
+      - mp2891-i2c-9-6c/PMIC-10 HVDD_T47 Rail Curr (out2)/curr3_alarm
+
+      temp:
+
+      - tmp451-i2c-7-4c/temp1/temp1_max_alarm
+      - tmp451-i2c-7-4c/temp1/temp1_min_alarm
+      - tmp451-i2c-7-4c/temp1/temp1_crit_alarm
+      - tmp451-i2c-7-4c/temp2/temp2_max_alarm
+      - tmp451-i2c-7-4c/temp2/temp2_min_alarm
+      - tmp451-i2c-7-4c/temp2/temp2_crit_alarm
+      - tmp451-i2c-7-4c/temp2/temp2_fault
+
+      - jc42-i2c-2-1b/SODIMM2 Temp/temp1_max_alarm
+      - jc42-i2c-2-1b/SODIMM2 Temp/temp1_min_alarm
+      - jc42-i2c-2-1b/SODIMM2 Temp/temp1_crit_alarm
+
+      - lm5066i-i2c-7-12/HSC Temp/temp1_max_alarm
+      - lm5066i-i2c-7-12/HSC Temp/temp1_crit_alarm
+
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM PHASE TEMP/temp1_max_alarm
+      - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM PHASE TEMP/temp1_crit_alarm
+
+      - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_CPU PHASE TEMP/temp1_crit_alarm
+      - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_SOC PHASE TEMP/temp2_crit_alarm
+
+      - raa228004-i2c-7-60/PWR_CONV1 Temp/temp2_max_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Temp/temp2_crit_alarm
+      - raa228004-i2c-7-60/PWR_CONV1 Temp/temp2_lcrit_alarm
+
+      - jc42-i2c-2-1a/SODIMM1 Temp/temp1_max_alarm
+      - jc42-i2c-2-1a/SODIMM1 Temp/temp1_min_alarm
+      - jc42-i2c-2-1a/SODIMM1 Temp/temp1_crit_alarm
+
+
+    compares:
+      power: [ ]
+      temp:
+
+      - - mp2891-i2c-9-69/PMIC-8 DVDD_T4 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-69/PMIC-8 DVDD_T4 ADJ Temp 1/temp1_crit
+
+      - - mp2891-i2c-9-67/PMIC-6 DVDD_T0 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-67/PMIC-6 DVDD_T0 ADJ Temp 1/temp1_crit
+
+      - - mp2891-i2c-9-62/PMIC-1 VDD_M ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-62/PMIC-1 VDD_M ADJ Temp 1/temp1_crit
+
+      - - tmp451-i2c-7-4c/temp1/temp1_input
+        - tmp451-i2c-7-4c/temp1/temp1_crit
+
+      - - tmp451-i2c-7-4c/temp2/temp2_input
+        - tmp451-i2c-7-4c/temp2/temp2_crit
+
+      - - mp2891-i2c-9-65/PMIC-4 VDD_T4 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-65/PMIC-4 VDD_T4 ADJ Temp 1/temp1_crit
+
+      - - jc42-i2c-2-1b/SODIMM2 Temp/temp1_input
+        - jc42-i2c-2-1b/SODIMM2 Temp/temp1_crit
+
+      - - lm5066i-i2c-7-12/HSC Temp/temp1_input
+        - lm5066i-i2c-7-12/HSC Temp/temp1_crit
+
+      - - mp2891-i2c-9-64/PMIC-3 VDD_T2 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-64/PMIC-3 VDD_T2 ADJ Temp 1/temp1_crit
+
+      - - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM PHASE TEMP/temp1_input
+        - mp2975-i2c-69-6a/PMIC-13 COMEX VDD_MEM PHASE TEMP/temp1_crit
+
+      - - mp2891-i2c-9-6e/PMIC-11 VDDSCC 1V2 Temp 1/temp1_input
+        - mp2891-i2c-9-6e/PMIC-11 VDDSCC 1V2 Temp 1/temp1_crit
+
+      - - mp2891-i2c-9-6a/PMIC-9 DVDD_T6 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-6a/PMIC-9 DVDD_T6 ADJ Temp 1/temp1_crit
+
+      - - nvme-pci-0100/SSD Temp/temp1_input
+        - nvme-pci-0100/SSD Temp/temp1_crit
+
+      - - mp2891-i2c-9-68/PMIC-7 DVDD_T2 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-68/PMIC-7 DVDD_T2 ADJ Temp 1/temp1_crit
+
+      - - mp2891-i2c-9-63/PMIC-2 VDD_T0 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-63/PMIC-2 VDD_T0 ADJ Temp 1/temp1_crit
+
+      - - mp2891-i2c-9-66/PMIC-5 VDD_T6 ADJ Temp 1/temp1_input
+        - mp2891-i2c-9-66/PMIC-5 VDD_T6 ADJ Temp 1/temp1_crit
+
+      - - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_CPU PHASE TEMP/temp1_input
+        - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_CPU PHASE TEMP/temp1_crit
+
+      - - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_SOC PHASE TEMP/temp2_input
+        - mp2855-i2c-69-69/PMIC-12 COMEX VDDCR_SOC PHASE TEMP/temp2_crit
+
+      - - raa228004-i2c-7-60/PWR_CONV1 Temp/temp2_input
+        - raa228004-i2c-7-60/PWR_CONV1 Temp/temp2_crit
+
+      - - jc42-i2c-2-1a/SODIMM1 Temp/temp1_input
+        - jc42-i2c-2-1a/SODIMM1 Temp/temp1_crit
+
+      - - mp2891-i2c-9-6c/PMIC-10 HVDD_T03 1V2 Temp 1/temp1_input
+        - mp2891-i2c-9-6c/PMIC-10 HVDD_T03 1V2 Temp 1/temp1_crit
+
+
+    non_zero:
+      fan: [ ]
+      power: [ ]
+      temp: [ ]
+    psu_skips: { }
+    sensor_skip_per_version: { }
+
+

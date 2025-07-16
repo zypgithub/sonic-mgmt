@@ -317,6 +317,45 @@
 					}
 				]
 			}
+		},
+	    "SN5810_LD": {
+			"component":{
+				"BIOS": [
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.022/Release/0ACTV.rom",
+						"version": "0ACTV_00.01.022",
+						"reboot": ["cold"]
+					},
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.020/Release/0ACTV.rom",
+						"version": "0ACTV_00.01.020",
+						"reboot": ["cold"]
+					}
+				],
+				"ONIE": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0018-rc2/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2025.05-5.3.0018-rc2-115200-dev",
+						"reboot": ["cold"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2025.05-5.3.0017-115200-dev",
+						"reboot": ["cold"]
+					}
+				],
+				"CPLD2": [
+					{
+						"firmware": "",
+						"version": "",
+						"reboot": ["power off","cold"]
+					}
+				]
+			}
 		}
 	},
 	"host": {
