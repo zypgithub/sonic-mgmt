@@ -3,6 +3,9 @@ import sys
 import argparse
 import json
 import logging
+import yaml
+import subprocess
+import re
 
 workspace_dir = os.environ['WORKSPACE']
 sys.path.append(os.path.join(workspace_dir, 'sonic-mgmt'))
@@ -13,6 +16,7 @@ from ngts.constants.constants import DbConstants, CliType
 logger = logging.getLogger(__name__)
 
 # Get env variables
+test_config_yaml_file = os.environ.get('test_config_yaml_file')
 fast_reboot_executors = os.environ.get('fast_reboot_executors')
 fast_reboot_iterations_number = os.environ.get('fast_reboot_iterations_number', 1)
 warm_reboot_executors = os.environ.get('warm_reboot_executors')
@@ -36,12 +40,19 @@ if not cold_base_version:
 target_version = os.environ.get('target_version')
 tests_results_file_path = os.path.join(workspace_dir, 'results.json')
 email_report_file_path = os.path.join(workspace_dir, 'email_report.html')
+sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
 
 REBOOT_TYPES = ['fast', 'warm', 'cold', 'unknown']
 FAST_REBOOT_TEST_IDS = [9, 13]  # 9 and 13 - id's for fast-reboot and fast-reboot upgrade tests
 COLD_REBOOT_TEST_IDS = [205]
 UNKNOWN = 'unknown'
 
+UPGRADE_TC_PROJECT_ID_DICT = {
+    "test_upgrade_path": "upgrade-reboot",
+    "test_multi_hop_upgrade_path": "multi-hop-upgrade",
+    "test_warm_upgrade_sad_path": "warm-upgrade-sad",
+    "test_double_upgrade_path": "double-upgrade",
+}
 DB_FILE_TEMPLATE = '''<?xml version="1.0" encoding="UTF-8"?>
 <DBDEF>
 <global>
@@ -113,7 +124,7 @@ CASES_FILE_REBOOT_TESTCASE_TEMPLATE = '''<case>
     <tout> 3600 </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--log-cli-level debug  --show-capture=no -ra --showlocals --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts platform_tests/test_advanced_reboot.py::test_{test_type}_reboot </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--log-cli-level debug  --show-capture=no -ra --showlocals --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts platform_tests/test_advanced_reboot.py::test_{test_type}_reboot </static_args>
          </params>
     </cmd>
 </case>
@@ -125,7 +136,7 @@ CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> {timeout} </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::{upgrade_testcase} </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --base_image_list={base_versions_list} --target_image_list={target_version} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_upgrade_path.py::{upgrade_testcase} </static_args>
          </params>
     </cmd>
 </case>
@@ -137,7 +148,7 @@ CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> {timeout} </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
          </params>
     </cmd>
 </case>
@@ -149,7 +160,7 @@ CASES_FILE_END_LINE_TEMPLATE = '''
 '''
 
 
-def get_test_name(r_type, is_upgrade_test):
+def get_test_name(r_type, is_upgrade_test, upgrade_testcase=upgrade_testcase):
     test_name = '{} Reboot'.format(r_type.upper())
     if is_upgrade_test:
         test_name = test_name + ' with Upgrade'
@@ -160,49 +171,104 @@ def get_test_name(r_type, is_upgrade_test):
     return test_name
 
 
-def prepare_db_files(reboot_types_list, is_upgrade_test=False):
+def prepare_db_files(reboot_types_list, is_upgrade_test=False, upgrade_testcase=upgrade_testcase):
     """
     Prepare DB files and store them into sonic-mgmt folder
     """
     for r_type in reboot_types_list:
-        test_name = get_test_name(r_type, is_upgrade_test)
+        test_name = get_test_name(r_type, is_upgrade_test, upgrade_testcase)
 
         db_file_name = '{}_reboot.db'.format(r_type)
-        sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
         db_file_path = os.path.join(sonic_mgmt_path, db_file_name)
         with open(db_file_path, 'w') as file:
             file_data = DB_FILE_TEMPLATE.format(test_name=test_name, test_type=r_type)
             file.write(file_data)
 
+def extract_plain_version(image_file_path:str)-> str:
+    """
+    Extract plain base version and plain target version from version string
+    image_file_path can be a list separated by comma
+    """
+    if not image_file_path:
+        return "None"
+    image_file_path_list = [image_file_path]
+    if ',' in image_file_path:
+        image_file_path_list = image_file_path.split(',')
+    res = []
+    for image_path in image_file_path_list:
+        if os.path.islink(image_path):
+            image_path = os.path.realpath(image_path)
+        match = re.search(r'/sonic/([0-9]{6}|master)', image_path)
+        if match:
+            plain_version = match.group(1)
+        else:
+            plain_version = os.path.basename(image_path) # if no match, use the original basename
+        res.append(plain_version)
+    return ','.join(res)
 
-def prepare_cases_files(reboot_type_iterations_dict, reboot_type_base_ver_images=None, target_ver=None):
+def prepare_cases_files(reboot_type_iterations_dict,
+                        reboot_type_base_ver_images=None, target_ver=None,
+                        upgrade_testcase=upgrade_testcase,
+                        setup_name=None):
     """
     Prepare CASES files and store them into sonic-mgmt folder
     """
     for r_type, iterations_number in reboot_type_iterations_dict.items():
-
+        base_allure_project_id_param = ""
+        if setup_name:
+            setup_id = setup_name.replace('_', '-').rstrip('-setup')
+            base_allure_project_id_param = (
+                "--allure_server_project_id="
+                f"{setup_id}-"
+                f"{UPGRADE_TC_PROJECT_ID_DICT.get(upgrade_testcase, 'upgrade-reboot')}-"
+                f"{r_type}"
+            )
         base_ver_images = reboot_type_base_ver_images[r_type]
         is_upgrade_test = base_ver_images and target_ver
-        test_name = get_test_name(r_type, is_upgrade_test)
+        test_name = get_test_name(r_type, is_upgrade_test, upgrade_testcase)
         cases_file_name = '{}_reboot.cases'.format(r_type)
         file_data = CASES_FILE_HEADER_TEMPLATE.format(test_name=test_name)
+
         for _ in range(iterations_number):
             if upgrade_testcase == "test_multi_hop_upgrade_path":
-                file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(test_type=r_type,
-                                                                                               multi_hop_upgrade_path=base_ver_images,
-                                                                                               target_version=target_ver,
-                                                                                               timeout=10800)
+                file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(
+                    test_type=r_type,
+                    multi_hop_upgrade_path=base_ver_images,
+                    target_version=target_ver,
+                    timeout=10800,
+                    allure_project_id_param=base_allure_project_id_param
+                )
             else:
                 if base_ver_images and target_ver:
                     for base_ver in base_ver_images.split(','):
-                        file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(test_name=test_name,
-                                                                                             test_type=r_type,
-                                                                                             base_versions_list=base_ver,
-                                                                                             target_version=target_ver,
-                                                                                             upgrade_testcase=upgrade_testcase,
-                                                                                             timeout=case_timeout)
+                        base_ver_plain = extract_plain_version(base_ver)
+                        target_ver_plain = extract_plain_version(target_ver)
+                        test_name_with_version = (
+                            f"{test_name}[{base_ver_plain}->{target_ver_plain}]"
+                        )
+                        current_allure_project_id_param = (
+                            f"{base_allure_project_id_param}-{base_ver_plain}-{target_ver_plain}"
+                            if base_allure_project_id_param else ""
+                        )
+                        # 70 is for allure server project id length limit
+                        # 27 is for parameter key length, i.e. "--allure_server_project_id="
+                        if len(current_allure_project_id_param) > 70+27:
+                            current_allure_project_id_param = current_allure_project_id_param[:70+27]
+                        file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(
+                            test_name=test_name_with_version,
+                            test_type=r_type,
+                            base_versions_list=base_ver,
+                            target_version=target_ver,
+                            upgrade_testcase=upgrade_testcase,
+                            timeout=case_timeout,
+                            allure_project_id_param=current_allure_project_id_param
+                        )
                 else:
-                    file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(test_name=test_name, test_type=r_type)
+                    file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(
+                        test_name=test_name,
+                        test_type=r_type,
+                        allure_project_id_param=base_allure_project_id_param
+                    )
         file_data += CASES_FILE_END_LINE_TEMPLATE
 
         sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
@@ -241,6 +307,55 @@ def do_preparation_steps():
     prepare_db_files(reboot_types_list, is_upgrade_test)
     prepare_cases_files(reboot_type_iterations_dict, reboot_type_base_ver_images=reboot_type_base_version_dict, target_ver=target_version)
 
+def do_preparation_steps_with_test_config_yaml(test_config_yaml_file:str):
+    """
+    Prepare DB and CASES files and store them into sonic-mgmt folder with test config yaml file
+    The DB file and cases file names will start with setup name so that each setup
+    will have its own DB and cases file.
+    """
+    with open(test_config_yaml_file, 'r') as file:
+        test_config = yaml.safe_load(file)
+    for setup in test_config['all_tests']:
+        # prepare DB and CASES files for each setup
+        reboot_types_set = set()
+        reboot_type_iterations_dict = {}
+        reboot_type_base_version_dict = {}
+        for test_config in setup['tests']:
+            if 'iterations' not in test_config or int(test_config['iterations']) <= 0:
+                continue
+            test_config_upgrade_testcase = (
+                test_config['upgrade_testcase']
+                if 'upgrade_testcase' in test_config
+                else 'test_upgrade_path'
+            )
+            r_type = test_config['reboot_type']
+            reboot_types_set.add(r_type)
+            reboot_type_iterations_dict[r_type] = test_config['iterations']
+            reboot_type_base_version_dict[r_type] = ",".join(test_config['base_version'])
+            is_upgrade_test = bool(test_config['target_version'])
+
+            prepare_db_files(list(reboot_types_set), is_upgrade_test=is_upgrade_test,
+                             upgrade_testcase=test_config_upgrade_testcase)
+            prepare_cases_files(
+                reboot_type_iterations_dict,
+                reboot_type_base_ver_images=reboot_type_base_version_dict,
+                target_ver=test_config['target_version'],
+                upgrade_testcase=test_config_upgrade_testcase,
+                setup_name=setup['setup_name']
+            )
+            # rename db and cases file names to include setup name
+            for r_type in reboot_types_set:
+                db_file_name = f"{r_type}_reboot.db"
+                cases_file_name = f"{r_type}_reboot.cases"
+                db_file_path = os.path.join(sonic_mgmt_path, db_file_name)
+                cases_file_path = os.path.join(sonic_mgmt_path, cases_file_name)
+                os.makedirs(os.path.join(sonic_mgmt_path, setup['setup_name']), exist_ok=True)
+                subprocess.run([
+                    "sed", "-i",
+                    f"s/{r_type}_reboot.cases/{setup['setup_name']}\/{r_type}_reboot.cases/g", db_file_path],
+                    check=True)
+                os.rename(db_file_path, os.path.join(sonic_mgmt_path, setup['setup_name'], db_file_name))
+                os.rename(cases_file_path, os.path.join(sonic_mgmt_path, setup['setup_name'], cases_file_name))
 
 def build_summary_report(results):
     """
@@ -638,6 +753,9 @@ if __name__ == "__main__":
     generate_report_email = args.generate_report_email
 
     if do_preparation:  # generate db and cases files
+        if test_config_yaml_file:
+            do_preparation_steps_with_test_config_yaml(test_config_yaml_file)
+            exit(0)
         do_preparation_steps()
     elif session_id:  # collect results for session
         get_results_for_session(session_id, setup_name)
