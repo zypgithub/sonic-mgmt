@@ -110,22 +110,22 @@ class QosBase:
             else:
                 dut_test_params_qos["basicParams"]["router_mac"] = ''
 
-        elif "dualtor" in tbinfo["topo"]["name"]:
-            # For dualtor qos test scenario, DMAC of test traffic is default vlan interface's MAC address.
-            # To reduce duplicated code, put "is_dualtor" and "def_vlan_mac" into dutTestParams['basicParams'].
-            dut_test_params_qos["basicParams"]["is_dualtor"] = True
+            if "dualtor" in tbinfo["topo"]["name"]:
+                # For dualtor qos test scenario, DMAC of test traffic is default vlan interface's MAC address.
+                # To reduce duplicated code, put "is_dualtor" and "def_vlan_mac" into dutTestParams['basicParams'].
+                dut_test_params_qos["basicParams"]["is_dualtor"] = True
 
-            vlan_cfgs = tbinfo['topo']['properties']['topology']['DUT']['vlan_configs']
-            if vlan_cfgs and 'default_vlan_config' in vlan_cfgs:
-                default_vlan_name = vlan_cfgs['default_vlan_config']
-                if default_vlan_name:
-                    for vlan in vlan_cfgs[default_vlan_name].values():
-                        if 'mac' in vlan and vlan['mac']:
-                            dut_test_params_qos["basicParams"]["def_vlan_mac"] = vlan['mac']
-                            break
+                vlan_cfgs = tbinfo['topo']['properties']['topology']['DUT']['vlan_configs']
+                if vlan_cfgs and 'default_vlan_config' in vlan_cfgs:
+                    default_vlan_name = vlan_cfgs['default_vlan_config']
+                    if default_vlan_name:
+                        for vlan in vlan_cfgs[default_vlan_name].values():
+                            if 'mac' in vlan and vlan['mac']:
+                                dut_test_params_qos["basicParams"]["def_vlan_mac"] = vlan['mac']
+                                break
 
-            pytest_assert(dut_test_params_qos["basicParams"]["def_vlan_mac"] is not None,
-                          "Dual-TOR miss default VLAN MAC address")
+                pytest_assert(dut_test_params_qos["basicParams"]["def_vlan_mac"] is not None,
+                            "Dual-TOR miss default VLAN MAC address")
         else:
             try:
                 asic = duthost.asic_instance().asic_index
@@ -1383,7 +1383,7 @@ class QosSaiBase(QosBase):
             "srcDutInstance": src_dut,
             "dstDutInstance": dst_dut,
             "dualTor": request.config.getoption("--qos_dual_tor"),
-            "dualTorScenario": len(dualtor_ports_for_duts) != 0
+            "dualTorScenario": len(dualtor_ports_for_duts) != 0 and "dualtor" not in tbinfo["topo"]["name"]
         }
 
     @pytest.fixture(scope='class')
