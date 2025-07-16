@@ -3,7 +3,8 @@ import pytest
 from ngts.constants.constants import CliType
 
 EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
-EXPECTED_SONIC_VERSION_LIST = ["202405_RC.55-f4c156aaf_Internal", "202411_RC.59-4712ce112_Internal"]
+EXPECTED_SONIC_VERSION_LIST = ["202405_RC.55-f4c156aaf_Internal", "202411_RC.59-4712ce112_Internal",
+                               "202411_RC.65-1ca0982ef_Internal"]
 
 logger = logging.getLogger()
 
