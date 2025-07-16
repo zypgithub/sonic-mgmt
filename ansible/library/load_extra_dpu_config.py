@@ -4,6 +4,7 @@ import paramiko
 import os
 import time
 from ansible.module_utils.basic import AnsibleModule
+from ansible.module_utils.misc_utils import wait_for_path
 from ansible.module_utils.smartswitch_utils import smartswitch_hwsku_config
 
 DPU_HOST_IP_BASE = "169.254.200.{}"
@@ -101,6 +102,8 @@ class LoadExtraDpuConfigModule(object):
 
             try:
                 self.transfer_to_dpu(ssh, dpu_ip)
+                wait_for_path(ssh, dpu_ip, DEFAULT_CONFIG_FILE, not_empty=True, tries=10, delay=5)
+
                 self.execute_command(ssh, dpu_ip, GEN_FULL_CONFIG_CMD)
                 self.execute_command(ssh, dpu_ip, CONFIG_RELOAD_CMD)
                 self.execute_command(ssh, dpu_ip, CONFIG_SAVE_CMD)
