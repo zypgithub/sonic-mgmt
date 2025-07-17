@@ -149,13 +149,42 @@ def create_mgmt_network(conn):
         logger.info('macvlan network \"%s\" - already exist', NETWORK_NAME)
 
 
-def create_secrets_vars_script(conn, mars_docker_env_secrets, container_name, skip_weekend_cases):
+def parse_escape_docker_env_secrets(mars_docker_env_secrets):
+    """"
+    Input: String of env vars in the format: "--env VAR1=value1 --env VAR2=value2 ...."
+    Parse the docker env secrets and escape the single quotes.
+    returns the shell friendly array of env vars:
+    [
+        "VAR1=value1",
+        "VAR2=value2",
+        ...
+    ]
+    """
+    regex = r"[\w|_]+=[|\'\w\d$!-\.\/\-:~\(\)@=\{\}]*(?:$|\s)"
+    env_vars = re.findall(regex, mars_docker_env_secrets)
+    # cleanup the env var
+    env_vars_clean = []
+    for env_var in env_vars:
+        env_var = env_var.strip()
+        par, val = env_var.split("=", 1)
+        par = par.strip()
+        val = val.strip()
+        if val[0] == "'" and val[-1] == "'" and len(val) > 1:
+            # remove single quotes from the beginning and end of the value
+            val = val[1:-1]
+        # Revert if any single quotes are already escaped
+        val =  val.replace(r"'\''", r"'")
+        # Escape any single quotes in the value
+        val =  val.replace(r"'", r"'\''")
+        env_vars_clean.append("{}='{}'".format(par, val))
+    return env_vars_clean
+
+
+def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_name, skip_weekend_cases):
     export_env_var_script_path = "/tmp/{CONTAINER_NAME}_export_env_var.sh".format(CONTAINER_NAME=container_name)
     if os.path.exists(export_env_var_script_path):
         conn.run("rm -f {SCRIPT_PATH}".format(SCRIPT_PATH=export_env_var_script_path), warn=True)
-    regex = r"[\w|_]+=[|\'\w\d$!-\.\/\-:~\(\)@=]*"
-    env_vars = re.findall(regex, mars_docker_env_secrets)
-    script_content = ["export {0}".format(env_var.replace("$", r"\$")) for env_var in env_vars]
+    script_content = ["export {0}".format(env_var.replace("$", r"\$")) for env_var in parsed_mars_docker_env_secrets]
     script_content.append("export SKIP_WEEKEND_CASES={}".format(skip_weekend_cases))
     script_content = ["#!/bin/bash"] + script_content
     for line in script_content:
@@ -189,11 +218,11 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
 
     container_mountpoints = " ".join(container_mountpoints_list)
 
-    mars_docker_env_secrets = os.getenv("MARS_DOCKER_ENV_SECRETS")
-    secrets_vars_script_path = create_secrets_vars_script(conn, mars_docker_env_secrets, container_name, skip_weekend_cases)
+    parsed_mars_docker_env_secrets = parse_escape_docker_env_secrets(os.getenv("MARS_DOCKER_ENV_SECRETS"))
+    secrets_vars_script_path = create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_name, skip_weekend_cases)
     cmd_tmplt = "docker run --init -d -t --cap-add=NET_ADMIN {CONTAINER_MOUNTPOINTS} " \
                 "--privileged --network=containers_network --mac-address={MAC_ADDRESS} " \
-                "--env ANSIBLE_CONFIG=/root/mars/workspace/sonic-mgmt/ansible/ansible.cfg {MARS_DOCKER_ENV_SECRETS} " \
+                "--env ANSIBLE_CONFIG=/root/mars/workspace/sonic-mgmt/ansible/ansible.cfg --env {MARS_DOCKER_ENV_SECRETS} " \
                 "--env SKIP_WEEKEND_CASES={SKIP_WEEKEND_CASES} " \
                 "--name {CONTAINER_NAME} {IMAGE_NAME}:{IMAGE_TAG} /bin/bash"
     cmd = cmd_tmplt.format(
@@ -202,7 +231,7 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         CONTAINER_NAME=container_name,
         IMAGE_NAME=image_name,
         IMAGE_TAG=image_tag,
-        MARS_DOCKER_ENV_SECRETS=mars_docker_env_secrets,
+        MARS_DOCKER_ENV_SECRETS=" --env ".join(parsed_mars_docker_env_secrets),
         SKIP_WEEKEND_CASES=skip_weekend_cases
     )
 
