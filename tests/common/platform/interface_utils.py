@@ -11,6 +11,7 @@ from collections import defaultdict
 from natsort import natsorted
 from .transceiver_utils import all_transceivers_detected
 import functools
+from collections import defaultdict
 
 
 def parse_intf_status(lines):
@@ -398,10 +399,11 @@ def get_interface_index_and_subport(duthost, interface):
 
 def get_interfaces_physical_path(duthost,interfaces):
     interfaces_full_path = {}
-    first_port_in_split = get_first_port_in_split(duthost)
+    lport_to_first_subport_mapping = get_lport_to_first_subport_mapping(duthost, interfaces)
+    first_port_in_split = set(lport_to_first_subport_mapping.values())
     for intf in interfaces:
-       intf_idx, intf_subport = get_interface_index_and_subport(duthost, intf)
-       interfaces_full_path[intf] =  f"{intf_idx}/{intf_subport}" if intf not in first_port_in_split else intf_idx
+        intf_idx, intf_subport = get_interface_index_and_subport(duthost, intf)
+        interfaces_full_path[intf] =  f"{intf_idx}/{intf_subport}" if intf not in first_port_in_split else intf_idx
     return interfaces_full_path
 
 

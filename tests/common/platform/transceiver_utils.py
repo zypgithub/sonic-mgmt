@@ -154,7 +154,6 @@ def check_transceiver_dom_sensor_details(dut, asic_index, interfaces, xcvr_skip_
         key, value = line.split(":", 1)
         intf_name = key.split('|')[1].strip()
         port_xcvr_dom_dict[intf_name] = value.strip()
-
     for intf in interfaces:
         if intf not in xcvr_skip_list[dut.hostname] + port_list_with_flat_memory[dut.hostname]:
             first_subport = lport_to_first_subport_mapping[intf]

@@ -5,7 +5,8 @@ from tests.platform_tests.sfp.util import get_sfp_type_per_interface, get_dev_co
     DICT_WRITABLE_BYTE_FOR_PAGE_0, read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.platform.transceiver_utils import get_passive_cable_port_list
-from tests.common.platform.interface_utils import get_first_port_in_split
+from tests.common.platform.interface_utils import get_lport_to_first_subport_mapping
+
 
 
 pytestmark = [
@@ -61,10 +62,8 @@ class TestSoftwareControlFunctional:
         sff_cables = helpers.get_sff_cables(self.duthost, "TRANSCEIVER_INFO", self.enum_frontend_asic_index, self.sc_port_list)
         show_transceiver_status_all_interfaces = self.duthost.command(f"{helpers.CMD_INTERFACE_TRANSCEIVER_STATUS}")
         parsed_transceiver_status_all_interfaces = helpers.parse_all_interfaces_eeprom_output_to_dict(show_transceiver_status_all_interfaces["stdout"])
-        first_port_in_split = get_first_port_in_split(self.duthost)
-        for port in self.sc_port_list:
-            if port not in first_port_in_split:
-                continue
+        lport_to_first_subport_mapping = get_lport_to_first_subport_mapping(self.duthost, self.sc_port_list)
+        for port in set(lport_to_first_subport_mapping.values()):
             redis_output = helpers.transform_redis_transceiver_data(self.duthost, "TRANSCEIVER_STATUS", self.enum_frontend_asic_index, [port])
             if port in sff_cables:
                 logger.info(f"Port {port} has SFF cable connected, skip for this test")
