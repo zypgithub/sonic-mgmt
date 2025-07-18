@@ -21,7 +21,7 @@ UDP_BFD_PKT_LEN = 32
 
 def get_if(iff, cmd):
     s = socket.socket()
-    ifreq = ioctl(s, cmd, struct.pack("16s16x", iff.encode('utf-8')))
+    ifreq = ioctl(s, cmd, struct.pack("16s16x", iff))
     s.close()
     return ifreq
 
@@ -52,7 +52,7 @@ class Interface(object):
     def recv(self):
         sniffed = self.socket.recv()
         pkt = sniffed[0]
-        str_pkt = bytes(pkt).hex()
+        str_pkt = str(pkt).encode("HEX")
         binpkt = binascii.unhexlify(str_pkt)
         return binpkt
 
@@ -101,9 +101,9 @@ class BFDResponder(object):
                 return
             # Respond with F bit if P bit is set
             if (bfd_flags & (1 << BFD_FLAG_P_BIT)):
-                session["pkt"].payload.payload.payload.flags = (1 << BFD_FLAG_F_BIT)
+                session["pkt"].payload.payload.payload.load.flags = (1 << BFD_FLAG_F_BIT)
             interface.send(session["pkt"])
-            session["pkt"].payload.payload.payload.flags = 0
+            session["pkt"].payload.payload.payload.load.flags = 0
             return
 
         if bfd_state == 2:
@@ -112,9 +112,9 @@ class BFDResponder(object):
         bfd_pkt_init = self.craft_bfd_packet(
             session, data, mac_src, mac_dst, ip_src, ip_dst, bfd_remote_disc, 2)
         bfd_pkt_init.payload.payload.chksum = None
-        bfd_pkt_init.payload.payload.payload.flags = 0
+        bfd_pkt_init.payload.payload.payload.load.flags = 0
         interface.send(bfd_pkt_init)
-        bfd_pkt_init.payload.payload.payload.sta = 3
+        bfd_pkt_init.payload.payload.payload.load.sta = 3
         bfd_pkt_init.payload.payload.chksum = None
         session["pkt"] = bfd_pkt_init
         return
@@ -132,7 +132,7 @@ class BFDResponder(object):
         ip_version = str(ether.payload.version)
         ip_priority_field = 'tos' if ip_version == IPv4 else 'tc'
         ip_priority = getattr(ether.payload, ip_priority_field)
-        bfdpkt = BFD(bytes(ether.payload.payload.payload))
+        bfdpkt = BFD(bytes(ether.payload.payload.payload.load))
         bfd_remote_disc = bfdpkt.my_discriminator
         bfd_state = bfdpkt.sta
         bfd_flags = bfdpkt.flags
@@ -143,12 +143,12 @@ class BFDResponder(object):
 
     def craft_bfd_packet(self, session, data, mac_src, mac_dst, ip_src, ip_dst, bfd_remote_disc, bfd_state):
         ethpart = scapy2.Ether(data)
-        bfdpart = BFD(bytes(ethpart.payload.payload.payload))
+        bfdpart = BFD(bytes(ethpart.payload.payload.payload.load))
         bfdpart.my_discriminator = session["my_disc"]
         bfdpart.your_discriminator = bfd_remote_disc
         bfdpart.sta = bfd_state
 
-        ethpart.payload.payload.payload = bfdpart
+        ethpart.payload.payload.payload.load = bfdpart
         ethpart.src = mac_dst
         ethpart.dst = mac_src
         ethpart.payload.src = ip_dst
