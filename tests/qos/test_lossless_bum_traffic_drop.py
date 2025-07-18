@@ -21,6 +21,19 @@ def mg_facts(duthost, tbinfo):
     return duthost.get_extended_minigraph_facts(tbinfo)
 
 
+@pytest.fixture(scope='module', autouse=True)
+def config_counter_poll_interval(duthost):
+    """
+    Set counter poll interval to 100ms to ensure that the counters are updated in time
+    """
+    origin_queue_interval = duthost.get_counter_poll_status()['PORT_STAT']['interval']
+    duthost.set_counter_poll_interval('PORT_STAT', 100)
+
+    yield
+
+    duthost.set_counter_poll_interval('PORT_STAT', origin_queue_interval)
+
+
 @pytest.mark.parametrize(
     "param", [('broadcast', 'ff:ff:ff:ff:ff:ff'),
               ('unkonwn_unicast', '11:22:33:44:55:66'),
