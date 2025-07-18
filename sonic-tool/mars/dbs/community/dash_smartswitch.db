@@ -42,4 +42,7 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_nasa_debug.cases </cases>
+    </test>
 </DBDEF>
