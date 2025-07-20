@@ -189,7 +189,8 @@ def check_bgp_prefix_config(duthost, community, cli_namespace_prefix):
             return True
         else:
             logger.error(f"BGP prefix configuration not ready yet - IPv4: old_removed={ipv4_old_removed}, "
-                         f"new_added={ipv4_new_added}, IPv6: old_removed={ipv6_old_removed}, new_added={ipv6_new_added}")
+                         f"new_added={ipv4_new_added}, IPv6: old_removed={ipv6_old_removed}, "
+                         f"new_added={ipv6_new_added}")
             return False
     except Exception as e:
         logger.error(f"Error checking bgp prefix configuration: {e}")
