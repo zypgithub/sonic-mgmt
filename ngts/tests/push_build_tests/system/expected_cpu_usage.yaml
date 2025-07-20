@@ -96,3 +96,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
+  SN6600: # Salamandra
+    <<: *platform_defaults
+    sx_sdk: 5
+    syncd: 2
