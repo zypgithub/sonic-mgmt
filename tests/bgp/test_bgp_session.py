@@ -183,7 +183,7 @@ def test_bgp_session_interface_down(duthosts, rand_one_dut_hostname, fanouthosts
     )
     if test_type == "reboot" and (
         "isolated" in tbinfo["topo"]["name"] or
-        duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch")):
+            duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch")):
         pytest.skip("Warm Reboot is not supported on isolated topology or smartswitch")
 
     # Skip the test on Virtual Switch due to fanout switch dependency and warm reboot
