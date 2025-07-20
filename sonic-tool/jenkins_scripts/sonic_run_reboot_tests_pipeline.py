@@ -213,6 +213,10 @@ def prepare_cases_files(reboot_type_iterations_dict,
     """
     Prepare CASES files and store them into sonic-mgmt folder
     """
+    if upgrade_testcase == "test_multi_hop_upgrade_path" or upgrade_testcase == "test_warm_upgrade_sad_path":
+        case_timeout = 42000
+    else:
+        case_timeout = 5400
     for r_type, iterations_number in reboot_type_iterations_dict.items():
         base_allure_project_id_param = ""
         if setup_name:
@@ -235,7 +239,7 @@ def prepare_cases_files(reboot_type_iterations_dict,
                     test_type=r_type,
                     multi_hop_upgrade_path=base_ver_images,
                     target_version=target_ver,
-                    timeout=10800,
+                    timeout=case_timeout,
                     allure_project_id_param=base_allure_project_id_param
                 )
             else:
