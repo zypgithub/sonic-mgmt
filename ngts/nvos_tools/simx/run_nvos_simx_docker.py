@@ -43,10 +43,6 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices):
 def start_simx_docker(target_version, dut_engine, server_engine, devices):
     cmd = f"sudo {path_to_source_code}/{chipsim_script_file_name} --ip {dut_engine.ip} --nos-image {target_version} "
 
-    if devices.dut.switch_class == NvosConst.JULIET_SWITCH:
-        cmd += ("--pelican-tag 2014_3104 --chipsim-version master-1.2.206 "
-                "--docker-image nbu-harbor.gtm.nvidia.com/chipsim/master/ib:1.2.206")
-
     output = server_engine.run_cmd(cmd)
 
     time.sleep(5)
