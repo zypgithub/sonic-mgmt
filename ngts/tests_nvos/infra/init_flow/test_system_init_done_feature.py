@@ -90,6 +90,7 @@ def test_system_ready_state_up(engines, devices, topology_obj):
 
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.init_flow
+@pytest.mark.disable_loganalyzer
 def test_system_ready_state_down(engines, devices, topology_obj):
     """
     Test flow:

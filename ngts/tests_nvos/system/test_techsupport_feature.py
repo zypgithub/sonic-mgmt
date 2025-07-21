@@ -43,6 +43,7 @@ def test_techsupport_folder_name(engines):
 
 @pytest.mark.general
 @pytest.mark.tech_support
+@pytest.mark.disable_loganalyzer
 def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
     """
     Test flow:
