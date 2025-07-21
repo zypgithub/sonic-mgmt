@@ -53,121 +53,6 @@ def setup_env(duthost):
         delete_checkpoint(duthost)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def skip_if_packet_trimming_not_supported(duthost):
-    """
-    Check if the current device supports packet trimming feature.
-    """
-    platform = duthost.facts["platform"]
-    logger.info(f"Checking packet trimming support for platform: {platform}")
-
-    # Check if the SWITCH_TRIMMING_CAPABLE capability is true
-    trimming_capable = duthost.command('redis-cli -n 6 HGET "SWITCH_CAPABILITY|switch" "SWITCH_TRIMMING_CAPABLE"')[
-        'stdout'].strip()
-    if trimming_capable.lower() != 'true':
-        pytest.skip("Packet trimming is not supported")
-
-    # For Nvidia SPC1/2/3 platforms, skip the test
-    elif any(platform_id in platform.lower() for platform_id in ["sn2", "sn3", "sn4"]):
-        pytest.skip(f"Packet trimming is not supported on {platform}")
-
-
-def trimming_global_config_sym_add(duthost):
-    """ Test add packet trimming global config in sym mode
-    """
-    json_patch = [
-        {
-            "op": "add",
-            "path": "/SWITCH_TRIMMING",
-            "value": {
-                "GLOBAL": {
-                    "dscp_value": f"{TRIM_DSCP}",
-                    "queue_index": f"{TRIM_QUEUE}",
-                    "size": f"{TRIM_SIZE}"
-                }
-            }
-        }
-    ]
-    json_patch = format_json_patch_for_multiasic(duthost=duthost, json_data=json_patch)
-    tmpfile = generate_tmpfile(duthost)
-    logger.info("tmpfile {}".format(tmpfile))
-
-    try:
-        output = apply_patch(duthost, json_data=json_patch, dest_file=tmpfile)
-        expect_op_success(duthost, output)
-        trimming_config = duthost.shell("show switch-trimming global --json")["stdout"]
-        logger.info("The trimming config: {}".format(trimming_config))
-
-    finally:
-        delete_tmpfile(duthost, tmpfile)
-
-
-def trimming_global_config_sym_replace(duthost):
-    """ Test replace packet trimming global config in sym mode
-    """
-    json_patch = [
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/dscp_value",
-            "value": f"{TRIM_DSCP_UPDATE}"
-        },
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/queue_index",
-            "value": f"{TRIM_QUEUE_UPDATE}"
-        },
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/size",
-            "value": f"{TRIM_SIZE_UPDATE}"
-        }
-    ]
-    json_patch = format_json_patch_for_multiasic(duthost=duthost, json_data=json_patch)
-
-    tmpfile = generate_tmpfile(duthost)
-    logger.info("tmpfile {}".format(tmpfile))
-
-    try:
-        output = apply_patch(duthost, json_data=json_patch, dest_file=tmpfile)
-        expect_op_success(duthost, output)
-
-    finally:
-        delete_tmpfile(duthost, tmpfile)
-
-
-def trimming_global_config_sym_replace_xfail(duthost):
-    """ Test replace packet trimming global config negative test in sym mode
-    """
-    json_patch = [
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/dscp_value",
-            "value": f"{TRIM_DSCP_INVALID}"
-        },
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/queue_index",
-            "value": f"{TRIM_QUEUE_INVALID}"
-        },
-        {
-            "op": "replace",
-            "path": "/SWITCH_TRIMMING/GLOBAL/size",
-            "value": f"{TRIM_SIZE_INVALID}"
-        }
-    ]
-    json_patch = format_json_patch_for_multiasic(duthost=duthost, json_data=json_patch)
-
-    tmpfile = generate_tmpfile(duthost)
-    logger.info("tmpfile {}".format(tmpfile))
-
-    try:
-        output = apply_patch(duthost, json_data=json_patch, dest_file=tmpfile)
-        expect_op_failure(output)
-
-    finally:
-        delete_tmpfile(duthost, tmpfile)
-
-
 def trimming_global_config_asym_add(duthost):
     """ Test add packet trimming global config in asym mode
     """
@@ -275,7 +160,7 @@ def trimming_global_config_asym_replace_xfail(duthost):
         delete_tmpfile(duthost, tmpfile)
 
 
-def test_packet_trimming_config(rand_selected_dut, loganalyzer):
+def test_packet_trimming_config_asym(rand_selected_dut, loganalyzer, skip_if_packet_trimming_not_supported):
     """ Test packet trimming config
     """
     # After GCU test finished, it will rollback to the original configuration, but the packet trimming field removal
@@ -287,9 +172,6 @@ def test_packet_trimming_config(rand_selected_dut, loganalyzer):
         ]
         loganalyzer[rand_selected_dut.hostname].ignore_regex.extend(ignoreRegex)
 
-    trimming_global_config_sym_add(rand_selected_dut)
-    trimming_global_config_sym_replace(rand_selected_dut)
-    trimming_global_config_sym_replace_xfail(rand_selected_dut)
     trimming_global_config_asym_add(rand_selected_dut)
     trimming_global_config_asym_replace(rand_selected_dut)
     trimming_global_config_asym_replace_xfail(rand_selected_dut)
