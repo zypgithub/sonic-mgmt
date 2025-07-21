@@ -5,6 +5,7 @@ from datetime import datetime
 
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts, MRCConsts
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 def create_performance_db_template(players, session_id, setup_name):
@@ -166,11 +167,47 @@ def get_updated_columns_names():
     return updated_columns_names_dict
 
 
-def collect_all_samples_into_df_list(samples, sample_df_key):
+def collect_all_samples_into_df_list(samples, sample_df_key, use_port_groups=False):
+    """
+    Collects all sample data frames from a nested samples dictionary.
+
+    Args:
+        samples: dict, mapping sample_id to either a dict of port_groups or a single sample dict.
+        sample_df_key: str, key to extract the list of port dicts from each sample.
+        use_port_groups: bool, if True, expects samples to be nested by port_group.
+
+    Returns:
+        List of pandas DataFrames, each containing the sample data with port group info if applicable.
+    """
+    def _add_port_group_and_create_df(sample, port_group=None):
+        if port_group is not None:
+            for port_dict in sample[sample_df_key]:
+                port_dict[MongoDbConsts.PORT_GROUP_NAME] = port_group
+        return pd.DataFrame(sample[sample_df_key])
+
     df_list = []
-    for sample_id, sample in samples.items():
-        df = pd.DataFrame(sample[sample_df_key])
-        df_list.append(df)
+    for sample_id, sample_or_groups in samples.items():
+        # TODO: remove this if statement once the issue is fixed (keep only the else part)
+        if is_redmine_issue_active([4545618])[0]:
+            try:
+                if use_port_groups and sample_or_groups:
+                    for port_group, sample in sample_or_groups.items():
+                        df = _add_port_group_and_create_df(sample, port_group)
+                        df_list.append(df)
+                else:
+                    df = _add_port_group_and_create_df(sample_or_groups)
+                    df_list.append(df)
+            except Exception as e:
+                df = _add_port_group_and_create_df(sample_or_groups)
+                df_list.append(df)
+        else:
+            if use_port_groups and sample_or_groups:
+                for port_group, sample in sample_or_groups.items():
+                    df = _add_port_group_and_create_df(sample, port_group)
+                    df_list.append(df)
+            else:
+                df = _add_port_group_and_create_df(sample_or_groups)
+                df_list.append(df)
     return df_list
 
 
@@ -184,7 +221,7 @@ def restructure_bw(validation_json):
     """
     bw_samples = validation_json[ValidationConsts.BW_SAMPLES]
     bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-    df_list = collect_all_samples_into_df_list(bw_samples, ValidationConsts.BW_DATAFRAME)
+    df_list = collect_all_samples_into_df_list(bw_samples, ValidationConsts.BW_DATAFRAME, use_port_groups=True)
     df_result = get_base_df(df_list)
     df_result[ValidationConsts.TX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.TX_RATE)
     df_result[ValidationConsts.RX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.RX_RATE)

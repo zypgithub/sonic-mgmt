@@ -263,24 +263,65 @@ def validate_no_drops_on_tg_ports(traffic_json, players, violations_list):
             violations_list.extend(violations)
 
 
+def _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold):
+    """
+    Get TX and RX bandwidth thresholds for a given port group.
+
+    Args:
+        bw_threshold (int, float, or dict): The bandwidth threshold(s). Can be a single value (global),
+            or a dict mapping port group names to thresholds. If per-port-group, the value can be a single
+            value or a dict with 'tx' and 'rx' keys.
+        port_group_name (str): The name of the port group to get thresholds for.
+        is_global_threshold (bool): Whether the threshold is a global value (True) or per-port-group (False).
+
+    Returns:
+        tuple: (tx_threshold, rx_threshold) for the given port group. Returns (None, None) if not specified.
+    """
+    if is_global_threshold:
+        return bw_threshold, bw_threshold
+    group_threshold = bw_threshold.get(port_group_name)
+    if group_threshold is None:
+        return None, None
+    if isinstance(group_threshold, dict):
+        return group_threshold.get("tx"), group_threshold.get("rx")
+    return group_threshold, group_threshold
+
+
 def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
-    with allure.step(f"Validate all bandwidth samples minimal value is above {bw_threshold} threshold"):
+    """
+    Validate that all bandwidth samples meet or exceed the specified TX and RX thresholds.
+
+    Args:
+        traffic_json (dict): The traffic data containing bandwidth samples.
+        bw_threshold (int, float, or dict): The bandwidth threshold(s). Can be a single value (global),
+            or a dict mapping port group names to thresholds. If per-port-group, the value can be a single
+            value or a dict with 'tx' and 'rx' keys.
+        validate_bw_rx (bool): Whether to validate RX bandwidth in addition to TX.
+        violations_list (list): List to append any validation violations found.
+
+    Returns:
+        Appends any violations to violations_list.
+    """
+    with allure.step(f"Validate all bandwidth samples minimal value is above threshold(s): {bw_threshold}"):
         bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
         bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-        lower_tx_bw_sample = []
-        lower_rx_bw_sample = []
+
+        is_global_threshold = isinstance(bw_threshold, (int, float))
         for sample_id, bw_sample in bw_samples.items():
-            bw_stats = bw_sample[ValidationConsts.BW_STATS]
-            if bw_stats[ValidationConsts.TX_RATE_MIN] < bw_threshold:
-                lower_tx_bw_sample.append(sample_id)
-            if validate_bw_rx and bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
-                lower_rx_bw_sample.append(sample_id)
-        if lower_tx_bw_sample:
-            violations_list.append(f"Not all tx bandwidth samples were higher than threshold {bw_threshold}, "
-                                   f"please check {lower_tx_bw_sample}")
-        if lower_rx_bw_sample:
-            violations_list.append(f"Not all rx bandwidth samples were higher than threshold {bw_threshold}, "
-                                   f"please check {lower_rx_bw_sample}")
+            for port_group_name, group_data in bw_sample.items():
+                tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
+                if tx_threshold is None and rx_threshold is None:
+                    violations_list.append(f"No threshold specified for port group {port_group_name}.")
+                    continue
+                bw_stats = group_data[ValidationConsts.BW_STATS]
+                if tx_threshold is not None and bw_stats[ValidationConsts.TX_RATE_MIN] < tx_threshold:
+                    violations_list.append(
+                        f"TX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {tx_threshold}."
+                    )
+                if validate_bw_rx and rx_threshold is not None and bw_stats[ValidationConsts.RX_RATE_MIN] < rx_threshold:
+                    violations_list.append(
+                        f"RX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {rx_threshold}."
+                    )
 
 
 def get_ports_avg_bw(traffic_json):
@@ -310,16 +351,19 @@ def get_tc_occ(traffic_json, tc_list, key=ValidationConsts.TC_OCC_AVG):
 def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_list):
     bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
     bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-    for sample_id, bw_sample in bw_samples.items():
-        bw_df = pd.DataFrame(bw_sample[ValidationConsts.BW_DATAFRAME])
-        for port in ports_list:
-            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
-            if bw_threshold == 0 and port_tx > bw_threshold:
-                violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
-                                       f"please check {sample_id}")
-            if port_tx < bw_threshold:
-                violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
-                                       f"please check {sample_id}")
+
+    for sample_id, port_groups in bw_samples.items():
+        for port_group_name, port_group_data in port_groups.items():
+            bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
+            for port in ports_list:
+                if port in bw_df[ValidationConsts.PORT].values:
+                    port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
+                    if bw_threshold == 0 and port_tx > bw_threshold:
+                        violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
+                                               f"please check {sample_id}")
+                    if port_tx < bw_threshold:
+                        violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
+                                               f"please check {sample_id}")
 
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):

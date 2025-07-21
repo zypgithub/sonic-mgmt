@@ -9,7 +9,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.constants import InfraConst
-from ngts.performance_tests.spcx_ra.Alibaba_400G_AR_tests.conftest import AlibabaScenarioToconfiguration, get_alibaba_traffic, extract_acl_counters
+from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import AlibabaScenarioToconfiguration, get_alibaba_traffic, extract_acl_counters
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
 import re
@@ -77,6 +77,7 @@ class Test_Alibaba_scenarios_with_reset:
                               for rebalancer_enabled in [True, False]])
     @allure.title('test_Alibaba_100%_line_rate - {scenario_name} with rebalancer {rebalancer_enabled}')
     @allure.description('Added dynamically in test body')
+    @pytest.mark.skip(reason="AR is not supported at 100 percent line rate. Bug FW #4549566")
     def test_alibaba_100_percent_line_rate(self, request, scenario_name, scenario_configuration, rebalancer_enabled):
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = set_allure_title(request, self.is_ipv6)

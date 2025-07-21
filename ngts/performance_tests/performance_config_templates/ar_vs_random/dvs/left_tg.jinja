@@ -27,7 +27,7 @@
 
             {# Configure port groups - either from provided config or default mapping #}
             {% if conf_args.port_groups is defined %}
-            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.PORT_GROUPS] | tojson }}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.LEFT_TG_ALIAS] | tojson }}
             {% else %}
             "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_left) | tojson }}
             {% endif %}

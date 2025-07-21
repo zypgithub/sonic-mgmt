@@ -180,23 +180,24 @@ def get_sum_power_df_by_collectors_group(power_df):
 
 def validate_power_df_by_collectors(power_df, collectors_power_threshold, violations_list):
     power_total_th = collectors_power_threshold.get("TOTAL")
+    hvdd_power_th = collectors_power_threshold.get("HVDD_TILES_TH")
     total_power = power_df[PowerConsts.POWER_WATT].sum()
+    hvdd_power_sum = 0
     for index, row in power_df.iterrows():
         collector_name = row[PowerConsts.POWER_SUPPLY]
         collector_power = row[PowerConsts.POWER_WATT]
         for power_supply_regex, collector_th in collectors_power_threshold.items():
             if re.search(power_supply_regex, collector_name):
                 if collector_power > collector_th:
-                    # TODO: remove this 'if' statement once FW bug #4526752 is fixed. Keep only the 'else' part.
-                    if collector_name == "HVDD TILES (HVDD_T03)" and is_redmine_issue_active([4526752])[0]:
-                        logger.info(f"Power for {collector_name}: {collector_power} W,  "
-                                    f"was higher than threshold {collector_th}, "
-                                    f"please check table \"Power full dataframe\" in allure attachments. "
-                                    f"Not failing test, due to bug FW #4526752")
-                    else:
-                        violations_list.append(f"Power for {collector_name}: {collector_power} W,  "
-                                               f"was higher than threshold {collector_th}, "
-                                               f"please check table \"Power full dataframe\" in allure attachments")
+                    violations_list.append(f"Power for {collector_name}: {collector_power} W,  "
+                                           f"was higher than threshold {collector_th}, "
+                                           f"please check table \"Power full dataframe\" in allure attachments")
+                if re.search(r"HVDD TILES \(HVDD_T\d+\)", collector_name):
+                    hvdd_power_sum += collector_power
+        if hvdd_power_sum > hvdd_power_th:
+            logger.info(f"Power for total HVDD TILES: {hvdd_power_sum} W,  "
+                        f"was higher than threshold {hvdd_power_th}, "
+                        f"please check table \"Power full dataframe\" in allure attachments. ")
 
     if total_power > power_total_th:
         violations_list.append(f"Total power {total_power} W was higher than total power threshold {power_total_th}, "

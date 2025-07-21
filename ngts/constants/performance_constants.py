@@ -279,7 +279,7 @@ class SPCXRAConsts:
     DUT_TX_UTIL_AUTO_TH_DICT = {4096: 0.92}
     DUT_TX_UTIL_IBM_TH_DICT = {4096: 0.96}
     PACKET_NUM_400G_x2 = 8
-    PACKET_NUM_800G_x1 = 16
+    PACKET_NUM_800G_x1 = 20
 
 
 class MongoDbConsts:
@@ -408,10 +408,11 @@ class PowerConsts:
         "SPC4": {
             r"VCORE TILES \d & \d \(VDD_Tx\)": 17,
             r"DVDD TILES \d & \d \(DVDD_Tx\)": 18.13,
-            r"HVDD TILES \(HVDD_T\d+\)": 118,
+            r"HVDD TILES \(HVDD_T\d+\)": 124,
             r"VDDSCC": 46,
             r"VCORE MAIN \(VDD_M\)": 345,
-            "TOTAL": 754
+            "TOTAL": 754,
+            "HVDD_TILES_TH": 243
         },
         "SPC5": {
             r"VCORE TILES \d & \d \(VDD_Tx\)": 28.5,
@@ -419,7 +420,8 @@ class PowerConsts:
             r"HVDD TILES \(HVDD_T\d+\)": 222,
             r"VDDSCC": 42,
             r"VCORE MAIN \(VDD_M\)": 310,
-            "TOTAL": 811
+            "TOTAL": 811,
+            "HVDD_TILES_TH": 444
         }
     }
     CONTROLLER_REGEX = r'\w*\d*-i2c-\d*-\d*\w*'

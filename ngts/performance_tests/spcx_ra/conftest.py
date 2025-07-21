@@ -26,6 +26,7 @@ def get_spcx_ra_spine_traffic(players, conf_args, template_suite="traffic_packet
 
 
 def get_spcx_ra_leaf_traffic(players, conf_args, template_suite="traffic_packets_json_files"):
+    conf_args["left_num_packets"] = 1
     traffic_jsons = {}
     pkt_size = PerfConsts.PACKET_SIZE_LIST[0]
     for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:

@@ -10,6 +10,7 @@ from ngts.helpers.performance.performance_setup_helpers import (restore_basic_co
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.ar_vs_random.conftest import get_ar_vs_random_traffic
+from ngts.performance_tests.ar_vs_random.split_x2_400G_ar_vs_random_leaf_scenario.conftest import LEFT_PORTS_LEAF_TO_SPINE, RIGHT_PORTS_LEAF_TO_HOST
 from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 
 
@@ -28,6 +29,15 @@ class TestARvsRandom:
         self.chip_type = chip_type
         self.ip = InfraConst.IPV4
         self.is_ipv6 = False
+
+    def _get_bw_threshold(self, bisection_traffic, packet_size):
+        if bisection_traffic:
+            return SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]
+        else:
+            return {
+                LEFT_PORTS_LEAF_TO_SPINE: {"tx": 0, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]},
+                RIGHT_PORTS_LEAF_TO_HOST: {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size], "rx": 0}
+            }
 
     @pytest.mark.parametrize(
         "bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario",
@@ -81,10 +91,12 @@ class TestARvsRandom:
             f"{'with' if bisection_traffic else 'without'} bisection traffic, "
             f"and {'AR' if ecmp_type_ar else 'Random'} ecmp type"
         ):
+            bw_threshold = self._get_bw_threshold(bisection_traffic, packet_size)
+
             # Note that ECN counters are expected, due to required low ECN thresholds, to make sure packets aren't dropped on RED.
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=skip_first_counters_iteration,
                                       ignore_counter_list=['tx_ecn_marked_tc_3'])

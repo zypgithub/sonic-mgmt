@@ -1,4 +1,5 @@
 import pytest
+import allure
 import time
 import logging
 import os

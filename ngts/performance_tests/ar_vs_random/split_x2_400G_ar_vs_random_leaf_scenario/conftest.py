@@ -19,6 +19,10 @@ logger = logging.getLogger()
 
 TESTS_SCENARIO = "ar_vs_random"
 
+# Define port group names as constants
+LEFT_PORTS_LEAF_TO_SPINE = "left_ports_leaf_to_spine"
+RIGHT_PORTS_LEAF_TO_HOST = "right_ports_leaf_to_host"
+
 
 @pytest.fixture(scope='module', autouse=True)
 def skip_test_conditionally(players):
@@ -27,7 +31,7 @@ def skip_test_conditionally(players):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario):
+def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario, players):
     conf_args = {"run_fw_latency_optimization": "False",
                  "auto_buffer_mode": "False",
                  "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
@@ -48,6 +52,7 @@ def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario):
                  "one_to_one_leaf_scenario": one_to_one_leaf_scenario,
                  "params": None
                  }
+
     return conf_args
 
 
