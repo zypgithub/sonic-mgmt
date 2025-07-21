@@ -797,7 +797,7 @@ def ptfhosts(enhance_inventory, ansible_adhoc, tbinfo, duthost, request):
         return None
     if "ptf_image_name" in tbinfo and "docker-keysight-api-server" in tbinfo["ptf_image_name"]:
         return None
-    if 'mlnx' in tbinfo.get("ptf_image_name") and "ptf-dummy" in tbinfo.get("ptf"):
+    if 'mlnx' in tbinfo.get("ptf_image_name") and "ptf-dummy" in tbinfo.get("ptf", ""):
         return None
     if "ptf" in tbinfo:
         _hosts.append(PTFHost(ansible_adhoc, tbinfo["ptf"], duthost, tbinfo,
@@ -925,7 +925,7 @@ def nbrhosts(enhance_inventory, ansible_adhoc, tbinfo, creds, request):
     for server in servers:
         vm_base = int(server['vm_base'][2:])
         vm_name_fmt = 'VM%0{}d'.format(len(server['vm_base']) - 2)
-        vms = MultiServersUtils.parse_topology_vms(
+        vms = MultiServersUtils.get_vms_by_dut_interfaces(
                 tbinfo['topo']['properties']['topology']['VMs'],
                 server['dut_interfaces']
             ) if 'dut_interfaces' in server else tbinfo['topo']['properties']['topology']['VMs']
