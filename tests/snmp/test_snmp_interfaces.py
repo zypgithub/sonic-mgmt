@@ -4,7 +4,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.snmp_helpers import get_snmp_facts
 from tests.platform_tests.counterpoll.counterpoll_helper import ConterpollHelper
 from tests.platform_tests.counterpoll.counterpoll_constants import CounterpollConstants
-from tests.ip.ip_util import parse_rif_counters
+from tests.common.utilities import parse_rif_counters
 from tests.common.utilities import wait_until
 
 pytestmark = [
