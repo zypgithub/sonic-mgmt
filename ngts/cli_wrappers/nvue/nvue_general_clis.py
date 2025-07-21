@@ -130,7 +130,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         _, index = serial_engine.run_cmd(
             wget_cmd,
             ['100%', 'ERROR', 'failed', 'wget:'],
-            timeout=60
+            timeout=180
         )
 
         if index == 0:  # Success - found '100%'

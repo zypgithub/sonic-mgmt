@@ -518,13 +518,13 @@ class GeneralCliCommon(GeneralCliInterface):
         self.engine.run_cmd(f'chmod 777 {onie_reboot_script_path}', validate=True)
         return onie_reboot_script_path
 
-    def reboot_by_onie_reboot_script(self, onie_reboot_script_path, mode):
+    def reboot_by_onie_reboot_script(self, onie_reboot_script_path, mode, chip_type="SPC3"):
         logger.info(f"Reboot to ONIE with boot-mode {mode}")
         with allure.step(f"Reboot to ONIE with boot-mode {mode}"):
             if mode == "uninstall":
-                timeout = 480
+                timeout = PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type]
             else:
-                timeout = 120
+                timeout = PerfConsts.TIMEOUT_FOR_INSTALL_MODE
 
             self.engine.reload([f'{onie_reboot_script_path} {mode}'], wait_after_ping=timeout, ssh_after_reload=False)
 
@@ -533,6 +533,7 @@ class GeneralCliCommon(GeneralCliInterface):
         if current_os == "Cumulus":
             if target_cli_type == "NVUE":
                 logger.info("Skipping uninstall mode since cumulus would wipe out the system")
+                self.engine.reload("sudo onie-select -i -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_INSTALL_MODE, ssh_after_reload=False)
             else:
                 logger.info("Cumulus/NVOS detected wiping out the entire system")
                 self.engine.reload("sudo onie-select -k -f && sudo reboot", wait_after_ping=PerfConsts.TIMEOUT_FOR_UNINSTALL_MODE[chip_type], ssh_after_reload=False)
@@ -540,10 +541,10 @@ class GeneralCliCommon(GeneralCliInterface):
             onie_reboot_script_path = self.prepare_onie_reboot_script_on_dut()
             if target_cli_type == "NVUE":
                 logger.info("Skipping uninstall mode since cumulus would wipe out the system")
-                self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'install')
+                self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'install', chip_type)
             else:
                 logger.info(f"Wiping the entire system for {target_cli_type} install")
-                self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'uninstall')
+                self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'uninstall', chip_type)
 
     def get_kernel_version(self):
         kernel_version_output = self.engine.run_cmd('uname -r', validate=True)

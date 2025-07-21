@@ -272,6 +272,7 @@ class PerfConsts:
         "SPC4": 900,
         "SPC5": 480
     }
+    TIMEOUT_FOR_INSTALL_MODE = 120
 
 
 class SPCXRAConsts:

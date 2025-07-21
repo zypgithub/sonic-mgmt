@@ -8,7 +8,10 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.helpers.run_process_on_host import run_process_on_host
+from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
+from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
+import time
+from retry import retry
 
 logger = logging.getLogger()
 
@@ -158,3 +161,90 @@ class CumulusGeneralCli(NvueGeneralCli):
 
     def _verify_dockers_are_up(self, dockers_list):
         pass
+
+    def enter_onie_mode(self, topology_obj, onie_menu_entry, dut_alias='dut'):
+        '''
+        @summary: In this function we want to enter ONIE install/update mode.
+
+        We are doing so by the following steps:
+            1. Create a serial engine
+            2. Check if the switch is in ONIE install mode
+            3. Trigger remote reboot
+            4. Wait for GRUB menu to appear:
+                a. If the NVOS GRUB menu appears, select the ONIE entry (pressing down 2 key arrows)
+                b. If the ONIE GRUB menu appears, do nothing — the selected entry will auto-trigger after 5 seconds
+
+        @param onie_menu_entry: The GRUB menu entry to select under the ONIE bootloader.
+                                Common values are:
+                                  - 'ONIE: Install OS'
+                                  - 'ONIE: Update ONIE'
+        '''
+        with allure.step(f"Initializing serial connection to {dut_alias}"):
+            serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
+
+        with allure.step('Confirm ONIE boot mode'):
+            if self._check_if_in_onie_install_mode(serial_engine):
+                return
+
+        with allure.step(f'Executing remote reboot on {dut_alias}'):
+            self.remote_reboot_nvue(topology_obj, dut_alias)
+
+        with allure.step('wait for NVOS/ONIE grub menu'):
+            grub_menu_pointer = 0
+            onie_menu_pointer = 1
+            cumulus_esc_pointer = 2
+
+            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN]
+            all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
+            output, respond = serial_engine.run_cmd('', all_patterns, timeout=240, send_without_enter=True)
+
+        if respond != onie_menu_pointer:
+            if respond == cumulus_esc_pointer:
+                with allure.step('Grub menu new style handle'):
+                    logger.info('Hit ESC on grub new style')
+                    output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns,
+                                                            timeout=240, send_without_enter=True)
+                    time.sleep(1)
+
+            if respond >= len(grub_menu_patterns):
+                with allure.step('Secure boot error - handle'):
+                    with allure.step('hit Enter till no error message'):
+                        while respond >= len(grub_menu_patterns):
+                            logger.info('Hit Enter on secure boot error message')
+                            output, respond = serial_engine.run_cmd("\r", expected_value=all_patterns, timeout=240,
+                                                                    send_without_enter=True)
+                            time.sleep(1)
+
+            elif respond == grub_menu_pointer:
+                with allure.step("System in NVOS grub menu, entering ONIE grub menu"):
+                    GrubMenuTool.select_grub_menu_item(serial_engine, 'ONIE')
+
+                    logger.info("Pressing Enter to enter ONIE grub menu")
+                    _, respond = serial_engine.run_cmd('\r',
+                                                       expected_value=[
+                                                           'Due to security constraints, this option will uninstall your current OS',
+                                                           'Answer "YES" to continue',
+                                                           '\\*ONIE:.*'
+                                                       ],
+                                                       timeout=30, send_without_enter=True)
+
+        with allure.step(f'in ONIE grub menu: Go to {onie_menu_entry}'):
+            GrubMenuTool.select_grub_menu_item(serial_engine, onie_menu_entry)
+
+        with allure.step("Waiting for onie prompt"):
+            self.wait_for_onie_prompt(serial_engine)
+
+        with allure.step("Send 'onie-stop'"):
+            self.send_onie_stop(serial_engine)
+
+    @retry(exceptions=Exception, tries=2, delay=1)
+    def _check_if_in_onie_install_mode(self, serial_engine):
+        try:
+            output = serial_engine.run_cmd('\r', [], timeout=5, send_without_enter=False)
+            output, respond = serial_engine.run_cmd('cat /proc/cmdline', ["boot_reason=install"], timeout=10, send_without_enter=False)
+            logger.info('Switch is in ONIE install mode, sending onie-stop')
+            self.send_onie_stop(serial_engine)
+            return True
+        except Exception as e:
+            logger.info(f'Switch is not in ONIE install mode')
+            return False
