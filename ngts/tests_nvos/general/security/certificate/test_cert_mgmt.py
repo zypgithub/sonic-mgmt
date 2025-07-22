@@ -492,7 +492,7 @@ def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
 @pytest.mark.system
 @pytest.mark.certificate
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cert_mgmt_import_raw_chain(test_api, engines):
+def test_cert_mgmt_import_raw_chain(test_api, engines, clear_certs):
     """
     Verify that importing a certificate chain raw with system security import data works
 
