@@ -2078,4 +2078,10 @@
     - Affected_test_cases:
         - tests_nvos/general/security/bmc/test_reset_bmc_root_password.py
         - tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py
+      
+- Errors_list:
+    - '.*send_packet: Network is down.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_message.py::test_system_reload_for_system_message
 # --------------------------------------------------
