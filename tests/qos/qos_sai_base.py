@@ -1354,6 +1354,12 @@ class QosSaiBase(QosBase):
         dualTor = request.config.getoption("--qos_dual_tor")
         if dualTor:
             testPortIds = dualTorPortIndexes
+
+        # Begin: For debug Leopard 01 issue of 4503493, later will remove it
+        if topo in self.SUPPORTED_T1_TOPOS and dut_asic.hostname == 'r-leopard-01':
+            testPortIds[0][0] = testPortIds[0][0][3:] # pop the first 3 ports
+        # End: For debug Leopard 01 issue of 4503493, later will remove it
+
         testPorts = self.__buildTestPorts(request, testPortIds, testPortIps, src_port_ids, dst_port_ids,
                                           get_src_dst_asic_and_duts, uplinkPortIds, sysPortMap,
                                           downlinkPortIds, is_supported_per_dir, lossy_queue_traffic_direction)
