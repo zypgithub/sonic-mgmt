@@ -1,0 +1,5 @@
+StartDevice,StartPort,EndDevice,EndPort,EndFeed
+pdu-10-193-228-79,14,bison-1324,PSU1,
+pdu-10-193-228-79,15,bison-1324,PSU2,
+pdu-10-193-229-95,20,bison-1324,PSU3,
+pdu-10-193-229-95,21,bison-1324,PSU4,

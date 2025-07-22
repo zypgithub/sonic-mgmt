@@ -59,6 +59,12 @@ bison-1211 ansible_host=bison-1211  sonic_version=v2  sonic_hwsku=Mellanox-SN564
 bison-1212-ptf-any ansible_host=bison-1212  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2            serial_console="ssh -l rcon:7003 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=50:00:E6:A0:E7:74 serial=MT251560153G model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT251560153G', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:A0:E7:74', '0x25': u'04/10/2025 07:54:07', '0xfe': u'0x7E6197E5', '0x2b': u'Nvidia', '0x2a': u'546'}"
 bison-1212 ansible_host=bison-1212  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2           serial_console="ssh -l rcon:7003 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=50:00:E6:A0:E7:74 serial=MT251560153G model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2024.08-5.3.0015-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT251560153G', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:A0:E7:74', '0x25': u'04/10/2025 07:54:07', '0xfe': u'0x7E6197E5', '0x2b': u'Nvidia', '0x2a': u'546'}"
 
+bison-1323-ptf-any ansible_host=bison-1323  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2            serial_console="ssh -l rcon:7040 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=38:25:F3:E0:D3:6C serial=MT2521600FAM model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2521600FAM', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:E0:D3:6C', '0x25': u'05/19/2025 23:52:18', '0xfe': u'0xCB85E50C', '0x2b': u'Nvidia', '0x2a': u'546'}"
+bison-1323 ansible_host=bison-1323  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2           serial_console="ssh -l rcon:7040 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=38:25:F3:E0:D3:6C serial=MT2521600FAM model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2521600FAM', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:E0:D3:6C', '0x25': u'05/19/2025 23:52:18', '0xfe': u'0xCB85E50C', '0x2b': u'Nvidia', '0x2a': u'546'}"
+
+bison-1324-ptf-any ansible_host=bison-1324  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2            serial_console="ssh -l rcon:7041 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=38:25:F3:E1:13:5A serial=MT2521600FBF model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2521600FBF', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:E1:13:5A', '0x25': u'05/20/2025 03:53:47', '0xfe': u'0x35D24DC4', '0x2b': u'Nvidia', '0x2a': u'546'}"
+bison-1324 ansible_host=bison-1324  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2           serial_console="ssh -l rcon:7041 10.220.15.238" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-228-79 base_mac=38:25:F3:E1:13:5A serial=MT2521600FBF model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2521600FBF', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:E1:13:5A', '0x25': u'05/20/2025 03:53:47', '0xfe': u'0x35D24DC4', '0x2b': u'Nvidia', '0x2a': u'546'}"
+
 # MTR canonical testbed sonic_bison_r-bison-12 topologies
 r-bison-12-ptf-any ansible_host=r-bison-12  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2            serial_console="ssh -l rcon:7043 10.208.2.39" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-15,pdu-10-208-2-42 base_mac=50:00:E6:23:F6:80 serial=MT2512602H1G model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H1G', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:F6:80', '0x25': u'03/21/2025 20:24:03', '0xfe': u'0x9F3B3A45', '0x2b': u'Nvidia', '0x2a': u'546'}"
 r-bison-12 ansible_host=r-bison-12  sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C512S2           serial_console="ssh -l rcon:7043 10.208.2.39" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-15,pdu-10-208-2-42 base_mac=50:00:E6:23:F6:80 serial=MT2512602H1G model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200-dev', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2512602H1G', '0x21': u'SN5640', '0x26': u'16', '0x24': u'50:00:E6:23:F6:80', '0x25': u'03/21/2025 20:24:03', '0xfe': u'0x9F3B3A45', '0x2b': u'Nvidia', '0x2a': u'546'}"
@@ -1926,6 +1932,12 @@ bison-1211
 
 bison-1212-ptf-any
 bison-1212
+
+bison-1323-ptf-any
+bison-1323
+
+bison-1324-ptf-any
+bison-1324
 
 mtvr-moose-03-ptf-any
 mtvr-moose-03

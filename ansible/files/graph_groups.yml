@@ -20,6 +20,8 @@
   - r-bison-12
   - bison-1211
   - bison-1212
+  - bison-1323
+  - bison-1324
   - nvidia_common
   - nvidia
   - r-anaconda-15
