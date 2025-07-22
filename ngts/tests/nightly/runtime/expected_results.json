@@ -107,6 +107,24 @@
         "show_pl_temperature": "0.532",
         "show_sys_health_summary": "5.0364"
     },
+    "SN4280": {
+        "add_vlan": "0.436",
+        "del_vlan": "0.636",
+        "add_route": "0.436",
+        "del_route": "0.42",
+        "add_po": "0.446",
+        "del_po": "0.422",
+        "show_ifaces_status": "0.772",
+        "show_iface_tr_eeprom": "0.719",
+        "show_pl_fan": "0.535",
+        "show_pl_psustatus": "0.499",
+        "show_pl_firmware": "0.687",
+        "show_pl_pcieinfo": "0.859",
+        "show_pl_ssdhealth": "0.992",
+        "show_pl_syseeprom": "0.592",
+        "show_pl_temperature": "0.532",
+        "show_sys_health_summary": "5.0364"
+    },
     "SN5600": {
         "add_vlan": "0.436",
         "del_vlan": "0.636",

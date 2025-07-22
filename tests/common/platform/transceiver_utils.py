@@ -9,6 +9,16 @@ from copy import deepcopy
 
 I2C_WAIT_TIME_AFTER_SFP_RESET = 5  # in seconds
 
+# Passive cable vendor PN list for the helper function is_passive_vendor_pn
+PASSIVE_CABLE_VENDOR_PN_PREFIXES = ["MCP1650", "MCP1660", "NDYYYF"]
+
+
+def is_passive_vendor_pn(pn):
+    for vendor_pn in PASSIVE_CABLE_VENDOR_PN_PREFIXES:
+        if pn.startswith(vendor_pn):
+            return True
+    return False
+
 
 def parse_transceiver_info(output_lines):
     """
@@ -419,6 +429,8 @@ def is_passive_cable(sfp_eeprom_info):
                 if "Extended Specification Compliance" in spec_compliance and\
                         "CR" in spec_compliance.get("Extended Specification Compliance", " "):
                     return True
+    if is_passive_vendor_pn(sfp_eeprom_info.get("Vendor PN", "").strip()):
+        return True
     return False
 
 
