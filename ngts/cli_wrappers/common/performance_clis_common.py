@@ -289,7 +289,7 @@ class PerformanceCommon:
         """
         pass
 
-    def configure_interfaces_mac_neighbor(self):
+    def configure_interfaces_mac_neighbor(self, vlan_interface_configuration_dict):
         """
         This method is used to configure the mac neighbor on the dut
         Implemented for SONiC only

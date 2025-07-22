@@ -13,7 +13,7 @@ from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, Sonic
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
-from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
+from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict, generate_mac_range
 from ngts.helpers.config_db_utils import save_config_db_json
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import is_ipv6
@@ -384,11 +384,7 @@ class SonicPerformanceCli(PerformanceCommon):
         save_config_db_json(self.engine, conf_json, conf_path, remove_json_path=False)
 
     def save_basic_configuration(self, players):
-        config_db_json = self.cli_obj.general.get_config_db()
-        full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", PerfConsts.DEFAULT_PERF_TEMPLATES_DIR,
-                                 "sonic", f"{self.dut_alias}_basic_config_db.json")
-        with open(full_path, 'w') as f:
-            json.dump(config_db_json, f)
+        pass
 
     def get_player_ports(self, dst_dut_dir="/tmp"):
         return {'connected_ports': self.connected_ports,
@@ -424,12 +420,7 @@ class SonicPerformanceCli(PerformanceCommon):
         return f"/{file_name}"
 
     def restore_basic_configuration(self, dst_dut_dir="/tmp"):
-        full_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", PerfConsts.DEFAULT_PERF_TEMPLATES_DIR,
-                                 "sonic", f"{self.dut_alias}_basic_config_db.json")
-        self.engine.copy_file(source_file=full_path, file_system=dst_dut_dir, dest_file=SonicConst.CONFIG_DB_JSON,
-                              overwrite_file=True, verify_file=False)
-        full_path = os.path.join(dst_dut_dir, SonicConst.CONFIG_DB_JSON)
-        self.cli_obj.general.load_configuration(full_path)
+        pass
 
     def get_tg_unconnected_ports(self):
         return self.unconnected_ports
@@ -606,6 +597,7 @@ class SonicPerformanceCli(PerformanceCommon):
             vlan_ports = list(vlan_info_dict["ports"].keys())
             for port in vlan_ports:
                 vlan_interface_configuration_dict[port] = int(vlan)
+        self.vlan_interface_configuration_dict = vlan_interface_configuration_dict
         return vlan_interface_configuration_dict
 
     def get_dut_interfaces_ipv6_configuration(self):
@@ -618,6 +610,7 @@ class SonicPerformanceCli(PerformanceCommon):
                 if is_ipv6(ip):
                     ipv6_address = ip.split("/")[0]
                     dut_interfaces_ipv6_configuration_dict[interface] = ipv6_address
+        self.dut_interfaces_ipv6_configuration_dict = dut_interfaces_ipv6_configuration_dict
         return dut_interfaces_ipv6_configuration_dict
 
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
@@ -654,24 +647,24 @@ class SonicPerformanceCli(PerformanceCommon):
         self.execute_cmd(self.get_cmd_for_sdk(configure_ports_shaper_cmd,
                                               env_variables=[f'{PerfConsts.SHAPER_VALUE_ENV_VAR}={shaper_value}']))
 
-    def configure_interfaces_mac_neighbor(self):
+    def configure_interfaces_mac_neighbor(self, vlan_interface_configuration_dict):
         """
         TODO: Should be done via BGP - this is temporary
         Configure static route on dut, however this configuration eventually will be done via BGP
         """
-        dut_ports = self.cli_object.performance.get_dut_ports()
+        dut_ports = self.cli_obj.performance.get_dut_ports()
         mac_range = generate_mac_range("00:11:22:33:44:55", count=len(dut_ports))
         fdb_discard_conf = []
         cmd_list = []
         for idx, port in enumerate(dut_ports):
             port_ipv6_address = self.dut_interfaces_ipv6_configuration_dict[port].replace("aaaa", "bbbb")
             port_neighbor_mac = mac_range[idx]
-            vlan = self.vlan_interface_configuration_dict[port]
+            vlan = vlan_interface_configuration_dict[port]
             cmd_list.append(f"sudo ip -6 route add {port_ipv6_address}/48 dev {port}")
             cmd_list.append(f"sudo ip -6 neigh add {port_ipv6_address} lladdr {port_neighbor_mac} dev {port}")
-            fdb_discard_conf.append([self.cli_object.performance.get_hex_int_sdk_port(port), port_neighbor_mac, vlan])
-            self.engine.run_cmd_set(cmd_list)
-            self.configure_fdb_discard(fdb_discard_conf)
+            fdb_discard_conf.append([self.cli_obj.performance.get_hex_int_sdk_port(port), port_neighbor_mac, vlan])
+        self.engine.run_cmd_set(cmd_list)
+        self.configure_fdb_discard(fdb_discard_conf)
 
     def configure_fdb_discard(self, fdb_discard_conf):
         """
@@ -685,7 +678,7 @@ class SonicPerformanceCli(PerformanceCommon):
         with open(full_path, 'w') as f:
             json.dump(fdb_discard_conf, f)
         for alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-            copy_files_to_syncd(self.engines[alias], [conf_file], PerfConsts.CONFIG_FILES_DIR)
+            copy_files_to_syncd(self.topology_obj.players[alias]['engine'], [conf_file], PerfConsts.CONFIG_FILES_DIR)
         for alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-            tg_cli = self.cli_objects[alias]
+            tg_cli = self.topology_obj.players[alias]['cli']
             tg_cli.performance.fdb_discard_creation()

@@ -46,7 +46,7 @@ class TestSRv6Leaf(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.cli_object.performance.configure_interfaces_mac_neighbor()
+        self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
         config_optimal_trimming_size(self.chip_type, self.cli_objects)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 
