@@ -173,7 +173,7 @@ def test_set_fae_fw_recovery_access_ports(engines, devices, random_api, standalo
     port_name = select_random_nvl_port_name(devices, 'acp')
     _run_fae_mode_timeout_test(
         test_api=random_api,
-        group_all_ports=f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}',
+        group_all_ports=f'acp1-{str(len(devices.dut.nvl_access_ports_list))}',
         devices=devices,
         port_name=port_name,
         config=config,

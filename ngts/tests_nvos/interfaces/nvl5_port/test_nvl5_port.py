@@ -269,7 +269,7 @@ def test_nvl5_negative(engines, devices, test_api):
 @pytest.mark.multiplanar
 def test_interface_xdr_slow_speed_access_ports(engines, devices, random_api, setup_name, standalone_system, has_loopbox):
     skip_if_no_access_links(has_loopbox, standalone_system)
-    acp_ports_range = f'acp1-{str(len(devices.dut.nvl5_access_ports_list))}'
+    acp_ports_range = f'acp1-{str(len(devices.dut.nvl_access_ports_list))}'
     _set_unset_interface_xdr_slow_speed(engines, devices, random_api, setup_name,
                                         standalone_system, acp_ports_range, prefix='acp')
 

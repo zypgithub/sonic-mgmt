@@ -120,7 +120,7 @@ def has_active_access_ports(request: pytest.FixtureRequest, standalone_system: b
 @pytest.fixture(scope='module', autouse=True)
 def access_ports(devices):
     # Extract numeric indices from ACP port names by removing 'acp' prefix
-    port_indices = [int(port_name.replace('acp', '')) for port_name in devices.dut.nvl5_access_ports_list]
+    port_indices = [int(port_name.replace('acp', '')) for port_name in devices.dut.nvl_access_ports_list]
     min_port, max_port = min(port_indices), max(port_indices)
     yield Port(f'acp{min_port}-{max_port}', '', '')
 
