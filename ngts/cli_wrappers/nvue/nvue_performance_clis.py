@@ -8,6 +8,7 @@ import re
 from retry import retry
 
 from infra.tools.exceptions.test_issue import TestIssue
+from infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts, ValidationConsts
 from dataclasses import dataclass
@@ -32,7 +33,7 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
         super().__init__(topology_obj, engine, dut_alias, cli_obj)
-        self.port_groups = self.get_right_left_ports_dict()
+        self.port_groups = {}
         self.mac = self.cli_obj.general.get_dut_mac_address()
         self.dut_neighbor_dict = {}
         self.ports = []
@@ -40,7 +41,6 @@ class NvuePerformanceCli(PerformanceCommon):
         self.unconnected_ports = []
         self.ports_mapping = {}
         self.mloops = []
-        # self.set_class_vars()    # only for debug where we don't want to apply the config again
 
     def set_class_vars(self):
         self.ports = self.get_player_ports()
@@ -60,6 +60,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.ports = self.get_player_ports()
         self.connected_ports = self.ports["connected_ports"]
         self.unconnected_ports = self.ports["unconnected_ports"]
+        self.port_groups = self.get_right_left_ports_dict()
         self.get_os_ports_name_mapping()
 
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
@@ -555,7 +556,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.engine.copy_file(source_file=full_path, file_system="/tmp",
                               dest_file=ports_file, overwrite_file=True, verify_file=False)
 
-    @retry(exceptions=TestIssue, tries=10, delay=1)
+    @retry(exceptions=TestIssue, tries=10, delay=3)
     def check_mloops_up(self):
         """
         This method is used to check if the mloops are up on the traffic generator
@@ -580,3 +581,13 @@ class NvuePerformanceCli(PerformanceCommon):
     def update_dst_mac_address(self, src_port, dut_mac_addresses, traffic_parameters):
         dut_port = self.dut_neighbor_dict[src_port]
         traffic_parameters["MAC"]["dst"] = dut_mac_addresses[dut_port]
+
+    def get_sorted_ports_list(self, ports_list, breakout=4):
+        return sorted(ports_list, key=lambda port: int(re.search(r'swp(\d+)s(\d+)', port).group(1)) * breakout + int(re.search(r'swp(\d+)s(\d+)', port).group(2)))
+
+    def enable_disable_packet_trim(self, enable=True, apply=True):
+        if apply:
+            self.execute_cmd("nv config detach")
+        self.execute_cmd(f"nv set system forwarding packet-trim state {'enabled' if enable else 'disabled'}")
+        if apply:
+            self.execute_cmd("nv config apply -y")
