@@ -9,9 +9,7 @@ from grpc_tools import protoc
 
 from tests.common.helpers.assertions import pytest_require as pyrequire
 from tests.common.helpers.dut_utils import check_container_state
-from tests.gnmi.helper import gnmi_container, apply_cert_config, recover_cert_config, create_ext_conf, create_ca_conf,\
-    prepare_root_cert, prepare_server_cert, prepare_client_cert, copy_certificate_to_dut,\
-    copy_certificate_to_ptf
+from tests.gnmi.helper import gnmi_container, apply_cert_config, recover_cert_config, create_ext_conf, create_ca_conf
 from tests.gnmi.helper import GNMI_SERVER_START_WAIT_TIME, check_ntp_sync_status
 from tests.common.gu_utils import create_checkpoint, rollback
 from tests.common.helpers.gnmi_utils import GNMIEnvironment
@@ -146,12 +144,6 @@ def setup_gnmi_server(duthosts, rand_one_dut_hostname, localhost, ptfhost):
         check_container_state(duthost, gnmi_container(duthost), should_be_running=True),
         "Test was not supported on devices which do not support GNMI!")
 
-    prepare_root_cert(localhost)
-    prepare_server_cert(duthost, localhost)
-    prepare_client_cert(localhost)
-
-    copy_certificate_to_dut(duthost)
-    copy_certificate_to_ptf(ptfhost)
     # Create Root key
     local_command = "openssl genrsa -out gnmiCA.key 2048"
     localhost.shell(local_command)
