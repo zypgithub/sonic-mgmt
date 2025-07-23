@@ -156,6 +156,14 @@ def pytest_addoption(parser):
 
     # FEC test options
     parser.addoption("--toggles_num", action="store", default=1, type=int, help="Number of toggles for FEC test")
+
+    #####################################
+    # dash, vxlan, route shared options #
+    #####################################
+    parser.addoption("--skip_cleanup", action="store_true", help="Skip config cleanup after test (tests: dash, vxlan)")
+    parser.addoption("--num_routes", action="store", default=None, type=int,
+                     help="Number of routes (tests: route, vxlan)")
+
     ############################
     # pfc_asym options         #
     ############################
