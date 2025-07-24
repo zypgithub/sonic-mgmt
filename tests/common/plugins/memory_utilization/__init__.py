@@ -66,7 +66,8 @@ def pytest_runtest_setup(item):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_teardown(item, nextitem):
-    if item.rep_setup.skipped or item.rep_call.skipped:
+    if not hasattr(item, "rep_setup") or item.rep_setup.skipped or \
+            not hasattr(item, "rep_call") or item.rep_call.skipped:
         return
     logger.debug("pytest_runtest_teardown early for test {}".format(item.name))
     if "request" in item.fixturenames:
