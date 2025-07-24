@@ -448,7 +448,7 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
                                    f"please check {higher_tc_samples}")
 
 
-def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, violations_list):
+def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, tolerance, violations_list):
     with allure.step(f"Validate {tc_to_validate} TC samples occupancy rate is below {tc_occ_threshold} cells"):
         tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
@@ -460,11 +460,84 @@ def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, violations_l
                 if tc_name in tc_to_validate:
                     for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
                         tc_occ = tc_dict[tc_occ_key]
-                        if tc_occ > tc_occ_th:
-                            higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
+                        validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key)
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
                                    f"please check {higher_tc_samples}")
+
+
+def validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key):
+    if tolerance:
+        min_range, max_range, is_within_range = is_within_tolerance_range(tc_occ, tc_occ_th, tolerance)
+        if not is_within_range:
+            higher_tc_samples.append(f"{sample_id} - TC {tc_name} {tc_occ_key} {tc_occ} is off range {min_range} - {max_range}")
+    else:
+        if tc_occ > tc_occ_th:
+            higher_tc_samples.append(f"{sample_id} - TC {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
+
+
+def is_within_tolerance_range(value, threshold, tolerance):
+    """
+    This function is used to validate the TC occupancy value is within the tolerance range
+    :param value: the value to validate
+    :param threshold: the threshold to validate against
+    :param tolerance: the tolerance range, i.e float value between 0 and 1
+    :return: min_range, max_range, is_within_range
+    """
+    if not is_tolerance_value_valid(tolerance):
+        raise ValueError("Tolerance value must be between 0 and 1")
+    min_tolerance, max_tolerance = 1 - tolerance, 1 + tolerance
+    min_range, max_range = threshold * min_tolerance, threshold * max_tolerance
+    is_within_range = value > min_range and value < max_range
+    return min_range, max_range, is_within_range
+
+
+def is_tolerance_value_valid(tolerance):
+    """
+    This function is used to validate the tolerance value is between 0 and 1
+    :param tolerance: the tolerance value to validate
+    :return: True if the tolerance value is between 0 and 1, False otherwise
+    """
+    return 0 < tolerance < 1
+
+
+def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_validate, allowed_deviation, violations_list):
+    """
+    This function is used to compare the TC occupancy to a reference TC occupancy
+    :param traffic_json: current test validation json
+    :param reference_json: reference validation json, can be from a previous test run or from a reference file
+    :param tc_keys: list of tc keys, i.e [ValidationConsts.TC_OCC_AVG, ValidationConsts.TC_OCC_MAX]
+    :param tc_to_validate: list of tc to validate, i.e [1, 2]
+    :param allowed_deviation: allowed deviation from the reference TC occupancy, i.e +-1
+    :param violations_list: list of violations
+    """
+    with allure.step(f"Compare TC occupancy to reference for {tc_to_validate}"):
+        tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+        tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+        for sample_id, tc_sample in tc_samples.items():
+            tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
+            for tc_dict in tc_df:
+                tc_name = tc_dict[ValidationConsts.TC_NAME]
+                if tc_name in tc_to_validate:
+                    for key in tc_keys:
+                        tc_occ = tc_dict[key]
+                        reference_tc_occ = get_tc_occ_from_traffic_json(reference_json, key, tc_name)
+                        min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
+                        if tc_occ < min_limit or tc_occ > max_limit:
+                            violations_list.append(f"TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
+
+
+def get_tc_occ_from_traffic_json(traffic_json, tc_key, tc):
+    tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+    tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+    tc_occ = None
+    for sample_id, tc_sample in tc_samples.items():
+        tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
+        for tc_dict in tc_df:
+            tc_name = tc_dict[ValidationConsts.TC_NAME]
+            if tc_name == tc:
+                tc_occ = tc_dict[tc_key]
+    return tc_occ
 
 
 def validate_counters(traffic_json, skip_first_counters_iteration, ignore_counter_list, violations_list):
@@ -630,6 +703,34 @@ def get_queue_packet_percentages(cli_obj, interface_list, queues_list):
     return queue_packet_percentages
 
 
+def validate_ets(cli_obj, interface_list, queues_list, violations_list):
+    """
+     For each queue in (1,2,4):
+
+    (#bytes transmitted from each queue) == (Sum of #bytes transmitted from queues 1,2,4) * (Approximate normalized DWRR weight / sum of Approximate normalized DWRR weights of queues 1,2,4).
+    """
+    dwrr_weights = cli_obj.qos.get_dwrr_weights(queues_list)
+    dwrr_weights_sum = sum(dwrr_weights.values())
+    with allure.step(f"Validate ETS for {queues_list}"):
+        for interface in interface_list:
+            show_queue_counters_dict = cli_obj.interface.parse_show_queue_counters(interface)
+            sum_queue_bytes = get_sum_queue_bytes(show_queue_counters_dict, queues_list)
+            for queue in queues_list:
+                queue_counter_bytes, queue_counter_drop_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+                queue_dwrr_weight = dwrr_weights[queue]
+                if queue_counter_bytes != sum_queue_bytes * (queue_dwrr_weight / dwrr_weights_sum):
+                    violations_list.append(f"Queue {queue} bytes: queue_counter_bytes {queue_counter_bytes} != sum_queue_bytes {sum_queue_bytes} * queue_dwrr_weight {queue_dwrr_weight} / dwrr_weights_sum {dwrr_weights_sum} for {interface}")
+    return violations_list
+
+
+def get_sum_queue_bytes(show_queue_counters_dict, queues_list):
+    sum_queue_bytes = 0
+    for queue in queues_list:
+        queue_counter_bytes, queue_counter_drop_bytes = get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+        sum_queue_bytes += queue_counter_bytes
+    return sum_queue_bytes
+
+
 def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
     """
     validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
@@ -659,14 +760,14 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
                 total_packets_egress_port_bytes = total_drop_queue_counter_pkts_bytes + trimming_queue_counter_pkts_bytes
                 dropped_without_trimming = total_packets_egress_port_dropped - trimming_queue_counter_pkts
                 if dropped_without_trimming > 0:
-                    dropped_without_trimming_percentage = round(dropped_without_trimming / total_packets_egress_port, 2)
+                    dropped_without_trimming_percentage = dropped_without_trimming / total_packets_egress_port
                 else:
                     dropped_without_trimming_percentage = 0
-                untrimmed_percentage = round(total_drop_queue_counter_pkts / total_packets_egress_port, 2)
-                untrimmed_bytes_percentage = round(total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes, 2)
-                trimming_percentage = round(trimming_queue_counter_pkts / total_packets_egress_port, 2)
-                trimming_bytes_percentage = round(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes, 2)
-                queue_packet_percentages_dict = {ValidationConsts.PORT: interface,
+                untrimmed_percentage = total_drop_queue_counter_pkts / total_packets_egress_port
+                untrimmed_bytes_percentage = total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes
+                trimming_percentage = trimming_queue_counter_pkts / total_packets_egress_port
+                trimming_bytes_percentage = trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes
+                queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: interface,
                                                  ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
                                                  ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage,
                                                  ValidationConsts.DROPPED_WITHOUT_TRIMMING_PRECENTAGE: dropped_without_trimming_percentage,
@@ -682,6 +783,7 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
     queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
     with allure.step(f"Attach queue_packet_percentages_df"):
         allure.attach(queue_packet_percentages_df.to_html(), "Queue packet percentages dataframe", attachment_type=allure.attachment_type.HTML)
+    return queue_packet_percentages
 
 
 def update_queue_counters(show_queue_counters_dict, queue,

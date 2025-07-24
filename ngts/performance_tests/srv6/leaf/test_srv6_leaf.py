@@ -1,16 +1,16 @@
 import os
-
 import allure
+import json
 import logging
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_few_traffic
 import pytest
 import pandas as pd
-from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, stop_traffic,
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, Validation, stop_traffic,
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata,
                                                                 skip_performance_test_conditionally, skip_test_on_unsupported_chip_type)
 from ngts.constants.constants import InfraConst
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
                                                   get_leaf_many_to_few_port_group_df,
@@ -20,8 +20,7 @@ from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import (validate_no_dropped_packets_on_queue, get_ports_avg_bw,
-                                                      validate_trimmed_untrimmed_dropped_percentages, get_tc_occ, get_queue_packet_percentages)
+from ngts.helpers.performance.traffic_helpers import (validate_no_dropped_packets_on_queue, validate_per_tc)
 from infra.tools.exceptions.test_issue import TestIssue
 
 
@@ -71,12 +70,14 @@ class TestSRv6Leaf(TestSRv6Base):
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
 
         with allure.step(f"Verifying the traffic for all egress ports"):
+            additional_validations = self.get_additional_validations(traffic_type)
             self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
-                                      power_threshold=self.power_thresholds_by_chip_type)
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      additional_validations=additional_validations)
             run_validation(config)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -133,7 +134,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                      MongoDbConsts.TEST_WORKLOAD: workload})
         self.many_to_few_traffic_test_runner(test_name, traffic_type, workload,
                                              egress_ports=egress_ports, ingress_ports=ingress_ports, M=M,
-                                             tc_threshold=MRCConsts.SPINE_MANY_TO_FEW_TRAFFIC_TC_OCC_TH)
+                                             tc_threshold=MRCConsts.LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH)
 
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
     def test_victim_flow_srv6(self, request, victim_flow_port_group_df, traffic_type, packet_size=4096):
@@ -174,13 +175,15 @@ class TestSRv6Leaf(TestSRv6Base):
             self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
+            additional_validations = self.get_victim_flow_additional_validations()
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       run_validate_counters=False,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
-                                      tc_occ_threshold=MRCConsts.OCC_TH_DICT,
+                                      tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,
-                                      samples_params_dict=samples_params_dict)
+                                      samples_params_dict=samples_params_dict,
+                                      additional_validations=additional_validations)
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
         with allure.step(f"stop traffic"):
             stop_traffic(self.players)
@@ -188,3 +191,9 @@ class TestSRv6Leaf(TestSRv6Base):
             validate_no_dropped_packets_on_queue(self.cli_object, egress_ports, MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, violations_list)
         if violations_list:
             raise TestIssue("\n".join(violations_list))
+
+    def get_victim_flow_additional_validations(self):
+        additional_validations = {
+            'validate_per_tc': Validation(validate_per_tc, {'tc_occ_threshold': MRCConsts.OCC_TH_DICT, 'tc_to_validate': MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, 'tolerance': None})
+        }
+        return additional_validations

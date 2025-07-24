@@ -43,3 +43,16 @@ class SonicQosCli:
         :return: command output
         """
         return self.engine.run_cmd('docker exec swss supervisorctl start buffermgrd', validate=True)
+
+    def get_dwrr_weights(self, tc_list):
+        """
+        This function is used to get the dwrr weights for the selected tc list
+        :param tc_list: list of tc, i.e [1, 2]
+        :return: dict of tc and dwrr weight, i.e {1: 100, 2: 200}
+        """
+        dwrr_weights = {}
+        output = self.engine.run_cmd("sonic-cfggen -j /etc/sonic/config_db.json --var-json SCHEDULER")
+        weights_json = json.loads(output)
+        for tc in tc_list:
+            dwrr_weights[tc] = int(weights_json[f"scheduler_q{tc}_downlink"]["weight"])
+        return dwrr_weights

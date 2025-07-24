@@ -69,19 +69,18 @@ def create_round_robin_stream(player_alias, cli_obj, src_ports, dst_port, traffi
 
 def create_workload1_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,
                             mloops_dict, dut_interfaces_ipv6_configuration_dict, stream_list,
-                            mrc1_num_packets=5, mrc2_num_packets=5,
+                            mrc1_num_packets=6, mrc2_num_packets=6,
                             send_roce_ack=True, send_rtt_and_probe_ack=True, congestion=False, send_retransmission=True):
     """
     packet breakdown:
     +------------------------+------------------+
     | Packet Type           | Number of Packets |
     +------------------------+------------------+
-    | MRC1 data packets     | 5                |
-    | MRC2 data packets     | 5                |
-    | MRC1 retransmission   | 1                |
-    | MRC2 retransmission   | 1                |
+    | MRC1 data packets     | 6                 |
+    | MRC2 data packets     | 6                 |
+    | MRC retransmission    | 1                 |
     +------------------------+------------------+
-    | Total                 | 12               |
+    | Total                 | 13                |
     +------------------------+------------------+
     """
     set_workload_traffic_parameters(cli_obj, traffic_parameters, mloops_dict, src_ports, dst_port,
@@ -103,11 +102,11 @@ def create_workload1_stream(player_alias, cli_obj, src_ports, dst_port, traffic_
                         congestion=False,
                         stream_num=2)
     if send_retransmission:
-        mrc1_retransmit_stream = get_mrc_stream(player_alias, traffic_parameters, 1, src_ports, dst_port,
-                                                MRCConsts.MRC1_RETRANSMISSION_DSCP, mrc_stream_name="1_RETRANSMIT")
-        mrc2_retransmit_stream = get_mrc_stream(player_alias, traffic_parameters, 1, src_ports, dst_port,
-                                                MRCConsts.MRC2_RETRANSMISSION_DSCP, mrc_stream_name="2_RETRANSMIT")
-        stream_list.extend([mrc1_retransmit_stream, mrc2_retransmit_stream])
+        dscp = random.choice([MRCConsts.MRC1_RETRANSMISSION_DSCP, MRCConsts.MRC2_RETRANSMISSION_DSCP])
+        stream_num = 1 if dscp == MRCConsts.MRC1_RETRANSMISSION_DSCP else 2
+        mrc_retransmit_stream = get_mrc_stream(player_alias, traffic_parameters, 1, src_ports, dst_port,
+                                               dscp, mrc_stream_name=f"{stream_num}_RETRANSMIT")
+        stream_list.extend([mrc_retransmit_stream])
 
 
 def create_mrc1_data_only_workload_stream(player_alias, cli_obj, src_ports, dst_port, traffic_parameters, traffic_type,

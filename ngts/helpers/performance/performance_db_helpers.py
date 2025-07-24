@@ -103,19 +103,21 @@ def create_test_validation_entry_to_db(players, test_name):
     os_ports_name_mapping_df = pd.DataFrame(test_specific_values.pop(ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME, []))
     power_total = test_specific_values.pop(MongoDbConsts.POWER_TOTAL, [])
     power_by_collectors_group = test_specific_values.pop(MongoDbConsts.POWER_BY_COLLECTORS, [])
+    trimmed_untrimmed_dropped_percentages = test_specific_values.pop(MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES, None)
     if validation_json:
         test_specific_values[MongoDbConsts.VALIDATOR_RESULTS] = restructure_validator_results(validation_json,
                                                                                               ports_group_df,
                                                                                               os_ports_name_mapping_df,
                                                                                               power_total,
-                                                                                              power_by_collectors_group)
+                                                                                              power_by_collectors_group,
+                                                                                              trimmed_untrimmed_dropped_percentages)
 
     test_info_path = os.path.join(PerfConsts.REQUIRMENTS_DIR, f"{test_name}_info_dump.json")
     with open(test_info_path, "w") as f:
         json.dump(test_specific_values, f, indent=4)
 
 
-def restructure_validator_results(validation_json, ports_group_df, os_ports_name_mapping_df, power_total, power_by_collectors_group):
+def restructure_validator_results(validation_json, ports_group_df, os_ports_name_mapping_df, power_total, power_by_collectors_group, trimmed_untrimmed_dropped_percentages):
     """
     Args:
         validation_json: the JSON from the SDK TrafficValidator
@@ -128,7 +130,7 @@ def restructure_validator_results(validation_json, ports_group_df, os_ports_name
         an updated dict with the validator info for mongo db
     """
     test_validation_to_mongo_db = {}
-    test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df)
+    test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df, trimmed_untrimmed_dropped_percentages)
     test_validation_to_mongo_db[MongoDbConsts.TC_DATA] = restructure_tc(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.TEMP_DATA] = restructure_temp(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.POWER_TOTAL] = restructure_power(power_total)
@@ -236,7 +238,7 @@ def calculate_avg_on_all_samples(df_list, samples, sample_key):
     return round(sum(df[sample_key] for df in df_list) / len(samples), 3)
 
 
-def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df):
+def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df, trimmed_untrimmed_dropped_percentages):
     """
     Args:
         validation_json: the JSON from the SDK TrafficValidator
@@ -251,6 +253,9 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
     merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
     if not os_ports_name_mapping_df.empty:
         merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
+    if trimmed_untrimmed_dropped_percentages:
+        trimmed_untrimmed_dropped_percentages_df = pd.DataFrame(trimmed_untrimmed_dropped_percentages)
+        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.OS_PORT_NAME)
     return merged_df.to_dict(orient='records')
 
 
