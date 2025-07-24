@@ -12,6 +12,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 
 logger = logging.getLogger()
 
@@ -22,6 +23,10 @@ def required_for_redundancy(devices):
         pytest.skip("No PSUs found on the DUT")
 
     min_required = len(devices.dut.psu_list) // 2
+
+    if devices.dut.is_eth():
+        min_required = len(devices.dut.psu_list)
+
     required_for_redundancy = {PlatformConsts.PS_REDUNDANCY_NO: min_required,
                                PlatformConsts.PS_REDUNDANCY_GRID: min_required * 2,
                                PlatformConsts.PS_REDUNDANCY_PS: min_required + 1}
@@ -36,14 +41,19 @@ def clear_platform_ps_redundancy(platform, engines):
     """
 
     with allure.step('Run unset platform ps-redundancy command and apply config'):
-        platform.ps_redundancy.unset(apply=True, dut_engine=engines.dut).verify_result()
+        platform.ps_redundancy.unset(apply=True, ask_for_confirmation=TestToolkit.devices.dut.ask_for_confirmation, dut_engine=engines.dut).verify_result()
 
 
 @pytest.mark.platform
+@pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_ps_redundancy(test_api, devices):
+def test_show_platform_ps_redundancy(test_api, devices, engines, min_psu_not_available_eth):
     """nv show platform ps-redundancy"""
     TestToolkit.tested_api = test_api
+
+    if min_psu_not_available_eth:
+        with allure.step("Verify testcase applicable for cumulus devices"):
+            pytest.skip("Skipping test_show_platform_ps_redundancy test on Cumulus devices as PS Redundancy is not supported because MIN_PSU is not available")
 
     with allure.step("Create Platform object"):
         platform = Platform()
@@ -60,11 +70,16 @@ def test_show_platform_ps_redundancy(test_api, devices):
 
 
 @pytest.mark.platform
+@pytest.mark.cumulus
 @pytest.mark.timeout(6 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
+def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy, devices, min_psu_not_available_eth):
     """nv set platform ps-redundancy"""
     TestToolkit.tested_api = test_api
+
+    if min_psu_not_available_eth:
+        with allure.step("Verify testcase applicable for cumulus devices"):
+            pytest.skip("Skipping test_set_platform_ps_redundancy test on Cumulus devices as PS Redundancy is not supported because MIN_PSU is not available")
 
     with allure.step("Create Platform object"):
         platform = Platform()
@@ -73,7 +88,7 @@ def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
         for policy_type in PlatformConsts.PS_REDUNDANCY_POLICY_TYPE:
             with allure.step("Set platform ps-redundancy to {} and verify in show output".format(policy_type)):
                 platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, policy_type,
-                                           apply=True, dut_engine=engines.dut)
+                                           ask_for_confirmation=devices.dut.ask_for_confirmation, apply=True, dut_engine=engines.dut)
                 output = OutputParsingTool.parse_json_str_to_dictionary(platform.ps_redundancy.show()).\
                     get_returned_value()
                 ValidationTool.verify_field_value_in_output(output, PlatformConsts.PS_REDUNDANCY_POLICY,
@@ -82,7 +97,7 @@ def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
                                                             required_for_redundancy[policy_type]).verify_result()
 
         with allure.step("Unset platform ps-redundancy and verify show command shows default policy"):
-            platform.ps_redundancy.unset(PlatformConsts.PS_REDUNDANCY_POLICY, apply=True, dut_engine=engines.dut).\
+            platform.ps_redundancy.unset(PlatformConsts.PS_REDUNDANCY_POLICY, apply=True, ask_for_confirmation=devices.dut.ask_for_confirmation, dut_engine=engines.dut).\
                 verify_result()
 
             # To Do : Commenting the below code as the default policy is not defined yet.
@@ -96,10 +111,15 @@ def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy):
 
 @pytest.mark.platform
 @pytest.mark.disable_loganalyzer
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.cumulus
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, test_api, required_for_redundancy):
+def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, test_api, required_for_redundancy, min_psu_not_available_eth):
     TestToolkit.tested_api = test_api
+
+    if min_psu_not_available_eth:
+        with allure.step("Verify testcase applicable for cumulus devices"):
+            pytest.skip("Skipping test_platform_ps_redundancy_functionality test on Cumulus devices as PS Redundancy is not supported because MIN_PSU is not available")
 
     with allure.step("Create Platform object"):
         platform = Platform()

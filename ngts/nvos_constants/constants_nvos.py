@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from tokenize import Double
 from typing import Literal, TypedDict
+import re
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -111,6 +112,7 @@ class CumulusConsts:
     PLATFORM_ASIC_RESOURCE_ACL_TABLE_FIELDS = ['acl-18b', 'acl-36b', 'acl-54b', 'rule-count']
     PLATFORM_ASIC_RESOURCE_GLOBAL_REQUIRED_FIELDS = ['used']
     PLATFORM_ASIC_RESOURCE_GLOBAL_OPTIONAL_FIELDS = ['max', 'percentage']
+    MIN_PSU_VPD_PATTERN = re.compile(r"MIN_PSU\s*[=:]\s*\d+")
 
 
 class TestConsts:
