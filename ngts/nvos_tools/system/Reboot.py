@@ -15,10 +15,10 @@ class Reboot(BaseComponent):
         self.history = BaseComponent(self, path='/history')
 
     def action_reboot(self, engine=None, device=None, params="", should_wait_till_system_ready=True,
-                      recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, check_system_is_functional=None):
+                      recovery_engine=None, topology_obj=None, system_is_ready_timeout=None, check_system_is_functional=None, send_user_confirmation=None):
         return self.parent_obj.action_reboot(params, engine=engine, device=device, reboot_params=RebootParams(
             should_wait_till_system_ready=should_wait_till_system_ready,
             recovery_engine=recovery_engine,
             topology_obj=topology_obj or TestToolkit.topology_obj,
             system_is_ready_timeout=system_is_ready_timeout,
-            check_system_is_functional=check_system_is_functional))
+            check_system_is_functional=check_system_is_functional), send_user_confirmation=send_user_confirmation)

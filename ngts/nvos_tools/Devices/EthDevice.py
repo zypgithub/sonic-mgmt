@@ -5,7 +5,7 @@ from typing import List
 
 from packaging.version import Version
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -84,6 +84,14 @@ class EthSwitch(BaseSwitch):
         self.techsupport_delete_success_message = CumulusConsts.TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE
         self.techsupport_threshold = CumulusConsts.TECHSUPPORT_THRESHOLD
         self.techsupport_file_not_found_message = CumulusConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
+        self.ntp_service_name = 'ntpsec@mgmt'
+        self.ntp_reboot_action_param = ""
+        self.ntp_dict = NtpConsts.CUMULUS_NTP_DEFAULT_DICT
+        self.ntp_default_reference = NtpConsts.REFERENCE_DEFAULT_VALUE
+        self.ntp_expected_time = NtpConsts.CUMULUS_EXPECTED_DURATION
+        self.ntp_server1_values_dict = NtpConsts.CUMULUS_SERVER1_DEFAULT_VALUES_DICT
+        self.ntp_server_none_values_dict = NtpConsts.CUMULUS_SERVER_NONE_DEFAULT_VALUES_DICT
+        self.ntp_multiple_servers_values_dict = NtpConsts.CUMULUS_MULTIPLE_SERVERS_CONFIG_DICT
 
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",
