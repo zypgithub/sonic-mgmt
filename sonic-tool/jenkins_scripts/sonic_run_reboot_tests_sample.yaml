@@ -1,9 +1,13 @@
 # Modify based on the template and then place the test config yaml file
 # under folder /auto/sw_regression/system/SONIC/MARS/reboot_tests_config.d
+202305_version: &202305_version /auto/sw_system_release/sonic/202305/202305_1/dev/sonic-mellanox.bin
+202311_version: &202311_version /auto/sw_system_release/sonic/202311/202311/dev/sonic-mellanox.bin
+202405_version: &202405_version /auto/sw_system_release/sonic/202405/202405/dev/sonic-mellanox.bin
+202411_version: &202411_version /auto/sw_system_release/sonic/202411/202411_1/dev/sonic-mellanox.bin
+ 
 base_version: &base_version /auto/sw_system_release/sonic/main_branch_verification_pointer-base.bin
 target_version: &target_version /auto/sw_system_release/sonic/main_branch_verification_pointer.bin
-2505_rc_18: &2505_rc_18 /auto/sw_system_release/sonic/202505_RC.18-defd313c1_Internal/dev/Mellanox/sonic-mellanox.bin
-master_version: &master_version /auto/sw_system_release/sonic/master-latest-internal-sonic-mellanox.bin
+ 
 fast_reboot: &fast_reboot fast
 warm_reboot: &warm_reboot warm
 cold_reboot: &cold_reboot cold
@@ -12,18 +16,44 @@ cold_reboot: &cold_reboot cold
 # platform specific default values
 
 all_tests: # group by setup_name
-  - setup_name: arc-switch1004_setup
+  - setup_name: r-panther-23_setup
     tests:
     - reboot_type: *fast_reboot
       base_version:
-        - *base_version
+        - *202305_version
+      target_version: *202405_version
+      iterations: 1
+    - reboot_type: *cold_reboot
+      base_version:
+        - *202311_version
       target_version: *target_version
       iterations: 1
     - reboot_type: *warm_reboot
       upgrade_testcase: test_upgrade_path # only warm reboot can select upgrade testcase
       base_version:
-        - *base_version
-        - *master_version
+        - *202305_version
+        - *202405_version
+      target_version: *target_version
+      iterations: 1
+    - reboot_type: *warm_reboot
+      upgrade_testcase: test_multi_hop_upgrade_path # only warm reboot can select upgrade testcase
+      base_version:
+        - *202305_version
+        - *202405_version
+      target_version: *target_version
+      iterations: 1
+    - reboot_type: *warm_reboot
+      upgrade_testcase: test_warm_upgrade_sad_path # only warm reboot can select upgrade testcase
+      base_version:
+        - *202405_version
+        - *2505_rc_18
+      target_version: *target_version
+      iterations: 1
+    - reboot_type: *warm_reboot
+      upgrade_testcase: test_double_upgrade_path # only warm reboot can select upgrade testcase
+      base_version:
+        - *202305_version
+        - *202405_version
       target_version: *target_version
       iterations: 1
   - setup_name: r-panther-23_setup

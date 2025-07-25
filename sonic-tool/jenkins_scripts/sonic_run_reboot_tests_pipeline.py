@@ -224,7 +224,6 @@ def prepare_cases_files(reboot_type_iterations_dict,
             base_allure_project_id_param = (
                 "--allure_server_project_id="
                 f"{setup_id}-"
-                f"{UPGRADE_TC_PROJECT_ID_DICT.get(upgrade_testcase, 'upgrade-reboot')}-"
                 f"{r_type}"
             )
         base_ver_images = reboot_type_base_ver_images[r_type]
@@ -275,7 +274,6 @@ def prepare_cases_files(reboot_type_iterations_dict,
                     )
         file_data += CASES_FILE_END_LINE_TEMPLATE
 
-        sonic_mgmt_path = os.path.dirname(os.path.abspath(__file__)).split('sonic-tool')[0]
         cases_file_path = os.path.join(sonic_mgmt_path, cases_file_name)
         with open(cases_file_path, 'w') as file:
             file.write(file_data)
@@ -320,11 +318,11 @@ def do_preparation_steps_with_test_config_yaml(test_config_yaml_file:str):
     with open(test_config_yaml_file, 'r') as file:
         test_config = yaml.safe_load(file)
     for setup in test_config['all_tests']:
-        # prepare DB and CASES files for each setup
-        reboot_types_set = set()
-        reboot_type_iterations_dict = {}
-        reboot_type_base_version_dict = {}
+        # prepare DB and CASES files for each setup and each test case for the setup
         for test_config in setup['tests']:
+            reboot_types_set = set()
+            reboot_type_iterations_dict = {}
+            reboot_type_base_version_dict = {}
             if 'iterations' not in test_config or int(test_config['iterations']) <= 0:
                 continue
             test_config_upgrade_testcase = (
@@ -333,6 +331,9 @@ def do_preparation_steps_with_test_config_yaml(test_config_yaml_file:str):
                 else 'test_upgrade_path'
             )
             r_type = test_config['reboot_type']
+            test_case = test_config.get('upgrade_testcase', 'test_upgrade_path')
+            upgrade_tc_project_id = UPGRADE_TC_PROJECT_ID_DICT.get(test_case, 'upgrade-reboot')
+            r_type = r_type + "_" + upgrade_tc_project_id
             reboot_types_set.add(r_type)
             reboot_type_iterations_dict[r_type] = test_config['iterations']
             reboot_type_base_version_dict[r_type] = ",".join(test_config['base_version'])

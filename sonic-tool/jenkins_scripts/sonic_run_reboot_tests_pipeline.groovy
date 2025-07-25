@@ -144,19 +144,13 @@ def get_SetupNameRebootTypeMap(setup_name) {
         echo "get reboot types for ${setup_name} from ${env.test_config_yaml_file}"
         def test_config = readYaml(file: env.test_config_yaml_file)
         reboot_types = []
-        for (test in test_config.all_tests) {
-            if (test.setup_name == setup_name) {
-                for (t in test.tests) {
-                    if (t.containsKey('iterations') && t.iterations.toInteger() > 0) {
-                        reboot_types.add(t.reboot_type)
-                    } else if (t.containsKey('iterations')) {
-                        echo "skipping ${t.reboot_type} with ${t.iterations} iterations"
-                    } else {
-                        echo "skipping ${t.reboot_type} as 'iterations' key is missing"
-                    }
-                }
-                break
-            }
+        // get all .db files from sonic-mgmt/${setup_name} folder
+        // the file name format is ${reboot_type}.db
+        def db_files = findFiles(glob: "sonic-mgmt/${setup_name}/*.db")
+        db_files.each { db_file ->
+            def db_file_name = db_file.name
+            def reboot_type = db_file_name[0..-4]  // Remove .db extension
+            reboot_types.add(reboot_type)
         }
         return reboot_types
     }
@@ -261,18 +255,14 @@ def cloneRepoAndCheckoutBranch() {
 }
 
 
-def prepareSonicMgmtTarball() {
+def prepareSonicMgmtTarball(custom_tarball) {
     // Create sonic-mgmt tarball
-    sh 'tar -czvf jenkins_reboot_tests_runner.db.1.tgz sonic-mgmt/ > /dev/null'
-    sh 'chmod 777 jenkins_reboot_tests_runner.db.1.tgz'
-    sh 'cp jenkins_reboot_tests_runner.db.1.tgz /.autodirect/sw_regression/system/SONIC/MARS/tarballs/'
-    // sh 'chmod 777 /.autodirect/sw_regression/system/SONIC/MARS/tarballs/jenkins_reboot_tests_runner.db.1.tgz'
-    // Copy tarball to MTBC location to allow MTBC setups to be able to run reboot tests
-    //sh 'cp jenkins_reboot_tests_runner.db.1.tgz /.autodirect/sw_regression/mtbcsw/system/SONIC/MARS/tarballs/'
-    //sh 'chmod 777 /.autodirect/sw_regression/mtbcsw/system/SONIC/MARS/tarballs/jenkins_reboot_tests_runner.db.1.tgz'
+    sh "tar -czvf ${custom_tarball} sonic-mgmt/ > /dev/null"
+    sh "chmod 777 ${custom_tarball}"
+    sh "cp ${custom_tarball} /.autodirect/sw_regression/system/SONIC/MARS/tarballs/"
 }
 
-def prepareRunCmd(setup_name, base_version = env.base_version, target_version = env.target_version) {
+def prepareRunCmd(setup_name, custom_tarball, base_version = env.base_version, target_version = env.target_version) {
 	reboot_types = get_SetupNameRebootTypeMap(setup_name)
 
     base_versions_list = base_version
@@ -284,7 +274,7 @@ def prepareRunCmd(setup_name, base_version = env.base_version, target_version = 
     reboot_types.each { value ->
         db_file_name = "${value}_reboot.db"
         if (env.test_config_yaml_file) {
-            db_file_name = "${setup_name}/${db_file_name}"
+            db_file_name = "${setup_name}/${value}.db"
         }
         exec_block_gen_arg = exec_block_gen_arg +
             "{'entry_points': 'SONIC_MGMT', " +
@@ -298,7 +288,7 @@ def prepareRunCmd(setup_name, base_version = env.base_version, target_version = 
     setup_file_name = setup_name.replace("_setup", ".setup")
 
     mars_setup_cli_path = "/.autodirect/sw_tools/Internal/MARS/mars_apps/RELEASE/4_3_11/bin/setup_cli.py"
-    tarball_arg = "--meinfo_custom_tarball_name jenkins_reboot_tests_runner.db.1.tgz"
+    tarball_arg = "--meinfo_custom_tarball_name ${custom_tarball}"
 
     // If no target ver - base_ver = target ver
     if (target_version.trim()) {
@@ -387,16 +377,24 @@ pipeline {
     stages {
         stage('Preparation') {
             steps {
+                script {
+                    // Generate timestamp and set custom_tarball name
+                    def dateFormatter = java.time.format.DateTimeFormatter.ofPattern('yyyy-MM-dd_HH-mm-ss-SSS')
+                    def date_time = java.time.LocalDateTime.now().format(dateFormatter)
+                    custom_tarball = "jenkins_reboot_tests_runner_${date_time}.db.1.tgz"
+                }
+                echo "custom_tarball: ${custom_tarball}"
+
                 cloneRepoAndCheckoutBranch()
                 // Prepare .cases and .db files
                 sh "/ngts_venv/bin/python sonic-mgmt/sonic-tool/jenkins_scripts/sonic_run_reboot_tests_pipeline.py --do_preparation"
-                prepareSonicMgmtTarball()
+                prepareSonicMgmtTarball(custom_tarball)
                 script {
                     def (vault_config, secrets) = get_vault_creds()
                     withVault([configuration: vault_config, vaultSecrets: secrets]) {
                         addSvcUser()
 						getSetupNames().each{setup_name ->
-							prepareRunCmd(setup_name)
+							prepareRunCmd(setup_name, custom_tarball)
 						}
 					}
 				}
