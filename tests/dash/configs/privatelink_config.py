@@ -29,8 +29,10 @@ LOCAL_REGION_ID = "100"
 VM_VNI = "4321"
 ENCAP_VNI = 100
 VNET1 = "Vnet1"
+VNET2 = "Vnet2"
 VNET1_VNI = "2001"
 VNET1_GUID = "559c6ce8-26ab-4193-b946-ccc6e8f930b2"
+VNET2_GUID = "559c6ce8-26ab-4193-b946-ccc6e8f930b3"
 VM_MAC = "44:E3:9F:EF:C4:6E"
 ENI_MAC = "F4:93:9F:EF:C4:7E"
 ENI_MAC_STRING = ENI_MAC.replace(":", "")
@@ -44,27 +46,45 @@ ROUTE_GROUP1_GUID = "48af6ce8-26cc-4293-bfa6-0126e8fcdeb2"
 ROUTE_GROUP2_GUID = "58cf62e0-22cc-4693-baa6-012358fcdec9"
 OUTBOUND_DIR_LOOKUP = "dst_mac"
 TUNNEL1 = "Tunnel1"
+ENI_ID2 = "497f23d7-f0ac-4c99-a98f-59b470e8c7bd"
 TUNNEL1_ENDPOINT_IP = "40.40.40.40"
 TUNNEL2 = "Tunnel2"
 TUNNEL1_ENDPOINT_IPS = [TUNNEL1_ENDPOINT_IP]
+TUNNEL2_ENDPOINT_IPS = ["60.60.60.60", "70.70.70.70"]
 TRUSTED_VNI = "800"
 METER_POLICY_V4 = "MeterPolicyV4"
 METER_RULE_V4_PREFIX1 = "48.10.5.0/255.255.255.0"
 METER_RULE_V4_PREFIX2 = "92.6.0.0/255.255.0.0"
+RETURN_PATH_VNI = 202
 
 APPLIANCE_CONFIG = {
     f"DASH_APPLIANCE_TABLE:{APPLIANCE_ID}": {
         "sip": APPLIANCE_VIP,
         "vm_vni": VM_VNI,
-        "local_region_id": LOCAL_REGION_ID
+        "local_region_id": LOCAL_REGION_ID,
+        "trusted_vnis": str(ENCAP_VNI)
     }
 }
-APPLIANCE_TRUSTED_VNI_CONFIG = {
+APPLIANCE_FNIC_CONFIG = {
     f"DASH_APPLIANCE_TABLE:{APPLIANCE_ID}": {
         "sip": APPLIANCE_VIP,
         "vm_vni": VM_VNI,
         "outbound_direction_lookup": OUTBOUND_DIR_LOOKUP,
-        "trusted_vni": TRUSTED_VNI
+        "trusted_vnis": str(ENCAP_VNI)
+    }
+}
+
+ENI_TRUSTED_VNI_CONFIG = {
+    f"DASH_ENI_TABLE:{ENI_ID}": {
+        "vnet": VNET1,
+        "underlay_ip": VM1_PA,
+        "mac_address": ENI_MAC,
+        "eni_id": ENI_ID2,
+        "admin_state": State.STATE_ENABLED,
+        "pl_underlay_sip": APPLIANCE_VIP,
+        "pl_sip_encoding": f"{PL_ENCODING_IP}/{PL_ENCODING_MASK}",
+        "eni_mode": EniMode.MODE_FNIC,
+        "trusted_vnis": VM_VNI
     }
 }
 
@@ -88,6 +108,12 @@ VNET_CONFIG = {
         "guid": VNET1_GUID
     }
 }
+VNET2_CONFIG = {
+    f"DASH_VNET_TABLE:{VNET2}": {
+        "vni": VM_VNI,
+        "guid": VNET2_GUID
+    }
+}
 
 ENI_CONFIG = {
     f"DASH_ENI_TABLE:{ENI_ID}": {
@@ -99,6 +125,7 @@ ENI_CONFIG = {
         "pl_underlay_sip": APPLIANCE_VIP,
         "pl_sip_encoding": f"{PL_ENCODING_IP}/{PL_ENCODING_MASK}",
         "v4_meter_policy_id": METER_POLICY_V4,
+        "trusted_vnis": VM_VNI
     }
 }
 
@@ -144,8 +171,30 @@ TUNNEL1_CONFIG = {
     }
 }
 
+TUNNEL2_CONFIG = {
+    f"DASH_TUNNEL_TABLE:{TUNNEL2}": {
+        "endpoints": TUNNEL2_ENDPOINT_IPS,
+        "encap_type": EncapType.ENCAP_TYPE_VXLAN,
+        "vni": RETURN_PATH_VNI,
+    }
+}
+
 ROUTE_RULE1_CONFIG = {
-    f"DASH_ROUTE_RULE_TABLE:{ENI_MAC_STRING}:{TRUSTED_VNI}:{VM1_PA}": {
+    f"DASH_ROUTE_RULE_TABLE:{ENI_ID}:{ENCAP_VNI}:{PE_PA}/32": {
+        "action_type": ActionType.ACTION_TYPE_DECAP,
+        "priority": 1
+    }
+}
+
+VM_SUBNET_ROUTE_WITH_TUNNEL_CONFIG = {
+    f"DASH_ROUTE_TABLE:{ROUTE_GROUP1}:{VM_CA_SUBNET}": {
+        "routing_type": RoutingType.ROUTING_TYPE_DIRECT,
+        "tunnel": TUNNEL2
+    }
+}
+
+INBOUND_VM_ROUTE_RULE_CONFIG = {
+    f"DASH_ROUTE_RULE_TABLE:{ENI_ID}:{VM_VNI}:{VM1_PA}/32": {
         "action_type": ActionType.ACTION_TYPE_DECAP,
         "priority": 1
     }

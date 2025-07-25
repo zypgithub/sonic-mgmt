@@ -74,7 +74,7 @@ def get_pl_overlay_dip(orig_dip, ol_dip, ol_mask):
     return str(ip_address(overlay_dip))
 
 
-def inbound_pl_packets(config, use_pkt_alt_attrs=False, inner_packet_type='udp', vxlan_udp_dport=4789):
+def inbound_pl_packets(config, floating_nic=False, inner_packet_type='udp', vxlan_udp_dport=4789):
     inner_sip = get_pl_overlay_dip(  # not a typo, inner DIP/SIP are reversed for inbound direction
         pl.PE1_CA,
         pl.PL_OVERLAY_DIP,
@@ -91,7 +91,7 @@ def inbound_pl_packets(config, use_pkt_alt_attrs=False, inner_packet_type='udp',
 
     inner_packet = generate_inner_packet(inner_packet_type, ipv6=True)(
         eth_src=pl.REMOTE_MAC,
-        eth_dst=pl.ENI_MAC,
+        eth_dst=pl.ENI_MAC, 
         ipv6_src=inner_sip,
         ipv6_dst=inner_dip,
     )
@@ -113,8 +113,8 @@ def inbound_pl_packets(config, use_pkt_alt_attrs=False, inner_packet_type='udp',
     )
 
     exp_inner_packet = generate_inner_packet(inner_packet_type)(
-        eth_src=pl.REMOTE_MAC,
-        eth_dst=pl.ENI_MAC,
+        eth_src=pl.ENI_MAC if floating_nic else pl.REMOTE_MAC,
+        eth_dst=pl.ENI_MAC if floating_nic else pl.ENI_MAC, # TODO: should be VM_MAC for FNIC, Issue #4556818
         ip_src=pl.PE1_CA,
         ip_dst=pl.VM1_CA,
         ip_id=0,
@@ -129,17 +129,20 @@ def inbound_pl_packets(config, use_pkt_alt_attrs=False, inner_packet_type='udp',
         eth_dst=config[LOCAL_PTF_MAC],
         ip_src=pl.APPLIANCE_VIP,
         ip_dst=pl.VM1_PA,
-        ip_ttl=63 if use_pkt_alt_attrs else 254,
+        ip_ttl=254,
         ip_id=0,
         udp_dport=vxlan_udp_dport,
         udp_sport=VXLAN_UDP_BASE_SRC_PORT,
-        vxlan_vni=int(pl.VNET1_VNI) if use_pkt_alt_attrs else int(pl.VM_VNI),
+        vxlan_vni=pl.RETURN_PATH_VNI if floating_nic else int(pl.VM_VNI),
         inner_frame=exp_inner_packet
     )
 
     masked_exp_packet = Mask(exp_vxlan_packet)
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "src")
     masked_exp_packet.set_do_not_care_packet(scapy.Ether, "dst")
+    if floating_nic:
+        masked_exp_packet.set_do_not_care_packet(scapy.IP, "chksum")
+        masked_exp_packet.set_do_not_care_packet(scapy.IP, "dst")
     # 34 is the sport offset, 2 is the length of UDP sport field
     masked_exp_packet.set_do_not_care(8 * (34 + 2) - VXLAN_UDP_SRC_PORT_MASK, VXLAN_UDP_SRC_PORT_MASK)
     masked_exp_packet.set_do_not_care_packet(scapy.UDP, "chksum")
@@ -147,11 +150,11 @@ def inbound_pl_packets(config, use_pkt_alt_attrs=False, inner_packet_type='udp',
     return gre_packet, masked_exp_packet
 
 
-def outbound_pl_packets(config, outer_encap, use_pkt_alt_attrs=False, inner_packet_type='udp',
+def outbound_pl_packets(config, outer_encap, floating_nic=False, inner_packet_type='udp',
                         vxlan_udp_dport=4789, inner_extra_conf={}, vxlan_udp_sport=1234, nsg_packet=False):
     inner_packet = generate_inner_packet(inner_packet_type)(
-        eth_src=pl.ENI_MAC,
-        eth_dst=pl.REMOTE_MAC,
+        eth_src=pl.VM_MAC if floating_nic else pl.ENI_MAC,
+        eth_dst=pl.ENI_MAC if floating_nic else pl.REMOTE_MAC,
         ip_src=pl.VM1_CA,
         ip_dst=pl.PE1_CA,
         **inner_extra_conf
@@ -168,7 +171,7 @@ def outbound_pl_packets(config, outer_encap, use_pkt_alt_attrs=False, inner_pack
             udp_dport=vxlan_udp_dport,
             udp_sport=vxlan_udp_sport,
             with_udp_chksum=False,
-            vxlan_vni=int(pl.VNET1_VNI) if use_pkt_alt_attrs else int(pl.VM_VNI),
+            vxlan_vni=int(pl.VM_VNI),
             inner_frame=inner_packet
         )
     elif outer_encap == 'gre':
@@ -178,7 +181,7 @@ def outbound_pl_packets(config, outer_encap, use_pkt_alt_attrs=False, inner_pack
             ip_src=pl.VM1_PA,
             ip_dst=pl.APPLIANCE_VIP,
             gre_key_present=True,
-            gre_key=int(pl.ENCAP_VNI) << 8 if use_pkt_alt_attrs else int(pl.VM_VNI) << 8,
+            gre_key=int(pl.VM_VNI) << 8,
             inner_frame=inner_packet
         )
     else:
@@ -213,9 +216,9 @@ def outbound_pl_packets(config, outer_encap, use_pkt_alt_attrs=False, inner_pack
 
     exp_inner_packet[l4_protocol_key] = inner_packet[l4_protocol_key]
     if nsg_packet:
-        ip_ttl = 64 if use_pkt_alt_attrs else 255
+        ip_ttl = 255
     else:
-        ip_ttl = 63 if use_pkt_alt_attrs else 254
+        ip_ttl = 254
 
     exp_encap_packet = testutils.simple_gre_packet(
         eth_dst=config[DUT_MAC] if nsg_packet else config[REMOTE_PTF_MAC],
@@ -314,15 +317,15 @@ def build_outer_encap_packet(config, encap_type, inner_packet, ip_src, ip_dst,
     return outer_packet
 
 
-def generate_plnsg_packets(config, use_pkt_alt_attrs, inner_encap, outer_encap, inner_packet_type='udp', num_packets=1000):
+def generate_plnsg_packets(config, floating_nic, inner_encap, outer_encap, inner_packet_type='udp', num_packets=1000):
     plnsg_pkts = []
     for i in range(num_packets):
         sport = random.randint(49152, 65535)
         outbound_pkt, outbound_exp_pkt = outbound_plnsg_packets(
-            config=config, use_pkt_alt_attrs=use_pkt_alt_attrs, inner_encap=inner_encap, outer_encap=outer_encap, inner_sport=sport
+            config=config, floating_nic=floating_nic, inner_encap=inner_encap, outer_encap=outer_encap, inner_sport=sport
         )
         inbound_pkt, inbound_exp_pkt = inbound_pl_packets(
-            config, use_pkt_alt_attrs, inner_packet_type=inner_packet_type, vxlan_udp_dport=4789
+            config, floating_nic, inner_packet_type=inner_packet_type, vxlan_udp_dport=4789
         )
         plnsg_pkts.append((
             outbound_pkt,
@@ -334,10 +337,10 @@ def generate_plnsg_packets(config, use_pkt_alt_attrs, inner_encap, outer_encap, 
     return plnsg_pkts
 
 
-def outbound_plnsg_packets(config, use_pkt_alt_attrs, inner_encap, outer_encap, inner_sport, inner_packet_type='udp',
+def outbound_plnsg_packets(config, floating_nic, inner_encap, outer_encap, inner_sport, inner_packet_type='udp',
                            vxlan_udp_dport=4789, vxlan_udp_sport=1234):
     pl_outer_packet, pl_exp_packet = outbound_pl_packets(
-        config, inner_encap, use_pkt_alt_attrs, inner_packet_type=inner_packet_type, vxlan_udp_sport=inner_sport, nsg_packet=True
+        config, inner_encap, floating_nic, inner_packet_type=inner_packet_type, vxlan_udp_sport=inner_sport, nsg_packet=True
     )
 
     nsg_exp_packet = build_outer_encap_packet(
