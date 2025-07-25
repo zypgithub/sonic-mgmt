@@ -124,6 +124,7 @@ class EthSwitch(BaseSwitch):
         self.ib_ports_num = 32
         self.supports_tpm_testing = False
         # Note: expected_operation_durations is populated via _init_expected_operation_durations()
+        self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
 
     def _init_expected_operation_durations(self):
         """Initialize expected operation durations for Ethernet devices."""
@@ -344,6 +345,9 @@ class EthSwitch(BaseSwitch):
     def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
         with allure.step('Bypass password on sudo commands'):
             dut_engine.run_cmd(f"echo '{dut_engine.password}' | sudo -S echo")
+
+    def normalize_platform_asic_temperature_output(self, temperature_dict):
+        return {k: str(v) for k, v in temperature_dict.items()}
 
 # -------------------------- Mlx3700 Anaconda Switch ----------------------------
 

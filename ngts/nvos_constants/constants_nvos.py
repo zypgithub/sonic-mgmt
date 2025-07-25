@@ -94,6 +94,23 @@ class CumulusConsts:
     INTERFACE_IP_VRF = 'vrf'
     FETCH_SUCCESS_MESSAGE = "File has been successfully fetched"
     FETCH_ERROR_MESSAGE = "Failed to fetch file due to the following error"
+    PLATFORM_ASIC_TEMPERATURE_FIELDS = ['current', 'min', 'max', 'crit', 'state']
+    PLATFORM_ASIC_OUTPUT_FIELDS = {'temperature': PLATFORM_ASIC_TEMPERATURE_FIELDS}
+    # Allowed values for ASIC temperature 'state' field
+    PLATFORM_ASIC_TEMPERATURE_STATES = ('ok', 'high', 'low', 'critical')
+    # Valid ranges for ASIC temperature numeric fields (min/max inclusive)
+    PLATFORM_ASIC_TEMP_CURRENT_MIN = 0
+    PLATFORM_ASIC_TEMP_CURRENT_MAX = 150
+    PLATFORM_ASIC_TEMP_MIN_MIN = 0
+    PLATFORM_ASIC_TEMP_MIN_MAX = 50
+    PLATFORM_ASIC_TEMP_MAX_MIN = 50
+    PLATFORM_ASIC_TEMP_MAX_MAX = 150
+    PLATFORM_ASIC_TEMP_CRIT_MIN = 100
+    PLATFORM_ASIC_TEMP_CRIT_MAX = 200
+    PLATFORM_ASIC_RESOURCE_SECTIONS = ['global', 'acl']
+    PLATFORM_ASIC_RESOURCE_ACL_TABLE_FIELDS = ['acl-18b', 'acl-36b', 'acl-54b', 'rule-count']
+    PLATFORM_ASIC_RESOURCE_GLOBAL_REQUIRED_FIELDS = ['used']
+    PLATFORM_ASIC_RESOURCE_GLOBAL_OPTIONAL_FIELDS = ['max', 'percentage']
 
 
 class TestConsts:
