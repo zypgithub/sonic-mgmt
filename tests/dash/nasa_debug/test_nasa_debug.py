@@ -5,10 +5,11 @@ import pytest
 from shlex import quote
 from collections.abc import Iterable
 
-from ngts.tools.nasa_debug import NASA_DEBUG_ENTITY, NASA_DEBUG_DUMP_DIR, nasa_entity_debug_set
-from ngts.tools.nasa_debug import get_nasa_entity_debug_enabled, get_nasa_entity_debug_file
-from ngts.tools.nasa_debug import nasa_debuggability_enable, nasa_debuggability_disable
-from ngts.tools.nasa_debug import get_file_size
+from ngts.tools.nasa_debug.nasa_debug_plugin import NASA_DEBUG_ENTITY, NASA_DEBUG_DUMP_DIR, nasa_entity_debug_set
+from ngts.tools.nasa_debug.nasa_debug_plugin import get_nasa_entity_debug_enabled, get_nasa_entity_debug_file
+from ngts.tools.nasa_debug.nasa_debug_plugin import nasa_debuggability_enable, nasa_debuggability_disable
+from ngts.tools.nasa_debug.nasa_debug_plugin import get_file_size
+from ngts.constants.constants import PytestConst
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ def test_nasa_debug_enabled(dpuhost, entity):
     # finally check for the extra files present along the reported debug files
     debug_dir = os.path.dirname(debug_file)
     # Get the last 2 files from the debug directory, catch any extra empty files, that should not be there
-    result = dpuhost.shell(f"ls {shlex.quote(debug_dir)}/* | tail -2")
+    result = dpuhost.shell(f"ls {quote(debug_dir)}/* | tail -2")
     found_files = result['stdout_lines']
     from infra.tools.redmine.redmine_api import is_redmine_issue_active
     if not is_redmine_issue_active([4545888])[0]:
@@ -91,7 +92,7 @@ def eni_counter_test_params(request):
     # options to reuse from the current environment
     READ_OPTIONS = ['--inventory', '--host-pattern','--module-path', '--testbed', '--setup_name', '--testbed_file', '--topology', '--dpu-pattern']
     OTHER_OPTIONS = ['--allow_recover', '--assert', 'plain', '--show-capture=no', '-ra',
-                     '--showlocals', '--log-cli-level', 'info', '--skip_sanity', '--dynamic_update_skip_reason', '--disable_loganalyzer', '--strict-markers']
+                     '--showlocals', '--log-cli-level', 'info', '--skip_sanity', '--dynamic_update_skip_reason', '--disable_loganalyzer', '--strict-markers', '--collect_techsupport=False']
 
     # build the params for the pytest command
     params = ENI_COUNTER_TEST_SCRIPT_SELECT.copy()
@@ -99,9 +100,9 @@ def eni_counter_test_params(request):
         option_value = request.config.getoption(option)
         # check if the option is iterable and not a string (list for example), join with commas
         if isinstance(option_value, Iterable) and not isinstance(option_value, str):
-            option_value = ','.join(map(shlex.quote, option_value))
+            option_value = ','.join(map(quote, option_value))
         else:
-            option_value  = shlex.quote(str(option_value))
+            option_value  = quote(str(option_value))
         params.append(f'{option}={option_value}')
     params.extend(OTHER_OPTIONS)
 
@@ -115,6 +116,18 @@ def eni_counter_test_params_debug(eni_counter_test_params):
 def get_host_epoch(dpuhost):
     """This function will return the host epoch"""
     return int(dpuhost.shell(f"date +%s")['stdout'].strip())
+
+
+def run_external_pytest(params):
+    """This function will run the pytest command with the given params
+       With the disabled sysdump generation
+    """
+    env_saved = os.environ.copy()
+    os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
+    result = pytest.main(params)
+    os.environ = env_saved
+    return result
+
 
 @pytest.mark.nasa_debuggability_tests
 def test_nasa_debug_action(dpuhost, eni_counter_test_params):
@@ -146,7 +159,7 @@ def test_nasa_debug_action(dpuhost, eni_counter_test_params):
         debug_files[entity] = [debug_file, get_file_size(dpuhost, debug_file)]
 
     # run the ENI counter test with the NASA debuggability enabled
-    result = pytest.main(eni_counter_test_params)
+    result = run_external_pytest(eni_counter_test_params)
     if result != pytest.ExitCode.OK:
         logger.warning(f"ENI counter test failed with pytest exit code {result}")
     nasa_debuggability_disable(dpuhost)
@@ -187,7 +200,7 @@ def get_nasa_debug_dump_files(dpuhost):
     """This function will return the list of the files in the NASA debug dump directories"""
     files_list = dict()
     for entity in NASA_DEBUG_ENTITY:
-        files_list[entity] = set(dpuhost.shell(f"ls {shlex.quote(NASA_DEBUG_DUMP_DIR)}/{shlex.quote(entity.value.config_key)}/*")['stdout_lines'])
+        files_list[entity] = set(dpuhost.shell(f"ls {quote(NASA_DEBUG_DUMP_DIR)}/{quote(entity.value.config_key)}/*")['stdout_lines'])
     return files_list
 
 
@@ -206,7 +219,7 @@ def test_nasa_debug_tech_support(dpuhost, eni_counter_test_params_debug):
 
     logger.info(f"Running the ENI counter test with the NASA debuggability enabled: {eni_counter_test_params_debug}")
     # run the test with the NASA debuggability enabled
-    result = pytest.main(eni_counter_test_params_debug)
+    result = run_external_pytest(eni_counter_test_params_debug)
     if result != pytest.ExitCode.OK:
         logger.warning(f"ENI counter test failed with pytest exit code {result}")
 
@@ -247,8 +260,8 @@ def test_nasa_debug_tech_support(dpuhost, eni_counter_test_params_debug):
     # Example of listing NASA debug files in the tech support file
     # tar --wildcards --sort=name -tf /var/dump/sonic_dump_sonic_20250724_231154.tar.gz sonic_dump_sonic_20250724_231154/log/cfg_record_\*.gz sonic_dump_sonic_20250724_231154/log/pkt_dump_record_\*.gz
     nasa_debug_files_in_tech_support = dpuhost.shell(f"tar --wildcards -tf {quote(tech_support_file)} "
-                                                     f"{shlex.quote(tech_support_file_basename)}/log/cfg_record_*.gz "
-                                                     f"{shlex.quote(tech_support_file_basename)}/log/pkt_dump_record_*.gz")['stdout_lines']
+                                                     f"{quote(tech_support_file_basename)}/log/cfg_record_*.gz "
+                                                     f"{quote(tech_support_file_basename)}/log/pkt_dump_record_*.gz")['stdout_lines']
 
     logger.info(f"NASA debug files in the tech support file: {nasa_debug_files_in_tech_support}")
     # remove the path from the file name and the .gz

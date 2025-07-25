@@ -1,8 +1,7 @@
-from .nasa_debug_utils import NASA_DEBUG_ENTITY, NASA_DEBUG_DUMP_DIR, nasa_entity_debug_set
-from .nasa_debug_utils import get_nasa_entity_debug_enabled, get_nasa_entity_debug_file
-from .nasa_debug_utils import nasa_debuggability_enable, nasa_debuggability_disable
-from .nasa_debug_utils import get_file_size
-from .nasa_debug_utils import nasa_debug, enable_nasa_debuggability
+import logging
+import pytest
+
+logger = logging.getLogger(__name__)
 
 
 def pytest_addoption(parser):
@@ -19,3 +18,11 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "nasa_debuggability_tests: Tests to skip when NASA debuggability is explicitly enabled"
     )
+    if config.getoption("--nasa_debug"):
+        config.pluginmanager.import_plugin("ngts.tools.nasa_debug.nasa_debug_plugin")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def nasa_debug(request):
+    logger.info("Fixture NASA debug: {}".format(request.config.getoption("--nasa_debug")))
+    return request.config.getoption("--nasa_debug")

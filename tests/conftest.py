@@ -93,7 +93,7 @@ GOLDEN_CONFIG_DB_PATH = "/etc/sonic/golden_config_db.json"
 GOLDEN_CONFIG_DB_PATH_ORI = "/etc/sonic/golden_config_db.json.origin.backup"
 
 pytest_plugins = ('ngts.tools.sysdumps',
-                  'ngts.tools.nasa_debug',
+                  'ngts.tools.nasa_debug.nasa_debug_wrapper',
                   'tests.common.plugins.ptfadapter',
                   'tests.common.plugins.ansible_fixtures',
                   'tests.common.plugins.dut_monitor',

@@ -73,30 +73,3 @@ def get_file_size(dpuhost, file_path):
     """Get file size using stat command """
     result = dpuhost.shell(f"stat -c %s {file_path}")
     return int(result['stdout'].strip())
-
-
-@pytest.fixture(scope="session")
-def nasa_debug(request):
-    logger.debug("Fixture NASA debug: {}".format(request.config.getoption("--nasa_debug")))
-    return request.config.getoption("--nasa_debug")
-
-
-@pytest.fixture(autouse=True)
-def enable_nasa_debuggability(request, dpuhosts, nasa_debug):
-    """This fixture is used to enable NASA debuggability for the tests to enable the debug info in the tech support.
-       Except for the debuggability tests themselves.
-
-    """
-    debuggability_test = request.node.get_closest_marker('nasa_debuggability_tests')
-    if nasa_debug and not debuggability_test:
-        # for DASH tests, enable the debuggability on all DPUs
-        logger.info("Enabling NASA debuggability to capture tech support info")
-        nasa_debuggability_enable_all(dpuhosts)
-
-        yield
-
-        # for DASH tests, disable the debuggability on all DPUs
-        logger.info("Disabling NASA debuggability to capture tech support info")
-        nasa_debuggability_disable_all(dpuhosts)
-    else:
-        yield
