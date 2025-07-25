@@ -39,17 +39,19 @@ def get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number):
     return cmd
 
 
-def get_deploy_minigraph_cmd(use_community=True):
+def get_deploy_minigraph_cmd(dark_mode=False):
     """
     Method which returns the deploy minigraph command.
     """
-    if use_community:
-        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault"
+    if dark_mode:
+        # when dut is smartswitch and dark mode,
+        # we need to deploy the minigraph with the light mode flag set to false
+        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault false"
     else:
-        # TODO: this is kept only for the smartswitch "dark mode", the community method checks DPU
-        # and it fails with dark mode regression. Remove this when we stop running dark mode regression
-        cmd = "ansible-playbook -i inventory --limit {SWITCH} deploy_minigraph.yml " \
-            "-e dut_minigraph={SWITCH}.{TOPO}.xml -b -vvv"
+        # When dut is smartswitch and light mode, in testbed-cli.sh by default
+        # the light mode is set to true, so we don't need to set it
+        # when dut is not smartswitch, we don't need to set the light mode too
+        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault"
     return cmd
 
 
@@ -89,13 +91,13 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
     Method which doing minigraph deploy on DUT
     """
     with allure.step('Deploy Minigraph'):
-        use_community = True
+        dark_mode = None
         if 'bobcat' in dut_name and not deploy_dpu:
-            use_community = False
+            dark_mode = True
             from infra.tools.redmine.redmine_api import is_redmine_issue_active
             if is_redmine_issue_active([4518602])[0]:
                 check_mst_dark_mode(cli_obj)
-        cmd_temp = get_deploy_minigraph_cmd(use_community)
+        cmd_temp = get_deploy_minigraph_cmd(dark_mode)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
         if recover_by_reboot:
