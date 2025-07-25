@@ -241,6 +241,13 @@ class FilesTool:
         with allure.step("Extract archive and verify result.   and also Read verification result and tar output"):
             return FilesTool.run_prepare_expected_output_exit_code(engine, f"sudo tar -xf {full_path} -C {archive_directory_path}")
 
+    @staticmethod
+    def cleanup_tmpfs(engines_dut, mount_point='/mnt/tmpfs', file_path='/mnt/tmpfs/testfile'):
+        """Best-effort tmpfs cleanup. Never raises so that setup failures are not masked in finally."""
+        engines_dut.run_cmd(f'sudo rm -f {file_path}')
+        engines_dut.run_cmd(f'sudo umount {mount_point} || true')
+        engines_dut.run_cmd(f'sudo rmdir {mount_point} || true')
+
 
 class EngineFile:
     """

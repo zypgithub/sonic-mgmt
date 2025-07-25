@@ -74,6 +74,13 @@ class IbSwitch(BaseSwitch):
         self._init_interface_attributes_mapping_dict()
         self._init_link_error_counters()
 
+    def get_health_issue_dict_fan_and_psu(self, psu_display_name, fan_display_name):
+        """Return expected health issues dict for simulated fan+PSU fault (IB)."""
+        return {
+            psu_display_name: ["missing or not available", "missing - Unpopulated PSU slot"],
+            fan_display_name: "not working",
+        }
+
     def _relevant_config_filename_by_version(self, version: str) -> str:
         global_build = self._version_to_global_build(version)
         if global_build:

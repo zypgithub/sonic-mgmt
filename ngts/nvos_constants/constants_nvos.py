@@ -1405,6 +1405,7 @@ class FansConsts:
     FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
     FAN_SPEED_OUT_OF_RANGE = "speed is out of range"
     FAN_NOT_WORKING = 'not working'
+    FAN_LOW_SPEED_WARNING = 'low'
 
 
 class IbConsts:

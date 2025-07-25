@@ -75,6 +75,13 @@ class EthSwitch(BaseSwitch):
         """Update sudoers for nopasswd after reload (e.g. factory reset) so log-analyzer can run."""
         CumulusGeneralCli(engine, self).update_sudoers_nopasswd()
 
+    def get_health_issue_dict_fan_and_psu(self, psu_display_name, fan_display_name):
+        """Return expected health issues dict for simulated fan+PSU fault (ETH/non-IB)."""
+        return {
+            psu_display_name: {"bad"},
+            fan_display_name: "bad",
+        }
+
     def _init_constants(self):
         super()._init_constants()
         self.pre_login_message = "Welcome to NVIDIA Cumulus (R) Linux (R)\n"

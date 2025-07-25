@@ -6,7 +6,7 @@ from retry import retry
 from typing import Dict
 
 from ngts.nvos_tools.infra import ExceptionTool
-from ngts.nvos_tools.infra.FilesTool import EngineFile, TempFileOnEngine
+from ngts.nvos_tools.infra.FilesTool import EngineFile, TempFileOnEngine, FilesTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
@@ -21,13 +21,14 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts
 from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts, CumulusConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_constants.constants_nvos import DatabaseConst
 from ngts.tests_nvos.platform.test_platform_environment_leakage import rewrite_files
+
 
 logger = logging.getLogger()
 
@@ -199,10 +200,17 @@ def _validate_instance_naming_and_count(component, instances, devices, validatio
 
 @pytest.fixture(scope='function')
 def set_unset_ps_redundancy_ps():
+    """Set ps-redundancy to PS before test and unset after. No-op on ETH (ps-redundancy not required)."""
+    if TestToolkit.devices.dut.is_eth():
+        yield
+        return
+
     platform = Platform()
     with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_PS}"):
         platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_PS, apply=True)
+
     yield
+
     with allure.step('Run unset platform ps-redundancy command and apply'):
         platform.ps_redundancy.unset(apply=True).verify_result()
 
@@ -216,7 +224,10 @@ def reset_health_service(engines):
 @pytest.fixture(scope='function')
 def validate_health_history():
     system = System()
-    system.health.history.retry_get_health_history_file_summary_line()
+    if TestToolkit.devices.dut.is_eth():
+        verify_health_status_and_led(system, OK)
+    else:
+        system.health.history.retry_get_health_history_file_summary_line()
 
 
 @pytest.mark.system
@@ -301,7 +312,6 @@ def test_show_system_health(devices):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
         ValidationTool.verify_field_exist_in_json_output(system_output, [SystemConsts.HEALTH]).verify_result()
         verify_expected_health_status(system_output[SystemConsts.HEALTH], HealthConsts.STATUS, OK)
-
     with allure.step("Validate \"nv show fae health\" cmd"):
         logger.info("Validate \"nv show fae health\" cmd")
         detail_health_output = OutputParsingTool.parse_json_str_to_dictionary(Fae().health.show()).get_returned_value()
@@ -310,7 +320,7 @@ def test_show_system_health(devices):
         verify_expected_health_status(detail_health_output, HealthConsts.STATUS, OK)
         monitor_dict = sort_monitor_list(detail_health_output[HealthConsts.MONITOR_LIST])
         assert len(monitor_dict[NOT_OK]) == 0, "Expected not to have \"Not OK\" devices, cause the health status is OK,\n" \
-                                               "but those devices are not OK : {}".format(monitor_dict[NOT_OK])
+            "but those devices are not OK : {}".format(monitor_dict[NOT_OK])
         ValidationTool.validate_all_values_exists_in_list(devices.dut.health_components,
                                                           detail_health_output[HealthConsts.MONITOR_LIST].keys()).verify_result()
 
@@ -781,6 +791,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service
 
 @pytest.mark.system
 @pytest.mark.health
+@pytest.mark.cumulus
 def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_ps, reset_health_service):
     """
     Validate health monitoring.
@@ -821,15 +832,14 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
             time.sleep(5)
             psu_display_name = "PSU{}".format(psu_id)
             fan_display_name = get_fan_display_name(fan_id)
-            health_issue_dict = {psu_display_name: ["missing or not available", "missing - Unpopulated PSU slot"],
-                                 fan_display_name: "not working"}
+            health_issue_dict = devices.dut.get_health_issue_dict_fan_and_psu(psu_display_name, fan_display_name)
 
         with allure.step("Validate health issue"):
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
         date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        time.sleep(1)
+        time.sleep(20)
         with allure.step("Cleanup - Fix the health issues"):
             with allure.step("Fix the Fan fault issue"):
                 HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id, fan_symlink)
@@ -844,6 +854,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
 
 @pytest.mark.system
 @pytest.mark.health
+@pytest.mark.cumulus
 def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_service):
     """
     Validate health monitoring when having a fan speed fault.
@@ -869,8 +880,15 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_se
     fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
     logger.info("Chosen fan : {}  - {}".format(fan_id, get_fan_display_name(fan_id)))
     fan_display_name = get_fan_display_name(fan_id)
-    health_issue_dict = {fan_display_name: [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]}
     symlink_target = None
+    health_issue_dict = {
+        fan_display_name: [
+            FansConsts.FAN_SPEED_OUT_OF_RANGE,
+            FansConsts.FAN_NOT_WORKING,
+            FansConsts.FAN_LOW_SPEED_WARNING,  # ETH/Cumulus may report "low" for fan speed fault
+        ]
+    }
+    real_speed = 0
     if loganalyzer:
         for hostname in loganalyzer.keys():
             loganalyzer[hostname].ignore_regex.extend([f"\\.*Fan low speed warning: fan{fan_id} current speed\\.*",
@@ -943,7 +961,6 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
                 symlink_target = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
                 fan_info[fan_id] = [fan_display_name, symlink_target]
                 time.sleep(2)
-
         with allure.step("Validate system event for fan speed fault for chosen fans:{}".format(fan_ids)):
             for fan_id in fan_ids:
                 prefix = fan_info[fan_id][0] + " "
@@ -1320,79 +1337,6 @@ def verify_issues_in_health_output(health_issues, expected_issues, is_fae_output
                             f'but got "{health_issues[component][key]}"')
 
 
-def validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
-    """
-    validate health issue or fix with show commands
-        - validate with system show cmd the health status
-        - validate with health detailed report
-        - validate with health history file the status and the issues
-        - validate system log indicates that health status has changed
-    """
-    status = OK if is_fix else NOT_OK
-    regex = HealthConsts.HEALTH_FIX_REGEX if is_fix else HealthConsts.HEALTH_ISSUE_REGEX
-    # normalize health_issue_dict values to be sets of strings
-    health_issue_dict = {k: ({v} if isinstance(v, str) else set(v)) for k, v in health_issue_dict.items()}
-
-    with allure.step("Validate health issues {}".format("fix" if is_fix else "")):
-        system.wait_until_health_status_change_to(status)
-
-        with allure.independent_step("Validate health output issues"):
-            health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
-            verify_health_status_and_led(system, status, health_output)
-            health_issues = health_output[HealthConsts.ISSUES]
-            if is_fix:
-                assert not (health_issue_dict.keys() & health_issues.keys()), (
-                    f"Expected none of these health issues: {list(health_issue_dict.keys())}\n"
-                    f"But got the following issues: {list(health_issues.keys())}"
-                )
-            else:
-                assert health_issue_dict.keys() <= health_issues.keys(), (
-                    f"The following health issues are expected but missing: {health_issue_dict.keys() - health_issues.keys()}"
-                )
-                verify_issues_in_health_output(health_issues, health_issue_dict, is_fae_output=False)
-
-        if expected_in_monitor_list:
-            with allure.independent_step("Validate detailed health report"):
-                detail_health_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    Fae().health.show()).get_returned_value()
-                verify_expected_health_status(detail_health_output, HealthConsts.STATUS, status)
-                monitor_dict = sort_monitor_list(detail_health_output[HealthConsts.MONITOR_LIST])
-                for component, issues in health_issue_dict.items():
-                    if is_fix:
-                        assert component not in monitor_dict[NOT_OK]
-                    else:
-                        assert component in monitor_dict[NOT_OK]
-                        verify_issues_in_health_output(detail_health_output[HealthConsts.MONITOR_LIST],
-                                                       health_issue_dict, is_fae_output=True)
-
-        with allure.independent_step("Validate health history file"):
-            # health_history_output = system.health.history.files.show("health_history | tail -1")
-            health_history_output = engines.dut.run_cmd('nv show system health history files health_history | grep ""')
-            assert system.health.history.get_last_status_from_health_file(
-                health_history_output) == status, "Last status in the health report file is not {}, as we expect".format(status)
-            assert len(TestToolkit.search_line_after_a_specific_date_time(
-                HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX + status, health_history_output,
-                search_since_datetime)) > 0, "Didn't find health status in history file since time : {},\n" \
-                                             "history:\n {}".format(search_since_datetime, health_history_output)
-            for component, issues in health_issue_dict.items():
-                issues_regex = "[" + "|".join(issues) + "]"
-                assert len(TestToolkit.search_line_after_a_specific_date_time(
-                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX[0], component=component, issue=issues_regex),
-                    health_history_output, search_since_datetime)) > 0
-
-        with allure.independent_step("Validate health status change appears in system log"):
-            exp_status = "Health status is {arg}ok".format(arg="" if is_fix else "not ")
-            exp_summary = "HEALTH_SUMMARY_{arg}OK".format(arg="" if is_fix else "NOT_")
-            log_output = system.log.file.show_log(param='| grep healthd', expected_str=exp_status)
-            HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status)
-            regex_to_search = NvosConst.DATE_TIME_REGEX[0] + HealthConsts.SYSTEM_LOG_HEALTH_STATUS_REGEX.format(
-                exp_status, exp_summary)
-            assert len(TestToolkit.search_line_after_a_specific_date_time(regex_to_search,
-                                                                          log_output, search_since_datetime)) > 0, \
-                "Didn't find health status line in the system log since specific time :{}\nSystem Log:\n {}".format(
-                    search_since_datetime, log_output)
-
-
 @retry(Exception, tries=6, delay=10)
 def retry_validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
     validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
@@ -1766,3 +1710,119 @@ def validate_health_component_last_unhealthy(system, component_name, last_unheal
     else:
         assert last_unhealthy_updated != "", f"Last unhealthy timestamp of {component_name} is not updated"
     return last_unhealthy_updated
+
+
+def validate_health_fix_or_issue(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
+    if TestToolkit.devices.dut.is_eth():
+        validate_health_fix_or_issue_for_cumulus(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
+    else:
+        validate_health_fix_or_issue_for_ib(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list)
+
+
+def validate_health_fix_or_issue_for_ib(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
+    """
+    validate health issue or fix with show commands
+        - validate with system show cmd the health status
+        - validate with health detailed report
+        - validate with health history file the status and the issues
+        - validate system log indicates that health status has changed
+    """
+    status = OK if is_fix else NOT_OK
+    regex = HealthConsts.HEALTH_FIX_REGEX if is_fix else HealthConsts.HEALTH_ISSUE_REGEX
+    # normalize health_issue_dict values to be sets of strings
+    health_issue_dict = {k: ({v} if isinstance(v, str) else set(v)) for k, v in health_issue_dict.items()}
+
+    with allure.step("Validate health issues {}".format("fix" if is_fix else "")):
+        system.wait_until_health_status_change_to(status)
+
+        with allure.independent_step("Validate health output issues"):
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+            verify_health_status_and_led(system, status, health_output)
+            health_issues = health_output[HealthConsts.ISSUES]
+            if is_fix:
+                assert not (health_issue_dict.keys() & health_issues.keys()), (
+                    f"Expected none of these health issues: {list(health_issue_dict.keys())}\n"
+                    f"But got the following issues: {list(health_issues.keys())}"
+                )
+            else:
+                assert health_issue_dict.keys() <= health_issues.keys(), (
+                    f"The following health issues are expected but missing: {health_issue_dict.keys() - health_issues.keys()}"
+                )
+                verify_issues_in_health_output(health_issues, health_issue_dict, is_fae_output=False)
+
+        if expected_in_monitor_list:
+            with allure.independent_step("Validate detailed health report"):
+                detail_health_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    Fae().health.show()).get_returned_value()
+                verify_expected_health_status(detail_health_output, HealthConsts.STATUS, status)
+                monitor_dict = sort_monitor_list(detail_health_output[HealthConsts.MONITOR_LIST])
+                for component, issues in health_issue_dict.items():
+                    if is_fix:
+                        assert component not in monitor_dict[NOT_OK]
+                    else:
+                        assert component in monitor_dict[NOT_OK]
+                        verify_issues_in_health_output(detail_health_output[HealthConsts.MONITOR_LIST],
+                                                       health_issue_dict, is_fae_output=True)
+
+        with allure.independent_step("Validate health history file"):
+            # health_history_output = system.health.history.files.show("health_history | tail -1")
+            health_history_output = engines.dut.run_cmd('nv show system health history files health_history | grep ""')
+            assert system.health.history.get_last_status_from_health_file(
+                health_history_output) == status, "Last status in the health report file is not {}, as we expect".format(status)
+            assert len(TestToolkit.search_line_after_a_specific_date_time(
+                HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX + status, health_history_output,
+                search_since_datetime)) > 0, "Didn't find health status in history file since time : {},\n" \
+                                             "history:\n {}".format(search_since_datetime, health_history_output)
+            for component, issues in health_issue_dict.items():
+                issues_regex = "[" + "|".join(issues) + "]"
+                assert len(TestToolkit.search_line_after_a_specific_date_time(
+                    regex.format(time_regex=NvosConst.DATE_TIME_REGEX[0], component=component, issue=issues_regex),
+                    health_history_output, search_since_datetime)) > 0
+
+        with allure.independent_step("Validate health status change appears in system log"):
+            exp_status = "Health status is {arg}ok".format(arg="" if is_fix else "not ")
+            exp_summary = "HEALTH_SUMMARY_{arg}OK".format(arg="" if is_fix else "NOT_")
+            log_output = system.log.file.show_log(param='| grep healthd', expected_str=exp_status)
+            HealthConsts.SYSTEM_LOG_HEALTH_REGEX.format(status)
+            regex_to_search = NvosConst.DATE_TIME_REGEX[0] + HealthConsts.SYSTEM_LOG_HEALTH_STATUS_REGEX.format(
+                exp_status, exp_summary)
+            assert len(TestToolkit.search_line_after_a_specific_date_time(regex_to_search,
+                                                                          log_output, search_since_datetime)) > 0, \
+                "Didn't find health status line in the system log since specific time :{}\nSystem Log:\n {}".format(
+                    search_since_datetime, log_output)
+
+
+def validate_health_fix_or_issue_for_cumulus(engines, system, health_issue_dict, search_since_datetime, is_fix, expected_in_monitor_list=True):
+    """
+    validate health issue or fix with show commands
+        - validate with health history  the status and the issues
+        - validate with system show cmd the health status
+    """
+    status = OK if is_fix else NOT_OK
+    regex = HealthConsts.HEALTH_FIX_REGEX if is_fix else HealthConsts.HEALTH_ISSUE_REGEX
+    # normalize health_issue_dict values to be sets of strings
+    health_issue_dict = {k: ({v} if isinstance(v, str) else set(v)) for k, v in health_issue_dict.items()}
+    with allure.step("Validate health issues {}".format("fix" if is_fix else "")):
+        system.wait_until_health_status_change_to(status)
+        with allure.independent_step("Validate health output issues"):
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+            health_issues = health_output[HealthConsts.ISSUES]
+            if is_fix:
+                assert not (health_issue_dict.keys() & health_issues.keys()), (
+                    f"Expected none of these health issues: {list(health_issue_dict.keys())}\n"
+                    f"But got the following issues: {list(health_issues.keys())}"
+                )
+            else:
+                assert health_issue_dict.keys() <= health_issues.keys(), (
+                    f"The following health issues are expected but missing: {health_issue_dict.keys() - health_issues.keys()}"
+                )
+                verify_issues_in_health_output(health_issues, health_issue_dict, is_fae_output=False)
+    with allure.step("Validate \"nv show system health\" cmd"):
+        if is_fix:
+            system.validate_health_status(HealthConsts.OK)
+        else:
+            logger.info("Validate \"nv show system health\" cmd")
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+            ValidationTool.validate_all_values_exists_in_list([HealthConsts.STATUS, HealthConsts.STATUS_LED], health_output.keys()).verify_result()
+            system.validate_health_status(HealthConsts.NOT_OK)
+            verify_health_status_and_led(system, HealthConsts.NOT_OK)

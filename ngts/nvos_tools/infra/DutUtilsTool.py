@@ -79,6 +79,14 @@ class DutUtilsTool:
                 engine.password = device.default_password
 
     @staticmethod
+    def reconnect_engine(engine, find_prompt_tries=5, find_prompt_delay=2):
+        """
+        Reconnect a disconnected engine by retrying run_cmd('') until the session is established.
+        Use after disconnect() when subsequent test steps need the same engine session.
+        """
+        retry_call(engine.run_cmd, fargs=[''], tries=find_prompt_tries, delay=find_prompt_delay, logger=logger)
+
+    @staticmethod
     def run_cmd_and_reconnect(engine, command, find_prompt_tries=5, find_prompt_delay=2):
         """
             this tool will help u to run commands that disconnect the admin
@@ -92,7 +100,7 @@ class DutUtilsTool:
         with allure.step('Run {} and reconnect'.format(command)):
             engine.send_config_set(command, exit_config_mode=False, cmd_verify=False, enter_config_mode=False)
             engine.disconnect()
-            retry_call(engine.run_cmd, fargs=[''], tries=find_prompt_tries, delay=find_prompt_delay, logger=logger)
+            DutUtilsTool.reconnect_engine(engine, find_prompt_tries, find_prompt_delay)
 
             return ResultObj(result=True, info="Reconnected After Running {}".format(command))
 

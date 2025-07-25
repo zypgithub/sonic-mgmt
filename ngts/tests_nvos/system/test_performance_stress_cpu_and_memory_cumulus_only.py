@@ -1,5 +1,4 @@
 import logging
-import time
 
 import pytest
 from retry import retry
@@ -8,6 +7,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.StressNgTool import StressNgTool
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -32,7 +32,7 @@ def test_performance_stress_system_memory(test_api, engines, devices, nv_command
     TestToolkit.tested_api = test_api
     engines_dut = engines.dut
 
-    install_stress_ng(engines_dut)
+    StressNgTool.install_stress_ng(engines_dut)
 
     try:
         with allure.step('Run stress-ng to generate memory load'):
@@ -61,7 +61,7 @@ def test_performance_stress_system_memory(test_api, engines, devices, nv_command
                 assert abs(swap_utilization - swap_utilization_calc) < 0.000001, \
                     f"Mismatch between Swap utilization: {swap_utilization}% to calculated utilization: {swap_utilization_calc}%"
     finally:
-        cleanup_stress_ng(engines_dut)
+        StressNgTool.cleanup_stress_ng(engines_dut)
 
 
 @pytest.mark.system
@@ -83,7 +83,7 @@ def test_performance_stress_system_cpu(test_api, engines, devices, nv_command):
     TestToolkit.tested_api = test_api
     engines_dut = engines.dut
 
-    install_stress_ng(engines_dut)
+    StressNgTool.install_stress_ng(engines_dut)
 
     try:
         with allure.step('Run stress-ng to generate CPU load'):
@@ -117,25 +117,7 @@ def test_performance_stress_system_cpu(test_api, engines, devices, nv_command):
             assert utilization >= SystemConsts.CPU_PERCENT_THRESH_MAX, \
                 "CPU utilization percentage is not reaching threshold level during stress"
     finally:
-        cleanup_stress_ng(engines_dut)
-
-
-def install_stress_ng(engines_dut):
-    with allure.step('Install stress-ng package'):
-        engines_dut.run_cmd('sudo sed -i \'s/#deb     http:\\/\\/deb.debian.org\\/debian/deb     http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
-        engines_dut.run_cmd('sudo sed -i \'s/#deb-src http:\\/\\/deb.debian.org\\/debian/deb-src http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
-        engines_dut.run_cmd('sudo sed -i \'s/# deb     http:\\/\\/deb.debian.org\\/debian/deb     http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
-        engines_dut.run_cmd('sudo sed -i \'s/# deb-src http:\\/\\/deb.debian.org\\/debian/deb-src http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
-        engines_dut.run_cmd('sudo apt-get update -y --force-yes', timeout=300)
-        engines_dut.run_cmd('sudo apt-get install -y --force-yes stress-ng', timeout=300)
-
-
-def cleanup_stress_ng(engines_dut):
-    with allure.step('Clean up stress-ng'):
-        engines_dut.run_cmd("sudo killall stress-ng", timeout=30)
-        engines_dut.run_cmd('sudo apt-get remove -y --force-yes stress-ng', timeout=300)
-        engines_dut.run_cmd('sudo sed -i \'s/deb     http:\\/\\/deb.debian.org\\/debian/#deb     http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
-        engines_dut.run_cmd('sudo sed -i \'s/deb-src http:\\/\\/deb.debian.org\\/debian/#deb-src http:\\/\\/deb.debian.org\\/debian/g\' /etc/apt/sources.list', timeout=30)
+        StressNgTool.cleanup_stress_ng(engines_dut)
 
 
 @retry(Exception, tries=10, delay=1)
