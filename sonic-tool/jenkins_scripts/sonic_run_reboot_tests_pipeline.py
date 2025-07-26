@@ -231,11 +231,11 @@ def prepare_cases_files(reboot_type_iterations_dict,
         test_name = get_test_name(r_type, is_upgrade_test, upgrade_testcase)
         cases_file_name = '{}_reboot.cases'.format(r_type)
         file_data = CASES_FILE_HEADER_TEMPLATE.format(test_name=test_name)
-
+        test_type = r_type.split("_")[0]
         for _ in range(iterations_number):
             if upgrade_testcase == "test_multi_hop_upgrade_path":
                 file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(
-                    test_type=r_type,
+                    test_type=test_type,
                     multi_hop_upgrade_path=base_ver_images,
                     target_version=target_ver,
                     timeout=case_timeout,
@@ -259,7 +259,7 @@ def prepare_cases_files(reboot_type_iterations_dict,
                             current_allure_project_id_param = current_allure_project_id_param[:70+27]
                         file_data += CASES_FILE_REBOOT_WITH_UPGRADE_TESTCASE_TEMPLATE.format(
                             test_name=test_name_with_version,
-                            test_type=r_type,
+                            test_type=test_type,
                             base_versions_list=base_ver,
                             target_version=target_ver,
                             upgrade_testcase=upgrade_testcase,
@@ -269,7 +269,7 @@ def prepare_cases_files(reboot_type_iterations_dict,
                 else:
                     file_data += CASES_FILE_REBOOT_TESTCASE_TEMPLATE.format(
                         test_name=test_name,
-                        test_type=r_type,
+                        test_type=test_type,
                         allure_project_id_param=base_allure_project_id_param
                     )
         file_data += CASES_FILE_END_LINE_TEMPLATE
