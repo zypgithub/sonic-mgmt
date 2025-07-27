@@ -670,7 +670,9 @@ def test_log_idle(engines):
         r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(sysstat-collect\.service: Succeeded|Finished system activity accounting tool\.)[^\n]*[\n]?',
         r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued\s*.+\s*(log\s*rotate|Log\s*rotate)[^\n]*[\n]?',
         r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+Ran Job running ActionKey\(\'@rotate\', \'/system/log\', \(\), \d+, \(\)\)[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+\"GET /nvue_v1/action/\d+ HTTP/1\.1\" 200 -[^\n]*[\n]?'
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+\"GET /nvue_v1/action/\d+ HTTP/1\.1\" 200 -[^\n]*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO .+ Backup logs.*[\n]?',
+        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+DEBUG nvued.+[\n]?'
     ]
 
     with allure.step("Create System object"):
