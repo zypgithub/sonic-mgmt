@@ -33,7 +33,7 @@ def test_cluster_traffic_basic_test(engines, devices, test_api, has_loopbox, sta
             traffic_status = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
                                                                                 playbook,
                                                                                 '-e "nvflash_path=nvflash/nvflash_eng" ' +
-                                                                                "--skip-tags 'check_status'")
+                                                                                "--skip-tags 'check_status' -vvv")
             assert traffic_status, f"Playbook {playbook} failed. Please check test log to see what step failed"
 
     finally:
@@ -62,7 +62,7 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
             traffic_status = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
                                                                                 playbook,
                                                                                 '-e "nvflash_path=nvflash/nvflash_eng" ' +
-                                                                                "--skip-tags 'check_status'")
+                                                                                "--skip-tags 'check_status' -vvv")
             assert traffic_status, f"Playbook {playbook} failed. Please check test log to see what step failed"
 
     finally:

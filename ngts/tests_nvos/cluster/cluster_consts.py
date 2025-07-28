@@ -119,11 +119,11 @@ class AnsbilePlaybooksConsts:
                                         COMPUTE_HMC: COMPUTE_NODE_FW_PATH,
                                         CUDA_PACKAGE: CUDA_AARCH64_DOWNLOAD_URL}
 
-    PLAYBOOKS_ARGUMENTS = {RM_VERSION: '',
-                           COMPUTE_BMC: '',
-                           COMPUTE_CPLD: '',
-                           COMPUTE_HMC: '',
-                           CUDA_PACKAGE: "--skip-tags 'cuda_rm_assert'"}
+    PLAYBOOKS_ARGUMENTS = {RM_VERSION: '-vvv',
+                           COMPUTE_BMC: '-vvv',
+                           COMPUTE_CPLD: '-vvv',
+                           COMPUTE_HMC: '-vvv',
+                           CUDA_PACKAGE: "--skip-tags 'cuda_rm_assert' -vvv"}
 
     PLAYBOOKS_NAMES = {RM_VERSION: 'provision_compute_node_software_nvl5.yml',
                        COMPUTE_BMC: 'provision_compute_node_firmware_bmc.yml',
