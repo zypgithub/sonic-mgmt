@@ -93,5 +93,7 @@ def get_service_port(platform):
         return ['Ethernet512', 'Ethernet520']
     if platform in PlatformTypesConstants.SALAMANDRA_PLATFORMS:
         return ['Ethernet512', 'Ethernet520', 'Ethernet528', 'Ethernet536']
+    if platform == PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_SIMX:
+        return ['Ethernet512', 'Ethernet513']
 
     return []

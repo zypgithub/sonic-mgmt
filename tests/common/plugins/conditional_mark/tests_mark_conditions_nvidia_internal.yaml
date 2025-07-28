@@ -136,6 +136,12 @@ tests/nightly/cpu_mem/test_bulk_counter_performance.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3832426"
 
+tests/nightly/arp/test_arp.py::test_arp_table_updated_during_ping:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4566594"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4566594 and '5810' in platform"
+
 tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3272016 on SIMX platform"
@@ -159,6 +165,12 @@ tests/nightly/app_extension/test_app_extension_upgrade.py:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
     conditions:
     - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
+
+tests/nightly/ecmp_calculator/test_ecmp_calculator.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4597728"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4597728 and '5810' in platform"
 
 tests/nightly/evpn_vxlan/test_evpn_vxlan_type5/test_evpn_vxlan_type5.py::TestEvpnVxlan::test_overlay_ecmp:
   skip:
