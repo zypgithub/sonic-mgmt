@@ -1,0 +1,17 @@
+# queue_info.yaml
+queues:
+  devops_sonic_ci_simx_spc:
+    setup_type: "CI_SONIC_SIMX_SPC"
+    device_var: "SWITCH_PANTHER1"
+    chip_type: "SPC"
+
+  devops_sonic_ci_simx_spc3:
+    setup_type: "CI_SONIC_SIMX_SPC3"
+    device_var: "SWITCH_LEOPARD1"
+    chip_type: "SPC3"
+
+  devops_sonic_ci_simx_spc4:
+    setup_type: "CI_SONIC_SIMX_SPC4"
+    device_var: "SWITCH_MOOSE1"
+    chip_type: "SPC4"
+

@@ -11,7 +11,9 @@
     "PRIORITY_NUMBER=4",
     "TARBALL_NAME=SONIC_MGMT_TAR.db.1.tgz",
     "OFFICIAL_TESTS=SONIC_MGMT",
-    "SIMX_ON_FAILURE=stop"
+    "SIMX_ON_FAILURE=stop",
+    "CI_SONIC_SPC_SETUP_CHIP_TYPE=SPC",
+    "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC"
   ],
   "phases": [
     {
@@ -35,7 +37,7 @@
     {
       "phase_2": [
         {
-          "name": "Clone",
+          "name": "Clone Sonic-mgmt",
           "module": "com.mellanox.jenkins.generic_modules.Checkout",
           "category": "Pre BAT",
           "node": "SONIC_LITE",
@@ -46,6 +48,21 @@
           "skip": false,
           "on_failure": "stop",
           "out_of_mail": true
+        },
+        {
+          "name": "Clone General",
+          "category": "Pre BAT",
+          "module": "com.mellanox.jenkins.generic_modules.Checkout",
+          "node": "SONIC_LITE",
+          "parameters": {
+            "CLONE_PATH_TMP": "general",
+            "CREDENTIALSID": "gitlab-user-password",
+            "GIT_REPOSITORY": "https://gitlab-master.nvidia.com/nbu-sws/Tools/general.git",
+            "BRANCH_NAME": "${GENERAL_SHA1}"
+          },
+          "skip": false,
+          "on_failure": "stop",
+          "out_of_mail": "true"
         },
         {
           "name": "Components Match",
@@ -153,15 +170,13 @@
         },
         {
           "name": "Allocate setup SPC",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
+          "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
           "category": "Allocate setups",
           "node": "MINI_MARS@SPC",
           "parameters": {
-            "queue_id": "devops_sonic_ci_spc",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SPC",
             "setup_var": "CI_SONIC_SPC_SETUP",
-            "device_var": "SWITCH_PANTHER1",
+            "yaml_path": "${nfs_dir}/build/common/queue_physical_info.yaml",
             "setup_requirements": "group_name:Sagi,sub_group:SONIC_CI,setup_status:enable"
           },
           "skip": "${SKIP_SONIC_HW_SPC_BAT}",
@@ -169,87 +184,17 @@
           "out_of_mail": true
         },
         {
-          "name": "Allocate setup SPC3",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "node": "MINI_MARS@SPC3",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_spc3",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SPC3",
-            "setup_var": "CI_SONIC_SPC3_SETUP",
-            "device_var": "SWITCH_LEOPARD1",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SONIC_HW_SPC3_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup SPC4",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "node": "MINI_MARS@SPC4",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_spc4",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SPC4",
-            "setup_var": "CI_SONIC_SPC4_SETUP",
-            "device_var": "SWITCH_MOOSE1",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SONIC_HW_SPC4_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": true
-        },
-        {
           "name": "Allocate setup SIMX SPC",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
+          "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
           "category": "Allocate setups",
           "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
-            "queue_id": "devops_sonic_ci_simx_spc",
             "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SIMX_SPC",
             "setup_var": "CI_SONIC_SIMX_SPC_SETUP",
-            "device_var": "SWITCH_PANTHER1",
+            "yaml_path": "${nfs_dir}/build/common/queue_simx_info.yaml",
             "setup_requirements": "group_name:Sagi,sub_group:SONIC_SIMX_CI,setup_status:enable"
           },
           "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
-          "on_failure": "continue",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup SIMX SPC3",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "node": "MINI_MARS@SIMX_SPC3",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_simx_spc3",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SIMX_SPC3",
-            "setup_var": "CI_SONIC_SIMX_SPC3_SETUP",
-            "device_var": "SWITCH_LEOPARD1",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_SIMX_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SONIC_SIMX_SPC3_BAT}",
-          "on_failure": "continue",
-          "out_of_mail": true
-        },
-        {
-          "name": "Allocate setup SIMX SPC4",
-          "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
-          "category": "Allocate setups",
-          "node": "MINI_MARS@SIMX_SPC4",
-          "parameters": {
-            "queue_id": "devops_sonic_ci_simx_spc4",
-            "priority": "${PRIORITY_NUMBER}",
-            "setup_type": "CI_SONIC_SIMX_SPC4",
-            "setup_var": "CI_SONIC_SIMX_SPC4_SETUP",
-            "device_var": "SWITCH_MOOSE1",
-            "setup_requirements": "group_name:Sagi,sub_group:SONIC_SIMX_CI,setup_status:enable"
-          },
-          "skip": "${SKIP_SONIC_SIMX_SPC4_BAT}",
           "on_failure": "continue",
           "out_of_mail": true
         },
@@ -288,13 +233,13 @@
           "out_of_mail": true
         },
         {
-          "name": "BAT Community SPC",
+          "name": "Deploy Community SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
           "node": "MINI_MARS@COMMUNITY_SPC",
           "parameters": {
-            "matrix_row": "ETH_COMMUNITY",
-            "matrix_col": "SPC",
+            "row": "ETH_COMMUNITY",
+            "column": "SPC",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_COMMUNITY_SPC_SETUP}",
@@ -302,19 +247,43 @@
             "base_version": "${SONIC_BIN}",
             "test_type": "REGRESSION",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "test_name": "deploy"
           },
           "skip": "${SKIP_COMMUNITY_REGRESSION}",
-          "on_failure": "stop"
+          "on_failure": "stop",
+          "out_of_mail": false
         },
         {
-          "name": "BAT SPC",
+          "name": "Test Community SPC",
+          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
+          "category": "BAT",
+          "node": "MINI_MARS@COMMUNITY_SPC",
+          "parameters": {
+            "row": "ETH_COMMUNITY",
+            "column": "SPC",
+            "global_conf": "${MARS_GLOBAL_CONF}",
+            "local_conf": "${MARS_LOCAL_CONF}",
+            "setup_id": "${CI_SONIC_COMMUNITY_SPC_SETUP}",
+            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_COMMUNITY_SPC_SETUP}/",
+            "base_version": "${SONIC_BIN}",
+            "test_type": "REGRESSION",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "sonic_mgmt_repo_url": "${nfs_dir}",
+            "test_name": "test"
+          },
+          "skip": "${SKIP_COMMUNITY_REGRESSION}",
+          "on_failure": "stop",
+          "out_of_mail": false
+        },
+        {
+          "name": "Deploy SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
           "node": "MINI_MARS@SPC",
           "parameters": {
-            "matrix_row": "ETH",
-            "matrix_col": "SPC",
+            "row": "ETH",
+            "column": "${CI_SONIC_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_SPC_SETUP}",
@@ -322,62 +291,43 @@
             "base_version": "${SONIC_BIN}",
             "test_type": "CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "test_name": "deploy"
           },
           "skip": "${SKIP_SONIC_HW_SPC_BAT}",
           "on_failure": "stop",
           "out_of_mail": false
         },
         {
-          "name": "BAT SPC3",
+          "name": "Test SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SPC3",
+          "node": "MINI_MARS@SPC",
           "parameters": {
-            "matrix_row": "ETH",
-            "matrix_col": "SPC3",
+            "row": "ETH",
+            "column": "${CI_SONIC_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_SPC3_SETUP}",
-            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SPC3_SETUP}/",
+            "setup_id": "${CI_SONIC_SPC_SETUP}",
+            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SPC_SETUP}/",
             "base_version": "${SONIC_BIN}",
             "test_type": "CI",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "test_name": "test"
           },
-          "skip": "${SKIP_SONIC_HW_SPC3_BAT}",
+          "skip": "${SKIP_SONIC_HW_SPC_BAT}",
           "on_failure": "stop",
           "out_of_mail": false
         },
         {
-          "name": "BAT SPC4",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "node": "MINI_MARS@SPC4",
-          "parameters": {
-            "matrix_row": "ETH",
-            "matrix_col": "SPC4",
-            "global_conf": "${MARS_GLOBAL_CONF}",
-            "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_SPC4_SETUP}",
-            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SPC4_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type": "CI",
-            "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
-          },
-          "skip": "${SKIP_SONIC_HW_SPC4_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": false
-        },
-        {
-          "name": "BAT SIMX SPC",
+          "name": "Deploy SIMX SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
           "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
-            "matrix_row": "SIMX",
-            "matrix_col": "SPC",
+            "row": "SIMX",
+            "column": "${CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_SIMX_SPC_SETUP}",
@@ -385,84 +335,90 @@
             "base_version": "${SONIC_BIN}",
             "test_type": "CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "test_name": "deploy"
           },
           "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
           "on_failure": "${SIMX_ON_FAILURE}",
           "out_of_mail": false
         },
         {
-          "name": "BAT SIMX SPC3",
+          "name": "Test SIMX SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SIMX_SPC3",
+          "node": "MINI_MARS@SIMX_SPC",
           "parameters": {
-            "matrix_row": "SIMX",
-            "matrix_col": "SPC3",
+            "row": "SIMX",
+            "column": "${CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE}",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_SIMX_SPC3_SETUP}",
-            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SIMX_SPC3_SETUP}/",
+            "setup_id": "${CI_SONIC_SIMX_SPC_SETUP}",
+            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SIMX_SPC_SETUP}/",
             "base_version": "${SONIC_BIN}",
             "test_type": "CI",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "test_name": "test"
           },
-          "skip": "${SKIP_SONIC_SIMX_SPC3_BAT}",
+          "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
           "on_failure": "${SIMX_ON_FAILURE}",
           "out_of_mail": false
         },
         {
-          "name": "BAT SIMX SPC4",
-          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
-          "category": "BAT",
-          "node": "MINI_MARS@SIMX_SPC4",
-          "parameters": {
-            "matrix_row": "SIMX",
-            "matrix_col": "SPC4",
-            "global_conf": "${MARS_GLOBAL_CONF}",
-            "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${CI_SONIC_SIMX_SPC4_SETUP}",
-            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SIMX_SPC4_SETUP}/",
-            "base_version": "${SONIC_BIN}",
-            "test_type": "CI",
-            "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
-          },
-          "skip": "${SKIP_SONIC_SIMX_SPC4_BAT}",
-          "on_failure": "${SIMX_ON_FAILURE}",
-          "out_of_mail": false
-        },
-        {
-          "name": "BAT SmartSwitch",
+          "name": "Deploy SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
           "node": "MINI_MARS@SS",
           "parameters": {
-            "matrix_row": "SMARTSWITCH",
-            "matrix_col": "SPC3/BF3",
+            "row": "SMARTSWITCH",
+            "column": "SPC3/BF3",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
             "setup_id": "${CI_SONIC_SS_SETUP}",
-            "setup_conf_file_path": "/auto/sw_regression/system/SONIC/MARS/conf/setups/${CI_SONIC_SS_SETUP}/",
+            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SS_SETUP}/",
             "base_version": "${SONIC_BIN}",
             "base_version_dpu": "${DPU_BIN}",
             "test_type": "MGMT_CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "test_name": "deploy"
           },
           "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "on_failure": "stop",
           "out_of_mail": false
         },
         {
-          "name": "BAT QTM3",
+          "name": "Test SmartSwitch",
+          "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
+          "category": "BAT",
+          "node": "MINI_MARS@SS",
+          "parameters": {
+            "row": "SMARTSWITCH",
+            "column": "SPC3/BF3",
+            "global_conf": "${MARS_GLOBAL_CONF}",
+            "local_conf": "${MARS_LOCAL_CONF}",
+            "setup_id": "${CI_SONIC_SS_SETUP}",
+            "setup_conf_file_path": "${MARS_CONF_BASE}/${CI_SONIC_SS_SETUP}/",
+            "base_version": "${SONIC_BIN}",
+            "base_version_dpu": "${DPU_BIN}",
+            "test_type": "MGMT_CI",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "sonic_mgmt_repo_url": "${nfs_dir}",
+            "test_name": "test"
+          },
+          "skip": "${SKIP_SONIC_HW_SS_BAT}",
+          "on_failure": "stop",
+          "out_of_mail": false
+        },
+        {
+          "name": "Deploy QTM3",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
           "node": "MINI_MARS@QTM3",
           "parameters": {
-            "matrix_row": "CHIPSIM",
-            "matrix_col": "QTM3",
+            "row": "CHIPSIM",
+            "column": "QTM3",
+            "test_name": "QTM3",
             "global_conf": "${MARS_GLOBAL_CONF}",
             "local_conf": "${MARS_LOCAL_CONF}",
             "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
@@ -470,7 +426,31 @@
             "target_version": "${NVOS_BIN}",
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "mars_run_type": "deploy"
+          },
+          "skip": "${SKIP_NVOS_BAT}",
+          "on_failure": "stop",
+          "out_of_mail": false
+        },
+        {
+          "name": "Test QTM3",
+          "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
+          "category": "BAT",
+          "node": "MINI_MARS@QTM3",
+          "parameters": {
+            "row": "CHIPSIM",
+            "column": "QTM3",
+            "test_name": "QTM3",
+            "global_conf": "${MARS_GLOBAL_CONF}",
+            "local_conf": "${MARS_LOCAL_CONF}",
+            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
+            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
+            "target_version": "${NVOS_BIN}",
+            "base_version": "${NVOS_BIN}",
+            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
+            "mars_release_version": "${MARS_RELEASE_VERSION}",
+            "mars_run_type": "test"
           },
           "skip": "${SKIP_NVOS_BAT}",
           "on_failure": "stop",
@@ -503,32 +483,6 @@
           "out_of_mail": true
         },
         {
-          "name": "Free SPC3 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "node": "MINI_MARS@SPC3",
-          "parameters": {
-            "setup_name": "${CI_SONIC_SPC3_SETUP}"
-          },
-          "skip": false,
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free SPC4 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "node": "MINI_MARS@SPC4",
-          "parameters": {
-            "setup_name": "${CI_SONIC_SPC4_SETUP}"
-          },
-          "skip": false,
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
           "name": "Free SIMX SPC setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
@@ -537,32 +491,6 @@
             "setup_name": "${CI_SONIC_SIMX_SPC_SETUP}"
           },
           "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free SIMX SPC3 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "node": "MINI_MARS@SIMX_SPC3",
-          "parameters": {
-            "setup_name": "${CI_SONIC_SIMX_SPC3_SETUP}"
-          },
-          "skip": "${SKIP_SONIC_SIMX_SPC3_BAT}",
-          "finally": true,
-          "on_failure": "ignore",
-          "out_of_mail": true
-        },
-        {
-          "name": "Free SIMX SPC4 setup",
-          "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
-          "category": "Clean",
-          "node": "MINI_MARS@SIMX_SPC4",
-          "parameters": {
-            "setup_name": "${CI_SONIC_SIMX_SPC4_SETUP}"
-          },
-          "skip": "${SKIP_SONIC_SIMX_SPC4_BAT}",
           "finally": true,
           "on_failure": "ignore",
           "out_of_mail": true
@@ -603,34 +531,56 @@
           "category": "Create Tests Matrix",
           "node": "SONIC_LITE",
           "parameters": {
+            "COL_ORDER": "SPC,SPC3,SPC4,SPC5,SPC3/BF3,QTM3",
             "EXPECTED_RESULTS": [
               {
                 "ETH": [
-                  "SPC",
-                  "SPC3",
-                  "SPC4"
+                  {
+                    "${CI_SONIC_SPC_SETUP_CHIP_TYPE}": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
                 ]
               },
               {
                 "SIMX": [
-                  "SPC",
-                  "SPC3",
-                  "SPC4"
+                  {
+                    "${CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE}": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
                 ]
               },
               {
                 "ETH_COMMUNITY": [
-                  "SPC"
+                  {
+                    "SPC": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
                 ]
               },
               {
                 "SMARTSWITCH": [
-                  "SPC3/BF3"
+                  {
+                    "SPC3/BF3": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
                 ]
               },
               {
                 "CHIPSIM": [
-                  "QTM3"
+                  {
+                    "QTM3": [
+                      "deploy",
+                      "test"
+                    ]
+                  }
                 ]
               }
             ]

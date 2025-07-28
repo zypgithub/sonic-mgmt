@@ -176,6 +176,7 @@ def run_step(name) {
             print "copying mgmt repo files to " + env."nfs_dir"
             NGCITools().ciTools.run_sh("cp -rf ./. ${env.nfs_dir}/sonic-mgmt/")
             NGCITools().ciTools.run_sh("cp -r build/. ${env.nfs_dir}/build/")
+            NGCITools().ciTools.run_sh("cp -r ${WORKSPACE}/general ${env.nfs_dir}/")
             //Copy bat properties from sonic_devops shared location (used by bat.groovy)
             NGCITools().ciTools.run_sh("cp /auto/sw_system_release/ci/sonic_devops/build/ci/bat_properties_file.txt ${env.nfs_dir}/build/ci/")
             NGCITools().ciTools.run_sh("cp /auto/sw_system_release/ci/nos/nvos/build/common/bat_properties_file.txt ${env.nfs_dir}/build/common/")

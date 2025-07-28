@@ -6,39 +6,18 @@ def set_bat_skip(name, skip_list) {
     for (bat_to_skip in skip_list) {
         switch(bat_to_skip) {
             case "SPC_HW":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "ETH", "SPC", "Skipped=status")
                 env.SKIP_SONIC_HW_SPC_BAT = "true"
                 break
-            case "SPC3_HW":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "ETH", "SPC3", "Skipped=status")
-                env.SKIP_SONIC_HW_SPC3_BAT = "true"
-                break
-            case "SPC4_HW":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "ETH", "SPC4", "Skipped=status")
-                env.SKIP_SONIC_HW_SPC4_BAT = "true"
-                break
             case "SS_HW":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "SMARTSWITCH", "SPC3/BF3", "Skipped=status")
                 env.SKIP_SONIC_HW_SS_BAT = "true"
                 break
             case "SPC_SIMX":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "SIMX", "SPC", "Skipped=status")
                 env.SKIP_SONIC_SIMX_SPC_BAT = "true"
                 break
-            case "SPC3_SIMX":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "SIMX", "SPC3", "Skipped=status")
-                env.SKIP_SONIC_SIMX_SPC3_BAT = "true"
-                break
-            case "SPC4_SIMX":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "SIMX", "SPC4", "Skipped=status")
-                env.SKIP_SONIC_SIMX_SPC4_BAT = "true"
-                break
             case "QTM2":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "IB", "QTM2", "Skipped=status")
                 env.SKIP_NVOS_BAT = "true"
                 break
             case "ETH_COMMUNITY":
-                NGCITools().ciTools.insert_test_result_to_matrix(name, "ETH_COMMUNITY", "SPC", "Skipped=status")
                 env.SKIP_COMMUNITY_REGRESSION = "true"
                 break
         }
@@ -51,8 +30,8 @@ def pre(name) {
 
 
 def run_step(name) {
-    def SONIC_CANONICAL_HW_BAT = ["SPC_HW", "SPC3_HW", "SPC4_HW", "SS_HW"]
-    def SONIC_CANONICAL_SIMX_BAT = ["SPC_SIMX", "SPC3_SIMX", "SPC4_SIMX"]
+    def SONIC_CANONICAL_HW_BAT = ["SPC_HW", "SS_HW"]
+    def SONIC_CANONICAL_SIMX_BAT = ["SPC_SIMX"]
     def SONIC_CANONICAL_BAT = SONIC_CANONICAL_HW_BAT + SONIC_CANONICAL_SIMX_BAT
     def SONIC_COMMUNITY_BAT = ["ETH_COMMUNITY"]
     def NVOS_BAT = ["QTM2"]
