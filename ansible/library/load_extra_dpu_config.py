@@ -92,7 +92,7 @@ class LoadExtraDpuConfigModule(object):
 
         for i in range(0, self.dpu_num):
             # Update the extra dpu config file
-            self.module.run_command("sed -i 's/18.0.202/18.{}.202/g' {}".format(i, SRC_DPU_CONFIG_FILE))
+            self.module.run_command("sed -i 's/18.*202/18.{}.202/g' {}".format(i, SRC_DPU_CONFIG_FILE))
 
             dpu_ip = DPU_HOST_IP_BASE.format(i + 1)
 
