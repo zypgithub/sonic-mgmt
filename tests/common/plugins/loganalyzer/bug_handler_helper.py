@@ -399,7 +399,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
-        "nvos_ci": False
+        "nvos_ci": False,
+        "air_bringup": True
     }
 
     project_bug_update_map = {
@@ -411,7 +412,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
-        "nvos_ci": False
+        "nvos_ci": False,
+        "air_bringup": True
     }
 
     project_bug_only_check_map = {
@@ -423,7 +425,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
-        "nvos_ci": False
+        "nvos_ci": False,
+        "air_bringup": False
     }
 
     if not only_check:
