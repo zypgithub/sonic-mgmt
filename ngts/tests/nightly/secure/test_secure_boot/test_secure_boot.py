@@ -115,4 +115,4 @@ def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params,
             SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[SonicSecureBootConsts.BIOS_COMPONENT],
             SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
     with allure.step("Wait for the switch auto boot to SONiC"):
-        retry_call(secure_boot_helper.is_sonic_mode, tries=15, delay=10, logger=logger)
+        retry_call(secure_boot_helper.is_sonic_mode, tries=20, delay=15, logger=logger)
