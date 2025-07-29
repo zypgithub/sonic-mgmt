@@ -14,7 +14,7 @@ class ComponentManager:
             should_update = component.installed_version != component.required_version
             if should_update:
                 print(
-                    f"{component.name} will be updated from {component.installed_version} to {component.required_version if component.required_version else component.install_path}")
+                    f"{component.name} will be updated from {component.installed_version} to {component.required_version if component.required_version else component.install_path} using {component.install_path}")
                 result = component.update()
                 if not result:
                     error_msg = f"Update for {component.name} failed."

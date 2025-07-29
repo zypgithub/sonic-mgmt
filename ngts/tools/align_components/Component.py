@@ -102,8 +102,8 @@ class CpldComponent(Component):
             "ResetType": f"{reset_type}"
         }
         respond, _ = self.rf_api.post_query(RedfishCollection.RESET, data)
-        print("Power cycle request sent. Sleeping for 2.5 minutes...")
-        time.sleep(150)
+        print("Power cycle request sent. Sleeping for 6 minutes...")
+        time.sleep(6 * 60)
 
     def _run_player_cmd(self, command):
         try:
