@@ -6,6 +6,7 @@ import random
 import pandas as pd
 from ngts.helpers.performance.packet_json_generator import PacketGenerator
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ast import literal_eval
 
 
@@ -307,13 +308,48 @@ def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
         bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
 
         is_global_threshold = isinstance(bw_threshold, (int, float))
-        for sample_id, bw_sample in bw_samples.items():
+        # TODO: remove this if statement once the issue is fixed (keep only the else part)
+        if is_redmine_issue_active([4545618])[0]:
+            try:
+                for sample_id, bw_sample in bw_samples.items():
+                    for port_group_name, group_data in bw_sample.items():
+                        bw_stats = group_data[ValidationConsts.BW_STATS]
+                        tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
+                        if tx_threshold is None and rx_threshold is None:
+                            violations_list.append(f"No threshold specified for port group {port_group_name}.")
+                            continue
+
+                        if tx_threshold is not None and bw_stats[ValidationConsts.TX_RATE_MIN] < tx_threshold:
+                            violations_list.append(
+                                f"TX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {tx_threshold}."
+                            )
+                        if validate_bw_rx and rx_threshold is not None and bw_stats[ValidationConsts.RX_RATE_MIN] < rx_threshold:
+                            violations_list.append(
+                                f"RX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {rx_threshold}."
+                            )
+            except Exception as e:
+                lower_tx_bw_sample = []
+                lower_rx_bw_sample = []
+                for sample_id, bw_sample in bw_samples.items():
+                    bw_stats = bw_sample[ValidationConsts.BW_STATS]
+                    if bw_stats[ValidationConsts.TX_RATE_MIN] < bw_threshold:
+                        lower_tx_bw_sample.append(sample_id)
+                    if validate_bw_rx and bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
+                        lower_rx_bw_sample.append(sample_id)
+                if lower_tx_bw_sample:
+                    violations_list.append(f"Not all tx bandwidth samples were higher than threshold {bw_threshold}, "
+                                           f"please check {lower_tx_bw_sample}")
+                if lower_rx_bw_sample:
+                    violations_list.append(f"Not all rx bandwidth samples were higher than threshold {bw_threshold}, "
+                                           f"please check {lower_rx_bw_sample}")
+        else:
             for port_group_name, group_data in bw_sample.items():
+                bw_stats = group_data[ValidationConsts.BW_STATS]
                 tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
                 if tx_threshold is None and rx_threshold is None:
                     violations_list.append(f"No threshold specified for port group {port_group_name}.")
                     continue
-                bw_stats = group_data[ValidationConsts.BW_STATS]
+
                 if tx_threshold is not None and bw_stats[ValidationConsts.TX_RATE_MIN] < tx_threshold:
                     violations_list.append(
                         f"TX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {tx_threshold}."
@@ -353,10 +389,24 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
     bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
 
     for sample_id, port_groups in bw_samples.items():
-        for port_group_name, port_group_data in port_groups.items():
-            bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
-            for port in ports_list:
-                if port in bw_df[ValidationConsts.PORT].values:
+        # TODO: remove this if statement once the issue is fixed (keep only the else part)
+        if is_redmine_issue_active([4545618])[0]:
+            try:
+                for port_group_name, port_group_data in port_groups.items():
+                    bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
+                    for port in ports_list:
+                        if port in bw_df[ValidationConsts.PORT].values:
+                            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
+                            if bw_threshold == 0 and port_tx > bw_threshold:
+                                violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
+                                                       f"please check {sample_id}")
+                            if port_tx < bw_threshold:
+                                violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
+                                                       f"please check {sample_id}")
+            except Exception as e:
+                bw_sample = port_groups
+                bw_df = pd.DataFrame(bw_sample[ValidationConsts.BW_DATAFRAME])
+                for port in ports_list:
                     port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
                     if bw_threshold == 0 and port_tx > bw_threshold:
                         violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
@@ -364,6 +414,18 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
                     if port_tx < bw_threshold:
                         violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
                                                f"please check {sample_id}")
+        else:
+            for port_group_name, port_group_data in port_groups.items():
+                bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
+                for port in ports_list:
+                    if port in bw_df[ValidationConsts.PORT].values:
+                        port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
+                        if bw_threshold == 0 and port_tx > bw_threshold:
+                            violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
+                                                   f"please check {sample_id}")
+                        if port_tx < bw_threshold:
+                            violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
+                                                   f"please check {sample_id}")
 
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):
