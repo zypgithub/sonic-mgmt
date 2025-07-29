@@ -18,6 +18,7 @@ class Defaults:
     CPLD_NAME = 'cpld'
     BMC_NAME = 'bmc'
     BIOS_NAME = 'bios'
+    MCU_NAME = 'mcu'
     FPGA_NAME = 'fpga'
     FPGA_ENCRYPTED_NAME = 'fpga_encrypted'
     EROT_NAME = 'erot'

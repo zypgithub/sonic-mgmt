@@ -8,7 +8,7 @@ import nogaq
 from Component import Component, BmcComponent
 from ComponentManager import ComponentManager
 from Redfish_rest_api import RedFishRestApi
-from Constants import Defaults, NogaConstants
+from Constants import Defaults, NogaConstants, RedfishCollection
 
 
 def get_switch_info(setup_name: str) -> List[str]:
@@ -43,6 +43,18 @@ def start_components_update(_args):
     if _has_non_encrypted_fpga(bmc_ip) and any(Defaults.FPGA_NAME in comp for comp in components_to_update):
         components_to_update.remove(Defaults.FPGA_ENCRYPTED_NAME)
         components_to_update.append(Defaults.FPGA_NAME)
+
+    respond = rf_api.get_query(f'{RedfishCollection.FIRMWARE_INVENTORY}')
+
+    # If no FPGA hardware found, remove all FPGA-related components
+    if Defaults.FPGA_NAME not in str(respond).lower():
+        components_to_update = [comp for comp in components_to_update if Defaults.FPGA_NAME not in comp.lower()]
+
+    # For non-FPGA components, do the normal availability check
+    for component in components_to_update.copy():
+        if Defaults.FPGA_NAME not in component.lower():  # Skip FPGA components
+            if component.lower() not in str(respond).lower():
+                components_to_update.remove(component)
 
     components: List[Component] = []
     for component_name in components_to_update:
