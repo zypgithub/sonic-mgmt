@@ -37,7 +37,7 @@
     },
     "r-panther-01_setup": {
         "default_hwsku": "Mellanox-SN2700-A1-D48C8",
-        "support_hwsku": ["Mellanox-SN2700-A1-D48C8", "Mellanox-SN2700-A1-C28D8"]
+        "support_hwsku": ["Mellanox-SN2700-A1-D48C8", "Mellanox-SN2700-A1-C28D8", "Mellanox-SN2700-A1"]
     },
     "r-panther-02_setup": {
         "default_hwsku": "Mellanox-SN2700-A1",
@@ -49,7 +49,7 @@
     },
     "r-panther-40_setup": {
         "default_hwsku": "Mellanox-SN2700-A1-D48C8",
-        "support_hwsku": ["Mellanox-SN2700-A1-D48C8", "Mellanox-SN2700-A1-C28D8"]
+        "support_hwsku": ["Mellanox-SN2700-A1-D48C8", "Mellanox-SN2700-A1-C28D8", "Mellanox-SN2700-A1"]
     },
     "r-panther-42_setup": {
         "default_hwsku": "Mellanox-SN2700-A1",
