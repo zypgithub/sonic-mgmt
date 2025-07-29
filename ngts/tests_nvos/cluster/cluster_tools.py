@@ -80,6 +80,15 @@ class ClusterTools:
             return ResultObj(result=True)
 
     @staticmethod
+    def get_filtered_state_files(standalone_system=False):
+        """
+        Get state files filtered based on system type.
+        In standalone systems, topology files are excluded.
+        """
+        return [f for f in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES
+                if not (standalone_system and f == 'topology')]
+
+    @staticmethod
     def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -539,9 +548,10 @@ class ClusterTools:
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def verify_sdn_state_files_deleted(sdn):
+    def verify_sdn_state_files_deleted(sdn, standalone_system=False):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
                                                                     output_format=OutputFormat.json).get_returned_value()

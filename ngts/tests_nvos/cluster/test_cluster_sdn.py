@@ -92,7 +92,8 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
 
         with allure.step("Generate state files"):
             for _ in range(2):
-                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+                state_files = ClusterTools.get_filtered_state_files(standalone_system)
+                for file_type in state_files:
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                     output = sdn.state.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                     output = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
@@ -133,9 +134,9 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                     for file in all_config_files_paths[file_type]:
                         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
-                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
-                            file].action_delete().verify_result()
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+                        sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 if all_state_files_paths[file_type]:
                     for file in all_state_files_paths[file_type]:
                         app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
@@ -147,7 +148,7 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
             # Make sure all files are deleted.
             ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
             verify_all_files_are_deleted(engines, all_state_files_paths)
             verify_all_files_are_deleted(engines, all_config_files_paths)
 
@@ -169,9 +170,9 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                         for file in all_config_files_paths[file_type]:
                             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
-                            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[
-                                file].action_delete().verify_result()
-                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+                            sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
+                state_files = ClusterTools.get_filtered_state_files(standalone_system)
+                for file_type in state_files:
                     if (file_type in all_state_files_paths) and all_state_files_paths[file_type]:
                         for file in all_state_files_paths[file_type]:
                             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]

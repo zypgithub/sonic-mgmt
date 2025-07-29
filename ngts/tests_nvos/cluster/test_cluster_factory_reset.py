@@ -64,11 +64,12 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                 ClusterTools.verify_app_is_down(engines, app)
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
             sdn_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
@@ -149,11 +150,12 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
                 ClusterTools.verify_app_is_down(engines, app)
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
             sdn_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
@@ -230,11 +232,12 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
                 ClusterTools.verify_app_is_down(engines, app)
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
             ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
             sdn_files_deleted = True
             rotate_logs(system)
             logger.info("Sleeping for 30 seconds to gather nmx log messages")
@@ -315,10 +318,11 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 ClusterTools.verify_app_is_up(engines, app)  # Verify apps are running
             for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            for file_type in state_files:
                 verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
             ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
             sdn_files_deleted = True
             rotate_logs(system)
             time.sleep(30)
