@@ -623,6 +623,7 @@ def test_techsupport_commands(
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
 
     stdout = duthost.shell(r'sudo generate_dump -n | grep -v "^mkdir\|^rm\|^tar\|^gzip"')
+
     pytest_assert(stdout['rc'] == 0, 'generate_dump command failed')
 
     cmd_list = stdout["stdout_lines"]
