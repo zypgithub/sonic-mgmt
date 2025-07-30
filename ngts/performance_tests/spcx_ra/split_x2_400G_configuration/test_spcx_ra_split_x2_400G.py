@@ -9,23 +9,25 @@ from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, vali
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, restore_basic_configuration, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
-                                                                skip_test_on_unsupported_os, get_obj_method,
-                                                                set_allure_title)
+                                                                skip_test_on_unsupported_os, get_obj_method)
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
+from ngts.performance_tests.spcx_ra.split_x2_400G_configuration.conftest import get_conf_args
 
 logger = logging.getLogger()
 
 PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 
+@pytest.mark.parametrize("basic_setup_configuration", [InfraConst.IPV4, InfraConst.IPV6], indirect=True)
 class TestSPCXRA_x2Split_400G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
+    def setup(self, players, engines, power_thresholds_by_chip_type, chip_type, basic_setup_configuration):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -33,11 +35,11 @@ class TestSPCXRA_x2Split_400G:
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
-        self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
-        self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
-        self.is_ipv6 = is_ipv6
         self.chip_type = chip_type
-        self.conf_args = conf_args
+        self.ip = InfraConst.IPV6 if basic_setup_configuration else InfraConst.IPV4
+        self.is_ipv6 = basic_setup_configuration
+        self.conf_args = get_conf_args(self.is_ipv6)
+        self.traffic_jsons = get_spcx_ra_spine_traffic(players, self.conf_args)
 
     def apply_custom_configuration(self, scenario_config=None):
         """Apply the custom configuration for this test class"""
@@ -55,14 +57,12 @@ class TestSPCXRA_x2Split_400G:
         configure_mloops(players=self.players)
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth_rebalancer_enabled')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile. Rebalancer enabled == auto buffer mode.')
     def test_ar_perf_max_bandwidth_rebalancer_enabled(self, request, packet_size):
         if isinstance(self.cli_object, NvueCli):
             pytest.mark.xfail(reason="test_ar_perf_max_bandwidth expected to fail on Nvue")
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
 
         with allure.step("Apply custom configuration: Enable rebalancer - auto buffer mode is true"):
             self.apply_custom_configuration({"auto_buffer_mode": "True"})
@@ -82,12 +82,10 @@ class TestSPCXRA_x2Split_400G:
             self.apply_custom_configuration()
 
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth_rebalancer_enabled')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -106,15 +104,13 @@ class TestSPCXRA_x2Split_400G:
                                       skip_first_counters_iteration=True)
             run_validation(config)
 
-    @allure.title('test_ar_perf_link_flap')
     @pytest.mark.parametrize("packet_size", PACKET_SIZE_LIST)
     @pytest.mark.parametrize("flap_scenario", ["port_hiccup", "port_repeated_toggle", "toggle_multiple_ports"])
     @allure.description('With full line rate traffic, verify that traffic converges '
                         'to the initial state after an interface flap.')
     def test_ar_perf_link_flap(self, request, packet_size, flap_scenario):
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
 
         with allure.step("Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -135,14 +131,12 @@ class TestSPCXRA_x2Split_400G:
                                       skip_first_counters_iteration=True)
             run_validation(config)
 
-    @allure.title('test_ar_perf_reload_reboot')
     @allure.description('With full line rate traffic, verify that traffic converges to'
                         ' the initial state after cold reboot/reload.')
     def test_ar_perf_reload_reboot(self, request, packet_size=4096):
         skip_test_on_unsupported_os(cli_obj=self.cli_object, unsupported_os=CliType.DVS)
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
 
         with allure.step("Run 4000B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)

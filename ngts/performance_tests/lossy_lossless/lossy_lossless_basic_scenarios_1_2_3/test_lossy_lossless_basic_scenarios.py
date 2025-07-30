@@ -3,8 +3,7 @@ import logging
 import pytest
 
 from ngts.helpers.general_helper import get_pytest_test_name
-from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj,
-                                                                set_allure_title)
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj)
 from ngts.performance_tests.lossy_lossless.lossy_lossless_basic_scenarios_1_2_3.conftest import set_allure_lossy_lossless_title
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.performance_tests.lossy_lossless.conftest import get_lossy_lossless_basic_traffic
@@ -37,7 +36,7 @@ class TestLossyLossless:
                                               packet_size=4096):
 
         with allure.step(f"Set test correct allure title with {scenario_name} parameter"):
-            test_name = set_allure_lossy_lossless_title(request, scenario_name, self.is_ipv6)
+            test_name = set_allure_lossy_lossless_title(request, scenario_name)
 
         self.traffic_jsons = get_lossy_lossless_basic_traffic(self.players, self.conf_args, num_lossy_packets,
                                                               num_lossless_packets)

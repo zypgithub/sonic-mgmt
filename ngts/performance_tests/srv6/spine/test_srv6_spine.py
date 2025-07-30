@@ -60,7 +60,7 @@ class TestSRv6Spine(TestSRv6Base):
         In order to recreate this full mesh we just define all the spine downstream ports as both
         downstream and upstream this way get the traffic pattern as seen above.
         """
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         round_robin_dict = MRCConsts.SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
         round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
         downstream_group1, downstream_group2, port_group_df = get_spine_downstream_groups_port_group_df(self.players, round_robin_ports_num, round_robin_groups_num)
@@ -80,7 +80,7 @@ class TestSRv6Spine(TestSRv6Base):
                                              traffic_type, workload, ingress_port_sequence, ingress_ports_num, get_ports_from_start=False):
         condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
         skip_performance_test_conditionally(condition, skip_message)
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
         with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
             ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=get_ports_from_start)
@@ -97,7 +97,7 @@ class TestSRv6Spine(TestSRv6Base):
     def test_spine_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
         condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
         skip_performance_test_conditionally(condition, skip_message)
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, M)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,

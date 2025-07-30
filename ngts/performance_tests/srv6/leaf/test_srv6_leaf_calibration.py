@@ -62,7 +62,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         self.cli_object.trimming.enable_trimming_on_lossy_queue()
         self.cli_object.trimming.disable_packets_aging()
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = get_perf_test_name(request, self.ip)
+            test_name = get_perf_test_name(request)
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"Calibrate-OPT_TS",
                                                 MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
@@ -116,7 +116,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
     @pytest.mark.parametrize("ingress_port_sequence", [MRCConsts.INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE])
     def test_leaf_srv6_trimming_many_to_one_for_experiments(self, request, traffic_type, workload, ingress_port_sequence):
         pytest.skip("This test is not running in regression, only used for manual calibration of many to one ingress ports num")
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         self.cli_object.trimming.configure_custom_dwrr_weights()
         data_df = []
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=True)

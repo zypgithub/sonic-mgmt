@@ -4,41 +4,38 @@ import pytest
 from ngts.constants.constants import CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
-                                                                skip_test_on_unsupported_os, set_allure_title,
-                                                                ValidationConfig)
-from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
+                                                                skip_test_on_unsupported_os, ValidationConfig)
+from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
+from ngts.performance_tests.spcx_ra.split_x1_800G_configuration.conftest import get_conf_args
 from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 logger = logging.getLogger()
 
 
+@pytest.mark.parametrize("basic_setup_configuration", [InfraConst.IPV4, InfraConst.IPV6], indirect=True)
 class TestSPCXRA_x1Split_800G:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6, set_ibm):
+    def setup(self, players, engines, power_thresholds_by_chip_type, chip_type, basic_setup_configuration):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
-        self.traffic_jsons = get_spcx_ra_spine_traffic(players, conf_args)
         self.chip_type = chip_type
-        self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
-        self.is_ipv6 = is_ipv6
-        self.conf_args = conf_args
+        self.ip = InfraConst.IPV6 if basic_setup_configuration else InfraConst.IPV4
+        self.is_ipv6 = basic_setup_configuration
+        self.conf_args = get_conf_args(self.is_ipv6)
+        self.traffic_jsons = get_spcx_ra_spine_traffic(players, self.conf_args)
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and default AR profile.')
     def test_ar_perf_max_bandwidth(self, request, packet_size, ibm_fixture):
-
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
-
+        test_name = get_perf_test_name(request)
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
@@ -56,12 +53,10 @@ class TestSPCXRA_x1Split_800G:
             run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth_ibm')
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, self.traffic_jsons)
@@ -83,19 +78,17 @@ class TestSPCXRA_x1Split_800G:
             run_validation(config)
 
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
-    @allure.title('test_ar_perf_max_bandwidth_leaf')
     @allure.description('Calculate the port utilization on the DUT with AR enabled on one side')
-    def test_ar_perf_max_bandwidth_leaf(self, request, packet_size, conf_args):
+    def test_ar_perf_max_bandwidth_leaf(self, request, packet_size):
 
-        with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
-            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x1_800G_leaf"})
+        test_name = get_perf_test_name(request)
+        add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "x1_800G_leaf"})
 
-        conf_args["two_sided_ar"] = False
-        leaf_traffic_jsons = get_spcx_ra_leaf_traffic(self.players, conf_args)
+        self.conf_args["two_sided_ar"] = False
+        leaf_traffic_jsons = get_spcx_ra_leaf_traffic(self.players, self.conf_args)
         restore_basic_configuration(players=self.players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES)
         apply_test_configuration(players=self.players, players_aliases=PerfConsts.PERF_SETUP_DUT_ALIASES,
-                                 scenario=self.scenario, conf_args=conf_args)
+                                 scenario=self.scenario, conf_args=self.conf_args)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports"):
             run_traffic(self.players, self.scenario, leaf_traffic_jsons)

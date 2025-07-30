@@ -81,8 +81,7 @@ def is_ipv6(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def basic_test_configuration(request, players):
-    request.getfixturevalue('basic_setup_configuration')
+def basic_test_configuration(request, players, basic_setup_configuration):
     try:
         with allure.step('Configure Mloops on Traffic Generators'):
             configure_mloops(players)
@@ -100,10 +99,9 @@ def basic_test_configuration(request, players):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def os_ports_name_mapping_df(request, players, is_ipv6):
-    request.getfixturevalue('basic_setup_configuration')
+def os_ports_name_mapping_df(request, players, basic_setup_configuration):
     os_ports_name_mapping_df = players['dut']['cli'].performance.get_os_ports_name_mapping()
-    test_name = get_perf_test_name(request, is_ipv6)
+    test_name = get_perf_test_name(request)
     add_test_mongo_metadata(test_name,
                             {ValidationConsts.OS_PORTS_NAME_MAPPING_DATAFRAME:
                                 os_ports_name_mapping_df})
@@ -116,9 +114,9 @@ def create_mongo_db_template_file(players, session_id, setup_name):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def update_test_data_in_mongo_db(request, players, is_ipv6):
+def update_test_data_in_mongo_db(request, players):
     try:
-        test_name = get_perf_test_name(request, is_ipv6)
+        test_name = get_perf_test_name(request)
         time_now = datetime.now().strftime(MongoDbConsts.TIME_REGEX_FORMAT)
         add_test_mongo_metadata(test_name, {MongoDbConsts.TEST_NAME: test_name,
                                             MongoDbConsts.TIME_STAMP: time_now})
@@ -169,7 +167,7 @@ def get_all_players_ports(players, right_split_num=1, left_split_num=1):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def port_group_df(request, players, conf_args=None):
+def port_group_df(request, players, basic_setup_configuration, conf_args=None):
     """
     Pytest fixture that creates a port group configuration dataframe.
 
@@ -192,7 +190,6 @@ def port_group_df(request, players, conf_args=None):
                   ...
               ]
     """
-    request.getfixturevalue('basic_setup_configuration')
     port_group_df = []
 
     port_groups = players[PerfConsts.DUT_ALIAS]['cli'].performance.port_groups

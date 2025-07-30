@@ -17,13 +17,14 @@ from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.nv_optimizer_constant import NvOptimizerEnvVariables
 from ngts.helpers.performance.performance_setup_helpers import get_perf_test_name, add_test_mongo_metadata
 from ngts.constants.performance_constants import MongoDbConsts
+from ngts.constants.constants import InfraConst
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "spcx_ra"
 
 
 @pytest.fixture(scope='class', autouse=True)
-def conf_args(is_ipv6, performance_parameters):
+def get_conf_args(is_ipv6, performance_parameters):
     conf_args = {
         "auto_buffer_mode": "False",
         "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
@@ -42,25 +43,31 @@ def conf_args(is_ipv6, performance_parameters):
     return conf_args
 
 
-@pytest.fixture(scope='class', autouse=True)
-def basic_setup_configuration(players, conf_args, init, cleanup):
+def apply_basic_setup_configuration(is_ipv6, players, performance_parameters, init):
+    conf_args = get_conf_args(is_ipv6, performance_parameters)
+    if init:
+        with allure.step('Save Players initial Configuration'):
+            save_base_configuration(players)
+        with allure.step("Apply Test configuration on all Players"):
+            apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
+
+
+@pytest.fixture(scope='class')
+def basic_setup_configuration(request, players, performance_parameters, init, cleanup):
+    is_ipv6 = request.param == InfraConst.IPV6
     try:
-        with allure.step('Save Players initial Configuration only during setup initialization'):
-            if init:
-                save_base_configuration(players)
-        with allure.step("Apply Test configuration on all Players only during setup initialization"):
-            if init:
-                apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
-        yield
+        apply_basic_setup_configuration(is_ipv6, players, performance_parameters, init)
+        yield is_ipv6
     except Exception as e:
         raise e
     finally:
-        with allure.step('Restore Base Configuration only when cleanup is called'):
-            if cleanup:
+        if cleanup:
+            with allure.step('Restore Base Configuration on all Players'):
                 restore_basic_configuration(players)
 
 
 @pytest.fixture(scope='function', autouse=False)
-def ibm_fixture(players, conf_args):
+def ibm_fixture(players, basic_setup_configuration, performance_parameters):
+    conf_args = get_conf_args(basic_setup_configuration, performance_parameters)
     with allure.step("Set IBM in accordance with the test configuration"):
         players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)

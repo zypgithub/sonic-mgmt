@@ -42,12 +42,12 @@ def get_lossy_lossless_basic_traffic(players, conf_args, num_lossy_packets, num_
 
 
 @pytest.fixture(scope='function', autouse=True)
-def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, scenario_name):
+def update_test_mongo_metadata(request, port_group_df, scenario_name):
     """
     Fixture to update test metadata in MongoDB.
     Requires scenario_name parameter to be present in the test function.
     """
-    test_name = get_perf_test_name(request, is_ipv6)
+    test_name = get_perf_test_name(request)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: scenario_name,
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield

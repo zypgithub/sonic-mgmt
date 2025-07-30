@@ -355,7 +355,7 @@ def add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6):
             json.dump(db_json, f, indent=4)
 
 
-def get_perf_test_name(request, is_ipv6):
+def get_perf_test_name(request):
     """
     Args:
         request: pytest request object
@@ -365,7 +365,5 @@ def get_perf_test_name(request, is_ipv6):
         name of the test including the class and ip flag info,
         i.e, TestSPCXRA_x1Split_800G_test_ar_perf_link_flap[port_repeated_toggle-4096-IPv6]
     """
-    ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
     test_name = request.node.cls.__name__ + "_" + request.node.name
-    test_name_with_ip_param = test_name.replace("]", f"-{ip}]")
-    return test_name_with_ip_param
+    return test_name

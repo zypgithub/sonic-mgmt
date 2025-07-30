@@ -382,24 +382,5 @@ def get_topology_obj(players):
         return get_nvue_sonic_topology_obj(players)
 
 
-def get_performance_pytest_test_name(request, is_ipv6):
-    """
-    Args:
-        request: pytest request fixture
-        ip: the ip type (IPv4/IPv6)
-
-    Returns:
-        the test name with the ip parameter, i.e, test_ar_perf_max_bandwidth[4096-IPv6]
-    """
-    test_name_with_ip_param = get_perf_test_name(request, is_ipv6)
-    return test_name_with_ip_param
-
-
-def set_allure_title(request, is_ipv6):
-    test_name = get_performance_pytest_test_name(request, is_ipv6)
-    allure.dynamic.title(test_name)
-    return test_name
-
-
 def create_acl_dump(players):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_acl_dump()

@@ -5,13 +5,14 @@ import logging
 import pytest
 import random
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, create_acl_dump, restore_basic_configuration, run_traffic, run_validation,
-                                                                get_topology_obj, set_allure_title)
+                                                                get_topology_obj)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
 from ngts.constants.constants import InfraConst
 from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import AlibabaScenarioToconfiguration, get_alibaba_traffic, extract_acl_counters
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
+from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import get_conf_args
 import re
 
 logger = logging.getLogger()
@@ -56,9 +57,10 @@ SCENARIO_CONFIGURATIONS_NO_SHAPER = {
 }
 
 
+@pytest.mark.parametrize("basic_setup_configuration", [InfraConst.IPV4, InfraConst.IPV6], indirect=True)
 class Test_Alibaba_scenarios_with_reset:
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, power_thresholds_by_chip_type, conf_args, chip_type, is_ipv6):
+    def setup(self, players, engines, power_thresholds_by_chip_type, chip_type, basic_setup_configuration):
         self.topology_obj = get_topology_obj(players)
         self.players = players
         self.engines = engines
@@ -66,10 +68,10 @@ class Test_Alibaba_scenarios_with_reset:
         self.cli_object = self.players['dut']['cli']
         self.scenario = "spcx_ra"
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
-        self.ip = InfraConst.IPV6 if is_ipv6 else InfraConst.IPV4
-        self.is_ipv6 = is_ipv6
+        self.ip = InfraConst.IPV6 if basic_setup_configuration else InfraConst.IPV4
+        self.is_ipv6 = basic_setup_configuration
         self.chip_type = chip_type
-        self.conf_args = conf_args
+        self.conf_args = get_conf_args(self.is_ipv6)
 
     @pytest.mark.parametrize("scenario_name,scenario_configuration,rebalancer_enabled",
                              [(scenario_name, scenario_configuration, rebalancer_enabled)
@@ -79,8 +81,9 @@ class Test_Alibaba_scenarios_with_reset:
     @allure.description('Added dynamically in test body')
     @pytest.mark.skip(reason="AR is not supported at 100 percent line rate. Bug FW #4549566")
     def test_alibaba_100_percent_line_rate(self, request, scenario_name, scenario_configuration, rebalancer_enabled):
+        test_name = get_perf_test_name(request)
+
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = set_allure_title(request, self.is_ipv6)
             allure.dynamic.title(f"test_Alibaba_100%_line_rate - {scenario_name} with rebalancer {rebalancer_enabled}")
             allure.dynamic.description(f"Test Alibaba 100% line rate scenario {scenario_name} with rebalancer {rebalancer_enabled}")
 
@@ -114,7 +117,7 @@ class Test_Alibaba_scenarios_with_reset:
     @allure.title('test_Alibaba_scenario - {scenario_name} with {packet_size}B packets and {hash_type} hash')
     @allure.description('Added dynamically in test body')
     def test_alibaba_scenario(self, request, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture):
-        test_name = get_perf_test_name(request, False)
+        test_name = get_perf_test_name(request)
 
         with allure.step("Adding dynamic description to allure report"):
             allure.dynamic.description(f"Test Alibaba scenario {scenario_name} with packet size {packet_size}B and {hash_type} hash type. "

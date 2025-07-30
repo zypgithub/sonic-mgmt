@@ -11,7 +11,7 @@ import logging
 import allure
 import copy
 import os
-from ngts.constants.constants import BugHandlerConst, CliType
+from ngts.constants.constants import BugHandlerConst, CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration, skip_test_on_unsupported_os)
@@ -45,8 +45,7 @@ def skip_test_conditionally(players):
     yield
 
 
-@pytest.fixture(scope='class', autouse=True)
-def conf_args(is_ipv6):
+def get_conf_args(is_ipv6):
     """
     Config args for the test.
     Note that unlike must tests, those test perform DVS_START at the end. Then, we override some variables according
@@ -78,14 +77,20 @@ def conf_args(is_ipv6):
     return conf_args
 
 
-@pytest.fixture(scope='class', autouse=True)
-def basic_setup_configuration(players, conf_args):
+def apply_basic_setup_configuration(is_ipv6, players):
+    conf_args = get_conf_args(is_ipv6)
+    with allure.step('Save Players initial Configuration'):
+        save_base_configuration(players)
+    with allure.step("Apply Test configuration on all Players"):
+        apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
+
+
+@pytest.fixture(scope='class')
+def basic_setup_configuration(request, players):
+    is_ipv6 = request.param == InfraConst.IPV6
     try:
-        with allure.step('Save Players initial Configuration'):
-            save_base_configuration(players)
-        with allure.step("Apply Test configuration on all Players"):
-            apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
-        yield
+        apply_basic_setup_configuration(is_ipv6, players)
+        yield is_ipv6
     except Exception as e:
         raise e
     finally:
@@ -94,14 +99,15 @@ def basic_setup_configuration(players, conf_args):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def alibaba_scenarios_fixture(players, conf_args, scenario_configuration, hash_type):
+def alibaba_scenarios_fixture(players, scenario_configuration, hash_type, basic_setup_configuration):
     """
     Fixture to apply scenario-specific configuration for each test case.
     Updates conf_args with scenario configuration and applies it to players.
     """
     if scenario_configuration is None:
         raise ValueError("scenario_configuration must be provided")
-
+    is_ipv6 = basic_setup_configuration
+    conf_args = get_conf_args(is_ipv6)
     try:
         with allure.step("Restore Base Configuration on all Players"):
             restore_basic_configuration(players)
@@ -168,12 +174,12 @@ def get_alibaba_traffic(players, conf_args, template_suite="traffic_packets_json
 
 
 @pytest.fixture(scope='function', autouse=True)
-def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, scenario_name):
+def update_test_mongo_metadata(request, port_group_df, scenario_name):
     """
     Fixture to update test metadata in MongoDB.
     Requires scenario_name parameter to be present in the test function.
     """
-    test_name = get_perf_test_name(request, is_ipv6)
+    test_name = get_perf_test_name(request)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: scenario_name,
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield
@@ -207,12 +213,12 @@ def extract_acl_counters(acl_dump, create_acls, create_goto_acl):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, scenario_name):
+def update_test_mongo_metadata(request, port_group_df, scenario_name):
     """
     Fixture to update test metadata in MongoDB.
     Requires scenario_name parameter to be present in the test function.
     """
-    test_name = get_perf_test_name(request, is_ipv6)
+    test_name = get_perf_test_name(request)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: scenario_name,
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})
     yield

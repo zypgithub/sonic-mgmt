@@ -31,7 +31,7 @@ def skip_test_conditionally(players):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario, players):
+def conf_args(bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario):
     conf_args = {"run_fw_latency_optimization": "False",
                  "auto_buffer_mode": "False",
                  "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
@@ -72,8 +72,8 @@ def basic_setup_configuration(players, conf_args):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def update_test_mongo_metadata(request, players, is_ipv6, port_group_df, bisection_traffic, ecmp_type_ar):
-    test_name = get_perf_test_name(request, is_ipv6)
+def update_test_mongo_metadata(request, port_group_df, bisection_traffic, ecmp_type_ar):
+    test_name = get_perf_test_name(request)
     add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"ar_vs_random_leaf_{'with' if bisection_traffic else 'without'}"
                                         f"_bisection_traffic_{'AR' if ecmp_type_ar else 'Random'}",
                                         MongoDbConsts.PORT_GROUP_DF: port_group_df})

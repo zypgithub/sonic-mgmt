@@ -40,7 +40,7 @@ class TestSpcX400GTo200G:
     def test_400_to_200_bw(self, request, packet_size):
         skip_test_on_unsupported_os(self.cli_object, CliType.NVUE)
 
-        test_name = get_perf_test_name(request, self.is_ipv6)
+        test_name = get_perf_test_name(request)
         self.traffic_jsons = get_spcx_ra_leaf_traffic(self.players, self.conf_args)
 
         with allure.step(f"Run traffic on all the ports. Packet size is {packet_size} bytes"):

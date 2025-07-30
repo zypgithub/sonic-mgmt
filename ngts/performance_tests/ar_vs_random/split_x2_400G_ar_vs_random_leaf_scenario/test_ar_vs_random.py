@@ -5,9 +5,8 @@ import pytest
 from ngts.constants.constants import CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
-                                                                skip_test_on_unsupported_os, set_allure_title,
-                                                                ValidationConfig)
-from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
+                                                                skip_test_on_unsupported_os, ValidationConfig)
+from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.ar_vs_random.conftest import get_ar_vs_random_traffic
 from ngts.performance_tests.ar_vs_random.split_x2_400G_ar_vs_random_leaf_scenario.conftest import LEFT_PORTS_LEAF_TO_SPINE, RIGHT_PORTS_LEAF_TO_HOST
@@ -53,7 +52,7 @@ class TestARvsRandom:
     @allure.title('test_ar_vs_random_leaf. Added dynamically in test body')
     @allure.description('Added dynamically in test body')
     def test_ar_vs_random_leaf(self, request, bisection_traffic, ecmp_type_ar, one_to_one_leaf_scenario, conf_args):
-        test_name = get_perf_test_name(request, False)
+        test_name = get_perf_test_name(request)
 
         scenario_name = (
             f'test_ar_vs_random_leaf_'

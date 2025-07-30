@@ -53,7 +53,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_bisection_srv6(self, request, traffic_type, workload, packet_size=4096):
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
-            test_name = get_perf_test_name(request, self.ip)
+            test_name = get_perf_test_name(request)
             num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
             upstream, downstream, port_group_df = get_upstream_downstream_port_group_df(self.players, upstream_ports_num=num_of_ports,
                                                                                         downstream_ports_num=num_of_ports)
@@ -82,7 +82,7 @@ class TestSRv6Leaf(TestSRv6Base):
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_leaf_round_robin_srv6(self, request, traffic_type):
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         round_robin_dict = MRCConsts.LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
         round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
         upstream_groups, downstream_groups, port_group_df = get_upstream_downstream_groups_port_group_df(self.players,
@@ -105,7 +105,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                             traffic_type, workload, ingress_port_sequence, ingress_ports_num, get_ports_from_start=False):
         condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
         skip_performance_test_conditionally(condition, skip_message)
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
         with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
             ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=get_ports_from_start)
@@ -123,7 +123,7 @@ class TestSRv6Leaf(TestSRv6Base):
     def test_leaf_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
         condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
         skip_performance_test_conditionally(condition, skip_message)
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
         egress_ports, ingress_ports, port_group_df = get_leaf_many_to_few_port_group_df(self.players, M, num_of_ports)
         with allure.step(f"Set test configuration description"):
@@ -139,7 +139,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
     def test_victim_flow_srv6(self, request, victim_flow_port_group_df, traffic_type, packet_size=4096):
         skip_test_on_unsupported_chip_type(self.chip_type, "SPC4")
-        test_name = get_perf_test_name(request, self.ip)
+        test_name = get_perf_test_name(request)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:

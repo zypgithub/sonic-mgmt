@@ -38,7 +38,7 @@ class TestOptimizeLossyLossless:
                                               init, cleanup, packet_size=4096):
 
         with allure.step(f"Set test correct allure title with {scenario_name} parameter"):
-            test_name = set_allure_lossy_lossless_title(request, scenario_name, self.is_ipv6)
+            test_name = set_allure_lossy_lossless_title(request, scenario_name)
 
         if (not init) and (not cleanup):
             self.traffic_jsons = get_lossy_lossless_basic_traffic(self.players, self.conf_args, num_lossy_packets,
