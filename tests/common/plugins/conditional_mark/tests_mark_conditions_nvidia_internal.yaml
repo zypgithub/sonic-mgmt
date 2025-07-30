@@ -870,9 +870,9 @@ process_monitoring/test_critical_process_monitoring.py:
 
 process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401383 on hwsku Mellanox-SN2700"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3240997 on hwsku Mellanox-SN2700"
     conditions:
-    - "https://redmine.mellanox.com/issues/4401383 and hwsku in ['Mellanox-SN2700']"
+    - "https://redmine.mellanox.com/issues/3240997 and hwsku in ['Mellanox-SN2700']"
 
 sub_port_interfaces/:
   skip:
