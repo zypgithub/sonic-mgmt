@@ -7,6 +7,10 @@ from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.constants.performance_constants import PerfConsts, MRCConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
+logger = logging.getLogger(__name__)
+# Redis EXISTS command return values
+REDIS_KEY_EXISTS = "1"
+REDIS_KEY_NOT_EXISTS = "0"
 
 
 class SonicTrimmingCli(PerformanceCommon):
@@ -26,7 +30,6 @@ class SonicTrimmingCli(PerformanceCommon):
         for selected ports and queue.
         This is done by configuring a custom zero scheduler and
         configure it to drop all the packets for selected queue on selected ports.
-
         :param ports: list of ports, i.e ['Ethernet111', 'Ethernet112']
         :param queues: list of queues, i.e [1, 2]
         :param scenario: scenario, i.e 'srv6'
@@ -95,3 +98,45 @@ class SonicTrimmingCli(PerformanceCommon):
             self.execute_cmd(f"sudo config switch-trimming global --size {trimming_size} "
                              f"--dscp {MRCConsts.MRC_TRIMMED_DSCP} "
                              f"--queue {MRCConsts.MRC_TRIMMED_TC}")
+
+    def show_mmu(self):
+        return self.execute_cmd('show mmu')
+
+    def config_mmu_trimming(self, buffer_profile_name, action):
+        return self.execute_cmd(f'sudo config mmu -p {buffer_profile_name} -t {action}')
+
+    def check_buffer_profile_exists(self, buffer_profile_name):
+        result = self.execute_cmd(f"redis-cli -n 4 exists 'BUFFER_PROFILE|{buffer_profile_name}'")
+        key_exists = result.split()[-1] == REDIS_KEY_EXISTS
+        logger.info(f"check_buffer_profile_exists key_exists: {key_exists}")
+        return key_exists
+
+    def get_buffer_profile_packet_discard_action(self, buffer_profile_name):
+        action = self.execute_cmd(f"redis-cli -n 4 hget 'BUFFER_PROFILE|{buffer_profile_name}' packet_discard_action")
+        action = action.strip('"')
+        if action not in ["trim", "drop", "(nil)"]:
+            logging.error(f"[TRIMMING] Unexpected packet discard action: '{action}'. Expected 'trim' or 'drop' or 'nil'")
+            logging.error(f"[TRIMMING] This may indicate the profile doesn't have packet_discard_action set")
+        return action
+
+    def get_all_buffer_profile_keys(self):
+        """
+        Get all buffer profile keys from Redis and return just the profile names
+        :return: list of buffer profile names (without the 'BUFFER_PROFILE|' prefix)
+        """
+        raw_result = self.execute_cmd("redis-cli -n 4 keys 'BUFFER_PROFILE|*'")
+        profile_keys = raw_result.strip().split('\n') if raw_result.strip() else []
+        buffer_profile_names = []
+        for redis_buffer_key in profile_keys:
+            # Skip empty keys
+            if not redis_buffer_key.strip():
+                continue
+            # Extract profile name from Redis key format: 'BUFFER_PROFILE|profile_name'
+            if '|' in redis_buffer_key:
+                buffer_profile_name = redis_buffer_key.split('|')[1]  # Get part after the '|'
+            else:
+                buffer_profile_name = redis_buffer_key  # Fallback if no delimiter found
+            # Remove any trailing quotes that Redis might include
+            buffer_profile_name = buffer_profile_name.rstrip('"')
+            buffer_profile_names.append(buffer_profile_name)
+        return buffer_profile_names

@@ -1250,3 +1250,18 @@ def get_hardware_version(duthost, platform):
 def get_hw_management_version(duthost):
     full_version = duthost.shell('dpkg-query --showformat=\'${Version}\' --show hw-management')['stdout']
     return full_version[len('1.mlnx.'):]
+
+
+def is_spc4_or_above_hwsku(hwsku):
+    """
+    Check if the given HWSKU is SPC4 or above.
+    Returns True if the HWSKU is NOT SPC1, SPC2, or SPC3.
+    
+    :param hwsku: The HWSKU string to check
+    :return: True if HWSKU is SPC4 or above (not SPC1-SPC3), False otherwise
+    """
+    # Combined list of SPC1-SPC3 platforms (those that don't support SPC4+ features)
+    spc1_to_spc3_hwskus = SPC1_HWSKUS + SPC2_HWSKUS + SPC3_HWSKUS
+    
+    # Check if HWSKU is NOT in the SPC1-SPC3 list (meaning it's SPC4 or above)
+    return hwsku not in spc1_to_spc3_hwskus

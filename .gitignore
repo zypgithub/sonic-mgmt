@@ -41,3 +41,8 @@ tests/common/plugins/loganalyzer/bughandler/build
 tests/common/plugins/loganalyzer/bughandler/.cache
 .venv
 venv
+.devcontainer_old/
+.env_old
+file.log
+log.txt
+.devcontainer/
