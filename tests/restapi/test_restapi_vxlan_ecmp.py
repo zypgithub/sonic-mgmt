@@ -33,6 +33,7 @@ INITIAL_ROUTES = [ROUTES_DATA[0], ROUTES_DATA[4]]
 
 restapi = Restapi(CLIENT_CERT, CLIENT_KEY)
 
+
 def get_vnet_name(duthost, vnet_alias):
     """
     Gets the alias of a VNET
@@ -43,6 +44,7 @@ def get_vnet_name(duthost, vnet_alias):
         if alias == vnet_alias:
             return vnet_name
     return None
+
 
 def get_vnet_routes(duthost, vnet_alias):
     """
