@@ -186,7 +186,3 @@ def skip_if_packet_trimming_not_supported(duthost):
         'stdout'].strip()
     if trimming_capable.lower() != 'true':
         pytest.skip("Packet trimming is not supported")
-
-    # For Nvidia SPC1/2/3 platforms, skip the test
-    elif any(platform_id in platform.lower() for platform_id in ["sn2", "sn3", "sn4"]):
-        pytest.skip(f"Packet trimming is not supported on {platform}")
