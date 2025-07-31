@@ -90,41 +90,6 @@ def split_into_subsets(lst, subset_size):
     return [lst[i:i + subset_size] for i in range(0, len(lst), subset_size)]
 
 
-def get_leaf_many_to_few_port_group_df(players, M, num_of_ingress_ports):
-    port_group_df = []
-    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-    left_ports = copy.deepcopy(ports["left_ports"])
-    right_ports = copy.deepcopy(ports["right_ports"])
-    egress_ports_num = num_of_ingress_ports // M
-    num_of_egress_ports_for_each_tg = egress_ports_num // 2
-    num_of_ingress_ports_for_each_tg = num_of_ingress_ports // 2
-    total_num_of_ports_for_each_tg = num_of_egress_ports_for_each_tg + num_of_ingress_ports_for_each_tg
-    plus_egress_ports_num = 0 if egress_ports_num % 2 == 0 else 1
-    left_start_index = random.randint(0, len(left_ports) - total_num_of_ports_for_each_tg - plus_egress_ports_num)
-    right_start_index = random.randint(0, len(right_ports) - total_num_of_ports_for_each_tg)
-    left_egress_ports_start_index = left_start_index
-    right_egress_ports_start_index = right_start_index
-    left_egress_ports_end_index = left_egress_ports_start_index + num_of_egress_ports_for_each_tg + plus_egress_ports_num
-    right_egress_ports_end_index = right_egress_ports_start_index + num_of_egress_ports_for_each_tg
-    left_ingress_ports_start_index = left_egress_ports_end_index
-    right_ingress_ports_start_index = right_egress_ports_end_index
-    left_ingress_ports_end_index = left_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
-    right_ingress_ports_end_index = right_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
-    left_egress_ports, right_egress_ports = left_ports[left_egress_ports_start_index:left_egress_ports_end_index], \
-        right_ports[right_egress_ports_start_index:right_egress_ports_end_index]
-    left_ingress_ports, right_ingress_ports = left_ports[left_ingress_ports_start_index:left_ingress_ports_end_index], \
-        right_ports[right_ingress_ports_start_index:right_ingress_ports_end_index]
-    egress_ports = left_egress_ports + right_egress_ports
-    ingress_ports = left_ingress_ports + right_ingress_ports
-    sdk_port_list_egress = players['dut']['cli'].performance.get_sdk_ports(egress_ports)
-    sdk_port_list_ingress = players['dut']['cli'].performance.get_sdk_ports(ingress_ports)
-    for port in sdk_port_list_egress:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
-    for port in sdk_port_list_ingress:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
-    return egress_ports, ingress_ports, port_group_df
-
-
 def get_spine_many_to_few_port_group_df(players, M):
     port_group_df = []
     ports = players['dut']['cli'].performance.get_dut_ports()
@@ -189,13 +154,6 @@ def get_spine_downstream_groups_port_group_df(players, downstream_ports_num, num
         for port in sdk_port_list_downstream_groups_2:
             port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_2_{i + 1}"})
     return downstream_groups_1, downstream_groups_2, port_group_df
-
-
-def config_optimal_trimming_size(chip_type, cli_objects):
-    if chip_type == "SPC5":
-        opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
-        cli_objects.dut.trimming.enable_trimming_on_lossy_queue()
-        cli_objects.dut.trimming.configure_trimming_size(opt_ts)
 
 
 @pytest.fixture(scope="function", autouse=False)

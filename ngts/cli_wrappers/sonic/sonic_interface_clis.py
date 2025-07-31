@@ -616,12 +616,12 @@ class SonicInterfaceCli(InterfaceCliCommon):
         else:
             raise AssertionError("Couldn't parse FEC value: {} on mlxlink output".format(actual_mlxlink_fec_val))
 
-    def clear_counters(self):
+    def clear_counters(self, validate=True):
         """
         clear counters
         """
-        self.engine.run_cmd("sonic-clear counters", validate=True)
-        self.engine.run_cmd("sudo sonic-clear counters", validate=True)
+        self.engine.run_cmd("sonic-clear counters", validate=validate)
+        self.engine.run_cmd("sudo sonic-clear counters", validate=validate)
 
     def clear_queue_counters(self):
         """
@@ -815,12 +815,32 @@ class SonicInterfaceCli(InterfaceCliCommon):
         return generic_sonic_output_parser(show_queue_counters_output, headers_ofset=2, len_ofset=3,
                                            data_ofset_from_start=4, data_ofset_from_end=None, column_ofset=2, output_key='TxQ')
 
-    def get_all_interfaces_mac_addresses(self, verify_execution=False):
+    def get_all_interfaces_mac_addresses(self, validate=True):
         """
         Get all interfaces mac addresses
-        :param verify_execution: verify execution
+        :param validate: validate execution
         :return: ETHERNET0:00:11:22:33:44:55
         ETHERNET1:00:11:22:33:44:56
         """
-        all_interfaces_mac_addresses = self.engine.run_cmd("sudo ip -o link show | awk '/link\\/ether/ {print $2 " " $17}'", validate=verify_execution)
+        all_interfaces_mac_addresses = self.engine.run_cmd("sudo ip -o link show | awk '/link\\/ether/ {print $2 " " $17}'", print_output=False, validate=validate)
         return {line.split(":")[0]: line.split(":")[1].strip() for line in all_interfaces_mac_addresses.strip().splitlines() if line}
+
+    def get_sorted_ports_list(self, ports_list, breakout=None):
+        return sorted(ports_list, key=lambda port: int(re.search(r'Ethernet(\d+)', port).group(1)))
+
+    def get_counters_for_queue(self, show_queue_counters_dict, queue):
+        queue_counter_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Counter/pkts"].replace(",", ""))
+        queue_drop_pkts = int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"].replace(",", ""))
+        return queue_counter_pkts, queue_drop_pkts
+
+    def get_counters_for_queue_bytes(self, show_queue_counters_dict, queue, packet_size):
+        queue_counter_bytes = int(show_queue_counters_dict[f"UC{queue}"]["Counter/bytes"].replace(",", ""))
+        queue_drop_bytes = int(show_queue_counters_dict[f"UC{queue}"]["Drop/pkts"].replace(",", "")) * packet_size
+        return queue_counter_bytes, queue_drop_bytes
+
+    def get_sum_queue_bytes(self, show_queue_counters_dict, queues_list):
+        sum_queue_bytes = 0
+        for queue in queues_list:
+            queue_counter_bytes, queue_counter_drop_bytes = self.get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+            sum_queue_bytes += queue_counter_bytes
+        return sum_queue_bytes

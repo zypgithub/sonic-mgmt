@@ -2,23 +2,22 @@ import os
 import json
 import allure
 import logging
+import pandas as pd
+from ngts.helpers.performance.traffic_helpers import convert_to_percentage
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst
-from ngts.constants.performance_constants import PerfConsts, MRCConsts
-from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+from ngts.constants.performance_constants import PerfConsts, MRCConsts, ValidationConsts
+from ngts.cli_wrappers.common.trimming_clis_common import TrimmingCommon
 from jinja2 import Environment, FileSystemLoader
-logger = logging.getLogger(__name__)
-# Redis EXISTS command return values
-REDIS_KEY_EXISTS = "1"
-REDIS_KEY_NOT_EXISTS = "0"
 
 
-class SonicTrimmingCli(PerformanceCommon):
+class SonicTrimmingCli(TrimmingCommon):
     """
     This class is for trimming cli commands for sonic only
     """
 
     def __init__(self, topology_obj, engine, dut_alias, cli_obj):
+        super().__init__(topology_obj, engine, dut_alias, cli_obj)
         self.topology_obj = topology_obj
         self.engine = engine
         self.dut_alias = dut_alias
@@ -99,44 +98,98 @@ class SonicTrimmingCli(PerformanceCommon):
                              f"--dscp {MRCConsts.MRC_TRIMMED_DSCP} "
                              f"--queue {MRCConsts.MRC_TRIMMED_TC}")
 
-    def show_mmu(self):
-        return self.execute_cmd('show mmu')
-
-    def config_mmu_trimming(self, buffer_profile_name, action):
-        return self.execute_cmd(f'sudo config mmu -p {buffer_profile_name} -t {action}')
-
-    def check_buffer_profile_exists(self, buffer_profile_name):
-        result = self.execute_cmd(f"redis-cli -n 4 exists 'BUFFER_PROFILE|{buffer_profile_name}'")
-        key_exists = result.split()[-1] == REDIS_KEY_EXISTS
-        logger.info(f"check_buffer_profile_exists key_exists: {key_exists}")
-        return key_exists
-
-    def get_buffer_profile_packet_discard_action(self, buffer_profile_name):
-        action = self.execute_cmd(f"redis-cli -n 4 hget 'BUFFER_PROFILE|{buffer_profile_name}' packet_discard_action")
-        action = action.strip('"')
-        if action not in ["trim", "drop", "(nil)"]:
-            logging.error(f"[TRIMMING] Unexpected packet discard action: '{action}'. Expected 'trim' or 'drop' or 'nil'")
-            logging.error(f"[TRIMMING] This may indicate the profile doesn't have packet_discard_action set")
-        return action
-
-    def get_all_buffer_profile_keys(self):
+    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
         """
-        Get all buffer profile keys from Redis and return just the profile names
-        :return: list of buffer profile names (without the 'BUFFER_PROFILE|' prefix)
+        validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
+        :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
+        :param trimming_queue: trimming queue, i.e 'UC4'
+        :param drop_queues: drop queue, i.e 'UC1'
         """
-        raw_result = self.execute_cmd("redis-cli -n 4 keys 'BUFFER_PROFILE|*'")
-        profile_keys = raw_result.strip().split('\n') if raw_result.strip() else []
-        buffer_profile_names = []
-        for redis_buffer_key in profile_keys:
-            # Skip empty keys
-            if not redis_buffer_key.strip():
-                continue
-            # Extract profile name from Redis key format: 'BUFFER_PROFILE|profile_name'
-            if '|' in redis_buffer_key:
-                buffer_profile_name = redis_buffer_key.split('|')[1]  # Get part after the '|'
-            else:
-                buffer_profile_name = redis_buffer_key  # Fallback if no delimiter found
-            # Remove any trailing quotes that Redis might include
-            buffer_profile_name = buffer_profile_name.rstrip('"')
-            buffer_profile_names.append(buffer_profile_name)
-        return buffer_profile_names
+        queue_packet_percentages = []
+        with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for all egress interfaces"):
+            for interface in interface_list:
+                with allure.step(f"Validate all packets sent to queue {drop_queues} are dropped and trimmed on queue {trimming_queue} for {interface}"):
+                    total_drop_queue_counter_pkts = 0
+                    total_packets_egress_port = 0
+                    total_packets_egress_port_dropped = 0
+                    total_drop_queue_counter_pkts_bytes = 0
+                    total_packets_egress_port_bytes = 0
+                    total_packets_egress_port_dropped_bytes = 0
+                    show_queue_counters_dict = self.cli_obj.interface.parse_show_queue_counters(interface)
+                    logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+                    for drop_queue in drop_queues:
+                        total_drop_queue_counter_pkts, total_packets_egress_port_dropped, total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes = self.update_queue_counters(show_queue_counters_dict, drop_queue,
+                                                                                                                                                                                                    total_drop_queue_counter_pkts, total_packets_egress_port_dropped,
+                                                                                                                                                                                                    total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes)
+                    total_packets_egress_port = total_drop_queue_counter_pkts + total_packets_egress_port_dropped
+                    trimming_queue_counter_pkts, trimming_queue_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, trimming_queue)
+                    trimming_queue_counter_pkts_bytes, trimming_queue_drop_pkts_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, trimming_queue, PerfConsts.PACKET_SIZE_4K)
+                    total_packets_egress_port_bytes = total_drop_queue_counter_pkts_bytes + trimming_queue_counter_pkts_bytes
+                    dropped_without_trimming = total_packets_egress_port_dropped - trimming_queue_counter_pkts
+                    if dropped_without_trimming > 0:
+                        dropped_without_trimming_percentage = convert_to_percentage(dropped_without_trimming / total_packets_egress_port)
+                    else:
+                        dropped_without_trimming_percentage = 0
+                    untrimmed_percentage = convert_to_percentage(total_drop_queue_counter_pkts / total_packets_egress_port)
+                    untrimmed_bytes_percentage = convert_to_percentage(total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
+                    trimming_percentage = convert_to_percentage(trimming_queue_counter_pkts / total_packets_egress_port)
+                    trimming_bytes_percentage = convert_to_percentage(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
+                    queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: interface,
+                                                     ValidationConsts.UNTRIMMED_PERCENTAGE: untrimmed_percentage,
+                                                     ValidationConsts.TRIMMING_PERCENTAGE: trimming_percentage,
+                                                     ValidationConsts.DROPPED_WITHOUT_TRIMMING_PERCENTAGE: dropped_without_trimming_percentage,
+                                                     ValidationConsts.UNTRIMMED_BYTES_PERCENTAGE: untrimmed_bytes_percentage,
+                                                     ValidationConsts.TRIMMING_BYTES_PERCENTAGE: trimming_bytes_percentage}
+                    queue_packet_percentages.append(queue_packet_percentages_dict)
+                    if trimming_queue_drop_pkts > 0:
+                        violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
+                    if dropped_without_trimming > 0:
+                        violations_list.append(f"Dropped packets without trimming detected on {interface}")
+                    if return_dict:
+                        return queue_packet_percentages_dict
+        queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
+        with allure.step(f"Attach queue_packet_percentages_df"):
+            allure.attach(queue_packet_percentages_df.to_html(), "Queue packet percentages dataframe", attachment_type=allure.attachment_type.HTML)
+        return queue_packet_percentages
+
+    def update_queue_counters(self, show_queue_counters_dict, queue,
+                              queue_pkts_counter, queue_drop_pkts_counter,
+                              queue_pkts_bytes_counter, queue_dropped_bytes_counter):
+        queue_pkts, queue_drop = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
+        queue_bytes, queue_drop_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+        queue_pkts_counter += queue_pkts
+        queue_drop_pkts_counter += queue_drop
+        queue_pkts_bytes_counter += queue_bytes
+        queue_dropped_bytes_counter += queue_drop_bytes
+        return queue_pkts_counter, queue_drop_pkts_counter, queue_pkts_bytes_counter, queue_dropped_bytes_counter
+
+    def validate_no_dropped_packets_on_queue(self, interface_list, queue_list, violations_list):
+        for interface in interface_list:
+            with allure.step(f"Validate no dropped packets on queues {queue_list} for {interface}"):
+                show_queue_counters_dict = self.cli_obj.interface.parse_show_queue_counters(interface)
+                logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+                for queue in queue_list:
+                    queue_counter_pkts, queue_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
+                    if queue_drop_pkts > 0:
+                        violations_list.append(f"Dropped packets on {interface} queue {queue}")
+
+    def get_queue_packet_percentages(self, interface_list, queues_list):
+        queue_packet_percentages = {}
+        for interface in interface_list:
+            total_queue_counter_pkts = 0
+            show_queue_counters_dict = self.cli_obj.interface.parse_show_queue_counters(interface)
+            logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
+            for queue in queues_list:
+                queue_counter_pkts, queue_counter_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
+                total_queue_counter_pkts += queue_counter_pkts
+            for queue in queues_list:
+                queue_counter_pkts, queue_counter_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
+                queue_packet_percentage = round(queue_counter_pkts / total_queue_counter_pkts, 2)
+                queue_packet_percentages[f"Queue{queue}"] = queue_packet_percentage
+        return queue_packet_percentages
+
+    def config_optimal_trimming_size(self, chip_type):
+        if chip_type == "SPC5":
+            opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
+            self.cli_obj.trimming.enable_trimming_on_lossy_queue()
+            self.cli_obj.trimming.configure_trimming_size(opt_ts)

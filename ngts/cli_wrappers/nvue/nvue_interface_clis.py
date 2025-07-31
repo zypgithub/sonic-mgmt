@@ -52,8 +52,8 @@ class NvueInterfaceCli(SonicInterfaceCli):
             mac_addresses[interface] = data['link']['mac-address']
         return mac_addresses
 
-    def get_all_interfaces_mac_addresses(self, verify_execution=False):
-        if verify_execution:
+    def get_all_interfaces_mac_addresses(self, validate=False):
+        if validate:
             try:
                 output = SendCommandTool.execute_command(NvueInterfaceCli._get_all_interfaces_mac_addresses, self.engine).verify_result()
             except Exception as e:
@@ -138,5 +138,30 @@ class NvueInterfaceCli(SonicInterfaceCli):
         output = json.loads(output)
         return output
 
-    def clear_counters(self):
+    @staticmethod
+    def _clear_counters(engine):
+        return engine.run_cmd("nv action clear interface counters")
+
+    def clear_counters(self, validate=False):
+        if validate:
+            try:
+                SendCommandTool.execute_command(NvueInterfaceCli._clear_counters, self.engine).verify_result()
+            except Exception as e:
+                logging.error(f"Error clearing counters: {e}")
+                raise
+        else:
+            NvueInterfaceCli._clear_counters(self.engine)
+
+    def clear_queue_counters(self):
         pass
+
+    def get_sorted_ports_list(self, ports_list, breakout=4):
+        return sorted(ports_list, key=lambda port: int(re.search(r'swp(\d+)s(\d+)', port).group(1)) * breakout + int(re.search(r'swp(\d+)s(\d+)', port).group(2)))
+
+    def get_tx_drop_counters(self, interface_list):
+        output_json = self.engine.run_cmd("nv sh interface counters -o json", print_output=False)
+        output_dict = json.loads(output_json)
+        tx_drop_counters = {}
+        for interface in interface_list:
+            tx_drop_counters[interface] = output_dict[interface]['counters']['netstat']["tx-drop"]
+        return tx_drop_counters

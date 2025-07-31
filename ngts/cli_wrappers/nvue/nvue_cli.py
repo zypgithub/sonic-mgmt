@@ -7,6 +7,7 @@ from ngts.cli_wrappers.sonic.sonic_im_clis import SonicImClis
 from ngts.cli_wrappers.nvue.nvue_ip_clis import NvueIpCli
 from ngts.cli_wrappers.nvue.nvue_performance_clis import NvuePerformanceCli
 from ngts.cli_wrappers.nvue.nvue_interface_clis import NvueInterfaceCli
+from ngts.cli_wrappers.nvue.nvue_trimming_clis import NvueTrimmingCli
 
 logger = logging.getLogger()
 
@@ -24,6 +25,7 @@ class NvueCli:
         self._im = None
         self._ip = None
         self._performance = None
+        self._trimming = None
 
     @property
     def general(self):
@@ -61,3 +63,10 @@ class NvueCli:
             self._performance = NvuePerformanceCli(topology_obj=self.topology, engine=self.engine,
                                                    dut_alias=self.dut_alias, cli_obj=self)
         return self._performance
+
+    @property
+    def trimming(self):
+        if self._trimming is None:
+            self._trimming = NvueTrimmingCli(topology_obj=self.topology, engine=self.engine,
+                                             dut_alias=self.dut_alias, cli_obj=self)
+        return self._trimming

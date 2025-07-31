@@ -16,7 +16,7 @@ def get_tg_bisection_traffic_params(players, player_alias, conf_args, traffic_ty
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_bisection.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
-    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses(verify_execution=False)
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses()
     for (src_port, dst_port) in port_bisection_pairs:
         player_cli_obj.performance.update_dst_mac_address(src_port, dut_mac_addresses, traffic_parameters)
         create_workload_stream(player_alias, player_cli_obj, [src_port], dst_port, traffic_parameters, traffic_type,
@@ -71,7 +71,7 @@ def get_tg_round_robin_traffic_params(players, player_alias, conf_args, traffic_
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_round_robin.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
     stream_list = []
-    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses(verify_execution=False)
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses()
     for upstream_ports, downstream_ports in upstream_downstream_group:
         cycle_ports_pairs = get_cycle_ports_pairs(upstream_ports, downstream_ports)
         round_len = len(upstream_ports)
@@ -157,9 +157,11 @@ def get_tg_many_to_one_traffic_params(players, player_alias, conf_args,
     stream_list = []
 
     tg_ingress_ports = get_ingress_ports_by_tg(ingress_ports, src_ports)
-    if tg_ingress_ports:
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses()
+    for ingress_port in tg_ingress_ports:
         for egress_port in egress_ports:
-            create_workload_stream(player_alias, player_cli_obj, tg_ingress_ports, egress_port, traffic_parameters, traffic_type,
+            player_cli_obj.performance.update_dst_mac_address(ingress_port, dut_mac_addresses, traffic_parameters)
+            create_workload_stream(player_alias, player_cli_obj, [ingress_port], egress_port, traffic_parameters, traffic_type,
                                    mloops_dict, dut_interfaces_ipv6_configuration_dict,
                                    stream_list=stream_list, congestion=congestion)
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)
@@ -198,11 +200,13 @@ def get_tg_many_to_few_traffic_params(players, player_alias, conf_args,
     json_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", template_suite,
                              conf_args["scenario"], f"{player_alias}_{conf_args['scenario']}_many_to_few.json")
     mloops_dict = dict(player_cli_obj.performance.mloops)
+    dut_mac_addresses = players['dut']['cli'].interface.get_all_interfaces_mac_addresses()
     stream_list = []
     for ingress_ports, egress_port in ingress_egress_ports_pairing:
         tg_ingress_ports = get_ingress_ports_by_tg(ingress_ports, src_ports)
-        if tg_ingress_ports:
-            create_workload_stream(player_alias, player_cli_obj, tg_ingress_ports, egress_port, traffic_parameters, traffic_type,
+        for ingress_port in tg_ingress_ports:
+            player_cli_obj.performance.update_dst_mac_address(ingress_port, dut_mac_addresses, traffic_parameters)
+            create_workload_stream(player_alias, player_cli_obj, [ingress_port], egress_port, traffic_parameters, traffic_type,
                                    mloops_dict, dut_interfaces_ipv6_configuration_dict,
                                    stream_list=stream_list, congestion=congestion)
     create_json_traffic_file_with_stream_list(player_alias, traffic_parameters, json_path, stream_list)

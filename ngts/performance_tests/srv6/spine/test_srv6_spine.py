@@ -10,7 +10,6 @@ from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.performance_tests.srv6.conftest import (get_spine_many_to_few_port_group_df,
                                                   get_spine_downstream_groups_port_group_df,
-                                                  config_optimal_trimming_size,
                                                   get_trimming_tests_skip_condition)
 
 logger = logging.getLogger()
@@ -34,8 +33,8 @@ class TestSRv6Spine(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
-        config_optimal_trimming_size(self.chip_type, self.cli_objects)
+        self.configure_interfaces_mac_neighbor()
+        self.cli_object.performance.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)

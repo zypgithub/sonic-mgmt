@@ -42,11 +42,11 @@ class ValidationConsts:
     PORT = "port"
     OS_PORT_NAME = "osPortName"
     OS_PORTS_NAME_MAPPING_DATAFRAME = "osPortsNameMappingDataframe"
-    UNTRIMMED_PRECENTAGE = "untrimmedPrecentage"
-    TRIMMING_PRECENTAGE = "trimmingPrecentage"
-    DROPPED_WITHOUT_TRIMMING_PRECENTAGE = "droppedWithoutTrimmingPrecentage"
-    UNTRIMMED_BYTES_PRECENTAGE = "untrimmedBytesPrecentage"
-    TRIMMING_BYTES_PRECENTAGE = "trimmingBytesPrecentage"
+    UNTRIMMED_PERCENTAGE = "untrimmedPercentage"
+    TRIMMING_PERCENTAGE = "trimmingPercentage"
+    DROPPED_WITHOUT_TRIMMING_PERCENTAGE = "droppedWithoutTrimmingPercentage"
+    UNTRIMMED_BYTES_PERCENTAGE = "untrimmedBytesPercentage"
+    TRIMMING_BYTES_PERCENTAGE = "trimmingBytesPercentage"
     POWER_SAMPLES = "Power_samples"
     TEMPERATURE_SAMPLES = "Temperature_samples"
     TEMPERATURE = "temperature"
@@ -362,9 +362,12 @@ class MRCConsts:
     BUFFER_CELL_SIZE = 192
     SPC5_POOL_SIZE_MB = 105
     SPC5_POOL_SIZE_BYTES = SPC5_POOL_SIZE_MB * 1000 * 1000
+    SPC4_POOL_SIZE_BYTES = 158230080
     SPC5_POOL_SIZE_CELLS = SPC5_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
+    SPC4_POOL_SIZE_CELLS = SPC4_POOL_SIZE_BYTES / BUFFER_CELL_SIZE
     POOL_SIZE_CELLS_BY_CHIP_TYPE = {
-        "SPC5": SPC5_POOL_SIZE_CELLS
+        "SPC5": SPC5_POOL_SIZE_CELLS,
+        "SPC4": SPC4_POOL_SIZE_CELLS
     }
     HALF_MRC_DATA_PACKET_SIZE = 11
     FULL_MRC_DATA_PACKET_SIZE = 22

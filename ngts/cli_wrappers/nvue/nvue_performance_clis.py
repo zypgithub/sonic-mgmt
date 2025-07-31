@@ -6,11 +6,13 @@ import tempfile
 import yaml
 import re
 from retry import retry
+import copy
+import allure
 
 from infra.tools.exceptions.test_issue import TestIssue
 from infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
-from ngts.constants.performance_constants import PerfConsts, Cl_Consts, ValidationConsts
+from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, Cl_Consts, ValidationConsts
 from dataclasses import dataclass
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from jinja2 import Environment, FileSystemLoader
@@ -46,6 +48,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.ports = self.get_player_ports()
         self.connected_ports = self.ports["connected_ports"]
         self.unconnected_ports = self.ports["unconnected_ports"]
+        self.port_groups = self.get_right_left_ports_dict()
         self.get_os_ports_name_mapping()
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, dst_dir=Cl_Consts.CL_HOME_DIR):
@@ -203,7 +206,10 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def logrotate(self, daemon):
         logging.info(f"Rotating log for {daemon}")
-        self.execute_cmd(f"sudo logrotate --force /etc/logrotate.d/{daemon}")
+        try:
+            self.execute_cmd(f"sudo logrotate --force /etc/logrotate.d/{daemon}")
+        except Exception as e:
+            logging.warning(f"Failed to rotate log for {daemon}: {e}")
 
     def get_traffic_parameters(self, scenario, conf_args={}):
         if scenario == "srv6":
@@ -566,6 +572,8 @@ class NvuePerformanceCli(PerformanceCommon):
             self.dut_neighbor_dict = self.cli_obj.interface.filter_lldp_neighbors(neighbor_list=[PerfConsts.DUT_ALIAS],
                                                                                   include_neighbor_ports=True)[PerfConsts.DUT_ALIAS]
         mloops_tuples_list = []
+        down_ports_list = []
+        up_ports_list = []
         if len(self.connected_ports) == len(self.unconnected_ports):
             dut_lldp_name = self.dut_alias.replace("_", "-")
             ports_dict = self.cli_obj.interface.filter_lldp_neighbors(neighbor_list=[dut_lldp_name, PerfConsts.DUT_ALIAS])
@@ -582,12 +590,18 @@ class NvuePerformanceCli(PerformanceCommon):
         dut_port = self.dut_neighbor_dict[src_port]
         traffic_parameters["MAC"]["dst"] = dut_mac_addresses[dut_port]
 
-    def get_sorted_ports_list(self, ports_list, breakout=4):
-        return sorted(ports_list, key=lambda port: int(re.search(r'swp(\d+)s(\d+)', port).group(1)) * breakout + int(re.search(r'swp(\d+)s(\d+)', port).group(2)))
-
-    def enable_disable_packet_trim(self, enable=True, apply=True):
-        if apply:
-            self.execute_cmd("nv config detach")
-        self.execute_cmd(f"nv set system forwarding packet-trim state {'enabled' if enable else 'disabled'}")
-        if apply:
-            self.execute_cmd("nv config apply -y")
+    def get_leaf_many_to_few_port_group_df(self, M, num_of_ingress_ports):
+        port_group_df = []
+        ports = self.cli_obj.performance.get_right_left_ports_dict()
+        left_ports = copy.deepcopy(ports["left_ports"])
+        right_ports = copy.deepcopy(ports["right_ports"])
+        egress_ports_num = num_of_ingress_ports // M
+        egress_ports = right_ports[:egress_ports_num]
+        ingress_ports = left_ports[:num_of_ingress_ports]
+        sdk_port_list_egress = self.cli_obj.performance.get_sdk_ports(egress_ports)
+        sdk_port_list_ingress = self.cli_obj.performance.get_sdk_ports(ingress_ports)
+        for port in sdk_port_list_egress:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+        for port in sdk_port_list_ingress:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+        return egress_ports, ingress_ports, port_group_df

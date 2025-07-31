@@ -9,12 +9,10 @@ import re
 import numpy as np
 import time
 import pandas as pd
-from ngts.helpers.system_helpers import copy_files_to_syncd
-from ngts.helpers.performance.traffic_helpers import (generate_mac_range, get_ports_avg_bw,
+from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw,
                                                       pick_random_non_consecutive_ports,
                                                       pick_random_consecutive_ports,
-                                                      validate_trimmed_untrimmed_dropped_percentages,
-                                                      validate_per_tc, compare_tc_occ_to_reference, validate_ets)
+                                                      validate_per_tc, compare_tc_occ_to_reference)
 from ngts.helpers.performance.performance_setup_helpers import (Validation, ValidationConfig, run_traffic,
                                                                 stop_traffic, run_validation, configure_mloops,
                                                                 skip_test_on_unsupported_os, add_test_mongo_metadata)
@@ -87,6 +85,7 @@ class TestSRv6Base:
         because of the congestion caused by MRC data flow.
         Validate TC SB max (among ports) watermark < 22*260 buffer cells.
         """
+        initial_trimming_counters = 0
         with allure.step(f"Many to one traffic with ingress ports num={len(ingress_ports)}"):
             traffic_jsons = get_many_to_one_traffic(self.players, self.conf_args, traffic_type,
                                                     self.dut_interfaces_ipv6_configuration_dict,
@@ -95,7 +94,9 @@ class TestSRv6Base:
                                                     congestion=True)
             with allure.step(f"Clear counters"):
                 self.cli_object.interface.clear_counters()
+                self.cli_object.trimming.clear_trimming_counters()
                 self.cli_object.interface.clear_queue_counters()
+
             with allure.step(f"Run traffic"):
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
@@ -131,10 +132,10 @@ class TestSRv6Base:
                 stop_traffic(self.players)
             with allure.step(f"validate trimmed untrimmed dropped percentages"):
                 if len(ingress_ports) == MRCConsts.INCAST_VALUE_WITH_TRIMMING_DROP:
-                    validate_ets(self.cli_object, egress_port, MRCConsts.ETS_TC_LIST, violations_list)
-                trimmed_untrimmed_dropped_percentages = validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_port, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                                       drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                       violations_list=violations_list)
+                    self.cli_object.performance.validate_ets(egress_port, MRCConsts.ETS_TC_LIST, violations_list)
+                trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_port, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                                                                drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
+                                                                                                                                violations_list=violations_list)
                 add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
             if avg_ports_rx < PerfConsts.SHAPER_VALUE:
                 violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
@@ -143,9 +144,9 @@ class TestSRv6Base:
 
     def many_to_few_traffic_test_runner(self, test_name, traffic_type, workload,
                                         egress_ports, ingress_ports, tc_threshold, M, get_ports_from_start=False):
-        total_violations_list = []
         with allure.step(f"Clear counters"):
             self.cli_object.interface.clear_counters()
+            self.cli_object.trimming.clear_trimming_counters()
             self.cli_object.interface.clear_queue_counters()
         with allure.step(f"Run many to few traffic on {len(ingress_ports)} ingress ports and {len(egress_ports)} egress ports, M={M}"):
             traffic_jsons = get_many_to_few_traffic(self.players, self.conf_args, traffic_type,
@@ -187,10 +188,10 @@ class TestSRv6Base:
             stop_traffic(self.players)
         with allure.step(f"validate trimmed untrimmed dropped percentages"):
             if M == MRCConsts.INCAST_VALUE_WITH_TRIMMING_DROP:
-                validate_ets(self.cli_object, egress_ports, MRCConsts.ETS_TC_LIST, violations_list)
-            trimmed_untrimmed_dropped_percentages = validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                                   drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                   violations_list=violations_list)
+                self.cli_object.performance.validate_ets(egress_ports, MRCConsts.ETS_TC_LIST, violations_list)
+            trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                                                            drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
+                                                                                                                            violations_list=violations_list)
             add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
         if avg_ports_rx < PerfConsts.SHAPER_VALUE:
             violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
@@ -210,7 +211,7 @@ class TestSRv6Base:
     def get_ingress_ports(self, egress_ports, ingress_ports_num, ingress_port_sequence=MRCConsts.INGRESS_PORT_SEQUENCE_CONSECUTIVE, get_ports_from_start=False):
         dut_ports = self.cli_object.performance.get_dut_ports()
         port_list = list(set(dut_ports).difference(egress_ports))
-        ingress_ports_candidates = sorted(port_list, key=lambda port: int(re.search(r'Ethernet(\d+)', port).group(1)))
+        ingress_ports_candidates = self.cli_object.interface.get_sorted_ports_list(port_list, self.conf_args["split_left"])
         if ingress_port_sequence == MRCConsts.INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE:
             ingress_ports = pick_random_non_consecutive_ports(ports_list=ingress_ports_candidates, port_number=ingress_ports_num, non_consecutive_gap=8)
         elif ingress_port_sequence == MRCConsts.INGRESS_PORT_SEQUENCE_CONSECUTIVE:

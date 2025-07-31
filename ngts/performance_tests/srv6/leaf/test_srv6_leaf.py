@@ -13,14 +13,12 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
-                                                  get_leaf_many_to_few_port_group_df,
-                                                  config_optimal_trimming_size,
                                                   get_trimming_tests_skip_condition)
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import (validate_no_dropped_packets_on_queue, validate_per_tc)
+from ngts.helpers.performance.traffic_helpers import validate_per_tc
 from infra.tools.exceptions.test_issue import TestIssue
 
 
@@ -46,7 +44,7 @@ class TestSRv6Leaf(TestSRv6Base):
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
         self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
-        config_optimal_trimming_size(self.chip_type, self.cli_objects)
+        self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
@@ -125,7 +123,7 @@ class TestSRv6Leaf(TestSRv6Base):
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
-        egress_ports, ingress_ports, port_group_df = get_leaf_many_to_few_port_group_df(self.players, M, num_of_ports)
+        egress_ports, ingress_ports, port_group_df = self.cli_object.performance.get_leaf_many_to_few_port_group_df(M, num_of_ports)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME: f"leaf-many-to-few",
@@ -188,7 +186,7 @@ class TestSRv6Leaf(TestSRv6Base):
         with allure.step(f"stop traffic"):
             stop_traffic(self.players)
         with allure.step(f"validate no dropped packets on queues"):
-            validate_no_dropped_packets_on_queue(self.cli_object, egress_ports, MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, violations_list)
+            self.cli_object.trimming.validate_no_dropped_packets_on_queue(egress_ports, MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, violations_list)
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 

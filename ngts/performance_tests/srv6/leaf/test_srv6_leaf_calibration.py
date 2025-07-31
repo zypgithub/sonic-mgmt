@@ -14,15 +14,11 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 add_test_mongo_metadata)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
-from ngts.performance_tests.srv6.conftest import (config_optimal_trimming_size)
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_one_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw,
-                                                      validate_trimmed_untrimmed_dropped_percentages,
-                                                      get_tc_occ, get_queue_packet_percentages,
-                                                      convert_to_percentage)
+from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw, get_tc_occ, convert_to_percentage)
 from infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
@@ -46,8 +42,8 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
-        config_optimal_trimming_size(self.chip_type, self.cli_objects)
+        self.configure_interfaces_mac_neighbor()
+        self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
@@ -104,9 +100,9 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                                                      f"ingress ports number: {total_ingress_ports_num}")
                         total_violations_list.extend(violations_list)
                         stop_traffic(self.players)
-                        validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                       drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
-                                                                       violations_list=total_violations_list)
+                        self.cli_object.performance.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                                   drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
+                                                                                                   violations_list=total_violations_list)
         self.set_opt_ts(comparison_value_dict)
         if total_violations_list:
             raise TestIssue("\n".join(total_violations_list))
@@ -159,11 +155,11 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                     logger.info(f"avg ports tx: {avg_ports_tx}, avg ports rx: {avg_ports_rx}, tc_occ_dict: {tc_occ_dict}")
                 with allure.step(f"Stop traffic"):
                     stop_traffic(self.players)
-                queue_packet_percentages_dict = validate_trimmed_untrimmed_dropped_percentages(self.cli_object, egress_port,
-                                                                                               trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                               drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                               violations_list=violations_list, return_dict=True)
-                queue_packet_percentages_dict.update(get_queue_packet_percentages(self.cli_object, egress_port, [MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC, MRCConsts.TRIMMING_TC]))
+                queue_packet_percentages_dict = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_port,
+                                                                                                                        trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                                                        drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
+                                                                                                                        violations_list=violations_list, return_dict=True)
+                queue_packet_percentages_dict.update(self.cli_object.trimming.get_queue_packet_percentages(egress_port, [MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC, MRCConsts.TRIMMING_TC]))
                 queue_packet_percentages_dict['ingress_ports_num'] = ingress_ports_num
                 queue_packet_percentages_dict[ValidationConsts.TX_RATE] = convert_to_percentage(avg_ports_tx)
                 queue_packet_percentages_dict[ValidationConsts.RX_RATE] = convert_to_percentage(avg_ports_rx)

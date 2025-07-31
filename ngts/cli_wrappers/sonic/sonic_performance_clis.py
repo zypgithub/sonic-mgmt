@@ -1,16 +1,18 @@
+import copy
 import logging
 import os
 import json
+import random
 import re
 import time
 from retry import retry
 from collections import defaultdict
 from infra.tools.exceptions.test_issue import TestIssue
 from jsonmerge import merge
-from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+import allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
-from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts
+from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, PowerConsts, ValidationConsts, MRCConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict, generate_mac_range
@@ -682,3 +684,56 @@ class SonicPerformanceCli(PerformanceCommon):
         for alias in PerfConsts.PERF_SETUP_TG_ALIASES:
             tg_cli = self.topology_obj.players[alias]['cli']
             tg_cli.performance.fdb_discard_creation()
+
+    def get_leaf_many_to_few_port_group_df(self, M, num_of_ingress_ports):
+        port_group_df = []
+        ports = self.cli_obj.performance.get_right_left_ports_dict()
+        left_ports = copy.deepcopy(ports["left_ports"])
+        right_ports = copy.deepcopy(ports["right_ports"])
+        egress_ports_num = num_of_ingress_ports // M
+        num_of_egress_ports_for_each_tg = egress_ports_num // 2
+        num_of_ingress_ports_for_each_tg = num_of_ingress_ports // 2
+        total_num_of_ports_for_each_tg = num_of_egress_ports_for_each_tg + num_of_ingress_ports_for_each_tg
+        plus_egress_ports_num = 0 if egress_ports_num % 2 == 0 else 1
+        left_start_index = random.randint(0, len(left_ports) - total_num_of_ports_for_each_tg - plus_egress_ports_num)
+        right_start_index = random.randint(0, len(right_ports) - total_num_of_ports_for_each_tg)
+        left_egress_ports_start_index = left_start_index
+        right_egress_ports_start_index = right_start_index
+        left_egress_ports_end_index = left_egress_ports_start_index + num_of_egress_ports_for_each_tg + plus_egress_ports_num
+        right_egress_ports_end_index = right_egress_ports_start_index + num_of_egress_ports_for_each_tg
+        left_ingress_ports_start_index = left_egress_ports_end_index
+        right_ingress_ports_start_index = right_egress_ports_end_index
+        left_ingress_ports_end_index = left_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
+        right_ingress_ports_end_index = right_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
+        left_egress_ports, right_egress_ports = left_ports[left_egress_ports_start_index:left_egress_ports_end_index], \
+            right_ports[right_egress_ports_start_index:right_egress_ports_end_index]
+        left_ingress_ports, right_ingress_ports = left_ports[left_ingress_ports_start_index:left_ingress_ports_end_index], \
+            right_ports[right_ingress_ports_start_index:right_ingress_ports_end_index]
+        egress_ports = left_egress_ports + right_egress_ports
+        ingress_ports = left_ingress_ports + right_ingress_ports
+        sdk_port_list_egress = self.cli_obj.performance.get_sdk_ports(egress_ports)
+        sdk_port_list_ingress = self.cli_obj.performance.get_sdk_ports(ingress_ports)
+        for port in sdk_port_list_egress:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+        for port in sdk_port_list_ingress:
+            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+        return egress_ports, ingress_ports, port_group_df
+
+    def validate_ets(self, interface_list, queues_list, violations_list):
+        """
+        For each queue in (1,2,4):
+
+        (#bytes transmitted from each queue) == (Sum of #bytes transmitted from queues 1,2,4) * (Approximate normalized DWRR weight / sum of Approximate normalized DWRR weights of queues 1,2,4).
+        """
+        dwrr_weights = self.cli_obj.qos.get_dwrr_weights(queues_list)
+        dwrr_weights_sum = sum(dwrr_weights.values())
+        with allure.step(f"Validate ETS for {queues_list}"):
+            for interface in interface_list:
+                show_queue_counters_dict = self.cli_obj.interface.parse_show_queue_counters(interface)
+                sum_queue_bytes = self.cli_obj.interface.get_sum_queue_bytes(show_queue_counters_dict, queues_list)
+                for queue in queues_list:
+                    queue_counter_bytes, queue_counter_drop_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+                    queue_dwrr_weight = dwrr_weights[queue]
+                    if queue_counter_bytes != sum_queue_bytes * (queue_dwrr_weight / dwrr_weights_sum):
+                        violations_list.append(f"Queue {queue} bytes: queue_counter_bytes {queue_counter_bytes} != sum_queue_bytes {sum_queue_bytes} * queue_dwrr_weight {queue_dwrr_weight} / dwrr_weights_sum {dwrr_weights_sum} for {interface}")
+        return violations_list
