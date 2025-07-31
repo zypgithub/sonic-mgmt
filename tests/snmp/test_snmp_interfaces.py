@@ -2,10 +2,9 @@ import logging
 import pytest
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.snmp_helpers import get_snmp_facts
-from tests.platform_tests.counterpoll.counterpoll_helper import ConterpollHelper
-from tests.platform_tests.counterpoll.counterpoll_constants import CounterpollConstants
-from tests.common.utilities import parse_rif_counters
-from tests.common.utilities import wait_until
+from tests.common.constants import CounterpollConstants
+from tests.common.helpers.counterpoll_helper import ConterpollHelper
+from tests.common.utilities import parse_rif_counters, wait_until
 
 pytestmark = [
     pytest.mark.topology('any'),
@@ -39,11 +38,13 @@ def disable_conterpoll(duthost):
     ConterpollHelper.enable_counterpoll(duthost, counter_type_list=[CounterpollConstants.PORT,
                                                                     CounterpollConstants.RIF])
 
+
 def get_interfaces(duthost, tbinfo):
     """
     Method to get interfaces for testing
     :param duthost: DUT host object
-    :return: RIF interface name in case available in topo. If not - return Port Channel name and interface in Port Channel
+    :return: RIF interface name in case available in topo. If not - return Port Channel name and interface in Port
+     Channel
     """
     rif_counters = parse_rif_counters(duthost.command("show interfaces counters rif")["stdout_lines"])
     for interface in rif_counters:
@@ -384,7 +385,7 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
     duthost.shell("rm -rf /tmp/cache/intfstat", module_ignore_errors=True)
     duthost.shell("rm -rf /tmp/cache/portstat", module_ignore_errors=True)
 
-    logger.info(f'Set port and rif counters in COUNTERS DB')
+    logger.info('Set port and rif counters in COUNTERS DB')
     logger.info(f'Set port {port_interface} {SAI_PORT_STAT_IF_IN_ERRORS} counter to {COUNTER_VALUE}')
     set_counters_value(duthost, port_oid, SAI_PORT_STAT_IF_IN_ERRORS, COUNTER_VALUE)
     logger.info(f'Set port {port_interface} {SAI_PORT_STAT_IF_IN_DISCARDS} counter to {COUNTER_VALUE}')
@@ -401,13 +402,13 @@ def test_snmp_interfaces_error_discard(duthosts, enum_rand_one_per_hwsku_hostnam
     rif_counters = parse_rif_counters(duthost.command("show interfaces counters rif")["stdout_lines"])
     port_counters = get_port_interface_counter(duthost, port_interface)
 
-    logger.info(f'Compare rif counters in COUNTERS DB and counters get from SONiC CLI')
+    logger.info('Compare rif counters in COUNTERS DB and counters get from SONiC CLI')
     assert int(rif_counters[rif_interface]['tx_err']) == COUNTER_VALUE, \
         f"tx_err value is {rif_counters[rif_interface]['tx_err']} not set to {COUNTER_VALUE}"
     assert int(rif_counters[rif_interface]['rx_err']) == COUNTER_VALUE, \
         f"rx_err value is {rif_counters[rif_interface]['rx_err']} not set to {COUNTER_VALUE}"
 
-    logger.info(f'Compare port counters in COUNTERS DB and counters get from SONiC CLI')
+    logger.info('Compare port counters in COUNTERS DB and counters get from SONiC CLI')
     assert int(port_counters['tx_err']) == COUNTER_VALUE, \
         f"tx_err value is {port_counters['tx_err']} not set to {COUNTER_VALUE}"
     assert int(port_counters['rx_err']) == COUNTER_VALUE, \
