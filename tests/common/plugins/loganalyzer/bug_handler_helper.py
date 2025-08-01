@@ -8,6 +8,7 @@ import sys
 from paramiko.ssh_exception import SSHException
 import allure as raw_allure
 import pytest
+from abc import ABC, abstractmethod
 
 from tests.common.helpers.parallel import parallel_run
 from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
@@ -26,6 +27,34 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
+
+class BugHandler(ABC):
+    @abstractmethod
+    def bug_handler_wrapper(self, analyzers, duthosts, la_results):
+        pass
+
+
+class ConsolidatedBugHandler(BugHandler):
+    def bug_handler_wrapper(self, analyzers, duthosts, la_results):
+        """
+        Consolidated bug handler.
+        This handler will consolidate the loganalyzer results from all the DUTs
+        """
+        bug_handler_wrapper(analyzers, duthosts, la_results)
+
+
+class NoOpBugHandler(BugHandler):
+    """No operation bug handler"""
+    def bug_handler_wrapper(self, analyzers, duthosts, la_results):
+        pass
+
+
+def get_bughandler_instance(kwargs: dict) -> BugHandler:
+    if isinstance(kwargs, dict):
+        bh_type = kwargs.get("type", "noop")
+        if bh_type in {"consolidated", "default"}:
+            return ConsolidatedBugHandler()
+    return NoOpBugHandler()
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
                                bug_handler_action, log_errors_dir_path=None, is_serial_log=False):

@@ -12,7 +12,7 @@ import pytest
 from retry.api import retry_call
 from tests.common.helpers.assertions import pytest_assert, pytest_require
 from tests.common.helpers.psu_helpers import turn_on_all_outlets, get_grouped_pdus_by_psu
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzerEnhanced as LogAnalyzer
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, get_bughandler_instance
 from tests.common.utilities import wait_until, get_sup_node_or_random_node
 from tests.common.platform.device_utils import get_dut_psu_line_pattern
 from tests.platform_tests.cli.util import get_skip_mod_list
@@ -162,7 +162,7 @@ def psu_test_setup_teardown(duthosts, enum_rand_one_per_hwsku_hostname):
 def ignore_particular_error_log(request, duthosts, enum_rand_one_per_hwsku_hostname):
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='turn_on_off_psu_and_check_psustatus',
-                              request=request)
+                              request=request, bughandler=get_bughandler_instance({"type": "default"}))
     loganalyzer.load_common_config()
 
     ignore_list = request.param
@@ -490,7 +490,8 @@ def check_thermal_control_load_invalid_file(duthost, file_name):
               control daemon is up and there is an error log printed
     """
     loganalyzer = LogAnalyzer(ansible_host=duthost,
-                              marker_prefix='thermal_control')
+                              marker_prefix='thermal_control',
+                              bughandler=get_bughandler_instance({"type": "default"}))
     loganalyzer.expect_regex = [LOG_EXPECT_POLICY_FILE_INVALID]
     # For kvm testbed, we will not restart the deamon `thermal`
     # So we will not get the syslog as expected.
@@ -508,7 +509,8 @@ def test_thermal_control_fan_status(duthosts, enum_rand_one_per_hwsku_hostname, 
     """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     loganalyzer = LogAnalyzer(ansible_host=duthost,
-                              marker_prefix='thermal_control')
+                              marker_prefix='thermal_control',
+                              bughandler=get_bughandler_instance({"type": "default"}))
     loganalyzer.load_common_config()
 
     with ThermalPolicyFileContext(duthost, THERMAL_POLICY_VALID_FILE):

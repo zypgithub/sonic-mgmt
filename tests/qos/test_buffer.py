@@ -13,7 +13,7 @@ from tests.common.helpers.assertions import pytest_assert, pytest_require
 from tests.common.fixtures.conn_graph_facts import conn_graph_facts         # noqa: F401
 from tests.common.marvell_teralynx_data import is_marvell_teralynx_device
 from tests.common.mellanox_data import is_mellanox_device, get_chip_type
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzerEnhanced as LogAnalyzer
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, get_bughandler_instance
 from tests.common.utilities import check_qos_db_fv_reference_with_table
 from tests.common.utilities import skip_release
 from tests.common.dualtor.dual_tor_utils import is_tunnel_qos_remap_enabled, dualtor_ports      # noqa: F401
@@ -402,7 +402,7 @@ def skip_traditional_model():
 
 def init_log_analyzer(duthost, marker, expected, ignored=None, request=None):
     loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix=marker,
-                              request=request)
+                              request=request, bughandler=get_bughandler_instance({"type": "default"}))
     marker = loganalyzer.init()
 
     loganalyzer.load_common_config()

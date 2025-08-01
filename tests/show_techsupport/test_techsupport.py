@@ -9,7 +9,7 @@ import tech_support_cmds as cmds
 from random import randint
 from collections import defaultdict
 from tests.common.helpers.assertions import pytest_assert, pytest_require
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzerEnhanced as LogAnalyzer, LogAnalyzerError
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError, get_bughandler_instance
 from tests.common.utilities import wait_until, check_msg_in_syslog
 from log_messages import LOG_EXPECT_ACL_RULE_CREATE_RE, LOG_EXPECT_ACL_RULE_REMOVE_RE, LOG_EXCEPT_MIRROR_SESSION_REMOVE
 from pkg_resources import parse_version
@@ -144,7 +144,8 @@ def acl(duthosts, enum_rand_one_per_hwsku_frontend_hostname, acl_setup, request)
     acl_facts = duthost.acl_facts()["ansible_facts"]["ansible_acl_facts"]
     pytest_require(ACL_TABLE_NAME in acl_facts, "{} acl table not exists")
 
-    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
+    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
+                              bughandler=get_bughandler_instance({"type": "default"}))
     loganalyzer.load_common_config()
 
     try:
@@ -248,7 +249,8 @@ def mirroring(duthosts, enum_rand_one_per_hwsku_frontend_hostname, neighbor_ip, 
     try:
         yield
     finally:
-        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
+        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
+                                  bughandler=get_bughandler_instance({"type": "default"}))
         loganalyzer.load_common_config()
 
         try:
