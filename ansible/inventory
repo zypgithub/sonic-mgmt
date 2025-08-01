@@ -2978,3 +2978,4 @@ pdu-10-245-2-50 ansible_host=10.245.2.50 protocol=snmp
 pdu-10-245-2-17 ansible_host=10.245.2.17 protocol=snmp
 pdu-10-193-228-79 ansible_host=10.193.228.79 protocol=snmp
 pdu-10-193-229-95 ansible_host=10.193.229.95 protocol=snmp
+pdu-10-193-230-193 ansible_host=10.193.230.193 protocol=snmp

@@ -10,3 +10,6 @@ ceos_image_filename: cEOS64-lab-4.32.5M.tar
 ceos_image_orig: ceosimage:4.32.5M
 ceos_image: ceosimage:4.32.5M-1
 skip_ceos_image_downloading: false
+
+ceos_image_url:
+  - "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_project/sonic/vmimages/cEOS64-lab-4.32.5M.tar"

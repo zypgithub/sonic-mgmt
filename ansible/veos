@@ -175,6 +175,12 @@ R-SONIC-15 ansible_host=r-sonic-15
 [vm_host_94]
 R-SONIC-18 ansible_host=r-sonic-18
 
+[vm_host_95]
+FIT-SONIC-VRT-80_1 ansible_host=fit-sonic-vrt-80
+
+[vm_host_96]
+FIT-SONIC-VRT-80_2 ansible_host=fit-sonic-vrt-80
+
 [vm_host:children]
 vm_host_1
 vm_host_2
@@ -235,6 +241,8 @@ vm_host_91
 vm_host_92
 vm_host_93
 vm_host_94
+vm_host_95
+vm_host_96
 
 [vms_0]
 VM0000 ansible_host=0.0.0.0
@@ -4534,6 +4542,232 @@ VM7485 ansible_host=10.215.35.37
 VM7486 ansible_host=10.215.35.38
 VM7487 ansible_host=10.215.35.39
 
+[vms_95]
+VM7550 ansible_host=10.220.73.88
+VM7551 ansible_host=10.220.73.89
+VM7552 ansible_host=10.220.73.90
+VM7553 ansible_host=10.220.73.91
+VM7554 ansible_host=10.220.73.92
+VM7555 ansible_host=10.220.73.93
+VM7556 ansible_host=10.220.73.94
+VM7557 ansible_host=10.220.73.95
+VM7558 ansible_host=10.220.73.96
+VM7559 ansible_host=10.220.73.97
+VM7560 ansible_host=10.220.73.98
+VM7561 ansible_host=10.220.73.99
+VM7562 ansible_host=10.220.73.101
+VM7563 ansible_host=10.220.73.102
+VM7564 ansible_host=10.220.73.103
+VM7565 ansible_host=10.220.73.104
+VM7566 ansible_host=10.220.73.105
+VM7567 ansible_host=10.220.73.106
+VM7568 ansible_host=10.220.73.107
+VM7569 ansible_host=10.220.73.108
+VM7570 ansible_host=10.220.73.109
+VM7571 ansible_host=10.220.73.110
+VM7572 ansible_host=10.220.73.111
+VM7573 ansible_host=10.220.73.112
+VM7574 ansible_host=10.220.73.113
+VM7575 ansible_host=10.220.73.114
+VM7576 ansible_host=10.220.73.115
+VM7577 ansible_host=10.220.73.116
+VM7578 ansible_host=10.220.73.117
+VM7579 ansible_host=10.220.73.118
+VM7580 ansible_host=10.220.73.119
+VM7581 ansible_host=10.220.73.141
+VM7582 ansible_host=10.220.73.142
+VM7583 ansible_host=10.220.73.143
+VM7584 ansible_host=10.220.73.144
+VM7585 ansible_host=10.220.73.145
+VM7586 ansible_host=10.220.73.146
+VM7587 ansible_host=10.220.73.147
+VM7588 ansible_host=10.220.73.148
+VM7589 ansible_host=10.220.73.149
+VM7590 ansible_host=10.220.73.150
+VM7591 ansible_host=10.220.73.151
+VM7592 ansible_host=10.220.73.152
+VM7593 ansible_host=10.220.73.153
+VM7594 ansible_host=10.220.73.154
+VM7595 ansible_host=10.220.73.155
+VM7596 ansible_host=10.220.73.156
+VM7597 ansible_host=10.220.73.157
+VM7598 ansible_host=10.220.73.158
+VM7599 ansible_host=10.220.73.159
+VM7600 ansible_host=10.220.73.161
+VM7601 ansible_host=10.220.73.162
+VM7602 ansible_host=10.220.73.163
+VM7603 ansible_host=10.220.73.164
+VM7604 ansible_host=10.220.73.165
+VM7605 ansible_host=10.220.73.166
+VM7606 ansible_host=10.220.73.167
+VM7607 ansible_host=10.220.73.168
+VM7608 ansible_host=10.220.73.169
+VM7609 ansible_host=10.220.73.170
+VM7610 ansible_host=10.220.73.171
+VM7611 ansible_host=10.220.73.172
+VM7612 ansible_host=10.220.73.173
+VM7613 ansible_host=10.220.73.174
+VM7614 ansible_host=10.220.73.175
+VM7615 ansible_host=10.220.73.176
+VM7616 ansible_host=10.220.73.177
+VM7617 ansible_host=10.220.73.178
+VM7618 ansible_host=10.220.73.179
+VM7619 ansible_host=10.220.73.200
+VM7620 ansible_host=10.220.73.201
+VM7621 ansible_host=10.220.73.202
+VM7622 ansible_host=10.220.73.203
+VM7623 ansible_host=10.220.73.204
+VM7624 ansible_host=10.220.73.205
+VM7625 ansible_host=10.220.73.206
+VM7626 ansible_host=10.220.73.207
+VM7627 ansible_host=10.220.73.208
+VM7628 ansible_host=10.220.73.209
+VM7629 ansible_host=10.220.73.210
+VM7630 ansible_host=10.220.73.211
+VM7631 ansible_host=10.220.73.212
+VM7632 ansible_host=10.220.73.213
+VM7633 ansible_host=10.220.73.214
+VM7634 ansible_host=10.220.73.215
+VM7635 ansible_host=10.220.73.216
+VM7636 ansible_host=10.220.73.217
+VM7637 ansible_host=10.220.73.218
+VM7638 ansible_host=10.220.73.219
+VM7639 ansible_host=10.220.73.240
+VM7640 ansible_host=10.220.73.241
+VM7641 ansible_host=10.220.73.242
+VM7642 ansible_host=10.220.73.243
+VM7643 ansible_host=10.220.73.244
+VM7644 ansible_host=10.220.73.245
+VM7645 ansible_host=10.220.73.246
+VM7646 ansible_host=10.220.73.247
+VM7647 ansible_host=10.220.73.248
+VM7648 ansible_host=10.220.73.249
+VM7649 ansible_host=10.220.73.250
+VM7650 ansible_host=10.220.73.251
+VM7651 ansible_host=10.220.73.252
+VM7652 ansible_host=10.220.73.253
+VM7653 ansible_host=10.220.73.254
+VM7654 ansible_host=10.220.74.1
+VM7655 ansible_host=10.220.74.2
+VM7656 ansible_host=10.220.74.3
+VM7657 ansible_host=10.220.74.4
+VM7658 ansible_host=10.220.74.5
+VM7659 ansible_host=10.220.74.6
+VM7660 ansible_host=10.220.74.7
+
+[vms_96]
+VM7661 ansible_host=10.220.74.8
+VM7662 ansible_host=10.220.74.9
+VM7663 ansible_host=10.220.74.10
+VM7664 ansible_host=10.220.74.11
+VM7665 ansible_host=10.220.74.12
+VM7666 ansible_host=10.220.74.13
+VM7667 ansible_host=10.220.74.14
+VM7668 ansible_host=10.220.74.15
+VM7669 ansible_host=10.220.74.16
+VM7670 ansible_host=10.220.74.17
+VM7671 ansible_host=10.220.74.18
+VM7672 ansible_host=10.220.74.19
+VM7673 ansible_host=10.220.74.20
+VM7674 ansible_host=10.220.74.21
+VM7675 ansible_host=10.220.74.22
+VM7676 ansible_host=10.220.74.23
+VM7677 ansible_host=10.220.74.24
+VM7678 ansible_host=10.220.74.25
+VM7679 ansible_host=10.220.74.26
+VM7680 ansible_host=10.220.74.27
+VM7681 ansible_host=10.220.74.28
+VM7682 ansible_host=10.220.74.29
+VM7683 ansible_host=10.220.74.30
+VM7684 ansible_host=10.220.74.31
+VM7685 ansible_host=10.220.74.32
+VM7686 ansible_host=10.220.74.33
+VM7687 ansible_host=10.220.74.34
+VM7688 ansible_host=10.220.74.35
+VM7689 ansible_host=10.220.74.36
+VM7690 ansible_host=10.220.74.37
+VM7691 ansible_host=10.220.74.38
+VM7692 ansible_host=10.220.74.39
+VM7693 ansible_host=10.220.74.40
+VM7694 ansible_host=10.220.74.41
+VM7695 ansible_host=10.220.74.42
+VM7696 ansible_host=10.220.74.43
+VM7697 ansible_host=10.220.74.44
+VM7698 ansible_host=10.220.74.45
+VM7699 ansible_host=10.220.74.46
+VM7700 ansible_host=10.220.74.47
+VM7701 ansible_host=10.220.74.48
+VM7702 ansible_host=10.220.74.49
+VM7703 ansible_host=10.220.74.50
+VM7704 ansible_host=10.220.74.51
+VM7705 ansible_host=10.220.74.52
+VM7706 ansible_host=10.220.74.53
+VM7707 ansible_host=10.220.74.54
+VM7708 ansible_host=10.220.74.55
+VM7709 ansible_host=10.220.74.56
+VM7710 ansible_host=10.220.74.57
+VM7711 ansible_host=10.220.74.58
+VM7712 ansible_host=10.220.74.59
+VM7713 ansible_host=10.220.74.60
+VM7714 ansible_host=10.220.74.61
+VM7715 ansible_host=10.220.74.62
+VM7716 ansible_host=10.220.74.63
+VM7717 ansible_host=10.220.74.64
+VM7718 ansible_host=10.220.74.65
+VM7719 ansible_host=10.220.74.66
+VM7720 ansible_host=10.220.74.67
+VM7721 ansible_host=10.220.74.68
+VM7722 ansible_host=10.220.74.69
+VM7723 ansible_host=10.220.74.70
+VM7724 ansible_host=10.220.74.71
+VM7725 ansible_host=10.220.74.72
+VM7726 ansible_host=10.220.74.73
+VM7727 ansible_host=10.220.74.74
+VM7728 ansible_host=10.220.74.75
+VM7729 ansible_host=10.220.74.76
+VM7730 ansible_host=10.220.74.77
+VM7731 ansible_host=10.220.74.78
+VM7732 ansible_host=10.220.74.79
+VM7733 ansible_host=10.220.74.80
+VM7734 ansible_host=10.220.74.81
+VM7735 ansible_host=10.220.74.82
+VM7736 ansible_host=10.220.74.83
+VM7737 ansible_host=10.220.74.84
+VM7738 ansible_host=10.220.74.85
+VM7739 ansible_host=10.220.74.86
+VM7740 ansible_host=10.220.74.87
+VM7741 ansible_host=10.220.74.88
+VM7742 ansible_host=10.220.74.89
+VM7743 ansible_host=10.220.74.90
+VM7744 ansible_host=10.220.74.91
+VM7745 ansible_host=10.220.74.92
+VM7746 ansible_host=10.220.74.93
+VM7747 ansible_host=10.220.74.94
+VM7748 ansible_host=10.220.74.95
+VM7749 ansible_host=10.220.74.96
+VM7750 ansible_host=10.220.74.97
+VM7751 ansible_host=10.220.74.98
+VM7752 ansible_host=10.220.74.99
+VM7753 ansible_host=10.220.74.100
+VM7754 ansible_host=10.220.74.101
+VM7755 ansible_host=10.220.74.102
+VM7756 ansible_host=10.220.74.103
+VM7757 ansible_host=10.220.74.104
+VM7758 ansible_host=10.220.74.105
+VM7759 ansible_host=10.220.74.106
+VM7760 ansible_host=10.220.74.107
+VM7761 ansible_host=10.220.74.108
+VM7762 ansible_host=10.220.74.109
+VM7763 ansible_host=10.220.74.110
+VM7764 ansible_host=10.220.74.111
+VM7765 ansible_host=10.220.74.112
+VM7766 ansible_host=10.220.74.113
+VM7767 ansible_host=10.220.74.114
+VM7768 ansible_host=10.220.74.115
+VM7769 ansible_host=10.220.74.116
+VM7770 ansible_host=10.220.74.117
+VM7771 ansible_host=10.220.74.118
+VM7772 ansible_host=10.220.74.119
 
 [eos:children]
 vms_1
@@ -4595,6 +4829,8 @@ vms_91
 vms_92
 vms_93
 vms_94
+vms_95
+vms_96
 
 ## The groups below are helper to limit running playbooks to server_1, server_2 or server_3 only
 [server_1:children]
@@ -5175,6 +5411,28 @@ host_var_file=host_vars/R-SONIC-18.yml
 host_var_file=host_vars/R-SONIC-18.yml
 mgmt_prefixlen=16
 
+[server_95:children]
+vm_host_95
+vms_95
+
+[server_95:vars]
+host_var_file=host_vars/FIT-SONIC-VRT-80_1.yml
+
+[vms_95:vars]
+host_var_file=host_vars/FIT-SONIC-VRT-80_1.yml
+mgmt_prefixlen=22
+
+[server_96:children]
+vm_host_96
+vms_96
+
+[server_96:vars]
+host_var_file=host_vars/FIT-SONIC-VRT-80_2.yml
+
+[vms_96:vars]
+host_var_file=host_vars/FIT-SONIC-VRT-80_2.yml
+mgmt_prefixlen=22
+
 
 [servers:children]
 server_1
@@ -5236,6 +5494,8 @@ server_91
 server_92
 server_93
 server_94
+server_95
+server_96
 
 [servers:vars]
 topologies=['dualtor', 'dualtor-64', 'dualtor-64-breakout', 'dualtor-mixed', 'dualtor-aa', 'dualtor-aa-64', 'dualtor-aa-64-breakout', 'dualtor-56', 'dualtor-mixed-56', 'dualtor-aa-56', 't1', 't1-lag', 't1-28-lag', 't1-32-lag', 't1-48-lag', 't1-56-lag', 't1-64-lag', 't1-64-lag-clet', 't0', 't0-16', 't0-28', 't0-56', 't0-56-po2vlan', 't0-56-o8v48', 't0-52', 'ptf32', 'ptf64', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-88-o8c80', 'ptp-256', 't0-64', 't0-64-32', 't0-64-256', 't0-80', 't0-116', 't0-120', 't0-256', 't0-c256', 't1-lag-c224o8', 'dpu', 'dpu-1', 't1-isolated-d28u1', 't1-isolated-d56u2', 't1-isolated-v6-d56u2', 't1-isolated-d224u8', 't1-isolated-d254u2s1', 't0-isolated-d16u16s1', 't0-isolated-d16u16s2', 't0-isolated-d32u32s2', 't0-isolated-v6-d32u32s2', 't0-isolated-d116u16s2', 't0-isolated-d128u128s1', 't0-isolated-d2u254s1', 't0-isolated-d2u254s2', 't0-isolated-d2u510', 't0-isolated-d2u510s2', 't0-isolated-d256u256s2']

@@ -1252,6 +1252,150 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: bobcat-1250-t0-28
+  group-name: vm-t1
+  topo: t0-28
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1250
+  ptf_ip: 10.220.73.82/22
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM7550
+  dut:
+    - bobcat-1250
+    - bobcat-1250-dpu-0
+    - bobcat-1250-dpu-1
+    - bobcat-1250-dpu-2
+    - bobcat-1250-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1250-t1-28-lag
+  group-name: vm-t1
+  topo: t1-28-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1250
+  ptf_ip: 10.220.73.82/22
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM7550
+  dut:
+    - bobcat-1250
+    - bobcat-1250-dpu-0
+    - bobcat-1250-dpu-1
+    - bobcat-1250-dpu-2
+    - bobcat-1250-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1250-t1-48-lag
+  group-name: vm-t1
+  topo: t1-48-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1250
+  ptf_ip: 10.220.73.82/22
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM7550
+  dut:
+    - bobcat-1250
+    - bobcat-1250-dpu-0
+    - bobcat-1250-dpu-1
+    - bobcat-1250-dpu-2
+    - bobcat-1250-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1250-t0-88-o8c80
+  group-name: vm-t1
+  topo: t0-88-o8c80
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1250
+  ptf_ip: 10.220.73.82/22
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM7550
+  dut:
+    - bobcat-1250
+    - bobcat-1250-dpu-0
+    - bobcat-1250-dpu-1
+    - bobcat-1250-dpu-2
+    - bobcat-1250-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1254-t0-28
+  group-name: vm-t2
+  topo: t0-28
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1254
+  ptf_ip: 10.220.73.83/22
+  ptf_ipv6:
+  server: server_96
+  vm_base: VM7661
+  dut:
+    - bobcat-1254
+    - bobcat-1254-dpu-0
+    - bobcat-1254-dpu-1
+    - bobcat-1254-dpu-2
+    - bobcat-1254-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1254-t1-28-lag
+  group-name: vm-t2
+  topo: t1-28-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1254
+  ptf_ip: 10.220.73.83/22
+  ptf_ipv6:
+  server: server_96
+  vm_base: VM7661
+  dut:
+    - bobcat-1254
+    - bobcat-1254-dpu-0
+    - bobcat-1254-dpu-1
+    - bobcat-1254-dpu-2
+    - bobcat-1254-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1254-t1-48-lag
+  group-name: vm-t2
+  topo: t1-48-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1254
+  ptf_ip: 10.220.73.83/22
+  ptf_ipv6:
+  server: server_96
+  vm_base: VM7661
+  dut:
+    - bobcat-1254
+    - bobcat-1254-dpu-0
+    - bobcat-1254-dpu-1
+    - bobcat-1254-dpu-2
+    - bobcat-1254-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: bobcat-1254-t0-88-o8c80
+  group-name: vm-t2
+  topo: t0-88-o8c80
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-bobcat-1254
+  ptf_ip: 10.220.73.83/22
+  ptf_ipv6:
+  server: server_96
+  vm_base: VM7661
+  dut:
+    - bobcat-1254
+    - bobcat-1254-dpu-0
+    - bobcat-1254-dpu-1
+    - bobcat-1254-dpu-2
+    - bobcat-1254-dpu-3
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
 - conf-name: r-moose-01-t0
   group-name: vm-t1
   topo: t0

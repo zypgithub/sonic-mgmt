@@ -1,0 +1,6 @@
+Hostname,ManagementIp,HwSku,Type,Protocol,Os,PortConfigIni
+bobcat-1250,10.220.12.50/22,Mellanox-SN4280-O28,DevSonic,,sonic
+leopard-1252,10.220.12.52/22,ACS-MSN4700,FanoutLeaf,,sonic,files/hwsku_vars/bobcat-1250_setup/Mellanox-SN4280-O28/port_config.ini
+fit-sonic-vrt-80,10.220.73.80,TestServ,Server,,
+pdu-10-193-230-193,10.193.230.193,Raritan,Pdu,snmp,
+rcon-10-220-15-239,10.220.15.239,,ConsoleServer,ssh,sonic
