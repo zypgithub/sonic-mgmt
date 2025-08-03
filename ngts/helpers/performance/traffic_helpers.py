@@ -698,7 +698,7 @@ def get_queue_packet_percentages(cli_obj, interface_list, queues_list):
             total_queue_counter_pkts += queue_counter_pkts
         for queue in queues_list:
             queue_counter_pkts, queue_counter_drop_pkts = get_counters_for_queue(show_queue_counters_dict, queue)
-            queue_packet_percentage = round(queue_counter_pkts / total_queue_counter_pkts, 2)
+            queue_packet_percentage = convert_to_percentage(queue_counter_pkts / total_queue_counter_pkts)
             queue_packet_percentages[f"Queue{queue}"] = queue_packet_percentage
     return queue_packet_percentages
 
@@ -760,13 +760,13 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
                 total_packets_egress_port_bytes = total_drop_queue_counter_pkts_bytes + trimming_queue_counter_pkts_bytes
                 dropped_without_trimming = total_packets_egress_port_dropped - trimming_queue_counter_pkts
                 if dropped_without_trimming > 0:
-                    dropped_without_trimming_percentage = dropped_without_trimming / total_packets_egress_port
+                    dropped_without_trimming_percentage = convert_to_percentage(dropped_without_trimming / total_packets_egress_port)
                 else:
                     dropped_without_trimming_percentage = 0
-                untrimmed_percentage = total_drop_queue_counter_pkts / total_packets_egress_port
-                untrimmed_bytes_percentage = total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes
-                trimming_percentage = trimming_queue_counter_pkts / total_packets_egress_port
-                trimming_bytes_percentage = trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes
+                untrimmed_percentage = convert_to_percentage(total_drop_queue_counter_pkts / total_packets_egress_port)
+                untrimmed_bytes_percentage = convert_to_percentage(total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
+                trimming_percentage = convert_to_percentage(trimming_queue_counter_pkts / total_packets_egress_port)
+                trimming_bytes_percentage = convert_to_percentage(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
                 queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: interface,
                                                  ValidationConsts.UNTRIMMED_PRECENTAGE: untrimmed_percentage,
                                                  ValidationConsts.TRIMMING_PRECENTAGE: trimming_percentage,
@@ -776,7 +776,7 @@ def validate_trimmed_untrimmed_dropped_percentages(cli_obj, interface_list, trim
                 queue_packet_percentages.append(queue_packet_percentages_dict)
                 if trimming_queue_drop_pkts > 0:
                     violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
-                if dropped_without_trimming_percentage > 0:
+                if dropped_without_trimming > 0:
                     violations_list.append(f"Dropped packets without trimming detected on {interface}")
                 if return_dict:
                     return queue_packet_percentages_dict
@@ -796,3 +796,11 @@ def update_queue_counters(show_queue_counters_dict, queue,
     queue_pkts_bytes_counter += queue_bytes
     queue_dropped_bytes_counter += queue_drop_bytes
     return queue_pkts_counter, queue_drop_pkts_counter, queue_pkts_bytes_counter, queue_dropped_bytes_counter
+
+
+def convert_to_percentage(value):
+    is_valid_value = 0 <= value <= 1
+    if is_valid_value:
+        return value * 100
+    else:
+        raise ValueError(f"Value {value} is not between 0 and 1")

@@ -21,7 +21,8 @@ from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw,
                                                       validate_trimmed_untrimmed_dropped_percentages,
-                                                      get_tc_occ, get_queue_packet_percentages)
+                                                      get_tc_occ, get_queue_packet_percentages,
+                                                      convert_to_percentage)
 from infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
@@ -164,8 +165,8 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                                                                                                violations_list=violations_list, return_dict=True)
                 queue_packet_percentages_dict.update(get_queue_packet_percentages(self.cli_object, egress_port, [MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC, MRCConsts.TRIMMING_TC]))
                 queue_packet_percentages_dict['ingress_ports_num'] = ingress_ports_num
-                queue_packet_percentages_dict[ValidationConsts.TX_RATE] = avg_ports_tx
-                queue_packet_percentages_dict[ValidationConsts.RX_RATE] = avg_ports_rx
+                queue_packet_percentages_dict[ValidationConsts.TX_RATE] = convert_to_percentage(avg_ports_tx)
+                queue_packet_percentages_dict[ValidationConsts.RX_RATE] = convert_to_percentage(avg_ports_rx)
                 queue_packet_percentages_dict.update(tc_occ_dict)
                 data_df.append(queue_packet_percentages_dict)
                 total_violations_list.append(f"ingress ports num: {ingress_ports_num} violations:")
