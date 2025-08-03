@@ -5,7 +5,7 @@ import time
 
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import skip_release
-from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos
+from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos, get_supported_available_optical_interfaces
 from tests.platform_tests.sfp.software_control.helpers import check_sc_sai_attribute_value
 from tests.common.utilities import wait_until
 
@@ -17,7 +17,26 @@ pytestmark = [
 
 SUPPORTED_PLATFORMS = ["arista_7060x6", "nvidia_sn5640", "nvidia_sn5600"]
 cmd_sfp_presence = "sudo sfpshow presence"
+DEFAULT_COLLECTED_PORTS_NUM = 5
 
+def pytest_addoption(parser):
+    """
+    Add command line options for pytest
+    """
+    parser.addoption(
+        "--collected-ports-num",
+        action="store",
+        default=DEFAULT_COLLECTED_PORTS_NUM,
+        type=int,
+        help="Number of ports to collect for testing (default: {})".format(DEFAULT_COLLECTED_PORTS_NUM)
+    )
+
+@pytest.fixture(scope="session")
+def collected_ports_num(request):
+    """
+    Fixture to get the number of ports to collect from command line argument
+    """
+    return request.config.getoption("collected_ports_num", default=DEFAULT_COLLECTED_PORTS_NUM)
 
 class TestMACFault(object):
     @pytest.fixture(autouse=True)
@@ -29,6 +48,10 @@ class TestMACFault(object):
             skip_release(duthost, ["201811", "201911", "202012", "202205", "202211", "202305", "202405"])
         else:
             pytest.skip("DUT has platform {}, test is not supported".format(duthost.facts['platform']))
+
+        if 'nvidia' in duthost.facts['platform'].lower() and not check_sc_sai_attribute_value(duthost):
+            pytest.skip("SW control feature is not enabled on platform")
+
 
     @staticmethod
     def get_mac_fault_count(dut, interface, fault_type):
@@ -48,8 +71,14 @@ class TestMACFault(object):
     def get_interface_status(dut, interface):
         return dut.show_and_parse("show interfaces status {}".format(interface))[0].get("oper", "unknown")
 
+    @pytest.fixture(scope="class", autouse=True)
+    def reboot_dut(self, duthosts, localhost, enum_rand_one_per_hwsku_frontend_hostname):
+        from tests.common.reboot import reboot
+        reboot(duthosts[enum_rand_one_per_hwsku_frontend_hostname],
+               localhost, safe_reboot=True, check_intf_up_ports=True)
+
     @pytest.fixture(scope="class")
-    def select_random_interfaces(self, duthosts, enum_rand_one_per_hwsku_frontend_hostname):
+    def select_random_interfaces(self, duthosts, enum_rand_one_per_hwsku_frontend_hostname, collected_ports_num):
         dut = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
 
         sfp_presence = dut.command(cmd_sfp_presence)
@@ -58,18 +87,13 @@ class TestMACFault(object):
         eeprom_infos = dut.command("sudo sfputil show eeprom -d")['stdout']
         eeprom_infos = parse_sfp_eeprom_infos(eeprom_infos)
 
-        available_optical_interfaces = []
-        for port_name, eeprom_info in eeprom_infos.items():
-            if parsed_presence.get(port_name) == "Present" and \
-                    "SFP EEPROM detected" in eeprom_info[port_name] \
-                    and "COPPER" not in eeprom_info.get("Media Interface Technology", "COPPER").upper():
-                available_optical_interfaces.append(port_name)
+
+        available_optical_interfaces = get_supported_available_optical_interfaces(eeprom_infos, parsed_presence)
 
         pytest_assert(available_optical_interfaces, "No interfaces with SFP detected. Cannot proceed with tests.")
         logging.info("Available Optical interfaces for tests: {}".format(available_optical_interfaces))
 
-        # Select 5 random interfaces (or fewer if not enough available)
-        selected_interfaces = random.sample(available_optical_interfaces, min(5, len(available_optical_interfaces)))
+        selected_interfaces = random.sample(available_optical_interfaces, min(collected_ports_num, len(available_optical_interfaces)))
         logging.info("Selected interfaces for tests: {}".format(selected_interfaces))
 
         return dut, selected_interfaces
