@@ -172,8 +172,11 @@ def parse_output_to_dict(output, keys_list):
     """
     result_dict = {}
     for key in keys_list:
-        result_dict.update({key.replace('\\', ''): re.search(f"{key}(\\s+)?:\\n? (.*)",  # noqa: E231
-                                                             output).group(2).strip()})
+        match = re.search(f"{key}(\\s+)?:\\n? (.*)", output)  # noqa: E231
+        if match:
+            result_dict.update({key.replace('\\', ''): match.group(2).strip()})
+        else:
+            result_dict.update({key.replace('\\', ''): None})
     return result_dict
 
 
