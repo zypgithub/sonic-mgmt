@@ -16,6 +16,7 @@ from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyze
 from tests.common.utilities import get_upstream_neigh_type
 from tests.common.utilities import get_neighbor_ptf_port_list
 from tests.common.utilities import get_neighbor_port_list
+from tests.common.utilities import wait_until
 
 logger = logging.getLogger(__name__)
 
@@ -250,18 +251,24 @@ def verify_test_data_rule_inserted_to_acl_table(duthost, action):
     ip = action.split()[-1]
     rule_type = action.split()[0].upper()
     find_rule_in_table = duthost.shell(f'show acl rule {action.split()[1]} | grep -E {ip}', module_ignore_errors=True)['stdout_lines']
-    logger.info(f"Search result for {action} in ACL table: {find_rule_in_table}")
+    logger.info(f"Verifying action: {action} was applied in ACL table")
     if not find_rule_in_table and rule_type == "UNBLOCK":
+        logger.info(f"[UNBLOCK] Expected: No rule for {ip} | Actual: No rule found (traffic allowed by default)")
         return True
 
     if find_rule_in_table and rule_type == "BLOCK":
+        logger.info(f"[BLOCK] Expected: Rule for {ip} to be found and active | Actual: {find_rule_in_table}")
         for rule in find_rule_in_table:
-            rule_from_table = rule.split()[1]
-            is_rule_added = ip in rule_from_table and rule_type in rule_from_table
+            rule_split = rule.split()
+            if len(rule_split) < 2:
+                continue
+            rule_from_table = rule_split[1]
+            is_rule_active = rule_split[-1] == "Active"
+            is_rule_added = ip in rule_from_table and rule_type in rule_from_table and is_rule_active
             if is_rule_added:
                 return True
 
-    logger.info(f"Rule {action} not found in ACL table")
+    logger.info(f"Rule {action} was not applied in ACL table")
     acl_table = duthost.shell(f'show acl rule {action.split()[1]}', module_ignore_errors=True)['stdout']
     logger.info(f"ACL table: {acl_table}")
     return False
