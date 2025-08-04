@@ -12,6 +12,28 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
+def _assert_test_results(status_check, traffic_status):
+    """Assert test results and provide detailed failure information"""
+    failed_components = []
+    passed_components = []
+
+    if not status_check:
+        failed_components.append("status check")
+    else:
+        passed_components.append("status check")
+    if not traffic_status:
+        failed_components.append("traffic test")
+    else:
+        passed_components.append("traffic test")
+
+    if passed_components:
+        logger.info(f"Passed: {', '.join(passed_components)}")
+
+    if failed_components:
+        failure_msg = f"Test failed on: {', '.join(failed_components)}"
+        assert False, failure_msg
+
+
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])

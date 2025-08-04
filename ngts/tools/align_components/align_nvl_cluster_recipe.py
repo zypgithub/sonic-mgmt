@@ -49,7 +49,7 @@ def fetch_and_install(component, package_path, package_name, inventory_file, ans
         # RM and CUDA does not need downloading the packages.
         if package_path.startswith("http") and ("cuda" not in component):
             with allure.step(f"Downloading package - {package_path} For Component {component}"):
-                download_package = f'curl -s -w "%{{http_code}}" -o /tmp/{package_name} -u \'{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}\' "{package_path}" | grep -q "^200$" && echo "Download successful" || echo "Download failed"'
+                download_package = f"""curl -s -w "%{{http_code}}" -o /tmp/{package_name} -u "{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}" "{package_path}" | grep -q "^200$" && echo "Download successful" || echo "Download failed" """
                 logger.info(f"Running curl command {download_package}")
                 output = run_ssh_command(download_package, ansible_machine, username, password)
                 logger.info(f"{output}")
