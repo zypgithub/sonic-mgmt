@@ -46,7 +46,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -105,7 +105,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
 @disabled_access_ports
@@ -132,7 +132,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_namem, standalone_system)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -188,7 +188,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
 @disabled_access_ports
@@ -214,7 +214,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -270,7 +270,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
 @disabled_access_ports
@@ -299,7 +299,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        log_level, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name)
+        log_level, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system)
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
@@ -365,7 +365,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
 
         if not sdn_files_deleted:
             ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
-            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths)
+            delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
         with allure.step("Run reset factory to get back to default configuration"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
@@ -417,7 +417,7 @@ def verify_all_files_are_deleted(engines, files_list):
         assert "No such file or directory" in output, "File was found, not expected to be found"
 
 
-def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name):
+def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system):
 
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, setup_name, output_format)
@@ -465,6 +465,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     with allure.step("Generate state files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            if standalone_system and file_type == 'topology':
+                continue
             app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
             output = sdn.state.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
             output = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
@@ -519,7 +521,7 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
     assert not errors_list, "\n\n".join(errors_list)
 
 
-def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths):
+def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system):
     with allure.step("Delete state/config Files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
             if file_type in all_config_files_paths and all_config_files_paths[file_type]:
@@ -531,6 +533,8 @@ def delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths,
                     except Exception as e:
                         logger.info("File Already Deleted")
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES:
+            if standalone_system and file_type == 'topology':
+                continue
             if file_type in all_state_files_paths and all_state_files_paths[file_type]:
                 for file in all_state_files_paths[file_type]:
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
