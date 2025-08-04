@@ -246,6 +246,27 @@ def send_and_verify_packet(ptfadapter, pkt, exp_pkt, tx_port, rx_port, expected_
         testutils.verify_no_packet(ptfadapter, pkt=exp_pkt, port_id=rx_port, timeout=5)
 
 
+def verify_test_data_rule_inserted_to_acl_table(duthost, action):
+    ip = action.split()[-1]
+    rule_type = action.split()[0].upper()
+    find_rule_in_table = duthost.shell(f'show acl rule {action.split()[1]} | grep -E {ip}', module_ignore_errors=True)['stdout_lines']
+    logger.info(f"Search result for {action} in ACL table: {find_rule_in_table}")
+    if not find_rule_in_table and rule_type == "UNBLOCK":
+        return True
+
+    if find_rule_in_table and rule_type == "BLOCK":
+        for rule in find_rule_in_table:
+            rule_from_table = rule.split()[1]
+            is_rule_added = ip in rule_from_table and rule_type in rule_from_table
+            if is_rule_added:
+                return True
+
+    logger.info(f"Rule {action} not found in ACL table")
+    acl_table = duthost.shell(f'show acl rule {action.split()[1]}', module_ignore_errors=True)['stdout']
+    logger.info(f"ACL table: {acl_table}")
+    return False
+
+
 def test_null_route_helper(rand_selected_dut, tbinfo, ptfadapter,
                            apply_pre_defined_rules, setup_ptf):  # noqa: F811
     """
@@ -278,10 +299,11 @@ def test_null_route_helper(rand_selected_dut, tbinfo, ptfadapter,
         ip_ver = ipaddress.ip_network(src_ip.encode().decode(), False).version
         logger.info("Testing with src_ip = {} action = {} expected_result = {}"
                     .format(src_ip, action, expected_result))
+
         pkt, exp_pkt = generate_packet(src_ip, ptf_port_info[ip_ver].split("/")[0], router_mac)
         if action != "":
             rand_selected_dut.shell(NULL_ROUTE_HELPER + " " + action)
-            time.sleep(1)
+            wait_until(5, 1, 0, verify_test_data_rule_inserted_to_acl_table, rand_selected_dut, action)
 
         send_and_verify_packet(ptfadapter, pkt, exp_pkt, random.choice(ptf_interfaces),
                                rx_port, expected_result)
