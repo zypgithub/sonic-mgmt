@@ -19,7 +19,7 @@ from tests.common.platform.device_utils import platform_api_conn, start_platform
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 
 pytestmark = [
-    pytest.mark.topology('smartswitch', 't1')
+    pytest.mark.topology('smartswitch')
 ]
 
 # Timeouts, Delays and Time Intervals in secs
@@ -202,26 +202,26 @@ def test_dpu_console(duthosts, enum_rand_one_per_hwsku_hostname,
         # Check if it's a Mellanox ASIC
         if is_mellanox_device(duthost):
             command = ('sudo python -c "import pexpect; '
-                      'child = pexpect.spawn(\'python /usr/local/bin/dpu-tty.py -n dpu%s\'); '  # noqa: E501
-                      'child.expect(r\' \'); '
-                      'child.sendline(\'\\r\\r\'); '
-                      'child.expect(r\' \'); '
-                      'child.sendline(\'exit\\rexit\\r\'); '
-                      'child.expect(r\'Terminal\'); '
-                      'child.sendline(\'\'); '
-                      'child.expect(r\'sonic login: \'); '
-                      'print(child.after.decode()); child.close()"'
-                      % (index))
+                       'child = pexpect.spawn(\'python /usr/local/bin/dpu-tty.py -n dpu%s\'); '  # noqa: E501
+                       'child.expect(r\' \'); '
+                       'child.sendline(\'\\r\\r\'); '
+                       'child.expect(r\' \'); '
+                       'child.sendline(\'exit\\rexit\\r\'); '
+                       'child.expect(r\'Terminal\'); '
+                       'child.sendline(\'\'); '
+                       'child.expect(r\'sonic login: \'); '
+                       'print(child.after.decode()); child.close()"'
+                       % (index))
         else:
             command = ('sudo python -c "import pexpect; '
-                      'child = pexpect.spawn(\'python /usr/local/bin/dpu-tty.py -n dpu%s\'); '  # noqa: E501
-                      'child.expect(r\' \'); '
-                      'child.sendline(\'\\r\\r\'); '
-                      'child.expect(r\' \'); '
-                      'child.sendline(\'exit\\rexit\\r\'); '
-                      'child.expect(r\'sonic login: \'); '
-                      'print(child.after.decode()); child.close()"'
-                      % (index))
+                       'child = pexpect.spawn(\'python /usr/local/bin/dpu-tty.py -n dpu%s\'); '  # noqa: E501
+                       'child.expect(r\' \'); '
+                       'child.sendline(\'\\r\\r\'); '
+                       'child.expect(r\' \'); '
+                       'child.sendline(\'exit\\rexit\\r\'); '
+                       'child.expect(r\'sonic login: \'); '
+                       'print(child.after.decode()); child.close()"'
+                       % (index))
 
         logging.info("Checking console access of {}".format(dpu_name))
         output_dpu_console = duthost.shell(command)
@@ -240,8 +240,7 @@ def test_npu_dpu_date(duthosts, dpuhosts,
     """
 
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
-    # output ISO format and UTC timezone
-    date_cmd = "date --iso-8601=s -u"
+    date_format = "%a %b %d %I:%M:%S %p %Z %Y"
 
     for index in range(num_dpu_modules):
         dpu_name = module.get_name(platform_api_conn, index)
@@ -250,13 +249,13 @@ def test_npu_dpu_date(duthosts, dpuhosts,
             continue
 
         logging.info("Checking date and time on {}".format(dpu_name))
-        dpu_date = dpuhosts[index].command(date_cmd)['stdout']
+        dpu_date = dpuhosts[index].command("date")['stdout']
 
         logging.info("Checking date and time on switch")
-        switch_date = duthost.command(date_cmd)['stdout_lines']
+        switch_date = duthost.command("date")['stdout_lines']
 
-        date1 = datetime.fromisoformat(switch_date[0])
-        date2 = datetime.fromisoformat(dpu_date)
+        date1 = datetime.strptime(switch_date[0], date_format)
+        date2 = datetime.strptime(dpu_date, date_format)
 
         time_difference = abs((date1 - date2).total_seconds())
 
