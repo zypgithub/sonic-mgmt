@@ -51,8 +51,8 @@ class PwhConsts:
         SPECIAL_CLASS: [ENABLED, DISABLED]
     }
 
-    # pwh default configuration
-    DEFAULTS = {
+    # pwh configuration when feature (state) is enabled
+    ENABLED_CONF = {
         STATE: ENABLED,
         EXPIRATION: '180',
         EXPIRATION_WARNING: '15',
@@ -65,8 +65,7 @@ class PwhConsts:
         SPECIAL_CLASS: ENABLED
     }
 
-    # pwh configuration when feature (state) is disabled
-    DISABLED_CONF = {
+    DEFAULTS = {
         STATE: DISABLED,
         EXPIRATION: '99999',
         EXPIRATION_WARNING: '7',

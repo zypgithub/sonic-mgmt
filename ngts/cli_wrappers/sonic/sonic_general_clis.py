@@ -12,8 +12,7 @@ from retry.api import retry_call
 
 import ngts.helpers.json_file_helper as json_file_helper
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultTestServerCred
-from infra.tools.general_constants.constants import SonicSimxConstants
+from infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
 from infra.tools.general_constants.air_constants import HostsConstants
 from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
 from infra.tools.redmine.redmine_api import is_redmine_issue_active

@@ -235,7 +235,7 @@ class ValidationTool:
 
             if check_empty_values:
                 for key, value in output_dictionary.items():
-                    if not value:
+                    if value is None or value == "":
                         result_obj.result = False
                         result_obj.info += "The value of {field_name} is None".format(field_name=key)
             return result_obj
