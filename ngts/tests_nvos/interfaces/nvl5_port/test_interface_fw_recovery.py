@@ -67,7 +67,7 @@ def test_show_fw_recovery_counters(engines, devices):
 
     with allure.step("Validate show interface command with all nvl5 interfaces"):
         port_output = OutputParsingTool.parse_json_str_to_dictionary(
-            selected_port.interface.link.phy_diag.show()).get_returned_value()
+            selected_port.interface.link.phy.detail.show()).get_returned_value()
 
     expected_fields = list(FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.keys())
     expected_values = list(FWRecoveryConsts.DEFAULT_FW_RECOVERY_COUNTERS.values())

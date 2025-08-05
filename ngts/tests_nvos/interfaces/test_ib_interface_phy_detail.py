@@ -55,9 +55,9 @@ logger = logging.getLogger()
 
 @pytest.mark.ib_interfaces
 def test_show_phy_diag(engines, test_api, output_format):
-    """Checks that `nv show interface <port> link phy-diag` returns non-empty output in a valid format."""
+    """Checks that `nv show interface <port> link phy detail` returns non-empty output in a valid format."""
     selected_port = RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
-    output = selected_port.interface.link.phy_diag.show(output_format=output_format)
+    output = selected_port.interface.link.phy.detail.show(output_format=output_format)
     d = OutputParsingTool.parse_show_output_to_dict(output, output_format).get_returned_value()
     assert len(d) > 1
 
@@ -65,7 +65,7 @@ def test_show_phy_diag(engines, test_api, output_format):
 @pytest.mark.ib_interfaces
 def test_intentional_link_down_counter(engines, devices):
     """
-    Test for `nv show interface <port> link phy-diag` intentional-link-down-events field. Flow:
+    Test for `nv show interface <port> link phy detail` intentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
     2.  Set port down
     3.  Assert the intentional- counter increased
@@ -98,7 +98,7 @@ def test_intentional_link_down_counter(engines, devices):
 @pytest.mark.ib_interfaces
 def test_unintentional_link_down_counter(engines, devices, enable_asic_error_injection):
     """
-    Test for `nv show interface <port> link phy-diag` unintentional-link-down-events field. Flow:
+    Test for `nv show interface <port> link phy detail` unintentional-link-down-events field. Flow:
     1.  Get intentional-link-down-events and unintentional-link-down-events counters for a port
     2.  Simulate link drop
     3.  Assert the unintentional- counter increased
@@ -131,7 +131,7 @@ def test_unintentional_link_down_counter(engines, devices, enable_asic_error_inj
 @pytest.mark.ib_interfaces
 def test_link_down_reason(engines, devices, setup_name, enable_asic_error_injection):
     """
-    Test the 'link-down-code' field (and related fields) under `nv show interface <port> link phy-diag`.
+    Test the 'link-down-code' field (and related fields) under `nv show interface <port> link phy detail`.
     Flow:
         1. Choose a random loopback port ("test port") and some other connected port.
         2. Set the test-port down, then set it back up.
@@ -227,13 +227,13 @@ def enable_asic_error_injection(devices):
         return
 
 
-def get_phy_diag(port):
-    return OutputParsingTool.parse_show_output_to_dict(port.interface.link.phy_diag.show()).get_returned_value()
+def get_phy_detail(port):
+    return OutputParsingTool.parse_show_output_to_dict(port.interface.link.phy.detail.show()).get_returned_value()
 
 
 def get_counters(port: Port) -> Tuple[int, int]:
-    """Runs nv show interface <port> link phy-diag, and returns the intentional & unintentional link-down counters"""
-    phy_diag_output = get_phy_diag(port)
+    """Runs nv show interface <port> link phy detail, and returns the intentional & unintentional link-down counters"""
+    phy_diag_output = get_phy_detail(port)
     return int(phy_diag_output[INTENTIONAL_LINK_DOWN_EVENTS]), int(phy_diag_output[UNINTENTIONAL_LINK_DOWN_EVENTS])
 
 
@@ -288,7 +288,7 @@ def assert_description_matches_code(description: str, code: Union[int, str], ite
 
 def get_codes(port: Port) -> Dict[str, Tuple[int]]:
     """
-    Obtains the output of nv show interface <port> link phy-diag --output json , for example:
+    Obtains the output of nv show interface <port> link phy detail --output json , for example:
     {
       ...
       "linkdown-reason-code-local": "22###22###22###22",
@@ -303,7 +303,7 @@ def get_codes(port: Port) -> Dict[str, Tuple[int]]:
       {LOCAL: (22, 22, 22, 22), REMOTE: (33, 33, 33, 33)}
     """
     with allure.step(f"Get link-down reasons for {port.name}"):
-        output = port.interface.link.phy_diag.show()
+        output = port.interface.link.phy.detail.show()
         output = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()
         result = {}
         for side in (LOCAL, REMOTE):

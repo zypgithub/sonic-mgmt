@@ -1,5 +1,6 @@
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtStats import MgmtStats
+from ngts.nvos_tools.ib.InterfaceConfiguration.Phy import Phy
 
 
 class LinkMgmt(BaseComponent):
@@ -11,6 +12,6 @@ class LinkMgmt(BaseComponent):
         self.counters = BaseComponent(self, path='/counters')
         self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.connection_mode = BaseComponent(self, path='/connection-mode')
-        self.phy_diag = BaseComponent(self, path='/phy-diag')
+        self.phy = Phy(self)
         self.phy_recovery = BaseComponent(self, path='/phy-recovery')
         self.kr = BaseComponent(self, path='/link-training')

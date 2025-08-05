@@ -246,3 +246,38 @@ class FWRecoveryConsts:
 class DataBaseNames:
     CONFIG_DB = "ConfigDb"
     STATE_DB = 'StateDb'
+
+
+class PhyHealthConsts:
+    """Constants for phy health related fields and values."""
+
+    # Field names for phy health output
+    EFFECTIVE_BER = "effective-ber"
+    EFFECTIVE_ERRORS = "effective-errors"
+    LANE = "lane"
+    PHY_RECEIVED_BITS = "phy-received-bits"
+    RAW_BER = "raw-ber"
+    SYMBOL_BER = "symbol-ber"
+    SYMBOL_ERRORS = "symbol-errors"
+    TIME_SINCE_LAST_CLEAR_MIN = "time-since-last-clear-min"
+
+    # Lane field names
+    PHY_RAW_ERRORS = "phy-raw-errors"
+    LANE_RAW_BER = "raw-ber"
+
+    # Histogram field names
+    RS_FEC_CORRECTED_ERRORS = "rs-fec-corrected-errors"
+    COUNT = "count"
+
+    # Expected values
+    EXPECTED_BER_FORMAT = "0E-0"
+    EXPECTED_BIN_COUNT = 16
+
+    # List of all expected fields in phy health output
+    EXPECTED_FIELDS = [
+        EFFECTIVE_BER, EFFECTIVE_ERRORS, LANE, PHY_RECEIVED_BITS,
+        RAW_BER, SYMBOL_BER, SYMBOL_ERRORS, TIME_SINCE_LAST_CLEAR_MIN
+    ]
+
+    # List of expected fields in each lane
+    EXPECTED_LANE_FIELDS = [PHY_RAW_ERRORS, LANE_RAW_BER]
