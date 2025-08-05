@@ -1476,9 +1476,10 @@ class BugHandlerConst:
                              "'NVOS - Design'": os.path.join(NGTS_PATH, "helpers/bug_handler/nvos_bug_handler.conf")}
     BUG_HANDLER_PYTHON_PATH = "/mswg/projects/swvt/MARS/scripts/python37_wrapper.sh"
     BH_1_5_2_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_2/bin/"
+    BH_1_5_3_PATH = "/auto/sw_tools/Internal/BugHandling/RELEASES/1_5_3/bin/"
     BUG_HANDLER_PATH = {
-        "SONiC-Design": BH_1_5_2_PATH,
-        "SONiC-Verification": BH_1_5_2_PATH,
+        "SONiC-Design": BH_1_5_3_PATH,
+        "SONiC-Verification": BH_1_5_3_PATH,
         "'NVOS - Design'": "/auto/sw_tools/Internal/BugHandling/RELEASES/1_4_3/bin/",
         "default": BH_1_5_2_PATH
     }

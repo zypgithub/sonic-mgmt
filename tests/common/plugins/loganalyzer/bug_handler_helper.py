@@ -4,7 +4,6 @@ import json
 import logging
 from pathlib import Path
 import time
-import sys
 from paramiko.ssh_exception import SSHException
 import allure as raw_allure
 import pytest
@@ -236,16 +235,53 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
                                                   log_errors_dir_path, is_serial_log)
     logger.info(f"Log Analyzer result: {json.dumps(log_analyzer_res, indent=2)}")
     error_msg = ''
+    ci_mode = bug_handler_actions.get('ci_mode', False)
+    if ci_mode:
+        logger.info("CI Mode is enabled: UPDATE decisions in NO_ACTION_MODE will not fail the test")
     if log_analyzer_res[BugHandlerConst.NO_ACTION_MODE]:
-        error_msg += f"There are err msg detected under the {BugHandlerConst.NO_ACTION_MODE} mode:\n"
+        # Collect errors that should fail the test
+        failing_errors = []
         for err_with_no_action in log_analyzer_res[BugHandlerConst.NO_ACTION_MODE]:
-            bug_id = err_with_no_action[BugHandlerConst.BUG_HANDLER_BUG_ID]
+            action = err_with_no_action.get(BugHandlerConst.BUG_HANDLER_ACTION, '')
+            bug_id = err_with_no_action.get(BugHandlerConst.BUG_HANDLER_BUG_ID, '')
             err_logs = err_with_no_action[BugHandlerConst.LA_ERROR]
-            if bug_id:
-                error_msg += f"Relative bug is #{bug_id} detected for the err logs: {err_logs} \n"
-                test_rm_issues.add(bug_id)
+            # Handle based on decision type and CI mode
+            if action == BugHandlerConst.BUG_HANDLER_DECISION_CREATE:
+                # CREATE decisions always fail the test (cannot create in no_action mode)
+                failing_errors.append((None, err_logs))  # No bug_id for CREATE decisions
+            elif action == BugHandlerConst.BUG_HANDLER_DECISION_UPDATE:
+                # UPDATE decisions: check CI mode
+                if ci_mode:
+                    # In CI mode, UPDATE decisions pass (known issues)
+                    logger.info(f"CI mode: Relative bug #{bug_id} detected for err logs: {err_logs} - Test will pass")
+                    if bug_id:
+                        test_rm_issues.add(bug_id)
+                    # Do not add to failing_errors
+                else:
+                    # Non-CI mode: UPDATE decisions fail the test
+                    failing_errors.append((bug_id, err_logs))
+                    if bug_id:
+                        test_rm_issues.add(bug_id)
+            elif action == BugHandlerConst.BUG_HANDLER_DECISION_SKIP:
+                # SKIP decisions don't fail the test
+                logger.info(f"SKIP decision: Bug #{bug_id} for err logs: {err_logs} - Test will pass")
+                if bug_id:
+                    test_rm_issues.add(bug_id)
+                # Do not add to failing_errors
             else:
-                error_msg += f"No relative bug detected for the err logs: {err_logs} \n"
+                # Other unknown decisions - fail the test for safety
+                logger.warning(f"Unknown bug handler decision '{action}' for err logs: {err_logs}")
+                failing_errors.append((bug_id, err_logs))
+                if bug_id:
+                    test_rm_issues.add(bug_id)
+        # Build error message only if there are failing errors
+        if failing_errors:
+            error_msg += f"There are err msg detected under the {BugHandlerConst.NO_ACTION_MODE} mode:\n"
+            for bug_id, err_logs in failing_errors:
+                if bug_id:
+                    error_msg += f"Relative bug is #{bug_id} detected for the err logs: {err_logs} \n"
+                else:
+                    error_msg += f"No relative bug detected for the err logs: {err_logs} \n"
 
     if log_analyzer_res[BugHandlerConst.UPDATE_ONLY]:
         error_msg += f"There are err msg detected under the {BugHandlerConst.UPDATE_ONLY} mode:\n"
@@ -288,7 +324,10 @@ def is_log_analyzer_bug_handler_enabled(bug_handler_actions):
     """
     Check if need to run the log analyzer bug handler based on the bug handler actions.
     """
-    return bug_handler_actions['only_check'] or bug_handler_actions['create'] or bug_handler_actions['update']
+    return (bug_handler_actions['only_check'] or
+            bug_handler_actions['create'] or
+            bug_handler_actions['update'] or
+            bug_handler_actions.get('ci_mode', False))
 
 
 def get_pytest_cmd(request, cli_type):
@@ -339,14 +378,16 @@ def get_low_layer_components(duthost):
 
 def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False):
     """
-    Get the bug handler actions, the return is a dictionary with 3 keys, "create", "update" and "only_check".
+    Get the bug handler actions, the return is a dictionary with 4 keys, "create", "update", "only_check", and "ci_mode".
     If only_check=True then bugs will not be created or updated.
+    ci_mode=True indicates special handling for CI projects where update decisions should pass the test.
     """
 
     bug_handler_actions = {
         'create': False,
         'update': False,
-        'only_check': True
+        'only_check': True,
+        'ci_mode': False
     }
 
     project_bug_create_map = {
@@ -355,9 +396,9 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_main": True,
         "sonic_public": True,
         "sonic_dpu_build": True,
-        "sonic_ci": True,
-        "sonic_dpu_ci": True,
-        "sonic_ci_app_extension": True,
+        "sonic_ci": False,
+        "sonic_dpu_ci": False,
+        "sonic_ci_app_extension": False,
         "nvos_ci": False
     }
 
@@ -392,6 +433,10 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
         _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions)
         _update_bug_handler_actions(request, bug_handler_actions)
+        # Set ci_mode for CI projects when both create and update are False
+        ci_projects = ["sonic_ci", "sonic_dpu_ci", "sonic_ci_app_extension"]
+        if project in ci_projects and not bug_handler_actions['create'] and not bug_handler_actions['update']:
+            bug_handler_actions['ci_mode'] = True
         logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
 
     return bug_handler_actions
@@ -560,10 +605,10 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
             if 'failed' in bh_results[node]:
                 logging.error(f'Failed to run bug handler on {node}')
     finally:
-        # only attach allure log when exception occurred in parallel_run to save space
+        # always attach allure log for bug handler results
         for duthost in duthosts:
             log_file = LOG_ANALYZER_LOG_FILE.format(duthost.hostname)
-            if sys.exc_info()[0] is not None and os.path.exists(log_file):
+            if os.path.exists(log_file):
                 raw_allure.attach.file(log_file, name=os.path.basename(log_file),
                                    attachment_type=raw_allure.attachment_type.TEXT)
 
