@@ -125,7 +125,7 @@ class QosBase:
                                 break
 
                 pytest_assert(dut_test_params_qos["basicParams"]["def_vlan_mac"] is not None,
-                            "Dual-TOR miss default VLAN MAC address")
+                              "Dual-TOR miss default VLAN MAC address")
         else:
             try:
                 asic = duthost.asic_instance().asic_index
