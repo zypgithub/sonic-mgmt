@@ -359,6 +359,30 @@ class TestSfpApi(PlatformApiTestBase):
         is_valid_xcvr_type = "QSFP" in xcvr_type and xcvr_type != "QSFP-DD"
         return self.is_xcvr_optical(xcvr_info_dict) and is_valid_xcvr_type
 
+    def get_interfaces_to_flap_after_sfp_reset(self, port_index_to_info_dict, duthost):
+        interfaces_to_flap = []
+        admin_up_port_list = set(duthost.get_admin_up_ports())
+        for intf in self.sfp_setup['conn_interfaces']:
+            logger.info("Processing interface {} for flap after SFP reset".format(intf))
+            if intf not in admin_up_port_list:
+                # skip interfaces which are not in admin up state.
+                logger.info("Skipping interface {} as it is not in admin up state".format(intf))
+                continue
+
+            # skip if info_dict is not retrieved during reset, which also means reset was not performed.
+            sfp_port_idx = self.sfp_setup['physical_port_index_map'][intf]
+            if sfp_port_idx not in port_index_to_info_dict:
+                logger.info(
+                    "Skipping interface {} as SFP reset was not performed on port index {}".format(intf, sfp_port_idx)
+                )
+                continue
+
+            info_dict = port_index_to_info_dict[sfp_port_idx]
+            if self.is_xcvr_support_lpmode(info_dict):
+                logger.info("Flapping interface {} - xcvr supports lpmode and needs to be flapped".format(intf))
+                interfaces_to_flap.append(intf)
+        return interfaces_to_flap
+
     #
     # Functions to test methods inherited from DeviceBase class
     #
@@ -760,7 +784,6 @@ class TestSfpApi(PlatformApiTestBase):
         # allow the I2C interface to recover post sfp reset
         time.sleep(I2C_WAIT_TIME_AFTER_SFP_RESET)
         intf_list = self.get_interfaces_to_flap_after_sfp_reset(port_index_to_info_dict, duthost)
-
         if intf_list:
             intf_to_flap_joined = ",".join(intf_list)
             logger.info("Flapping interfaces: {}".format(intf_to_flap_joined))
@@ -978,7 +1001,7 @@ class TestSfpApi(PlatformApiTestBase):
                 if self.expect(isinstance(error_description, str) or isinstance(error_description, str),
                                "Transceiver {} error description appears incorrect".format(i)):
                     self.expect(error_description == expected_state,
-                                f"Transceiver {i} is not {expected_state}, actual state is:{error_description}.")
+                                f"Transceiver {i} is not {expected_state}, actual state is: {error_description}.")
         self.assert_expectations()
 
     def test_thermals(self, platform_api_conn):     # noqa: F811
