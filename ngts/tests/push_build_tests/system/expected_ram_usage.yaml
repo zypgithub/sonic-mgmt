@@ -151,6 +151,8 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 380
+    sonic_ax_impl: 60
+    redis: 80
     orchagent: 90
     thermalctld: 107
     telemetry: 100
