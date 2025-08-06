@@ -181,12 +181,6 @@ def collect_all_samples_into_df_list(samples, sample_df_key, use_port_groups=Fal
     Returns:
         List of pandas DataFrames, each containing the sample data with port group info if applicable.
     """
-    def _add_port_group_and_create_df(sample, port_group=None):
-        if port_group is not None:
-            for port_dict in sample[sample_df_key]:
-                port_dict[MongoDbConsts.PORT_GROUP_NAME] = port_group
-        return pd.DataFrame(sample[sample_df_key])
-
     df_list = []
     for sample_id, sample_or_groups in samples.items():
         # TODO: remove this if statement once the issue is fixed (keep only the else part)
@@ -194,21 +188,21 @@ def collect_all_samples_into_df_list(samples, sample_df_key, use_port_groups=Fal
             try:
                 if use_port_groups and sample_or_groups:
                     for port_group, sample in sample_or_groups.items():
-                        df = _add_port_group_and_create_df(sample, port_group)
+                        df = pd.DataFrame(sample[sample_df_key])
                         df_list.append(df)
                 else:
-                    df = _add_port_group_and_create_df(sample_or_groups)
+                    df = pd.DataFrame(sample_or_groups[sample_df_key])
                     df_list.append(df)
             except Exception as e:
-                df = _add_port_group_and_create_df(sample_or_groups)
+                df = pd.DataFrame(sample_or_groups[sample_df_key])
                 df_list.append(df)
         else:
             if use_port_groups and sample_or_groups:
                 for port_group, sample in sample_or_groups.items():
-                    df = _add_port_group_and_create_df(sample, port_group)
+                    df = pd.DataFrame(sample[sample_df_key])
                     df_list.append(df)
             else:
-                df = _add_port_group_and_create_df(sample_or_groups)
+                df = pd.DataFrame(sample_or_groups[sample_df_key])
                 df_list.append(df)
     return df_list
 
@@ -249,6 +243,7 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
     """
     counters_df = restructure_counters(validation_json)
     bw_df = restructure_bw(validation_json)
+    breakpoint()
     bw_counters_data = pd.merge(counters_df, bw_df, on=ValidationConsts.PORT)
     merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
     if not os_ports_name_mapping_df.empty:
