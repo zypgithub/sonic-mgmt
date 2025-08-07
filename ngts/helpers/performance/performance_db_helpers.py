@@ -243,7 +243,6 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
     """
     counters_df = restructure_counters(validation_json)
     bw_df = restructure_bw(validation_json)
-    breakpoint()
     bw_counters_data = pd.merge(counters_df, bw_df, on=ValidationConsts.PORT)
     merged_df = pd.merge(bw_counters_data, ports_group_df, on=ValidationConsts.PORT)
     if not os_ports_name_mapping_df.empty:
