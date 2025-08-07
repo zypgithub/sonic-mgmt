@@ -615,6 +615,7 @@ class NvuePerformanceCli(PerformanceCommon):
             if os.path.exists(file_path):
                 self.engine.copy_file(source_file=file_path,
                                       dest_file=file,
-                                      file_system=dir,
+                                      file_system='/tmp/',
                                       direction='put'
                                       )
+                self.engine.run_cmd(f"sudo mv /tmp/{file} {os.path.join(dir, file)}")
