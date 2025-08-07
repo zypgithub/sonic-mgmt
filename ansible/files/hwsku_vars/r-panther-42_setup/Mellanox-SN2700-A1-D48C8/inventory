@@ -1,9 +1,9 @@
 [sonic_latest]
 # MTR testbed r-panther-42 topologies
-r-panther-42 ansible_host=10.210.25.56  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
-r-panther-42-t0-56  ansible_host=10.210.25.56  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
-r-panther-42-ptf32   ansible_host=10.210.25.56  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
-r-panther-42-ptf-any   ansible_host=10.210.25.56  sonic_version=v2  sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
+r-panther-42 ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
+r-panther-42-t0-56  ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
+r-panther-42-ptf32   ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
+r-panther-42-ptf-any   ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1-D48C8 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
 
 r-panther-43 ansible_host=r-panther-43 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
 
@@ -29,8 +29,7 @@ r-panther-42-ptf-any
 
 [ptf]
 # r-panther-42 PTF host
-ptf-r-panther-42 ansible_host=10.215.34.121 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.215.34.121 ansible_host=10.215.34.121 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-r-panther-42 ansible_host=10.215.34.121 ansible_hostv6="2001:db8:1234:5678:a288:c2ff:fe86:3edc" ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-208-0-191 ansible_host=10.208.0.191 protocol=snmp

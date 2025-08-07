@@ -461,7 +461,7 @@ str-7260-10         ansible_host=10.251.0.13
 str-7260-11         ansible_host=10.251.0.234
 str-msn2700-02      ansible_host=10.251.0.235 os=sonic
 arc-switch1007      ansible_host=10.210.25.42 os=mellanox
-r-panther-08        ansible_host=10.210.25.122 os=mellanox
+r-panther-08        ansible_host=2001:db8:1234:5678:7efe:90ff:fe2c:65d0 os=mellanox
 r-leopard-80        ansible_host=10.210.24.166 os=mellanox
 r-panther-07        ansible_host=10.210.24.177 os=mellanox
 c-panther-02        ansible_host=10.75.67.34 os=mellanox

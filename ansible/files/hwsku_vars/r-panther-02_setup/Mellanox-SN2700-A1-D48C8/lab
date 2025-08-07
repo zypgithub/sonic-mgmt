@@ -1,5 +1,5 @@
 [sonic_latest]
-r-panther-02      ansible_host=10.210.26.20 ansible_hostv6="fe80::a288:c2ff:fe86:5c40" sonic_version=v2 hwsku="Mellanox-SN2700-A1-D48C8" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM3233
+r-panther-02 ansible_host="2001:db8:1234:5678:a288:c2ff:fe86:5c40" sonic_version=v2 hwsku="Mellanox-SN2700-A1-D48C8" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM3233
 
 [sonic:children]
 sonic_latest
@@ -15,4 +15,4 @@ fanout
 mgmt_subnet_mask_length="24"
 
 [fanout]
-r-panther-08        ansible_host=10.210.25.122 os=mellanox
+r-panther-08 ansible_host="2001:db8:1234:5678:7efe:90ff:fe2c:65d0" os=mellanox

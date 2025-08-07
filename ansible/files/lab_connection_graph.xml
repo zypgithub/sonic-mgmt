@@ -2555,10 +2555,10 @@
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.47/24"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="r-panther-08">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.122/24"/>
+      <ManagementIPInterface Name="ManagementIp" Prefix="2001:db8:1234:5678:7efe:90ff:fe2c:65d0"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="r-panther-43">
-      <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.55/24"/>
+      <ManagementIPInterface Name="ManagementIp" Prefix="2001:db8:1234:5678:7efe:90ff:fe58:e026"/>
     </DevicesL3Info>
     <DevicesL3Info Hostname="r-panther-41">
       <ManagementIPInterface Name="ManagementIp" Prefix="10.210.25.35/24"/>

@@ -243,6 +243,19 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                 # see the fix for 202505 https://github.com/sonic-net/sonic-host-services/pull/293
                 logger.info("Cleaning reboot-cause history to avoid timezone conflicts between versions")
                 cleanup_reboot_cause_history(topology_obj, setup_info)
+        # move the default docker dns server in sonic-mgmt container to the end of file /etc/resolv.conf
+        # for ipv6 setups, i.e. r-panther-02 and r-panther-42
+        if ":" in setup_info['duts'][0]['dut_ip']:
+            default_docker_dns_server = 'nameserver 127.0.0.11'
+            with open('/etc/resolv.conf', 'r') as f:
+                lines = f.readlines()
+            with open('/etc/resolv.conf', 'w') as f:
+                for line in lines:
+                    if default_docker_dns_server == line.strip():
+                        continue
+                    else:
+                        f.write(line)
+                f.write(default_docker_dns_server)
 
     except Exception as err:
         raise AssertionError(err)
