@@ -16,8 +16,9 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import SshAuthVerifier
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 NMX_CONTROLLER = 'nmx-controller'
 NMX_TELEMETRY = 'nmx-telemetry'
@@ -584,6 +585,38 @@ def test_ztp_provisioning_script_positive(engines, devices):
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        _ztp_cleanup(engines, system)
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_hashed_password(engines, devices, topology_obj):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Apply json file with hashed password script
+        3. Verify that SSH authentication is successful with hashed password
+    """
+    system = System(None)
+
+    try:
+        _run_system_ztp_with_empty_config(engines, system)
+
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
+
+        with allure.step("Running hashed password ztp provisioning script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_HASHED_PASSWORD,
+                                       '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Verify that SSH authentication is successful with hashed password"):
+            ssh_connection = SshAuthVerifier(username='sasha', password='sasha',
+                                             engines=engines, topology_obj=topology_obj)
+            ssh_connection.verify_authentication(True)
+
+    except Exception as e:
+        logger.info(f"Received Exception during test_ztp_hashed_password: {e}")
         raise e
     finally:
         _ztp_cleanup(engines, system)
