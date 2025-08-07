@@ -283,8 +283,14 @@ def _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold):
     if group_threshold is None:
         return None, None
     if isinstance(group_threshold, dict):
-        return group_threshold.get("tx"), group_threshold.get("rx")
+        return group_threshold.get(ValidationConsts.TX), group_threshold.get(ValidationConsts.RX)
     return group_threshold, group_threshold
+
+
+def _get_tc_occ_threshold(tc_occ_threshold, port_group_name):
+    if port_group_name in tc_occ_threshold:
+        return tc_occ_threshold[port_group_name]
+    return tc_occ_threshold
 
 
 def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
@@ -359,22 +365,24 @@ def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
                     )
 
 
-def get_ports_avg_bw(traffic_json):
+def get_ports_avg_bw(traffic_json, port_group_name):
     bw_samples = traffic_json[ValidationConsts.BW_SAMPLES]
-    samples = list(traffic_json[ValidationConsts.BW_SAMPLES].keys())
+    bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+    samples = list(bw_samples.keys())
     last_sample = bw_samples[samples[-1]]
-    bw_samples_stats = last_sample[ValidationConsts.BW_STATS]
+    bw_samples_stats = last_sample[port_group_name][ValidationConsts.BW_STATS]
     avg_ports_tx = bw_samples_stats[ValidationConsts.TX_BW_AVG]
     avg_ports_rx = bw_samples_stats[ValidationConsts.RX_BW_AVG]
     return avg_ports_tx, avg_ports_rx
 
 
-def get_tc_occ(traffic_json, tc_list, key=ValidationConsts.TC_OCC_AVG):
+def get_tc_occ(traffic_json, tc_list, port_group_name, key=ValidationConsts.OCC_AVG):
     tc_occ_dict = {}
-    tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+    tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
+    tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     samples = list(tc_samples.keys())
     last_sample = tc_samples[samples[-1]]
-    tc_df = last_sample[ValidationConsts.TC_DATAFRAME]
+    tc_df = last_sample[port_group_name][ValidationConsts.TC_DATAFRAME]
     for tc_dict in tc_df:
         tc_name = tc_dict[ValidationConsts.TC_NAME]
         if tc_name in tc_list:
@@ -388,78 +396,52 @@ def validate_bw_per_ports(traffic_json, bw_threshold, ports_list, violations_lis
     bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
 
     for sample_id, port_groups in bw_samples.items():
-        # TODO: remove this if statement once the issue is fixed (keep only the else part)
-        if is_redmine_issue_active([4545618])[0]:
-            try:
-                for port_group_name, port_group_data in port_groups.items():
-                    bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
-                    for port in ports_list:
-                        if port in bw_df[ValidationConsts.PORT].values:
-                            port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
-                            if bw_threshold == 0 and port_tx > bw_threshold:
-                                violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
-                                                       f"please check {sample_id}")
-                            if port_tx < bw_threshold:
-                                violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
-                                                       f"please check {sample_id}")
-            except Exception as e:
-                bw_sample = port_groups
-                bw_df = pd.DataFrame(bw_sample[ValidationConsts.BW_DATAFRAME])
-                for port in ports_list:
+        for port_group_name, port_group_data in port_groups.items():
+            bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
+            for port in ports_list:
+                if port in bw_df[ValidationConsts.PORT].values:
                     port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
                     if bw_threshold == 0 and port_tx > bw_threshold:
                         violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
-                                               f"please check {sample_id}")
+                                               f"please check {sample_id} in port group: {port_group_name}")
                     if port_tx < bw_threshold:
                         violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
-                                               f"please check {sample_id}")
-        else:
-            for port_group_name, port_group_data in port_groups.items():
-                bw_df = pd.DataFrame(port_group_data[ValidationConsts.BW_DATAFRAME])
-                for port in ports_list:
-                    if port in bw_df[ValidationConsts.PORT].values:
-                        port_tx = bw_df.loc[bw_df[ValidationConsts.PORT] == hex(literal_eval(port))].loc[:, ValidationConsts.TX_RATE].values[0]
-                        if bw_threshold == 0 and port_tx > bw_threshold:
-                            violations_list.append(f"Port {port} tx: {port_tx} > {bw_threshold}, "
-                                                   f"please check {sample_id}")
-                        if port_tx < bw_threshold:
-                            violations_list.append(f"Port {port} tx: {port_tx} < {bw_threshold}, "
-                                                   f"please check {sample_id}")
+                                               f"please check {sample_id} in port group: {port_group_name}")
 
 
 def validate_tc(traffic_json, tc_occ_threshold, violations_list):
     with allure.step(f"Validate all TC samples average occupancy is below {tc_occ_threshold} cells"):
-        tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+        tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-        higher_tc_samples = []
-        for sample_id, tc_sample in tc_samples.items():
-            tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
-            for tc_dict in tc_df:
-                tc_name = tc_dict[ValidationConsts.TC_NAME]
-                for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
-                    tc_occ = tc_dict[tc_occ_key]
-                    if tc_occ > tc_occ_th:
-                        higher_tc_samples.append(f"{sample_id} - {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
-                        with allure.step(f"Attach TC sample {sample_id}: {tc_dict}"):
-                            pass
-        if higher_tc_samples:
-            violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
-                                   f"please check {higher_tc_samples}")
+        for sample_id, port_groups in tc_samples.items():
+            for port_group_name, port_group_data in port_groups.items():
+                tc_df = port_group_data[ValidationConsts.TC_DATAFRAME]
+                for tc_dict in tc_df:
+                    tc_name = tc_dict[ValidationConsts.TC_NAME]
+                    tc_occ_threshold = _get_tc_occ_threshold(tc_occ_threshold, port_group_name)
+                    for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
+                        tc_occ = tc_dict[tc_occ_key]
+                        if tc_occ > tc_occ_th:
+                            violations_list.append(f"{sample_id},{port_group_name} - TC {tc_name} {tc_occ_key} {tc_occ} > {tc_occ_th} threshold")
+                            with allure.step(f"Attach TC sample {sample_id} in port group: {port_group_name}: {tc_dict}"):
+                                pass
 
 
 def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, tolerance, violations_list):
     with allure.step(f"Validate {tc_to_validate} TC samples occupancy rate is below {tc_occ_threshold} cells"):
-        tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+        tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         higher_tc_samples = []
-        for sample_id, tc_sample in tc_samples.items():
-            tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
-            for tc_dict in tc_df:
-                tc_name = tc_dict[ValidationConsts.TC_NAME]
-                if tc_name in tc_to_validate:
-                    for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
-                        tc_occ = tc_dict[tc_occ_key]
-                        validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key)
+        for sample_id, port_groups in tc_samples.items():
+            for port_group_name, port_group_data in port_groups.items():
+                tc_df = port_group_data[ValidationConsts.TC_DATAFRAME]
+                for tc_dict in tc_df:
+                    tc_name = tc_dict[ValidationConsts.TC_NAME]
+                    tc_occ_threshold = _get_tc_occ_threshold(tc_occ_threshold, port_group_name)
+                    if tc_name in tc_to_validate:
+                        for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
+                            tc_occ = tc_dict[tc_occ_key]
+                            validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key)
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
                                    f"please check {higher_tc_samples}")
@@ -505,38 +487,127 @@ def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_val
     This function is used to compare the TC occupancy to a reference TC occupancy
     :param traffic_json: current test validation json
     :param reference_json: reference validation json, can be from a previous test run or from a reference file
-    :param tc_keys: list of tc keys, i.e [ValidationConsts.TC_OCC_AVG, ValidationConsts.TC_OCC_MAX]
+    :param tc_keys: list of tc keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
     :param tc_to_validate: list of tc to validate, i.e [1, 2]
     :param allowed_deviation: allowed deviation from the reference TC occupancy, i.e +-1
     :param violations_list: list of violations
     """
     with allure.step(f"Compare TC occupancy to reference for {tc_to_validate}"):
-        tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+        tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-        for sample_id, tc_sample in tc_samples.items():
-            tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
-            for tc_dict in tc_df:
-                tc_name = tc_dict[ValidationConsts.TC_NAME]
-                if tc_name in tc_to_validate:
-                    for key in tc_keys:
-                        tc_occ = tc_dict[key]
-                        reference_tc_occ = get_tc_occ_from_traffic_json(reference_json, key, tc_name)
-                        min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
-                        if tc_occ < min_limit or tc_occ > max_limit:
-                            violations_list.append(f"TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
+        for sample_id, port_groups in tc_samples.items():
+            for port_group_name, port_group_data in port_groups.items():
+                tc_df = port_group_data[ValidationConsts.TC_DATAFRAME]
+                for tc_dict in tc_df:
+                    tc_name = tc_dict[ValidationConsts.TC_NAME]
+                    if tc_name in tc_to_validate:
+                        for key in tc_keys:
+                            tc_occ = tc_dict[key]
+                            reference_tc_occ = get_tc_occ_from_traffic_json(reference_json, port_group_name, key, tc_name)
+                            min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
+                            if tc_occ < min_limit or tc_occ > max_limit:
+                                violations_list.append(f"In sample {sample_id} for port group {port_group_name} - TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
 
 
-def get_tc_occ_from_traffic_json(traffic_json, tc_key, tc):
-    tc_samples = traffic_json[ValidationConsts.TC_SAMPLES]
+def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validate, allowed_deviation, violations_list):
+    """
+    This function is used to compare the PG occupancy to a reference PG occupancy
+    :param traffic_json: current test validation json
+    :param reference_json: reference validation json, can be from a previous test run or from a reference file
+    :param pg_keys: list of pg keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
+    :param pg_to_validate: list of pg to validate, i.e [1, 2]
+    :param allowed_deviation: allowed deviation from the reference PG occupancy, i.e +-1
+    :param violations_list: list of violations
+    """
+    with allure.step(f"Compare PG occupancy to reference for {pg_to_validate}"):
+        pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
+        pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+        for sample_id, port_groups in pg_samples.items():
+            for port_group_name, port_group_data in port_groups.items():
+                pg_df = port_group_data[ValidationConsts.PG_DATAFRAME]
+                for pg_dict in pg_df:
+                    pg_name = pg_dict[ValidationConsts.PG_NAME]
+                    if pg_name in pg_to_validate:
+                        for key in pg_keys:
+                            pg_occ = pg_dict[key]
+                            reference_pg_occ = get_pg_occ_from_traffic_json(reference_json, port_group_name, key, pg_name)
+                            min_limit, max_limit = reference_pg_occ - allowed_deviation, reference_pg_occ + allowed_deviation
+                            if pg_occ < min_limit or pg_occ > max_limit:
+                                violations_list.append(f"In sample {sample_id} for port group {port_group_name} - PG {pg_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {pg_occ}")
+
+
+def get_tc_occ_from_traffic_json(traffic_json, port_group_name, tc_key, tc):
+    tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
     tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     tc_occ = None
-    for sample_id, tc_sample in tc_samples.items():
-        tc_df = tc_sample[ValidationConsts.TC_DATAFRAME]
+    for sample_id, port_groups in tc_samples.items():
+        tc_df = port_groups[port_group_name][ValidationConsts.TC_DATAFRAME]
         for tc_dict in tc_df:
             tc_name = tc_dict[ValidationConsts.TC_NAME]
             if tc_name == tc:
                 tc_occ = tc_dict[tc_key]
     return tc_occ
+
+
+def get_pg_occ_from_traffic_json(traffic_json, port_group_name, pg_key, pg):
+    pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
+    pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+    pg_occ = None
+    for sample_id, port_groups in pg_samples.items():
+        pg_df = port_groups[port_group_name][ValidationConsts.PG_DATAFRAME]
+        for pg_dict in pg_df:
+            pg_name = pg_dict[ValidationConsts.PG_NAME]
+            if pg_name == pg:
+                pg_occ = pg_dict[pg_key]
+    return pg_occ
+
+
+def compare_latency_to_reference(traffic_json, reference_json, latency_keys, tc_to_validate, allowed_deviation, violations_list):
+    """
+    This function is used to compare the latency to a reference latency
+    :param traffic_json: current test validation json
+    :param reference_json: reference validation json, can be from a previous test run or from a reference file
+    :param latency_keys: list of latency keys, i.e [ValidationConsts.LATENCY_AVG, ValidationConsts.LATENCY_MAX]
+    :param latency_to_validate: list of latency to validate, i.e [1, 2]
+    :param allowed_deviation: allowed deviation from the reference latency, i.e +-1
+    :param violations_list: list of violations
+    """
+    with allure.step(f"Compare latency to reference for {tc_to_validate}"):
+        tc_samples = traffic_json[ValidationConsts.TC_LATENCY_SAMPLES]
+        tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+        for sample_id, port_groups in tc_samples.items():
+            for port_group_name, port_group_data in port_groups.items():
+                tc_df = port_group_data[ValidationConsts.TC_LATENCY_DATAFRAME]
+                for tc_dict in tc_df:
+                    tc_name = tc_dict[ValidationConsts.TC_NAME]
+                    if tc_name in tc_to_validate:
+                        for latency_attribute_to_compare in latency_keys:
+                            latency_value = tc_dict[latency_attribute_to_compare]
+                            reference_latency = get_latency_from_traffic_json(reference_json, port_group_name, latency_attribute_to_compare, tc_name)
+                            min_limit, max_limit = reference_latency - allowed_deviation, reference_latency + allowed_deviation
+                            if latency_value < min_limit or latency_value > max_limit:
+                                violations_list.append(f"In sample {sample_id} for port group {port_group_name} - TC {tc_name} {latency_attribute_to_compare} is not within reference comparison range {min_limit} - {max_limit}, current value: {latency_value}")
+
+
+def get_latency_from_traffic_json(traffic_json, port_group_name, tc_latency_key, tc):
+    """
+    This function is used to get the latency from the traffic json
+    :param traffic_json: current test validation json
+    :param port_group_name: port group name, i.e 'PortGroup1'
+    :param latency_key: latency key, i.e 'LatencyAvg'
+    :param tc: tc name, i.e 'TC1'
+    :return: latency occ
+    """
+    latency_samples = traffic_json[ValidationConsts.TC_LATENCY_SAMPLES]
+    latency_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+    latency_occ = None
+    for sample_id, port_groups in latency_samples.items():
+        latency_df = port_groups[port_group_name][ValidationConsts.TC_LATENCY_DATAFRAME]
+        for latency_dict in latency_df:
+            tc_latency_name = latency_dict[ValidationConsts.TC_NAME]
+            if tc_latency_name == tc:
+                latency_occ = latency_dict[tc_latency_key]
+    return latency_occ
 
 
 def validate_counters(traffic_json, skip_first_counters_iteration, ignore_counter_list, violations_list):
@@ -550,16 +621,14 @@ def validate_counters(traffic_json, skip_first_counters_iteration, ignore_counte
         violations_list (list): List to store any validation violations found
     """
     counters_samples = traffic_json[ValidationConsts.COUNTERS_SAMPLES]
-
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-
     # Remove the first counter sample if skip_first_counters_iteration is True
     if skip_first_counters_iteration:
         counters_samples.pop(next(iter(counters_samples)))
 
     # Process each counter sample
-    for sample_id, counters_sample in counters_samples.items():
-        validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list)
+    for sample_id, port_groups_samples in counters_samples.items():
+        validate_counters_sample(sample_id, port_groups_samples, ignore_counter_list, violations_list)
 
 
 def validate_counters_sample(sample_id, counters_sample, ignore_counter_list, violations_list):
@@ -572,16 +641,17 @@ def validate_counters_sample(sample_id, counters_sample, ignore_counter_list, vi
         ignore_counter_list (list): list of counters to ignore during validation
         violations_list (list): List to store any validation violations found
     """
-    counters_df = pd.DataFrame(counters_sample[ValidationConsts.COUNTERS_DATAFRAME])
+    for port_group_name, port_group_data in counters_sample.items():
+        counters_df = pd.DataFrame(port_group_data[ValidationConsts.COUNTERS_DATAFRAME])
 
-    ports_with_counters = counters_df.loc[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].any(axis=1), ValidationConsts.PORT].to_list()
-    counters_with_values = counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].columns[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].gt(0).any()].tolist()
-    counters_with_values = [counter for counter in counters_with_values if counter not in ignore_counter_list]
+        ports_with_counters = counters_df.loc[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].any(axis=1), ValidationConsts.PORT].to_list()
+        counters_with_values = counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].columns[counters_df.loc[:, counters_df.columns != ValidationConsts.PORT].gt(0).any()].tolist()
+        counters_with_values = [counter for counter in counters_with_values if counter not in ignore_counter_list]
 
-    if counters_with_values:
-        violations_list.append(f"Ports: {ports_with_counters} had one or more of the following counters:\n"
-                               f"{counters_with_values} with values > 0,\n "
-                               f"please check {sample_id}")
+        if counters_with_values:
+            violations_list.append(f"Ports: {ports_with_counters} had one or more of the following counters:\n"
+                                   f"{counters_with_values} with values > 0,\n "
+                                   f"please check {sample_id} for {port_group_name}")
 
 
 def is_ipv6(address):

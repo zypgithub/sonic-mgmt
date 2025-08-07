@@ -4,7 +4,7 @@ import os
 import json
 import random
 import re
-import time
+import pandas as pd
 from retry import retry
 from collections import defaultdict
 from infra.tools.exceptions.test_issue import TestIssue
@@ -12,13 +12,13 @@ from jsonmerge import merge
 import allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
-from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, PowerConsts, ValidationConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts, MongoDbConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict, generate_mac_range
 from ngts.helpers.config_db_utils import save_config_db_json
 from jinja2 import Environment, FileSystemLoader
-from ngts.helpers.performance.traffic_helpers import is_ipv6
+from ngts.helpers.performance.traffic_helpers import is_ipv6, pick_random_non_consecutive_ports
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
@@ -42,6 +42,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.service_ports = []
         self.sonic_to_sdk_ports_dict = {}
         self.sdk_to_sonic_ports_dict = {}
+        self.sonic_ports_aliases_dict = {}
         self.connected_ports, self.unconnected_ports = [], []
         self.mloops = []
         self.port_groups = {}
@@ -221,6 +222,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.sonic_to_sdk_ports_dict, self.sdk_to_sonic_ports_dict = self.get_sonic_to_sdk_port_mapping()
         self.add_ports_connectivity_to_dut(conf_args)
         self.port_groups = self.get_right_left_ports_dict()
+        self.sonic_ports_aliases_dict = self.cli_obj.interface.parse_ports_aliases_on_sonic()
 
     def disable_im_on_tg(self):
         """
@@ -330,6 +332,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.sonic_to_sdk_ports_dict, self.sdk_to_sonic_ports_dict = self.get_sonic_to_sdk_port_mapping()
         self.mloops = self.get_mloops_tuples_list()
         self.port_groups = self.get_right_left_ports_dict()
+        self.sonic_ports_aliases_dict = self.cli_obj.interface.parse_ports_aliases_on_sonic()
 
     def get_switch_role(self, sku):
         sku_by_chip_type = MRCConsts.HWSKU_BY_CHIP_TYPE[self.chip_type]
@@ -691,32 +694,16 @@ class SonicPerformanceCli(PerformanceCommon):
         left_ports = copy.deepcopy(ports["left_ports"])
         right_ports = copy.deepcopy(ports["right_ports"])
         egress_ports_num = num_of_ingress_ports // M
-        num_of_egress_ports_for_each_tg = egress_ports_num // 2
-        num_of_ingress_ports_for_each_tg = num_of_ingress_ports // 2
-        total_num_of_ports_for_each_tg = num_of_egress_ports_for_each_tg + num_of_ingress_ports_for_each_tg
-        plus_egress_ports_num = 0 if egress_ports_num % 2 == 0 else 1
-        left_start_index = random.randint(0, len(left_ports) - total_num_of_ports_for_each_tg - plus_egress_ports_num)
-        right_start_index = random.randint(0, len(right_ports) - total_num_of_ports_for_each_tg)
-        left_egress_ports_start_index = left_start_index
-        right_egress_ports_start_index = right_start_index
-        left_egress_ports_end_index = left_egress_ports_start_index + num_of_egress_ports_for_each_tg + plus_egress_ports_num
-        right_egress_ports_end_index = right_egress_ports_start_index + num_of_egress_ports_for_each_tg
-        left_ingress_ports_start_index = left_egress_ports_end_index
-        right_ingress_ports_start_index = right_egress_ports_end_index
-        left_ingress_ports_end_index = left_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
-        right_ingress_ports_end_index = right_ingress_ports_start_index + num_of_ingress_ports_for_each_tg
-        left_egress_ports, right_egress_ports = left_ports[left_egress_ports_start_index:left_egress_ports_end_index], \
-            right_ports[right_egress_ports_start_index:right_egress_ports_end_index]
-        left_ingress_ports, right_ingress_ports = left_ports[left_ingress_ports_start_index:left_ingress_ports_end_index], \
-            right_ports[right_ingress_ports_start_index:right_ingress_ports_end_index]
-        egress_ports = left_egress_ports + right_egress_ports
-        ingress_ports = left_ingress_ports + right_ingress_ports
+        left_start_index = random.randint(0, len(left_ports) - egress_ports_num)
+        right_start_index = random.randint(0, len(right_ports) - num_of_ingress_ports)
+        egress_ports = pick_random_non_consecutive_ports(left_ports, egress_ports_num, MRCConsts.EIGHT_X_SKIP_GAP)
+        ingress_ports = right_ports[right_start_index:right_start_index + num_of_ingress_ports]
         sdk_port_list_egress = self.cli_obj.performance.get_sdk_ports(egress_ports)
         sdk_port_list_ingress = self.cli_obj.performance.get_sdk_ports(ingress_ports)
         for port in sdk_port_list_egress:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.EGRESS_PORT_GROUP_NAME})
         for port in sdk_port_list_ingress:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.INGRESS_PORT_GROUP_NAME})
         return egress_ports, ingress_ports, port_group_df
 
     def validate_ets(self, interface_list, queues_list, violations_list):
@@ -737,3 +724,15 @@ class SonicPerformanceCli(PerformanceCommon):
                     if queue_counter_bytes != sum_queue_bytes * (queue_dwrr_weight / dwrr_weights_sum):
                         violations_list.append(f"Queue {queue} bytes: queue_counter_bytes {queue_counter_bytes} != sum_queue_bytes {sum_queue_bytes} * queue_dwrr_weight {queue_dwrr_weight} / dwrr_weights_sum {dwrr_weights_sum} for {interface}")
         return violations_list
+
+    def update_port_group_df_on_dut(self, port_group_df):
+        """
+        Convert list of dicts format [{"port":"0x101f1", "portGroupName": "uplink"},..]
+        to dict format {"uplink": [65777, 65778, ...], ...}
+        """
+        port_group_df_dict = self.convert_port_group_df_to_dict(port_group_df)
+        port_group_df_file = "conf.json"
+        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, port_group_df_file)
+        with open(full_path, 'w') as f:
+            json.dump(port_group_df_dict, f)
+        copy_files_to_syncd(self.engine, [port_group_df_file], PerfConsts.CONFIG_FILES_DIR, syncd_dir='/tmp')

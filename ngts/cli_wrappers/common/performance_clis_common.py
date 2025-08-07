@@ -1,7 +1,8 @@
 import logging
 import os
 import json
-from ngts.constants.performance_constants import PerfConsts
+import pandas as pd
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
 from infra.tools.exceptions.test_issue import TestIssue
 
 
@@ -253,6 +254,33 @@ class PerformanceCommon:
         output = self.execute_cmd(sensors_cmd)
         return output
 
+    def convert_port_group_df_to_dict(self, port_group_df):
+        """
+        Convert list of dicts format [{"port":"0x101f1", "portGroupName": "uplink"},..]
+        to dict format {"uplink": [all ports], ...} using pandas
+        """
+        df = pd.DataFrame(port_group_df)
+        port_group_df_dict = df.groupby(MongoDbConsts.PORT_GROUP_NAME)[ValidationConsts.PORT].apply(list).to_dict()
+        for port_group_name, ports in port_group_df_dict.items():
+            port_group_df_dict[port_group_name] = [int(port, PerfConsts.HEX_BASE) for port in ports]
+        return {ValidationConsts.PORT_GROUPS: port_group_df_dict}
+
+    def update_port_group_df_on_dut(self, port_group_df):
+        """
+        Convert list of dicts format [{"port":"0x101f1", "portGroupName": "uplink"},..]
+        to dict format {"uplink": [65777, 65778, ...], ...}
+        """
+        port_group_df_dict = self.convert_port_group_df_to_dict(port_group_df)
+        port_group_df_file = "conf.json"
+        full_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, port_group_df_file)
+        with open(full_path, 'w') as f:
+            json.dump(port_group_df_dict, f)
+        self.engine.copy_file(source_file=full_path,
+                              dest_file=port_group_df_file,
+                              file_system='/tmp',
+                              direction='put'
+                              )
+
     def retrieve_default_route(self):
         """
         Retrieve the default route on the the setup
@@ -293,5 +321,12 @@ class PerformanceCommon:
         """
         This method is used to configure the mac neighbor on the dut
         Implemented for SONiC only
+        """
+        pass
+
+    def copy_sdk_changes_to_dut(self):
+        """
+        This method is used to copy sdk changes
+        that are not yet on the sdk branch used by the OS to the dut
         """
         pass

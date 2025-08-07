@@ -200,7 +200,7 @@ def set_workload_traffic_parameters(cli_obj, traffic_parameters,
 
 def get_mrc_stream(player_alias, traffic_parameters, mrc_num_packets,
                    src_ports, dst_port, mrc_dscp, mrc_stream_name,
-                   packet_size=4096, payload=True):
+                   packet_size=MRCConsts.MRC_DATA_PACKET_SIZE, payload=True):
     traffic_parameters["num_packets"] = mrc_num_packets
     traffic_parameters["packet_size"] = packet_size
     mrc_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,

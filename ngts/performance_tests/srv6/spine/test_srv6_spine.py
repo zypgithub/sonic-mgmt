@@ -3,7 +3,8 @@ import allure
 import logging
 import pytest
 from ngts.helpers.performance.traffic_helpers import is_ipv6
-from ngts.helpers.performance.performance_setup_helpers import (add_test_mongo_metadata, skip_performance_test_conditionally)
+from ngts.helpers.performance.performance_setup_helpers import (add_test_mongo_metadata, skip_performance_test_conditionally,
+                                                                update_port_group_in_df)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
@@ -33,9 +34,10 @@ class TestSRv6Spine(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.configure_interfaces_mac_neighbor()
-        self.cli_object.performance.config_optimal_trimming_size(self.chip_type)
+        self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
+        self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
+        self.cli_object.trimming.configure_custom_dwrr_weights()
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_spine_round_robin_srv6(self, request, traffic_type):
@@ -63,6 +65,7 @@ class TestSRv6Spine(TestSRv6Base):
         round_robin_dict = MRCConsts.SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
         round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
         downstream_group1, downstream_group2, port_group_df = get_spine_downstream_groups_port_group_df(self.players, round_robin_ports_num, round_robin_groups_num)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME: f"spine-round-robin",
@@ -83,6 +86,9 @@ class TestSRv6Spine(TestSRv6Base):
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
         with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
             ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=get_ports_from_start)
+        sdk_ingress_ports = self.cli_object.performance.get_sdk_ports(ingress_ports)
+        port_group_df = update_port_group_in_df(port_group_df, "ingress_ports", sdk_ingress_ports)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"{ingress_ports_num}_to_one_traffic",
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
@@ -98,6 +104,7 @@ class TestSRv6Spine(TestSRv6Base):
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, M)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME: f"spine-many-to-few({len(ingress_ports)}-to-{len(egress_ports)})",

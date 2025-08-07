@@ -8,6 +8,7 @@ import pandas as pd
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, Validation, stop_traffic,
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata,
+                                                                update_port_group_in_df,
                                                                 skip_performance_test_conditionally, skip_test_on_unsupported_chip_type)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
@@ -46,6 +47,7 @@ class TestSRv6Leaf(TestSRv6Base):
         self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
         self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
+        self.cli_object.trimming.configure_custom_dwrr_weights()
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -55,7 +57,7 @@ class TestSRv6Leaf(TestSRv6Base):
             num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
             upstream, downstream, port_group_df = get_upstream_downstream_port_group_df(self.players, upstream_ports_num=num_of_ports,
                                                                                         downstream_ports_num=num_of_ports)
-            egress_ports = upstream + downstream
+            self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"bisection",
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
@@ -69,7 +71,6 @@ class TestSRv6Leaf(TestSRv6Base):
 
         with allure.step(f"Verifying the traffic for all egress ports"):
             additional_validations = self.get_additional_validations(traffic_type)
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
@@ -87,6 +88,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                                                                                          upstream_ports_num=round_robin_ports_num,
                                                                                                          downstream_ports_num=round_robin_ports_num,
                                                                                                          num_of_groups=round_robin_groups_num)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:
@@ -107,6 +109,9 @@ class TestSRv6Leaf(TestSRv6Base):
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
         with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
             ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=get_ports_from_start)
+        sdk_ingress_ports = self.cli_object.performance.get_sdk_ports(ingress_ports)
+        port_group_df = update_port_group_in_df(port_group_df, MRCConsts.INGRESS_PORT_GROUP_NAME, sdk_ingress_ports)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"{ingress_ports_num}_to_one_traffic",
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
@@ -124,6 +129,7 @@ class TestSRv6Leaf(TestSRv6Base):
         test_name = get_perf_test_name(request)
         num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
         egress_ports, ingress_ports, port_group_df = self.cli_object.performance.get_leaf_many_to_few_port_group_df(M, num_of_ports)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME: f"leaf-many-to-few",
@@ -145,6 +151,7 @@ class TestSRv6Leaf(TestSRv6Base):
         with allure.step(f"Set test correct port group dataframe"):
             bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df = victim_flow_port_group_df
             egress_ports = bisection_left + bisection_right + many_to_one_egress_ports
+            self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
             add_test_mongo_metadata(test_name, {MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type})
             allure.attach(pd.DataFrame(port_group_df).to_html(), MongoDbConsts.PORT_GROUP_DF, allure.attachment_type.HTML)
@@ -170,14 +177,14 @@ class TestSRv6Leaf(TestSRv6Base):
             run_traffic(self.players, self.scenario, many_to_one_traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
             additional_validations = self.get_victim_flow_additional_validations()
+            bw_threshold = self.get_victim_flow_bw_threshold()
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       run_validate_counters=False,
-                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      bw_threshold=bw_threshold,
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       samples_params_dict=samples_params_dict,
@@ -195,3 +202,16 @@ class TestSRv6Leaf(TestSRv6Base):
             'validate_per_tc': Validation(validate_per_tc, {'tc_occ_threshold': MRCConsts.OCC_TH_DICT, 'tc_to_validate': MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, 'tolerance': None})
         }
         return additional_validations
+
+    def get_victim_flow_bw_threshold(self):
+        bw_threshold = {
+            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
+                                               ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
+            MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
+                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
+            MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                                             ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
+            MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                                           ValidationConsts.RX: PerfConsts.SHAPER_VALUE}
+        }
+        return bw_threshold

@@ -605,3 +605,16 @@ class NvuePerformanceCli(PerformanceCommon):
         for port in sdk_port_list_ingress:
             port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
         return egress_ports, ingress_ports, port_group_df
+
+    def copy_sdk_changes_to_dut(self):
+        """
+        This method is used to copy sdk changes
+        that are not yet on the sdk branch used by the OS to the dut
+        """
+        for file_path, (dir, file) in PerfConsts.SDK_CHANGES_DICT.items():
+            if os.path.exists(file_path):
+                self.engine.copy_file(source_file=file_path,
+                                      dest_file=file,
+                                      file_system=dir,
+                                      direction='put'
+                                      )

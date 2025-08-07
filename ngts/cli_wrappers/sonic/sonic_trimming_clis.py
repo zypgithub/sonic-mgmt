@@ -3,8 +3,8 @@ import json
 import allure
 import logging
 import pandas as pd
-from ngts.helpers.performance.traffic_helpers import convert_to_percentage
 from ngts.helpers.system_helpers import copy_files_to_syncd
+from ngts.helpers.performance.traffic_helpers import convert_to_percentage
 from ngts.constants.constants import BugHandlerConst, InfraConst
 from ngts.constants.performance_constants import PerfConsts, MRCConsts, ValidationConsts
 from ngts.cli_wrappers.common.trimming_clis_common import TrimmingCommon
@@ -98,6 +98,22 @@ class SonicTrimmingCli(TrimmingCommon):
                              f"--dscp {MRCConsts.MRC_TRIMMED_DSCP} "
                              f"--queue {MRCConsts.MRC_TRIMMED_TC}")
 
+    def validate_trimming_counters(self, interface_list, queues_list, violations_list):
+        """
+        validate that trimming counters are set correctly for all interfaces
+        :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
+        :param queues_list: list of queues, i.e [1, 2]
+        :param violations_list: list of violations
+        """
+        for interface in interface_list:
+            queuestat_dict = self.cli_obj.interface.parse_port_queuestat(interface)
+            logging.info(f"queuestat for {interface}:\n{queuestat_dict}")
+            for queue in queues_list:
+                queue_trimmed_pkts, queue_drop_pkts = self.cli_obj.interface.get_trimming_counters(queuestat_dict, queue)
+                were_trimmed_packet_dropped = queue_drop_pkts - queue_trimmed_pkts > 0
+                if were_trimmed_packet_dropped:
+                    violations_list.append(f"Dropped packets detected on queue {queue} for {interface}")
+
     def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
         """
         validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
@@ -123,7 +139,7 @@ class SonicTrimmingCli(TrimmingCommon):
                                                                                                                                                                                                     total_drop_queue_counter_pkts_bytes, total_packets_egress_port_dropped_bytes)
                     total_packets_egress_port = total_drop_queue_counter_pkts + total_packets_egress_port_dropped
                     trimming_queue_counter_pkts, trimming_queue_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, trimming_queue)
-                    trimming_queue_counter_pkts_bytes, trimming_queue_drop_pkts_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, trimming_queue, PerfConsts.PACKET_SIZE_4K)
+                    trimming_queue_counter_pkts_bytes, trimming_queue_drop_pkts_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, trimming_queue, MRCConsts.MRC_DATA_PACKET_SIZE)
                     total_packets_egress_port_bytes = total_drop_queue_counter_pkts_bytes + trimming_queue_counter_pkts_bytes
                     dropped_without_trimming = total_packets_egress_port_dropped - trimming_queue_counter_pkts
                     if dropped_without_trimming > 0:
@@ -135,6 +151,7 @@ class SonicTrimmingCli(TrimmingCommon):
                     trimming_percentage = convert_to_percentage(trimming_queue_counter_pkts / total_packets_egress_port)
                     trimming_bytes_percentage = convert_to_percentage(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
                     queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: interface,
+                                                     ValidationConsts.OS_PORT_ALIAS: self.cli_obj.performance.sonic_ports_aliases_dict[interface],
                                                      ValidationConsts.UNTRIMMED_PERCENTAGE: untrimmed_percentage,
                                                      ValidationConsts.TRIMMING_PERCENTAGE: trimming_percentage,
                                                      ValidationConsts.DROPPED_WITHOUT_TRIMMING_PERCENTAGE: dropped_without_trimming_percentage,
@@ -156,7 +173,7 @@ class SonicTrimmingCli(TrimmingCommon):
                               queue_pkts_counter, queue_drop_pkts_counter,
                               queue_pkts_bytes_counter, queue_dropped_bytes_counter):
         queue_pkts, queue_drop = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
-        queue_bytes, queue_drop_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
+        queue_bytes, queue_drop_bytes = self.cli_obj.interface.get_counters_for_queue_bytes(show_queue_counters_dict, queue, MRCConsts.MRC_DATA_PACKET_SIZE)
         queue_pkts_counter += queue_pkts
         queue_drop_pkts_counter += queue_drop
         queue_pkts_bytes_counter += queue_bytes
@@ -193,3 +210,9 @@ class SonicTrimmingCli(TrimmingCommon):
             opt_ts = os.environ.get("OPT_TS", default=MRCConsts.OPT_TS_DEFAULT)
             self.cli_obj.trimming.enable_trimming_on_lossy_queue()
             self.cli_obj.trimming.configure_trimming_size(opt_ts)
+            self.enable_trimming_counterpoll()
+
+    def enable_trimming_counterpoll(self):
+        for entity in MRCConsts.TRIMMING_COUNTERPOLL_LIST:
+            self.cli_obj.counterpoll.enable_counterpoll(entity)
+            self.cli_obj.counterpoll.set_counterpoll_interval(entity, MRCConsts.TRIMMING_COUNTERPOLL_INTERVAL)

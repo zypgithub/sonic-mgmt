@@ -1,33 +1,4 @@
 {
-    "BUFFER_PROFILE": {
-        "egress_lossy_profile": {
-            "dynamic_th": "0"
-        },
-        "queue1_downlink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue1_uplink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue2_downlink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue2_uplink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue3_downlink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue3_uplink_lossy_profile": {
-            "dynamic_th": "-6"
-        },
-        "queue4_downlink_lossy_profile": {
-            "dynamic_th": "1"
-        },
-        "queue4_uplink_lossy_profile": {
-            "dynamic_th": "1"
-        }
-    },
     "SCHEDULER": {
         "scheduler_q1_downlink": {
             "type": "DWRR",

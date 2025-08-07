@@ -844,3 +844,18 @@ class SonicInterfaceCli(InterfaceCliCommon):
             queue_counter_bytes, queue_counter_drop_bytes = self.get_counters_for_queue_bytes(show_queue_counters_dict, queue, PerfConsts.PACKET_SIZE_4K)
             sum_queue_bytes += queue_counter_bytes
         return sum_queue_bytes
+
+    def parse_port_queuestat(self, interface):
+        """
+        parse port queuestat
+        :param interface: port name, i.e Ethernet111
+        :return: dictionary, example:
+        """
+        show_interface_queuestat_output = self.engine.run_cmd(f"sudo queuestat -p {interface}")
+        return generic_sonic_output_parser(show_interface_queuestat_output, headers_ofset=2, len_ofset=3,
+                                           data_ofset_from_start=4, data_ofset_from_end=None, column_ofset=2, output_key='TxQ')
+
+    def get_trimming_counters(self, queuestat_dict, queue):
+        queue_trimmed_pkts = int(queuestat_dict[f"UC{queue}"]["Trim/pkts"].replace(",", ""))
+        queue_drop_pkts = int(queuestat_dict[f"UC{queue}"]["Drop/pkts"].replace(",", ""))
+        return queue_trimmed_pkts, queue_drop_pkts

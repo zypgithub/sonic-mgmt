@@ -7,7 +7,7 @@ import pytest
 from datetime import datetime
 from ngts.helpers.general_helper import get_pytest_test_name
 from ngts.constants.constants import BugHandlerConst, CliType
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
 from infra.tools.exceptions.test_issue import TestIssue
@@ -384,3 +384,16 @@ def get_topology_obj(players):
 
 def create_acl_dump(players):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_acl_dump()
+
+
+def update_port_group_in_df(port_group_df, port_group_name, port_list):
+    """
+    Update the port group dataframe with the port list
+    :param port_group_df: port group dataframe, i.e [{"port": "1", "port_group_name": "left"}, {"port": "2", "port_group_name": "right"}]
+    :param port_group_name: port group name, i.e "left" or "right"
+    :param port_list: port list, i.e ["1", "2"]
+    :return: port group dataframe, i.e [{"port": "1", "port_group_name": "left"}, {"port": "2", "port_group_name": "left"}, {"port": "3", "port_group_name": "right"}]
+    """
+    for port in port_list:
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: port_group_name})
+    return port_group_df

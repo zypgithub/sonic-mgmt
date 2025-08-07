@@ -20,15 +20,29 @@ class Cl_Consts:
 
 
 class ValidationConsts:
+    PORT_GROUPS = "port_groups"
     TC_DATAFRAME = "tc_dataframe"
+    PG_DATAFRAME = "pg_dataframe"
+    TC_PG_SAMPLES = "TC_PG_samples"
     TC_SAMPLES = "TC_samples"
     TC_NAME = "tc"
-    TC_OCC_AVG = "occAvg"
-    TC_OCC_99 = "occ99"
-    TC_OCC_MAX = "occMax"
-    TC_MAX_WATERMARK = "maxWatermark"
+    PG_NAME = "pg"
+    OCC_AVG = "occAvg"
+    OCC_99 = "occ99"
+    OCC_MAX = "occMax"
+    MAX_WATERMARK = "maxWatermark"
     TX_RATE = "txRate"
     RX_RATE = "rxRate"
+    TC_LATENCY_SAMPLES = "TC_latency_samples"
+    TC_LATENCY_DATAFRAME = "tc_latency_dataframe"
+    TC_AVG_LATENCY = "tcAvgLatency"
+    TC_MAX_LATENCY = "tcMaxLatency"
+    TC_99_LATENCY = "tc99Latency"
+    DATAFRAME_KEYS_DICT = {
+        TC_LATENCY_DATAFRAME: [TC_AVG_LATENCY, TC_MAX_LATENCY, TC_99_LATENCY],
+        TC_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK],
+        PG_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK]
+    }
     COUNTERS_SAMPLES = "Counters_samples"
     SAMPLES_PARAMS = "sample_params"
     COUNTERS_DATAFRAME = "counters_dataframe"
@@ -39,8 +53,13 @@ class ValidationConsts:
     RX_BW_AVG = 'rx_avg'
     TX_RATE_MIN = 'min_tx_bw'
     RX_RATE_MIN = 'min_rx_bw'
+    TX = 'tx'
+    RX = 'rx'
     PORT = "port"
+    QUEUE = "queue"
+    ACL = "acl"
     OS_PORT_NAME = "osPortName"
+    OS_PORT_ALIAS = "osPortAlias"
     OS_PORTS_NAME_MAPPING_DATAFRAME = "osPortsNameMappingDataframe"
     UNTRIMMED_PERCENTAGE = "untrimmedPercentage"
     TRIMMING_PERCENTAGE = "trimmingPercentage"
@@ -74,9 +93,9 @@ class PerfConsts:
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SHAPER_VALUE = 0.99
     OCC_AVG_TH = 400
-    TC_NUM = 6 if is_redmine_issue_active([4393276])[0] else 7
+    TC_NUM = 7
     # Thresholds
-    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: OCC_AVG_TH}
+    OCC_TH_DICT = {ValidationConsts.OCC_AVG: OCC_AVG_TH}
     TEMPERATURE_TH = 105
     LOW_AR_THRESHOLD = 190
     MED_AR_THRESHOLD = 800
@@ -90,9 +109,20 @@ class PerfConsts:
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
     REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
+    SDK_CHANGES_DIR = os.path.join(REQUIRMENTS_DIR, 'sdk_changes/')
     SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-11-2-amd64/"
     SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
+    SDK_VALIDATOR_DIR = "/root/sys_sdk/sx_sdk_py_tests/tests/multi_os_tests/"
+    SDK_VALIDATOR_FILE = "multi_nos_validator.py"
+    SDK_VALIDATOR_FILE_PATH = os.path.join(SDK_CHANGES_DIR, SDK_VALIDATOR_FILE)
+    SDK_CONSTANTS_DIR = "/root/sys_sdk/sx_sdk_py_tests/libs/base_classes/multi_nos/"
+    SDK_CONSTANTS_FILE = "multi_os_constants.py"
+    SDK_CONSTANTS_FILE_PATH = os.path.join(SDK_CHANGES_DIR, SDK_CONSTANTS_FILE)
+    SDK_CHANGES_DICT = {
+        SDK_VALIDATOR_FILE_PATH: (SDK_VALIDATOR_DIR, SDK_VALIDATOR_FILE),
+        SDK_CONSTANTS_FILE_PATH: (SDK_CONSTANTS_DIR, SDK_CONSTANTS_FILE)
+    }
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"
     LATEST_SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/lastrc_{SDK_BRANCH}/DEBS/"
@@ -289,6 +319,8 @@ class MongoDbConsts:
     PORT_GROUP_DF = "portGroupDataframe"
     BW_COUTERS_DATA = "bandwidthCountersData"
     TC_DATA = "tcData"
+    PG_DATA = "pgData"
+    TC_LATENCY_DATA = "tcLatencyData"
     TEMP_DATA = "temperatureData"
     TEST_NAME = "testName"
     TEST_WORKLOAD = "testWorkload"
@@ -316,11 +348,26 @@ class MongoDbConsts:
 
 
 class MRCConsts:
+    EIGHT_X_SKIP_GAP = 8
+    FOUR_X_SKIP_GAP = 4
+    TRIMMING_COUNTERPOLL_LIST = [ValidationConsts.PORT, ValidationConsts.QUEUE, ValidationConsts.ACL]
+    TRIMMING_COUNTERPOLL_INTERVAL = 1000
+    LATENCY_ALLOWED_DEVIATION = 59
+    HEADROOM_ALLOWED_DEVIATION = 4
+    MRC_DATA_PACKET_SIZE = 4234
+    EGRESS_PORT_GROUP_NAME = "egress_ports"
+    INGRESS_PORT_GROUP_NAME = "ingress_ports"
+    BISECTION_DOWNSTREAM_PORT_GROUP_NAME = "bisection_downstream"
+    BISECTION_UPSTREAM_PORT_GROUP_NAME = "bisection_upstream"
+    LEAF_ROUND_ROBIN_UPSTREAM_PORT_GROUP_NAME = "round_robin_upstream"
+    LEAF_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_NAME = "round_robin_downstream"
+    SPINE_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_1_NAME = "round_robin_downstream_group_1"
+    SPINE_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_2_NAME = "round_robin_downstream_group_2"
     MAX_INCAST_WITHOUT_TRIMMING_DROP = 10
     INCAST_VALUE_WITH_TRIMMING_DROP = MAX_INCAST_WITHOUT_TRIMMING_DROP + 1
-    TC_1_2_3_ALPHA = 1
-    MIN_INGRESS_PORTS_NUM = 4
-    MAX_INGRESS_PORTS_NUM = 5
+    TC_1_2_3_ALPHA = 1 / 64
+    MIN_INGRESS_PORTS_NUM = 9
+    MAX_INGRESS_PORTS_NUM = 10
     INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM))
     HWSKU_BY_CHIP_TYPE = {
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
@@ -369,19 +416,22 @@ class MRCConsts:
         "SPC5": SPC5_POOL_SIZE_CELLS,
         "SPC4": SPC4_POOL_SIZE_CELLS
     }
-    HALF_MRC_DATA_PACKET_SIZE = 11
-    FULL_MRC_DATA_PACKET_SIZE = 22
-    MANY_TO_ONE_MAX_QUEUE_BUILDUP = HALF_MRC_DATA_PACKET_SIZE * 260
-    MAX_PACKETS_IN_QUEUE_LEAF = 54
-    MAX_PACKETS_IN_QUEUE_SPINE = 68
-    MANY_TO_FEW_MAX_QUEUE_BUILDUP_LEAF = (MAX_PACKETS_IN_QUEUE_LEAF * PerfConsts.PACKET_SIZE_4K) / BUFFER_CELL_SIZE
-    MANY_TO_FEW_MAX_QUEUE_BUILDUP_SPINE = (MAX_PACKETS_IN_QUEUE_SPINE * PerfConsts.PACKET_SIZE_4K) / BUFFER_CELL_SIZE
+    FULL_MRC_DATA_PACKET_SIZE = 23
+    HALF_MRC_DATA_PACKET_SIZE = FULL_MRC_DATA_PACKET_SIZE / 2
+    MANY_TO_ONE_MAX_QUEUE_BUILDUP = FULL_MRC_DATA_PACKET_SIZE * 260
+    MAX_PACKETS_IN_QUEUE_LEAF = 55
+    MAX_PACKETS_IN_QUEUE_SPINE = 65
+    MANY_TO_FEW_MAX_QUEUE_BUILDUP_LEAF = (MAX_PACKETS_IN_QUEUE_LEAF * MRC_DATA_PACKET_SIZE) / BUFFER_CELL_SIZE
+    MANY_TO_FEW_MAX_QUEUE_BUILDUP_SPINE = (MAX_PACKETS_IN_QUEUE_SPINE * MRC_DATA_PACKET_SIZE) / BUFFER_CELL_SIZE
 
-    MANY_TO_ONE_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: MANY_TO_ONE_MAX_QUEUE_BUILDUP}
-    SPINE_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: MANY_TO_FEW_MAX_QUEUE_BUILDUP_SPINE}
-    LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {ValidationConsts.TC_MAX_WATERMARK: MANY_TO_FEW_MAX_QUEUE_BUILDUP_LEAF}
-    OCC_TH_DICT = {ValidationConsts.TC_OCC_AVG: HALF_MRC_DATA_PACKET_SIZE,
-                   ValidationConsts.TC_OCC_99: FULL_MRC_DATA_PACKET_SIZE}
+    MANY_TO_ONE_TRAFFIC_TC_OCC_TH = {EGRESS_PORT_GROUP_NAME: {ValidationConsts.MAX_WATERMARK: MANY_TO_ONE_MAX_QUEUE_BUILDUP},
+                                     INGRESS_PORT_GROUP_NAME: {}}
+    SPINE_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {EGRESS_PORT_GROUP_NAME: {ValidationConsts.MAX_WATERMARK: MANY_TO_FEW_MAX_QUEUE_BUILDUP_SPINE},
+                                           INGRESS_PORT_GROUP_NAME: {}}
+    LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH = {EGRESS_PORT_GROUP_NAME: {ValidationConsts.MAX_WATERMARK: MANY_TO_FEW_MAX_QUEUE_BUILDUP_LEAF},
+                                          INGRESS_PORT_GROUP_NAME: {}}
+    OCC_TH_DICT = {ValidationConsts.OCC_AVG: HALF_MRC_DATA_PACKET_SIZE,
+                   ValidationConsts.OCC_99: FULL_MRC_DATA_PACKET_SIZE}
     MAX_WATERMARK_BY_ALPHA_TOLERANCE = 0.1
     ECN_COUNTERS = [f'tx_ecn_marked_tc_{tc}' for tc in range(PerfConsts.TC_NUM)]
     COUNTERS_WITH_ECN = PerfConsts.COUNTERS + ECN_COUNTERS
@@ -408,7 +458,9 @@ class MRCConsts:
     MRC1_DATA_TC = '1'
     MRC2_DATA_TC = '2'
     MRC_RETRANSMISSION_TC = '3'
+    PG_LIST = [0]
     TRIMMING_ELEGABLE_QUEUE_NUM = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC)]
+    TRIMMING_QUEUE_NUM = [int(TRIMMING_TC)]
     MRC_CONTROL_TC = '4'
     GFP_DATA_TC = '5'
     WORKLOAD_1_TC_LIST = [int(MRC1_DATA_TC), int(MRC2_DATA_TC), int(MRC_RETRANSMISSION_TC), int(TRIMMING_TC)]

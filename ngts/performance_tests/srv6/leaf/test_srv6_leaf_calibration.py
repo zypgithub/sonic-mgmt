@@ -11,7 +11,7 @@ import numpy as np
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig,
                                                                 configure_mloops, stop_traffic,
                                                                 run_traffic, run_validation,
-                                                                add_test_mongo_metadata)
+                                                                add_test_mongo_metadata, update_port_group_in_df)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
@@ -42,9 +42,10 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = self.cli_object.performance.get_dut_interfaces_ipv6_configuration()
         self.vlan_interface_configuration_dict = self.tg_cli_object.performance.get_tg_interfaces_vlan_configuration()
-        self.configure_interfaces_mac_neighbor()
+        self.cli_object.performance.configure_interfaces_mac_neighbor(self.vlan_interface_configuration_dict)
         self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
+        self.cli_object.trimming.configure_custom_dwrr_weights()
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
@@ -52,9 +53,8 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                                               packet_size=4096):
         pytest.skip("This test is not running in regression, only used for manual calibration of OPT_TS")
         egress_ports, port_group_df = self.get_egress_port_group_df(port_number=8)
-
-        self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
-        self.cli_object.trimming.configure_trim_of_all_packets(ports=egress_ports, queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, scenario=self.scenario)
+        self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
+        self.cli_object.trimming.configure_trim_of_all_packets(ports=egress_ports, queues=MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, scenario=self.scenario)
         self.cli_object.trimming.enable_trimming_on_lossy_queue()
         self.cli_object.trimming.disable_packets_aging()
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
@@ -65,6 +65,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type})
         comparison_value_dict = {}
         total_violations_list = []
+        data_df = []
         with allure.step(f"Start to find optimal trimming size in range {MRCConsts.MINIMAL_TRIM_SIZE} - {MRCConsts.MAX_TRIM_SIZE_CHECKING_RANGE} with step 16"):
             for trimming_size in range(MRCConsts.MINIMAL_TRIM_SIZE, MRCConsts.MAX_TRIM_SIZE_CHECKING_RANGE + 1, 16):
                 with allure.step(f"Set trimming size to {trimming_size}"):
@@ -88,7 +89,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                         config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                                   chip_type=self.chip_type,
                                                   run_validate_counters=False,
-                                                  bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                                  bw_threshold=None,
                                                   tc_occ_threshold=None,
                                                   power_threshold=self.power_thresholds_by_chip_type)
                         traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
@@ -100,9 +101,22 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                                                      f"ingress ports number: {total_ingress_ports_num}")
                         total_violations_list.extend(violations_list)
                         stop_traffic(self.players)
-                        self.cli_object.performance.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                                   drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
-                                                                                                   violations_list=total_violations_list)
+                        queue_packet_percentages_dict = self.cli_object.performance.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                                                                   drop_queues=MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
+                                                                                                                                   violations_list=total_violations_list, return_dict=True)
+                        queue_packet_percentages_dict['trimming_size'] = trimming_size
+                        queue_packet_percentages_dict['comparison_value'] = comparison_value
+                        queue_packet_percentages_dict['ingress_ports_num'] = total_ingress_ports_num
+                        queue_packet_percentages_dict['egress_ports_num'] = len(egress_ports)
+                        avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json, MRCConsts.EGRESS_PORT_GROUP_NAME)
+                        tc_occ_dict = get_tc_occ(traffic_validation_json, tc_list=MRCConsts.WORKLOAD_1_TC_LIST, port_group_name=MRCConsts.EGRESS_PORT_GROUP_NAME)
+                        queue_packet_percentages_dict['avg_ports_tx'] = convert_to_percentage(avg_ports_tx)
+                        queue_packet_percentages_dict['avg_ports_rx'] = convert_to_percentage(avg_ports_rx)
+                        queue_packet_percentages_dict.update(tc_occ_dict)
+                        data_df.append(queue_packet_percentages_dict)
+        trimming_df = pd.DataFrame(data_df)
+        with allure.step(f"Attach trimming_df"):
+            allure.attach(trimming_df.to_html(), "Trimming dataframe", attachment_type=allure.attachment_type.HTML)
         self.set_opt_ts(comparison_value_dict)
         if total_violations_list:
             raise TestIssue("\n".join(total_violations_list))
@@ -113,7 +127,6 @@ class TestSRv6LeafCalibration(TestSRv6Base):
     def test_leaf_srv6_trimming_many_to_one_for_experiments(self, request, traffic_type, workload, ingress_port_sequence):
         pytest.skip("This test is not running in regression, only used for manual calibration of many to one ingress ports num")
         test_name = get_perf_test_name(request)
-        self.cli_object.trimming.configure_custom_dwrr_weights()
         data_df = []
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=True)
         with allure.step(f"Set test info"):
@@ -123,6 +136,9 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         for ingress_ports_num in range(2, 12):
             with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
                 ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=True)
+                sdk_ingress_ports = self.cli_object.performance.get_sdk_ports(ingress_ports)
+                update_port_group_in_df(port_group_df, MRCConsts.INGRESS_PORT_GROUP_NAME, sdk_ingress_ports)
+                self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
                 traffic_jsons = get_many_to_one_traffic(self.players, self.conf_args, traffic_type,
                                                         self.dut_interfaces_ipv6_configuration_dict,
                                                         egress_port, ingress_ports,
@@ -137,20 +153,19 @@ class TestSRv6LeafCalibration(TestSRv6Base):
                 with allure.step(f"Run traffic"):
                     run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
                 with allure.step(f"Verifying the traffic on egress port: {egress_port}"):
-                    self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_port)
                     samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
                     samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
                     config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                               chip_type=self.chip_type,
                                               run_validate_counters=False,
-                                              bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
-                                              tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
+                                              bw_threshold=None,
+                                              tc_occ_threshold=None,
                                               power_threshold=self.power_thresholds_by_chip_type,
                                               samples_params_dict=samples_params_dict)
                     traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
                     traffic_validation_json = traffic_validation_jsons_list.pop()
-                    avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
-                    tc_occ_dict = get_tc_occ(traffic_validation_json, tc_list=MRCConsts.WORKLOAD_1_TC_LIST)
+                    avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json, MRCConsts.EGRESS_PORT_GROUP_NAME)
+                    tc_occ_dict = get_tc_occ(traffic_validation_json, tc_list=MRCConsts.WORKLOAD_1_TC_LIST, port_group_name=MRCConsts.EGRESS_PORT_GROUP_NAME)
                 with allure.step(f"avg ports tx: {avg_ports_tx}, avg ports rx: {avg_ports_rx}, tc_occ_dict: {tc_occ_dict}"):
                     logger.info(f"avg ports tx: {avg_ports_tx}, avg ports rx: {avg_ports_rx}, tc_occ_dict: {tc_occ_dict}")
                 with allure.step(f"Stop traffic"):
@@ -175,7 +190,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
             raise TestIssue("\n".join(total_violations_list))
 
     def get_comparison_value(self, traffic_validation_json, trimming_size):
-        avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
+        avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json, port_group_name=MRCConsts.EGRESS_PORT_GROUP_NAME)
         with allure.step(f"Get comparison value for trimming size: {trimming_size}, avg ports tx: {avg_ports_tx}, avg ports rx: {avg_ports_rx}"):
             comparison_value = avg_ports_tx * 158 / trimming_size
         return comparison_value

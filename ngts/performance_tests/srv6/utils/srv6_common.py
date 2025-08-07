@@ -9,10 +9,10 @@ import re
 import numpy as np
 import time
 import pandas as pd
-from ngts.helpers.performance.traffic_helpers import (get_ports_avg_bw,
-                                                      pick_random_non_consecutive_ports,
+from ngts.helpers.performance.traffic_helpers import (pick_random_non_consecutive_ports,
                                                       pick_random_consecutive_ports,
-                                                      validate_per_tc, compare_tc_occ_to_reference)
+                                                      validate_per_tc, compare_tc_occ_to_reference,
+                                                      compare_latency_to_reference, compare_pg_to_reference)
 from ngts.helpers.performance.performance_setup_helpers import (Validation, ValidationConfig, run_traffic,
                                                                 stop_traffic, run_validation, configure_mloops,
                                                                 skip_test_on_unsupported_os, add_test_mongo_metadata)
@@ -60,9 +60,8 @@ class TestSRv6Base:
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         with allure.step(f"Verifying round-robin traffic pattern on all upstream ports and all downstream ports"):
             half_ports_num = len(all_ports_in_test) // 2
-            round_robin_occ_th_dict = {ValidationConsts.TC_OCC_AVG: 11 * half_ports_num,
-                                       ValidationConsts.TC_OCC_99: 22 * half_ports_num}
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=all_ports_in_test)
+            round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
+                                       ValidationConsts.OCC_99: 22 * half_ports_num}
             additional_validations = self.get_additional_validations(traffic_type)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
@@ -102,21 +101,7 @@ class TestSRv6Base:
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
             additional_validations = self.get_many_to_one_additional_validations(traffic_type)
-            with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress ports"):
-                self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=ingress_ports)
-                config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                          chip_type=self.chip_type,
-                                          run_validate_counters=False,
-                                          bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
-                                          validate_bw_rx=False,
-                                          tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
-                                          power_threshold=self.power_thresholds_by_chip_type,
-                                          samples_params_dict=samples_params_dict)
-                traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
-                traffic_validation_json = traffic_validation_jsons_list.pop()
-                avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
-            with allure.step(f"Verifying the traffic on egress port: {egress_port}"):
-                self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_port)
+            with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress/egress ports"):
                 bw_threshold = self.get_many_to_one_bw_threshold(traffic_type)
                 config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                           chip_type=self.chip_type,
@@ -137,8 +122,6 @@ class TestSRv6Base:
                                                                                                                                 drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
                                                                                                                                 violations_list=violations_list)
                 add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
-            if avg_ports_rx < PerfConsts.SHAPER_VALUE:
-                violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 
@@ -158,28 +141,15 @@ class TestSRv6Base:
             run_traffic(self.players, self.scenario, traffic_jsons)
         samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
         samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
-        additional_validations = self.get_many_to_few_additional_validations(egress_ports)
-        with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress ports"):
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=ingress_ports)
+        bw_threshold = self.get_many_to_few_bw_threshold(traffic_type)
+        additional_validations = self.get_many_to_few_additional_validations(egress_ports, tc_threshold)
+        with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress/egress ports"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       run_validate_counters=False,
-                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      bw_threshold=bw_threshold,
                                       validate_bw_rx=False,
-                                      tc_occ_threshold=tc_threshold,
-                                      power_threshold=self.power_thresholds_by_chip_type,
-                                      samples_params_dict=samples_params_dict)
-            traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True, attach_to_allure=False)
-            traffic_validation_json = traffic_validation_jsons_list.pop()
-            avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json)
-        with allure.step(f"Verifying the traffic on selected {len(egress_ports)} egress ports"):
-            self.cli_object.performance.add_ports_connectivity_to_dut(self.conf_args, selected_connected_ports=egress_ports)
-            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                      chip_type=self.chip_type,
-                                      run_validate_counters=False,
-                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
-                                      validate_bw_rx=False,
-                                      tc_occ_threshold=tc_threshold,
+                                      tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       samples_params_dict=samples_params_dict,
                                       additional_validations=additional_validations)
@@ -193,8 +163,6 @@ class TestSRv6Base:
                                                                                                                             drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
                                                                                                                             violations_list=violations_list)
             add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
-        if avg_ports_rx < PerfConsts.SHAPER_VALUE:
-            violations_list.append(f"avg ports rx {avg_ports_rx} is lower than shaper value {PerfConsts.SHAPER_VALUE}")
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 
@@ -205,7 +173,7 @@ class TestSRv6Base:
         if get_ports_from_start:
             egress_ports = ports[:port_number]
         for port in egress_ports:
-            port_group_df.append({"port": self.players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+            port_group_df.append({ValidationConsts.PORT: self.players['dut']['cli'].performance.get_sdk_port(port), MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
         return egress_ports, port_group_df
 
     def get_ingress_ports(self, egress_ports, ingress_ports_num, ingress_port_sequence=MRCConsts.INGRESS_PORT_SEQUENCE_CONSECUTIVE, get_ports_from_start=False):
@@ -238,7 +206,7 @@ class TestSRv6Base:
         n = num_of_congested_ports * num_of_congested_tc
         pool_size_cells = MRCConsts.POOL_SIZE_CELLS_BY_CHIP_TYPE[self.chip_type]
         tc_max_occ_th = pool_size_cells * MRCConsts.TC_1_2_3_ALPHA / (1 + MRCConsts.TC_1_2_3_ALPHA * n)
-        return {ValidationConsts.TC_MAX_WATERMARK: tc_max_occ_th}
+        return {ValidationConsts.MAX_WATERMARK: tc_max_occ_th}
 
     def get_additional_validations(self, traffic_type):
         additional_validations = {}
@@ -248,15 +216,24 @@ class TestSRv6Base:
                 with open(ipv6_validation_json_path, 'r') as f:
                     ipv6_validation_json = json.load(f)
                 additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                                 'tc_keys': [ValidationConsts.TC_OCC_AVG],
+                                                                                                                 'tc_keys': [ValidationConsts.OCC_AVG],
                                                                                                                  'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
                                                                                                                  'allowed_deviation': 1})
+                additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                                   'latency_keys': [ValidationConsts.TC_AVG_LATENCY],
+                                                                                                                   'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
+                                                                                                                   'allowed_deviation': MRCConsts.LATENCY_ALLOWED_DEVIATION})
+                additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                         'pg_keys': [ValidationConsts.OCC_AVG],
+                                                                                                         'pg_to_validate': MRCConsts.PG_LIST,
+                                                                                                         'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION})
         return additional_validations
 
-    def get_many_to_few_additional_validations(self, egress_ports):
+    def get_many_to_few_additional_validations(self, egress_ports, tc_threshold):
         max_watermark_th = self.get_max_watermark_th(num_of_congested_ports=len(egress_ports), num_of_congested_tc=len(MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM))
         additional_validations = {
-            'validate_max_watermark': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th, 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, 'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE}),
+            'validate_max_watermark_on_trimming_queue': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th, 'tc_to_validate': MRCConsts.TRIMMING_QUEUE_NUM, 'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE}),
+            'validate_max_watermark_on_data_queues': Validation(validate_per_tc, {'tc_occ_threshold': tc_threshold, 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, 'tolerance': None})
         }
         return additional_validations
 
@@ -265,7 +242,19 @@ class TestSRv6Base:
         return additional_validations
 
     def get_many_to_one_bw_threshold(self, traffic_type):
+        bw_threshold = {
+            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                               ValidationConsts.RX: None},
+            MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
+                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE}}
         if traffic_type == MRCConsts.TRAFFIC_TYPE_SRV6:
-            return MRCConsts.MANY_TO_ONE_SRV6_DUT_TX_UTIL_TH
-        else:
-            return MRCConsts.DUT_TX_UTIL_TH
+            bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.MANY_TO_ONE_SRV6_DUT_TX_UTIL_TH
+        return bw_threshold
+
+    def get_many_to_few_bw_threshold(self, traffic_type):
+        bw_threshold = {
+            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                               ValidationConsts.RX: None},
+            MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
+                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE}}
+        return bw_threshold

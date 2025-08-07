@@ -566,5 +566,10 @@ class GeneralCliCommon(GeneralCliInterface):
             logger.warning(f"No matching kernel version found for {dut_kernel_version}")
             return cur_sdk_version
         files_available_in_deb_dir = glob.glob(os.path.join(deb_file_path, PerfConsts.LATEST_SDK_DEB_FILE_TEMPLATE))
-        sdk_version = re.search(r"sys-sdk-git_1.mlnx.(\d+.\d+.\d+)", files_available_in_deb_dir[0]).group(1)
+        sdk_version = re.search(r"sys-sdk-git_1.mlnx.(\d+.\d+.\d+.*\d*)_", files_available_in_deb_dir[0]).group(1)
+
+        if sdk_version.count('.') == 3:
+            last_dot_index = sdk_version.rfind('.')
+            sdk_version = sdk_version[:last_dot_index] + '-' + sdk_version[last_dot_index + 1:]
+
         return sdk_version

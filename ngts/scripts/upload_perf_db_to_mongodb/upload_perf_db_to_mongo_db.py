@@ -16,6 +16,7 @@ logger = logging.getLogger()
 @allure.title('Upload Performance Database into MongoDB')
 def test_upload_perf_db(topology_obj, setup_name):
     try:
+        clear_sandbox_testing_files()
         with open(MongoDbConsts.PERF_MONGO_DB_RESULTS_PATH, "r+") as f:
             dut_system_information_template_json = json.load(f)
         lines = [MongoDbConsts.COLLECTION, MongoDbConsts.CRITERIA]
@@ -75,3 +76,12 @@ def do_sandbox_testing(tests_path_specific_values_dict, topology_obj, setup_name
             logger.info(f"Test {test_path} passed sandbox validation")
             os.remove(test_db_sandbox_testing_path)
     return passing_sandbox_validation_tests, failing_sandbox_validation_tests
+
+
+def clear_sandbox_testing_files():
+    for root, dirs, files in os.walk(MongoDbConsts.MONGO_DB_SANDBOX_TESTS):
+        for file in files:
+            if file.endswith('_info_dump.json.db'):
+                os.remove(os.path.join(root, file))
+            if file.endswith('_info_dump.json.err'):
+                os.remove(os.path.join(root, file))

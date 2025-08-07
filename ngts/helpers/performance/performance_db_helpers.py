@@ -2,7 +2,7 @@ import os.path
 import json
 import pandas as pd
 from datetime import datetime
-
+from collections import defaultdict
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts, MRCConsts
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -131,7 +131,9 @@ def restructure_validator_results(validation_json, ports_group_df, os_ports_name
     """
     test_validation_to_mongo_db = {}
     test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df, trimmed_untrimmed_dropped_percentages)
-    test_validation_to_mongo_db[MongoDbConsts.TC_DATA] = restructure_tc(validation_json)
+    test_validation_to_mongo_db[MongoDbConsts.TC_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_PG_SAMPLES, ValidationConsts.TC_DATAFRAME)
+    test_validation_to_mongo_db[MongoDbConsts.PG_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_PG_SAMPLES, ValidationConsts.PG_DATAFRAME)
+    test_validation_to_mongo_db[MongoDbConsts.TC_LATENCY_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_LATENCY_SAMPLES, ValidationConsts.TC_LATENCY_DATAFRAME)
     test_validation_to_mongo_db[MongoDbConsts.TEMP_DATA] = restructure_temp(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.POWER_TOTAL] = restructure_power(power_total)
     test_validation_to_mongo_db[MongoDbConsts.POWER_BY_COLLECTORS] = restructure_power(power_by_collectors_group)
@@ -151,11 +153,14 @@ def restructure_counters(validation_json):
     """
     counters_samples = validation_json[ValidationConsts.COUNTERS_SAMPLES]
     counters_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-    counters_df_list = collect_all_samples_into_df_list(counters_samples, ValidationConsts.COUNTERS_DATAFRAME)
-    max_df = pd.concat(counters_df_list).groupby(level=0).max()
-    updated_columns_names_dict = get_updated_columns_names()
-    counters_df = max_df.rename(columns=updated_columns_names_dict)
-    return counters_df
+    counters_df_dict = collect_all_samples_into_df_list(counters_samples, ValidationConsts.COUNTERS_DATAFRAME)
+    final_df = pd.DataFrame()
+    for port_group, df_list in counters_df_dict.items():
+        max_df = pd.concat(df_list).groupby(level=0).max()
+        updated_columns_names_dict = get_updated_columns_names()
+        counters_df = max_df.rename(columns=updated_columns_names_dict)
+        final_df = pd.concat([final_df, counters_df])
+    return final_df
 
 
 def change_name_to_camel_case(name):
@@ -169,7 +174,7 @@ def get_updated_columns_names():
     return updated_columns_names_dict
 
 
-def collect_all_samples_into_df_list(samples, sample_df_key, use_port_groups=False):
+def collect_all_samples_into_df_list(samples, sample_df_key):
     """
     Collects all sample data frames from a nested samples dictionary.
 
@@ -181,30 +186,12 @@ def collect_all_samples_into_df_list(samples, sample_df_key, use_port_groups=Fal
     Returns:
         List of pandas DataFrames, each containing the sample data with port group info if applicable.
     """
-    df_list = []
+    df_dict = defaultdict(list)
     for sample_id, sample_or_groups in samples.items():
-        # TODO: remove this if statement once the issue is fixed (keep only the else part)
-        if is_redmine_issue_active([4545618])[0]:
-            try:
-                if use_port_groups and sample_or_groups:
-                    for port_group, sample in sample_or_groups.items():
-                        df = pd.DataFrame(sample[sample_df_key])
-                        df_list.append(df)
-                else:
-                    df = pd.DataFrame(sample_or_groups[sample_df_key])
-                    df_list.append(df)
-            except Exception as e:
-                df = pd.DataFrame(sample_or_groups[sample_df_key])
-                df_list.append(df)
-        else:
-            if use_port_groups and sample_or_groups:
-                for port_group, sample in sample_or_groups.items():
-                    df = pd.DataFrame(sample[sample_df_key])
-                    df_list.append(df)
-            else:
-                df = pd.DataFrame(sample_or_groups[sample_df_key])
-                df_list.append(df)
-    return df_list
+        for port_group, sample in sample_or_groups.items():
+            df = pd.DataFrame(sample[sample_df_key])
+            df_dict[port_group].append(df)
+    return df_dict
 
 
 def restructure_bw(validation_json):
@@ -217,11 +204,42 @@ def restructure_bw(validation_json):
     """
     bw_samples = validation_json[ValidationConsts.BW_SAMPLES]
     bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-    df_list = collect_all_samples_into_df_list(bw_samples, ValidationConsts.BW_DATAFRAME, use_port_groups=True)
-    df_result = get_base_df(df_list)
-    df_result[ValidationConsts.TX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.TX_RATE)
-    df_result[ValidationConsts.RX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.RX_RATE)
-    return df_result
+    df_dict = collect_all_samples_into_df_list(bw_samples, ValidationConsts.BW_DATAFRAME)
+    final_df = pd.DataFrame()
+    for port_group, df_list in df_dict.items():
+        df_result = get_base_df(df_list)
+        df_result[ValidationConsts.TX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.TX_RATE)
+        df_result[ValidationConsts.RX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.RX_RATE)
+        final_df = pd.concat([final_df, df_result])
+    return final_df
+
+
+def get_tc_and_pg_info(validation_json, sample_key, df_key):
+    """
+    Args:
+        validation_json: the JSON from the SDK TrafficValidator
+
+    Returns:
+        a single df with the tc avg values based on all the samples
+    """
+    tc_pg_samples = validation_json.get(sample_key, None)
+    info = []
+    if tc_pg_samples:
+        tc_pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
+        info = get_tc_pg_average_info(tc_pg_samples, df_key)
+    return info
+
+
+def get_tc_pg_average_info(tc_pg_samples, df_key):
+    df_dict = collect_all_samples_into_df_list(tc_pg_samples, df_key)
+    final_df = pd.DataFrame()
+    for port_group, df_list in df_dict.items():
+        df_result = get_base_df(df_list)
+        for key in ValidationConsts.DATAFRAME_KEYS_DICT[df_key]:
+            df_result[key] = calculate_avg_on_all_samples(df_list, tc_pg_samples, key)
+        df_result[MongoDbConsts.PORT_GROUP_NAME] = port_group
+        final_df = pd.concat([final_df, df_result])
+    return final_df.to_dict(orient='records')
 
 
 def get_base_df(df_list):
@@ -249,30 +267,27 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
         merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
     if trimmed_untrimmed_dropped_percentages:
         trimmed_untrimmed_dropped_percentages_df = pd.DataFrame(trimmed_untrimmed_dropped_percentages)
-        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.OS_PORT_NAME)
-    return merged_df.to_dict(orient='records')
+        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.OS_PORT_NAME, how='left')
+    df_as_dict = merged_df.to_dict(orient='records')
+    return filter_all_Nan_values(df_as_dict)
 
 
-def restructure_tc(validation_json):
+def filter_all_Nan_values(df_as_dict):
     """
     Args:
-        validation_json: the JSON from the SDK TrafficValidator
+        df_as_dict: a dictionary representing a dataframe
 
     Returns:
-        a single df with the tc avg values based on all the samples
+        a dictionary representing a dataframe with all the NaN values filtered out
     """
-    tc_samples = validation_json.get(ValidationConsts.TC_SAMPLES, None)
-    tc_info = []
-    if tc_samples:
-        tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
-        df_list = collect_all_samples_into_df_list(tc_samples, ValidationConsts.TC_DATAFRAME)
-        df_result = get_base_df(df_list)
-        df_result[ValidationConsts.TC_OCC_AVG] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_AVG)
-        df_result[ValidationConsts.TC_OCC_99] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_99)
-        df_result[ValidationConsts.TC_OCC_MAX] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_OCC_MAX)
-        df_result[ValidationConsts.TC_MAX_WATERMARK] = calculate_avg_on_all_samples(df_list, tc_samples, ValidationConsts.TC_MAX_WATERMARK)
-        tc_info = df_result.to_dict(orient='records')
-    return tc_info
+    for dict_row in df_as_dict:
+        keys_to_pop = []
+        for key, value in dict_row.items():
+            if pd.isna(value):
+                keys_to_pop.append(key)
+        for key in keys_to_pop:
+            dict_row.pop(key)
+    return df_as_dict
 
 
 def restructure_temp(validation_json):

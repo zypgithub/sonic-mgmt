@@ -1,7 +1,70 @@
 {
+    "BUFFER_QUEUE": {
+        {%- for port in connected_ports %}
+            "{{port}}|4": {"profile": "q_lossy_profile"},
+            "{{port}}|1": {"profile": "q_lossy_profile"}{% if not loop.last or unconnected_ports|length>0 %},{% endif %}
+        {%- endfor %}
+        {%- for port in unconnected_ports %}
+            "{{port}}|4": {"profile": "q_lossy_profile"},
+            "{{port}}|1": {"profile": "q_lossy_profile"}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    },
+    "QUEUE": {
+        {%- for port in connected_ports %}
+            "{{port}}|4": {"scheduler": "small_packet_dwrr"},
+            "{{port}}|1": {"scheduler": "large_packet_dwrr"}{% if not loop.last or unconnected_ports|length>0 %},{% endif %}
+        {%- endfor %}
+        {%- for port in unconnected_ports %}
+            "{{port}}|4": {"scheduler": "small_packet_dwrr"},
+            "{{port}}|1": {"scheduler": "large_packet_dwrr"}{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    },
+    "BUFFER_PG": {
+        {%- for port in connected_ports %}
+            "{{port}}|0": {"profile": "ingress_lossy_profile"}{% if not loop.last or unconnected_ports|length>0 %},{% endif %}
+            {{ "\n" }}
+        {%- endfor %}
+        {%- for port in unconnected_ports %}
+            "{{port}}|0": {"profile": "ingress_lossy_profile"}{% if not loop.last %},{% endif %}
+            {{ "\n" }}
+        {%- endfor %}
+    },
+    "BUFFER_PORT_INGRESS_PROFILE_LIST": {
+        {% for port in connected_ports %}
+            "{{port}}": {"profile_list": "ingress_lossy_profile"}{% if not loop.last or unconnected_ports|length>0 %},{% endif %}
+            {{ "\n" }}
+        {% endfor %}
+        {% for port in unconnected_ports %}
+            "{{port}}": {"profile_list": "ingress_lossy_profile"}{% if not loop.last %},{% endif %}
+            {{ "\n" }}
+        {% endfor %}
+        },
+        "BUFFER_PORT_EGRESS_PROFILE_LIST": {
+        {% for port in connected_ports %}
+            "{{port}}": {"profile_list": "egress_lossy_profile"}{% if not loop.last or unconnected_ports|length>0 %},{% endif %}
+            {{ "\n" }}
+        {% endfor %}
+        {% for port in unconnected_ports %}
+            "{{port}}": {"profile_list": "egress_lossy_profile"}{% if not loop.last %},{% endif %}
+            {{ "\n" }}
+        {% endfor %}
+    },
+    "BUFFER_POOL": {
+        "ingress_lossy_pool": {"type": "ingress", "mode": "dynamic", "size": "93561216"},
+        "egress_lossy_pool": {"type": "egress", "mode": "dynamic", "size": "93561216"}
+    },
+    "BUFFER_PROFILE": {
+        "ingress_lossy_profile": {"dynamic_th": "3", "pool": "ingress_lossy_pool", "size": "0"},
+        "egress_lossy_profile": {"dynamic_th": "3", "pool": "egress_lossy_pool", "size": "10176"},
+        "q_lossy_profile": {"dynamic_th": "1", "pool": "egress_lossy_pool", "size": "960"}
+    },
+    "SCHEDULER": {
+        "small_packet_dwrr": {"type": "DWRR", "weight": "16"},
+        "large_packet_dwrr": {"type": "DWRR", "weight": "16"}
+    },
     "DSCP_TO_TC_MAP": {
         "AZURE": {
-            "0": "4", "1": "4", "2": "4", "3": "4", "4": "4", "5": "4", "6": "4", "7": "4",
+            "0": "4", "1": "1", "2": "4", "3": "1", "4": "4", "5": "1", "6": "1", "7": "4",
             "8": "4", "9": "4", "10": "4", "11": "4", "12": "4", "13": "4", "14": "4", "15": "4",
             "16": "4", "17": "4", "18": "4", "19": "4", "20": "4", "21": "4", "22": "4", "23": "4",
             "24": "4", "25": "4", "26": "4", "27": "4", "28": "4", "29": "4", "30": "4", "31": "4",
@@ -9,76 +72,6 @@
             "40": "4", "41": "4", "42": "4", "43": "4", "44": "4", "45": "4", "46": "4", "47": "4",
             "48": "4", "49": "4", "50": "4", "51": "4", "52": "4", "53": "4", "54": "4", "55": "4",
             "56": "4", "57": "4", "58": "4", "59": "4", "60": "4", "61": "4", "62": "4", "63": "4"
-        }
-    },
-    "SCHEDULER": {
-        "scheduler_q0_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q0_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q1_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q1_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q2_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q2_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q3_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q3_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q4_downlink": {
-            "type": "DWRR",
-            "weight": "100"
-        },
-        "scheduler_q4_uplink": {
-            "type": "DWRR",
-            "weight": "100"
-        },
-        "scheduler_q5_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q5_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q6_downlink": {
-            "type": "DWRR",
-            "weight": "1"
-        },
-        "scheduler_q6_uplink": {
-            "type": "DWRR",
-            "weight": "1"
-        }
-    },
-    "BUFFER_PROFILE": {
-        "queue4_downlink_lossy_profile": {
-            "dynamic_th": "1",
-            "pool": "egress_lossy_pool",
-            "size": "320000"
-        },
-        "queue4_uplink_lossy_profile": {
-            "dynamic_th": "1",
-            "pool": "egress_lossy_pool",
-            "size": "320000"
         }
     }
 }

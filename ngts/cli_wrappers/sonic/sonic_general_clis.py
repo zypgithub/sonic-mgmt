@@ -1787,10 +1787,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
             docker_exec_syncd_cmd = InfraConst.DOCKER_EXEC_BASH_CMD.format(DOCKER=InfraConst.SYNCD_DOCKER)
-            copy_files_to_syncd(self.engine, [PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version.replace("-", "."))],
+            sdk_deb_file = PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version.replace("-", "."))
+            copy_files_to_syncd(self.engine, [sdk_deb_file],
                                 PerfConsts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version))
-            self.engine.run_cmd(
-                f"{docker_exec_syncd_cmd} 'dpkg -i {PerfConsts.SDK_DEB_FILE_TEMPLATE.format(SDK_VERSION=sdk_version)}'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'dpkg -i {sdk_deb_file}'")
 
         with allure.step('pip dependencies'):
             self.engine.run_cmd(

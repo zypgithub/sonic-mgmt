@@ -2,7 +2,7 @@ import copy
 import os
 import random
 import pytest
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.constants.constants import CliType
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
@@ -10,7 +10,6 @@ from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsu
 
 @pytest.fixture(scope='module', autouse=True)
 def skip_test_conditionally(players):
-    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
     skip_test_on_unsupported_os(players['dut']['cli'], CliType.DVS)
     yield
 
@@ -42,9 +41,9 @@ def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstrea
     sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream)
     sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream)
     for port in sdk_port_list_upstream:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "upstream"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME})
     for port in sdk_port_list_downstream:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "downstream"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME})
     return upstream, downstream, port_group_df
 
 
@@ -80,9 +79,9 @@ def get_upstream_downstream_groups_port_group_df(players, upstream_ports_num, do
         sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream_groups[i])
         sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream_groups[i])
         for port in sdk_port_list_upstream:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"upstream_group_{i + 1}"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.LEAF_ROUND_ROBIN_UPSTREAM_PORT_GROUP_NAME})
         for port in sdk_port_list_downstream:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_{i + 1}"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.LEAF_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_NAME})
     return upstream_groups, downstream_groups, port_group_df
 
 
@@ -101,9 +100,9 @@ def get_spine_many_to_few_port_group_df(players, M):
     sdk_port_list_egress = players['dut']['cli'].performance.get_sdk_ports(egress_ports)
     sdk_port_list_ingress = players['dut']['cli'].performance.get_sdk_ports(ingress_ports)
     for port in sdk_port_list_egress:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "egress_ports"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.EGRESS_PORT_GROUP_NAME})
     for port in sdk_port_list_ingress:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "ingress_ports"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.INGRESS_PORT_GROUP_NAME})
     return egress_ports, ingress_ports, port_group_df
 
 
@@ -124,13 +123,13 @@ def victim_flow_port_group_df(request, players):
     sdk_port_list_many_to_one_ingress_ports = players['dut']['cli'].performance.get_sdk_ports(many_to_one_ingress_ports)
     sdk_port_list_many_to_one_egress_ports = players['dut']['cli'].performance.get_sdk_ports(many_to_one_egress_ports)
     for port in sdk_port_list_bisection_left:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "bisection_left"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME})
     for port in sdk_port_list_bisection_right:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "bisection_right"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME})
     for port in sdk_port_list_many_to_one_ingress_ports:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "many_to_one_ingress_ports"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.INGRESS_PORT_GROUP_NAME})
     for port in sdk_port_list_many_to_one_egress_ports:
-        port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: "many_to_one_egress_port"})
+        port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.EGRESS_PORT_GROUP_NAME})
     return bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df
 
 
@@ -150,9 +149,9 @@ def get_spine_downstream_groups_port_group_df(players, downstream_ports_num, num
         sdk_port_list_downstream_groups_1 = players['dut']['cli'].performance.get_sdk_ports(downstream_groups_1[i])
         sdk_port_list_downstream_groups_2 = players['dut']['cli'].performance.get_sdk_ports(downstream_groups_2[i])
         for port in sdk_port_list_downstream_groups_1:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_1_{i + 1}"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.SPINE_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_1_NAME})
         for port in sdk_port_list_downstream_groups_2:
-            port_group_df.append({"port": port, MongoDbConsts.PORT_GROUP_NAME: f"downstream_group_2_{i + 1}"})
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.SPINE_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_2_NAME})
     return downstream_groups_1, downstream_groups_2, port_group_df
 
 
