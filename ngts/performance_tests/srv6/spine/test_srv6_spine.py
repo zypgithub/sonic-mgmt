@@ -11,7 +11,7 @@ from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.performance_tests.srv6.conftest import (get_spine_many_to_few_port_group_df,
                                                   get_spine_downstream_groups_port_group_df,
-                                                  get_trimming_tests_skip_condition)
+                                                  get_srv6_tests_skip_condition)
 
 logger = logging.getLogger()
 
@@ -80,7 +80,7 @@ class TestSRv6Spine(TestSRv6Base):
     @pytest.mark.parametrize("ingress_ports_num", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_one(self, request,
                                              traffic_type, workload, ingress_port_sequence, ingress_ports_num, get_ports_from_start=False):
-        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
@@ -100,7 +100,7 @@ class TestSRv6Spine(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     @pytest.mark.parametrize("M", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
-        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, M)

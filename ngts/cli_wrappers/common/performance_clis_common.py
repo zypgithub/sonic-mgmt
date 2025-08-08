@@ -2,6 +2,7 @@ import logging
 import os
 import json
 import pandas as pd
+from retry import retry
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
 from infra.tools.exceptions.test_issue import TestIssue
 
@@ -183,13 +184,20 @@ class PerformanceCommon:
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
 
-    def configure_mloops(self):
-        logging.info(f"Configure Mloop on {self.dut_alias}")
-        self.logrotate("rsyslog")
-        configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
-        self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
-        self.check_mloops_up()
+    @retry(exceptions=TestIssue, tries=1, delay=2)
+    def configure_mloops(self, validate_mloops=True):
+        try:
+            logging.info(f"Configure Mloop on {self.dut_alias}")
+            self.logrotate("rsyslog")
+            configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
+            self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
+            if validate_mloops:
+                self.check_mloops_up()
+        except Exception as e:
+            logging.warning(f"Failed to configure Mloop on {self.dut_alias}: {e}")
+            raise TestIssue(msg=f"Failed to configure Mloop on {self.dut_alias}: {e}")
 
+    @retry(exceptions=TestIssue, tries=2, delay=15)
     def run_traffic(self, scenario, traffic_jsons):
         self.cli_obj.interface.clear_counters()
         json_path = traffic_jsons[self.dut_alias]
@@ -198,16 +206,22 @@ class PerformanceCommon:
         logging.info("Running traffic onto the device")
         run_traffic_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_NAME}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=[f'TG_JSON={traffic_json_path}']))
+        try:
+            self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=[f'TG_JSON={traffic_json_path}']))
+        except Exception as e:
+            logging.error(f"Error running traffic: {e}")
+            raise TestIssue(msg=f"Error running traffic: {e}")
 
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
+        env_variables = []
         for env_var_name, param_val in samples_params_dict.items():
             set_interval_cmd = f"export {env_var_name}={param_val}"
+            env_variables.append(f"{env_var_name}={param_val}")
             self.execute_cmd(set_interval_cmd)
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd))
+        self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=env_variables))
         self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
 
@@ -328,5 +342,17 @@ class PerformanceCommon:
         """
         This method is used to copy sdk changes
         that are not yet on the sdk branch used by the OS to the dut
+        """
+        pass
+
+    def set_shaper(self, speed, shaper_value, shaper_profile="default-global"):
+        """
+        This method is used to set the shaper on the traffic gen
+        """
+        pass
+
+    def validate_ets(self, interface_list, queues_list, violations_list):
+        """
+        This method is used to validate the ETS on the dut
         """
         pass

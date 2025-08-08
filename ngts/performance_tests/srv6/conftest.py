@@ -2,6 +2,7 @@ import copy
 import os
 import random
 import pytest
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.constants.constants import CliType
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
@@ -162,7 +163,11 @@ def cleanup_ports_shaper(cli_objects):
         cli_objects[tg_alias].performance.configure_ports_shaper(shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
 
-def get_trimming_tests_skip_condition(cli_obj, actual_chip_type, unsupported_chip_type):
-    condition = actual_chip_type == unsupported_chip_type and isinstance(cli_obj, SonicCli)
-    skip_message = f"This test is not supported on {unsupported_chip_type} on SONiC OS"
+def get_srv6_tests_skip_condition(cli_obj, actual_chip_type):
+    if isinstance(cli_obj, SonicCli):
+        unsupported_chip_type = "SPC4"
+    elif isinstance(cli_obj, NvueCli):
+        unsupported_chip_type = "SPC5"
+    condition = actual_chip_type == unsupported_chip_type
+    skip_message = f"This test is not supported on {unsupported_chip_type} on cli type {cli_obj.__class__.__name__}"
     return condition, skip_message

@@ -158,10 +158,34 @@ class NvueInterfaceCli(SonicInterfaceCli):
     def get_sorted_ports_list(self, ports_list, breakout=4):
         return sorted(ports_list, key=lambda port: int(re.search(r'swp(\d+)s(\d+)', port).group(1)) * breakout + int(re.search(r'swp(\d+)s(\d+)', port).group(2)))
 
-    def get_tx_drop_counters(self, interface_list):
+    def get_interface_counters(self, interface_list, counters_type="tx-drop"):
+        """
+        Description : Get interface counters using the following command
+        nv sh interface counters -o json
+        Args:
+        interface_list : list of interfaces to get the counters for.
+        counters_type : type of counters to get. tx-drop, rx-okay, tx-okay,
+        """
         output_json = self.engine.run_cmd("nv sh interface counters -o json", print_output=False)
         output_dict = json.loads(output_json)
-        tx_drop_counters = {}
+        counters_dict = {}
         for interface in interface_list:
-            tx_drop_counters[interface] = output_dict[interface]['counters']['netstat']["tx-drop"]
-        return tx_drop_counters
+            counters_dict[interface] = output_dict[interface]['counters']['netstat'][counters_type]
+        return counters_dict
+
+    def get_interface_utilization(self, interface, direction='in'):
+        output = self.engine.run_cmd(f"nv sh interface {interface} rates -o json", print_output=False)
+        interface_rates = json.loads(output)
+        return interface_rates[f"{direction}-utilization"]
+
+    def get_interface_queue_counters(self, interface_list, counters_type="egress-queue-stats", sub_type=["tx-bytes", "tx-frames"]):
+        counters_dict = {}
+        for interface in interface_list:
+            output = self.engine.run_cmd(f"nv sh interface {interface} counters qos {counters_type} -o json", print_output=False)
+            output_dict = json.loads(output)
+            counters_dict[interface] = {}
+            for queue in output_dict.keys():
+                counters_dict[interface][queue] = {}
+                for s_type in sub_type:
+                    counters_dict[interface][queue][s_type] = output_dict[queue][s_type]
+        return counters_dict

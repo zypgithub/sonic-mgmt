@@ -6,6 +6,7 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 class Cl_Consts:
     CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
     CL_LOG_PORT_FILE = 'log_port_cumulus.py'
+    CL_LOG_BW_FILE = 'collect_bw_cumulus.py'
     BONUS_PORTS = {
         'Spectrum-3': [],
         'Spectrum-4': ['swp65'],
@@ -17,6 +18,18 @@ class Cl_Consts:
     CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
     COMMON_IP_PREFIX_LEFT = "130"
     COMMON_IP_PREFIX_RIGHT = "110"
+    SRV6_SPEED_BY_CHIP_TYPE = {
+        "SPC4": "200000000",
+        "SPC5": "100000000"
+    }
+    SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
+        "SPC4": 4,
+        "SPC5": 8
+    }
+    SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
+        "SPC4": 4,
+        "SPC5": 8
+    }
 
 
 class ValidationConsts:
@@ -476,6 +489,7 @@ class MRCConsts:
     MRC2_DATA_ONLY_WORKLOAD_NAME = 'mrc2_data_only'
     MRC_REGRESSION_WORKLOADS_LIST = [WORKLOAD1_NAME]
     SHAPER_VALUE = 0.975
+    BEFORE_TEST_SHAPER_VALUE = 0.8
     SHAPER_VALUE_AFTER_TEST = 1.0
 
 

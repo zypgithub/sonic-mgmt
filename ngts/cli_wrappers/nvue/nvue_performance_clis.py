@@ -8,7 +8,7 @@ import re
 from retry import retry
 import copy
 import allure
-
+from collections import defaultdict
 from infra.tools.exceptions.test_issue import TestIssue
 from infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
@@ -42,6 +42,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.connected_ports = []
         self.unconnected_ports = []
         self.ports_mapping = {}
+        self.sdk_ports_mapping = {}
         self.mloops = []
 
     def set_class_vars(self):
@@ -197,6 +198,7 @@ class NvuePerformanceCli(PerformanceCommon):
             self.ports_mapping[port] = sdk_port
             os_ports_name_mapping.append({ValidationConsts.PORT: sdk_port,
                                           ValidationConsts.OS_PORT_NAME: port})
+        self.sdk_ports_mapping = {v: k for k, v in self.ports_mapping.items()}
         return os_ports_name_mapping
 
     def get_cmd_for_sdk(self, cmd, env_variables=[]):
@@ -260,22 +262,31 @@ class NvuePerformanceCli(PerformanceCommon):
 
     def get_sdk_ports(self, ports_list: list):
         ports_string = " ".join(ports_list)
-        if self.ports_mapping:
+        if all(port in self.ports_mapping.keys() for port in ports_list):
             return [self.ports_mapping[port] for port in ports_list]
-        self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
-                              dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
-                              file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
-        sdk_ports = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"')
-        sdk_ports = sdk_ports.split()
-        sdk_ports = [hex(int(port)) for port in sdk_ports]
+        else:
+            self.engine.copy_file(source_file=f'{Cl_Consts.CL_LOG_PORT_FILE_PATH}/{Cl_Consts.CL_LOG_PORT_FILE}',
+                                  dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
+                                  file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
+            sdk_ports = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --ports {ports_string}  | egrep \"^[0-9]\"')
+            sdk_ports = sdk_ports.split()
+            sdk_ports = [hex(int(port)) for port in sdk_ports]
+            for port, sdk_port in zip(ports_list, sdk_ports):
+                self.ports_mapping[port] = sdk_port
+                self.sdk_ports_mapping[sdk_port] = port
         return sdk_ports
 
     def get_hex_int_sdk_ports(self, ports_list: list):
         list_of_sdk_ports = []
         if not self.ports_mapping:
             self.get_os_ports_name_mapping()
-        for port in ports_list:
-            list_of_sdk_ports.append((int(self.ports_mapping[port], PerfConsts.HEX_BASE)))
+        if all(port in self.ports_mapping.keys() for port in ports_list):
+            for port in ports_list:
+                list_of_sdk_ports.append((int(self.ports_mapping[port], PerfConsts.HEX_BASE)))
+        else:
+            sdk_ports = self.get_sdk_ports(ports_list)
+            for sdk_port in sdk_ports:
+                list_of_sdk_ports.append((int(sdk_port, PerfConsts.HEX_BASE)))
         return list_of_sdk_ports
 
     def get_sdk_port(self, port: str):
@@ -286,6 +297,8 @@ class NvuePerformanceCli(PerformanceCommon):
                                   dest_file=f'{Cl_Consts.CL_LOG_PORT_FILE}',
                                   file_system=Cl_Consts.CL_HOME_DIR, overwrite_file=True, verify_file=False)
             sdk_port = self.execute_cmd(f'sudo python {Cl_Consts.CL_HOME_DIR}/{Cl_Consts.CL_LOG_PORT_FILE} --port {port}  | egrep \"^[0-9]\"')
+            self.ports_mapping[port] = hex(int(sdk_port))
+            self.sdk_ports_mapping[hex(int(sdk_port))] = port
             return hex(int(sdk_port))
 
     @staticmethod
@@ -378,8 +391,6 @@ class NvuePerformanceCli(PerformanceCommon):
             "two_sided_ar": conf_args.get('two_sided_ar', False)
         }
         outputText = jinja_template.render(parameter_dict=parameter_dict)
-        # TODO: Add port groups to SDK level, so validator will be able to overview them (SONiC as well)
-        self.port_groups = self.get_right_left_ports_dict()
         try:
             yaml.safe_load(outputText)  # just for checking the YAML sanity
         except yaml.YAMLError as yex:
@@ -619,3 +630,17 @@ class NvuePerformanceCli(PerformanceCommon):
                                       direction='put'
                                       )
                 self.engine.run_cmd(f"sudo mv /tmp/{file} {os.path.join(dir, file)}")
+
+    def set_shaper(self, speed, shaper_value, shaper_profile="default-global"):
+        """
+        This method is used to set the shaper on the traffic gen
+        """
+        # Convert speed to float if it's a string
+        if isinstance(speed, str):
+            speed = float(speed)
+        shaper_value_kbps = int(speed * shaper_value)
+        if shaper_value == 1.0:
+            self.engine.run_cmd(f"nv unset qos egress-shaper {shaper_profile}")
+        else:
+            self.engine.run_cmd(f"nv set qos egress-shaper {shaper_profile} port-max-rate {shaper_value_kbps}")
+        self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)

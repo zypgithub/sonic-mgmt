@@ -164,11 +164,11 @@ def apply_test_configuration(players, scenario, conf_args,
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
 
 
-def configure_mloops(players, step="basic_test_configuration - configure_mloops"):
+def configure_mloops(players, validate_mloops=True, step="basic_test_configuration - configure_mloops"):
     call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
                                            action="configure mloops",
                                            performance_clis_function_name="configure_mloops",
-                                           performance_clis_function_args=(), step=step)
+                                           performance_clis_function_args=(validate_mloops,), step=step)
 
 
 def save_base_configuration(players, step="basic_test_configuration - save_base_configuration"):
@@ -313,6 +313,13 @@ def set_ports_admin_state(players, port_list, port_state="up", step="Test Body -
                                            performance_clis_function_name="set_ports",
                                            performance_clis_function_args=(port_list, port_state),
                                            step=step)
+
+
+def set_shaper_on_traffic_gen(players, speed, shaper_value, shaper_profile="default-global", step="Test Body - set_shaper_on_traffic_gen"):
+    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                           action="set shaper on traffic gen",
+                                           performance_clis_function_name="set_shaper",
+                                           performance_clis_function_args=(speed, shaper_value, shaper_profile), step=step)
 
 
 def call_performance_function_with_threads(players, players_aliases, action,

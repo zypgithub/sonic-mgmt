@@ -15,7 +15,8 @@ from ngts.helpers.performance.traffic_helpers import (pick_random_non_consecutiv
                                                       compare_latency_to_reference, compare_pg_to_reference)
 from ngts.helpers.performance.performance_setup_helpers import (Validation, ValidationConfig, run_traffic,
                                                                 stop_traffic, run_validation, configure_mloops,
-                                                                skip_test_on_unsupported_os, add_test_mongo_metadata)
+                                                                skip_test_on_unsupported_os, add_test_mongo_metadata,
+                                                                set_shaper_on_traffic_gen)
 from ngts.constants.constants import CliType, InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
@@ -57,12 +58,14 @@ class TestSRv6Base:
                                                     upstream_downstream_group=upstream_downstream_group,
                                                     bisection_traffic=bisection_traffic,
                                                     dut_interfaces_ipv6_configuration_dict=self.dut_interfaces_ipv6_configuration_dict)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.BEFORE_TEST_SHAPER_VALUE)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         with allure.step(f"Verifying round-robin traffic pattern on all upstream ports and all downstream ports"):
             half_ports_num = len(all_ports_in_test) // 2
             round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
                                        ValidationConsts.OCC_99: 22 * half_ports_num}
             additional_validations = self.get_additional_validations(traffic_type)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SHAPER_VALUE)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
@@ -70,6 +73,7 @@ class TestSRv6Base:
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       additional_validations=additional_validations)
             run_validation(config)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
     def many_to_one_traffic_test_runner(self, test_name, traffic_type, workload, egress_port, ingress_ports):
         """
@@ -168,7 +172,7 @@ class TestSRv6Base:
 
     def get_egress_port_group_df(self, port_number, get_ports_from_start=False):
         port_group_df = []
-        ports = self.cli_object.performance.get_dut_ports()
+        ports = self.cli_object.performance.get_right_left_ports_dict()["right_ports"]
         egress_ports = pick_random_non_consecutive_ports(ports_list=ports, port_number=port_number)
         if get_ports_from_start:
             egress_ports = ports[:port_number]
@@ -177,7 +181,7 @@ class TestSRv6Base:
         return egress_ports, port_group_df
 
     def get_ingress_ports(self, egress_ports, ingress_ports_num, ingress_port_sequence=MRCConsts.INGRESS_PORT_SEQUENCE_CONSECUTIVE, get_ports_from_start=False):
-        dut_ports = self.cli_object.performance.get_dut_ports()
+        dut_ports = self.cli_object.performance.get_right_left_ports_dict()["left_ports"]
         port_list = list(set(dut_ports).difference(egress_ports))
         ingress_ports_candidates = self.cli_object.interface.get_sorted_ports_list(port_list, self.conf_args["split_left"])
         if ingress_port_sequence == MRCConsts.INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE:

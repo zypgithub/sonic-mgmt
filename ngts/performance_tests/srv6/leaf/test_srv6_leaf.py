@@ -14,7 +14,7 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
-                                                  get_trimming_tests_skip_condition)
+                                                  get_srv6_tests_skip_condition)
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
@@ -52,6 +52,8 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_bisection_srv6(self, request, traffic_type, workload, packet_size=4096):
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
+        skip_performance_test_conditionally(condition, skip_message)
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = get_perf_test_name(request)
             num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
@@ -81,6 +83,8 @@ class TestSRv6Leaf(TestSRv6Base):
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_leaf_round_robin_srv6(self, request, traffic_type):
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
+        skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         round_robin_dict = MRCConsts.LEAF_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
         round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
@@ -103,7 +107,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("ingress_ports_num", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_leaf_srv6_trimming_many_to_one(self, request,
                                             traffic_type, workload, ingress_port_sequence, ingress_ports_num, get_ports_from_start=False):
-        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
@@ -124,7 +128,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     @pytest.mark.parametrize("M", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_leaf_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
-        condition, skip_message = get_trimming_tests_skip_condition(self.cli_object, self.chip_type, "SPC4")
+        condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
         num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]

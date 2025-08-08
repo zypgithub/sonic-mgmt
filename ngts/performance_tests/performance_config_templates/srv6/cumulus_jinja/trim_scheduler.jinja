@@ -1,0 +1,53 @@
+{% set port_list = parameter_dict.port_list %}
+- set:
+    interface:
+      {% for port in port_list %}
+      {{ port }}:
+        qos:
+          egress-shaper:
+            profile: test
+      {% endfor %}
+    qos:
+      egress-scheduler:
+        default-global:
+          traffic-class:
+            '0':
+              bw-percent: 1
+              mode: dwrr
+            '1':
+              bw-percent: 1
+              mode: dwrr
+            '2':
+              bw-percent: 1
+              mode: dwrr
+            '3':
+              bw-percent: 1
+              mode: dwrr
+            '4':
+              mode: strict
+            '5':
+              bw-percent: 1
+              mode: dwrr
+            '6':
+              bw-percent: 1
+              mode: dwrr
+            '7':
+              bw-percent: 1
+              mode: dwrr
+      egress-shaper:
+        test:
+          traffic-class:
+            '0':
+              max-rate: 1
+            '1':
+              max-rate: 1
+            '2':
+              max-rate: 1
+            '3':
+              max-rate: 1
+            '5':
+              max-rate: 1
+            '6':
+              max-rate: 1
+            '7':
+              max-rate: 1
