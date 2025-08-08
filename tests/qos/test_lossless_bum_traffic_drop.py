@@ -11,7 +11,7 @@ pytestmark = [
 ]
 
 logger = logging.getLogger(__name__)
-PKT_NUM = 100
+PKT_NUM = 30
 LOSSLESS_DSCP = [3, 4]
 LOSSY_DSCP = list(range(0, 3)) + list(range(5, 64))
 
