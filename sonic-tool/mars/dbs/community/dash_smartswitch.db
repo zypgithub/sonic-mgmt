@@ -40,9 +40,9 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_private_link.cases </cases>
     </test>
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_nasa_debug.cases </cases>
     </test>
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_nasa_debug.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
     </test>
 </DBDEF>
