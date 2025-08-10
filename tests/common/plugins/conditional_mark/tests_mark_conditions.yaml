@@ -1410,6 +1410,12 @@ fdb/test_fdb_mac_learning.py::TestFdbMacLearning::testFdbMacLearning:
     conditions:
       - "'dualtor-aa' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/16110"
 
+fdb/test_fdb.py::test_fdb:
+  xfail:
+    reason: "Testcase ignored due to github issue https://github.com/sonic-net/sonic-buildimage/issues/23635"
+    conditions:
+      - "https://github.com/sonic-net/sonic-buildimage/issues/23635 and hwsku in ['Mellanox-SN5640-C512S2', 'Mellanox-SN5640-C448O16', 'Mellanox-SN5600-C256S1','Mellanox-SN5600-C224O8']"
+
 #######################################
 #####            fib              #####
 #######################################
