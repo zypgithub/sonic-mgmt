@@ -271,6 +271,17 @@ class ReleaseResultsUploader:
             logger.error(f"Error loading redmine issues file: {e}")
             raise e
 
+    def update_commercials_in_columns(self, df, i, old_hostname, new_hostname, commercial_name):
+        test_name = df.loc[i, "test name"]
+        testbed = df.loc[i, "testbed"]
+        internal_name = self.get_internal_name(old_hostname)
+        df.loc[i, "test name"] = self.handle_hostname_in_testbed_and_test_name(test_name, old_hostname, commercial_name)
+        df.loc[i, "testbed"] = self.handle_hostname_in_testbed_and_test_name(testbed, old_hostname, new_hostname)
+        if isinstance(df.loc[i, "message"], str):
+            for internal_name, commercial_name in ResultUploaderConst.HOST_INTERNAL_NAMES_MAP.items():
+                df.loc[i, "message"] = df.loc[i, "message"].replace(internal_name, commercial_name)
+        return df
+
     def modify_results(self):
         df = pd.read_excel(self.user_excel_table_path, sheet_name=self.sheet_name, index_col=0)
         self.load_redmine_issues_to_update()
@@ -285,13 +296,9 @@ class ReleaseResultsUploader:
             test_name = df.loc[i, "test name"]
             old_hostname = df.loc[i, "host"]
             platform = df.loc[i, "platform"]
-            new_hostname = self.get_new_hostname(old_hostname, platform)
-            df.loc[i, "test name"] = test_name.replace(old_hostname, new_hostname)
-            test_name = df.loc[i, "test name"]
-            df.loc[i, "testbed"] = df.loc[i, "testbed"].replace(old_hostname, new_hostname)
-            if isinstance(df.loc[i, "message"], str):
-                for internal_name, commercial_name in ResultUploaderConst.HOST_INTERNAL_NAMES_MAP.items():
-                    df.loc[i, "message"] = df.loc[i, "message"].replace(internal_name, commercial_name)
+            commercial_name = re.search(r"x86_64-\w*_(\w+\d{4}\w*)-.*", platform).group(1)
+            new_hostname = self.get_new_hostname(old_hostname, commercial_name)
+            df = self.update_commercials_in_columns(df, i, old_hostname, new_hostname, commercial_name)
             message = df.loc[i, "message"]
             host_commercial_name_col.append(new_hostname)
             junit_xml_path = self.handle_sanitize_data(df, i, junit_xml_path, session_id,
@@ -311,11 +318,10 @@ class ReleaseResultsUploader:
         logger.info(f'Modified excel results table is at : {self.user_modified_excel_table_path}')
         self.compose_modify_results_mail(self.user_modified_excel_table_path)
 
-    def get_new_hostname(self, old_hostname, platform):
+    def get_new_hostname(self, old_hostname, commercial_name):
         new_hostname = old_hostname
         internal_name = self.get_internal_name(old_hostname)
         if internal_name:
-            commercial_name = re.search(r"x86_64-\w*_(\w+\d{4}\w*)-.*", platform).group(1)
             new_hostname = old_hostname.replace(internal_name, commercial_name)
         return new_hostname
 
@@ -729,6 +735,18 @@ class ReleaseResultsUploader:
             logger.warning(f"Couldn't parse any testcase in junit file {junit_xml_path}")
         return excel_rows
 
+    def handle_hostname_in_testbed_and_test_name(self, name, host, host_name_to_replace):
+        sanitized_naming = name.replace(host, host_name_to_replace)
+        internal_name = self.get_internal_name(host)
+        if internal_name:
+            internal_name_match = re.search(rf"\b\w+-{internal_name}-\d+\b", sanitized_naming)
+            if internal_name_match:
+                logger.warning(f"Found internal name {internal_name_match.group()} in test name "
+                               f"{sanitized_naming} for host {host}, might be a bug in the test name "
+                               f"or dual-tor host")
+                sanitized_naming = sanitized_naming.replace(internal_name_match.group(), host_name_to_replace)
+        return sanitized_naming
+
     def parse_junit_file(self, session_id, junit_xml_path):
         """
         return a list of the parsed excel row for each test case in the junit file.
@@ -755,16 +773,18 @@ class ReleaseResultsUploader:
                    "topology", "host", "asic", "platform", "hwsku", "os_version", "xml_path",
                    "was_xml_updated", "modify_xml"]
                 """
+                host = self.sessions_testbed_properties[session_id]['host']
+                test_name = testcase_properties['test_name']
                 excel_row_content.append(session_id)
                 excel_row_content.append(self.get_mars_key_id(junit_xml_path))
                 excel_row_content.append(self.sessions_testbed_properties[session_id]['testbed'])
-                excel_row_content.append(testcase_properties['test_name'])
+                excel_row_content.append(test_name)
                 excel_row_content.append(testcase_properties.get('start', ""))
                 excel_row_content.append(testcase_properties.get('end', ""))
                 excel_row_content.append(testcase_properties['result'])
                 excel_row_content.append(testcase_properties['message'])
                 excel_row_content.append(self.sessions_testbed_properties[session_id]['topology'])
-                excel_row_content.append(self.sessions_testbed_properties[session_id]['host'])
+                excel_row_content.append(host)
                 excel_row_content.append(self.sessions_testbed_properties[session_id]['asic'])
                 excel_row_content.append(self.sessions_testbed_properties[session_id]['platform'])
                 excel_row_content.append(self.sessions_testbed_properties[session_id]['hwsku'])
@@ -772,9 +792,7 @@ class ReleaseResultsUploader:
                 excel_row_content.append(junit_xml_path)
                 excel_row_content.append(was_xml_updated)
                 excel_row_content.append(modify_xml)
-                sanitized_testname = \
-                    testcase_properties['test_name'].replace(self.sessions_testbed_properties[session_id]['host'],
-                                                             ResultUploaderConst.SANITIZED_HOSTNAME)
+                sanitized_testname = self.handle_hostname_in_testbed_and_test_name(test_name, host, ResultUploaderConst.SANITIZED_HOSTNAME)
                 excel_row_content.append(sanitized_testname)
                 excel_rows.append(excel_row_content)
         if not excel_rows:
