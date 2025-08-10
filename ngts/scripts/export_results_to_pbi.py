@@ -174,6 +174,14 @@ def summarize_test_run(tests, report_url):
 
     pass_rate = (passed / total_count_for_pass_rate) * 100.0 if total_count_for_pass_rate > 0 else 0.0
 
+    logger.info(f"Passed = {passed}")
+    logger.info(f"Failed = {failed}")
+    logger.info(f"Broken = {broken}")
+    logger.info(f"Unknown = {unknown}")
+    logger.info(f"Skipped = {skipped}")
+    logger.info(f"Pass Rate = {pass_rate}%")
+    logger.info(f"Executed = {passed}/{passed + failed} ({broken + unknown + skipped})")
+
     return {
         "passed": passed,
         "failed": failed,
