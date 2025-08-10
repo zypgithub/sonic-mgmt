@@ -19,6 +19,7 @@ ALLURE_DOCKER_SERVICE = 'allure-docker-service'
 SUITE_PATH = 'suite_path'
 TEST_NAME = 'test_name'
 STATUS = 'status'
+DURATION = 'duration'
 TEST_URL = 'test_url'
 PASS_RATE = 'pass_rate'
 VERSION = 'version'
@@ -87,11 +88,11 @@ def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summa
         logger.info("Insert results to test_analytics DB")
         values = ""
         for result in parsed_results:
-            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{result['test_url']}', '{branch}', '{version}')"
+            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{result['test_url']}', '{branch}', '{version}', '{result[DURATION]}')"
             values = f"{values}, {value}" if values else value
 
         if values:
-            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL}, {BRANCH}, {VERSION})"
+            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL}, {BRANCH}, {VERSION}, {DURATION})"
             query = "INSERT test_analytics {columns} values {values};".format(columns=columns, values=values)
             logger.info("Inserting data to test_analytics table")
             try:
@@ -131,6 +132,7 @@ def parse_suites(node, base_url, suite_chain=[], results=[]):
                 SUITE_PATH: " > ".join(new_chain),
                 TEST_NAME: child["name"],
                 STATUS: child["status"],
+                DURATION: child["time"]["duration"] / 60000,
                 TEST_URL: test_url  # new field
             })
         else:
