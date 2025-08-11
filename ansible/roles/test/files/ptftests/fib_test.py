@@ -397,7 +397,7 @@ class FibTest(BaseTest):
                 rcvd_port_index, rcvd_pkt = verify_packet_any_port(
                     self, masked_exp_pkt, dst_ports, timeout=1)
             except AssertionError:
-                logging.error("Traffic wasn't sent successfully, trying again")
+                logging.warning("Traffic wasn't sent successfully, trying again")
                 send_packet(self, src_port, pkt, count=5)
 
                 logging.info('Sent Ether(src={}, dst={})/IP(src={}, dst={})/TCP(sport={}, dport={}) on port {}'
@@ -504,7 +504,7 @@ class FibTest(BaseTest):
                 rcvd_port_index, rcvd_pkt = verify_packet_any_port(
                     self, masked_exp_pkt, dst_ports, timeout=1)
             except AssertionError:
-                logging.error("Traffic wasn't sent successfully, trying again")
+                logging.warning("Traffic wasn't sent successfully, trying again")
                 send_packet(self, src_port, pkt, count=5)
 
                 logging.info('Sent Ether(src={}, dst={})/IPv6(src={}, dst={})/TCP(sport={}, dport={}) on port {}'
