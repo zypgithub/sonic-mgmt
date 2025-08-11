@@ -42,6 +42,49 @@ pytestmark = [
 ]
 
 
+def cleanup_reboot_cause_history(topology_obj, setup_info):
+    """
+    Clean reboot-cause history after SONiC upgrade to resolve timezone conflicts.
+    This function removes old reboot-cause history files that may have inconsistent
+    timezone formats between different SONiC versions (e.g., 202411 IDT vs 202505 UTC).
+
+    :param topology_obj: topology object containing device connections
+    :param setup_info: setup information containing DUT details
+    """
+    logger.info("Starting reboot-cause history cleanup after SONiC upgrade")
+
+    for dut in setup_info['duts']:
+        dut_name = dut['dut_name']
+        dut_alias = dut['dut_alias']
+        try:
+            logger.info(f"Cleaning reboot-cause history on DUT: {dut_name}")
+            engine = topology_obj.players[dut_alias]['engine']
+            # Commands to clean up reboot-cause history
+            cleanup_commands = [
+                # Backup existing history (optional - for safety)
+                'sudo mkdir -p /host/reboot-cause/backup',
+                'sudo cp -r /host/reboot-cause/history/* /host/reboot-cause/backup/ 2>/dev/null || true',
+                # Remove all old reboot-cause history files
+                'sudo rm -f /host/reboot-cause/history/reboot-cause-*.json',
+                # Restart the process-reboot-cause service to reset state
+                'sudo systemctl restart process-reboot-cause.service || true',
+                # Verify cleanup
+                'ls -la /host/reboot-cause/history/ || true'
+            ]
+            for cmd in cleanup_commands:
+                try:
+                    result = engine.run_cmd(cmd)
+                    logger.debug(f"Command '{cmd}' executed on {dut_name}: {result}")
+                except Exception as e:
+                    logger.warning(f"Non-critical error executing '{cmd}' on {dut_name}: {e}")
+            logger.info(f"Reboot-cause history cleanup completed for DUT: {dut_name}")
+        except Exception as e:
+            logger.error(f"Failed to clean reboot-cause history on DUT {dut_name}: {e}")
+            # Don't fail the entire upgrade process for history cleanup issues
+            continue
+    logger.info("Reboot-cause history cleanup completed for all DUTs")
+
+
 @pytest.mark.dependency()
 @pytest.mark.disable_loganalyzer
 @allure.title('Deploy and upgrade image')
@@ -196,6 +239,10 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
         if base_version and target_version and not deploy_only_target:
             if not set_os_upgrade_flag():
                 logger.warning("Failed to set the OS upgrade flag")
+            with allure.step('clean reboot-cause history after upgrade'):
+                # see the fix for 202505 https://github.com/sonic-net/sonic-host-services/pull/293
+                logger.info("Cleaning reboot-cause history to avoid timezone conflicts between versions")
+                cleanup_reboot_cause_history(topology_obj, setup_info)
 
     except Exception as err:
         raise AssertionError(err)
