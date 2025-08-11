@@ -161,7 +161,6 @@ def outbound_pl_packets(config, outer_encap, floating_nic=False, inner_packet_ty
     )
     l4_protocol_key = get_scapy_l4_protocol_key(inner_packet_type)
 
-
     if outer_encap == 'vxlan':
         outer_packet = testutils.simple_vxlan_packet(
             eth_src=config[LOCAL_PTF_MAC],
@@ -219,6 +218,8 @@ def outbound_pl_packets(config, outer_encap, floating_nic=False, inner_packet_ty
         ip_ttl = 255
     else:
         ip_ttl = 254
+
+    exp_inner_packet[l4_protocol_key] = inner_packet[l4_protocol_key]
 
     exp_encap_packet = testutils.simple_gre_packet(
         eth_dst=config[DUT_MAC] if nsg_packet else config[REMOTE_PTF_MAC],
