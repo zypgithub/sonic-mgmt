@@ -70,9 +70,6 @@ R-R740-05 ansible_host=r-r740-05
 [vm_host_57]
 R-R740-03 ansible_host=r-r740-03
 
-[vm_host_58]
-R-R740-08 ansible_host=r-r740-08
-
 [vm_host_59]
 R-R740-09 ansible_host=r-r740-09
 
@@ -107,7 +104,7 @@ R-R740-14_1 ansible_host=r-r740-14
 R-R740-13_2 ansible_host=r-r740-13
 
 [vm_host_71]
-R-R740-12_2 ansible_host=r-r740-12
+R-R740-08 ansible_host=r-r740-08
 
 [vm_host_72]
 R-R740-14_2 ansible_host=R-R740-14
@@ -206,7 +203,6 @@ vm_host_54
 vm_host_55
 vm_host_56
 vm_host_57
-vm_host_58
 vm_host_59
 vm_host_60
 vm_host_61
@@ -930,12 +926,6 @@ VM2202 ansible_host=10.215.19.22
 VM2203 ansible_host=10.215.19.23
 VM2204 ansible_host=10.215.19.24
 
-[vms_58]
-VM2301 ansible_host=10.215.22.123
-VM2302 ansible_host=10.215.22.124
-VM2303 ansible_host=10.215.22.127
-VM2304 ansible_host=10.215.22.128
-
 [vms_59]
 VM2401 ansible_host=10.215.5.4
 VM2402 ansible_host=10.215.5.5
@@ -1517,38 +1507,38 @@ VM3531 ansible_host=10.215.34.152
 VM3532 ansible_host=10.215.34.153
 
 [vms_71]
-VM3601 ansible_host=10.215.30.183
-VM3602 ansible_host=10.215.30.184
-VM3603 ansible_host=10.215.30.185
-VM3604 ansible_host=10.215.30.186
-VM3605 ansible_host=10.215.30.187
-VM3606 ansible_host=10.215.30.188
-VM3607 ansible_host=10.215.30.189
-VM3608 ansible_host=10.215.30.190
-VM3609 ansible_host=10.215.30.191
-VM3610 ansible_host=10.215.30.192
-VM3611 ansible_host=10.215.30.193
-VM3612 ansible_host=10.215.30.194
-VM3613 ansible_host=10.215.30.195
-VM3614 ansible_host=10.215.30.196
-VM3615 ansible_host=10.215.30.197
-VM3616 ansible_host=10.215.30.198
-VM3617 ansible_host=10.215.30.199
-VM3618 ansible_host=10.215.30.200
-VM3619 ansible_host=10.215.30.201
-VM3620 ansible_host=10.215.30.202
-VM3621 ansible_host=10.215.30.203
-VM3622 ansible_host=10.215.30.204
-VM3623 ansible_host=10.215.30.205
-VM3624 ansible_host=10.215.30.206
-VM3625 ansible_host=10.215.30.207
-VM3626 ansible_host=10.215.30.208
-VM3627 ansible_host=10.215.30.209
-VM3628 ansible_host=10.215.30.210
-VM3629 ansible_host=10.215.30.211
-VM3630 ansible_host=10.215.30.212
-VM3631 ansible_host=10.215.30.213
-VM3632 ansible_host=10.215.30.214
+VM3601 ansible_host=10.215.22.123
+VM3602 ansible_host=10.215.22.124
+VM3603 ansible_host=10.215.22.125
+VM3604 ansible_host=10.215.22.126
+VM3605 ansible_host=10.215.22.127
+VM3606 ansible_host=10.215.22.128
+VM3607 ansible_host=10.215.22.129
+VM3608 ansible_host=10.215.22.130
+VM3609 ansible_host=10.215.22.131
+VM3610 ansible_host=10.215.22.132
+VM3611 ansible_host=10.215.22.133
+VM3612 ansible_host=10.215.22.134
+VM3613 ansible_host=10.215.22.135
+VM3614 ansible_host=10.215.22.136
+VM3615 ansible_host=10.215.22.137
+VM3616 ansible_host=10.215.22.138
+VM3617 ansible_host=10.215.22.139
+VM3618 ansible_host=10.215.22.140
+VM3619 ansible_host=10.215.22.141
+VM3620 ansible_host=10.215.22.142
+VM3621 ansible_host=10.215.22.143
+VM3622 ansible_host=10.215.22.144
+VM3623 ansible_host=10.215.22.145
+VM3624 ansible_host=10.215.22.146
+VM3625 ansible_host=10.215.22.147
+VM3626 ansible_host=10.215.22.148
+VM3627 ansible_host=10.215.22.149
+VM3628 ansible_host=10.215.22.150
+VM3629 ansible_host=10.215.22.151
+VM3630 ansible_host=10.215.22.152
+VM3631 ansible_host=10.215.22.153
+VM3632 ansible_host=10.215.22.154
 
 [vms_72]
 VM3701 ansible_host=10.215.28.217
@@ -4794,7 +4784,6 @@ vms_54
 vms_55
 vms_56
 vms_57
-vms_58
 vms_59
 vms_60
 vms_61
@@ -5025,17 +5014,6 @@ host_var_file=host_vars/R-R740-03.yml
 host_var_file=host_vars/R-R740-03.yml
 mgmt_prefixlen=16
 
-[server_58:children]
-vm_host_58
-vms_58
-
-[server_58:vars]
-host_var_file=host_vars/R-R740-08.yml
-
-[vms_58:vars]
-host_var_file=host_vars/R-R740-08.yml
-mgmt_prefixlen=16
-
 [server_59:children]
 vm_host_59
 vms_59
@@ -5163,10 +5141,10 @@ vm_host_71
 vms_71
 
 [server_71:vars]
-host_var_file=host_vars/R-R740-12_2.yml
+host_var_file=host_vars/R-R740-08.yml
 
 [vms_71:vars]
-host_var_file=host_vars/R-R740-12_2.yml
+host_var_file=host_vars/R-R740-08.yml
 mgmt_prefixlen=16
 
 [server_72:children]
@@ -5459,7 +5437,6 @@ server_54
 server_55
 server_56
 server_57
-server_58
 server_59
 server_60
 server_61

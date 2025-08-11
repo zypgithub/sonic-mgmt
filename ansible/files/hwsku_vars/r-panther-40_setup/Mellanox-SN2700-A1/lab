@@ -5,7 +5,7 @@ r-panther-40      ansible_host=10.210.25.49 ansible_hostv6="fe80::a288:c2ff:fe86
 sonic_latest
 
 [ptf]
-ptf-r-panther-40 ansible_host=10.215.30.182 ansible_ssh_user=root ansible_ssh_pass=root
+ptf-r-panther-40 ansible_host=10.215.22.122 ansible_ssh_user=root ansible_ssh_pass=root
 
 [lab:children]
 sonic
