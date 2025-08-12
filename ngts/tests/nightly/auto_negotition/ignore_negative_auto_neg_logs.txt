@@ -1,0 +1,1 @@
+r, ".*ERR syncd#SDK: \[SAI_UTILS\.ERR\] \./src/mlnx_sai_utils\.c\[\d+\]- set_dispatch_attrib_handler: Failed Set SPEED, key:PORT \[OID:0x[\dA-Fa-f]+\] \[log_port:0x[\dA-Fa-f]+\], val:\d+.*"

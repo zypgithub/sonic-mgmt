@@ -1,5 +1,6 @@
 import random
 import logging
+import os
 import pytest
 from retry.api import retry_call
 
@@ -7,6 +8,7 @@ from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 from ngts.tests.nightly.auto_negotition.conftest import convert_speeds_to_mb_format, get_matched_types, \
     get_interface_cable_width
 from ngts.tests.nightly.auto_negotition.auto_neg_common import TestAutoNegBase
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer
 from ngts.tests.nightly.conftest import cleanup
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from ngts.constants.constants import AutonegCommandConstants
@@ -25,6 +27,37 @@ INVALID_PORT_ERR_REGEX = r"Invalid\s+port"
 INVALID_SPEED_ERR_REGEX = r"Invalid\s+speed\s+specified"
 INVALID_AUTO_NEG_MODE_ERR_REGEX = r'Error:\s+Invalid\s+value\s+for\s+"<mode>":\s+invalid choice:' \
                                   r'\s+enable.\s\(choose\s+from\s+enabled,\s+disabled\)'
+
+
+@pytest.fixture(autouse=False)
+def local_loganalyzer_mismatch_speed_type(duthosts, ignore_main_loganalyzer):
+    """
+    This fixture is specific for the mismatch speed and type test.
+    It creates a local loganalyzer to catch the SAI errors in the log.
+    It also disables the main loganalyzer to avoid the SAI errors in the log.
+
+    :param duthosts: duthosts fixture
+    :param ignore_main_loganalyzer: disable main loganalyzer
+    :return: None
+    """
+    assert duthosts, "Need to have loganalyzer enabled to run this test"
+
+    # Create a manual loganalyzer to catch the SAI errors in the log
+    local_loganalyzer = LogAnalyzer(ansible_host=duthosts[0], marker_prefix='autoneg_mismatch_local')
+    local_loganalyzer.load_common_config()
+    local_loganalyzer.expect_regex.clear()
+
+    # add test specific regexps
+    match_regex_list = \
+        local_loganalyzer.parse_regexp_file(src=str(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                 "expected_negative_auto_neg_logs.txt")))
+    ignore_regex_list = \
+        local_loganalyzer.parse_regexp_file(src=str(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                 "ignore_negative_auto_neg_logs.txt")))
+    local_loganalyzer.expect_regex.extend(match_regex_list)
+    local_loganalyzer.ignore_regex.extend(ignore_regex_list)
+
+    yield local_loganalyzer
 
 
 class TestAutoNegNegative(TestAutoNegBase):
@@ -181,7 +214,8 @@ class TestAutoNegNegative(TestAutoNegBase):
         conf[lb[1]][AutonegCommandConstants.ADV_TYPES] = ",".join(port_2_adv_type)
         return conf
 
-    def test_negative_advertised_speed_type_mismatch(self, expected_auto_neg_loganalyzer_exceptions,
+    def test_negative_advertised_speed_type_mismatch(self,
+                                                     local_loganalyzer_mismatch_speed_type,
                                                      cleanup_list):
         """
         Verify error in log when configuring mismatch type and speed, like 'CR4' and '10G',
@@ -191,6 +225,7 @@ class TestAutoNegNegative(TestAutoNegBase):
         :param cleanup_list:  a list of cleanup functions that should be called in the end of the test
         :return: raise assertion error in case of failure
         """
+        marker = local_loganalyzer_mismatch_speed_type.init()
         split_mode = 1
         first_lb = 0
         lb = self.tested_lb_dict[split_mode][first_lb]
@@ -204,7 +239,26 @@ class TestAutoNegNegative(TestAutoNegBase):
         self.configure_port_auto_neg(self.cli_objects.dut, conf.keys(),
                                      conf, cleanup_list, mode='disabled',
                                      set_expected_mlxlink_autoneg=False)
-        self.auto_neg_checker(tested_lb_dict, conf, cleanup_list)
+        try:
+            self.auto_neg_checker(tested_lb_dict, conf, cleanup_list)
+        except AssertionError:
+            # ignore any test failures
+            # only expecting loganalyzer to catch SAI errors
+            pass
+
+        # Disable the autoneg to prevent further error messages in this test
+        self.configure_port_auto_neg(self.cli_objects.dut, conf.keys(),
+                                     conf, cleanup_list, mode='disabled',
+                                     set_expected_mlxlink_autoneg=False)
+
+        # analyze the log and check if the expected SAI errors are in the log
+        result = local_loganalyzer_mismatch_speed_type.analyze(marker, fail=True)
+        # Expecting to see all expected error messages
+        assert result["total"]["expected_match"] >= len(local_loganalyzer_mismatch_speed_type.expect_regex), \
+            "Expecting to match all SAI errors in the log"
+        assert len(result['unused_expected_regexp']) == 0, \
+            ("Expecting to match and REGEXPs in the log, remaining regexps: {}"
+                .format(result['unused_expected_reg_exp']))
 
     def check_if_interface_support_max_cr_type(self, port, conf_min_speed, max_type):
         """

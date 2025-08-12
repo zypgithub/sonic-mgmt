@@ -295,32 +295,18 @@ def convert_speeds_to_mb_format(speeds_list):
 
 
 @pytest.fixture(autouse=False)
-def expected_auto_neg_loganalyzer_exceptions(request, cli_objects, loganalyzer):
+def ignore_main_loganalyzer(cli_objects, loganalyzer):
     """
-    expanding the ignore list of the loganalyzer for these tests because of reboot.
-    :param request: pytest build-in
-    :param loganalyzer: loganalyzer utility fixture
+    :param cli_objects: cli objects fixture
+    :param loganalyzer: loganalyzer fixture
     :return: None
     """
     dut_hostname = cli_objects.dut.chassis.get_hostname()
     if loganalyzer:
-        expected_regex_list = \
-            loganalyzer[dut_hostname].parse_regexp_file(src=str(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                                             "expected_negative_auto_neg_logs.txt")))
-        loganalyzer[dut_hostname].expect_regex.extend(expected_regex_list)
-
+        loganalyzer[dut_hostname].add_start_ignore_mark()
     yield
-
-    # If test skipped - remove expected regexps from loganalyzer.expect_regex list
-    if request.node.rep_setup.skipped:
-        if loganalyzer:
-            expected_regex_list = \
-                loganalyzer[dut_hostname].parse_regexp_file(
-                    src=str(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                         "expected_negative_auto_neg_logs.txt")))
-
-            for regexp in expected_regex_list:
-                loganalyzer[dut_hostname].expect_regex.remove(regexp)
+    if loganalyzer:
+        loganalyzer[dut_hostname].add_end_ignore_mark()
 
 
 def get_all_advertised_speeds_sorted_string(speeds_list, physical_interface_type=None):
