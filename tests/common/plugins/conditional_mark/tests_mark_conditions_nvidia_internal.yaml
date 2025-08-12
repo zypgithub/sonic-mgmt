@@ -362,7 +362,7 @@ tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_polic
     - "'5640' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_core_check:
-  skip:
+  xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371"
     conditions:
       - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
