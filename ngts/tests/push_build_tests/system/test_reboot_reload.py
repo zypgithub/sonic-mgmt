@@ -45,6 +45,11 @@ def validation_type(platform_params, is_simx, reboot_type):
         expected_traffic_loss_dict[validation_type]['data'] = 360  # Update SIMX downtime due to SW limitations
         expected_traffic_loss_dict[validation_type]['control'] = 360
 
+    elif "5640" in platform_params.platform:
+        # WA due to #4533180
+        expected_traffic_loss_dict[validation_type]['data'] = 260
+        expected_traffic_loss_dict[validation_type]['control'] = 220
+
     return validation_type
 
 
