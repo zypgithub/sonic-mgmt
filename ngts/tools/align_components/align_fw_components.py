@@ -50,12 +50,6 @@ def start_components_update(_args):
     if Defaults.FPGA_NAME not in str(respond).lower():
         components_to_update = [comp for comp in components_to_update if Defaults.FPGA_NAME not in comp.lower()]
 
-    # For non-FPGA components, do the normal availability check
-    for component in components_to_update.copy():
-        if Defaults.FPGA_NAME not in component.lower():  # Skip FPGA components
-            if component.lower() not in str(respond).lower():
-                components_to_update.remove(component)
-
     components: List[Component] = []
     for component_name in components_to_update:
         required_version = None
