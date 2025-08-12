@@ -497,7 +497,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                             f"-out {SonicConst.TELEMETRY_DSMSROOT_CER}")
 
     def deploy_sonic(self, image_path, is_skipping_migrating_package=False):
-        tmp_target_path = '/tmp/sonic-mellanox.bin'
+        tmp_target_path = '/home/admin/sonic-mellanox.bin'
         delimiter = self.get_installer_delimiter()
 
         def get_file_md5sum(file_path):
@@ -514,7 +514,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 retries, tmp_target_path_md5sum = 3, ""
                 while retries > 0:
                     self.engine.copy_file(source_file=image_path, dest_file='sonic-mellanox.bin',
-                                          file_system='/tmp/', overwrite_file=True, verify_file=False)
+                                          file_system='/home/admin/', overwrite_file=True, verify_file=False)
                     tmp_target_path_md5sum = self.engine.run_cmd(f'md5sum {tmp_target_path}|cut -d" " -f1')
                     if tmp_target_path_md5sum == image_path_md5sum:
                         break
@@ -529,6 +529,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step('Setting image as default'):
                 image_binary = self.get_image_binary_version(tmp_target_path, delimiter)
                 self.set_default_image(image_binary, delimiter)
+            with allure.step('Removing the image'):
+                self.engine.run_cmd(f'sudo rm -f {tmp_target_path}')
 
         with allure.step('Rebooting the dut'):
             self.engine.reload(['sudo reboot'])
