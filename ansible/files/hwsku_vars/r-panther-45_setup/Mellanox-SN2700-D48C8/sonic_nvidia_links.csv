@@ -55,4 +55,4 @@ r-panther-45,Ethernet120,r-panther-46,ethernet 1/31/1,50000,153,Access
 r-panther-45,Ethernet122,r-panther-46,ethernet 1/31/2,50000,154,Access
 r-panther-45,Ethernet124,r-panther-46,ethernet 1/32/1,50000,155,Access
 r-panther-45,Ethernet126,r-panther-46,ethernet 1/32/2,50000,156,Access
-r-panther-46,ethernet 1/26,r-dl360-01,p2p2,100000,101-156,Trunk
+r-panther-46,ethernet 1/26,r-r740-09,p1p2,100000,101-156,Trunk

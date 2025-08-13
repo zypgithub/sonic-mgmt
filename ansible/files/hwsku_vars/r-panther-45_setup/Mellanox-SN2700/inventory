@@ -32,8 +32,8 @@ r-panther-45-ptf-any
 
 [ptf]
 # r-panther-45 PTF host
-ptf-r-panther-45 ansible_host=10.215.34.249 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.215.34.249 ansible_host=10.215.34.249 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-r-panther-45 ansible_host=10.215.5.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.5.3 ansible_host=10.215.5.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-208-0-137 ansible_host=10.208.0.137 protocol=snmp
