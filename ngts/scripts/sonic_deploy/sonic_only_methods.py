@@ -151,6 +151,8 @@ class SonicInstallationSteps:
                                                   f"hwsku_vars/{setup_name}/{destination_hwsku}/inventory")
         setup_hwsku_lab_path = os.path.join(common_csv_file_path,
                                             f"hwsku_vars/{setup_name}/{destination_hwsku}/lab")
+        setup_hwsku_veos_path = os.path.join(common_csv_file_path,
+                                             f"hwsku_vars/{setup_name}/veos")
 
         logger.info(f"Common csv files path: {common_csv_file_path}")
         logger.info(f"Copy {setup_name} - {destination_hwsku} related csv files to override the common csv files")
@@ -162,6 +164,10 @@ class SonicInstallationSteps:
                     f"common inventory and lab files")
         os.system(f"cp -f {setup_hwsku_inventory_path} {common_inventory_lab_path}")
         os.system(f"cp -f {setup_hwsku_lab_path} {common_inventory_lab_path}")
+
+        if os.path.exists(setup_hwsku_veos_path):
+            logger.info(f"Copy {setup_name} - {destination_hwsku} related veos file to override the common veos file")
+            os.system(f"cp -f {setup_hwsku_veos_path} {common_inventory_lab_path}")
 
     @staticmethod
     def override_hwsku_files(setup_info, destination_hwsku):

@@ -2770,7 +2770,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2784,7 +2784,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2798,7 +2798,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2834,7 +2834,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2870,7 +2870,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2884,7 +2884,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2944,7 +2944,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2958,7 +2958,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2972,7 +2972,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -2986,7 +2986,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -3000,7 +3000,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -3014,7 +3014,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -3028,7 +3028,7 @@
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
   ptf_ipv6:
-  server: server_90
+  server: server_88
   vm_base: VM5301
   dut:
     - r-bison-01
@@ -3266,7 +3266,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3280,7 +3280,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3294,7 +3294,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3308,7 +3308,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3322,7 +3322,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3336,21 +3336,21 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-04-t1
+- conf-name: r-bison-06-t1
   group-name: vm-t1
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3364,7 +3364,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3378,7 +3378,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3392,7 +3392,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3406,7 +3406,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3420,7 +3420,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3434,7 +3434,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3448,7 +3448,7 @@
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
   ptf_ipv6:
-  server: server_92
+  server: server_90
   vm_base: VM6325
   dut:
     - r-bison-06
@@ -3462,7 +3462,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3476,7 +3476,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3490,7 +3490,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3504,7 +3504,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3518,7 +3518,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3532,7 +3532,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3546,7 +3546,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3560,7 +3560,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3574,7 +3574,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3588,7 +3588,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3602,7 +3602,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3616,7 +3616,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
@@ -3630,7 +3630,7 @@
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
   ptf_ipv6:
-  server: server_93
+  server: server_91
   vm_base: VM6837
   dut:
     - r-bison-08
