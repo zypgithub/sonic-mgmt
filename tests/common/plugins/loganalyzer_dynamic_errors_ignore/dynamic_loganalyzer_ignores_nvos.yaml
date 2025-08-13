@@ -793,14 +793,17 @@
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_lowest_server_only
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
       - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
-      - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication
-      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
-      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_basic
-      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_local_first
-      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_server_unreachable
+      - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication[ipv4-BadFlow]
+
+- Errors_list:
+    - '.*WARNING.*nslcd.*Invalid credentials.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication[ipv4-BadFlow]
 
 - Errors_list:
     - '.*WARNING.*The CRL.*doesn''t exist.*'
+    - '.*ERR.*crl_file.*not found.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/general/security/crl/test_crl.py::test_crl_bad_name
@@ -1505,6 +1508,7 @@
     - '.*WARNING nslcd\[\d+\]: \[\w+\].*failed to bind to LDAP server.*Invalid argument.*'
     - '.*WARNING systemd\[1\]: nvued\.service: Failed with result.*'
     - '.*ERR nslcd\[\d+\]: \[\w+\].*no available LDAP server found.*'
+    - '.*WARNING nslcd\[\d+\]: \[\w+\].*request denied by validnames option.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_server_unreachable[OpenApi-BadFlow]
@@ -2039,6 +2043,12 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/platform/test_platform_ps_redundancy.py::test_platform_ps_redundancy_functionality
+
+- Errors_list:
+    - '.*ERR.*does not contain the encryption mode required.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/nmx_rbac/test_nmx_rbac.py::test_update_rbac_file_without_encryption
 
 # NVOS: Ignore Leakage errors in leakage inducing tests
 - Errors_list:

@@ -86,18 +86,9 @@ def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION
 
 def wait_for_ldap_nvued_restart_workaround(test_item, engine_to_use=None):
     with allure.step('After LDAP configuration - wait for NVUE restart Workaround'):
-        workaround_max_time = 20
+        workaround_max_time = 1
         with allure.step(f'sleep for {workaround_max_time} seconds'):
             time.sleep(workaround_max_time)
-    # sleep_time = 3
-    # if not engine_to_use:
-    #     engine_to_use = test_item.active_remote_admin_engine if hasattr(test_item,
-    #                                                                     'active_remote_admin_engine') else TestToolkit.engines.dut
-    # with allure.step(f'Disconnect engine of user "{engine_to_use.username}"'):
-    #     engine_to_use.disconnect()
-    #     time.sleep(sleep_time)
-    # with allure.step(f'Wait till cli up - using user "{engine_to_use.username}"'):
-    #     wait_until_cli_is_up(engine=engine_to_use)
 
 
 def get_version_info(version: str) -> Tuple[str, str]:
