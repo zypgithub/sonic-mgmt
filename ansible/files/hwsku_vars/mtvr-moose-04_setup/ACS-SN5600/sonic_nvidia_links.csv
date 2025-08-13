@@ -63,4 +63,4 @@ mtvr-moose-04,Ethernet480,mtvr-moose-15,Ethernet480,800000,161,Access,on
 mtvr-moose-04,Ethernet488,mtvr-moose-15,Ethernet488,800000,162,Access,on
 mtvr-moose-04,Ethernet496,mtvr-moose-15,Ethernet496,800000,163,Access,on
 mtvr-moose-04,Ethernet504,mtvr-moose-15,Ethernet504,800000,164,Access,on
-mtvr-moose-15,Ethernet512,mtvr-r740-01,p3p1,25000,101-164,Trunk
+mtvr-moose-15,Ethernet512,mtvr-r740-01,p4p1,25000,101-164,Trunk

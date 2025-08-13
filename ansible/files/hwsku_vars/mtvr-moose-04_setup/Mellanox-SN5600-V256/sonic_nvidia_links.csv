@@ -255,4 +255,4 @@ mtvr-moose-04,Ethernet504,mtvr-moose-15,Ethernet504,200000,353,Access,on
 mtvr-moose-04,Ethernet506,mtvr-moose-15,Ethernet506,200000,354,Access,on
 mtvr-moose-04,Ethernet508,mtvr-moose-15,Ethernet508,200000,355,Access,on
 mtvr-moose-04,Ethernet510,mtvr-moose-15,Ethernet510,200000,356,Access,on
-mtvr-moose-15,Ethernet512,mtvr-r740-01,p3p1,25000,101-356,Trunk,on
+mtvr-moose-15,Ethernet512,mtvr-r740-01,p4p1,25000,101-356,Trunk,on

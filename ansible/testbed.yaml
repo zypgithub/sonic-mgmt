@@ -1569,7 +1569,7 @@
   topo: t0
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1583,7 +1583,7 @@
   topo: t0-c256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1597,7 +1597,7 @@
   topo: t0-64
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1611,7 +1611,7 @@
   topo: t0-64-256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1625,7 +1625,7 @@
   topo: t0-isolated-d16u16s1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1639,7 +1639,7 @@
   topo: t0-isolated-d128u128s1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1653,7 +1653,7 @@
   topo: t1-isolated-d28u1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1667,7 +1667,7 @@
   topo: t1-isolated-d224u8
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1681,7 +1681,7 @@
   topo: t0-isolated-d2u254s1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1695,7 +1695,7 @@
   topo: t1-isolated-d254u2s1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1709,7 +1709,7 @@
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1723,7 +1723,7 @@
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1737,7 +1737,7 @@
   topo: t1-lag-c224o8
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1751,7 +1751,7 @@
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1765,7 +1765,7 @@
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
@@ -1779,7 +1779,7 @@
   topo: ptp-256
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-mtvr-moose-04
-  ptf_ip: 10.245.20.62/16
+  ptf_ip: 10.245.20.62/22
   ptf_ipv6:
   server: server_65
   vm_base: VM3001
