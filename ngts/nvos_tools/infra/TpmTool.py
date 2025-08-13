@@ -86,7 +86,8 @@ class TpmTool:
 
     def get_bmc_admin_password_from_tpm(self):
         with allure.step('get bmc admin password from tpm'):
-            return self.get_tpm_cipher()[:11] + 'A!'
+            tpm_pass = self.engine.run_cmd('sudo python3 -c "from sonic_platform.bmc import BMC; print(BMC(\'10.0.1.1\').get_login_password())"')
+            return tpm_pass.strip()
 
     def get_sed_password_primary_bank(self):
         return self._get_sed_password(PRIMARY_SED_TPM_BANK)
