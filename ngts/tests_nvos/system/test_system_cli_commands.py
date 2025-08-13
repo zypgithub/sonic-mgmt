@@ -3,9 +3,11 @@ import time
 import pytest
 import logging
 from ngts.nvos_tools.system.System import System
-from retry import retry
+from datetime import datetime
+from retry.api import retry_call
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -110,7 +112,7 @@ def test_set_max_cli_session(engines, devices):
 
 @pytest.mark.checklist
 @pytest.mark.ssh_config
-def test_set_inactivity_timeout(engines, devices, topology_obj):
+def test_set_inactivity_timeout(engines, devices, topology_obj, test_name):
     """
     Test flow:
         1. run show system serial-console and check default fields and values
@@ -162,9 +164,17 @@ def test_set_inactivity_timeout(engines, devices, topology_obj):
             with allure.step("Verify we have 2 new users connected"):
                 assert users_num == _get_users_num(engines) - 2, f"Current users number is not as expected.\nExpected: {users_num + 2}\nGot: {_get_users_num(engines)}"
 
-            with allure.step("Wait 60 seconds and verify 2 users disconnected by inactivity timeout"):
+            with allure.step("Wait 60 seconds"):
+                start_time = time.time()
                 time.sleep(60)
-                assert _get_users_num(engines) == users_num, f"Current users number is not as expected.\nExpected: {users_num},\nGot: {_get_users_num(engines)}"
+
+            with allure.step("Verify 2 users disconnected by inactivity timeout"):
+                retry_call(_assert_number_of_users_disconnected, [engines, users_num], exceptions=AssertionError, tries=6, delay=5)
+                end_time = time.time()
+                total_time = end_time - start_time
+                logger.info(f"Users disconnection by inactivity timeout duration - {total_time} seconds")
+                OperationTime.verify_operation_time(total_time, "users disconnection by inactivity timeout").verify_result()
+
         except BaseException as ex:
             raise Exception("Failed on {}".format(str(ex)))
         finally:
@@ -239,3 +249,9 @@ def _get_users_num(engines):
     if match:
         users_num = int(match.group(1))
     return users_num
+
+
+def _assert_number_of_users_disconnected(engines, users_num):
+    current_users = _get_users_num(engines)
+    output = ValidationTool.compare_values(current_users, users_num).get_returned_value()
+    return output

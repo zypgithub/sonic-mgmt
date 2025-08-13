@@ -3,16 +3,14 @@ import logging
 from typing import Dict
 from datetime import datetime
 
-
-import allure
-
-from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_constants.constants_nvos import NvosConst, RemarkableLogsConsts, LogsSources
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.constants.constants import BugHandlerConst
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -46,29 +44,39 @@ class Log(BaseLog):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_write_to_logs,
                                                    TestToolkit.engines.dut).get_returned_value()
 
-    def verify_expected_logs(self, logs_to_find, engine=None, only_latest_log=False):
+    def verify_expected_logs(self, logs_to_find, logs_source=LogsSources.SYSLOG, engine=None, only_latest_log=False):
         """
+        :param logs_source: could be syslog, nvued, user and auth
         :param logs_to_find: list of logs to find
         :param engine: system engine
         :param only_latest_log: verify in only latest log file, instead of all in log files.
         :return:
         """
+
+        if not engine:
+            engine = TestToolkit.engines.dut
+
         with allure.step('Verify expected logs'):
+
             log_search_errors: Dict[str, str] = {log: f'log "{log}" was not found' for log in logs_to_find}
             grep_logs = '|'.join(logs_to_find)
 
             if only_latest_log:
-                log_files = ['syslog']
+                log_files = [logs_source]
             else:
-                log_files = OutputParsingTool.parse_json_str_to_dictionary(
-                    self.file.show()).get_returned_value().keys()
+                with allure.step(f"Get all {logs_source} files"):
+                    log_files = engine.run_cmd(f"ls {RemarkableLogsConsts.LOGS_PATH} | grep {logs_source}").splitlines()
 
             for log_file in log_files:
                 if not log_search_errors:
                     break
 
-                output = self.file.file_id[log_file].show(op_param=f'| grep -E -a "{grep_logs}"', output_format='',
-                                                          dut_engine=engine)
+                with allure.step(f"Try to find expected logs in {log_file}"):
+                    cmd = 'zcat' if log_file.endswith('.gz') else 'cat'
+                    output = engine.run_cmd(f'{cmd} {RemarkableLogsConsts.LOGS_PATH}'
+                                            f''
+                                            f'{log_file} | grep -E -a "{grep_logs}"')
+
                 if output:
                     for log in logs_to_find:
                         if re.search(log, output) and log in log_search_errors:
@@ -99,7 +107,7 @@ class Log(BaseLog):
                 if not log_search_errors:
                     break
 
-                output = engine.run_cmd(f'sudo cat /var/log/{log_file} | grep -E -a "{grep_logs}"')
+                output = engine.run_cmd(f'sudo cat {RemarkableLogsConsts.LOGS_PATH}{log_file} | grep -E -a "{grep_logs}"')
 
                 if output:
                     lines = output.splitlines()

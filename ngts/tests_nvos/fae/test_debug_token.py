@@ -214,10 +214,10 @@ def test_debug_info_rename_bad_flow(engines, test_name, test_api):
         debug_image.files.file_name[new_filename].action_delete().verify_result()
 
     with allure.step(f'bad flow - delete the old non-existing file {filename} - expected fail'):
-        debug_image.files.file_name[filename].action_delete.verify_result(should_succeed=False)
+        debug_image.files.file_name[filename].action_delete().verify_result(should_succeed=False)
 
     with allure.step(f'bad flow - delete the renamed file {new_filename} - expected fail'):
-        debug_image.files.file_name[new_filename].action_delete.verify_result(should_succeed=False)
+        debug_image.files.file_name[new_filename].action_delete().verify_result(should_succeed=False)
 
     debug_image.files.verify_show_files_output()
 

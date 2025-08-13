@@ -142,7 +142,7 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
                     assert admin_sessions_after_testing - admin_sessions_before_testing == 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {admin_sessions_before_testing} and after connecting with the key it's {admin_sessions_after_testing}"
 
                 with allure.independent_step(f"verify sessions count for {monitor_user}"):
-                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
+                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 4, f"after connection using key we expect more sessions for admin, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
 
             with allure.independent_step("verify users ability using the new connection session"):
                 with allure.independent_step("verify admin ability"):

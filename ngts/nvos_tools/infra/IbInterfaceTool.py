@@ -119,6 +119,48 @@ class IbInterfaceTool:
             port_number -= 9
         return get_log_port(table_output, port_number, lane_bmap)
 
+    @staticmethod
+    def get_connected_transceivers_dict(engine, transceivers_list):
+        """
+        Gets the connection status of all transceivers by checking system status files.
+
+        Args:
+            engine: The engine object to run commands on
+            transceivers_list (list): List of all transceivers (including non-ASIC ones like fnm1)
+
+        Returns:
+            dict: Dictionary with transceiver names as keys and True/False as values indicating connection status
+        """
+        # Sort transceivers so that FNM ports come at the end of the list
+        sorted_transceivers_list = sorted(transceivers_list, key=lambda x: 'fnm' in x.lower())
+
+        # Initialize result dictionary with all transceivers set to False
+        transceiver_status = {transceiver: False for transceiver in sorted_transceivers_list}
+
+        # Use a single command to get all status values at once
+        cmd = f"for i in {{0..{len(sorted_transceivers_list) + 2}..1}}; do echo \"${{i}}: $(cat /sys/module/sx_core/asic0/module${{i}}/status 2>/dev/null)\"; done"
+        output = engine.run_cmd(cmd, validate=True)
+
+        # Map system status lines to transceivers by position
+        # Each line corresponds to a transceiver in the list by index
+        transceiver_index = 0
+        for line in output.splitlines():
+            # Parse line format: "1: 1" or "8: 2"
+            parts = line.split(':')
+            if len(parts) == 2:
+                try:
+                    status = parts[1].strip()
+                    # Only process if we have a valid status and haven't exceeded our transceiver list
+                    if status and transceiver_index < len(sorted_transceivers_list):
+                        transceiver_name = sorted_transceivers_list[transceiver_index]
+                        if status == '1':
+                            transceiver_status[transceiver_name] = True
+                        transceiver_index += 1  # Only increment if we successfully processed the line
+                except (ValueError, IndexError):
+                    continue  # Skip malformed lines
+
+        return transceiver_status
+
 
 def get_log_port(table: str, label_port: int, lane_bmap: str):
     """

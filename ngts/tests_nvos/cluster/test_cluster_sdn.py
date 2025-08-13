@@ -29,11 +29,10 @@ logger = logging.getLogger()
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
-def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
     config_files_deleted = False
     with allure.step("Create Cluster object"):
@@ -183,7 +182,9 @@ def test_cluster_sdn(engines, devices, test_api, has_loopbox, standalone_system,
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
         sdn.factory_default.action_reset(param='force')
-        time.sleep(4)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                         nmx_c_expected_state='down')
+        time.sleep(1)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
                                                          nmx_c_expected_state='up')
 

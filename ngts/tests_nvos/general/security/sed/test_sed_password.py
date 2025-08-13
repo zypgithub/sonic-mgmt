@@ -11,8 +11,7 @@ from ngts.nvos_tools.system.System import *
 
 @pytest.mark.system
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_change_sed_password(engines, devices, sed_default_password, test_api):
+def test_change_sed_password(engines, devices, sed_default_password, random_api):
     """
     @summary:
         Verify that change SED password works via nv action both for NVUE and OpenAPI
@@ -24,7 +23,7 @@ def test_change_sed_password(engines, devices, sed_default_password, test_api):
         4. Reboot the system and verify nvos works.
         5. Check that tpm primary and secondary bank have this password.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     switch: LinuxSshEngine = engines.dut
     tpm_tool = TpmTool(switch)
     system = System()

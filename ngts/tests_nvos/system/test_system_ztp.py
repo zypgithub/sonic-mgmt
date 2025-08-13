@@ -105,6 +105,7 @@ def test_ztp_json(engines, devices):
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download dummy json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.DUMMY_JSON)
 
             with allure.step("Run nv action run system ztp"):
@@ -115,6 +116,7 @@ def test_ztp_json(engines, devices):
                     engines, string_to_validate='occurred while processing ZTP JSON file /host/ztp/ztp_data_local.json')
 
         with allure.step("Download positive json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.POSITIVE_JSON)
 
             with allure.step("Run nv action run system ztp"):
@@ -125,15 +127,16 @@ def test_ztp_json(engines, devices):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download negative ping json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_PING_JSON)
 
             _run_system_ztp_with_empty_config(engines, system)
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step("Download json file with halt on failure parameter"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_HALT_ON_FAILURE_JSON)
 
             _run_system_ztp_with_empty_config(engines, system)
@@ -144,6 +147,7 @@ def test_ztp_json(engines, devices):
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step("Download json file with restart on failure parameter"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_RESTART_ON_FAILURE_JSON)
 
             _run_system_ztp_with_empty_config(engines, system)
@@ -187,6 +191,7 @@ def test_ztp_image(engines, devices):
         with allure.step("Download image json file"):
             image_json = devices.dut.ztp_dev_json if SecureBootTool.is_dev_system(
                 TestToolkit.engines.dut) else devices.dut.ztp_prod_json
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, image_json)
 
             _run_system_ztp_with_empty_config(engines, system)
@@ -235,12 +240,12 @@ def test_ztp_startup_file_commands_list(engines, devices):
         _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download json file with wrong ip"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_WRONG_IP)
 
             _run_system_ztp_with_empty_config(engines, system)
 
             with allure.step("Check ztp status"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_FAILED)
 
         with allure.step('Run show command on selected port and verify that description field is set'):
@@ -249,6 +254,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
             _validate_interface_description_field(selected_port, abcd_description, True)
 
         with allure.step("Download clear config false json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_CLEAR_CONFIG_FALSE)
 
             with allure.step("Run nv action run system ztp"):
@@ -263,13 +269,13 @@ def test_ztp_startup_file_commands_list(engines, devices):
                     _validate_interface_description_field(selected_port, abcd_description, True)
 
         with allure.step("Download config save true startup json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_CLEAR_CONFIG_TRUE)
 
             with allure.step("Run nv action run system ztp"):
                 _run_system_ztp_with_empty_config(engines, system)
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
                 with allure.step('Check interface description exist'):
@@ -277,6 +283,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                     _validate_interface_description_field(selected_port, empty_description, False)
 
         with allure.step("Download clear config true startup json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_SAVE_CONFIG_TRUE)
 
             with allure.step("Run nv action run system ztp"):
@@ -287,6 +294,7 @@ def test_ztp_startup_file_commands_list(engines, devices):
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download clear config true startup json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.STARTUP_FILE_INTERACTIVE_COMMANDS)
 
             with allure.step("Run nv action run system ztp"):
@@ -320,6 +328,7 @@ def test_ztp_connectivity_check(engines, devices):
             _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Download ping ipv4 and ipv6 json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.CONNECTIVITY_IPV4_IPV6)
 
             with allure.step("Run nv action run system ztp"):
@@ -330,6 +339,7 @@ def test_ztp_connectivity_check(engines, devices):
                     _wait_until_ztp_step_status(system, '01-connectivity-check', SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download negative ip json file"):
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_CONNECTIVITY)
 
             with allure.step("Run nv action run system ztp"):
@@ -367,6 +377,7 @@ def test_ztp_json_complex(engines, devices):
         with allure.step("Download complex json file"):
             image_json = devices.dut.ztp_complex_dev_json if SecureBootTool.is_dev_system(
                 TestToolkit.engines.dut) else devices.dut.ztp_complex_prod_json
+            system.ztp.action_abort_ztp().verify_result()
             _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):

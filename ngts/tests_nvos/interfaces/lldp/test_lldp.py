@@ -63,8 +63,7 @@ def test_lldp_show(engines, devices):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_disabled(engines, devices, test_api):
+def test_lldp_disabled(engines, devices, random_api):
     """
     Check that lldp is disabled correctly.
 
@@ -74,7 +73,7 @@ def test_lldp_disabled(engines, devices, test_api):
     4. Verify neighbors table is empty
     5. Enable back lldp and verify it is working.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     lldp = system.lldp
 
@@ -92,14 +91,13 @@ def test_lldp_disabled(engines, devices, test_api):
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_with_custom_interval(engines, devices, test_api):
+def test_lldp_with_custom_interval(engines, devices, random_api):
     """
     Check that lldp frames have correct data in them.
     1. Verify lldp is running with custom interval.
     2. Verify lldp information is the same as in tcpdump.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
 
     system = System()
     lldp = system.lldp
@@ -273,6 +271,9 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
     2. Add additional IpV6 address.
     3. Verify lldp frames contain this new IpV6 address.
     """
+    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
+        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
+
     system = System()
     engine = engines.dut
     _verify_lldp_running(system.lldp, engine=engine)
@@ -290,7 +291,8 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                 LLDPTool.verify_mgmt_ports_are_up(engine=serial_engine)
 
             with allure.step("Verify ipv6 address is in the lldp frame"):
-                output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name)
+                default_interval = 30
+                output = LLDPTool.get_lldp_frames(engine=serial_engine, interface=interface_name, interval=default_interval + 2)
                 assert ip_address in output, f"The ipv6 address {ip_address} is not in lldp frame"
 
         finally:

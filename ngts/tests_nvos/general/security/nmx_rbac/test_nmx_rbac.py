@@ -53,6 +53,7 @@ def test_rbac_user_auth(random_api, dut_hostname, engines, cluster_rbac_tools):
         8. Run app client with bad user - Should succeed
     """
     TestToolkit.tested_api = random_api
+    ip = engines.dut.ip
     rbac_tool: NmxRbacTool = cluster_rbac_tools
     rbac_file_name = "rbac_user_auth"
     certs_location = get_test_certs_dir_location("rbac_user_auth", dut_hostname)
@@ -63,7 +64,7 @@ def test_rbac_user_auth(random_api, dut_hostname, engines, cluster_rbac_tools):
         engines=engines,
         dut_hostname=dut_hostname,
         scp_player=scp_player,
-        dut_ip=engines.dut.ip,
+        dut_ip=ip,
         create_chain=False,
     )
     client_cert = certs[0]
@@ -76,13 +77,13 @@ def test_rbac_user_auth(random_api, dut_hostname, engines, cluster_rbac_tools):
     rbac_tool.update_rbac_mode(RbacConsts.RBAC_MODE_USERNAME_PASSWORD)
     rbac_user = UserInfo("sasha", "sasha_rbac", "admin")
     bad_rbac_user = UserInfo("bad_user", "bad_password", "admin")
-    rbac_tool.run_app_client(dut_hostname, rbac_user, client_cert, server_cert, expect_success=True)
-    rbac_tool.run_app_client(dut_hostname, bad_rbac_user, client_cert, server_cert, expect_success=False)
+    rbac_tool.run_app_client(ip, rbac_user, client_cert, server_cert, expect_success=True)
+    rbac_tool.run_app_client(ip, bad_rbac_user, client_cert, server_cert, expect_success=False)
 
     rbac_tool.restore_rbac_mode()
-    rbac_tool.run_app_client(dut_hostname, bad_rbac_user, client_cert, server_cert, expect_success=True)
+    rbac_tool.run_app_client(ip, bad_rbac_user, client_cert, server_cert, expect_success=True)
     rbac_tool.restore_rbac_file()
-    rbac_tool.run_app_client(dut_hostname, bad_rbac_user, client_cert, server_cert, expect_success=True)
+    rbac_tool.run_app_client(ip, bad_rbac_user, client_cert, server_cert, expect_success=True)
 
 
 @pytest.mark.cluster
@@ -138,16 +139,16 @@ def test_rbac_spiffe_auth(dut_hostname, engines, cluster_rbac_tools):
     cluster_tools.update_rbac_file(rbac_file_name)
     cluster_tools.update_rbac_mode(RbacConsts.RBAC_MODE_SPIFFE)
 
-    cluster_tools.run_app_client(dut_hostname, bad_rbac_user, cert_with_spiffe, server_cert, expect_success=True)
-    cluster_tools.run_app_client(dut_hostname, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=False)
+    cluster_tools.run_app_client(ip, bad_rbac_user, cert_with_spiffe, server_cert, expect_success=True)
+    cluster_tools.run_app_client(ip, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=False)
 
     cluster_tools.restore_rbac_mode()
 
-    cluster_tools.run_app_client(dut_hostname, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=True)
+    cluster_tools.run_app_client(ip, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=True)
 
     cluster_tools.restore_rbac_file()
 
-    cluster_tools.run_app_client(dut_hostname, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=True)
+    cluster_tools.run_app_client(ip, bad_rbac_user, cert_with_bad_spiffe, server_cert, expect_success=True)
 
 ######################################################## BAD FLOW ########################################################
 
@@ -165,6 +166,7 @@ def test_bad_rbac_file(random_api, dut_hostname, engines, cluster_rbac_tools):
         4. Restore rbac file
         5. Run app client with good user - Should succeed
     """
+    ip = engines.dut.ip
     TestToolkit.tested_api = random_api
     rbac_tool: NmxRbacTool = cluster_rbac_tools
     rbac_file_name = "bad_rbac_file"
@@ -176,7 +178,7 @@ def test_bad_rbac_file(random_api, dut_hostname, engines, cluster_rbac_tools):
         engines=engines,
         dut_hostname=dut_hostname,
         scp_player=scp_player,
-        dut_ip=engines.dut.ip,
+        dut_ip=ip,
         create_chain=False,
     )
     client_cert = certs[0]
@@ -187,10 +189,10 @@ def test_bad_rbac_file(random_api, dut_hostname, engines, cluster_rbac_tools):
     rbac_tool.import_rbac_file(rbac_file_name, rbac_file_path)
     rbac_tool.update_rbac_file(rbac_file_name)
     admin = UserInfo("admin", "admin", "admin")
-    rbac_tool.run_app_client(dut_hostname, admin, client_cert, server_cert, expect_success=True)
+    rbac_tool.run_app_client(ip, admin, client_cert, server_cert, expect_success=True)
 
     rbac_tool.restore_rbac_file()
-    rbac_tool.run_app_client(dut_hostname, admin, client_cert, server_cert, expect_success=True)
+    rbac_tool.run_app_client(ip, admin, client_cert, server_cert, expect_success=True)
 
 
 @pytest.mark.cluster

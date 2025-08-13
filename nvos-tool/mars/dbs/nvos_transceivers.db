@@ -44,4 +44,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_transceiver_photonics.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[taipan]</value> </condition></ignore>
+	</test>
 </DBDEF>

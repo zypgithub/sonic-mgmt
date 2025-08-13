@@ -100,7 +100,7 @@ class System(BaseComponent):
                 if throw_exception:
                     assert False, exception_str
 
-    @retry(Exception, tries=3, delay=2)
+    @retry(Exception, tries=10, delay=2)
     def wait_until_health_status_change_to(self, expected_status):
         self.validate_health_status(expected_status)
 

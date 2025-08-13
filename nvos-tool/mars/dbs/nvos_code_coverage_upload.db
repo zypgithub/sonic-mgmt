@@ -1,0 +1,23 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<DBDEF>
+	<global>
+		<default_params_type> extended_setup_step_params </default_params_type>
+		<DB>
+			<info> </info>
+			<owner> Yana Port </owner>
+			<group> NVOS </group>
+			<dimension> VER </dimension>
+
+            <pre>
+            </pre>
+
+		</DB>
+		<Test>
+			<post> </post>
+		</Test>
+		<Case> </Case>
+	</global>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_upload_code_coverage_to_sonar.cases </cases>
+	</test>
+</DBDEF>

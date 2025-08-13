@@ -20,8 +20,7 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_configure_ntp_server(test_api):
+def test_configure_ntp_server(random_api):
     """
     validate:
     - Show NTP global configuration
@@ -58,7 +57,7 @@ def test_configure_ntp_server(test_api):
     21.	Validate show system ntp commands output (expect default values)
     22.	Verify ntp daemon state (expect Ntpd running)
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     server_name = NtpConsts.SERVER1_IPV4
     ntp_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
@@ -482,8 +481,7 @@ def test_ntp_system_authentication(engines, test_api):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_configure_ntp_multiple_servers(test_api):
+def test_configure_ntp_multiple_servers(random_api):
     """
     validate:
     - Add and configure multiple servers
@@ -511,7 +509,7 @@ def test_configure_ntp_multiple_servers(test_api):
         (The active server does not exist, and another server becomes active)
     9. Check unset of all servers (All servers removed)
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     server2_hostname = get_hostname_from_ip(NtpConsts.SERVER2_IPV4)
     ntp_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
@@ -654,8 +652,7 @@ def test_configure_ntp_multiple_servers(test_api):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ntp_performance(test_api):
+def test_ntp_performance(random_api):
     """
     validate:
     - Similar configuration time for 1 and 10 servers
@@ -675,7 +672,7 @@ def test_ntp_performance(test_api):
     9. Remove all ntp servers
     10. Validate system sync time after setting a new server (Sync time < 5 sec)
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     server_name = NtpConsts.SERVER1_IPV4
 

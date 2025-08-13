@@ -111,8 +111,7 @@ class IbInterfaceConsts:
                        'qp1-drops',
                        'buffer-overrun-errors',
                        LINK_STATS_RCV_ICRC_ERRORS,
-                       LINK_STATS_TX_PARITY_ERRORS,
-                       LINK_PLR_RCV_CODES_ERRORS]
+                       LINK_STATS_TX_PARITY_ERRORS]
     LINK_PHY_RAW_ERRORS = ["phy-raw-errors-lane0",
                            "phy-raw-errors-lane1",
                            "phy-raw-errors-lane2",

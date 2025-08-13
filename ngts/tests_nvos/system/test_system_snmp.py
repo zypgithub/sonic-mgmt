@@ -16,6 +16,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, DatabaseConst
+from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -356,7 +357,7 @@ def test_system_snmp_mismtach_system_image(engines):
 
     with allure.step("Get Version Via NVUe System Image"):
         system_image_output = OutputParsingTool.parse_json_str_to_dictionary(system.version.show()).get_returned_value()
-        system_image_nvos_version = system_image_output["image"]
+        system_image_nvos_version = system_image_output["image"][ImageConsts.BUILD_ID]
         assert system_image_nvos_version, "system_image_nvos_version is None - parsing failed."
 
     with allure.step("Compare Version Outputs"):

@@ -258,6 +258,7 @@ class DutUtilsTool:
                                       password=os.getenv("TEST_SERVER_PASSWORD"))
             reboot_cmd = skip_str + '/.autodirect/mswg/utils/bin/rreboot ' + dhcp_hostname + ' ' + psu_state
             ssh_conn.run_cmd(reboot_cmd)
+            time.sleep(2)
 
 
 def ping_device(ip_add):

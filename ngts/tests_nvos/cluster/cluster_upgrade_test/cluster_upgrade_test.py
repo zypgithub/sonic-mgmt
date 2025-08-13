@@ -114,7 +114,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 non_preserved_configs = []
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                    sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+                    sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(ImageConsts.SCP_PATH + path_to_config[file_type])
                     sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
                     output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
@@ -199,8 +199,11 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
-                time.sleep(2)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                                 nmx_c_expected_state='down')
+                time.sleep(1)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
+                                                                 nmx_c_expected_state='up')
 
         if not target_image_installed:
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)

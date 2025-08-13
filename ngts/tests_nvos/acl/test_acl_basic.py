@@ -108,8 +108,7 @@ def test_show_acls(engines, test_api):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rules_order(devices, engines, test_api, topology_obj):
+def test_rules_order(devices, engines, random_api, topology_obj):
     """
     Validate acl rules order by priority of rules order.
     the first rule that match the packet should apply even if the next rule also match but the action is different.
@@ -118,7 +117,7 @@ def test_rules_order(devices, engines, test_api, topology_obj):
     2. send packet
     3. validate that the action we do on the packet is as the first rule.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     with allure.step("Define ACL with 2 rules"):
 
         with allure.step("Define ACL"):
@@ -213,8 +212,7 @@ def test_rules_order(devices, engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_order(engines, test_api, topology_obj):
+def test_acl_order(engines, random_api, topology_obj):
     """
     Validate ACLs rules order by priority of ACL order.
     the first rule in the first acl that match the packet should applied.
@@ -223,7 +221,7 @@ def test_acl_order(engines, test_api, topology_obj):
     2. send packet
     3. validate that the action we do on the packet is as the first ACL rule.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv4'
@@ -279,8 +277,7 @@ def test_acl_order(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
+def test_acl_ipv6(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     """
     Validate ACLs rules over ipv6.
     steps:
@@ -288,7 +285,7 @@ def test_acl_ipv6(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
     2. send packet
     3. validate counters increase
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
         pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
@@ -353,15 +350,14 @@ def test_acl_loopback(engines, test_api):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_acl_commands(devices, engines, test_api, topology_obj):
+def test_show_acl_commands(devices, engines, random_api, topology_obj):
     """
     Validate acl show commands.
     steps:
     1. config an ACL with rules
     2. validate show commands
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     with allure.step("Define ACL with rules"):
 
         with allure.step("Define ACL"):
@@ -504,8 +500,7 @@ def wait_till_acl_applied(mgmt_port, acl_id):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_inbound_outbound_counters(engines, test_api, topology_obj):
+def test_inbound_outbound_counters(engines, random_api, topology_obj):
     """
     Validate inbound outbound counters.
     rule match ip dest-ip - should increase outbound counters only
@@ -518,7 +513,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
     5. unset source-ip rule from inbound acl
     6. validate outbound counters are still 0
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     with allure.step("Choosing randomly whether or not to use control-plane parameter"):
         control_plane = random.choice([AclConsts.CONTROL_PLANE, ""])
         allure.orig_allure.attach(f"{control_plane=}", "control_plane_value", allure.orig_allure.attachment_type.TEXT)
@@ -596,8 +591,7 @@ def test_inbound_outbound_counters(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr):
+def test_acl_match_dest_ip(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     """
     Validate ACL match dest-ip rules.
     steps:
@@ -607,7 +601,7 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr
         - Send packet over interface
         - Assert the rule statistics have increased
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     with allure.step("ACL type ipv4 test"):
@@ -622,8 +616,7 @@ def test_acl_match_dest_ip(engines, test_api, topology_obj, sonic_mgmt_ipv6_addr
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_match_source_port(engines, test_api, topology_obj):
+def test_acl_match_source_port(engines, random_api, topology_obj):
     """
     Validate ACL match source port rules.
     steps:
@@ -631,7 +624,7 @@ def test_acl_match_source_port(engines, test_api, topology_obj):
     2. send packet
     3. validate counter increased
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     src_port_list = ['ANY', 'ssh', 1244]
@@ -654,8 +647,7 @@ def test_acl_match_dest_port(engines, random_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_match_protocol(engines, test_api, topology_obj):
+def test_acl_match_protocol(engines, random_api, topology_obj):
     """
     Validate ACL match protocol rules.
     steps:
@@ -663,7 +655,7 @@ def test_acl_match_protocol(engines, test_api, topology_obj):
     2. send packet
     3. validate counter increased
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     acl_id = "AA_TEST_ACL_PROTOCOL"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
@@ -975,8 +967,7 @@ def test_acl_hashlimit(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_recent_list(engines, test_api, topology_obj):
+def test_acl_recent_list(engines, random_api, topology_obj):
     """
     Validate ACL match recent-list rules.
     steps:
@@ -984,7 +975,7 @@ def test_acl_recent_list(engines, test_api, topology_obj):
     2. send packet
     3. validate counter increased
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     acl_id = "AA_TEST_ACL_RECENT_LIST"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)

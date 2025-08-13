@@ -20,6 +20,8 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.nvos_build
 def test_reboot_command(engines, devices, test_name):
@@ -35,29 +37,32 @@ def test_reboot_command(engines, devices, test_name):
 
     with allure.step('Run nv action reboot system'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
 
     with allure.step("Check system reboot output"):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()
         assert "reason" in output.keys(), "'reason' not in the output"
         assert "history" in output.keys(), "'history' not in the output"
 
-        with allure.step("Check system reboot reason output"):
+        with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
             ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output, ["gentime", "reason", "user"]).verify_result()
 
-        with allure.step("Check system reboot history output"):
+        with allure.independent_step("Check system reboot history output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
             if output and len(output.keys()) > 0:
                 ValidationTool.verify_all_fields_value_exist_in_output_dictionary(output[list(output.keys())[0]],
                                                                                   ["gentime", "reason", "user"]).verify_result()
 
-        with allure.step("Check reboot cause"):
+        with allure.independent_step("Check reboot cause"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
             assert 'reboot' in output["reason"], "reboot not found in show reboot output"
             assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
 
-    validate_reboot_reason_and_user(system, expected_reason, expected_user)
+        with allure.independent_step("Validate reboot reason and user"):
+            validate_reboot_reason_and_user(system, expected_reason, expected_user)
+
+        with allure.independent_step("Verify reboot time is within expected range"):
+            OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
 
 
 @pytest.mark.system
@@ -116,7 +121,7 @@ def test_reboot_command_bad_flow(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.parametrize('mode', RebootConsts.DEFAULT_MODES)
-def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name):
+def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name, verify_no_kernel_errors):
     if mode == RebootConsts.POWER_CYCLE and mode not in devices.dut.supported_commands:
         pytest.skip(f"{mode} not supported")
     system = System()
@@ -130,7 +135,8 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
         result_obj.verify_result()
         expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
 
-        validate_reboot_reason_and_user(system, expected_reason, expected_user)
+        with allure.step("Validate reboot reason and user"):
+            validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.step("Verify reboot time is within expected range"):
             OperationTime.verify_operation_time(result_obj.duration, mode).verify_result()
@@ -148,8 +154,14 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
         1. run remote reboot script to turn off PSU and turn on the PSU
         2. Validate reboot reason in system events
     """
+    with allure.step('Check whether device has BMC'):
+        if devices.dut.has_bmc:
+            mode = RebootConsts.POWER_CYCLE
+        else:
+            mode = RebootConsts.PSU_OFF
     system = System()
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.PSU_OFF]
+
+    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
 
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
@@ -195,7 +207,7 @@ def _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode):
         reboot_params.should_wait_till_system_ready = mode != RebootConsts.HALT
         reboot_result_obj, _ = OperationTime.save_duration(f"reboot {mode}", '', test_name,
                                                            system.action_reboot,
-                                                           flags=mode,
+                                                           flags=['mode', mode],
                                                            reboot_params=reboot_params)
         time.sleep(10)
 

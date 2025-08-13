@@ -111,6 +111,7 @@ def test_reset_bmc_password_to_default_while_locked_out(engines, topology_obj, t
         client.change_root_password(password=root_pass)
 
 
+@pytest.mark.disable_loganalyzer
 @pytest.mark.bmc
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, test_api, nv_command: NvCommand):

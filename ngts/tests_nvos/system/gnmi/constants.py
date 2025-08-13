@@ -87,6 +87,7 @@ class GnmiConstants:
     VL_CAPABILITIES = "vl-capabilities"
     IB_SUBNET = "ib-subnet"
     PLR_RCV_CODES = 'plr-rcv-codes'
+    LINK_PLR_RCV_CODE_ERRORS = 'plr-rcv-code-err'
     PHY_RAW_ERRORS = ["raw-errors-ch-1",
                       "raw-errors-ch-2",
                       "raw-errors-ch-3",

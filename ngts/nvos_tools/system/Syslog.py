@@ -356,7 +356,7 @@ class Selector(BaseComponent):
             ResultObj: Result of the operation
         """
         try:
-            return self.unset(SyslogConsts.SEVERITY, apply=apply, ask_for_confirmation=ask_for_confirmation)
+            return super().unset(SyslogConsts.SEVERITY, apply=apply, ask_for_confirmation=ask_for_confirmation)
         except Exception as e:
             if "Invalid config" in str(e):
                 # If severity cannot be unset, return a ResultObj with error
@@ -371,7 +371,7 @@ class Selector(BaseComponent):
                         apply=apply, ask_for_confirmation=ask_for_confirmation)
 
     def unset_program_name(self, apply=False, ask_for_confirmation=False):
-        return self.unset(SyslogConsts.PROGRAM_NAME, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        return super().unset(SyslogConsts.PROGRAM_NAME, apply=apply, ask_for_confirmation=ask_for_confirmation)
 
     def set_rate_limit(self, rate_limit, expected_str='', apply=False, ask_for_confirmation=False):
         return self.rate_limit.set(op_param_name=SyslogConsts.RATE_LIMIT, op_param_value=rate_limit, expected_str=expected_str,
@@ -385,7 +385,7 @@ class Selector(BaseComponent):
                         apply=apply, ask_for_confirmation=ask_for_confirmation)
 
     def unset_facility(self, apply=False, ask_for_confirmation=False):
-        return self.unset(SyslogConsts.FACILITY, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        return super().unset(SyslogConsts.FACILITY, apply=apply, ask_for_confirmation=ask_for_confirmation)
 
     def verify_trap_severity_level(self, selector_id, expected_severity_level):
         output = self.get_selector_field_values()
@@ -426,11 +426,12 @@ class Selector(BaseComponent):
                     "Rate limit burst mismatch. Expected: {}, Got: {}".format(
                         expected_rate_limit['burst'], actual_rate_limit.get('burst'))
 
-    def unset(self, apply=False, ask_for_confirmation=False):
+    def unset(self, op_param="", apply=False, ask_for_confirmation=False):
         """
-        Unset the selector.
+        Unset the selector or a specific parameter.
 
         Args:
+            op_param: Optional parameter to unset. If empty, unset the entire selector.
             apply: Whether to apply the change
             ask_for_confirmation: Whether to ask for confirmation
 
@@ -438,7 +439,12 @@ class Selector(BaseComponent):
             ResultObj: Result of the operation
         """
         try:
-            return super().unset(apply=apply, ask_for_confirmation=ask_for_confirmation)
+            if op_param:
+                # Unset a specific parameter using BaseComponent's unset method
+                return super().unset(op_param=op_param, apply=apply, ask_for_confirmation=ask_for_confirmation)
+            else:
+                # Unset the entire selector
+                return super().unset(apply=apply, ask_for_confirmation=ask_for_confirmation)
         except Exception as e:
             if "Invalid config" in str(e) and "Attempt to attach the syslog selector" in str(e):
                 # If selector is still attached to a server, return a ResultObj with error

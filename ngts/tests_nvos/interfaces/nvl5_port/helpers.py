@@ -1,7 +1,7 @@
 import random
 import pytest
 
-from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -73,9 +73,10 @@ def select_random_nvl_port_name(devices, prefix=None):
 
 
 def skip_if_no_trunk_links(devices):
-    has_any_connected_transceivers = bool(ClusterTools.get_all_interfaces_with_transceivers(devices))
-    if isinstance(devices.dut, JulietNonScaleoutSwitch) or not has_any_connected_transceivers:
-        pytest.skip("Skipping test - no connected trunk ports")
+    if isinstance(devices.dut, JulietSwitch):
+        has_any_connected_transceivers = bool(ClusterTools.get_all_interfaces_with_transceivers(devices))
+        if isinstance(devices.dut, JulietNonScaleoutSwitch) or not has_any_connected_transceivers:
+            pytest.skip("Skipping test - no connected trunk ports")
 
 
 def skip_if_no_access_links(has_loopbox, standalone_system):

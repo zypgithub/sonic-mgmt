@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -17,24 +18,11 @@ logger = logging.getLogger()
 
 class TechSupport(BaseComponent):
     def __init__(self, parent_obj=None):
-        BaseComponent.__init__(self, parent=parent_obj, path='/tech-support/files')
+        BaseComponent.__init__(self, parent=parent_obj, path='/tech-support')
+        self.files = Files(self)
         self.file_name = ""
 
-    def action_upload(self, upload_path, file_name):
-        with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload, TestToolkit.engines.dut,
-                                                   self.get_resource_path(), file_name, upload_path)
-
-    def action_delete(self, file_name):
-        with allure.step("Delete tech-support: {}".format(file_name)):
-            if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE and TestToolkit.tested_api == ApiType.OPENAPI:
-                resource_path = self.get_resource_path() + '/\\{file-name\\}'
-            else:
-                resource_path = self.get_resource_path()
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_delete, TestToolkit.engines.dut,
-                                                   resource_path, file_name)
-
-    def action_generate(self, engine="", option="", since_time="", test_name=''):
+    def action_generate(self, engine="", option="", since_time="", test_name='', verify_size=False):
         """
         in the future the command will be nv action generate system tech-support (without files)
         changes to do :
@@ -48,16 +36,29 @@ class TechSupport(BaseComponent):
 
             cmd_out, duration = OperationTime.save_duration('generate tech-support', option, test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_generate_techsupport, engine,
-                                                            self.get_resource_path().replace('/files', ' '), option, since_time)
+                                                            self.get_resource_path(), option, since_time)
             cmd_out.ignore_result()
             if 'failed' in cmd_out.info or 'error' in cmd_out.info:
                 return cmd_out.info, duration
+
+            # Parse the techsupport folder name based on device type
             if TestToolkit.devices.dut.is_eth():
                 self.parse_eth_techsupport_folder_name(cmd_out)
-                return CumulusConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration
+                tech_support_folder = CumulusConsts.TECHSUPPORT_FILES_PATH + self.file_name
             else:
                 self.parse_ib_techsupport_folder_name(cmd_out)
-                return SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name, duration
+                tech_support_folder = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
+
+            # Verify file size if requested
+            if verify_size:
+                with allure.step('Verify tech-support file size'):
+                    # Round output to MB by -m flag and trim white spaces with column to receive int like output
+                    output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
+                    size_in_MB = int(output.split(" ")[0])
+                    assert size_in_MB < SystemConsts.TECHSUPPORT_SIZE_LIMIT, f"{tech_support_folder} size ({size_in_MB}MB)" \
+                        f" should be less than {SystemConsts.TECHSUPPORT_SIZE_LIMIT}MB"
+
+            return tech_support_folder, duration
 
     def parse_ib_techsupport_folder_name(self, techsupport_res):
         techsupport_res_list = techsupport_res.returned_value.split('\n')
@@ -82,6 +83,23 @@ class TechSupport(BaseComponent):
             logging.info(f"extract {self.file_name}")
             full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
             engine.run_cmd('sudo tar -xf ' + full_path + ' -C' + SystemConsts.TECHSUPPORT_FILES_PATH)
+
+    def extract_techsupport_subfile(self, engine, sub_folder, filename, tech_support_dir=''):
+        """
+        Extract a specific file within the tech-support structure
+
+        :param engine: engine
+        :param sub_folder: sub folder within tech-support (e.g., 'hw-mgmt')
+        :param filename: filename to extract (e.g., 'hw-mgmt-dump.tar.gz')
+        :param tech_support_dir: tech-support directory name (optional, uses self.file_name if not provided)
+        """
+        if not tech_support_dir:
+            tech_support_dir = self.file_name.replace('.tar.gz', '')
+
+        with allure.step(f"extract {filename} from {sub_folder}"):
+            logging.info(f"extract {filename} from {sub_folder}")
+            full_path = f"{tech_support_dir}/{sub_folder}"
+            engine.run_cmd(f'sudo tar -xf {full_path}/{filename} -C {full_path}')
 
     def get_techsupport_files_names(self, engine, expected_files_dict):
         """

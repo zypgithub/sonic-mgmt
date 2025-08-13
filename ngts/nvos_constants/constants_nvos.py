@@ -80,6 +80,7 @@ class NvosConst:
     JULIET_SWITCH = "JULIET"
     CROCODILE_SWITCH = "CROCODILE"
     BLACK_MAMBA_SWITCH = "BLACK_MAMBA"
+    BLACK_MAMBA_DGX_SWITCH = "BLACK_MAMBA_DGX"
     TAIPAN_SWITCH = "TAIPAN"
     TAIPAN_SINGLE_ASIC_SWITCH = "TAIPAN_SINGLE_ASIC"
     GORILLA_SWITCH = "GORILLA"
@@ -502,9 +503,10 @@ class SystemConsts:
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd']
+                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock']
 
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log']
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json']
+
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
 
@@ -1149,7 +1151,7 @@ class FansConsts:
     FAN_STATUS_LED = "FAN_STATUS"
     FAN_FAULT_FILE = "/var/run/hw-management/thermal/fan{}_fault"
     FAN_SPEED_OUT_OF_RANGE = "speed is out of range"
-    FAN_NOT_WORKING = 'is not working'
+    FAN_NOT_WORKING = 'not working'
 
 
 class IbConsts:
@@ -1482,22 +1484,23 @@ class RebootConsts:
     FAST = "fast"
     FACTORY_RESET = 'factory-reset'
     POWER_BUTTON = SystemConsts.REBOOT_REASON_POWER_BUTTON
+    KERNEL_PANIC = 'Kernel Panic'
     PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
 
-    DEFAULT_MODES = [POWER_CYCLE]
+    DEFAULT_MODES = [POWER_CYCLE, HALT, COLD, IMMEDIATE]
     REBOOT_USER_NA = "N/A"
     REBOOT_USER_ADMIN = "admin"
     REBOOT_USER_SYSTEM = "system"
 
     REBOOT_REASON_MAP = {
-        HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_NA),
-        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_ADMIN),
+        HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_ADMIN),
+        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_NA),
         COLD: ("reboot", REBOOT_USER_ADMIN),
-        IMMEDIATE: ("Immediate reboot", REBOOT_USER_ADMIN),
-        FACTORY_RESET: ("reboot", REBOOT_USER_ADMIN),
+        IMMEDIATE: ("Platform reset", REBOOT_USER_ADMIN),
+        FACTORY_RESET: ("reboot", REBOOT_USER_SYSTEM),
         POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, REBOOT_USER_NA),
-        PSU_OFF: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_NA)
+        PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_NA)
     }
     POWER_CYCLE_NOT_SUPPORTED_ERR_MSG = "Power cycle mode is not supported on this system"
 
@@ -1684,7 +1687,8 @@ class OperationTimeConsts:
                   'install cpld': 720,
                   'install erot': 420,
                   ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 330
+                  'juliet-power-cycle': 330,
+                  'users disconnection by inactivity timeout': 65,
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
@@ -2079,7 +2083,7 @@ class IssuConsts:
     ISSU = 'issu'
     ISSU_SKIP_SM = 'issu skip-sm'
     ISSU_NO_REBOOT = 'reboot no issu'
-    ISSU_INVALID_FLAG = 'issu skip-invalid'
+    ISSU_INVALID_FLAG = 'issu invalid-flag'
     DB_REQUEST_ISSU = 'WARM_RESTART_TABLE|request-issu'
     DB_STATUS = 'status'
     OPENSM_RESPONSE_CLEAR = ''
@@ -2107,6 +2111,7 @@ class IssuConsts:
                                   '  No permission to perform ISSU from the SM')
     ERROR_DOWNGRADE_NOT_ALLOWED = ('Error: Action failed with the following issue:\n'
                                    '  ISSU does not support downgrade')
+    ERROR_INVALID_PARAM = "Error: Invalid parameter: 'invalid-flag'"
     LOG_MSG_LIST = ['issue: No permission to perform ISSU from the SM',
                     'issue: System must be rebooted during ISSU',
                     'issue: Configuration must be saved before performing ISSU',
@@ -2143,6 +2148,17 @@ class RemarkableLogsConsts:
                                ERROR_LOGS_TIME_WINDOW, FIRST_SAVED_BOOT_LOGS, REQUESTED_BY_DAEMON_LOGS,
                                STATE, STORM_LOGS_CLEAN_TIME, STORM_LOGS_NUMBER,
                                STORM_LOGS_RATE, STORM_LOGS_TIME_WINDOW]
+
+
+class LogsSources:
+    SYSLOG = "syslog"
+    NVUED = "nvued.log"
+    USER = "user.log"
+    AUTH = "auth.log"
+
+    @classmethod
+    def all(cls):
+        return [v for k, v in vars(cls).items() if k.isupper()]
 
 
 class SecureConfig:

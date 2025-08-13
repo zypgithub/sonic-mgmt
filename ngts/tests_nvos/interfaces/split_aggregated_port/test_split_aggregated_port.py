@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from ngts.nvos_constants.constants_nvos import DatabaseConst
 from ngts.nvos_tools.infra.Fae import Fae
@@ -9,6 +10,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils.allure_utils import step as allure_step
+from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 
 
 logger = logging.getLogger()
@@ -59,22 +61,20 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
             logging.info("All expected values were found")
 
     with allure_step("Check traffic port up"):
-        split_ports = MultiPlanarTool._get_split_ports()
+        # Need to provide some good way to find loopback ports. Is it ibnetdiscover?
+        split_ports = MultiPlanarTool._get_split_ports(port="swA11p1")
 
     with allure_step("Split splitter port"):
         parent_port = split_ports[0]
+        parent_port.interface.link.set(op_param_name=LinkDetectionConsts.CONNECTION_MODE,
+                                       op_param_value=LinkDetectionConsts.CONNECTION_MODE_XDR,
+                                       apply=True, ask_for_confirmation=True).verify_result()
         parent_port.interface.link.set(op_param_name='breakout',
                                        op_param_value=IbInterfaceConsts.LINK_BREAKOUT_XDR,
                                        apply=True, ask_for_confirmation=True).verify_result()
 
     with allure_step("Get split ports"):
         child_ports = MultiPlanarTool._get_split_child_ports(parent_port)
-
-    with allure_step("Validate next two ports not exist"):
-        Fae(port_name='swA11p1').port.interface.show(should_succeed=False)
-        Fae(port_name='swA11p2').port.interface.show(should_succeed=False)
-        Fae(port_name='swA11p1s1').port.interface.show(should_succeed=False)
-        Fae(port_name='swA11p2s1').port.interface.show(should_succeed=False)
 
     with allure_step("Validate split port going to up"):
         child_port = Port(name=devices.dut.child_aggregated_port)
@@ -83,6 +83,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
     with allure_step("Change mtu on child port and check changes"):
         child_ports[0].interface.link.set(op_param_name='mtu', op_param_value=512, apply=True,
                                           ask_for_confirmation=True).verify_result()
+        time.sleep(5)
 
         with allure_step("Verify changed values on child port"):
             child_ports[0].interface.wait_for_port_state(NvosConsts.LINK_STATE_UP, sleep_time=8).verify_result()

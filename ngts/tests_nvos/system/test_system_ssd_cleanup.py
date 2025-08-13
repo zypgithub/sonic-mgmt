@@ -97,8 +97,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
-        with allure.step("health issue will be reported after 150 seconds"):
-            time.sleep(150)
+        with allure.step("health issue will be reported after 180 seconds"):
+            time.sleep(180)
 
         with allure.step("check health status is not ok"):
             _check_disk_issue(system, False)

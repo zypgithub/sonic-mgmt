@@ -41,7 +41,10 @@ class ConnectionTool:
                     result_obj.result = True
                     result_obj.info = 'Created ssh connection successfully'
             except NetmikoAuthenticationException as ex:
-                result_obj.returned_value += ex
+                if not result_obj.returned_value:
+                    result_obj.returned_value = str(ex)
+                else:
+                    result_obj.returned_value += ex
                 return result_obj
 
             return result_obj
@@ -157,3 +160,10 @@ class ConnectionTool:
                 raise Exception(f"ip address {server_ip} is unreachable")
 
         return _ping_device(server_ip)
+
+    @staticmethod
+    def disconnect_engine(engine, reason=""):
+        with allure.step("Persist session history to disk"):
+            engine.run_cmd("history -w")
+        with allure.step(f"Terminate SSH session ({reason})"):
+            engine.disconnect()

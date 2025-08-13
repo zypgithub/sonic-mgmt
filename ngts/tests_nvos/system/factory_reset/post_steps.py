@@ -18,6 +18,17 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
         validate_port_description(engines.dut, apply_and_save_port, "")
         validate_port_description(engines.dut, just_apply_port, "")
         validate_port_description(engines.dut, not_apply_port, "")
+
+    with allure.step("Validate system contact information has been deleted"):
+        system_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        assert system_output[SystemConsts.CONTACT] is None, "System {} in system show is {} instead of Null".\
+            format(SystemConsts.CONTACT, system_output[SystemConsts.CONTACT])
+
+    with allure.step("Validate system location information has been deleted"):
+        system_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        assert system_output[SystemConsts.LOCATION] is None, "System {} in system show is {} instead of Null".\
+            format(SystemConsts.LOCATION, system_output[SystemConsts.LOCATION])
+
     if TestToolkit.devices.dut.has_nmx:
         with allure.step('Juliet Device Check'):
             with allure.step("Make sure cluster initial state restored"):

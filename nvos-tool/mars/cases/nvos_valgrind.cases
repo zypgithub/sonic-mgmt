@@ -70,4 +70,92 @@
     </cmd>
   </case>
 
+  <case>
+    <name> test_ib_interface_state </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_ib_interface_state.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_rsyslog_positive_minimal_flow_by_hostname </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/syslog/test_system_syslog.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_rsyslog_positive_minimal_flow_by_hostname --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_gnmi_spiffe_core_functionality </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/gnmi_server/mtls/spiffe_id/test_gnmi_server_spiffe_id.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_gnmi_spiffe_core_functionality --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_rbac_interface_single_allow </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/rbac/test_rbac.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_rbac_interface_single_allow --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_api_mtls_core_functionality </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_api_server_security/test_api_mtls.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_api_mtls_core_functionality --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_ssh_pka_positive_flow </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/test_ssh_pka/test_ssh_pka_pka_only.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_ssh_pka_positive_flow --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_radius_auth </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/radius/test_aaa_radius.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_radius_auth --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test_tacacs_auth </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/security/tacacs/test_aaa_tacacs.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_tacacs_auth --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
 </CASEDEF>

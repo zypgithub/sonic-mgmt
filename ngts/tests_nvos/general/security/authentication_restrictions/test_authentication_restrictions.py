@@ -57,8 +57,7 @@ def test_authentication_show_commands(test_api, engines):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_auth_restrictions_set_unset(test_api, engines):
+def test_auth_restrictions_set_unset(random_api, engines):
     """
     @summary: Verify (in show output) that configuration is changing correctly with the set/unset commands
 
@@ -72,7 +71,7 @@ def test_auth_restrictions_set_unset(test_api, engines):
         7. Run unset to system, aaa, authentication, restrictions (not specific field)
         8. Verify default configuration
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     restrictions = system.aaa.authentication.restrictions
 
@@ -278,8 +277,7 @@ def test_auth_restrictions_action_clear_user(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
+def test_auth_restrictions_action_clear_all(random_api, engines, test_users):
     """
     @summary: Verify the functionality of action clear command
 
@@ -292,7 +290,7 @@ def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
         6. Unblock all
         7. Verify both are unblocked
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
 
     with allure.step('Enable lockout'):
         restrictions = System().aaa.authentication.restrictions

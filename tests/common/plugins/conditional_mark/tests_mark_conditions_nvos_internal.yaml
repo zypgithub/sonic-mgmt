@@ -172,15 +172,21 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160 and juliet-146 due to hardware issues"
+    conditions_logical_operator: or
     conditions:
       - "'juliet' not in testbed"
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
 
 tests_nvos/checklist/test_bios_manual_update.py:
   skip:
-    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow. Also skipped on juliet-160 and juliet-146 due to hardware issues"
+    conditions_logical_operator: or
     conditions:
       - "'juliet' not in testbed"
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
 
 tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
   skip:
@@ -623,9 +629,9 @@ tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_env
 
 tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_traffic:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4549805"
     conditions:
-      - https://redmine.mellanox.com/issues/4276503
+      - https://redmine.mellanox.com/issues/4549805
 
 tests_nvos/system/test_system_health.py::test_ignore_health_issue:
   skip:
@@ -641,7 +647,7 @@ tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_hw_si
 
 tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_positive:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4334449"
     conditions:
       - https://redmine.mellanox.com/issues/4334449
 
@@ -742,15 +748,7 @@ tests_nvos/cluster/test_start_stop_cluster.py::test_cluster_app_start_stop:
     conditions:
       - https://redmine.mellanox.com/issues/4468309
 
-ngts/tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
-  skip:
-    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet-146' in testbed"
-      - "'juliet-160' in testbed"
-
-ngts/tests_nvos/checklist/test_bmc_install.py:
+tests_nvos/checklist/test_bmc_install.py:
   skip:
     reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
     conditions_logical_operator: or
@@ -765,7 +763,7 @@ ngts/tests_nvos/checklist/test_firmware_install_same_version.py:
     conditions:
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
-    
+
 ngts/tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4543350"
@@ -781,4 +779,10 @@ ngts/tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
     conditions:
       - https://redmine.mellanox.com/issues/4543350
       - "'juliet' in testbed"
+
+ngts/tests_nvos/system/test_physical_monitor.py::test_physical_monitor:
+   skip:
+    reason: "[NVOS - Design] Bug SW #4553201: [Non-Functional] | Physical monitor feature doesn't work on NVOS branch 5000"
+    conditions:
+      - https://redmine.mellanox.com/issues/4553201
 ########################## NVOS IGNORE END ##########################

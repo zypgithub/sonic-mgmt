@@ -337,6 +337,7 @@ def test_validate_discard_counters_fields(engines, test_api):
     5. Validate that in-drops and out-drops fields are present in GNMI
     """
     TestToolkit.tested_api = test_api
+    plane_suffix = "pl1"
     server = 'fit-build-240'
     server_user = os.getenv("BUILD_SERVER_USER")
     server_password = os.getenv("BUILD_SERVER_PASSWORD")
@@ -347,7 +348,7 @@ def test_validate_discard_counters_fields(engines, test_api):
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     port = selected_port.name
-    port_oid = get_port_oid(engines, port)
+    port_oid = get_port_oid(engines, port, plane_suffix)
     logging.info("Selected Port:{}, OID:{}".format(port, port_oid))
 
     with allure.step('Validate that in-drops and out-drops fields are present in show output'):
@@ -387,11 +388,11 @@ def test_validate_total_counters_in_out_drops(engines, test_api):
     4. Validate total out drop counters are a sum of two counters in Sonic-DB
     """
     TestToolkit.tested_api = test_api
-
+    plane_suffix = "pl1"
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     port = selected_port.name
-    port_oid = get_port_oid(engines, port)
+    port_oid = get_port_oid(engines, port, plane_suffix)
     logging.info("Selected Port:{}, OID:{}".format(port, port_oid))
 
     with allure.step('Validate total in drop counters are a sum of two counters in Sonic-DB'):
@@ -433,6 +434,7 @@ def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
     6. Compare in/out drops counters across show CLI, Sonic DB and GNMI server
     """
     TestToolkit.tested_api = test_api
+    plane_suffix = "pl1"
     server = 'fit-build-240'
     server_user = os.getenv("BUILD_SERVER_USER")
     server_password = os.getenv("BUILD_SERVER_PASSWORD")
@@ -446,7 +448,7 @@ def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
     TestToolkit.update_tested_ports([selected_port])
     port = selected_port.name
     logging.info("Selected Port:{}".format(port))
-    port_oid = get_port_oid(engines, selected_port.name)
+    port_oid = get_port_oid(engines, selected_port.name, plane_suffix)
 
     with allure.step('Retrieve in-drops and out-drops fields from show output'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -473,17 +475,14 @@ def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
             in_drop_mismatch_err, out_drop_mismatch_err)
 
 
-def get_port_oid(engines, port_name):
+def get_port_oid(engines, port_name, plane_suffix):
     fae = Fae(port_name=f'{port_name}')
     output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
         fae.interface.show()).get_returned_value()
-    port_key = output_dictionary["plan-ports"][port_name]["key"]
-    port_to_oid_cmd = f'sonic-db-cli COUNTERS_DB hgetall "COUNTERS_PORT_NAME_MAP"'
+    port_key_with_suffix = output_dictionary["plan-ports"][port_name + plane_suffix]["key"]
+    port_key = port_key_with_suffix[:-3]
+    port_to_oid_cmd = f'sonic-db-cli COUNTERS_DB hget "COUNTERS_PORT_NAME_MAP" "{port_key}"'
     output = engines.dut.run_cmd(port_to_oid_cmd)
-    # change output string to match json format
-    output = output.replace("'", '"')
-    port_oid_details_dict = json.loads(output)
-    output = port_oid_details_dict[f'{port_key}']
     port_oid = output.split(":")[1]
     return port_oid
 

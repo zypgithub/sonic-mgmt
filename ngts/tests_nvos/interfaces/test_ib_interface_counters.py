@@ -66,7 +66,7 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
 
     out_of_range_p, out_of_range_sw, reversed_range, undefined_range = create_invalid_ranges(selected_ports[0].name)
     error_msg1 = 'does not exist'
-    error_msg2 = "is not a 'interface-name'"
+    error_msg2 = "Error: Invalid Command: action clear interface"
 
     with allure.step("Create Interface"):
         interface = Interface(parent_obj=None)
@@ -85,8 +85,7 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, f
                                                          ).verify_result(True)
 
         with allure.independent_step("check undefined range"):
-            interface.action_clear_counter_for_interface(interface_name=undefined_range
-                                                         ).verify_result(False, error_msg2)
+            interface.action_clear_counter_for_interface(interface_name=undefined_range, expected_str=error_msg2).verify_result(True)
 
 
 @pytest.mark.ib_interfaces
@@ -134,33 +133,36 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
              first_range_last_point) = randoms
         p_number = random.randint(1, 2)
         random_port = f'{selected_port_name}{random_port}p{p_number}'
+        port_prefix = selected_port_name.replace("sw", "")
 
-    with allure.step("Run clear counters using range for p1 or p2 only"):
-        with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
-                                                         interface_name=f'{selected_port_name}{second_range_first_point}-{second_range_last_point}p{p_number}-{p_number},{random_port}').verify_result()
+    with allure.step("Run clear counters"):
+        with allure.independent_step("Run clear counters using range for p1 or p2 only"):
+            with allure.step('Run clear counter command'):
+                interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
+                                                             interface_name=f'{selected_port_name}{second_range_first_point}-{second_range_last_point}p{p_number}-{p_number},{random_port}').verify_result()
 
-        verify_files_created(ssh_connection, file_name,
-                             get_port_range(second_range_first_point, second_range_last_point, p_number) + [random_port])
+            verify_files_created(ssh_connection, file_name,
+                                 get_port_range(port_prefix, second_range_first_point, second_range_last_point, p_number) + [random_port])
 
-        with allure.step('verify show command output'):
-            with allure.step('Check selected port counters'):
-                check_port_counters(selected_port, False, ssh_connection).verify_result()
-                check_port_counters(selected_port, False, engines.dut).verify_result()
+            with allure.step('verify show command output'):
+                with allure.step('Check selected port counters'):
+                    check_port_counters(selected_port, False, ssh_connection).verify_result()
+                    check_port_counters(selected_port, False, engines.dut).verify_result()
 
-    with allure.step("Run clear counters using range and multiple ports and verify results"):
+        with allure.independent_step("Run clear counters using range and multiple ports and verify results"):
 
-        with allure.step('Run clear counter command'):
-            interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
-                                                         interface_name=f'{selected_port_name}{first_range_first_point}-{first_range_last_point}p1-2,{random_port}').verify_result()
+            with allure.step('Run clear counter command'):
+                interface.action_clear_counter_for_interface(dut_engine=ssh_connection,
+                                                             interface_name=f'{selected_port_name}{first_range_first_point}-{first_range_last_point}p1-2,{random_port}').verify_result()
 
-        verify_files_created(ssh_connection, file_name,
-                             get_port_range(first_range_first_point, first_range_last_point) + [random_port])
+            verify_files_created(ssh_connection, file_name,
+                                 get_port_range(port_prefix, first_range_first_point, first_range_last_point) + [
+                                     random_port])
 
-        with allure.step('verify show command output'):
-            with allure.step('Check selected port counters'):
-                check_port_counters(selected_port, True, ssh_connection).verify_result()
-                check_port_counters(selected_port, False, engines.dut).verify_result()
+            with allure.step('verify show command output'):
+                with allure.step('Check selected port counters'):
+                    check_port_counters(selected_port, True, ssh_connection).verify_result()
+                    check_port_counters(selected_port, False, engines.dut).verify_result()
 
 
 def _clear_counters_test_flow(engines, players, interfaces, setup_name, all_counters=False, fae_param=""):
@@ -315,20 +317,17 @@ def create_new_user(engine):
     return file_name, user_name, ssh_connection
 
 
-def get_port_range(first: int, last: int, p1_2=0) -> List[str]:
+def get_port_range(port_prefix: str, first: int, last: int, p1_2=0) -> List[str]:
     """
     (2, 4) --> ['sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
     (2, 4, p1_2=2) --> ['sw2p2', 'sw3p2', 'sw4p2']
     """
-    return [f'sw{x}p{p}' for x in range(first, last + 1) for p in ([p1_2] if p1_2 else [1, 2])]
+    return [f'sw{port_prefix}{x}p{p}' for x in range(first, last + 1) for p in ([p1_2] if p1_2 else [1, 2])]
 
 
 def verify_files_created(ssh_connection: LinuxSshEngine, directory: str, ports: List[str]):
-    if is_bug_active(4079803):
-        logger.error("Won't check files due to https://redmine.mellanox.com/issues/4079803")
-    else:
-        with allure.step('verify that a clear file is added to each port'):
-            all_files = ssh_connection.run_cmd('ls {}'.format(directory)).split()
-            missing_ports = [port for port in ports if port not in all_files]
-            msg = "\n".join("{} is missing".format(port) for port in missing_ports)
-            assert not missing_ports, msg
+    with allure.step('verify that a clear file is added to each port'):
+        all_files = ssh_connection.run_cmd('ls {}'.format(directory)).split()
+        missing_ports = [port for port in ports if port not in all_files]
+        msg = "\n".join("{} is missing".format(port) for port in missing_ports)
+        assert not missing_ports, msg

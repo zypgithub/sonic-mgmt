@@ -23,8 +23,13 @@
 #    - GitHub:
 #      - https://github.com/Azure/sonic-buildimage/issues/9811
 
+# Ignored messages for all tests and platforms:
 - Errors_list:
     - '.*No kernel crashes detected.*'
+    - '.*DMA: preallocated .* pool for atomic allocations.*'
+    - '.*pcieport .* error containment capabilities:.*'
+    - '.*Finished kdump-tools.service - Kernel crash dump capture service.*'
+    - '.*Starting check_for_kernel_crashes.service - Check for kernel crashes and generate tech support.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos
@@ -563,15 +568,6 @@
 
 # NVOS
 - Errors_list:
-    - '.*ERR systemd[1]: Failed to start ib-utils container.*'
-    - '.*WARNING healthd: Got system ready timeout. Notifying.*'
-    - '.*WARNING nvued: WARNING: .* System is not ready.*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
-
-# NVOS
-- Errors_list:
     - '.* ERR rsyslogd: omfwd: could not get addrinfo for hostname .*'
   Conditions:
     - Affected_test_cases:
@@ -633,7 +629,8 @@
 
 # NVOS Errors which should be ignored in tests which doing reset service
 - Errors_list:
-    - '.* ERR health-statsd#health_history: ib-utils: Container .* is not running.*'
+    - ".*ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running.*"
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.* ERR health-statsd#health_history: Summary: Not OK.*'
   Conditions:
     - Affected_test_cases:
@@ -762,6 +759,14 @@
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_bad_connection
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_server_unreachable
 
+# NVOS
+- Errors_list:
+    - '.*WARNING.*The CRL.*doesn''t exist.*'
+    - '.*WARNING.*lifecycle.*crl_file.*not found.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/security/crl/test_crl.py::test_crl_bad_name
+
 # NVOS AAA authentication restrictions
 - Errors_list:
     - '.*ERR nslcd\[.*\]: \[.*\] client supplied argument 1 bytes too large'
@@ -785,10 +790,20 @@
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_auth
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_priority
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_basic
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_lowest_server_only
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
       - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_auth_failthrough
       - tests_nvos/system/gnmi/test_gnmi_pam.py::test_gnmi_authentication
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_basic
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_local_first
+      - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_server_unreachable
+
+- Errors_list:
+    - '.*WARNING.*The CRL.*doesn''t exist.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/crl/test_crl.py::test_crl_bad_name
 
 - Errors_list:
     - '.*WARNING.*nss_tacplus:.*TACACS\+ server.*read failed with protocol error \(incorrect shared secret\?\).*'
@@ -829,6 +844,7 @@
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_server_unreachable
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_top_server
+        - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_accounting_unreachable_lowest_server
 
 - Errors_list:
     - '.*ERR .*: pam_radius_auth: RADIUS server .*:123 failed to respond.*'
@@ -895,6 +911,7 @@
 # NVOS : Errors which should be ignored in tests which doing reboot/reload
 - Errors_list:
     - '.* ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.* ERR health-statsd#health_history: Disk check: is not Status ok.*'
     - '.* ERR health-statsd#health_history: memory_check: is not Status ok.*'
     - '.* ERR health-statsd#health_history: Summary: Not OK.*'
@@ -934,6 +951,7 @@
 # NVOS : Errors - Bug 3558065 related
 - Errors_list:
     - '.* ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.* ERR health-statsd#health_history: Disk check: is not Status ok.*'
     - '.* ERR health-statsd#health_history: memory_check: is not Status ok.*'
     - '.* ERR health-statsd#health_history: Summary: Not OK.*'
@@ -1118,7 +1136,7 @@
 
 # NVOS
 - Errors_list:
-    - '.*ERR health-statsd#health_history: ib-utils: Container .* is not running.*'
+    - "ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running"
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_docker_stop
@@ -1162,6 +1180,8 @@
 # NVOS
 - Errors_list:
     - '.*ERR health-statsd#health_history: Summary: Not OK.*'
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
+    - ".*ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running.*"
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_snmp.py::test_system_snmp_load_test
@@ -1214,6 +1234,8 @@
     - '.*WARNING systemd\[\d\]: lldp.service: Control process exited, code=killed.*'
     - '.*ERR health\-statsd\#health\_history: lldp: Container ''lldp'' is not running.*'
     - '.*ERR healthd: lldp service status: Down, app status: Down, fail reason: signal.*'
+    - '.*WARNING healthd: Got system ready timeout. Notifying.*'
+    - '.*WARNING nvued: WARNING: .* System is not ready.*'
   Conditions:
     - Affected_test_cases:
       - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
@@ -1406,6 +1428,7 @@
 
 # NVOS
 - Errors_list:
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*WARNING pmon#psud: PSU absence warning: PSU \d is not present.*'
@@ -1461,6 +1484,8 @@
 - Errors_list:
     - '.*WARNING systemd\[1\]: nvued\.service: Failed with result.*'
     - '.*WARNING nslcd\[\d+\]: \[\w+\].*Invalid credentials.*'
+    - '.*ERR nslcd\[\d+\]: \[\w+\].*no available LDAP server found.*'
+    - '.*WARNING nslcd\[\d+\]: \[\w+\].*ldap_start_tls_s\(\) failed.*Connect error.*The TLS connection was non-properly terminated.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_auth[ipv4-NVUE-BadFlow]
@@ -1540,6 +1565,7 @@
 # NVOS
 - Errors_list:
     - ".*ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running.*"
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.*ERR health-statsd#health_history: Summary: Not OK.*'
   Conditions:
     - Affected_test_cases:
@@ -1874,6 +1900,8 @@
     - '.*WARNING kernel:.*EXT4-fs warning \(device loop1\): ext4_end_bio:347: I\/O error.*'
     - '.*ERR health\-statsd\#health\_history: Disk space: Status is not ok.*'
     - '.*ERR kernel:.*Buffer I\/O error on device loop1, logical block.*'
+    - ".*ERR health-statsd#health_history: eventd.*container 'eventd' is not running.*"
+    - ".*ERR health-statsd#health_history: lldp.* 'lldp' is not running.*"
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_ssd_cleanup.py
@@ -1938,6 +1966,7 @@
 # NVOS
 - Errors_list:
     - '.*ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.*ERR health-statsd#health_history: Summary: Not OK.*'
   Conditions:
     - Affected_test_cases:
@@ -2078,10 +2107,45 @@
     - Affected_test_cases:
         - tests_nvos/general/security/bmc/test_reset_bmc_root_password.py
         - tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py
-      
+
 - Errors_list:
     - '.*send_packet: Network is down.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_message.py::test_system_reload_for_system_message
+
+# NVOS: Expected logs
+- Errors_list:
+    - '.*WARNING pmon#psud\[\d+\]: Power absence warning: PSU \d is out of power.*'
+    - '.*.*WARNING pmon#thermalctld: Fan removed warning: psu\d_fan\d was removed from the system.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_reboot.py::test_reboot_via_psu_off
+
+- Errors_list:
+    - '.*send_packet: Network is down.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_message.py::test_system_reload_for_system_message
+
+- Errors_list:
+    - '.*ERR pmon#syseepromd.* Leakage sensor leakage.* does not exist.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/platform/test_platform_environment_leakage.py::test_platform_environment_bmc_leakage
+
+# NVOS: Expected logs after reboot
+- Errors_list:
+    - '.*WARNING kernel.*clocksource: Long readout interval, skipping watchdog check.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_power_cycle.py
+        - tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_reboot_system_keeps_data
+        - tests_nvos/cluster/test_cluster_factory_reset.py::test_cluster_factory_reset_keep_all_config
+        - tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py::test_erot_upgrade_fae
+        - tests_nvos/cluster/test_cluster_reboot.py::test_reboot_command
+        - tests_nvos/system/test_system_reboot.py
+        - tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py::test_tpm_reboot_cases
+        - tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_reboot_system_keeps_data
+        - tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade
 # --------------------------------------------------

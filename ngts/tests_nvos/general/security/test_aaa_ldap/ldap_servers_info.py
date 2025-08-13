@@ -207,15 +207,15 @@ class LdapServersP3:
         hostname=AaaConsts.VM_AAA_SERVER_IPV4_ADDR,
         priority=1,
         secret='secret',
-        port=393,
+        port=333,
         base_dn=BASE_DN,
         bind_dn=BIND_DN,
         timeout_bind=5,
         timeout_search=5,
         version=VERSION,
-        ssl_port=394,
+        ssl_port=777,
         users=LDAP1_USERS,
-        docker_name='nvos_ldap_3000',
+        docker_name='ldap_nvos_5000',
         users_per_auth_medium=LDAP3_USERS_PER_AUTH_MEDIUM
     )
     LDAP3_IPV6 = LDAP3_IPV4.copy()

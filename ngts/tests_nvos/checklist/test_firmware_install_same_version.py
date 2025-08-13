@@ -175,11 +175,11 @@ def install_same_firmware_version(test_name, component, platform_component, skip
                                                                                      filename=filename,
                                                                                      test_name=test_name,
                                                                                      skip_version_check=skip_version_check).verify_result(expected_duration=duration_threshold)
+            return result_obj
     finally:
         with allure.step(f"Delete fetched fw image files"):
             files = platform_component.files.get_files()
             platform_component.files.delete_files(files_to_delete=files)
-        return result_obj
 
 
 def select_random_component(devices):

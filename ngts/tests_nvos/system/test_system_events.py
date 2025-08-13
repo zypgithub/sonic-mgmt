@@ -85,8 +85,7 @@ def test_show_system_events_table_size(test_api):
 @pytest.mark.events
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_events_maximum(test_api, engines):
+def test_system_events_maximum(random_api, engines):
     """
     Verify show system events is able to capture maximum no of events (10000)
         Test flow:
@@ -97,7 +96,7 @@ def test_system_events_maximum(test_api, engines):
             5. Unset system events table-size and validate table-size is set to default(1000)
             6. Clear system events
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     clear_system_events(system)
     try:

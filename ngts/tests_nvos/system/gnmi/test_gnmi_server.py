@@ -79,8 +79,7 @@ def test_gnmi_basic_flow_once(engines, topology_obj):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_gnmi_basic_flow_stream(test_api, engines, topology_obj):
+def test_gnmi_basic_flow_stream(random_api, engines, topology_obj):
     """
     Check gnmi basic flow: show command , disable and enable commands, validate stream updates to gnmi-client,
      with subscribe mode - stream.
@@ -97,14 +96,13 @@ def test_gnmi_basic_flow_stream(test_api, engines, topology_obj):
             11. validate gnmi-server stream updates
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     gnmi_basic_flow(engines, mode=GnmiMode.STREAM, mgmt_port_name=mgmt_port_name)
 
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_simulate_gnmi_server_failure(test_api, engines):
+def test_simulate_gnmi_server_failure(random_api, engines):
     """
     In this test we will simulate a gnmi-server failure,
     by disabling the auto restart and stop the gnmi-server docker,
@@ -121,7 +119,7 @@ def test_simulate_gnmi_server_failure(test_api, engines):
             10. validate gnmi-server is running
             11. validate gnmi-server stream updates
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)

@@ -6,7 +6,7 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
     Mlx2201Switch, Mlx2100Switch, \
     Mlx2010Switch, Mlx3700Switch, Mlx5640Switch
-from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch,
+from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, BlackMambaDGXSwitch,
                                               CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
                                               JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch,
@@ -32,6 +32,7 @@ class DeviceFactory:
             'QM3000 - Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black Mamba': BlackMambaSwitch,
             'Q3400-RA Black_Mamba': BlackMambaSwitch,
+            'Q3401-RD Black Mamba DGX': BlackMambaDGXSwitch,
             'Mellanox SN5600': Mlx5600Switch,
             'Mellanox SN5640': Mlx5640Switch,
             'Mellanox SN5400': Mlx5400Switch,

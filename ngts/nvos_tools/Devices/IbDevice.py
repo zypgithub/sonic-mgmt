@@ -261,7 +261,7 @@ class IbSwitch(BaseSwitch):
     def _init_services(self):
         super()._init_services()
         self.available_services.extend((
-            'docker.service', 'database.service', 'hw-management.service', 'config-setup.service', 'ntpsec.service', 'hostname-config.service', 'ntp-config.service',
+            'docker.service', 'database.service', 'hw-management.service', 'hw-management-tc.service', 'config-setup.service', 'ntpsec.service', 'hostname-config.service', 'ntp-config.service',
             'rsyslog-config.service', 'procdockerstatsd.service',
             'configmgrd.service', 'countermgrd.service', 'portsyncmgrd.service'
         ))
@@ -427,9 +427,9 @@ class IbSwitch(BaseSwitch):
                                           "nv show platform boot-policy",
                                           "nv show platform cable-cartridge",
                                           "nv show platform chassis-location",
-                                          "nv show system cli",
                                           "nv show cluster",
-                                          "nv show sdn"]
+                                          "nv show sdn",
+                                          "nv show fae interface {port} link link-training"]
 
     def sleep_after_system_reboot(self):
         pass
@@ -475,7 +475,7 @@ class IbSwitch(BaseSwitch):
         self.fnm_external_port_list = ['fnm1']
         self.fnm_external_child_port = 'fnm1s1'
         self.interface_active_internal_fnm_ports = {}
-        self.child_aggregated_port = 'swA10p1s1'
+        self.child_aggregated_port = 'swA11p1s1'
         self.num_of_plane_ports = 4
         self.num_of_fnm_plane_ports = 2
         self.network_ports = ['eth0', 'ib0', 'lo']  # total 3 ports
@@ -521,7 +521,7 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
             # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
             # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
-            IbInterfaceConsts.LINK_STATS_QNT3[10]: GnmiConstants.PLR_RCV_CODES,
+            IbInterfaceConsts.LINK_PLR_RCV_CODES_ERRORS: GnmiConstants.LINK_PLR_RCV_CODE_ERRORS,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_MULTICAST_IN_PKTS: GnmiConstants.IN_MULTICAST_PKTS,
@@ -761,6 +761,7 @@ class BlackMambaSwitch(IbSwitch):
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 14.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
         })
+        self.memory_speed = 2667  # in MT/s
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -843,6 +844,58 @@ class BlackMambaSwitch(IbSwitch):
     @classmethod
     def _get_lane_bmap(cls, port):
         return 0x10 ** (port.local_port - 1) * 2 ** (port.plane_number - 1)
+
+
+# -------------------------- BlackMambaDGX Switch ----------------------------
+class BlackMambaDGXSwitch(BlackMambaSwitch):
+
+    def __init__(self, switch_class=NvosConst.BLACK_MAMBA_DGX_SWITCH):
+        super().__init__(switch_class=switch_class)
+
+    def _init_fan_list(self):
+        super()._init_fan_list()
+        self.fan_list += ["FAN7/1", "FAN7/2", "FAN8/1", "FAN8/2"]
+
+    def _init_led_list(self):
+        super()._init_led_list()
+        self.led_list += ['FAN7', 'FAN8']
+
+    def _init_psu_list(self):
+        self.psu_list = []
+        self.psu_fan_list = []
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            'ASIC1', 'ASIC2', 'ASIC3', 'ASIC4', 'Ambient-Fan-Side-Temp', 'Ambient-Port-Side-Temp', 'PCH-Temp',
+            'CPU-Core-0-Temp', 'CPU-Core-1-Temp', 'CPU-Core-2-Temp', 'CPU-Core-3-Temp', 'CPU-Pack-Temp', 'Drive-Temp',
+            'PMIC-1-Temp', 'PMIC-2-Temp', 'PMIC-3-Temp', 'PMIC-4-Temp', 'PMIC-5-Temp', 'PMIC-6-Temp', 'PMIC-7-Temp',
+            'PMIC-8-Temp', 'PMIC-9-Temp', 'PMIC-10-Temp', 'PMIC-11-Temp', 'PMIC-12-Temp', 'PMIC-13-Temp',
+            'SODIMM-1-Temp', 'SODIMM-2-Temp']
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "Q3401-RD",
+            "asic-model": self.asic_type,
+        })
+        self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
+                                'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
+                                'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
+                                'PMIC-4-12V-VDD-ASIC2-In-1', 'PMIC-4-ASIC2-VDD-Out-1',
+                                'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
+                                'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1',
+                                'PMIC-7-12V-VDD-ASIC3-In-1', 'PMIC-7-ASIC3-VDD-Out-1',
+                                'PMIC-8-12V-HVDD-DVDD-ASIC3-In-1', 'PMIC-8-ASIC3-DVDD-PL0-Out-2',
+                                'PMIC-8-ASIC3-HVDD-PL0-Out-1', 'PMIC-9-12V-HVDD-DVDD-ASIC3-In-1',
+                                'PMIC-9-ASIC3-DVDD-PL1-Out-2', 'PMIC-9-ASIC3-HVDD-PL1-Out-1',
+                                'PMIC-10-12V-VDD-ASIC4-In-1', 'PMIC-10-ASIC4-VDD-Out-1',
+                                'PMIC-11-12V-HVDD-DVDD-ASIC4-In-1', 'PMIC-11-ASIC4-DVDD-PL0-Out-2',
+                                'PMIC-11-ASIC4-HVDD-PL0-Out-1', 'PMIC-12-12V-HVDD-DVDD-ASIC4-In-1',
+                                'PMIC-12-ASIC4-DVDD-PL1-Out-2', 'PMIC-12-ASIC4-HVDD-PL1-Out-1', 'PMIC-13-12V-MAIN-In-1',
+                                'PMIC-13-CEX-VDD-Out-1']
 
 
 # -------------------------- Taipan Switch ----------------------------
@@ -975,6 +1028,7 @@ class CrocodileSwitch(IbSwitch):
         })
         self.unsupported_commands_list.extend(["nv show ib device ASIC3",
                                                "nv show ib device ASIC4"])
+        self.memory_speed = 2667  # in MT/s
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -1205,6 +1259,7 @@ class JulietSwitch(NvLinkSwitch):
         })
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
+        self.memory_speed = 2400  # in MT/s
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1718,6 +1773,10 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         # GB300 is 100% liquid cooled
         self.fan_list = []
         self.fan_led_list = []
+
+    def _init_services(self):
+        super()._init_services()
+        self.available_services.remove('hw-management.service')
 
     def _init_platform_lists(self):
         super()._init_platform_lists()

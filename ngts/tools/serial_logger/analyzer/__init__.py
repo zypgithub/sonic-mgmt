@@ -6,6 +6,7 @@ import pytest
 
 from infra.tools.general_constants.constants import NogaConstants
 from infra.tools.topology_tools import nogaq
+import requests_cache
 from ngts.constants.constants import SerialLoggerConst
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from .SerialLogAnalyzer import SerialLogAnalyzer, DUTHOSTS_MISSING_MESSAGE
@@ -36,6 +37,7 @@ def serial_log_analyzers(request, test_name, setup_name, session_id, tmp_path) -
     except pytest.FixtureLookupError:  # duthosts fixture unavailable for SONiC switches
         logging.info(DUTHOSTS_MISSING_MESSAGE + " Test and serial-log-analyzer will still run.")
         duthost_default = NotImplemented  # when duthost is NotImplemented we know we're on a non-NVOS system
+    requests_cache.uninstall_cache()
 
     exceptions = []
     if mode in {SerialLoggerConst.MODE_ANALYZE, SerialLoggerConst.MODE_ANALYZE_AND_OPEN_BUGS}:

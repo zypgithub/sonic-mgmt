@@ -38,10 +38,10 @@ SIMULATED_ISSUES = {"bad_device": "device is out of power"}
 
 
 @pytest.fixture(scope='function')
-def set_unset_ps_redundancy_grid():
+def set_unset_ps_redundancy_ps():
     platform = Platform()
-    with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_GRID}"):
-        platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_GRID, apply=True)
+    with allure.step(f"Set platform ps-redundancy to {PlatformConsts.PS_REDUNDANCY_PS}"):
+        platform.ps_redundancy.set(PlatformConsts.PS_REDUNDANCY_POLICY, PlatformConsts.PS_REDUNDANCY_PS, apply=True)
     yield
     with allure.step('Run unset platform ps-redundancy command and apply'):
         platform.ps_redundancy.unset(apply=True).verify_result()
@@ -55,7 +55,7 @@ def validate_health_history():
 
 @pytest.mark.system
 @pytest.mark.health
-def test_reboot_test(validate_health_history):
+def test_reboot_test(validate_health_history, verify_no_kernel_errors):
     """
     Validate health after reboot :
     - status is OK
@@ -199,7 +199,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
         pytest.skip("Skipping test because setup has no fans and no psus")
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
-    validate_psu_redundancy(devices, Platform())
+    validate_min_psus_for_redundancy(devices, Platform())
     health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path())
     verify_health_before_test()
 
@@ -277,7 +277,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_grid):
+def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_ps):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -290,34 +290,47 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
             7. validate health status changed to "OK"
             8. validate devices appear in the detailed health report as OK
     """
-    if len(devices.dut.fan_list) == 0 and len(devices.dut.psu_list) == 0:
-        pytest.skip("Skipping test because setup has no fans and no psus")
-    validate_psu_redundancy(devices, Platform())
+    with allure.step("Validate system had PSUs and Fans"):
+        if len(devices.dut.fan_list) == 0 and len(devices.dut.psu_list) == 0:
+            pytest.skip("Skipping test because setup has no fans and no psus")
+
     system = System()
-    thermal_directory = devices.dut.fan_direction_dir
-    system.log.rotate_logs()
-    health_issue_dict = {}
     date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-    system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
-    time.sleep(1)
-    verify_health_before_test()
+    thermal_directory = devices.dut.fan_direction_dir
+    health_issue_dict = {}
+
+    with allure.step("Validate minimum no of PSUs for redundancy"):
+        validate_min_psus_for_redundancy(devices, Platform())
+
+    with allure.step("Clear health file and rotate logs"):
+        system.log.rotate_logs()
+        system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
+        time.sleep(1)
+
+    with allure.step("Validate system health prior to test"):
+        verify_health_before_test()
 
     try:
-        psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
-        psu_display_name = "PSU{}".format(psu_id)
-        fan_display_name = get_fan_display_name(fan_id)
-        health_issue_dict = {psu_display_name: ["missing or not available", "missing - Unpopulated PSU slot"],
-                             fan_display_name: "not working"}
-        logger.info("sleep 5 sec after simulating HW issue")
-        time.sleep(5)
-        validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
+        with allure.step("Simulate PSU and FAN health issue"):
+            psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
+            logger.info("sleep 5 sec after simulating HW issue")
+            time.sleep(5)
+            psu_display_name = "PSU{}".format(psu_id)
+            fan_display_name = get_fan_display_name(fan_id)
+            health_issue_dict = {psu_display_name: ["missing or not available", "missing - Unpopulated PSU slot"],
+                                 fan_display_name: "not working"}
+
+        with allure.step("Validate health issue"):
+            validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
     finally:
         date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
         time.sleep(1)
         with allure.step("Cleanup - Fix the health issues"):
-            HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
-            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+            with allure.step("Fix the Fan fault issue"):
+                HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
+            with allure.step("Fix the PSU fault issue"):
+                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
@@ -397,7 +410,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
     fan_ids = random.sample([i for i in range(1, no_of_fans)], 2)
     logger.info("Chosen fans : {}".format(fan_ids))
     fan_info = dict()
-    fan_fault_events = [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]
+    fan_fault_events = [FansConsts.FAN_SPEED_OUT_OF_RANGE, "is " + FansConsts.FAN_NOT_WORKING]
 
     if loganalyzer:
         for key, value in loganalyzer.items():
@@ -669,7 +682,7 @@ def validate_docker_is_up(engine, docker):
     assert docker in engine.run_cmd("docker ps")
 
 
-def validate_psu_redundancy(devices, platform):
+def validate_min_psus_for_redundancy(devices, platform):
     if not devices.dut.psu_list:
         pytest.skip(f"DUT has 0 valid PSUs, we cant simulate psu fault due to ps-redundancy")
     valid_psus = platform.environment.get_available_psus()
@@ -678,10 +691,15 @@ def validate_psu_redundancy(devices, platform):
 
 
 def verify_health_status_and_led(system, expected_status, output=None):
+    # Validate health status through show system
+    system.validate_health_status(expected_status)
+
+    # Validate health status through show system health
     if not output:
         output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
-    system.validate_health_status(expected_status)
     verify_expected_health_status(output, HealthConsts.STATUS, expected_status)
+
+    # Validate health status-led through show system health
     expected_led = HealthConsts.LED_OK_STATUS if expected_status == HealthConsts.OK else HealthConsts.LED_NOT_OK_STATUS
     verify_expected_health_status(output, HealthConsts.STATUS_LED, expected_led)
 
@@ -727,19 +745,18 @@ def get_system_health_monitoring_config_file_path():
 
 def simulate_fan_and_psu_health_issue(engines, devices):
     thermal_directory = devices.dut.fan_direction_dir
-    with allure.step("simulate_fan_and_psu_health_issue"):
-        if devices.dut.psu_list:
-            psu_id = int(random.choice(Platform().environment.get_available_psus()).replace('PSU', ''))
-        else:
-            psu_id = None
-        if devices.dut.fan_list:
-            fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
-        else:
-            fan_id = None
-        logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
-        HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
-        HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
-        return psu_id, fan_id
+    if devices.dut.psu_list:
+        psu_id = int(random.choice(Platform().environment.get_available_psus()).replace('PSU', ''))
+    else:
+        psu_id = None
+    if devices.dut.fan_list:
+        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+    else:
+        fan_id = None
+    logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
+    HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
+    HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
+    return psu_id, fan_id
 
 
 def get_fan_display_name(fan_id):
@@ -959,7 +976,7 @@ def validate_health_files_exist_in_techsupport(system, engine, health_files=[Hea
     finally:
         system.techsupport.cleanup(engine)
         if system.techsupport.file_name:
-            system.techsupport.action_delete(system.techsupport.file_name)
+            system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 def validate_health_issues_exist(system, issues: Dict[str, str]):

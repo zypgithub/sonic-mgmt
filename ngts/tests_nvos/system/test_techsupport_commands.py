@@ -7,6 +7,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
@@ -14,7 +15,8 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_show(engines, test_name, random_api, devices):
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
+def test_techsupport_show(engines, test_name, random_api, devices, serial_log_analyzers):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     command: nv show system tech-support files
@@ -27,24 +29,27 @@ def test_techsupport_show(engines, test_name, random_api, devices):
         5. run nv show system tech-support files
         6. validate the output format
     """
+    serial_analyzer, = serial_log_analyzers.values()
     system = System(None)
     operation = devices.dut.generate_tech_support
     with allure.step('Run show/action system tech-support and verify that each results updated as expected'):
         output_dictionary_before_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
-        folder, duration = system.techsupport.action_generate(test_name=test_name)
+            system.techsupport.files.show()).get_returned_value().values())
+        with serial_analyzer.stage("Generate tech-support 1"):
+            folder, duration = system.techsupport.action_generate(test_name=test_name, verify_size=True)
 
         OperationTime.verify_operation_time(duration, operation).verify_result()
         file1 = system.techsupport.file_name
-        folder, duration = system.techsupport.action_generate()
+        with serial_analyzer.stage("Generate tech-support 2"):
+            folder, duration = system.techsupport.action_generate(verify_size=True)
         OperationTime.verify_operation_time(duration, operation).verify_result()
         file2 = system.techsupport.file_name
         output_dictionary_after_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            system.techsupport.files.show()).get_returned_value().values())
         validate_techsupport_output(output_dictionary_before_actions, output_dictionary_after_actions, 2)
 
     with allure.step('Validate show tech-support command format'):
-        show_output = system.techsupport.show()
+        show_output = system.techsupport.files.show()
         output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
         assert SystemConsts.LATEST_KEY in output_dict, \
             f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {output_dict.keys()}"
@@ -58,12 +63,13 @@ def test_techsupport_show(engines, test_name, random_api, devices):
                                             for full_path in output_dict.values()], \
             f"Output of show tech-support has mismatch between keys (file names) and full-paths: {output_dict.items()}"
 
-    system.techsupport.action_delete(file1)
-    system.techsupport.action_delete(file2)
+    system.techsupport.files.file_name[file1].action_delete()
+    system.techsupport.files.file_name[file2].action_delete()
 
 
 @pytest.mark.system
 @pytest.mark.tech_support
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_techsupport_since(engines, test_name, random_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -82,10 +88,10 @@ def test_techsupport_since(engines, test_name, random_api, devices):
         tech_support_folder, duration = system.techsupport.action_generate(engines.dut, SystemConsts.ACTIONS_GENERATE_SINCE,
                                                                            yesterday_str, test_name=test_name)
         output_dictionary = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            system.techsupport.files.show()).get_returned_value().values())
         validate_techsupport_since(output_dictionary, tech_support_folder)
         OperationTime.verify_operation_time(duration, operation).verify_result()
-        system.techsupport.action_delete(system.techsupport.file_name)
+        system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 @pytest.mark.system
@@ -118,6 +124,7 @@ def test_techsupport_since_invalid_date(engines, random_api):
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.cumulus
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_techsupport_delete(engines, random_api, devices):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -134,36 +141,39 @@ def test_techsupport_delete(engines, random_api, devices):
         8. File not found: <first_file>
     """
     system = System(None)
+
     path = devices.dut.techsupport_files_path
     success_message = devices.dut.techsupport_delete_success_message
     with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
 
         with allure.step('Generate two tech-support files'):
             first_file, duration = system.techsupport.action_generate()
-            system.techsupport.show()
+            system.techsupport.files.show()
             second_file, duration = system.techsupport.action_generate()
-            system.techsupport.show()
+            system.techsupport.files.show()
 
         with allure.step('Delete the first created tech-support file'):
-            output = system.techsupport.action_delete(first_file.replace('/host/dump/', '')).get_returned_value()
+            system.techsupport.files.file_name[first_file.replace(path, '')].action_delete().verify_result(expected_value=success_message)
 
-        assert success_message in output, 'failed to delete'
-        output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
+                system.techsupport.files.show()).get_returned_value().values())
 
-        with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
-            assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(first_file)
-            assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
+            with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
+                assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(first_file)
+                assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
 
         with allure.step('Delete non exist tech-support file {}'.format(first_file)):
-            res_obj = system.techsupport.action_delete(first_file.replace('/host/dump/', ''))
-            res_obj.verify_result(should_succeed=False)
-            assert 'Action failed with the following issue:' in res_obj.info, "Can not delete non exist file!"
+            system.techsupport.files.file_name[first_file.replace(path, '')].action_delete().verify_result(should_succeed=False,
+                                                                                                           expected_value="File not found")
+
+        with allure.step('Delete the second created tech-support file'):
+            system.techsupport.files.file_name[second_file.replace(path, '')].action_delete().verify_result()
 
 
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.cumulus
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_techsupport_upload(engines, random_api, devices):
     """
     Test flow:
@@ -181,7 +191,6 @@ def test_techsupport_upload(engines, random_api, devices):
     :return:
     """
     system = System(None)
-    TestToolkit.tested_api = random_api
     path = devices.dut.techsupport_files_path
     success_message = devices.dut.techsupport_upload_success_message
 
@@ -189,36 +198,32 @@ def test_techsupport_upload(engines, random_api, devices):
     invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices)
 
     with allure.step('Try to upload non exist tech-support file'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
-        assert "File not found: nonexist" in output.get_info(False), "we can not upload a non exist file!"
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=upload_path).verify_result(False, expected_value="File not found: nonexist")
 
     with allure.step('Generate tech-support file'):
         tech_file, duration = system.techsupport.action_generate()
-        tech_file = tech_file.replace('/host/dump/', '')
+        tech_file = tech_file.replace(path, '')
 
     with allure.step('try to upload techsupport {} to {} - Positive Flow'.format(tech_file, upload_path)):
-        output = system.techsupport.action_upload(upload_path, tech_file).verify_result()
-        with allure.step('verify the upload message'):
-            assert "File upload successfully" in output, "Failed to upload the techsupport file"
+        system.techsupport.files.file_name[tech_file].action_upload(upload_path).verify_result(expected_value=success_message)
 
         with allure.step('verify the uploaded file exist in target path'):
-            output = player.run_cmd('ls /tmp/')
+            output = target_engine.run_cmd('ls /tmp/')
             assert tech_file in output
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_1)
-        assert "is not a" in output.get_info(False), "URL was not in the right format"
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_1).verify_result(False, expected_value="is not a")
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=invalid_url_2)
-        assert "is not a" in output.get_info(False), "URL used non supported transfer protocol"
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_2).verify_result(False, expected_value="is not a")
 
-    system.techsupport.action_delete(system.techsupport.file_name)
+    system.techsupport.files.file_name[tech_file].action_delete()
 
 
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.cumulus
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 def test_techsupport_multiple_times(engines, test_name, random_api, devices, serial_log_analyzers):
     """
     Run nv show system tech-support files command and verify the required fields are exist
@@ -227,45 +232,20 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
     Test flow:
         1. run nv action generate system tech-support 4 times in a row
     """
+    serial_analyzer, = serial_log_analyzers.values()
     system = System(None)
     operation = devices.dut.generate_tech_support
     files_names = []
     with allure.step('Run show/action system tech-support 4 times in a row'):
         for i in range(0, 4):
             with allure.step("Generate Tech-Support for the {} time".format(i)):
-                folder, duration = system.techsupport.action_generate(test_name=test_name)
+                with serial_analyzer.stage(f"Generate tech-support {i}"):
+                    folder, duration = system.techsupport.action_generate(test_name=test_name)
                 OperationTime.verify_operation_time(duration, operation).verify_result()
                 files_names.append(system.techsupport.file_name)
 
     for file_name in files_names:
-        system.techsupport.action_delete(file_name)
-
-
-@pytest.mark.system
-@pytest.mark.tech_support
-def test_techsupport_size(engines, test_name, random_api):
-    """
-    Run nv action generate system tech-support and verify output file size
-    command: nv action generate system tech-support
-
-    Test flow:
-        1. run nv action generate system tech-support
-        2. check file size by du -sm
-        3. assert if size > 75 MB
-    """
-    engine = engines.dut
-    system = System(None)
-    with allure.step('Run generate tech-support'):
-        try:
-            tech_support_folder, duration = system.techsupport.action_generate()
-            # Round output to MB by -m flag and trim white spaces with column to receive int like output
-            output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
-            size_in_MB = int(output.split(" ")[0])
-            assert size_in_MB < SystemConsts.TECHSUPPORT_SIZE_LIMIT, f"{tech_support_folder} size ({size_in_MB}MB)" \
-                f" should be less than {SystemConsts.TECHSUPPORT_SIZE_LIMIT}MB"
-
-        finally:
-            system.techsupport.action_delete(system.techsupport.file_name)
+        system.techsupport.files.file_name[file_name].action_delete()
 
 
 def validate_techsupport_output(output_dictionary_before, output_dictionary_after, number_of_expected_files):
@@ -302,3 +282,31 @@ def find_latest_key(tech_support_dict):
         # result -> "/host/dump/nvos_dump_mtvr-croc-19-mgmt2_20241119_001126.tar.gz"
     """
     return SystemConsts.TECHSUPPORT_FILES_PATH + max(tech_support_dict.keys(), key=lambda x: x.split('_')[-2:])
+
+
+def _create_upload_urls(engines, devices):
+    """
+    Helper function to create upload URLs based on device type.
+
+    Args:
+        engines: The engines object containing device connections
+        devices: The devices object containing device information
+
+    Returns:
+        tuple: (invalid_url_1, invalid_url_2, upload_path, target_engine)
+    """
+    if devices.dut.is_ib():
+        # For IB devices, use player (sonic_mgmt)
+        player = engines['sonic_mgmt']
+        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
+        invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        target_engine = player
+    else:
+        # For ETH devices, use engines.dut
+        invalid_url_1 = "\'scp://{}:{}{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        invalid_url_2 = "\'ffff://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        upload_path = "\'scp://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        target_engine = engines.dut
+
+    return invalid_url_1, invalid_url_2, upload_path, target_engine

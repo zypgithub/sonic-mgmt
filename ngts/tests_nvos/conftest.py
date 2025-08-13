@@ -8,6 +8,7 @@ import time
 from email.mime.text import MIMEText
 from typing import Dict
 import requests_cache
+import re
 
 import pexpect
 import pytest
@@ -59,6 +60,11 @@ from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart
 
 logger = logging.getLogger()
 
+EXPECTED_KERNEL_PATTERNS = [
+    re.compile(r".*DPC: error containment capabilities:.*"),
+    re.compile(r".*ib3: multicast join failed for.*, status -\d+"),
+]
+
 
 def pytest_addoption(parser):
     """
@@ -89,29 +95,49 @@ def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
 
 
+@pytest.fixture
+def verify_no_kernel_errors(engines):
+    yield
+    with allure.step("Validate no error logs in kernel"):
+        kernel_errors = engines.dut.run_cmd("sudo dmesg | grep -Ei 'error|fail|warning'")
+        lines = kernel_errors.splitlines()
+
+        unexpected_lines = [
+            line for line in lines
+            if not any(pattern.search(line) for pattern in EXPECTED_KERNEL_PATTERNS)
+        ]
+
+        filtered_logs = "\n".join(unexpected_lines)
+        allure.attach("Filtered Kernel Errors", filtered_logs or "(no unexpected errors)")
+        assert not filtered_logs.strip(), f"Unexpected error logs in kernel:\n{filtered_logs}"
+
+
 @pytest.fixture(autouse=True)
-def check_log_size(request, engines):
-    def __get_syslog_file_size_kb(filename='syslog') -> int:
-        return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
-    marker_name = 'check_log_size'
+def check_disk_usage(request, engines):
+    marker_name = 'check_disk_usage'
     should_check = is_cur_test_has_marker(request, marker_name)
     if should_check:
-        with allure.step('get syslog size before (in KB)'):
-            size_before = __get_syslog_file_size_kb()
+        with allure.step("Get initial disk stats"):
+            field_to_read = 'kB_wrtn'
+            initial_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+            device = next((devices for devices in initial_output.keys() if not devices.startswith('loop')), None)
+            initial_kb = int(initial_output[device][field_to_read])
+
     yield
+
     if should_check:
-        with allure.step('get syslog size after (in KB)'):
-            size_after = __get_syslog_file_size_kb()
-            if size_after <= size_before:
-                logging.info('log was rotated')
-                size_after += __get_syslog_file_size_kb('syslog.1')
-            test_addition_to_syslog = size_after - size_before
-        allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
+        with allure.step("Fetching written data size"):
+            final_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+            final_kb = int(final_output[device][field_to_read])
+            delta_kb = (final_kb - initial_kb)
+
+        allure.attach('Written data size', f'before: {initial_kb}KB\nafter: {final_kb}KB\ntest added: {delta_kb}KB')
+
         if is_cur_test_passed(request):
             expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
-                    assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
+                    assert delta_kb <= expected_threshold, f"Wrote {delta_kb}KB (max {expected_threshold}KB allowed)"
 
 
 @pytest.fixture(autouse=True)
@@ -894,8 +920,27 @@ def test_api(request):
     return request.param
 
 
-@pytest.fixture(params=[get_random_api()])
-def random_api(request):
+def pytest_generate_tests(metafunc: pytest.Metafunc):
+    """
+    This hook is called for every test function collected.
+    It dynamically parametrizes any test that requests the `random_api` fixture.
+    """
+    if random_api.__name__ in metafunc.fixturenames:
+        is_collecting = metafunc.config.getoption("--collect-only")
+
+        if is_collecting:
+            param_list = ApiType.ALL_TYPES
+            logging.warning(f"  -> COLLECT MODE: Parametrizing with all values: {param_list}")
+        else:
+            random_api_choice = random.choice(ApiType.ALL_TYPES)
+            logging.warning(f"  -> Test run Selected API: {random_api_choice}")
+            param_list = [random_api_choice]
+
+        metafunc.parametrize('random_api', param_list, indirect=True)
+
+
+@pytest.fixture()
+def random_api(request: pytest.FixtureRequest):
     """Causes the test to run on a randomly-chosen API. The fixture also returns the name of the used API."""
     TestToolkit.tested_api = request.param
     return request.param

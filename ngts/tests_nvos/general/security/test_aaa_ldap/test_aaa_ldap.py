@@ -700,7 +700,7 @@ def test_ldap_map_group(test_api, engines, request, topology_obj):
     TestToolkit.tested_api = test_api
 
     with allure.step('Set ldap configuration'):
-        server = LdapServersP3.LDAP1_IPV4.copy()
+        server = LdapServersP3.LDAP3_IPV4.copy()
         test_user = [user for user in server.users if user.username == 'ldap1adm1'][0]
         test_groups = ['adm', 'sudo', 'nvapply', 'nvaction', 'docker', 'redis', 'ldap1grp1']
         server.configure(engines)

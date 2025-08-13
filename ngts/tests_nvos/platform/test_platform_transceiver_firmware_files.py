@@ -12,8 +12,7 @@ logger = logging.getLogger()
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_files_actions_positive(engines, test_api):
+def test_transceiver_files_actions_positive(engines, random_api):
     """
     The test will check the positive flow of fetching and deleting transceiver firmware.
 

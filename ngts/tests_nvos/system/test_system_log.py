@@ -6,10 +6,11 @@ import pytest
 from typing import List
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts
+from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts, LogsSources
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
@@ -36,22 +37,21 @@ def test_show_log(engines):
     """
     with allure.step("Create System object"):
         system = System(None)
+        platform = Platform()
 
     with allure.step("Rotate logs"):
-        logging.info("Rotate logs")
         system.log.rotate_logs()
 
-    with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
-        system.image.show()
+    with allure.step(f"Verify {LogsSources.SYSLOG} and {LogsSources.NVUED} includes the expected logs"):
+        with allure.independent_step(f"Run show platform command to view platform firmware info {LogsSources.SYSLOG}"):
+            platform.firmware.show()
+            show_output = system.log.file.show_log(exit_cmd='q')
+            ValidationTool.verify_expected_output(show_output, 'part-number').verify_result()
 
-    with allure.step("Run nv show system log command follow to view system logs"):
-        logging.info("Run nv show system log command follow to view system logs")
-        show_output = system.log.file.show_log(exit_cmd='q')
-
-    with allure.step('Verify updated “system/image” in the logs as expected'):
-        logging.info('Verify updated “system/image” in the logs as expected')
-        ValidationTool.verify_expected_output(show_output, 'system/image').verify_result()
+        with allure.independent_step(f'Run show system image and verify “system/image” in the {LogsSources.NVUED} logs'):
+            system.image.show()
+            system.log.verify_expected_logs(logs_to_find=["system/image"], logs_source=LogsSources.NVUED,
+                                            engine=engines.dut, only_latest_log=True)
 
 
 @pytest.mark.system
@@ -70,22 +70,19 @@ def test_show_log_continues(engines):
     """
     with allure.step("Create System object"):
         system = System()
+        platform = Platform()
 
     with allure.step("Rotate logs"):
-        logging.info("Rotate logs")
         system.log.rotate_logs()
 
     with allure.step("Run nv show system log command --view follow to view system logs"):
-        logging.info("Run nv show system log command --view follow to view system logs")
         wait_for_specific_regex_in_logs(engines.dut, "nvued\\:    INFO", timeout=5)
 
-    with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
-        system.image.show()
+    with allure.step("Run show command to view platform firmware"):
+        platform.firmware.show()
 
-    with allure.step("Run nv show system log command follow to view system logs"):
-        logging.info("Run nv show system log command follow to view system logs")
-        system.log.file.show_log(param='follow', expected_str='system/image', exit_cmd='\x03')
+    with allure.step("Run system log file follow to view platform firmware logs"):
+        system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -104,6 +101,7 @@ def test_show_log_files(engines):
     """
     with allure.step("Create System object"):
         system = System(None)
+        platform = Platform()
 
     with allure.step("Run nv show system log file list command and validate fields"):
         show_output = system.log.file.show(op_param='list')
@@ -115,16 +113,13 @@ def test_show_log_files(engines):
             logging.info("All expected fields were found")
 
     with allure.step("Rotate logs"):
-        logging.info("Rotate logs")
         system.log.rotate_logs()
 
-    with allure.step("Run show command to view system image"):
-        logging.info("Run show command to view system image")
-        system.image.show()
+    with allure.step("Run show command to view platform firmware"):
+        platform.firmware.show()
 
-    with allure.step("Run nv show system log files command follow to view system logs"):
-        logging.info("Run nv show system log files command follow to view system logs")
-        system.log.file.show_log(expected_str='system/image', exit_cmd='q')
+    with allure.step("Run system log file follow to view platform firmware logs"):
+        system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -153,7 +148,6 @@ def test_log_files_rotation_default_fields(engines):
 
 def _log_files_rotation_default_fields(system_log_obj, default_max_number, default_size):
     with allure.step("Run nv show system log rotation command and validate fields"):
-        logging.info("Run nv show system log rotation command and validate fields")
         show_output = system_log_obj.rotation.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
 
@@ -571,10 +565,12 @@ def test_delete_log_files(engines, topology_obj):
     with allure.step("Create System object"):
         system = System(None)
         system.log.rotate_logs()
+
     with allure.step('Test delete log files'):
         with allure.independent_step(f"Test delete log files on {LogComponentsConsts.SYSLOG}"):
             _delete_log_files(engines, system.log, file_name=LogComponentsConsts.SYSLOG)
         component = system.log.component.component_id[LogComponentsConsts.NVUE]  # for now only nvue component has logs
+
         with allure.independent_step(f"Test delete log files on {component.get_resource_basename()}"):
             _delete_log_files(engines, component, file_name=LogComponentsConsts.NVUE_LOG)
 
@@ -596,6 +592,8 @@ def _delete_log_files(engines, system_log_obj, file_name):
         5. Check it exist in log
     """
     system = System()
+    platform = Platform()
+
     with allure.step("Rotate log 5 times to create log files"):
         for i in range(0, 5):
             system_log_obj.rotate_logs()
@@ -614,6 +612,8 @@ def _delete_log_files(engines, system_log_obj, file_name):
 
         logs_names_to_delete = list(log_files_dict.keys())
         logs_names_to_delete.remove(file_name)
+        if LogComponentsConsts.NVUE_CLI_LOG in logs_names_to_delete:
+            logs_names_to_delete.remove(LogComponentsConsts.NVUE_CLI_LOG)
         left_files = logs_names_to_delete.copy()
 
         for log_file in logs_names_to_delete:
@@ -651,14 +651,14 @@ def _delete_log_files(engines, system_log_obj, file_name):
             with allure.step("Rotate logs"):
                 system_log_obj.rotate_logs()
 
-            with allure.step("Run show command to view system image"):
-                system.image.show()
+            with allure.step("Run show command to view platform firmware"):
+                platform.firmware.show()
 
-            with allure.step("Run nv show system log command follow to view system logs"):
-                system_log_obj.file.show_log(exit_cmd='q', expected_str='system/image')
+            with allure.step("Run system log file follow to view platform firmware logs"):
+                system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
 
 
-@pytest.mark.check_log_size(expectedKbWritten=10000)
+@pytest.mark.check_log_size(expect=10000)
 @pytest.mark.system
 @pytest.mark.log
 @pytest.mark.simx

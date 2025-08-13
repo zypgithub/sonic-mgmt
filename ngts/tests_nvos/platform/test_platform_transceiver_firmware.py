@@ -36,7 +36,6 @@ def test_transceiver_database_tables(engines, devices, test_api):
     :return:
     """
     with allure.step("Create platform object"):
-        platform = Platform()
         transceivers_tables_name = devices.dut.transceivers_tables_name
         number_of_transceivers = devices.dut.number_of_transceivers
         with allure.step("Validate for each transceiver out of {} transceivers we have the table in STATE_DB".format(number_of_transceivers)):
@@ -99,7 +98,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.platform
 @pytest.mark.transceiver
-def test_install_transceiver_firmware_positive(engines, devices, test_api, test_name):
+def test_install_transceiver_firmware_positive(engines, devices, random_api, test_name):
     """
     Test Flow:
         1. Fetch 2 module FW images. Save as <FW1>و <FW2>
@@ -133,9 +132,10 @@ def test_install_transceiver_firmware_positive(engines, devices, test_api, test_
     platform, random_transceiver, random_port = _get_random_optical_module_transceiver()
 
     with allure.step(f"get the mst device for transceiver {random_transceiver}"):
-        pci_conf = IbInterfaceTool.get_mst_dev_name(engines=engines, module_name=random_transceiver, asic_conf_dict=asic_conf_dict, port_name=random_port).split("/")
+        output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(
+            Port.show_interface(fae_param='fae', port_names=random_port)).get_returned_value()
+        pci_conf = output_dictionary[IbInterfaceConsts.PRIMARY_ASIC_DEVICE].split("/")
         mst_dev_name = IbInterfaceTool.get_mst_cable_name(engines.dut, random_transceiver, pci_conf[-1])
-        logger.info(f"the mst device for {random_transceiver} is {mst_dev_name}")
 
     default_fw = OutputParsingTool.parse_json_str_to_dictionary(
         platform.transceiver.show(random_transceiver + ' firmware')).verify_result()[PlatformConsts.FW_ACTUAL]

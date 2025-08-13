@@ -198,7 +198,7 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_ib_interface_speed_invalid(engines, devices, start_sm, test_api):
     """
     Try to set an invalid speed and make sure the config apply fails
@@ -210,25 +210,18 @@ def test_ib_interface_speed_invalid(engines, devices, start_sm, test_api):
 
     TestToolkit.update_tested_ports([selected_port])
 
-    invalid_speed = "invalid_speed"
-    with allure.step("Set an invalid ib-speed '{}' for port '{}".format(invalid_speed, selected_port.name)):
-        selected_port.interface.link.set(op_param_name='ib-speed', op_param_value=invalid_speed,
-                                         apply=True, ask_for_confirmation=True).verify_result(False)
+    with allure.step("Test Invalid Speeds"):
+        invalid_speed = "invalid_speed"
+        with allure.independent_step("Set an invalid ib-speed '{}' for port '{}".format(invalid_speed, selected_port.name)):
+            selected_port.interface.link.set(op_param_name='ib-speed', op_param_value=invalid_speed,
+                                             apply=True, ask_for_confirmation=True).verify_result(False)
 
-    if (test_api == ApiType.OPENAPI) or (not is_bug_active(4370994)):
         invalid_speeds = devices.dut.invalid_ib_speeds
         if invalid_speeds:
             invalid_speed = Tools.RandomizationTool.select_random_value(list(invalid_speeds.keys())).get_returned_value()
-            with allure.step("Set an invalid ib-speed '{}' for port '{}".format(invalid_speed, selected_port.name)):
+            with allure.independent_step("Set an invalid ib-speed '{}' for port '{}".format(invalid_speed, selected_port.name)):
                 selected_port.interface.link.set(op_param_name='ib-speed', op_param_value=invalid_speed,
-                                                 apply=False, ask_for_confirmation=True).verify_result()
-
-                with allure.step("Try to apply invalid configuration and expect failure"):
-                    res = Tools.SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config,
-                                                                engines.dut, False)
-                    selected_port.interface.link.unset(op_param='ib-speed', apply=True,
-                                                       ask_for_confirmation=True).verify_result()
-                    res.verify_result(False)
+                                                 apply=False, ask_for_confirmation=True).verify_result(should_succeed=False, expected_value="is not one of [")
 
 
 @pytest.mark.ib_interfaces

@@ -22,10 +22,9 @@ logger = logging.getLogger()
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = test_api
+def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     try:
@@ -45,7 +44,7 @@ def test_cluster_app_log_level(engines, devices, test_api, has_loopbox, standalo
                     output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
                     assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
                     ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)

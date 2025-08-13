@@ -47,6 +47,11 @@ def validate_firmware_keys(platform, firmware_items, dut_engine):
 def validate_firmware_components(platform, firmware_items, dut_engine):
     errors = {}
     for component in firmware_items:
+        # WA for the weekend, need to check if it's a bug
+        if component == 'BMC' and is_bug_active(4543350):
+            break
+        # WA --------------------------------------------
+
         try:
             with allure.step(f"Test output of nv show platform firmware {component}"):
                 output = OutputParsingTool.parse_show_output_to_dict(

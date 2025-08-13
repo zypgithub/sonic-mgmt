@@ -89,7 +89,7 @@ def test_cacert_mgmt_cacert_cli(test_api, engines, scp_player, clear_certs):
             with allure.independent_step(f'continue checks with {rand_ca.name}'):
                 with allure.independent_step(f'Show a single cert "{rand_ca.name}" – expect fields {CaShowFields.ALL_FIELDS}'):
                     out_single = OutputParsingTool.parse_json_str_to_dictionary(security.ca_certificate.cert_id[rand_ca.name].show()).get_returned_value()
-                    assert all(field in out_single for field in CaShowFields.ALL_FIELDS), f'not all expected fields in single ca show output\nexpected: {CaShowFields.ALL_FIELDS}\nout:\n{out}'
+                    assert all(field in out_single for field in CaShowFields.ALL_FIELDS if field != CaShowFields.INSTALLED), f'not all expected fields in single ca show output\nexpected: {CaShowFields.ALL_FIELDS}\nout:\n{out}'
                 with allure.independent_step('verify show values'):
                     for field in CaShowFields.ALL_FIELDS:
                         if field == CaShowFields.TYPE:

@@ -8,8 +8,8 @@ import time
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_constants.constants_nvos import (ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts, IssuConsts,
-                                                NvosConst, SystemConsts)
+from ngts.nvos_constants.constants_nvos import (ActionConsts, ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts,
+                                                IssuConsts, NvosConst, SystemConsts)
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
@@ -23,6 +23,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -83,7 +84,8 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
             f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
     with (allure.step('Verify image version')):
-        system_version = system.version.get_nvos_image_version()
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image'][ImageConsts.BUILD_ID]
         expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
         assert system_version == expected_version, (f'system image is: {system_version}, '
                                                     f'instead of {expected_version}')
@@ -110,14 +112,15 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, issu_version, 
     system = System()
 
     # In case of manual run add the following lines with the relevant paths
-    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
-    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/dev/nvos-amd64-25.02.4014.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.4936-013/amd64/dev/nvos-amd64-25.02.4936-013.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
     with (allure.step('Verify image versions')):
-        system_version = system.version.get_nvos_image_version()
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
         if system_version == expected_version:
             fw_version = OutputParsingTool.parse_json_str_to_dictionary(
                 Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
@@ -201,14 +204,15 @@ def test_system_issu_positive_flow(engines, devices, issu_version, target_versio
     system = System()
 
     # In case of manual run add the following lines with the relevant paths
-    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
-    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/dev/nvos-amd64-25.02.4014.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.4936-013/amd64/dev/nvos-amd64-25.02.4936-013.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
     expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
 
     with (allure.step('Verify image versions')):
-        system_version = system.version.get_nvos_image_version()
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
         if system_version == expected_version:
             fw_version = OutputParsingTool.parse_json_str_to_dictionary(
                 Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
@@ -302,9 +306,9 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     system = System()
 
     # In case of manual run add the following lines with the relevant paths
-    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.3941-002/amd64/dev/nvos-amd64-25.02.3941-002.bin'
-    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.3942/amd64/dev/nvos-amd64-25.02.3942.bin'
-    # target_version = '/auto/sw_system_release/nos/nvos/25.02.3943-001/amd64/dev/nvos-amd64-25.02.3943-001.bin'
+    # downgrade_version = '/auto/sw_system_release/nos/nvos/25.02.4013/amd64/dev/nvos-amd64-25.02.4013.bin'
+    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/dev/nvos-amd64-25.02.4014.bin'
+    # target_version = '/auto/sw_system_release/nos/nvos/25.02.4936-013/amd64/dev/nvos-amd64-25.02.4936-013.bin'
 
     target_version = player.run_cmd(f'ls {target_version}')
 
@@ -362,7 +366,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+                force=True, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
@@ -374,7 +378,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     with allure.step("Perform ISSU with “no reboot” flag"):
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+                force=True, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU_NO_REBOOT, should_succeed=False, press_y=True).verify_result(
                 should_succeed=False)
 
@@ -388,7 +392,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+                force=True, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_CONFIG_MUST_BE_SAVED in output, \
@@ -405,35 +409,29 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[base_filename].action_file_install_with_reboot(
-                force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+                force=True, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
                 param_value=IssuConsts.ISSU, should_succeed=False, press_y=True).verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
             f'error message: {IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED} is missing in output: {output}'
 
     with allure.step("Perform ISSU with an invalid flag"):
-        system.image.files.file_name[target_filename].action_file_install_with_reboot(
-            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            param_value=IssuConsts.ISSU_INVALID_FLAG, should_succeed=False, press_y=True). \
-            verify_result(should_succeed=False)
+        output = system.image.files.file_name[target_filename].action(
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU_INVALID_FLAG).verify_result(should_succeed=False)
+
+        assert IssuConsts.ERROR_INVALID_PARAM in output, \
+            f'error message: {IssuConsts.ERROR_INVALID_PARAM} is missing in output: {output}'
 
     with allure.step("Validate system log"):
         system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine, only_latest_log=True)
 
-    with allure.step("Install issu version image (without ISSU)"):
-        system.image.files.file_name[target_filename].action_file_install_with_reboot(
-            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-            should_succeed=True, press_y=True).verify_result(should_succeed=True)
+    with allure.step("Perform ISSU with no-sm flag"):
+        system.image.files.file_name[target_filename].action(
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM).verify_result(should_succeed=True)
 
     # with allure.step("Validate event table"):
     #     # TODO update...
     #     system.log.verify_expected_logs(IssuConsts.LOG_MSG_LIST, engine=dut_engine)
-
-    # # TODO random no-sm/w SM flag in the positive flow, instead of here
-    # with allure.step("Perform ISSU with no-sm flag"):
-    #     system.image.files.file_name[target_filename].action_file_install_with_reboot(
-    #         force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
-    #         param_value=IssuConsts.ISSU_SKIP_SM).verify_result()
 
 
 @pytest.mark.system
@@ -494,11 +492,11 @@ def test_power_cycle_during_issu_process(topology_obj, engines, devices, issu_ve
                 remote_reboot_dut(topology_obj)
 
     with (allure.step('Verify image versions')):
-        system_version = system.version.get_nvos_image_version()
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
         expected_version = issu_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
         assert system_version == expected_version, (f'system image is: {system_version}, '
                                                     f'instead of {expected_version}')
-
     # if res:
     #     with allure.step('Waiting for switch to bring-up after reload'):
     #         check_port_status_till_alive(should_be_alive=True, destination_host=engines.dut.ip,
@@ -731,13 +729,15 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
     player = engines.sonic_mgmt
     dut_device = devices.dut
 
-    with allure.step('Validate health status'):
-        system.validate_health_status(HealthConsts.OK)
+    with (allure.step('Validate health status')):
+        health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+        assert health_output[HealthConsts.STATUS] == HealthConsts.OK, \
+            f"System health status is {health_output[HealthConsts.STATUS]}, instead of: {HealthConsts.OK}"
 
     with allure.step('Get config file and path for target version'):
         config_file_path, config_filename = dut_device.get_test_config_file_by_version(target_version)
 
-    # In case oo manual run add the following line with updated user/password
+    # In case of manual run add the following line with updated user/password
     # scp_host_creds = '{username}:{password}@fit74'
 
     with allure.step('Apply and save pre-defined configuration'):
@@ -807,6 +807,7 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
     :param devices:
     :param target_version:
     :param fw_expected:
+    :param interface_dict:
     :param traffic_start_time:
     :return:
     """
@@ -842,7 +843,8 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
                 f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
         with (allure.step('Verify image versions')):
-            system_version = system.version.get_nvos_image_version()
+            system_version = OutputParsingTool.parse_json_str_to_dictionary(
+                system.version.show()).get_returned_value()['image']
             expected_version = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
             assert system_version == expected_version, (f'system image is: {system_version}, '
                                                         f'instead of {expected_version}')
@@ -894,7 +896,9 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected, 
         time.sleep(10)
 
         with allure.step('Validate health status'):
-            system.validate_health_status(HealthConsts.OK)
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.show()).get_returned_value()
+            assert health_output[HealthConsts.STATUS] == HealthConsts.OK, \
+                f"System health status is {health_output[HealthConsts.STATUS]}, instead of: {HealthConsts.OK}"
 
         # with allure.step('Validate system log'):
         # TODO: complete (check with Elias)
@@ -949,7 +953,8 @@ def install_system_image_and_start_opensm(engines, dut_device, system, image_ver
 
     with (allure.step('Verify image versions, and recover to target version if needed')):
         expected_version = image_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
-        system_version = system.version.get_nvos_image_version()
+        system_version = OutputParsingTool.parse_json_str_to_dictionary(
+            system.version.show()).get_returned_value()['image']
 
         if system_version == expected_version:
             logger.info(f'image version {system_version} is already installed')
@@ -1033,7 +1038,7 @@ def run_install_system_image_issu(dut_engine, dut_device, recovery_engine, image
 
     with allure.step("Perform Install image with ISSU"):
         output = system.image.files.file_name[image_filename].action_file_install_with_reboot(
-            force=False, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
+            force=True, engine=dut_engine, device=dut_device, recovery_engine=recovery_engine,
             param_value=param_value, should_succeed=should_succeed, press_y=True).verify_result(
             should_succeed=should_succeed)
 

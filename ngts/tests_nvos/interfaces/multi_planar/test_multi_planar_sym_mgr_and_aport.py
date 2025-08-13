@@ -7,7 +7,7 @@ import time
 # from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, MultiPlanarConsts
+from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, MultiPlanarConsts, LogsSources
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -635,24 +635,21 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
         with allure.step("Set fae interface link state and check log file"):
             system.log.rotate_logs()
             selected_aggregated_port.interface.link.state.set(op_param_name='down', apply=True).verify_result()
-            show_output = system.log.file.show_log(exit_cmd='q')
-            ValidationTool.verify_expected_output(show_output, f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}"
-                                                  f"{selected_aggregated_port.name}").verify_result()
+            system.log.verify_expected_logs([f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}{selected_aggregated_port.name}"], logs_source=LogsSources.NVUED, engine=engines.dut)
 
         with allure.step("Unset fae interface link state and check log file"):
             system.log.rotate_logs()
             selected_aggregated_port.interface.link.state.unset(apply=True, ask_for_confirmation=True).\
                 verify_result()
-            show_output = system.log.file.show_log(exit_cmd='q')
-            ValidationTool.verify_expected_output(show_output, f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}"
-                                                  f"{selected_aggregated_port.name}").verify_result()
+            system.log.verify_expected_logs(
+                [f"{MultiPlanarConsts.LOG_MSG_SET_FAE_INTERFACE}{selected_aggregated_port.name}"],
+                logs_source=LogsSources.NVUED, engine=engines.dut)
 
         with allure.step("Run action clear fae interface and check log file"):
             system.log.rotate_logs()
             selected_fae_plane_port.port.interface.link.stats.clear_stats(fae_param="fae").verify_result()
-            show_output = system.log.file.show_log(exit_cmd='q')
-            ValidationTool.verify_expected_output(show_output, MultiPlanarConsts.LOG_MSG_ACTION_CLEAR_FAE_INTERFACE.
-                                                  format(port_name=selected_fae_plane_port.port.name)).verify_result()
+            system.log.verify_expected_logs([MultiPlanarConsts.LOG_MSG_ACTION_CLEAR_FAE_INTERFACE.format(port_name=selected_fae_plane_port.port.name)], logs_source=LogsSources.NVUED, engine=engines.dut)
+            system.log.verify_expected_logs(["Cleared counters successfully"], only_latest_log=True, engine=engines.dut)
 
         with allure.step("Validate all asics database files exist in tech support file"):
             validate_mp_database_files_exist_in_techsupport(system, engines.dut)
@@ -783,41 +780,6 @@ def test_verify_sm_commands_not_exist(engines, test_api):
 
     with allure.step("Validate unset ib sm sm-sl command"):
         ib.sm.unset(op_param=IbConsts.SM_SL, apply=True, ask_for_confirmation=True).verify_result(False)
-
-
-@pytest.mark.interface
-@pytest.mark.multiplanar
-@pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_verify_breakout_commands_not_exist(engines, test_api):
-    """
-    Validate the following breakout commands are not exist nor supported:
-    nv set interface <interface-id> link breakout (2x-hdr|2x-ndr)
-    nv unset interface <interface-id> link breakout
-    nv action change system profile [breakout-mode (enabled|disabled)]
-
-    Test flow:
-    1. run 'nv list-commands | grep "breakout-mode" on dut
-    2. check if any "breakout" command exists
-    3. validate all "breakout" commands don't work.
-    """
-    TestToolkit.tested_api = test_api
-    engines_dut = engines.dut
-    system = System(None)
-
-    with allure.step('verify "breakout-mode" commands not exist in commands list'):
-        output = NvueGeneralCli.search_in_list_commands(engines_dut, "breakout-mode")
-        assert not output, "'breakout-mode' commands should not exist"
-
-    with allure.step("Validate action change system profile breakout-mode enabled command"):
-        system.profile.action_profile_change(params_dict={'breakout-mode': 'enabled'}).verify_result(False)
-
-    with allure.step("Validate action change system profile breakout-mode disabled command"):
-        system.profile.action_profile_change(params_dict={'breakout-mode': 'enabled'}).verify_result(False)
-
-    with allure.step('Validate show system profile'):
-        system_profile = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()).get_returned_value()
-        assert 'breakout-mode' not in system_profile.keys(), "'breakout-mode' should not exists in system profile"
 # ---------------------------------------------
 
 
@@ -901,7 +863,7 @@ def validate_mp_database_files_exist_in_techsupport(system, engine):
     finally:
         system.techsupport.cleanup(engine)
         if system.techsupport.file_name:
-            system.techsupport.action_delete(system.techsupport.file_name)
+            system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 def validate_set_and_unset_fae_interface_link_lanes_command(selected_fae_port):

@@ -65,7 +65,8 @@ class MultiPlanarTool:
     def select_random_aggregated_port(device):
         with allure.step("Select a random aggregated port"):
             if isinstance(device, CrocodileSwitch):
-                port_name = 'swA10p1'
+                # TODO: update PortSelectionTool to support this case
+                port_name = 'swB10p1'
             else:
                 port_name = RandomizationTool.select_random_port(
                     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE

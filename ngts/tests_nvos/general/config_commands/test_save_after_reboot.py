@@ -26,25 +26,31 @@ logger = logging.getLogger()
 def test_save_reboot(engines, devices):
     """
         Test flow:
-            1. run nv set system hostname <new_hostname> with apply
-            2. Run 'nv set fae fast-recovery state disabled' and apply config
-            3. Run 'nv system contact "contact_info_1"' and apply config
-            4. Run 'nv system location "location_info_1"' and apply config
-            5. run nv config save
-            6. Run 'nv system contact "contact_info_2"' and apply config
-            7. Run 'nv system location "location_info_2"' and apply config
-            8. run nv set interface eth0 description <new_description> with apply
-            9. Run 'nv set fast-recovery trigger credit-watchdog event warning' and apply config
-            10. run nv action reboot system
-            11. run nv show system after reload
-            12. verify hostname is new_hostname
-            13. Verify fast-recovery state is Disabled
-            14. Run nv show interface eth0
-            15. Verify the applied description value is ''
-            16. Verify that applied system contact is "contact_info_1"
-            17. Verify that applied system location is "location_info_1"
-            18. Verify fast-recovery trigger event for trigger-id is Error
-            19. cleanup - run nv unset system hostname & reboot
+            1.  run nv set system hostname <new_hostname> with apply
+            2.  Run 'nv set fae fast-recovery state disabled' and apply config
+            3.  Run 'nv system contact "contact_info_1"' and apply config
+            4.  Run 'nv system location "location_info_1"' and apply config
+            5.  Run 'nv set system message pre-login'
+            6.  Run 'nv set system message post-logout'
+            7.  run nv config save
+            8.  Run 'nv system contact "contact_info_2"' and apply config
+            9.  Run 'nv system location "location_info_2"' and apply config
+            10. Run 'nv set system message post-login'
+            11. Run nv set interface eth0 description <new_description> with apply
+            12. Run 'nv set fast-recovery trigger credit-watchdog event warning' and apply config
+            13. Run nv action reboot system
+            14. Run nv show system after reload
+            15. verify hostname is new_hostname
+            16. Verify fast-recovery state is Disabled
+            17. Run nv show interface eth0
+            18. Verify the applied description value is ''
+            19. Verify that applied system contact is "contact_info_1"
+            20. Verify that applied system location is "location_info_1"
+            21. Run 'nv show system message' and verify pre-login message is as set
+            22. Run 'nv show system message' and verify post-logout message is as set
+            23. Run 'nv show system message' and verify post-login message is default
+            24. Verify fast-recovery trigger event for trigger-id is Error
+            25. cleanup - run nv unset system hostname & reboot
     """
 
     nmx_log_stream_test = False
@@ -86,6 +92,14 @@ def test_save_reboot(engines, devices):
             system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info_1", apply=True,
                        dut_engine=engines.dut).verify_result()
 
+        with allure.step('Run set system message pre-login command and apply config'):
+            system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"Pre login test msg"',
+                               apply=True, dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system message post-logout command and apply config'):
+            system.message.set(op_param_name=SystemConsts.POST_LOGOUT_MESSAGE, op_param_value=f'"Post logout test msg"',
+                               apply=True, dut_engine=engines.dut).verify_result()
+
         with allure.step('Run set system dns server ipv4 command and apply config'):
             system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=SystemConsts.DNS_SERVER_IDS["ipv4"],
                            apply=True, dut_engine=engines.dut).verify_result()
@@ -120,6 +134,8 @@ def test_save_reboot(engines, devices):
 
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
+
+        with allure.step('Save config'):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         with allure.step('Run set system dns server ipv6 command and apply config'):
@@ -148,6 +164,11 @@ def test_save_reboot(engines, devices):
             with allure.step('Run set system location location_info_2 command and apply config'):
                 system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info_2", apply=True,
                            dut_engine=engines.dut).verify_result()
+
+            with allure.step('Run set system message post-login command and apply config'):
+                system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE,
+                                   op_param_value=f'"Post login test msg"',
+                                   apply=True, dut_engine=engines.dut).verify_result()
 
             with allure.step('Run nv action reboot system'):
                 system.action_reboot(send_user_confirmation='y').verify_result()
@@ -207,6 +228,16 @@ def test_save_reboot(engines, devices):
                     ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info_1").\
                         verify_result()
 
+            with allure.step('Verify system messages are as expected in show system message'):
+                message_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.message.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
+                                                            "Pre login test msg").verify_result()
+                ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
+                                                            "Post logout test msg").verify_result()
+                ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
+                                                            devices.dut.post_login_message).verify_result()
+
             with allure.step("verify dscp option is loaded back after reboot"):
                 dscp_output = OutputParsingTool.parse_json_str_to_dictionary(rule_id_obj.action.show()).\
                     get_returned_value()
@@ -261,9 +292,9 @@ def test_general_auto_save(engines, devices, test_api):
                 'set eth0 description to be {description} - with apply'.format(description=new_eth0_description)):
             eth0_port.interface.set(NvosConst.DESCRIPTION, new_eth0_description, apply=True).verify_result()
 
-        assert new_eth0_description in TestToolkit.GeneralApi[test_api].show_config(engine=engines.dut,
-                                                                                    revision='startup'), \
-            "Expected to have new description field after set command, but we do not have it."
+        with allure.step("Verify description is set"):
+            output = TestToolkit.GeneralApi[test_api].show_config(engine=engines.dut, revision='startup')
+            assert new_eth0_description in output, "Expected to have new description field after set command, but we do not have it."
 
     finally:
 

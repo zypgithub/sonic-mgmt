@@ -157,7 +157,7 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
 @pytest.mark.platform
 @pytest.mark.power_telemetry
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_negative_platform_asic_power_telemetry_not_supported(engines, topology_obj, test_api, nv_command):
+def test_negative_platform_asic_power_telemetry_not_supported(engines, devices, topology_obj, test_api, nv_command):
     """
     Validate ASIC Power Telemetry feature not working on not supported systems.
         Test flow:

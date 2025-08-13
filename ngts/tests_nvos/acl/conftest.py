@@ -1,5 +1,7 @@
 import pytest
 import logging
+
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port

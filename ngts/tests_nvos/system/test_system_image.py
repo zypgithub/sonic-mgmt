@@ -190,7 +190,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-def test_system_image_upload(engines, release_name, test_api, original_version, devices, downgrade_version_realpath):
+def test_system_image_upload(engines, release_name, random_api, original_version, devices, downgrade_version_realpath):
     """
     Uploading image file to player and validate.
     1. Fetch random image
@@ -270,7 +270,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_system_image_bad_flow(engines, release_name, test_api, original_version, sonic_mgmt_ipv6_addr,
+def test_system_image_bad_flow(engines, release_name, random_api, original_version, sonic_mgmt_ipv6_addr,
                                downgrade_version_realpath):
     """
     Check bad flow scenarios:
@@ -610,7 +610,7 @@ def test_fetch_image_via_https(test_api):
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
-def test_fetch_image_with_weird_password(test_api, engines):
+def test_fetch_image_with_weird_password(random_api, engines):
     """
     Install system image test
 
@@ -637,7 +637,7 @@ def test_fetch_image_with_weird_password(test_api, engines):
 
     for weird_password in weird_passwords:
         logger.info("Testing with password: {}".format(weird_password))
-        helper_fetch_image_with_weird_password(engines, system, test_api, weird_password)
+        helper_fetch_image_with_weird_password(engines, system, random_api, weird_password)
 
     with allure.step("Remove the dummy file"):
         cmd_to_remove_file = "rm " + SystemConsts.DUMMY_IMAGE_PATH + SystemConsts.DUMMY_IMAGE

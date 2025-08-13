@@ -1,5 +1,6 @@
 import random
 import string
+import time
 from typing import List, Callable, Tuple
 
 from typing_extensions import TypeAlias
@@ -23,6 +24,7 @@ from ngts.tests_nvos.general.security.mtls.generic_testing.helpers import verify
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
+from ngts.ngts_types import EnginesT
 
 
 def generic_test_mtls_cli(test_api, feature_resource: MTLSableServerResource, mtls_fields: List[str], installed_app_name: str, certs: List[CertInfo] = TEST_CERTS):
@@ -130,7 +132,7 @@ def generic_test_mtls_core_functionality(addressing_type: str, dut_ipv6_addr: st
     4. Unset ca-cert
     5. Send client request using any/no cert – expect success (server mtls off)
     """
-    engines = TestToolkit.engines
+    engines: EnginesT = TestToolkit.engines
     scp_player = get_scp_player(engines)
 
     dut = engines.dut
@@ -169,20 +171,30 @@ def generic_test_mtls_core_functionality(addressing_type: str, dut_ipv6_addr: st
         def run(self):
             with allure.step('setup'):
                 should_apply = False
+                cert_changed = False
+                ca_changed = False
                 if self.server_cert and self.server_cert.name != Case.configured_server_cert:
                     feature_resource.set(CERTIFICATE, self.server_cert.name).verify_result()
                     should_apply = True
+                    cert_changed = True
                 elif self.server_cert is None and Case.configured_server_cert is not None:
                     feature_resource.unset(CERTIFICATE).verify_result()
+                    cert_changed = True
                     should_apply = True
                 if self.server_ca and self.server_ca.cacert_name != Case.configured_server_ca:
                     feature_resource.mtls.set(CA_CERTIFICATE, self.server_ca.cacert_name).verify_result()
+                    ca_changed = True
                     should_apply = True
                 elif self.server_ca is None and Case.configured_server_ca is not None:
                     feature_resource.mtls.unset().verify_result()
+                    ca_changed = True
                     should_apply = True
                 if should_apply:
                     feature_resource._general_cli_wrapper.apply_config(dut)
+                    if cert_changed and ca_changed:
+                        sleep_time = 10
+                        with allure.step(f"When changing both cert and ca-cert gnmi rotation takes {sleep_time} sec"):
+                            time.sleep(sleep_time)
                 Case.configured_server_cert = self.server_cert.name if self.server_cert else None
                 Case.configured_server_ca = self.server_ca.cacert_name if self.server_ca else None
             with allure.step('verify client'):

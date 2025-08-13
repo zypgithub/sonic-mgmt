@@ -9,6 +9,7 @@ from ngts.nvos_tools.Devices import IbDevice
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
@@ -16,7 +17,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.system
-def test_physical_monitor(devices):
+def test_physical_monitor(devices, engines):
     """
     Tests the Physical Monitor feature, which raises a system event in case of a PSC failure. Flow:
     0.  Choose 2 ASICs randomly and make sure their counter is currently at 0 (otherwise the test cannot proceed).
@@ -30,6 +31,10 @@ def test_physical_monitor(devices):
     Step #3 is crucial because steps 2 and 4 cause identical events to be created, and the system-events mechanism
     ignores a repeated event.
     """
+
+    if SecureBootTool.is_prod_system(engines.dut):
+        pytest.skip("Tests are supported only on development systems. The current system is a production system.")
+
     device: IbDevice = devices.dut
     nv = NvCommand()
 

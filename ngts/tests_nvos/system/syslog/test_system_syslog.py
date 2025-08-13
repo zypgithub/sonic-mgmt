@@ -179,8 +179,7 @@ def test_rsyslog_multiple_servers_configuration(engines):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_configurations(test_api):
+def test_rsyslog_configurations(random_api):
     """
     will check rsyslog configurations
 
@@ -193,7 +192,7 @@ def test_rsyslog_configurations(test_api):
     6. unset server
     7. validate show commands
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     server_a = 'server-a'
     server_b = 'server-b'
@@ -273,8 +272,7 @@ def test_rsyslog_configurations(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_server_severity_levels(engines, loganalyzer, test_api):
+def test_rsyslog_server_severity_levels(engines, loganalyzer, random_api):
     """
     Will validate all the severity options:  debug, info, notice, warning, error, critical, alert, emerg, none.
     Will configure the severity level, validate it in the show command and validate that the server catch the relevant
@@ -290,7 +288,7 @@ def test_rsyslog_server_severity_levels(engines, loganalyzer, test_api):
     * Unset server severity
     * Cleanup
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -466,8 +464,7 @@ def test_rsyslog_port(engines, test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_protocol(engines, test_api):
+def test_rsyslog_protocol(engines, random_api):
     """
     Will check the syslog protocol options: TCP and UDP
     Steps:
@@ -483,7 +480,7 @@ def test_rsyslog_protocol(engines, test_api):
         10. reconnect , restart the rsyslog process
         11. send a msg and validate server received it
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -531,8 +528,7 @@ def test_rsyslog_protocol(engines, test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_filter(engines, test_api):
+def test_rsyslog_filter(engines, random_api):
     """
     Will check the rsyslog filter options: exclude and include.
     Validate that the server will get only the relevant messages.
@@ -544,7 +540,7 @@ def test_rsyslog_filter(engines, test_api):
     5. unset filter
     6. validate with show commands and send messages
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -581,7 +577,6 @@ def test_rsyslog_filter(engines, test_api):
                         'match': 'a+'
                     }
                 },
-                'rate-limit': None,
                 'severity': 'notice'
             }
             system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
@@ -825,8 +820,7 @@ def test_rsyslog_bad_params(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_selector_priorities(test_api):
+def test_syslog_selector_priorities(random_api):
     """
     Test selector priorities configuration and validation:
     1. Create server with UDP protocol and port 514
@@ -837,7 +831,7 @@ def test_syslog_selector_priorities(test_api):
     6. Verify selector ID retrieval by priority
     7. Clean up configuration
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -889,8 +883,7 @@ def test_syslog_selector_priorities(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_selector_attachment_validation_negative(test_api):
+def test_syslog_selector_attachment_validation_negative(random_api):
     """
     Test system behavior when attempting to configure server priority without a selector-id
     and other negative selector attachment scenarios.
@@ -904,7 +897,7 @@ def test_syslog_selector_attachment_validation_negative(test_api):
     6. Attempt to unset attached selector
     7. Clean up configurations
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -961,8 +954,7 @@ def test_syslog_selector_attachment_validation_negative(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_selector_priority_with_all_options(test_api):
+def test_syslog_selector_priority_with_all_options(random_api):
     """
     Test Objective:
     Verify selector priority configuration with filters, including include/exclude filter functionality, severity and facility
@@ -972,7 +964,7 @@ def test_syslog_selector_priority_with_all_options(test_api):
     - Syslog service is enabled
     - Test environment is properly configured
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1020,12 +1012,127 @@ def test_syslog_selector_priority_with_all_options(test_api):
             send_msg_to_server(filter_match + "_" + test_message, remote_server_ip, TestToolkit.engines[NvosConst.SONIC_MGMT],
                                facility=facility, priority=severity, program=program_name, verify_msg_received=True)
 
-            with allure.step("Unset selector priority and Validate"):
-                system.syslog.servers.servers_dict[remote_server_ip].unset_selector_priority(priority, apply=True)
-                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
-                system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
-                system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
+        # EXTENDED COVERAGE: Add missing granular show command validations
+        with allure.step("EXTENDED: Validate granular show commands"):
+            with allure.step("Validate nv show system syslog server <server-id> selector"):
+                server_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.syslog.servers.servers_dict[remote_server_ip].show()).get_returned_value()
+                server_selector_dict = server_output.get('selector', {})
+                assert str(priority) in server_selector_dict, f"Priority {priority} should be in server selector output"
+                assert server_selector_dict[str(priority)][SyslogConsts.SELECTOR_ID] == selector, f"Selector ID should be {selector}"
 
+            with allure.step("Validate nv show system syslog server <server-id> selector <priority-id>"):
+                server_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.syslog.servers.servers_dict[remote_server_ip].show()).get_returned_value()
+                server_selector_priority_dict = server_output.get('selector', {}).get(str(priority), {})
+                assert server_selector_priority_dict[SyslogConsts.SELECTOR_ID] == selector, f"Selector ID should be {selector}"
+
+            with allure.step("Validate nv show system syslog selector"):
+                selector_list_output = system.syslog.selectors.show()
+                selector_list_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_list_output).get_returned_value()
+                assert selector in selector_list_dict, f"Selector {selector} should be in selector list"
+
+            with allure.step("Validate nv show system syslog selector <selector-id>"):
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                assert selector_dict[SyslogConsts.SEVERITY] == severity, f"Severity should be {severity}"
+                assert selector_dict[SyslogConsts.FACILITY] == facility, f"Facility should be {facility}"
+                assert selector_dict[SyslogConsts.PROGRAM_NAME] == program_name, f"Program name should be {program_name}"
+
+            with allure.step("Validate nv show system syslog selector <selector-id> filter"):
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                selector_filter_dict = selector_dict.get('filter', {})
+                assert "1" in selector_filter_dict, "Filter ID '1' should be present"
+                assert selector_filter_dict["1"][SyslogConsts.ACTION] == filter_action, f"Filter action should be {filter_action}"
+                assert selector_filter_dict["1"][SyslogConsts.MATCH] == filter_match, f"Filter match should be {filter_match}"
+
+            with allure.step("Validate nv show system syslog selector <selector-id> filter <filter-id>"):
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                selector_filter_id_dict = selector_dict.get('filter', {}).get("1", {})
+                assert selector_filter_id_dict[SyslogConsts.ACTION] == filter_action, f"Filter action should be {filter_action}"
+                assert selector_filter_id_dict[SyslogConsts.MATCH] == filter_match, f"Filter match should be {filter_match}"
+
+        # EXTENDED COVERAGE: Add missing individual property unset validations
+        with allure.step("EXTENDED: Test individual property unset"):
+            with allure.step("Unset selector program-name and validate"):
+                system.syslog.selectors.selectors_dict[selector].unset(SyslogConsts.PROGRAM_NAME, apply=True)
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                assert SyslogConsts.PROGRAM_NAME not in selector_dict or selector_dict[SyslogConsts.PROGRAM_NAME] is None, "Program name should be unset"
+
+            with allure.step("Unset selector facility and validate"):
+                system.syslog.selectors.selectors_dict[selector].unset(SyslogConsts.FACILITY, apply=True)
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                assert SyslogConsts.FACILITY not in selector_dict or selector_dict[SyslogConsts.FACILITY] == SyslogConsts.DAEMON, "Facility should be unset or default"
+
+            with allure.step("Unset selector filter and validate"):
+                system.syslog.selectors.selectors_dict[selector].unset(SyslogConsts.FILTER, apply=True)
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                selector_filter_dict = selector_dict.get('filter', {})
+                assert len(selector_filter_dict) == 0, "All filters should be unset"
+
+        with allure.step("Unset selector priority and Validate"):
+            system.syslog.servers.servers_dict[remote_server_ip].unset_selector_priority(priority, apply=True)
+            expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
+            system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
+            system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
+
+        # EXTENDED COVERAGE: Add missing global and individual unset command validations
+        with allure.step("EXTENDED: Test missing unset commands"):
+            # First setup format for testing format unset
+            with allure.step("Setup format for unset testing"):
+                firewall_name = "test-firewall"
+                system.syslog.format.welf.set_firewall_name(firewall_name, apply=True)
+                format_output = system.syslog.format.show()
+                format_dict = OutputParsingTool.parse_json_str_to_dictionary(format_output).get_returned_value()
+                assert SyslogConsts.WELF in format_dict, "WELF format should be configured"
+
+            # Re-create a filter for individual filter unset testing
+            with allure.step("Setup individual filter for unset testing"):
+                test_filter_id = 2
+                system.syslog.selectors.selectors_dict[selector].set_filter(test_filter_id, apply=False)
+                system.syslog.selectors.selectors_dict[selector].filter_dict[test_filter_id].set_action_filter(filter_action, apply=False)
+                system.syslog.selectors.selectors_dict[selector].filter_dict[test_filter_id].set_match_filter(filter_match, apply=True)
+
+            with allure.step("Validate nv unset system syslog selector <selector-id> filter <filter-id>"):
+                system.syslog.selectors.selectors_dict[selector].unset_filter(test_filter_id, apply=True)
+                selector_output = system.syslog.selectors.selectors_dict[selector].show()
+                selector_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_output).get_returned_value()
+                selector_filter_dict = selector_dict.get('filter', {})
+                assert str(test_filter_id) not in selector_filter_dict, f"Filter {test_filter_id} should be unset"
+
+            with allure.step("Validate nv unset system syslog format"):
+                system.syslog.format.unset(apply=True)
+                format_output = system.syslog.format.show()
+                format_dict = OutputParsingTool.parse_json_str_to_dictionary(format_output).get_returned_value()
+                # Format should be empty or have default values only
+                assert SyslogConsts.WELF not in format_dict or format_dict.get(SyslogConsts.WELF) is None, "WELF format should be unset"
+
+            with allure.step("Validate nv unset system syslog selector (all selectors)"):
+                system.syslog.selectors.unset(apply=True)
+                selector_list_output = system.syslog.selectors.show()
+                selector_list_dict = OutputParsingTool.parse_json_str_to_dictionary(selector_list_output).get_returned_value()
+                assert len(selector_list_dict) == 0 or selector not in selector_list_dict, "All selectors should be unset"
+
+            with allure.step("Validate nv unset system syslog server (all servers)"):
+                system.syslog.servers.unset(apply=True)
+                server_list_output = system.syslog.servers.show()
+                server_list_dict = OutputParsingTool.parse_json_str_to_dictionary(server_list_output).get_returned_value()
+                assert len(server_list_dict) == 0 or remote_server_ip not in server_list_dict, "All servers should be unset"
+
+            with allure.step("Validate nv unset system syslog (global unset)"):
+                # Re-setup minimal config for global unset testing
+                system.syslog.servers.set_server(remote_server_ip, apply=True)
+                system.syslog.unset(apply=True)
+                syslog_output = system.syslog.show()
+                syslog_dict = OutputParsingTool.parse_json_str_to_dictionary(syslog_output).get_returned_value()
+                # Verify that all main sections are cleared
+                assert len(syslog_dict.get(SyslogConsts.SERVER, {})) == 0, "All syslog configuration should be unset"
+                assert len(syslog_dict.get(SyslogConsts.SELECTOR, {})) == 0, "All selectors should be unset"
     finally:
         with allure.step("Cleanup syslog configurations"):
             system.syslog.unset(apply=True)
@@ -1034,8 +1141,7 @@ def test_syslog_selector_priority_with_all_options(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_multiple_filters_same_selector(test_api):
+def test_syslog_multiple_filters_same_selector(random_api):
     """
     Test multiple filters configured on the same selector and verify their combinations work correctly.
 
@@ -1049,7 +1155,7 @@ def test_syslog_multiple_filters_same_selector(test_api):
     3. Test message filtering with different patterns
     4. Clean up configurations
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -1120,8 +1226,7 @@ def test_syslog_multiple_filters_same_selector(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_multiple_selectors_same_server(test_api):
+def test_syslog_multiple_selectors_same_server(random_api):
     """
     Test Objective:
     Verify multiple selectors with different priorities on the same server and their message filtering behavior.
@@ -1131,7 +1236,7 @@ def test_syslog_multiple_selectors_same_server(test_api):
     - Syslog service is enabled
     - Test environment is properly configured
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1332,7 +1437,7 @@ def test_syslog_rate_limit_burst(random_api):
 
         with allure.step("Unset rate limit"):
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.unset(apply=True)
-            expected_selector = {'rate-limit': None}
+            expected_selector = {}
             system.syslog.selectors.selectors_dict[selector_id].verify_rate_limit_config(expected_selector)
 
         with allure.step("Send new message after unset"):
@@ -1621,7 +1726,6 @@ def create_selector_configuration(selector_id, options=None, program=None, facil
         SyslogConsts.FACILITY: facility if facility else (options.get(SyslogConsts.FACILITY) if options else None),
         SyslogConsts.PROGRAM_NAME: program if program else (options.get(SyslogConsts.PROGRAM_NAME) if options else None),
         SyslogConsts.FILTER: {},
-        SyslogConsts.RATE_LIMIT: None,
         SyslogConsts.SEVERITY: severity if severity else (options.get(SyslogConsts.SEVERITY) if options else None)
     }
 

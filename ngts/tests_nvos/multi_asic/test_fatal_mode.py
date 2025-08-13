@@ -523,8 +523,7 @@ def _assert_syncd_restart(expect_restart=True):
 
 def _assert_reboot():
     with allure.step(f"{_assert_reboot.__name__}: Verify switch is rebooted"):
-        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut,
-                                           reboot_params=RebootParams(wait_time_before_reboot=20))
+        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut)
         _reset_base_prompt(TestToolkit.engines.dut)
         _wait(0, 15)
 

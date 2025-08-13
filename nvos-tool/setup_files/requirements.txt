@@ -34,3 +34,5 @@ lxml
 perscache
 pytest-timeout==2.3.1
 paramiko
+pandas
+jsonmerge

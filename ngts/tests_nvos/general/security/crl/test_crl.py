@@ -514,7 +514,7 @@ def test_crl_with_no_ca(engines, dut_hostname, system_with_cleanup):
 
     with allure.step("Bind CRL with CA that didn't sign the CRL and expect failure"):
         crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[another_ca_cert])
-        crl_validator.bind_crl(crl_path, crl_name, should_succeed=False)
+        crl_validator.bind_crl(crl_path, crl_name, should_succeed=False, should_import=False)
 
 
 @pytest.mark.system

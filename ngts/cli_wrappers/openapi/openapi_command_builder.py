@@ -6,6 +6,7 @@ from typing import Tuple
 import requests
 from requests.auth import HTTPBasicAuth
 from retry import retry
+import requests_cache
 
 from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -446,6 +447,8 @@ class OpenApiCommandHelper:
 
     @staticmethod
     def execute_script(user_name, password, req_type, dut_ip, resource_path, op_param_name='', op_param_value='', client_certs_after_apply: CertInfo = None):
+        requests_cache.uninstall_cache()
+        logger.info("Uninstalled requests cache")
         request_data = RequestData(user_name, password, dut_ip, resource_path, op_param_name, op_param_value)
         if req_type == OpenApiReqType.APPLY:
             return OpenApiRequest.apply_nvue_changeset(request_data, op_param_name, client_certs_after_apply=client_certs_after_apply)
@@ -454,5 +457,7 @@ class OpenApiCommandHelper:
 
     @staticmethod
     def execute_action(action_type, user_name, password, dut_ip, resource_path, params, expected_str=''):
+        requests_cache.uninstall_cache()
+        logger.info("Uninstalled requests cache")
         request_data = RequestData(user_name, password, dut_ip, resource_path.strip(), action_type, params)
         return OpenApiCommandHelper.req_method[OpenApiReqType.ACTION](request_data, expected_str)

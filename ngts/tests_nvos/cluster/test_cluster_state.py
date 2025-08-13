@@ -20,9 +20,8 @@ logger = logging.getLogger()
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_state(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
     output_format = OutputFormat.json
 
     try:
@@ -131,9 +130,8 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_state_with_stressed_resources(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
+def test_cluster_state_with_stressed_resources(engines, devices, random_api, test_name, has_loopbox, standalone_system, setup_name):
     TestToolkit.tested_api = 'NVUE'
     output_format = OutputFormat.json
 

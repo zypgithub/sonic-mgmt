@@ -15,6 +15,8 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_tools.system.System import System
+from ngts.scripts.code_coverage.coverage_helpers import get_dest_path, _get_coverage_path_from_target_version
 
 logger = logging.getLogger()
 
@@ -86,12 +88,31 @@ def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
         c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
 
     with allure.step('Restart system services to get coverage for running services'):
-        engines.dut.run_cmd('sudo systemctl stop swss-ibv0@0.service')
-        engines.dut.run_cmd('sudo systemctl stop swss-ibv0@1.service')
-        time.sleep(5)
-        engines.dut.run_cmd('sudo systemctl start swss-ibv0@0.service')
-        engines.dut.run_cmd('sudo systemctl start swss-ibv0@1.service')
-        time.sleep(10)
+        engines.dut.run_cmd(f'sudo docker ps')
+
+        """# Stop all services
+        for service in NvosConsts.SERVICES_LIST:
+            engines.dut.run_cmd(f'sudo systemctl stop {service}')
+            time.sleep(2)
+
+        # Reset-failed all services
+        for service in NvosConsts.SERVICES_LIST:
+            engines.dut.run_cmd(f'sudo systemctl reset-failed {service}')
+            time.sleep(2)
+
+        # Start all services
+        for service in NvosConsts.SERVICES_LIST:
+            engines.dut.run_cmd(f'sudo systemctl start {service}')
+            time.sleep(2)
+
+        time.sleep(30)
+        for service in NvosConsts.SERVICES_LIST:
+            engines.dut.run_cmd(f'sudo systemctl status {service}')"""
+
+        system = System(None)
+        system.reboot.action_reboot(engines.dut)
+
+        engines.dut.run_cmd(f'sudo docker ps')
 
     with allure.step("Get sudo cli object"):
         sudo_cli_general = get_sudo_cli_obj(engine)
@@ -309,29 +330,6 @@ def install_gcov(cli_obj):
         cli_obj.pip3_install('gcovr')
 
 
-def get_dest_path(engine, coverage_path):
-    with allure.step("Get nvos version"):
-        output = json.loads(engine.run_cmd("nv show system version -o json"))
-        nvos_version = output['image']["build-id"]
-        release = TestToolkit.version_to_release(nvos_version)
-        nvos_version = nvos_version.replace("nvos-", "")
-
-    dest = f"{coverage_path}/{release}_{nvos_version}"
-
-    with allure.step("Create coverage folder if not exists"):
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-            os.chmod(dest, 0o777)
-            sub_dir = dest + SharedConsts.C_DIR
-            os.makedirs(sub_dir)
-            os.chmod(sub_dir, 0o777)
-            sub_dir = dest + SharedConsts.PYTHON_DIR
-            os.makedirs(sub_dir)
-            os.chmod(sub_dir, 0o777)
-
-    return dest
-
-
 def create_coverage_xml(cli_general, coverage_file, coverage_xml_file):
     """
     Checks if coverage files exist, and if so combines them into an xml report.
@@ -387,20 +385,19 @@ def collect_gcov_for_container_nvos(engine, cli_obj, container, gcov_filename_pr
     :param cli_obj: dut cli object
     :param container: the container to work on
     """
+
     with allure.step("Create docker cli object"):
         docker_cli_obj = create_docker_cli_obj(engine, container)
 
-    with allure.step("Remove old src files"):
-        try:
-            docker_cli_obj.rm("/sonic/src/", flags='-rf')
-        except BaseException:
-            logging.info("Old src was not removed")
+    with allure.step(f"Generate cpp coverage for {container} container"):
+        engine.run_cmd(f'docker exec {container} nvos_collect_coverage.sh')
 
-    with allure.step(f'Create GCOV JSON report for {container} container'):
-        container_gcov_json_file = create_gcov_report_for_container(docker_cli_obj, gcov_filename_prefix, container,
-                                                                    NvosConsts.GCOV_CONTAINERS_SOURCES_PATH[container])
-        cli_obj.general.copy_from_docker(container, container_gcov_json_file, container_gcov_json_file)
-        docker_cli_obj.rm(container_gcov_json_file, flags='-f')
+    with allure.step(""):
+        cli_obj.general.copy_from_docker(container,
+                                         NvosConsts.GCOV_JSON_FILE_PATTERN.format(gcov_filename_prefix=gcov_filename_prefix,
+                                                                                  container=container),
+                                         NvosConsts.JSON_PATH_DOCKER)
+        docker_cli_obj.rm(NvosConsts.JSON_PATH_DOCKER, flags='-f')
 
 
 def create_docker_cli_obj(engine, container):
@@ -438,54 +435,3 @@ def nvos_pre_step(engine):
                                           listening_address='all')
     except BaseException as ex:
         logging.info("NVOS pre step failed")
-
-
-def _get_coverage_path_from_target_version(target_version):
-    """
-    Transforms a target version path into a coverage path.
-    Example input: /auto/sw_system_release/nos/nvos/25.02.4934-024/amd64/dev/nvos-amd64-25.02.4934-024.bin
-    Example output: /auto/sw_system_release/nos/nvos/25.02.4934-024/amd64/dev/coverage
-    """
-    path_parts = target_version.split('/')
-    path_parts.pop()
-    coverage_path = '/'.join(path_parts) + '/coverage'
-    return coverage_path
-
-
-def test_copy_unitests_results(engines, target_version, topology_obj):
-    """
-    Copies unitests coverage XML files from the coverage directory to the destination path.
-    The function finds all XML files in the coverage directory and its sub-directories
-    and copies them to the destination path.
-
-    Args:
-        engines: Test engines object containing DUT information
-        target_version: Path to the target version, used to determine the coverage path
-        topology_obj: Topology object containing DUT information
-    """
-    with allure.step("Copy unitests results"):
-        with allure.step("Get coverage path from target version"):
-            coverage_path = _get_coverage_path_from_target_version(target_version)
-
-        with allure.step("Check if destination path exists"):
-            with allure.step("Create device object if needed"):
-                devices = DeviceFactory.create_devices_object(topology_obj)
-                TestToolkit.update_devices(devices)
-            dest = get_dest_path(engines.dut, NvosConsts.DEST_PATH) + SharedConsts.PYTHON_DIR
-
-        with allure.step("Copy unitests results"):
-            xml_files = []
-            for root, _, files in os.walk(coverage_path):
-                for file in files:
-                    if file.endswith('.xml'):
-                        xml_files.append(os.path.join(root, file))
-
-            for xml_file in xml_files:
-                rel_path = os.path.relpath(xml_file, coverage_path)
-                dir_path = os.path.dirname(rel_path).replace('/', '_')
-                filename = os.path.basename(xml_file)
-
-                new_filename = f"{dir_path}-{filename}" if dir_path else filename
-                dest_file = os.path.join(dest, new_filename)
-
-                shutil.copy2(xml_file, dest_file)

@@ -16,6 +16,9 @@ class CertInfo:
         self.subject_cn: str = subj_cn or dn
         self.san_uris: List[str] = san_uris
 
+    def __repr__(self):
+        return f"CertInfo(name={self.name}, cert_bundle={self.p12_bundle}, ca_cert={self.cacert}, uris={self.san_uris})"
+
     def update(self, **kwargs):
         for key, value in kwargs.items():
             if hasattr(self, key):

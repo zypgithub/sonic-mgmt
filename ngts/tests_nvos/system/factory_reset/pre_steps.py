@@ -8,6 +8,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 
 @disabled_access_ports
@@ -55,6 +56,23 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices,
         validate_port_description(engines.dut, apply_and_save_port, description)
         validate_port_description(engines.dut, just_apply_port, description)
         validate_port_description(engines.dut, not_apply_port, "")
+
+    with allure.step('Run set system contact command and apply config'):
+        system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
+                   dut_engine=engines.dut).verify_result()
+
+    with allure.step('Run set system location command and apply config'):
+        system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info", apply=True,
+                   dut_engine=engines.dut).verify_result()
+
+    with allure.step('Verify system contact is set'):
+        system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
+        ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info").\
+            verify_result()
+
+    with allure.step('Verify system location is set'):
+        ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
+            verify_result()
 
     with allure.step("Add data before reset factory"):
         username = add_verification_data(engines.dut, system)

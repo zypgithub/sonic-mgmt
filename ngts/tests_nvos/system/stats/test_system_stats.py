@@ -5,7 +5,7 @@ import csv
 import os
 
 from datetime import datetime, timedelta
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts
+from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, StatsConsts, LogsSources
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -23,8 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simxl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_stats_configuration(engines, devices, test_api):
+def test_system_stats_configuration(engines, devices, random_api):
     """
     validate:
     - Enable/Disable stats feature
@@ -55,7 +54,7 @@ def test_system_stats_configuration(engines, devices, test_api):
     18.	Check internal and external files
     """
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     category_list = devices.dut.category_list
@@ -177,8 +176,7 @@ def test_system_stats_configuration(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_stats_generation(engines, devices, test_api):
+def test_system_stats_generation(engines, devices, random_api):
     """
     validate:
     - Enable/Disable stats feature
@@ -201,7 +199,7 @@ def test_system_stats_generation(engines, devices, test_api):
     11.	Validate sample timestamps
     """
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     player = engines['sonic_mgmt']
@@ -606,7 +604,7 @@ def test_system_stats_log(engines, devices, test_api):
 
         with allure.step("Validate commands exist in system log"):
             log_message_list = [StatsConsts.LOG_MSG_UNSET_STATS, StatsConsts.LOG_MSG_PATCH_CATEGORY + name]
-            system.log.verify_expected_logs(log_message_list, engine=ssh_connection)
+            system.log.verify_expected_logs(log_message_list, logs_source=LogsSources.NVUED, engine=ssh_connection)
 
         with allure.step("Validate stats files in tech support file"):
             stats_files = list(engines.dut.run_cmd("ls /var/stats").split())
@@ -768,8 +766,7 @@ def test_system_stats_invalid_values(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_stats_big_files(engines, devices, test_api):
+def test_system_stats_big_files(engines, devices, random_api):
     """
     validate:
     - Append works on a big file (600K samples)
@@ -789,7 +786,7 @@ def test_system_stats_big_files(engines, devices, test_api):
     9. Replace category internal file with a corrupted file (over 600MB) and validate creation of a new file
     """
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     player_engine = engines['sonic_mgmt']
@@ -1261,7 +1258,7 @@ def validate_stats_files_exist_in_techsupport(system, engine, stats_files):
     finally:
         system.techsupport.cleanup(engine)
         if system.techsupport.file_name:
-            system.techsupport.action_delete(system.techsupport.file_name)
+            system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 def check_sample_timestamp(row, prev_sample_time, category):

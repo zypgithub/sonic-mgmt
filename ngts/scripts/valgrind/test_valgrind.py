@@ -1,32 +1,39 @@
 #!/usr/bin/env python
-import re
-
+import json
 import logging
 import os
+import re
+from collections import Counter
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Tuple
+
 import pytest
-import json
-
 from exceptiongroup import BaseExceptionGroup
-
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCli
 from ngts.helpers import system_helpers
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.infra import get_dumps_folder
+
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
 
 SRC_DIR = os.path.dirname(os.path.realpath(__file__))
 VALGRIND_CONFIG_PATH = os.path.join(SRC_DIR, 'valgrind_config')
 VALGRIND_DIR = '/valgrind/'
+VALGRIND_OUT_FILE_NAME = 'vg.{}.out'
+VALGRIND_OUT_FILE_PATH = VALGRIND_DIR + VALGRIND_OUT_FILE_NAME
 VALGRIND_RUNNER = 'valgrind_runner'
 VALGRIND_RUNNER_STAMP = '# VALGRIND_RUNNER'  # Used to differentiate between the wrapper and the original bin
 VALGRIND_RUNNER_STAMP_LINE_NUM = 2  # The line number where the stamp is expected
 VALGRIND_RUNNER_SRC_PATH = os.path.join(SRC_DIR, VALGRIND_RUNNER)
 VALGRIND_RUNNER_PATH = os.path.join(VALGRIND_DIR, VALGRIND_RUNNER)
 BACKUP_EXTENSION = '.backup'
+IGNORE_PATH = str(Path(__file__).with_name('ignores') / 'ignore.{}.txt')
 
 HOST_PROCESSES_KEY = 'host_processes'
 DOCKER_PROCESSES_KEY = 'docker_processes'
@@ -35,10 +42,10 @@ NO_SERVICE_KEY = 'null'  # For processes that are not associated with any servic
 # These are all services on croc/mamba where we successfully run valgrind
 SERVICE_LIST = ('aaastatsd.service', 'configmgrd.service', 'containerd.service', 'countermgrd.service', 'cron.service',
                 'dbus.service', 'featured.service', 'getty@tty1.service', 'haveged.service', 'health-statsd.service',
-                'hostcfgd.service', 'hw-management-sync.service', 'hw-management-tc.service',
-                'nginx-authenticator.service', 'nginx.service', 'ntp.service', 'nvued.service', 'pam-auth.service',
+                'hostcfgd.service', 'hw-management-sync.service',
+                'nginx-authenticator.service', 'nginx.service', 'nvued.service', 'pam-auth.service',
                 'portsyncmgrd.service', 'rasdaemon.service', 'rsyslog.service', 'serial-getty@ttyS0.service',
-                'smartmontools.service', 'ssh.service', 'statemgrd.service', 'stats-reportd.service', 'uuidd.service')
+                'smartmontools.service', 'ssh.service', 'statemgrd.service', 'stats-reportd.service')
 
 
 @pytest.fixture
@@ -94,10 +101,11 @@ def test_start_valgrind(engines):
                     fail_log = "Failed to collect journal: " + ExceptionTool.format_exception(e)
                 allure.attach(service + ".log", fail_log)
             SonicGeneralCli(engine=sudo_engine).systemctl_restart(failed_services, daemon_reload=True)
+    # todo: decide how to behave if valgrind fails to start for some services
 
 
 @pytest.mark.disable_loganalyzer
-def test_stop_valgrind(engines):
+def test_stop_valgrind(engines, setup_name, session_id, topology_obj):
     """
     Restores the services in SERVICE_LIST to non-valgrind operation and restarts them.
     Also attaches all valgrind output files to the allure report, under Valgrind Results step.
@@ -112,22 +120,37 @@ def test_stop_valgrind(engines):
                     restore_service(sudo_engine, service)
             with allure.independent_step("run systemctl restart"):
                 cli.systemctl_restart(SERVICE_LIST, daemon_reload=True)
+
     finally:
-        errors = []
-        with allure.step("Valgrind output"):
-            for f in engine.run_cmd(f"ls {VALGRIND_DIR}", validate=True).split():
-                try:
-                    out_path = VALGRIND_DIR + f
-                    engine.copy_file(source_file=out_path, dest_file=f'/tmp/{f}', file_system='/',
+        with allure.step("Analyze valgrind output"):
+            player_valgrind_dir = os.path.join(get_dumps_folder(setup_name, session_id, topology_obj), 'valgrind')
+            Path(player_valgrind_dir).mkdir(parents=True, exist_ok=True)
+            for service in SERVICE_LIST:
+                file_name = VALGRIND_OUT_FILE_NAME.format(service)
+                path_on_drive = os.path.join(player_valgrind_dir, file_name)
+                path_on_switch = os.path.join(VALGRIND_DIR, file_name)
+                with allure.independent_step(path_on_drive):
+                    engine.copy_file(source_file=path_on_switch, dest_file=path_on_drive, file_system='/',
                                      direction='get', overwrite=True, verify_file=False)
-                    # todo: save valgrind results in the MARS session dir
-                    with open(f'/tmp/{f}') as out_file:
-                        content = out_file.read()
-                    allure.attach(f, content, log=False)
-                except BaseException as e:
-                    errors.append(e)
-            if errors:
-                raise BaseExceptionGroup("Failed to get some valgrind log files", errors)
+                    leaks = LeakSummary.from_file(path_on_drive)
+                    if not leaks.leaks:
+                        continue
+
+                    with allure.step(f'{len(leaks.leaks)} leaks found totaling {leaks.total_bytes} bytes. '
+                                     f'Comparing against ignore-list'):
+                        ignores = LeakSummary.read_ignore_list(IGNORE_PATH.format(service))
+                        unexpected_leaks, unused_ignores = leaks.compare(ignores)
+                        message = ''
+                        for leak, count in unexpected_leaks.items():
+                            message += format_leak_message(leak, count, ignores[leak])
+                        if message:  # unexpected leaks were found - fail test
+                            # Print items from the ignore list that were not found valgrind output. Basically we don't
+                            # care about these, but if there are unexpected leaks then we want to have full context
+                            # for analyzing them. In particular, it's possible the newly-found leak is essentially
+                            # covered by the ignore-list, but was not matched because of some subtle difference.
+                            if unused_ignores:
+                                message += '\n\n' + '=' * 80 + '\n\n' + format_unused_ignores_message(unused_ignores)
+                            raise AssertionError(message)
 
 
 @pytest.mark.disable_loganalyzer
@@ -260,6 +283,7 @@ def install_valgrind_package(engine):
             GeneralCliCommon(engine=engine).apt_install('libc6=2.36-9+deb12u9', '-y --allow-downgrades')
             GeneralCliCommon(engine=engine).apt_install('valgrind', '-y')
             get_process_path(engine, 'valgrind')  # sanity check
+            GeneralCliCommon(engine=engine).apt_install('python3.11-dbg', '-y')
 
 
 def get_process_path(engine, process):
@@ -385,7 +409,7 @@ def configure_service_to_valgrind(engine, service_name):
                        validate=True)
         engine.run_cmd(
             fr"sed -i -E 's|ExecStart=(.+)|ExecStart=valgrind --tool=memcheck --leak-check=full "
-            fr"--log-file=/valgrind/vg.{service_name}.out \1|' {conf_file}",
+            fr"--log-file={VALGRIND_OUT_FILE_PATH.format(service_name)} \1|' {conf_file}",
             validate=True)
         try:
             engine.run_cmd(fr"sed -i -E 's|(ExecStart=.+) --daemon|\1|' {conf_file}", validate=True)
@@ -425,3 +449,82 @@ def restore_services(engine, services):
     for s, e in failed.items():
         logger.error(f"{s}: {e}")
     return restored
+
+
+@dataclass(frozen=True)
+class Leak:
+    text: str = field(compare=False)
+    size: int = field(repr=False)
+    stack: Tuple[str] = field(repr=False)
+    title: str = field(compare=False)
+
+    @staticmethod
+    def from_log(lines: List[str]) -> 'Leak':
+        return Leak(text=''.join(lines[1:]),
+                    size=int(lines[0].split(maxsplit=2)[1].replace(',', '')),
+                    title=lines[0].split(' ', 1)[-1],
+                    stack=tuple(line.partition(':')[2] for line in lines[1:]))
+
+    def __eq__(self, other):
+        return self.size == other.size and self.stack == other.stack
+
+
+@dataclass
+class LeakSummary:
+    leaks: List[Leak]
+    total_bytes: int
+    total_blocks: int
+
+    @staticmethod
+    def from_file(path: str) -> 'LeakSummary':
+        """Parses a valgrind log file and returns a LeakSummary object."""
+        leaks = []
+        total_bytes, total_blocks = '-1', '-1'
+        ARE_DEFINITELY_LOST = 'are definitely lost'
+        SUMMARY = 'definitely lost:'
+        with open(path) as f:
+            while line := f.readline():
+                if ARE_DEFINITELY_LOST in line:
+                    lines = [line]
+                    while line := f.readline():
+                        if len(line.split()) < 2:
+                            break
+                        lines.append(line)
+                    leaks.append(Leak.from_log(lines))
+                elif SUMMARY in line:
+                    total_bytes, total_blocks = re.search(r'([\d,]+) bytes in ([\d,]+) blocks', line).groups()
+        return LeakSummary(leaks, int(total_bytes.replace(',', '')), int(total_blocks.replace(',', '')))
+
+    @staticmethod
+    def read_ignore_list(path: str):
+        """Reads an ignore file (found in the 'ignores' directory) and returns a multiset (Counter) of expected leaks."""
+        if os.path.exists(path):
+            return Counter(LeakSummary.from_file(path).leaks)
+        else:
+            logger.warning(f"{path} doesn't exist, assuming an empty ignore list")
+            return Counter()
+
+    def compare(self, ignore_set: Counter) -> Tuple[Counter, Counter]:
+        """
+        Compares the leaks in the current LeakSummary with the expected leaks in the ignore_set.
+        :param ignore_set: a multiset of expected leaks. "Multiset" means that we count the number of expected
+        occurrences of each leak and compare against the number of found occurrences.
+        :return: Counter of unexpected leaks, Counter of extra expected leaks that were not found.
+        """
+        unexpected_leaks = Counter(self.leaks) - ignore_set
+        unused_ignores = ignore_set - Counter(self.leaks)
+        return unexpected_leaks, unused_ignores
+
+
+def format_leak_message(leak: 'Leak', count: int, ignore_count: int) -> str:
+    return (f'Found {count} unexpected leaks of {leak.size} bytes each with the following stack trace' +
+            (f'(in addition to {ignore_count} expected leaks of the same kind):\n' if ignore_count else ':\n') +
+            leak.text + '\n')
+
+
+def format_unused_ignores_message(unused_ignores: Counter) -> str:
+    return '\n'.join(
+        f'{count} more leaks of {leak.size} bytes with the following stack-trace were '
+        f'expected but *NOT* encountered:\n' + leak.text
+        for leak, count in unused_ignores.items()
+    )

@@ -2,6 +2,9 @@ from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tools.test_utils import allure_utils as allure
+import logging
+
+logger = logging.getLogger()
 
 
 class DMIDecodeTool:
@@ -23,6 +26,42 @@ class DMIDecodeTool:
         cmd = f"sudo dmidecode {' '.join([f'-t{t}' for t in types])}"
         output = self.engines.dut.run_cmd(cmd)
         self._parse_output(output)
+
+    def collect_memory_info(self):
+        """Collect memory information including configured memory speed"""
+        cmd = "sudo dmidecode -t memory"
+        output = self.engines.dut.run_cmd(cmd)
+        self._parse_output(output)
+
+    def get_memory_speed(self):
+        """Extract configured memory speed from collected data and return as integer"""
+        memory_speeds = []
+
+        # Loop through all handles to find Configured Memory Speed
+        for handle, info in self.data.items():
+            configured_speed = info.get('Configured Memory Speed')
+            if configured_speed:
+                logger.info(f"Found Configured Memory Speed in {handle}: {configured_speed}")
+                try:
+                    # Extract numeric value from string like "2400 MT/s"
+                    speed_str = configured_speed.strip().split()[0]
+                    speed_int = int(speed_str)
+                    memory_speeds.append(speed_int)
+                    logger.info(f"Extracted memory speed from {handle}: {speed_int} MT/s")
+                except (ValueError, IndexError):
+                    logger.info(f"Failed to parse memory speed from {handle}: {configured_speed}")
+
+        if not memory_speeds:
+            logger.info("No Configured Memory Speed found in any handle")
+            return None
+
+        # Check if all memory speeds are the same
+        if len(set(memory_speeds)) > 1:
+            logger.info(f"Memory speed mismatch across handles: {memory_speeds}")
+            return None
+
+        logger.info(f"All handles show consistent memory speed: {memory_speeds[0]} MT/s")
+        return memory_speeds[0]
 
     def validate_dmi_info(self):
         invalid_entries = []
@@ -92,9 +131,20 @@ class DMIDecodeTool:
                         if info.get(key) != value:
                             errors.append(f"{handle} - {key} mismatch: Expected '{value}', Got '{info.get(key)}'")
 
-            # Perform validation
             validation_errors = dmi_tool.validate_dmi_info()
             errors.extend(validation_errors)
+
+            # Verify memory speed
+            with allure.step("Verify memory speed"):
+                dmi_tool.collect_memory_info()
+                actual_memory_speed = dmi_tool.get_memory_speed()
+
+                if actual_memory_speed is not None:
+                    expected_memory_speed = devices.dut.memory_speed
+                    if actual_memory_speed != expected_memory_speed:
+                        errors.append(f"Memory speed mismatch: Expected {expected_memory_speed} MT/s, Got {actual_memory_speed} MT/s")
+                elif actual_memory_speed is None:
+                    errors.append("Memory speed information not found in DMI data")
 
             assert not errors, f"{len(errors)} DMI information mismatches or validation errors found:\n" + '\n'.join(
                 errors)

@@ -3,10 +3,12 @@ from typing import Optional
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import IssuConsts, NtpConsts, SystemConsts, OutputFormat
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -32,11 +34,11 @@ def test_techsupport_folder_name(engines):
     with allure.step('Run nv action generate system tech-support and validate the tech-support name'):
         system = System(None)
         output_dictionary_before = list(OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            system.techsupport.files.show()).get_returned_value().values())
         tech_support_folder, duration = system.techsupport.action_generate()
         validate_techsupport_folder_name(system, tech_support_folder)
         output_dictionary_after = list(OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            system.techsupport.files.show()).get_returned_value().values())
 
         cleanup_techsupport(engines.dut, output_dictionary_before, output_dictionary_after)
 
@@ -142,6 +144,9 @@ def test_techsupport_expected_files(engines, devices, test_name):
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files,
                            'etc': devices.dut.constants.etc_files}
 
+    if is_bug_active(4303918) and isinstance(devices.dut, CrocodileSwitch):
+        expected_files_dict["dump"].remove("hdparm")
+
     if devices.dut.has_nmx:
         cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
         expected_files_dict['log/nmx/nmx-c'] = devices.dut.constants.log_nmx_files
@@ -175,6 +180,10 @@ def test_techsupport_expected_files(engines, devices, test_name):
             with allure.step("Tech-support generation takes: {} seconds".format(duration)):
                 logger.info("Tech-support generation takes: {} seconds".format(duration))
             system.techsupport.extract_techsupport_files(engines.dut)
+
+            with allure.step('Extract hw-mgmt-dump.tar.gz under hw-mgmt folder'):
+                system.techsupport.extract_techsupport_subfile(engines.dut, 'hw-mgmt', 'hw-mgmt-dump.tar.gz', tech_support_dir)
+
             techsupport_files_dict = system.techsupport.get_techsupport_files_names(engines.dut, expected_files_dict)
 
         with allure.step('validate obscurity in config files'):
@@ -208,20 +217,22 @@ def test_techsupport_expected_files(engines, devices, test_name):
             with allure.independent_step('validate files names'):
                 techsupport_files_dict['sai_sdk_dump0'] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict['sai_sdk_dump0'])
                 for folder, files in techsupport_files_dict.items():
-                    verify_techsupport_files_names(files, expected_files_dict[folder])
+                    with allure.independent_step(f'validate files names for {folder}'):
+                        verify_techsupport_files_names(files, expected_files_dict[folder])
 
             with allure.independent_step('validate files sizes'):
                 for folder in expected_files_dict.keys():
                     if expected_files_dict[folder]:  # skip empty folders if files are not expected for a specific system
                         files_list = system.techsupport.get_techsupport_empty_files(engines.dut, tech_folder=folder)
-                        verify_techsupport_files_sizes(files_list, folder)
+                        with allure.independent_step(f'validate files sizes for {folder}'):
+                            verify_techsupport_files_sizes(files_list, folder)
     finally:
         if devices.dut.has_nmx:
             Cluster().unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
-            system.techsupport.action_delete(system.techsupport.file_name)
+            system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 @pytest.mark.general
@@ -257,17 +268,18 @@ def test_techsupport_bmc_badflow(engines, test_name):
 
             with allure.step('verify bmc folder is empty'):
                 files_list = system.techsupport.get_techsupport_files_list(engines.dut, 'bmc')
-                assert not files_list, f'bmc folder is not empty and got: {files_list}'
+                files_list = " ".join(files_list)
+                assert "No such file or directory" in files_list, f'bmc folder exist and got: {files_list}'
 
             with allure.step('verify error msg in logs'):
                 output = engines.dut.run_cmd("cat /var/log/syslog | grep -a 'bmc_techsupport.py'")
-                assert re.search(r'Failed to (extract|collect) BMC debug log dump',
-                                 output), f"Expected to find 'Failed to extract/collect BMC debug log dump' in output. Got: {output}"
+                assert re.search(r'Failed to trigger BMC debug log dump',
+                                 output), f"Expected to find 'Failed trigger BMC debug log dump' in output. Got: {output}"
     finally:
         engines.dut.run_cmd("sudo ifup usb0")
         system.techsupport.cleanup(engines.dut)
         if system.techsupport.file_name:
-            system.techsupport.action_delete(system.techsupport.file_name)
+            system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
 
 
 def cleanup_techsupport(engine, before, after):
@@ -278,18 +290,16 @@ def cleanup_techsupport(engine, before, after):
 
 def verify_techsupport_files_names(files_list, expected_files):
     """
-    :param files: list of files
+    Verify that all expected files are present in the files list.
+
+    :param files_list: list of actual files found
     :param expected_files: list of expected files
-    :param device: Noga device info
     :return: None
     """
-    files = [file for file in expected_files if file not in files_list]
-    if is_bug_active(36513547):
-        files.remove('hdparm')
-    assert len(files) == 0, "the following files are missing {files}".format(files=files)
-    files = [file for file in files_list if file not in expected_files]
-    if len(files) != 0:
-        logger.warning("the following files are in the dump folder but not in our check list {files}".format(files=files))
+    actual_files_set = set(files_list)
+    expected_files_set = set(expected_files)
+
+    ValidationTool.validate_subset_in_superset(expected_files_set, actual_files_set).verify_result()
 
 
 def verify_techsupport_files_sizes(files_list, folder):
@@ -300,7 +310,7 @@ def verify_techsupport_files_sizes(files_list, folder):
     elif folder == 'cluster':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
 
-    assert len(files_list) == 0, f"the next files are empty {files_list}"
+    assert len(files_list) == 0, f"the following files are empty {files_list}"
 
 
 def validate_techsupport_folder_name(system, tech_support_folder):

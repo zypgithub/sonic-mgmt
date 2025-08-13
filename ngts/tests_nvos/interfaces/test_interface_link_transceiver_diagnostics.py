@@ -218,7 +218,7 @@ def test_interface_link_diagnostics_functional(engines, start_sm, devices):
                                                                     num_of_ports_to_select=0).get_returned_value()
     with allure.step('Get ports connected to each others'):
         # Need to provide some good way to find loopback ports. Is it ibnetdiscover?
-        check_list = ['sw15p1', 'sw16p1', 'swA15p1', 'swA16p1']
+        check_list = ['sw15p1', 'sw16p1', 'swA15p1', 'swA16p1', 'sw9p1', 'sw9p2', 'sw10p1', 'sw10p2']
         ports_connected = [port for port in selected_up_ports if port.name in check_list]
         assert ports_connected, 'Connected in loopback ports not found'
 

@@ -11,7 +11,7 @@ from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.certificate.constants import DUT_IMPORTED_CERTS_PRIVATE_DIR, \
     DUT_IMPORTED_CERTS_PUBLIC_DIR, DUT_IMPORTED_CACERTS_DIR, CERT_PRIVATE_KEY_LOCATION, CERT_PUBLIC_KEY_LOCATION, \
     GLOBAL_CA_PEM_FILE_LOCATION, GLOBAL_CA_CRT_FILE_LOCATION, CA_POOL_FILE, GET_SYSTEM_VERSION_PATH, CertMsgs, \
-    EXTERNAL_CA_CRT_FILE_LOCATION
+    EXTERNAL_CA_CRT_FILE_LOCATION, CertShowFields
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
@@ -72,9 +72,11 @@ def delete_certificates(ca: bool = False):
     ca_str = "ca" if ca else ""
     with allure.step(f'delete {ca_str}certs from the system'):
         current_certs = OutputParsingTool.parse_json_str_to_dictionary(cert_obj.show()).get_returned_value()
-        for cert_name in current_certs:
-            with allure.step(f'delete {ca_str}cert {cert_name}'):
-                cert_obj.cert_id[cert_name].action_delete().verify_result()
+        for cert_name, cert_item in current_certs.items():
+            installed = cert_item.get(CertShowFields.INSTALLED, {})
+            if not installed:
+                with allure.step(f'delete {ca_str}cert {cert_name}'):
+                    cert_obj.cert_id[cert_name].action_delete().verify_result()
 
 
 def delete_crl():
@@ -82,9 +84,11 @@ def delete_crl():
     crl_resource = security_obj.crl
     with allure.step('delete crls from the system'):
         current_crls = OutputParsingTool.parse_json_str_to_dictionary(crl_resource.show()).get_returned_value()
-        for crl_name in current_crls:
-            with allure.step(f'delete {crl_name}'):
-                crl_resource.crl_id[crl_name].action_delete().verify_result()
+        for crl_name, crl_item in current_crls.items():
+            installed = crl_item.get(CertShowFields.INSTALLED, {})
+            if not installed:
+                with allure.step(f'delete {crl_name}'):
+                    crl_resource.crl_id[crl_name].action_delete().verify_result()
 
 
 def import_test_certs(scp_player: LinuxSshEngine, dut_engine: LinuxSshEngine, certs: List[CertInfo], external_cas=False):

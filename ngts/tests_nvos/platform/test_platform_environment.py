@@ -345,7 +345,6 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
     platform = Platform()
     system = System()
     fan_to_check = devices.dut.fan_list[2]
-    err_found = False
     op_param_val = " | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR) + "'"
     with allure.step('Check is Juliet Device'):
         if not isinstance(devices.dut, JulietSwitch):
@@ -380,6 +379,7 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
                 SystemConsts.SYSTEM_LAST_EVENT, '10000')).get_returned_value()
             fan_error_set = set()
             for events_no in output:
+                err_found = False
                 output_err_msg = str(output[events_no])
                 if FansConsts.FAN_DIRECTION_MISMATCH_ERR in output_err_msg:
                     err_found = True
@@ -388,10 +388,11 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
                     err_found = True
                     op_param_val = " | grep '" + str(FansConsts.FAN_DIRECTION_MISMATCH_ERR_CROC) + "'"
                 if err_found:
-                    fan = output[events_no]["text"]
-                    assert (fan not in fan_error_set), 'Fan mismatch event occurred more times for FAN:{}'.format(fan)
-                    fan_error_set.add(fan)
-                    logger.info("Fan direction mismatch Event captured for : {}".format(fan))
+                    fan_err_msg = output[events_no]["text"]
+                    assert (fan_err_msg not in fan_error_set), \
+                        'Fan mismatch event occurred more times for FAN:{}'.format(fan_to_check)
+                    fan_error_set.add(fan_err_msg)
+                    logger.info("Fan direction mismatch Event captured for : {}".format(fan_to_check))
 
         with allure.step("Validate Fan direction error appears in system log but is not flooded"):
             no_of_errors_1 = len(system.log.file.show_log(param=op_param_val).splitlines())

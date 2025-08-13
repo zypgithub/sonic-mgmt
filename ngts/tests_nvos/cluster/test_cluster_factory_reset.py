@@ -352,8 +352,11 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
                 sdn.factory_default.action_reset(param='force')
-                time.sleep(2)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                                 nmx_c_expected_state='down')
+                time.sleep(1)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
+                                                                 nmx_c_expected_state='up')
 
         for file_path in uploaded_files:
             engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
@@ -460,7 +463,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     with allure.step("Fetch & Generate config files"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(ImageConsts.SCP_PATH + path_to_config[file_type])
             output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
 
     with allure.step("Generate state files"):
@@ -476,7 +479,7 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
     with allure.step("Install config file"):
         for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
+            sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(ImageConsts.SCP_PATH + path_to_config[file_type])
             sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
             output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
             installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')

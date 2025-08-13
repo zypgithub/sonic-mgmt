@@ -93,7 +93,10 @@ class NvosConsts:
                                     'syncd-ibv00': '/src/sonic_syncd_src_cov.tar.gz',
                                     'swss-ibv01': '/src/sonic_swss_src_cov.tar.gz',
                                     'syncd-ibv01': '/src/sonic_syncd_src_cov.tar.gz'}
+    SERVICES_LIST = ["swss-ibv0@0.service", "swss-ibv0@1.service", "syncd-ibv0@0.service", "syncd-ibv0@1.service"]
     DEST_PATH = "/auto/sw_system_project/NVOS_INFRA/coverage/"
+    JSON_PATH_DOCKER = "/sonic/full-report.json"
+    GCOV_JSON_FILE_PATTERN = "/sonic/{gcov_filename_prefix}-{container}.json"
 
 
 class SonicConsts:

@@ -22,12 +22,11 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, standalone_system):
+def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name, standalone_system):
     if standalone_system:
         pytest.skip("Skipping test - supported only for non standalone systems.")
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
     interface_wa_called = False
     with allure.step("Create Cluster object"):
@@ -86,13 +85,17 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
         # And also, need to run with no-reroute randomization.
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down')
+            time.sleep(1)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
         TestToolkit.tested_api = ApiType.NVUE
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
         interface_wa_called = True
-        TestToolkit.tested_api = test_api
+        TestToolkit.tested_api = random_api
         with allure.step("Checking if partition is restored to original"):
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
                                                                  output_format=output_format).get_returned_value()
@@ -101,7 +104,9 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-            time.sleep(2)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down')
+            time.sleep(1)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
             try:
@@ -115,13 +120,12 @@ def test_cluster_partition(engines, devices, test_api, has_loopbox, setup_name, 
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
 
     if standalone_system:
         pytest.skip("Skipping test - supported only for non standalone systems.")
 
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
     interface_wa_called = False
     with allure.step("Create Cluster object"):
@@ -228,7 +232,7 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
-                TestToolkit.tested_api = test_api
+                TestToolkit.tested_api = random_api
 
             with allure.step("Add GPU with wrong mcast_limit"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
@@ -244,20 +248,24 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                err_msg = "Valid range is 0 - 1024" if test_api == 'NVUE' else "1025 is greater than the maximum of 1024"
+                err_msg = "Valid range is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
-                TestToolkit.tested_api = test_api
+                TestToolkit.tested_api = random_api
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down')
+            time.sleep(1)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         ClusterTools().stop_cluster(cluster)
         ClusterTools().start_cluster(cluster, setup_name)
         TestToolkit.tested_api = ApiType.NVUE
         interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
         next(interfaces_wa)
-        TestToolkit.tested_api = test_api
+        TestToolkit.tested_api = random_api
         interface_wa_called = True
         with allure.step("Checking if partition is restored to original"):
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -267,7 +275,9 @@ def test_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, sta
     finally:
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
-            time.sleep(2)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down')
+            time.sleep(1)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         if interface_wa_called:
             try:

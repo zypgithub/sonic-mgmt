@@ -109,16 +109,11 @@ def is_mini_oberon(standalone_system: bool, setup_name: str, engines: EnginesT):
     yield
 
 
-@pytest.fixture(autouse=True)
-def has_active_access_ports(request: pytest.FixtureRequest, standalone_system: bool, has_loopbox: bool):
-    """ check if a system doesn't have active access ports, skip the test """
-    to_be_ignored = ['test_kr_cli_hidden_non_nvlink']
-    if request.node.name not in to_be_ignored and standalone_system and not has_loopbox:
-        pytest.skip(reason="System doesn't have active access ports, skipping the test")
-
-
 @pytest.fixture(scope='module', autouse=True)
 def access_ports(devices):
+    if not hasattr(devices.dut, 'nvl5_access_ports_list'):  # IB devices don't have this attribute
+        yield
+        return
     # Extract numeric indices from ACP port names by removing 'acp' prefix
     port_indices = [int(port_name.replace('acp', '')) for port_name in devices.dut.nvl_access_ports_list]
     min_port, max_port = min(port_indices), max(port_indices)
@@ -159,39 +154,6 @@ def _reboot_gpus() -> None:
     if not IS_STANDALONE_SYSTEM:  # like mini-oberon
         logger.info("rebooting the GPUs")
         cluster_tools.ClusterTools.reboot_compute_nodes_gpus(SETUP_NAME)
-
-
-@pytest.mark.timeout(2 * MINUTE, func_only=True)
-def test_kr_cli_hidden_non_nvlink(engines: EnginesT):
-    """
-    Verify that the KR CLI is not displayed on non-NVLink interfaces.
-
-    Test Steps:
-        1. Get a random non-NVLink interface port
-        2. Run the command: nv fae show fae interface <non-nvlink-interface-id> link link-training
-        3. Verify the command fails as expected (KR is not supported)
-
-    Expected Outcome:
-        No KR configuration information appears, command fails with proper error
-    """
-    errors = []
-
-    with allure.step('Get non-NVLink ports'):
-        ports: str = engines.dut.run_cmd('nv show interface -o json | jq \'.[].type\' | sort -u | grep -vw nvl | sed \'s/"//g\'')
-    for port_type in ports.splitlines():
-        logger.info(f"Testing port type: {port_type}")
-        port = _get_random_port(engines.dut, port_type=port_type, ports_state=None)
-        logger.info(f"Selected port: {port.name}")
-        with allure.step(f'Attempt to show KR on non-NVLink port {port.name!r}'):
-            try:
-                Fae(port_name=port.name).interface.link.kr.show(should_succeed=False)
-                logger.info(f"asking for KR on port {port.name!r} show error as expected")
-            except AssertionError as e:
-                logger.error(f"Expected AssertionError on port {port.name}: {str(e)}")
-                logger.exception(e)
-                errors.append(str(e))
-
-    assert not errors, f"Errors:\n\t%s" % "\n\t".join(errors)
 
 
 def _configure_port_randomly(port: Port) -> Dict[str, str]:

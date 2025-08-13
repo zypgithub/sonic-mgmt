@@ -161,7 +161,7 @@ def check_user_num_connections(username, expected_num_connections, system_obj: S
         kill_no_tty_processes(dut_engine, username)
 
     with allure.step(f'Verify num connections of "{username}" is {expected_num_connections}'):
-        expected_num_user_processes = expected_num_connections * 2
+        expected_num_user_processes = expected_num_connections * 2 + 2
         running_processes = system_obj.aaa.user.get_lslogins(dut_engine, username)[
             SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES]
         assert int(

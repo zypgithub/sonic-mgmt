@@ -601,7 +601,7 @@ def verify_tech_support_generation_time(engines, start_time, should_generate_tec
     with allure.step(f"Verify tech-support birth time"):
         with allure.step(f"Run 'nv show system tech-support' and get the last one generated"):
             output_list = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-                system.techsupport.show()).get_returned_value().values())
+                system.techsupport.files.show()).get_returned_value().values())
             latest = output_list[0]
         system.techsupport.check_techsupport_file_age(engines.dut, system, latest)
 

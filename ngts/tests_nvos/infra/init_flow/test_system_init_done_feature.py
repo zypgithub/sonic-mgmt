@@ -11,9 +11,11 @@ from ngts.tests_nvos.constants import MINUTE
 logger = logging.getLogger()
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.init_flow
-def test_system_ready_state_up(engines, devices, topology_obj):
+def test_system_ready_state_up(engines, devices, topology_obj, verify_no_kernel_errors):
     """
     Test flow:
         0. serial connection
@@ -61,7 +63,7 @@ def test_system_ready_state_up(engines, devices, topology_obj):
         DutUtilsTool.wait_for_nvos_to_become_functional(ssh_connection).verify_result()
 
     logs_to_find = ['Wait until the NOS signal we are ready to serve', 'System is ready to serve']
-    System().log.verify_expected_logs(logs_to_find, engine=ssh_connection)
+    System().log.verify_expected_logs(logs_to_find, logs_source=LogsSources.NVUED, engine=ssh_connection)
 
     with allure.step('check the system status in DB'):
         output = Tools.DatabaseTool.sonic_db_cli_hgetall(engine=ssh_connection, asic="",
@@ -88,6 +90,8 @@ def test_system_ready_state_up(engines, devices, topology_obj):
         assert res_obj.result, res_obj.info
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.init_flow
 @pytest.mark.disable_loganalyzer
@@ -142,7 +146,7 @@ def test_system_ready_state_down(engines, devices, topology_obj):
                 time.sleep(300)
 
             logs_to_find = ['Wait until the NOS signal we are ready to serve']
-            system.log.verify_expected_logs(logs_to_find, engine=ssh_connection)
+            system.log.verify_expected_logs(logs_to_find, logs_source=LogsSources.NVUED, engine=ssh_connection)
 
             with allure.step('verify the system status is DOWN'):
                 output = Tools.DatabaseTool.sonic_db_cli_hgetall(engine=ssh_connection, asic="",

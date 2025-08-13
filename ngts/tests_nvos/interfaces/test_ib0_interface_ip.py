@@ -7,6 +7,8 @@ from ngts.nvos_constants.constants_nvos import ApiType
 logger = logging.getLogger()
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.ib
 @pytest.mark.simx
 def test_ib0_interface_ipv4_address(engines):

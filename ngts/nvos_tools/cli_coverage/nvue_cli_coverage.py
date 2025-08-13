@@ -35,6 +35,7 @@ class NVUECliCoverage:
     re_nvue_bracket = re.compile(r' \[[^ \]]+\]')
     re_nvue_options = re.compile(r' -y| --assume-yes| --output \S+| -o \S+| --view=\S+| --view \S+| --paginate \S+')
     re_nvue_space = re.compile(r' +')
+    re_nvue_output_type = re.compile(r'\s*--output.*$')
     re_nvue_pipe = re.compile(r'\|.*')
     re_nvue_endspace = re.compile(r' +$')
     last_matched_command_index = 0
@@ -140,18 +141,19 @@ class NVUECliCoverage:
         collect the nv commands from a device history,
         save the commands that we have used in cls.nvue_clis and normalize them.
         """
-        run_out = SendCommandTool.execute_command(LinuxGeneralCli(engine).get_history).get_returned_value()
         with allure.step("Create commands dictionary for the commands that we used"):
             logging.info("Create commands dictionary for the commands that we used")
+            run_out = SendCommandTool.execute_command(LinuxGeneralCli(engine).get_history).get_returned_value()
             for line in run_out.splitlines():
                 split_cmd = line.strip().split(" ")
-                if len(split_cmd) > 3:
+                if len(split_cmd) > 2:
                     split_cmd.pop(0)
                     cmd = ' '.join(split_cmd).strip()
                     if cmd.startswith('nv '):
+                        cleaner_cmd = cls.re_nvue_output_type.sub('', cmd)
                         cls.nvue_clis[swversion].append({
-                            'command executed': cmd,
-                            'command': cls.normalize_nvue_command(cmd, cls.full_command_list[swversion]),
+                            'command executed': cleaner_cmd,
+                            'command': cls.normalize_nvue_command(cleaner_cmd, cls.full_command_list[swversion]),
                             'response time': None
                         })
             result_obj = ResultObj(True)
@@ -298,15 +300,16 @@ class NVUECliCoverage:
 
     @classmethod
     def update_version_details(cls):
-        if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE:
-            cls.build_id = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()['build']
-            cls.swversion = cls.build_id.split()[-1]
-        else:
-            nvos_version = OutputParsingTool.parse_json_str_to_dictionary(System().show('version')).get_returned_value()[
-                'image']
-            release = TestToolkit.version_to_release(nvos_version).replace("nvos-", "")
-            cls.swversion = release.replace("-", ".")
-            cls.build_id = nvos_version.replace("nvos-", "")
+        with allure.step("Update version details"):
+            if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE:
+                cls.build_id = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()['build']
+                cls.swversion = cls.build_id.split()[-1]
+            else:
+                nvos_version = OutputParsingTool.parse_json_str_to_dictionary(System().version.image.show()).get_returned_value()['build-id']
+                with allure.step(f"the build-id is {nvos_version}"):
+                    release = TestToolkit.version_to_release(nvos_version).replace("nvos-", "")
+                    cls.swversion = release.replace("-", ".")
+                    cls.build_id = nvos_version.replace("nvos-", "")
 
     @classmethod
     def run(cls, item, start_time, project='nvos', department='verification', nvue_dir='/auto/sw/tools/comet/nvos/'):
@@ -324,7 +327,7 @@ class NVUECliCoverage:
                 if not cls.swversion:  # only init it once per session
                     cls.update_version_details()
                 if not cls.system_type:  # only init it once per session
-                    cls.system_type = OutputParsingTool.parse_json_str_to_dictionary(Platform().show()).get_returned_value()['product-name']
+                    cls.system_type = OutputParsingTool.parse_json_str_to_dictionary(Platform().show()).get_returned_value()['system-type']
 
                 with allure.step("Get full_commands list"):
                     result_obj = cls.get_full_command_list(cls.engine, cls.project, cls.swversion)

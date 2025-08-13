@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
@@ -54,6 +54,8 @@ def test_transceiver_status(engines, test_api):
     _verify_link_state_down(down_ports)
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
@@ -88,10 +90,11 @@ def test_transceiver_status_unplug(engines, devices, test_api):
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_status_with_reboot(engines, devices, test_api):
+def test_transceiver_status_with_reboot(engines, devices, random_api):
     """
     The test will check if the value of module_status is reset after reboot.
 
@@ -102,7 +105,7 @@ def test_transceiver_status_with_reboot(engines, devices, test_api):
     4. Reboot the system
     5. Verify module is plugged
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
 
     with allure.step("Create System and platform object"):
         platform = Platform()
@@ -142,11 +145,7 @@ def test_transceiver_general(engines, devices, nv_command, test_api):
 
     flow:
     1. Verify all expected modules exists in transceivers detail output
-    Additional flow for Taipan:
-    2. Verify all fields are as expected for els transceiver
-    3. Verify all fields are as expected for oe transceiver
-    4. Verify transceiver fault-condition, port-mapping and oe-mapping values for each els transceiver
-    5. Verify transceiver status, fault-condition, port-mapping and els-mapping for each oe transceiver
+    2. Verify connected transceivers count matches system status
     """
     TestToolkit.tested_api = test_api
 
@@ -158,89 +157,16 @@ def test_transceiver_general(engines, devices, nv_command, test_api):
         for transceiver in transceivers_list:
             assert transceiver in transceivers_output, f"{transceiver} is missing in transceivers output"
 
-    # In case of Taipan system
-    # --------------------------
-    if devices.dut.switch_class in [NvosConst.TAIPAN_SWITCH, NvosConst.TAIPAN_SINGLE_ASIC_SWITCH]:
-        if engines.dut.ip == '10.7.148.248':
-            logging.info("Skipped port and els verification for Taipan simulation system")
-        else:
-            els_list = [name for name in transceivers_list if TransceiversConsts.TRANSCEIVERS_ELS in name]
-            oe_list = [name for name in transceivers_list if TransceiversConsts.TRANSCEIVERS_OE in name]
+    with allure.step("Verify connected transceivers count matches system status"):
+        system_transceiver_status = IbInterfaceTool.get_connected_transceivers_dict(engines.dut, transceivers_list)
 
-            if devices.dut.switch_class == NvosConst.TAIPAN_SWITCH:
-                transceivers_els_to_port_mapping = TransceiversConsts.TRANSCEIVERS_ELS_PORT_MAPPING
-                transceivers_els_to_oe_mapping = TransceiversConsts.TRANSCEIVERS_ELS_OE_MAPPING
-            else:
-                transceivers_els_to_port_mapping = TransceiversConsts.TRANSCEIVERS_SINGLE_ASIC_ELS_PORT_MAPPING
-                transceivers_els_to_oe_mapping = TransceiversConsts.TRANSCEIVERS_SINGLE_ASIC_ELS_OE_MAPPING
+        connected_transceivers_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.transceiver.show()).get_returned_value()
+        nv_connected_transceivers = set(connected_transceivers_output.keys())
 
-            # Temporary skipped because 'co-optics-mapping' flag is not supported yet.
-            # with allure.independent_step(f"Verify transceiver co-optics-mapping output"):
-            #     mapping_output = OutputParsingTool.parse_json_str_to_dictionary(
-            #         nv_command.platform.transceiver.show('co-optics-mapping')).get_returned_value()
-            #     for els in mapping_output.keys():
-            #         assert mapping_output[els][PlatformConsts.TRANSCEIVER_OE_MAPPING] == \
-            #             TransceiversConsts.transceivers_els_to_oe_mapping[els], \
-            #             (f"transceiver {els} oe-mapping is no as expected: "
-            #              f"{TransceiversConsts.transceivers_els_to_oe_mapping[els]}")
-            #
-            #         assert mapping_output[els][PlatformConsts.TRANSCEIVER_ELS_MAPPING] == \
-            #             TransceiversConsts.transceivers_els_to_port_mapping[els], \
-            #             (f"transceiver {els} port-mapping is no as expected: "
-            #              f"{TransceiversConsts.transceivers_els_to_port_mapping[els]}")
+        system_connected_transceivers = {transceiver for transceiver, is_connected in system_transceiver_status.items() if is_connected}
 
-            with allure.independent_step(f"Verify all fields are as expected for els transceiver"):
-                els_rand = random.choice(els_list)
-                els_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    nv_command.platform.transceiver.show(els_rand)).get_returned_value()
-                assert els_output.keys() == TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS], \
-                    (f"els transceiver fields is: {els_output.keys()}, while the expected fields are: "
-                     f"{TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS]}")
-
-            with allure.independent_step(f"Verify all fields are as expected for oe transceiver"):
-                oe_rand = random.choice(oe_list)
-                oe_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    nv_command.platform.transceiver.show(oe_rand)).get_returned_value()
-                assert oe_output.keys() == TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE], \
-                    (f"oe transceiver fields is: {oe_output.keys()}, while the expected fields are: "
-                     f"{TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE]}")
-
-            with allure.independent_step(f"Verify transceiver fault-condition, "
-                                         f"port-mapping and oe-mapping values for each els transceiver"):
-                for els in els_list:
-                    els_output = OutputParsingTool.parse_json_str_to_dictionary(
-                        nv_command.platform.transceiver.show(els)).get_returned_value()
-                    assert els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].split() == \
-                        TransceiversConsts.transceivers_els_to_port_mapping[els], \
-                        (f"Transceiver {els} port-mapping is {els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING]}, "
-                         f"instead of {TransceiversConsts.transceivers_els_to_port_mapping[els]}")
-                    assert els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].split() == \
-                        TransceiversConsts.transceivers_els_to_oe_mapping[els], \
-                        (f"Transceiver {els} oe-mapping is {els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING]}, "
-                         f"instead of {TransceiversConsts.transceivers_els_to_oe_mapping[els]}")
-                    if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
-                        assert els_output[PlatformConsts.TRANSCEIVER_FAULT_CONDITION] == 'false', \
-                            (f"Transceiver {els} fault-condition is "
-                             f"{els_output[PlatformConsts.TRANSCEIVER_FAULT_CONDITION]}, instead of false")
-
-            with allure.independent_step(f"Verify transceiver status, fault-condition, "
-                                         f"port-mapping and els-mapping for each oe transceiver"):
-                for oe in oe_list:
-                    oe_output = OutputParsingTool.parse_json_str_to_dictionary(
-                        nv_command.platform.transceiver.show(oe)).get_returned_value()
-                    assert oe_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED, \
-                        (f"Transceiver {oe} status is {oe_output[PlatformConsts.TRANSCEIVER_STATUS]}, "
-                         f"instead of {PlatformConsts.INSERTED}")
-                    assert oe_output[PlatformConsts.TRANSCEIVER_FAULT_CONDITION] == 'false', \
-                        (f"Transceiver {oe} fault-condition is {oe_output[PlatformConsts.TRANSCEIVER_FAULT_CONDITION]}, "
-                         f"instead of false")
-                    assert oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].split() == \
-                        TransceiversConsts.transceivers_els_to_port_mapping[oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]], \
-                        (f"Transceiver {oe} port-mapping is {oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING]}, "
-                         f"instead of {TransceiversConsts.transceivers_els_to_port_mapping[oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]]}")
-                    assert oe in TransceiversConsts.transceivers_els_to_oe_mapping[oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]], \
-                        (f"Transceiver {oe} does not exist in {oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]} oe-mapping: "
-                         f"{TransceiversConsts.transceivers_els_to_oe_mapping[oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]]}")
+        Tools.ValidationTool.validate_set_equal(actual=system_connected_transceivers, expected=nv_connected_transceivers).verify_result()
 
 
 def _verify_transceiver_status(platform, transceiver_id, expected_module_status='Inserted',

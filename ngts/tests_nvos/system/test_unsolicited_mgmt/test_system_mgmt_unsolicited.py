@@ -97,6 +97,8 @@ def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
                 fae.system.mgmt_unsolicited.set(op_param_name=SystemConsts.STATE, op_param_value=NvosConst.ENABLED, apply=True)
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
 def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
@@ -115,6 +117,8 @@ def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
         config_management_interface_verify_logs(engine=engines.dut, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=ipv4_eth1_expected_logs)
 
 
+@pytest.mark.check_log_size
+@pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
 def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices):

@@ -1,7 +1,5 @@
 import time
 import re
-
-import allure
 import pytest
 
 from retry.api import retry_call
@@ -15,6 +13,7 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.platform.Platform import Platform
 from multiprocessing import Process
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -152,8 +151,6 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                                              ask_for_confirmation=True).verify_result()
                 result = mgmt_port.interface.link.set(op_param_name='duplex', op_param_value=duplex,
                                                       apply=True, ask_for_confirmation=True)
-                check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
                 Port.wait_for_port_state(mgmt_port, "up")
 
                 if not result:
@@ -166,8 +163,6 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     with allure.step('Set autoneg to off'):
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
                                      ask_for_confirmation=True).verify_result()
-        check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-        check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
         Port.wait_for_port_state(mgmt_port, "up")
         wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_OFF)
 
