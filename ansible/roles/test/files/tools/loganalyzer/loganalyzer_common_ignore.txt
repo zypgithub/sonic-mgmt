@@ -454,3 +454,17 @@ r, ".* ERR syncd#syncd: :- process_on_fdb_event: FDB notification was not sent s
 
 # https://github.com/sonic-net/sonic-mgmt/issues/19790
 r, ".* ERR syncd#syncd: .* SAI_API_SWITCH:sai_query_stats_capability:\d+ stats capablity not supported for object.*"
+
+# https://github.com/sonic-net/sonic-buildimage/issues/22795
+r, ".* ERR\s+dockerd:\s+tac_connect_single:\s+connection\s+failed\s+with\s+\d+\.[\d+a-fA-F]+\.\d+\.[\d+a-fA-F]+:\d+:\s+Transport\s+endpoint\s+is\s+not\s+connected.*"
+r, ".* ERR dockerd: nss_tacplus: failed to connect TACACS\+ server .* Operation now in progress.*"
+r, ".* ERR dockerd: tac_connect_single: connection to .* failed: Network is unreachable.*"
+r, ".* ERR dockerd: nss_tacplus: failed to connect TACACS\+ server .* Network is unreachable.*"
+r, ".* ERR libnetwork-setkey: tac_connect_single: connection to .* failed: Network is unreachable.*"
+r, ".* ERR libnetwork-setkey: nss_tacplus: failed to connect TACACS\+ server .* Network is unreachable.*"
+r, ".* ERR dockerd: nss_tacplus: failed to connect TACACS\+ server.* Transport endpoint is not connected.*"
+
+
+# https://github.com/sonic-net/sonic-buildimage/issues/23199
+r, ".* ERR dhcp_relay#supervisor-proc-exit-listener: Exception.*len.*trace: Traceback \(most recent call last\).*File .*\/usr\/bin\/supervisor-proc-exit-listener.*line.*in \<module\>.*main\(sys.argv.*File .*\/usr\/bin\/supe.*"
+r, ".* ERR dhcp_relay\#supervisor-proc-exit-listener: Exception:.*len.*trace: Traceback \(most recent call last.*File .*\/usr\/bin\/supervisor-proc-exit-listener.* line.*in .*main\(sys.* File.*\/usr\/bin\/supervisor-proc-exit-listener.* line.* in main.*payload.* sys.stdin.read.*KeyError:.*len.*"
