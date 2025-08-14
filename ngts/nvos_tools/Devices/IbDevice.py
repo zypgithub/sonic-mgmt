@@ -854,11 +854,11 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
 
     def _init_fan_list(self):
         super()._init_fan_list()
-        self.fan_list += ["FAN7/1", "FAN7/2", "FAN8/1", "FAN8/2"]
+        self.fan_list = list(set(self.fan_list) - {"FAN9/1", "FAN9/2", "FAN10/1", "FAN10/2"})
 
     def _init_led_list(self):
         super()._init_led_list()
-        self.led_list += ['FAN7', 'FAN8']
+        self.led_list = list(set(self.led_list) - {'FAN9', 'FAN10'})
 
     def _init_psu_list(self):
         self.psu_list = []
@@ -876,7 +876,7 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
     def _init_constants(self):
         super()._init_constants()
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "Q3401-RD",
+            PlatformConsts.SYSTEM_TYPE: "Q3401_RD",
             "asic-model": self.asic_type,
         })
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
