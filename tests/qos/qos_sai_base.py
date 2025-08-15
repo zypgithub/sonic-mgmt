@@ -961,7 +961,8 @@ class QosSaiBase(QosBase):
     def dutConfig(
             self, request, duthosts, configure_ip_on_ptf_intfs, get_src_dst_asic_and_duts,
             lower_tor_host, tbinfo, dualtor_ports_for_duts, dut_qos_maps,  # noqa: F811
-            is_supported_per_dir, lossy_queue_traffic_direction):
+            is_supported_per_dir, lossy_queue_traffic_direction
+    ):
         """
             Build DUT host config pertaining to QoS SAI tests
 
@@ -1101,6 +1102,11 @@ class QosSaiBase(QosBase):
                     if portIndex not in uplinkPortIds:
                         downlinkPortIds.append(portIndex)
 
+            if is_supported_per_dir:
+                for portIndex, _ in testPortIps[src_dut_index][src_asic_index].items():
+                    if portIndex not in uplinkPortIds:
+                        downlinkPortIds.append(portIndex)
+
             if 'backend' in topo:
                 # since backend T0 utilize dot1q encap pkts, testPortIds need to be repopulated with the
                 # associated sub-interfaces stored in testPortIps
@@ -1139,8 +1145,7 @@ class QosSaiBase(QosBase):
                         (get_src_dst_asic_and_duts["src_asic"]
                          .sonichost.facts["hwsku"]
                          in ["Cisco-8101-O8C48", "Cisco-8101-O8V48",
-                             "Cisco-8102-28FH-DPU-O-T1", "Cisco-8102-28FH-DPU-O"]))
-                             or is_supported_per_dir):
+                             "Cisco-8102-28FH-DPU-O-T1", "Cisco-8102-28FH-DPU-O"]) or is_supported_per_dir):
                         neighName = src_mgFacts["minigraph_neighbors"].get(portName, {}).get("name", "").lower()
                         if 't0' in neighName:
                             downlinkPortIds.append(portIndex)
@@ -2233,11 +2238,9 @@ class QosSaiBase(QosBase):
             if is_lossy_queue_only:
                 is_lossy_queue_only = True
                 queue_table_postfix_list = ['0', '1', '2', '3', '4', '5']
-                queue_to_dscp_map = {'0': '0', '1': '1', '2': '3', '3': '5', '4': '11', '5': '42'}
-                # for queue 0-3, the weight is 1, for queue 4 and 5, the weight is 4,
-                # because the queue 0~3 have the same dynamic threshold config
-                # so for the different dynamic threshold config, we have the same possibility to test it
-                queues = random.choices(queue_table_postfix_list, weights=(1, 1, 1, 1, 4, 4), k=1)[0]
+                queue_to_dscp_map = self.get_queue_to_dscp_map(duthost)
+                queue_weights_list = self.get_queue_weights_based_dynamic_th(duthost, queue_table_postfix_list)
+                queues = random.choices(queue_table_postfix_list, weights=queue_weights_list, k=1)[0]
             else:
                 queues = "0-2"
 
@@ -2251,7 +2254,7 @@ class QosSaiBase(QosBase):
             queues
         )
         if is_lossy_queue_only:
-            egress_lossy_profile['lossy_dscp'] = queue_to_dscp_map[queues]
+            egress_lossy_profile['lossy_dscp'] = random.choice(queue_to_dscp_map[queues])
             egress_lossy_profile['lossy_queue'] = queues
         logger.info(f"queues: {queues}, egressLossyProfile: {egress_lossy_profile}")
 
@@ -3096,9 +3099,46 @@ def set_queue_pir(interface, queue, rate):
                      dstPorts: {dstPorts}, src_port_ids: {src_port_ids}, dst_port_ids: {dst_port_ids}")
         return srcPorts, dstPorts, src_port_ids, dst_port_ids
 
-    def is_port_alpha_enabled(self, duthost):
-        # only spc4 and above support enable or disable port alpha function
-        get_sai_profile_cmd = "sudo docker exec syncd  cat /usr/share/sonic/hwsku/sai.profile"
-        sai_profile_content = duthost.shell(get_sai_profile_cmd)['stdout']
-        logging.info(f"sai_profile_content: {sai_profile_content}")
-        return "SAI_KEY_DISABLE_PORT_ALPHA=1" not in sai_profile_content
+    def get_queue_to_dscp_map(self, duthost):
+        """
+        Get queue to DSCP mapping from DUT host
+        """
+        config_facts = duthost.asic_instance().config_facts(source="running")["ansible_facts"]
+        dscp_to_tc_map = config_facts['DSCP_TO_TC_MAP']['AZURE']
+        queue_to_dscp_map = {}
+        for dscp, tc in dscp_to_tc_map.items():
+            queue_to_dscp_map.setdefault(tc, [])
+            queue_to_dscp_map[tc].append(dscp)
+        logging.info(f"queue_to_dscp_map: {queue_to_dscp_map}")
+        return queue_to_dscp_map
+
+    def get_queue_weights_based_dynamic_th(self, duthost, queue_table_postfix_list):
+        """
+        Get queue weights based on queue's dynamic th
+        e.g.  when queue_table_postfix_list = ['0', '1', '2', '3', '4', '5']
+        # for queue 1-3 has the same dynamic th -7,
+        # for queue 4 and 0 has the same dynamic th 0
+        # for queue 5 has the dynamic th -3
+        # so, for queue 1-3, the weight is 1/3, for queue 4 and 0, the weight is 1/2,
+        # for queue 5, the weight is 1/1
+        # so the weights_list is [1/2, 1/3, 1/3, 1/3, 1/2, 1/1]
+        # Based on the weights_list, every dynamic th has the same chance to be tested
+        """
+        queue_dynamic_th_map = {}
+        weights_list = []
+        for queue in queue_table_postfix_list:
+            key_str = f"BUFFER_PROFILE_TABLE:queue{queue}_downlink_lossy_profile"
+            dynamic_th_res = duthost.run_redis_cmd(argv=["redis-cli", "-n", 0, "HGET", key_str, "dynamic_th"])
+            if dynamic_th_res:
+                queue_dynamic_th_map[queue] = dynamic_th_res[0]
+        logging.info(f"queue_dynamic_th_map: {queue_dynamic_th_map}")
+
+        dynamic_th_list = list(queue_dynamic_th_map.values())
+        if len(queue_table_postfix_list) == len(dynamic_th_list):
+            weights_list.extend(
+                1/dynamic_th_list.count(queue_dynamic_th_map[queue]) for queue in queue_table_postfix_list)
+        else:
+            weights_list = [1] * len(queue_table_postfix_list)
+        logging.info(f"weights_list: {weights_list}")
+
+        return weights_list
