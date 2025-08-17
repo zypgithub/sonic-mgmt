@@ -139,7 +139,7 @@ def test_transceiver_status_with_reboot(engines, devices, random_api):
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_transceiver_general(engines, devices, nv_command, test_api):
+def test_transceivers_and_ports(engines, devices, nv_command, test_api):
     """
     The test verifies all expected modules (by device) exists in transceivers detail output.
 
@@ -151,22 +151,54 @@ def test_transceiver_general(engines, devices, nv_command, test_api):
 
     transceivers_list = devices.dut.transceiver_list
 
-    with allure.step(f"Verify all expected modules exists in transceivers detail output"):
-        transceivers_output = [name for name, transceiver in OutputParsingTool.parse_json_str_to_dictionary(
-            nv_command.platform.transceiver.show('detail')).get_returned_value().items()]
-        for transceiver in transceivers_list:
-            assert transceiver in transceivers_output, f"{transceiver} is missing in transceivers output"
-
-    with allure.step("Verify connected transceivers count matches system status"):
-        system_transceiver_status = IbInterfaceTool.get_connected_transceivers_dict(engines.dut, transceivers_list)
-
+    with allure.step(f"Verify all connected transceivers and ports"):
         connected_transceivers_output = OutputParsingTool.parse_json_str_to_dictionary(
             nv_command.platform.transceiver.show()).get_returned_value()
         nv_connected_transceivers = set(connected_transceivers_output.keys())
 
-        system_connected_transceivers = {transceiver for transceiver, is_connected in system_transceiver_status.items() if is_connected}
+        with allure.independent_step(f"Verify all expected transceiver modules are detected"):
+            transceivers_output = [name for name, transceiver in OutputParsingTool.parse_json_str_to_dictionary(
+                nv_command.platform.transceiver.show('detail')).get_returned_value().items()]
+            for transceiver in transceivers_list:
+                assert transceiver in transceivers_output, f"{transceiver} is missing in transceivers output"
 
-        Tools.ValidationTool.validate_set_equal(actual=system_connected_transceivers, expected=nv_connected_transceivers).verify_result()
+        with allure.independent_step("Verify number of connected transceivers matches system status"):
+            system_transceiver_status = IbInterfaceTool.get_connected_transceivers_dict(engines.dut, transceivers_list)
+
+            system_connected_transceivers = {transceiver for transceiver, is_connected in system_transceiver_status.items() if is_connected}
+
+            Tools.ValidationTool.validate_set_equal(actual=system_connected_transceivers, expected=nv_connected_transceivers).verify_result()
+
+        with allure.independent_step("Verify ports are UP for all connected cables"):
+            selected_up_ports = Tools.RandomizationTool.select_random_ports(
+                requested_ports_state=NvosConsts.LINK_STATE_UP, requested_ports_type=devices.dut.switch_type.lower(),
+                num_of_ports_to_select=0).get_returned_value()
+
+            ports = [port.name for port in selected_up_ports]
+
+            find_missing_ports(nv_connected_transceivers, ports)
+
+
+def find_missing_ports(connected_transceivers, ports):
+    """
+
+    :param selected_up_ports:
+    :param ports:
+    :return:
+    """
+    missing = {}
+    for dev in connected_transceivers:
+        expected_p1 = f"{dev}p1"
+        expected_p2 = f"{dev}p2"
+
+        has_p1 = expected_p1 in ports
+        has_p2 = expected_p2 in ports
+
+        # report only if both are missing
+        if not has_p1 and not has_p2:
+            missing[dev] = ["p1", "p2"]
+
+    assert not missing, f"Missing per device: {missing}"
 
 
 def _verify_transceiver_status(platform, transceiver_id, expected_module_status='Inserted',
