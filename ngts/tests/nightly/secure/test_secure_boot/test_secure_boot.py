@@ -24,7 +24,7 @@ allure.logger = logger
 
 @pytest.mark.disable_loganalyzer
 def test_unsigned_shim_secure_boot(secure_boot_helper, secure_boot_consts, mount_uefi_disk_partition,
-                                   test_server_engine, recover_switch_after_secure_boot_violation_message):
+                                   test_server_engine, recover_switch_after_secure_boot_violation_message, platform_params):
     """
     In this test case we want to simulate broken signature of shim
     by manually changing it and then do reboot/fast-reboot and see that it doesn't boot successfully
@@ -32,12 +32,12 @@ def test_unsigned_shim_secure_boot(secure_boot_helper, secure_boot_consts, mount
     with allure.step("Test secure boot of shim validation"):
         secure_boot_helper.unsigned_file_secure_boot(secure_boot_consts.SHIM_FILEPATH,
                                                      test_server_engine,
-                                                     secure_boot_consts.SHIM)
+                                                     secure_boot_consts.SHIM, platform_params.platform)
 
 
 @pytest.mark.disable_loganalyzer
 def test_unsigned_grub_secure_boot(secure_boot_helper, secure_boot_consts, mount_uefi_disk_partition,
-                                   test_server_engine, recover_switch_after_secure_boot_violation_message):
+                                   test_server_engine, recover_switch_after_secure_boot_violation_message, platform_params):
     """
     In this test case we want to simulate broken signature of grub
     by manually changing it and then do reboot/fast-reboot and see that it doesn't boot successfully
@@ -45,18 +45,19 @@ def test_unsigned_grub_secure_boot(secure_boot_helper, secure_boot_consts, mount
     with allure.step("Test secure boot of grub validation"):
         secure_boot_helper.unsigned_file_secure_boot(secure_boot_consts.GRUB_FILEPATH,
                                                      test_server_engine,
-                                                     secure_boot_consts.GRUB)
+                                                     secure_boot_consts.GRUB, platform_params.platform)
 
 
 @pytest.mark.disable_loganalyzer
 def test_unsgined_vmlinuz_secure_boot(secure_boot_helper, secure_boot_consts, test_server_engine,
-                                      vmiluz_filepath, recover_switch_after_secure_boot_violation_message):
+                                      vmiluz_filepath, recover_switch_after_secure_boot_violation_message, platform_params):
     """
     In this test case we want to simulate broken signature of vmlinuz component
     by manually changing it and then do reboot/fast-reboot/warm-reboot and see that it doesn't boot successfully
     """
+
     with allure.step("Test secure boot of vmlinuz validation"):
-        secure_boot_helper.unsigned_file_secure_boot(vmiluz_filepath, test_server_engine, secure_boot_consts.VMLINUZ)
+        secure_boot_helper.unsigned_file_secure_boot(vmiluz_filepath, test_server_engine, secure_boot_consts.VMLINUZ, platform_params.platform)
 
 
 @pytest.mark.disable_loganalyzer
@@ -110,9 +111,11 @@ def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params,
     In this test case we want to validate unsuccessful upgrade of key mismatched bios by fwutil
     """
     with allure.step("Test secure boot of fwutil - bios upgrade"):
+        is_bison = 'sn5640' in platform_params.platform
+        timeout_factor = 1.5 if is_bison else 1
         secure_boot_helper.fwutil_install_secure_boot_negative(
             SonicSecureBootConsts.BIOS_COMPONENT, signed_type, dut_secure_type, platform_params,
             SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[SonicSecureBootConsts.BIOS_COMPONENT],
-            SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
+            timeout_factor * SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
     with allure.step("Wait for the switch auto boot to SONiC"):
         retry_call(secure_boot_helper.is_sonic_mode, tries=20, delay=15, logger=logger)

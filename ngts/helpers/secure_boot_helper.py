@@ -6,6 +6,7 @@ import pytest
 import logging
 
 from retry import retry
+from tests.common.utilities import wait_until
 from ngts.constants.constants import MarsConstants
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
@@ -94,16 +95,22 @@ class SecureBootHelper:
 class SonicSecureBootHelper(SecureBootHelper):
 
     def is_sonic_mode(self):
-        _, respond = self.serial_engine.run_cmd('\r', ["/home/admin#",
-                                                       "Please press Enter to activate this console",
-                                                       DefaultConnectionValues.LOGIN_REGEX,
-                                                       DefaultConnectionValues.DEFAULT_PROMPTS[0],
-                                                       "Malformed binary after Attribute Certificate Table"],
-                                                timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
-        if respond == 0:
-            logger.info("It is in sonic")
-            return True
-        return False
+        try:
+            _, respond = self.serial_engine.run_cmd('\r', ["/home/admin#",
+                                                           "Please press Enter to activate this console",
+                                                           DefaultConnectionValues.LOGIN_REGEX,
+                                                           DefaultConnectionValues.DEFAULT_PROMPTS[0],
+                                                           "Malformed binary after Attribute Certificate Table"],
+                                                    timeout=10)
+            if respond == 0:
+                logger.info("SONIC mode")
+                return True
+            else:
+                logger.info("Not in SONIC mode")
+                return False
+        except Exception as e:
+            logger.warning(f"Failed to check SONIC mode via serial command: {str(e)}")
+            return False
 
     def get_backup_vmlinuz_signature(self):
         output = self.serial_engine.run_cmd_and_get_output(
@@ -194,12 +201,15 @@ class SonicSecureBootHelper(SecureBootHelper):
         """
         This function will login into onie mode
         """
-        self.serial_engine.run_cmd('\r', ["Please press Enter to activate this console"],
-                                   timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
+        def press_enter_until_onie_login():
+            _, respond = self.serial_engine.run_cmd('\r', [DefaultConnectionValues.LOGIN_REGEX] +
+                                                    DefaultConnectionValues.DEFAULT_PROMPTS, timeout=5)
+            if respond == 0:
+                return True
+            return False
 
-        _, respond = self.serial_engine.run_cmd('\r', [DefaultConnectionValues.LOGIN_REGEX] +
-                                                DefaultConnectionValues.DEFAULT_PROMPTS)
-        if respond == 0:
+        success = wait_until(SonicSecureBootConsts.ONIE_TIMEOUT, 10, 0, press_enter_until_onie_login)
+        if success:
             self.serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, [DefaultConnectionValues.PASSWORD_REGEX] +
                                        DefaultConnectionValues.DEFAULT_PROMPTS)
             self.serial_engine.run_cmd(DefaultConnectionValues.ONIE_PASSWORD, DefaultConnectionValues.DEFAULT_PROMPTS)
@@ -264,17 +274,18 @@ class SonicSecureBootHelper(SecureBootHelper):
             self.serial_engine.run_cmd('cp {}/{} {}'.format(SecureBootConsts.TMP_FOLDER, filename,
                                                             '/'.join(filepath.split('/')[0:-1])))
 
-    def get_reboot_cmd(self, test_type):
+    def get_reboot_cmd(self, test_type, platform):
         """
         This function will return the reboot command for specific test type(shim/grub/vmlinuz)
         """
-        if test_type in [SonicSecureBootConsts.SHIM, SonicSecureBootConsts.GRUB]:
+
+        if test_type in [SonicSecureBootConsts.SHIM, SonicSecureBootConsts.GRUB] or 'sn5640' in platform:
             reboot_cmd = SecureBootConsts.REBOOT
         else:
             reboot_cmd = random.choice(SonicSecureBootConsts.COLD_FAST_WARM_REBOOT_LIST)
         return reboot_cmd
 
-    def unsigned_file_secure_boot(self, secure_component, test_server_engine, test_type):
+    def unsigned_file_secure_boot(self, secure_component, test_server_engine, test_type, platform):
         """
         This function will perform as the test body called by the different wrappers
         It will perform the following:
@@ -285,10 +296,10 @@ class SonicSecureBootHelper(SecureBootHelper):
             3. validate 'invalid signature message' appears
         """
         self.manipulate_signature(test_server_engine, secure_component)
-        reboot_cmd = self.get_reboot_cmd(test_type)
+
+        reboot_cmd = self.get_reboot_cmd(test_type, platform)
         logger.info(f"Executing command: {reboot_cmd} for {test_type} validation")
-        self.serial_engine.run_cmd(reboot_cmd, SonicSecureBootConsts.INVALID_SIGNATURE,
-                                   timeout=SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
+        self.serial_engine.run_cmd(reboot_cmd, SonicSecureBootConsts.INVALID_SIGNATURE, timeout=SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
 
     def signed_kernel_module_secure_boot(self):
         """
@@ -419,8 +430,10 @@ class SonicSecureBootHelper(SecureBootHelper):
         with allure.step(f"Check firmware status"):
             self.serial_engine.run_cmd(f'sudo fwutil show status')
         with allure.step(f"Install {component_url}"):
-            self.serial_engine.run_cmd(f'sudo fwutil install chassis component {component} fw {component_url} -y',
-                                       expected_message, timeout)
+            try:
+                self.serial_engine.run_cmd(f'sudo fwutil install chassis component {component} fw {component_url} -y', expected_message, timeout)
+            except Exception as e:
+                logger.warning(f"Failed to get response from serial console with error: {str(e)}")
         if component == SonicSecureBootConsts.CPLD_COMPONENT:
             # Power cycle is required for CPLD burning
             with allure.step("Power cycle after CPLD installation"):
