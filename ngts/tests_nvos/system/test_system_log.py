@@ -1,4 +1,5 @@
 import logging
+import math
 import random
 import re
 import time
@@ -16,6 +17,8 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.FilesTool import FilesTool
 from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 
 logger = logging.getLogger()
 
@@ -664,35 +667,48 @@ def _delete_log_files(engines, system_log_obj, file_name):
 @pytest.mark.simx
 def test_log_idle(engines):
     expected_file_size_diff = 9000
-    # Split patterns to avoid Catastrophic Backtracking
-    list_of_expected_patterns: List[str] = [
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(Starting system activity accounting tool|Starting Rotate log files\.\.\.|logrotate\.service: Succeeded\.|Finished Rotate log files\.)[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(sysstat-collect\.service: Succeeded|Finished system activity accounting tool\.)[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued\s*.+\s*(log\s*rotate|Log\s*rotate)[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+Ran Job running ActionKey\(\'@rotate\', \'/system/log\', \(\), \d+, \(\)\)[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+\"GET /nvue_v1/action/\d+ HTTP/1\.1\" 200 -[^\n]*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO .+ Backup logs.*[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+DEBUG nvued.+[\n]?',
-        r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO healthd\[\d+\].+[\n]?'
+    rotate_sleep_time_sec = 600
+    list_of_expected_patterns: List[tuple[str, int | None]] = [
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(Starting system activity accounting tool|Starting Rotate log files\.\.\.|logrotate\.service: Succeeded\.|Finished Rotate log files\.)[^\n]*[\n]?', 4),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(sysstat-collect\.service: Succeeded|Finished system activity accounting tool\.)[^\n]*[\n]?', 2),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued\s*.+\s*(log\s*rotate|Log\s*rotate)[^\n]*[\n]?', 3),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+Ran Job running ActionKey\(\'@rotate\', \'/system/log\', \(\), \d+, \(\)\)[^\n]*[\n]?', 1),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO nvued.+\"GET /nvue_v1/action/\d+ HTTP/1\.1\" 200 -[^\n]*[\n]?', None),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO .+ Backup logs.*[\n]?', None),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+DEBUG nvued.+[\n]?', None),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: sysstat-collect.service: Deactivated successfully.*[\n]?', 1),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: logrotate.service: Deactivated successfully.*[\n]?', 1),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO healthd\[\d+\]\: System health takes [\d\.]+ seconds for one iteration[\n]?', math.ceil(rotate_sleep_time_sec / 3))
     ]
 
     with allure.step("Create System object"):
         system = System(None)
+
+    with allure.step("Renew DHCP"):
+        interface = Interface(None)
+        eth_port_list = [Port(interface_name) for interface_name in re.findall(r'eth\d+', interface.show())]
+        for port in eth_port_list:
+            port.interface.ip.action_renew_dhcp_client(ipv6=False).verify_result()
+            port.interface.ip.action_renew_dhcp_client(ipv6=True).verify_result()
+        time.sleep(60)
 
     with allure.step("Rotate the log"):
         system.log.rotate_logs()
         syslog_size_before_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
 
     with allure.step("Do nothing for 10 min"):
-        time.sleep(600)
+        time.sleep(rotate_sleep_time_sec)
 
     with allure.step("Check the log file content"):
         syslog_idle_output: str = engines.dut.run_cmd(f'cat {SyslogConsts.SYSLOG_LOG_PATH}')
-        # Filter out logs
         logs_after_check: str = syslog_idle_output
-        for pattern in list_of_expected_patterns:
+        for pattern, max_count in list_of_expected_patterns:
+            with allure.independent_step("check pattern count"):
+                if max_count is not None:
+                    actual_count = len(re.findall(pattern, logs_after_check))
+                    assert actual_count <= max_count, f'Pattern "{pattern}" matched {actual_count} times, maximum allowed {max_count}'
             logs_after_check = re.sub(pattern, '', logs_after_check)
-        assert len(logs_after_check) == 0, f'These unexpected logs found during idle: \n {logs_after_check} \n \
+        assert len(logs_after_check.splitlines()) == 0, f'These unexpected logs found during idle: \n {logs_after_check} \n \
             No logs should be recorded during idle'
 
     with allure.step("Check the log file size"):

@@ -64,3 +64,16 @@ class NvueIbInterfaceCli(NvueBaseCli):
         cmd = " ".join(cmd.split())
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_renew_dhcp_client(engine, resource_path):
+        """
+        Renew DHCP client for the specified interface
+        :param engine: ssh engine object
+        :param resource_path: the path of the interface
+        """
+        cmd = f'nv action renew {" ".join(resource_path.split("/"))}'
+        cmd = " ".join(cmd.split())
+        logging.info('Running ' + cmd)
+        return engine.run_cmd(cmd)

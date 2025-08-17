@@ -65,3 +65,17 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         params = f'?filter={filter_name}%3d{value}' if filter_name else ''
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, OpenApiReqType.GET,
                                                    engine.ip, '/interface', params)
+
+    @staticmethod
+    def action_renew_dhcp_client(engine, resource_path):
+        """
+        Renew DHCP client for the specified interface
+        :param engine: ssh engine object
+        :param resource_path: the path of the interface
+        """
+        logging.info(f"Running action: {ActionType.RENEW[1:]} on dut using OpenApi, resource: {resource_path}")
+        params = {
+            "state": "start",
+        }
+        return OpenApiCommandHelper.execute_action(ActionType.RENEW, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)
