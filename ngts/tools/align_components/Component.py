@@ -39,10 +39,10 @@ class BmcComponent(Component):
         self.comp_mapping = {Defaults.BIOS_NAME: "MGX_FW_CPU_0", Defaults.BMC_NAME: "MGX_FW_BMC_0", Defaults.FPGA_NAME: "MGX_FW_FPGA_0",
                              Defaults.FPGA_ENCRYPTED_NAME: "MGX_FW_FPGA_0", Defaults.EROT_NAME: "MGX_FW_ERoT_BMC_0"}
 
-        # TODO - Once we have actual MCU adjust "MCU_NAME" to the actual name, and uncomment.
-        # respond = self.rf_api.get_query(f'{RedfishCollection.FIRMWARE_INVENTORY}')
-        # if 'mcu'.lower() in str(respond).lower():
-        #     self.comp_mapping[Defaults.MCU_NAME] = "MCU_NAME"
+        # TODO - Once we have actual MCU adjust "MGX_FW_MCU_0" to the actual name.
+        respond = self.rf_api.get_query(f'{RedfishCollection.FIRMWARE_INVENTORY}')
+        if 'mcu'.lower() in str(respond).lower():
+            self.comp_mapping[Defaults.MCU_NAME] = "MGX_FW_MCU_0"
 
     def get_installed_version(self) -> str:
         respond = self.rf_api.get_query(f'{RedfishCollection.FIRMWARE_INVENTORY}/{self.comp_mapping[self.name]}')

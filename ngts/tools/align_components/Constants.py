@@ -5,6 +5,7 @@ class RedfishCollection:
     UPDATE_SERVICE = "redfish/v1/UpdateService"
     SESSION_SERVICE = "redfish/v1/SessionService"
     FIRMWARE_INVENTORY = "redfish/v1/UpdateService/FirmwareInventory"
+    CPU_REDFISH_NAME = "MGX_FW_CPU_0"
     SYSTEM_ACTIONS = f"{SYSTEM}/System_0/Actions"
     RESET = f"{SYSTEM_ACTIONS}/ComputerSystem.Reset"
 

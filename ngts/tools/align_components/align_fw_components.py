@@ -3,6 +3,7 @@ import json
 import os.path
 import traceback
 from typing import List
+import time
 
 import nogaq
 from Component import Component, BmcComponent
@@ -25,11 +26,13 @@ def start_components_update(_args):
     switch_info = get_switch_info(_args.setup_name)
     bmc_ip = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.BMC_IP]
     provisioning = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][NogaConstants.BIOS_VERSION]
+    switch_name = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name'].strip()
     assert bmc_ip, "No bmc ip found in noga"
     provisioning = 'prod' if provisioning == 'OPN' else 'dev'
     update_via_parameter = bool(_args.bmc_path or _args.bios_path or _args.erot_path or _args.fpga_path)
     rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
     json_dict = create_json_dict(_args.fw_versions_json_file)
+    devices_with_rel_prod_erot = {'juliet-160', 'juliet-195'}
 
     components_mapping = {
         Defaults.BMC_NAME: "bmc_path",
@@ -37,7 +40,8 @@ def start_components_update(_args):
         Defaults.FPGA_ENCRYPTED_NAME: "fpga_path",
         Defaults.EROT_NAME: "erot_path",
         Defaults.BIOS_NAME: "bios_path",
-        Defaults.PLDM_NAME: "pldm_path"
+        Defaults.PLDM_NAME: "pldm_path",
+        Defaults.MCU_NAME: "mcu_path"
     }
     components_to_update = _get_components_for_update(_args, update_via_parameter)
     if _has_non_encrypted_fpga(bmc_ip) and any(Defaults.FPGA_NAME in comp for comp in components_to_update):
@@ -50,14 +54,22 @@ def start_components_update(_args):
     if Defaults.FPGA_NAME not in str(respond).lower():
         components_to_update = [comp for comp in components_to_update if Defaults.FPGA_NAME not in comp.lower()]
 
+    if (not update_via_parameter) and (Defaults.MCU_NAME in json_dict.get(provisioning, {})):
+        components_to_update.append(Defaults.MCU_NAME)
+
     components: List[Component] = []
     for component_name in components_to_update:
         required_version = None
+
         if update_via_parameter:
             install_path = _args.__dict__[components_mapping[component_name]]
         else:
-            required_version = json_dict[provisioning][component_name]['latest']['version_name']
-            install_path = json_dict[provisioning][component_name]['latest']['path']
+            if component_name == Defaults.EROT_NAME and switch_name in devices_with_rel_prod_erot:
+                required_version = json_dict['prod'][component_name]['latest']['version_name']
+                install_path = json_dict['prod'][component_name]['latest']['path']
+            else:
+                required_version = json_dict[provisioning][component_name]['latest']['version_name']
+                install_path = json_dict[provisioning][component_name]['latest']['path']
 
         if not verify_install_path(install_path):
             print(f"{component_name} path does not exist {install_path}")
@@ -75,6 +87,11 @@ def start_components_update(_args):
 
     if was_update_performed:
         component_manager.perform_pc(switch_info)
+        try:
+            _wait_cpu_boot_start(rf_api)
+        except Exception as e:
+            print("Timed out waiting for BMC to see CPU boot to complete.")
+            raise e
 
     component_manager.print_installed_versions()
 
@@ -114,12 +131,33 @@ def _get_components_for_update(_args, update_via_parameter):
         components_to_update.append(Defaults.EROT_NAME)
     if _args.fpga_path:
         components_to_update.append(Defaults.FPGA_ENCRYPTED_NAME)
+    if _args.mcu_path:
+        components_to_update.append(Defaults.MCU_NAME)
     return components_to_update
 
 
 def _has_non_encrypted_fpga(bmc_ip):
     non_encrypted_fpga_ips = {'10.7.113.142', '10.7.113.148'}
     return bmc_ip in non_encrypted_fpga_ips
+
+
+# Try for 2 minutes (24 * 5 seconds) to wait for BMC to see CPU component boot.
+def _wait_cpu_boot_start(rf_api):
+    tries = 24
+    delay = 5
+    cpu_inv_name = RedfishCollection.CPU_REDFISH_NAME
+
+    for attempt in range(1, tries + 1):
+        respond = rf_api.get_query(f"{RedfishCollection.FIRMWARE_INVENTORY}")
+        if cpu_inv_name.lower() in str(respond).lower():
+            print(f"{cpu_inv_name} found in firmware inventory.")
+            return True
+
+        if attempt < tries:
+            print(f"{cpu_inv_name} not found yet; attempt {attempt}/{tries}. Retrying in {delay}s...")
+            time.sleep(delay)
+
+    raise RuntimeError(f"{cpu_inv_name} not found after {tries} tries")
 
 
 def parse_args():
@@ -159,6 +197,8 @@ def parse_args():
                         help='Path to erot fwpkg', required=False, type=parse_mars_default, default=None)
     parser.add_argument('--cpld_path',
                         help='Path to cpld fwpkg', required=False, type=parse_mars_default, default=None)
+    parser.add_argument('--mcu_path',
+                        help='Path to mcu fwpkg', required=False, type=parse_mars_default, default=None)
     parser.add_argument('--pldm_path',
                         help='Path to pldm fwpkg', required=False, type=parse_mars_default, default=None)
 
