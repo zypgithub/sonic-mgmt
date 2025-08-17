@@ -132,7 +132,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
     try:
         with allure.step("Add data before reset factory"):
             username = add_verification_data(engines.dut, system)
-        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_namem, standalone_system)
+        _, uploaded_files = reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system)
 
         if not standalone_system:
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
