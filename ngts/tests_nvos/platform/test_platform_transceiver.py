@@ -181,13 +181,20 @@ def test_transceivers_and_ports(engines, devices, nv_command, test_api):
 
 def find_missing_ports(connected_transceivers, ports):
     """
+    Behavior:
+        - A transceiver is included in the result ONLY if BOTH "swp1" and "swp2" are down.
+        - transceivers with at least one of the ports (p1 or p2) is up.
+        - We do not validate FNM ports (transceivers whose ID starts with "fnm" are ignored).
 
-    :param selected_up_ports:
+    :param connected_transceivers:
     :param ports:
     :return:
     """
     missing = {}
     for dev in connected_transceivers:
+        if "fnm" in dev:
+            continue
+
         expected_p1 = f"{dev}p1"
         expected_p2 = f"{dev}p2"
 

@@ -1,7 +1,7 @@
 import pytest
 import logging
 
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -30,7 +30,9 @@ def acl_cleanup(engines):
     with allure.step("ACL cleanup"):
         try:
             Acl().unset()
+            engines.dut.run_cmd("history -w")
             Port('').interface.unset(apply=True, ask_for_confirmation=True)
+
         except ValueError as e:
             if 'Unable to find prompt' in str(e):
                 pass  # the connection died because of the rule-change. we do engine.disconnect() anyway.

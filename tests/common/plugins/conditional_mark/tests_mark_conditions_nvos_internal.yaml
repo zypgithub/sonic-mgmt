@@ -536,15 +536,6 @@ tests_nvos/system/test_system_profile_change.py:
     conditions:
       - https://redmine.mellanox.com/issues/3924104
 
-
-tests_nvos/platform/test_platform_transceiver.py:
-  skip:
-    reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3950840"
-    conditions_logical_operator: and
-    conditions:
-      - "'gorilla' not in testbed and 'juliet' not in testbed"
-      - https://redmine.mellanox.com/issues/3950840
-
 tests_nvos/general/config_commands/test_config_fetch:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3955660"
