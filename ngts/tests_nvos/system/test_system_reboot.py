@@ -125,7 +125,6 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
     if mode == RebootConsts.POWER_CYCLE and mode not in devices.dut.supported_commands:
         pytest.skip(f"{mode} not supported")
     system = System()
-    TestToolkit.tested_api = ApiType.NVUE
 
     try:
         with allure.step('Clear system events to remove older reboot system events'):

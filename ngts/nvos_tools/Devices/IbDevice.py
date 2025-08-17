@@ -930,6 +930,20 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1", "PMIC-12-ASIC4-DVDD-PL1-Out-2",
             "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1", "PMIC-13-CEX-VDD-Out-1",
         ]
+        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
+                            "temperature.csv.gz", "voltage.csv.gz", "fan.csv.gz"]
+        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK.lower(),
+            "direction": 'F2B',
+            "current-speed": ExpectedString(range_min=4140, range_max=15870),
+            "min-speed": '4140',
+            "max-speed": '15870'}
+        self.platform_inventory_switch_values.update({"hardware-version": 'A9',
+                                                      "model": '920-9B36M-00MX-8NS'})
 
     def _init_psu_list(self):
         self.psu_list = []
