@@ -2,6 +2,7 @@
 """
 Prepare the SONiC testing topology.
 
+
 This script is executed on the STM node. It establishes SSH connection to the hypervisor (Player) and
 run commands on it. Purpose is to prepare the SONiC testing topology using the testbed-cli.sh tool.
 """
@@ -22,7 +23,6 @@ from fabric import Connection
 from invoke.exceptions import UnexpectedExit
 from retry import retry
 from retry.api import retry_call
-
 # Home-brew libs
 from lib import constants
 from lib.utils import parse_topology, get_logger
@@ -75,8 +75,8 @@ def inspect_container(conn, image_name, image_tag, container_name):
 
     res["container_exists"] = conn.run("docker ps -a -f name=%s$ --format '{{.Names}}'" % container_name).\
         stdout.strip() == container_name
-
     image_id = conn.run("docker images --no-trunc %s:%s --format '{{.ID}}'" % (image_name, image_tag)).stdout.strip()
+
     if len(image_id) > 0:
         res["image_exists"] = True
 
@@ -89,7 +89,6 @@ def inspect_container(conn, image_name, image_tag, container_name):
                 res["container_matches_image"] = image_id == container_info[0]["Image"]
         except (IndexError, KeyError) as e:
             logger.error("Failed to get container info, exception: %s" + repr(e))
-
     logger.info("Inspection result: %s" % json.dumps(res))
     return res
 
@@ -114,7 +113,6 @@ def start_container(conn, container_name, max_retries=3):
         logger.error("Starting container %s failed, max_retries=%d, attempt=%d" %
                      (container_name, max_retries, attempt))
         time.sleep(2)
-
     logger.error("Failed to start container %s after tried %d times." % (container_name, max_retries))
     return False
 
@@ -128,23 +126,19 @@ def create_mgmt_network(conn):
         ip_route_info = conn.run('ip route | grep default').stdout.strip()
         ip_gw = ip_route_info.split()[2]
         ip_iface = ip_route_info.split()[4]
-
         ip_info = conn.run("ip addr | grep  -A1 ' '{} | grep 'inet'".format(ip_iface)).stdout.strip()
         our_addr = ip_info.split()[1].split('/')[0]
         net_info_data = conn.run('ip route | grep -m1 "scope link src {}"'.format(our_addr)).stdout.strip()
         net_info = net_info_data.split()[0]
-
         ipv6_info = conn.run("ip -6 addr | grep  -A1 ' '{} | grep 'inet6'".format(ip_iface)).stdout.strip()
         our_addr_v6 = ipv6_info.split()[1]
         ipv6 = IPv6Interface(our_addr_v6)
         ipv6_net_info = str(ipv6.network)
         ipv6_gw = str(ipv6.network.network_address) + "1"
-
         cmd = 'docker network create -d macvlan --ipv6 --gateway={} --subnet={} --gateway={} --subnet={} -o parent={} {}'.format(ip_gw, net_info, ipv6_gw, ipv6_net_info, ip_iface, NETWORK_NAME)
         conn.run(cmd)
         if not conn.run(GET_NETWORK_CMD, warn=True).stdout.strip():
             raise Exception("Docker mgmt network was not created!")
-
     else:
         logger.info('macvlan network \"%s\" - already exist', NETWORK_NAME)
 

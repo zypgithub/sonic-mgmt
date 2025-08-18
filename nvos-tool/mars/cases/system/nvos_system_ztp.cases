@@ -97,7 +97,7 @@
   </case>
   <case>
     <name> System ztp nmx negative </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -108,7 +108,7 @@
   </case>
   <case>
     <name> System ztp nmx positive </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>

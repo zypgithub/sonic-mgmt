@@ -1664,7 +1664,7 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 380 if is_bug_active(4445141) else 270,
+                  'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
                   'julietscaleout reset factory': 600,
                   'reset factory': 300,
                   'install user FW': 500,

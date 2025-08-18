@@ -43,7 +43,7 @@
 	</global>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind]</value> </condition></ignore>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate]</value> </condition></ignore>
     </test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>

@@ -27,7 +27,7 @@
         <condition>
             <key>dut_type</key>
             <op> in </op>
-            <value>[juliet, rosalind]</value>
+            <value>[juliet, rosalind-surrogate]</value>
         </condition>
     </ignore>
   </case>

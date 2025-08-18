@@ -1,0 +1,70 @@
+- header:
+    model: n5110                      # Provided model name
+    nvue-api-version: nvue_v1         # Provided NVUE API version
+    rev-id: 1.0                       # Provided revision ID
+    version: 25.02.0504-001           # Provided version
+- set:
+    cluster:
+      state: enabled
+    interface:
+      eth0:
+        description: PORTI1
+        type: eth
+    system:
+      aaa:
+        authentication:
+          failthrough: enabled
+          order: tacacs,local
+          restrictions:
+            fail-delay: 0
+            lockout-state: disabled
+        tacacs:
+          server:
+            fdfd:fdfd:10:237:240:56ff:fe1b:56:
+              auth-mode: login
+              port: 52
+              secret: secret
+              timeout: 5
+        user:
+          eabboud:
+            password: $y$j9T$pUsDr8V55akJ6WgfjVvze.$gperjLnCy0onUXxsu4h5lwy2ZlxryUBWV56eK21lTxD
+          mon:
+            password: $y$j9T$CuAnwwjJMXYIBFVuJ7KN51$nPz./46jyFVBzuySd02vaS/DriCgfiC2PrdCKLKH.o2
+            role: monitor
+      security:
+        password-hardening:
+          state: enabled
+      message:
+        post-login: yoavpost
+        pre-login: yoavpre123
+      ntp:
+        server:
+          192.168.1.2:
+            state: enabled
+      snmp-server:
+        auto-refresh-interval: 5
+        listening-address:
+          all: { }
+        readonly-community:
+          '12345678': { }
+        state: enabled
+        system-contact: jemmyf
+        system-location: MTL1
+      ssh-server:
+        authentication-retries: 55
+        login-timeout: 555
+        max-sessions: 3
+      syslog:
+        selector:
+          selector-1:
+            filter:
+              '1':
+                action: include
+                match: b+
+        server:
+          10.7.49.202:
+            protocol: tcp
+          192.168.1.2:
+            selector:
+              '10':
+                selector-id: selector-1

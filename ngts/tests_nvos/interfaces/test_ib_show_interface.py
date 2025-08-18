@@ -159,8 +159,8 @@ def test_ib_show_interface_all_state_down(engines, devices, has_loopbox, setup_n
     3. Verify the required fields are presented in the output
     """
 
-    if has_loopbox and isinstance(devices.dut, JulietNonScaleoutSwitch):
-        pytest.skip("Cannot run test for Juliet NonScaleout system with loopbox")
+    if has_loopbox and (devices.dut.nvl_trunk_ports_list == []):
+        pytest.skip("Cannot run test System with loopboxes, and no trunk links (NSO)")
 
     output_dictionary = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
         Port.show_interface()).get_returned_value()

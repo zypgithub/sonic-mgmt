@@ -1980,7 +1980,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.category_list[4]: self.category_default_dict
         }
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/surrogate_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6150_ld-r0")
@@ -1994,19 +1994,19 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
         self.constants.erots.clear()
-        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
+        self.constants.erots.extend([PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME])
         self.constants.firmware.remove(PlatformConsts.FW_FPGA)
-        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["audit", "audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
         self.constants = self.constants._replace(log_dump_files=log_dump_files)
         self.voltage_sensors = [
-            "PDB-HSC-Volt-In",
-            "PDB-HSC-Volt-Out",
-            "PDB-PwrConv1-In-1",
-            "PDB-PwrConv1-Out-1",
-            "PDB-PwrConv2-In-1",
-            "PDB-PwrConv2-Out-1",
+            "PDB-1-Conv-In-1",
+            "PDB-1-Conv-Out-1",
+            "PDB-2-Conv-In-1",
+            "PDB-2-Conv-Out-1",
+            "HSC-VinDC-In",
+            "HSC-VinDC-Out",
             "PMIC-1-ASIC1-VDD-Out-1",
             "PMIC-1-PVIN1-VDD-ASIC1-In-1",
             "PMIC-2-ASIC1-AVDD-PL0-Out-1",
@@ -2084,31 +2084,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
             'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
             'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
-            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144',
-            'acp145', 'acp146', 'acp147', 'acp148', 'acp149', 'acp150',
-            'acp151', 'acp152', 'acp153', 'acp154', 'acp155', 'acp156',
-            'acp157', 'acp158', 'acp159', 'acp160', 'acp161', 'acp162',
-            'acp163', 'acp164', 'acp165', 'acp166', 'acp167', 'acp168',
-            'acp169', 'acp170', 'acp171', 'acp172', 'acp173', 'acp174',
-            'acp175', 'acp176', 'acp177', 'acp178', 'acp179', 'acp180',
-            'acp181', 'acp182', 'acp183', 'acp184', 'acp185', 'acp186',
-            'acp187', 'acp188', 'acp189', 'acp190', 'acp191', 'acp192',
-            'acp193', 'acp194', 'acp195', 'acp196', 'acp197', 'acp198',
-            'acp199', 'acp200', 'acp201', 'acp202', 'acp203', 'acp204',
-            'acp205', 'acp206', 'acp207', 'acp208', 'acp209', 'acp210',
-            'acp211', 'acp212', 'acp213', 'acp214', 'acp215', 'acp216',
-            'acp217', 'acp218', 'acp219', 'acp220', 'acp221', 'acp222',
-            'acp223', 'acp224', 'acp225', 'acp226', 'acp227', 'acp228',
-            'acp229', 'acp230', 'acp231', 'acp232', 'acp233', 'acp234',
-            'acp235', 'acp236', 'acp237', 'acp238', 'acp239', 'acp240',
-            'acp241', 'acp242', 'acp243', 'acp244', 'acp245', 'acp246',
-            'acp247', 'acp248', 'acp249', 'acp250', 'acp251', 'acp252',
-            'acp253', 'acp254', 'acp255', 'acp256', 'acp257', 'acp258',
-            'acp259', 'acp260', 'acp261', 'acp262', 'acp263', 'acp264',
-            'acp265', 'acp266', 'acp267', 'acp268', 'acp269', 'acp270',
-            'acp271', 'acp272', 'acp273', 'acp274', 'acp275', 'acp276',
-            'acp277', 'acp278', 'acp279', 'acp280', 'acp281', 'acp282',
-            'acp283', 'acp284', 'acp285', 'acp286', 'acp287', 'acp288'
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
         ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
@@ -2149,55 +2125,29 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             "PDB-Conv-1-Temp",
             "PDB-Conv-2-Temp",
             "PMIC-1-Temp",
-            "PMIC-2-Temp-1",
-            "PMIC-2-Temp-2",
-            "PMIC-3-Temp-1",
-            "PMIC-3-Temp-2",
-            "PMIC-4-Temp-1",
-            "PMIC-4-Temp-2",
+            "PMIC-2-Temp",
+            "PMIC-3-Temp",
+            "PMIC-4-Temp",
             "PMIC-5-Temp",
-            "PMIC-6-Temp-1",
-            "PMIC-6-Temp-2",
-            "PMIC-7-Temp-1",
-            "PMIC-7-Temp-2",
-            "PMIC-8-Temp-1",
-            "PMIC-8-Temp-2",
+            "PMIC-6-Temp",
+            "PMIC-7-Temp",
+            "PMIC-8-Temp",
             "PMIC-9-Temp",
-            "PMIC-10-Temp-1",
-            "PMIC-10-Temp-2",
-            "PMIC-11-Temp-1",
-            "PMIC-11-Temp-2",
-            "PMIC-12-Temp-1",
-            "PMIC-12-Temp-2",
+            "PMIC-10-Temp",
+            "PMIC-11-Temp",
+            "PMIC-12-Temp",
             "PMIC-13-Temp",
-            "PMIC-14-Temp-1",
-            "PMIC-14-Temp-2",
-            "PMIC-15-Temp-1",
-            "PMIC-15-Temp-2",
-            "PMIC-16-Temp-1",
-            "PMIC-16-Temp-2",
+            "PMIC-14-Temp",
+            "PMIC-15-Temp",
+            "PMIC-16-Temp",
             "PMIC-17-Temp",
-            "PMIC-18-Temp"
+            "PMIC-18-Temp",
+            "SODIMM-1-Temp",
+            "SODIMM-2-Temp"
         ]
 
-
-# -------------------------- RosalindSims Switch ----------------------------
-
-
-class RosalindSimx(RosalindSurrogateSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=1)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.asic_type = NvosConst.NVL6
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n6100_ld-r0")
-        self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N6100_LD",
-            "asic-model": self.asic_type,
-        })
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        return 'nvos_config_nvl6.yml'
 
 # -------------------------- Rosalind Switch ----------------------------
 
@@ -2221,11 +2171,174 @@ class RosalindSwitch(RosalindSurrogateSwitch):
             "asic-model": self.asic_type,
         })
 
+        self.nvl_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144',
+            'acp145', 'acp146', 'acp147', 'acp148', 'acp149', 'acp150',
+            'acp151', 'acp152', 'acp153', 'acp154', 'acp155', 'acp156',
+            'acp157', 'acp158', 'acp159', 'acp160', 'acp161', 'acp162',
+            'acp163', 'acp164', 'acp165', 'acp166', 'acp167', 'acp168',
+            'acp169', 'acp170', 'acp171', 'acp172', 'acp173', 'acp174',
+            'acp175', 'acp176', 'acp177', 'acp178', 'acp179', 'acp180',
+            'acp181', 'acp182', 'acp183', 'acp184', 'acp185', 'acp186',
+            'acp187', 'acp188', 'acp189', 'acp190', 'acp191', 'acp192',
+            'acp193', 'acp194', 'acp195', 'acp196', 'acp197', 'acp198',
+            'acp199', 'acp200', 'acp201', 'acp202', 'acp203', 'acp204',
+            'acp205', 'acp206', 'acp207', 'acp208', 'acp209', 'acp210',
+            'acp211', 'acp212', 'acp213', 'acp214', 'acp215', 'acp216',
+            'acp217', 'acp218', 'acp219', 'acp220', 'acp221', 'acp222',
+            'acp223', 'acp224', 'acp225', 'acp226', 'acp227', 'acp228',
+            'acp229', 'acp230', 'acp231', 'acp232', 'acp233', 'acp234',
+            'acp235', 'acp236', 'acp237', 'acp238', 'acp239', 'acp240',
+            'acp241', 'acp242', 'acp243', 'acp244', 'acp245', 'acp246',
+            'acp247', 'acp248', 'acp249', 'acp250', 'acp251', 'acp252',
+            'acp253', 'acp254', 'acp255', 'acp256', 'acp257', 'acp258',
+            'acp259', 'acp260', 'acp261', 'acp262', 'acp263', 'acp264',
+            'acp265', 'acp266', 'acp267', 'acp268', 'acp269', 'acp270',
+            'acp271', 'acp272', 'acp273', 'acp274', 'acp275', 'acp276',
+            'acp277', 'acp278', 'acp279', 'acp280', 'acp281', 'acp282',
+            'acp283', 'acp284', 'acp285', 'acp286', 'acp287', 'acp288'
+        ]
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = []
+        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1",
+                                       "fnma3p2"]
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_environment_fan_values = {}
         self.platform_inventory_switch_values.update({"hardware-version": None,
                                                       "model": ExpectedString(regex="920-9K42W-00L6-GS0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+
+# -------------------------- RosalindSimx Switch ----------------------------
+
+
+class RosalindSimx(RosalindSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "ASIC1",
+            "CPU-Pack-Temp",
+            "Drive-Temp",
+            "HSC-VinDC-Temp",
+            "PDB-Conv-1-Temp",
+            "PDB-Conv-2-Temp",
+            "PMIC-1-Temp",
+            "PMIC-2-Temp",
+            "PMIC-3-Temp",
+            "PMIC-4-Temp",
+            "PMIC-5-Temp",
+            "PMIC-6-Temp",
+            "PMIC-7-Temp",
+            "PMIC-8-Temp",
+            "PMIC-9-Temp",
+            "PMIC-10-Temp",
+            "PMIC-11-Temp",
+            "PMIC-12-Temp",
+            "PMIC-13-Temp",
+            "PMIC-14-Temp",
+            "PMIC-15-Temp",
+            "PMIC-16-Temp",
+            "PMIC-17-Temp",
+            "PMIC-18-Temp"
+        ]
+
+        self.voltage_sensors = [
+            "PDB-HSC-Volt-In",
+            "PDB-HSC-Volt-Out",
+            "PDB-PwrConv1-In-1",
+            "PDB-PwrConv1-Out-1",
+            "PDB-PwrConv2-In-1",
+            "PDB-PwrConv2-Out-1",
+            "PMIC-1-ASIC1-VDD-Out-1",
+            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
+            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
+            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
+            "PMIC-5-ASIC2-VDD-Out-1",
+            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
+            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
+            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
+            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
+            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
+            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
+            "PMIC-9-ASIC3-VDD-Out-1",
+            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
+            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
+            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
+            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
+            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
+            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
+            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
+            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
+            "PMIC-13-ASIC4-VDD-Out-1",
+            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
+            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
+            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
+            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
+            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
+            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
+            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
+            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
+            "PMIC-17-12V-MAIN-In-1",
+            "PMIC-17-CPU-Out-1",
+            "PMIC-17-SOC-Out-2",
+            "PMIC-18-COMEX-VDD-MEM-In-1",
+            "PMIC-18-COMEX-VDD-MEM-Out-1"
+        ]
 
 
 # -------------------------- Caiman Switch ----------------------------

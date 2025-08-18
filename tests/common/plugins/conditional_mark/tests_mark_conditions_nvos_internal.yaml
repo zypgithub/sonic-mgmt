@@ -494,17 +494,23 @@ tests_nvos/system/test_system_juliet_power_button.py::test_system_juliet_power_b
     conditions:
       - "'juliet' not in testbed"
 
+tests_nvos/checklist/test_fpga_install.py:
+  skip:
+    reason: "Testcase skipped on Systems without FPGA - Surrogate and Rosalind"
+    conditions:
+      - "'surrogate' in testbed or 'rosalind' in testbed"
+
 tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
   skip:
     reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
     conditions:
-      - "'juliet' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed"
 
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
     reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
     conditions:
-      - "'juliet' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed"
 
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
@@ -733,13 +739,15 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
-tests_nvos/cluster/test_start_stop_cluster.py::test_cluster_app_start_stop:
+ngts/tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4468309"
+    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
     conditions:
-      - https://redmine.mellanox.com/issues/4468309
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
 
-tests_nvos/checklist/test_bmc_install.py:
+ngts/tests_nvos/checklist/test_bmc_install.py:
   skip:
     reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
     conditions_logical_operator: or
