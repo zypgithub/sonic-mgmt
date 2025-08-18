@@ -3142,3 +3142,10 @@ def set_queue_pir(interface, queue, rate):
         logging.info(f"weights_list: {weights_list}")
 
         return weights_list
+
+    def is_port_alpha_enabled(self, duthost):
+        # only spc4 and above support enable or disable port alpha function
+        get_sai_profile_cmd = "sudo docker exec syncd  cat /usr/share/sonic/hwsku/sai.profile"
+        sai_profile_content = duthost.shell(get_sai_profile_cmd)['stdout']
+        logging.info(f"sai_profile_content: {sai_profile_content}")
+        return "SAI_KEY_DISABLE_PORT_ALPHA=1" not in sai_profile_content
