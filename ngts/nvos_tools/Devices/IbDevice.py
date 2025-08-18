@@ -1381,7 +1381,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                     "certificate": "",
                     "crl": "",
                     "encryption": "disabled",
-                    "state": "disabled"
+                    "state": "enabled"
                 },
                 "rbac": {
                     "rbac-file": "",
