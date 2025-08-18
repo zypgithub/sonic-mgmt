@@ -39,6 +39,9 @@ BF_2_PLATFORM = 'arm64-nvda_bf-mbf2h536c'
 BF_3_PLATFORM = 'arm64-nvda_bf-bf3comdpu'
 VPD_DATA_FILE = "/var/run/hw-management/eeprom/vpd_data"
 
+BF_2_PLATFORM = 'arm64-nvda_bf-mbf2h536c'
+BF_3_PLATFORM = 'arm64-nvda_bf-9009d3b600cvaa'
+
 
 @pytest.fixture(scope='module')
 def dut_vars(duthosts, enum_rand_one_per_hwsku_hostname, request):
@@ -510,6 +513,16 @@ def test_show_platform_ssdhealth(duthosts, enum_supervisor_dut_hostname):
     cmd = " ".join(cmds_list)
     supported_disks = ["SATA", "NVME"]
 
+    platform_ssd_device_path_dict = {BF_3_PLATFORM: "/dev/nvme0"}
+    unsupported_ssd_values_per_platform = {BF_2_PLATFORM: ["Temperature"]}
+
+    # Build specific path to SSD device based on platform/ssd path mapping dict
+    platform = duthost.facts['platform']
+    if platform_ssd_device_path_dict.get(platform):
+        cmds_list.append(platform_ssd_device_path_dict[platform])
+
+    cmd = " ".join(cmds_list)
+
     logging.info("Verifying output of '{}' on ''{}'...".format(cmd, duthost.hostname))
 
     ssdhealth_output_lines = duthost.command(cmd)["stdout_lines"]
@@ -527,7 +540,6 @@ def test_show_platform_ssdhealth(duthosts, enum_supervisor_dut_hostname):
     pytest_assert(len(unexpected_fields) == 0, "Unexpected fields in output: {} on '{}'".
                   format(repr(unexpected_fields), duthost.hostname))
 
-    # TODO: Test values against platform-specific expected data instead of testing for missing values
     for key in expected_fields:
         pytest_assert(ssdhealth_dict[key], "Missing value for '{}' on '{}'".format(key, duthost.hostname))
 
