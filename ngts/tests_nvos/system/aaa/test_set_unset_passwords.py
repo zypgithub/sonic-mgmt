@@ -93,6 +93,8 @@ def test_set_invalid_password_length(engines, enable_password_hardening_state):
     """
     with allure.step('generate invalid password - length < min'):
         system = System(force_api=ApiType.NVUE)
+        with allure.step('Enable password hardening feature'):
+            system.security.password_hardening.set(PwhConsts.STATE, PwhConsts.ENABLED, apply=True).verify_result()
         secutiry_output = system.security.password_hardening.show()
         password_min_len, enabled_rules = system.security.password_hardening.parse_password_hardening_enabled_rules(secutiry_output)
         invalid_password, rules = generate_invalid_password(enabled_rules=enabled_rules, password_min_len=password_min_len, length_case=True)
