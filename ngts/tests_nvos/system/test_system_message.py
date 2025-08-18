@@ -80,6 +80,8 @@ def test_show_system_message(engines, devices, test_api):
                                  apply=True, dut_engine=engines.dut).verify_result()
 
         with allure.step('Verify post-logout changed to default in show system'):
+            if TestToolkit.tested_api == ApiType.OPENAPI:
+                time.sleep(1)
             message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
                                                         SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()

@@ -54,10 +54,11 @@ def test_install_onie_via_pxe_boot(topology_obj, engines, devices):
         nvue_cli_obj.remote_reboot_nvue(topology_obj)
 
     try:
-        serial_engine = ConnectionTool.create_serial_connection(topology_obj, devices)
+        serial_engine = ConnectionTool.create_serial_engine(topology_obj, enter_serial_context=True)
 
         with allure.step("Enter PXE boot menu"):
             PxeTool.enter_pxe(serial_engine)
+            logger.info("Successfully entered PXE menu")
 
         with allure.step(f"Select ONIE version entry by stepping {step_count} times"):
             PxeTool.pxe_select_by_steps(serial_engine, step_count)
