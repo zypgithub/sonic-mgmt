@@ -226,6 +226,8 @@ def track_serial_console(request, topology_obj, engines, devices):
 
 @pytest.fixture(scope='session')
 def engines(topology_obj, devices, request, is_ipv6):
+    from ngts.nvos_tools.infra.CommandTracker import command_tracker
+
     engines_data = DottedDict()
 
     engines_data.dut = topology_obj.players['dut']['engine']
@@ -256,7 +258,106 @@ def engines(topology_obj, devices, request, is_ipv6):
 
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)
+
+    # Enable monkey patching for new engines and wrap existing engines
+    command_tracker.enable_monkey_patching()
+    command_tracker.wrap_engines_recursively(engines_data)
+
     return engines_data
+
+
+@pytest.fixture(scope='function', autouse=True)
+def auto_command_tracking_for_cli_coverage(request):
+    """
+    Automatically track commands for each test and attach results to Allure.
+    This provides command tracking for both CLI coverage and general test insights.
+    """
+    from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+    import json
+
+    # Start tracking commands for this test
+    TestToolkit.start_command_tracking()
+
+    try:
+        yield
+    finally:
+        # Stop tracking and create Allure attachments
+        TestToolkit.stop_command_tracking()
+
+        # Get command execution data
+        commands = TestToolkit.get_executed_commands()
+        stats = TestToolkit.get_command_stats()
+
+        if commands:
+            # Create general command tracking report for ALL tests
+            command_details = []
+            nvue_commands = []
+
+            for i, (cmd, response_time, status) in enumerate(commands, 1):
+                cmd_data = {
+                    "sequence": i,
+                    "command": cmd,
+                    "response_time_seconds": round(response_time, 3),
+                    "status": status
+                }
+                command_details.append(cmd_data)
+
+                # Separate NVUE commands for special handling
+                if cmd.startswith('nv '):
+                    nvue_commands.append(cmd_data)
+
+            # Create summary
+            summary = {
+                "test_name": request.node.name,
+                "total_commands": stats["total_commands"],
+                "nvue_commands_count": len(nvue_commands),
+                "total_execution_time_seconds": round(stats["total_time"], 3),
+                "average_time_per_command_seconds": round(stats["average_time"], 3),
+                "slowest_commands": [
+                    {
+                        "command": cmd,
+                        "response_time_seconds": round(time_taken, 3),
+                        "status": status
+                    }
+                    for cmd, time_taken, status in stats["slowest_commands"][:3]
+                ]
+            }
+
+            # Combine data
+            report_data = {
+                "summary": summary,
+                "command_details": command_details
+            }
+
+            # Attach to Allure
+            with allure.step("Attach command execution data to Allure report"):
+                allure.attach(
+                    "Test Command Tracking (JSON)",
+                    json.dumps(report_data, indent=2)
+                )
+
+                # Create readable summary
+                text_summary = f"""
+Command Execution Summary for {request.node.name}
+{'=' * 50}
+Total Commands: {stats["total_commands"]}
+NVUE Commands: {len(nvue_commands)}
+Total Time: {stats["total_time"]:.3f}s
+Average Time: {stats["average_time"]:.3f}s
+
+Top 3 Slowest Commands:
+"""
+                for i, (cmd, time_taken, status) in enumerate(stats["slowest_commands"][:3], 1):
+                    text_summary += f"{i}. {cmd[:60]}{'...' if len(cmd) > 60 else ''} - {time_taken:.3f}s ({status})\n"
+
+                text_summary += f"\nAll Commands (in execution order):\n"
+                for i, (cmd, response_time, status) in enumerate(commands, 1):
+                    text_summary += f"{i:3d}. [{response_time:6.3f}s] {cmd} ({status})\n"
+
+                allure.attach(
+                    "Test Command Summary",
+                    text_summary
+                )
 
 
 def get_dut_hostname(engines):

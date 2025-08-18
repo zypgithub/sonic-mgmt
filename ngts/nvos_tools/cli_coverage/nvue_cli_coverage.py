@@ -138,24 +138,40 @@ class NVUECliCoverage:
     @classmethod
     def create_used_commands_dictionary(cls, engine, swversion):
         """
-        collect the nv commands from a device history,
-        save the commands that we have used in cls.nvue_clis and normalize them.
+        Process NVUE commands that were tracked during test execution with real response times.
         """
         with allure.step("Create commands dictionary for the commands that we used"):
             logging.info("Create commands dictionary for the commands that we used")
-            run_out = SendCommandTool.execute_command(LinuxGeneralCli(engine).get_history).get_returned_value()
-            for line in run_out.splitlines():
-                split_cmd = line.strip().split(" ")
-                if len(split_cmd) > 2:
-                    split_cmd.pop(0)
-                    cmd = ' '.join(split_cmd).strip()
-                    if cmd.startswith('nv '):
-                        cleaner_cmd = cls.re_nvue_output_type.sub('', cmd)
-                        cls.nvue_clis[swversion].append({
-                            'command executed': cleaner_cmd,
-                            'command': cls.normalize_nvue_command(cleaner_cmd, cls.full_command_list[swversion]),
-                            'response time': None
-                        })
+
+            # Get tracked commands from the command tracker
+            from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+            tracked_commands = TestToolkit.get_executed_commands()
+
+            # Initialize or clear existing commands
+            if swversion not in cls.nvue_clis:
+                cls.nvue_clis[swversion] = []
+            else:
+                cls.nvue_clis[swversion].clear()
+
+            # Process only NVUE commands with real response times
+            nvue_commands_found = 0
+            logging.info(f"Processing {len(tracked_commands)} tracked commands for CLI coverage")
+
+            for cmd, response_time, status in tracked_commands:
+                if cmd.startswith('nv '):
+                    cleaner_cmd = cls.re_nvue_output_type.sub('', cmd)
+                    cls.nvue_clis[swversion].append({
+                        'command executed': cleaner_cmd,
+                        'command': cls.normalize_nvue_command(cleaner_cmd, cls.full_command_list[swversion]),
+                        'response time': round(response_time, 3)
+                    })
+                    nvue_commands_found += 1
+
+            logging.info(f"CLI Coverage: Processed {nvue_commands_found} NVUE commands with real response times")
+
+            if nvue_commands_found == 0:
+                logging.warning("No NVUE commands found in tracked data - test may not have executed any NVUE commands")
+
             result_obj = ResultObj(True)
         return result_obj
 
@@ -298,6 +314,9 @@ class NVUECliCoverage:
             result_obj.update(True)
         return result_obj
 
+    # attach_command_tracking_to_allure method removed -
+    # Allure attachments are now handled by the test fixture for all tests
+
     @classmethod
     def update_version_details(cls):
         with allure.step("Update version details"):
@@ -316,9 +335,15 @@ class NVUECliCoverage:
         """
         This is the main method to run the NVUE CLI coverage process
         """
+        from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+
         try:
             with allure.step("CLI coverage run start"):
                 logging.info("--------- CLI coverage run start---------")
+
+                # Command tracking should be started at test level, not here
+                # The CLI coverage processes commands that were already tracked during test execution
+
                 cls.project = project
                 cls.department = department
                 cls.nvue_dir = nvue_dir
@@ -339,6 +364,8 @@ class NVUECliCoverage:
                     logging.info("NVUE full command list count: {}".format(len(cls.full_command_list[cls.swversion])))
 
                 with allure.step("Get used commands:"):
+                    # Command tracking data is already attached to Allure by the test fixture
+                    # CLI coverage just uses the tracked data for its JSON files
                     cls.create_used_commands_dictionary(cls.engine, cls.swversion).verify_result()
 
                 date_folder = os.path.join(cls.nvue_dir, time.strftime("%Y%m%d"))

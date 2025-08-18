@@ -221,3 +221,41 @@ class TestToolkit:
                 dut_device = dut_device or TestToolkit.devices.dut
                 TestToolkit.is_dut_eth = (dut_device.switch_type == CumulusConsts.ETH_SWITCH_TYPE)
         return TestToolkit.is_dut_eth
+
+    @staticmethod
+    def start_command_tracking():
+        """Start tracking commands for the current test case."""
+        from ngts.nvos_tools.infra.CommandTracker import command_tracker
+        command_tracker.clear()
+        command_tracker.enable()
+        logging.debug("Command tracking started")
+
+    @staticmethod
+    def stop_command_tracking():
+        """Stop tracking commands and log summary."""
+        from ngts.nvos_tools.infra.CommandTracker import command_tracker
+        command_tracker.disable()
+        command_tracker.log_summary()
+        logging.debug("Command tracking stopped")
+
+    @staticmethod
+    def get_executed_commands():
+        """Get list of executed commands with response times."""
+        from ngts.nvos_tools.infra.CommandTracker import command_tracker
+        return command_tracker.get_commands()
+
+    @staticmethod
+    def get_command_stats():
+        """Get command execution statistics."""
+        from ngts.nvos_tools.infra.CommandTracker import command_tracker
+        commands = command_tracker.get_commands()
+        if not commands:
+            return {"total_commands": 0, "total_time": 0, "average_time": 0, "slowest_commands": []}
+
+        total_time = command_tracker.get_total_time()
+        return {
+            "total_commands": len(commands),
+            "total_time": total_time,
+            "average_time": total_time / len(commands),
+            "slowest_commands": command_tracker.get_slowest_commands(5)
+        }
