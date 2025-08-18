@@ -55,7 +55,11 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     TestToolkit.tested_api = 'NVUE'
     dut_device = devices.dut
     platform = Platform()
-    present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+
+    with allure.step("Get list of connected transceivers"):
+        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+        allure.attach(present_transceivers)
+
     with allure_step("Select nvl5 port"):
         port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
