@@ -11,6 +11,7 @@ import argparse
 import os
 import subprocess
 import socket
+import ipaddress
 
 # Third-party libs
 from fabric import Config
@@ -23,6 +24,15 @@ from lib.utils import parse_topology, get_logger
 from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 logger = get_logger("DumpBackup")
+
+
+def _is_ipv6_address(ip_str):
+    """Check if the given string is an IPv6 address."""
+    try:
+        addr = ipaddress.ip_address(ip_str)
+        return isinstance(addr, ipaddress.IPv6Address)
+    except ValueError:
+        return False
 
 
 def _parse_args():
@@ -79,8 +89,11 @@ def main():
         logger.info("Generating dump on sonic dut {}".format(target))
         generate_dump_cmd = "sudo generate_dump -s '%s'" % args.since
         ssh_port_param = "-p {}".format(dut.ssh_port) if hasattr(dut, "ssh_port") else ""
-        cmd_run = 'sshpass -p {} ssh {} {}@{} -o StrictHostKeyChecking=no "{}"'.format(
-            dut_device_password, ssh_port_param, dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
+
+        # Handle IPv6 addresses by adding -6 flag to SSH
+        ipv6_flag = "-6" if _is_ipv6_address(dut_device.BASE_IP) else ""
+        cmd_run = 'sshpass -p {} ssh {} {} {}@{} -o StrictHostKeyChecking=no "{}"'.format(
+            dut_device_password, ipv6_flag, ssh_port_param, dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
 
         process = subprocess.Popen(cmd_run, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, unused_err = process.communicate()

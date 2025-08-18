@@ -30,16 +30,6 @@
                     <tags_type> ignore_tags </tags_type>
                 </params>
             </pre>
-            <pre>
-                <type> reg_exec_func </type>
-                <name> pre-test check </name>
-                <mars_cmd_func> run_on_stm </mars_cmd_func>
-                <tout> 300 </tout>
-                <params>
-                    <cmd> /root/pyenv/sonic/bin/python -E [[conf:execution_blocks.B_ID1.local_src_path]]/sonic-mgmt/sonic-tool/mars/scripts/pre_test_check.py </cmd>
-                    <cmd_params> --topo [[conf:topology_file]] --test-name [[run_time:test_name]] --sonic-topo [[conf:extra_info.topology]] --workspace-path /root/mars/workspace --repo-name [[conf:extra_info.sonic_mgmt_repo_name]] </cmd_params>
-                </params>
-            </pre>
             <post>
             </post>
         </Test>
