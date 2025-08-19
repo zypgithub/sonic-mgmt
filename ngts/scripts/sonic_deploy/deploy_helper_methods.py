@@ -51,7 +51,8 @@ class DeploymentContext:
                  apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
                  recover_by_reboot, reboot, additional_apps, workspace_path, wjh_deb_url,
                  verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
-                 serial_log_analyzers, fanout_target_version, request, is_air):
+                 serial_log_analyzers, fanout_target_version, request, is_air,
+                 deploy_testbed_in_parallel=False, deploy_image_only=False):
         """
         Initialize DeploymentContext with all parameters.
 
@@ -91,7 +92,8 @@ class DeploymentContext:
         self.fanout_target_version = fanout_target_version
         self.request = request
         self.is_air = is_air
-
+        self.deploy_testbed_in_parallel = deploy_testbed_in_parallel
+        self.deploy_image_only = deploy_image_only
         # Initialize derived values (replaces lines 102-123 from original function)
         self._initialize()
 

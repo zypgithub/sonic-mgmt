@@ -60,7 +60,7 @@ class SonicInstallationSteps:
     @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
-            destination_hwsku, is_performance=False):
+            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False):
         """
         Pre-installation steps for SONIC
         :param sonic_topo: the topo for SONiC testing, for example: t0, t1, t1-lag, ptf32
@@ -73,6 +73,8 @@ class SonicInstallationSteps:
         :param threads_dict: dict, contain threads which will run in background
         :param destination_hwsku: the destination hwsku value
         :param is_performance: True if setup is performance, else False
+        :param parallel: deploy testbed in parallel flag
+        :param deploy_image_only: deploy image only flag
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
@@ -82,35 +84,36 @@ class SonicInstallationSteps:
         elif is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
             SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
-            if dut_name == 'r-bison-01':
-                logger.info(f"Skipping topologies removal/addition for {dut_name} as this is a bgp scale setup")
-                return
             # Get ptf docker tag
             ptf_tag = SonicInstallationSteps.get_ptf_tag_sonic(base_version, target_version)
             dut_names = []
             for dut in setup_info['duts']:
                 dut_names.append(dut['dut_name'])
+            if deploy_image_only:
+                logger.info("Skipping remove-topo as deploy_image_only is True")
+                return
             with allure.step('Remove topologies'):
                 cached_hwsku = get_cached_hwsku(dut_name)
                 if cached_hwsku and cached_hwsku != destination_hwsku:
                     if "dual-tor" in setup_name:
                         SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=None,
-                                                                 setup_name=setup_name, sonic_topo=sonic_topo)
+                                                                 setup_name=setup_name, sonic_topo=sonic_topo, parallel=parallel)
                     logger.info(f"Copy the setup related file for the hwsku {cached_hwsku}")
                     SonicInstallationSteps.override_hwsku_files(setup_info, cached_hwsku)
                     SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=dut_names,
-                                                             setup_name=None, sonic_topo=sonic_topo)
+                                                             setup_name=None, sonic_topo=sonic_topo, parallel=parallel)
                 else:
                     SonicInstallationSteps.remove_topologies(ansible_path=ansible_path,
                                                              dut_names=dut_names,
                                                              setup_name=setup_name,
-                                                             sonic_topo=sonic_topo)
+                                                             sonic_topo=sonic_topo, parallel=parallel)
                 if cached_hwsku and cached_hwsku != destination_hwsku:
                     SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
             SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
                                                                       dut_name, sonic_topo, neighbor_type,
                                                                       ptf_tag, port_number,
-                                                                      ansible_path, setup_info, destination_hwsku)
+                                                                      ansible_path, setup_info, destination_hwsku, parallel=parallel,
+                                                                      deploy_image_only=deploy_image_only)
             if is_dualtor_topo(sonic_topo):
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
         elif is_performance:
@@ -120,7 +123,7 @@ class SonicInstallationSteps:
 
     @staticmethod
     def start_community_background_threads(threads_dict, setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag,
-                                           port_number, ansible_path, setup_info, hwsku):
+                                           port_number, ansible_path, setup_info, hwsku, parallel=False, deploy_image_only=False):
         """
         Start background threads for community setup
         """
@@ -130,9 +133,19 @@ class SonicInstallationSteps:
                                                     setup_name=setup_name,
                                                     dut_names=[dut_name],
                                                     sonic_topo=sonic_topo)
-        add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
-                                                                   ptf_tag, hwsku)
-        run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=3600, exec_path=ansible_path)
+        if not deploy_image_only:
+            add_topo_cmd = SonicInstallationSteps.get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type,
+                                                                       ptf_tag, hwsku, parallel)
+            if sonic_topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT_SCALE
+            else:
+                add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT
+            logger.info(f"Using add topology timeout: {add_topo_timeout}s for topology: {sonic_topo}")
+            run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=add_topo_timeout,
+                                           exec_path=ansible_path)
+        else:
+            logger.info("Skipping add-topo as deploy_image_only is True")
+
         if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
@@ -304,7 +317,7 @@ class SonicInstallationSteps:
                 logger.warning(f'Failed to start SONiC VMs for dut {dut_name}. Got error: {err}')
 
     @staticmethod
-    def remove_topologies(ansible_path, dut_names, setup_name, sonic_topo):
+    def remove_topologies(ansible_path, dut_names, setup_name, sonic_topo, parallel=False):
         """
         The method removes the topologies to get the clear environment.
         """
@@ -321,10 +334,20 @@ class SonicInstallationSteps:
                                                            dut_names=dut_names,
                                                            sonic_topo=topo)
                 cmd = "./testbed-cli.sh -k {NEIGHBOR_TYPE} remove-topo {SETUP}-{TOPO} vault".format(SETUP=setup, TOPO=topo, NEIGHBOR_TYPE=cached_vm_type)
+                if parallel:
+                    cmd += " --parallel"
                 logger.info("Remove topo {}".format(topo))
                 logger.info("Running CMD: {}".format(cmd))
+
+                # Get timeout based on topology type
+                if topo in SonicDeployConstants.SCALE_TOPOLOGIES_LIST:
+                    remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT_SCALE
+                else:
+                    remove_timeout = SonicDeployConstants.REMOVE_TOPO_TIMEOUT
+                logger.info(f"Using remove topology timeout: {remove_timeout}s for topology: {topo}")
+
                 try:
-                    execute_script(cmd, ansible_path, validate=True, timeout=600)
+                    execute_script(cmd, ansible_path, validate=True, timeout=remove_timeout)
                 except Exception as err:
                     logger.warning(f'Failed to remove topology. Got error: {err}')
 
@@ -354,7 +377,7 @@ class SonicInstallationSteps:
         return topos_to_remove
 
     @staticmethod
-    def get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku=None):
+    def get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku=None, parallel=False):
         testbed_file = ''
         if is_dualtor_topo(sonic_topo) or setup_name.endswith('-ha'):
             dut_name = setup_name
@@ -362,6 +385,8 @@ class SonicInstallationSteps:
               "ptf_imagetag={PTF_TAG} -vvvvv".format(SWITCH=dut_name,
                                                      TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type,
                                                      HWSKU=hwsku)
+        if parallel:
+            cmd += " --parallel"
         return cmd
 
     @staticmethod

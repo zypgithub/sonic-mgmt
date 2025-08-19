@@ -99,6 +99,14 @@ def pytest_addoption(parser):
     parser.addoption('--custom_config_db_air_path', required=False, default="", action="store",
                      help='path to custom config_db.json file for AIR simulations')
 
+    logger.info('Parsing deploy_testbed_in_parallel')
+    parser.addoption("--deploy_testbed_in_parallel", action="store", default='no', choices=["yes", "no"], required=False,
+                     help="Deploy testbed on multi servers setup in parallel")
+
+    logger.info('Parsing deploy_image_only')
+    parser.addoption("--deploy_image_only", action="store", default='no', choices=["yes", "no"], required=False,
+                     help="Deploy the image only, skip add-topo and remove-topo")
+
 
 @pytest.fixture(scope="module")
 def workspace_path(request):
@@ -343,6 +351,34 @@ def deploy_dpu(base_version_dpu, platform_params):
     :return: deploy_dpu
     """
     return base_version_dpu and '4280' in platform_params['platform']
+
+
+@pytest.fixture(scope="module")
+def deploy_testbed_in_parallel(request):
+    """
+    Method for getting deploy_testbed_in_parallel flag from pytest arguments
+
+    Parameter conversion rules:
+    - Command line "--deploy_testbed_in_parallel=yes" -> returns True
+    - Command line "--deploy_testbed_in_parallel=no" -> returns False
+    - No parameter specified (default) -> returns False
+
+    :param request: pytest builtin
+    :return: deploy_testbed_in_parallel flag (True or False)
+    """
+    parallel_arg = request.config.getoption('--deploy_testbed_in_parallel')
+    return parallel_arg == "yes"
+
+
+@pytest.fixture(scope="module")
+def deploy_image_only(request):
+    """
+    Method for getting deploy_image_only from pytest arguments
+    :param request: pytest builtin
+    :return: deploy_image_only
+    """
+    deploy_image_only_arg = request.config.getoption('--deploy_image_only')
+    return deploy_image_only_arg == "yes"
 
 
 @pytest.fixture(scope="module")

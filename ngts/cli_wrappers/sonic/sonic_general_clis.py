@@ -1957,7 +1957,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         SonicInstallationSteps.pre_installation_steps(
             context.sonic_topo, context.neighbor_type, context.base_version, context.target_version,
             context.setup_info, context.port_number, context.is_simx,
-            threads_dict, context.destination_hwsku, context.is_performance
+            threads_dict, context.destination_hwsku, context.is_performance,
+            parallel=context.deploy_testbed_in_parallel, deploy_image_only=context.deploy_image_only
         )
 
     def post_installation_steps(self, context, image_helper=None):

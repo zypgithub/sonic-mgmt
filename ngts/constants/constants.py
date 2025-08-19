@@ -1191,6 +1191,7 @@ class MarsConstants:
         "dualtor-aa", "t0-isolated-d2u254s1", "t1-isolated-d254u2s1", "dualtor-64-breakout",
         "dualtor-aa-64-breakout", "t0-88-o8c80", "ptp-256", "t1-isolated-d28u1", "t1-isolated-d56u2",
         "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t1-isolated-v6-d56u1-lag", "t1-48-lag"
+        "t0-isolated-d128u128s2", "t0-isolated-d2u510s2", "t1-isolated-d510u2"
     )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
     TOPO_ARRAY_HA = ("t1-smartswitch-ha",)
@@ -1286,8 +1287,10 @@ class SonicDeployConstants:
     PRODUCTION_DUTS = ["bobcat-10", "mtvr-moose-11"]
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
-    ADD_TOPO_TIMEOUT_FACTOR_SCALE = 3
-    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8']
+    ADD_TOPO_TIMEOUT_SCALE = 14400
+    REMOVE_TOPO_TIMEOUT = 600
+    REMOVE_TOPO_TIMEOUT_SCALE = 3600
+    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2']
 
 
 class RebootTestConstants:
