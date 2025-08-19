@@ -795,12 +795,6 @@ platform_tests/api/test_sfp.py:
     conditions:
     - "'simx' in platform"
 
-platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
-  skip:
-    reason: "Testcase ignored on leopard and bobcat due to RM issue: https://redmine.mellanox.com/issues/4396617"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4396617 and ('4700' in platform or '4280' in platform)"
-
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
     reason: "Testcase ignored on simx;QSFP eeprom emulation is not supported currently"
