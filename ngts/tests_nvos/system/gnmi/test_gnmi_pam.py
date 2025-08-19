@@ -36,7 +36,7 @@ def aaa_users(engines, cleanup_after_aaa) -> Dict[str, UserInfo]:
                 random.choice(AddressingType.ALL_TYPES)]
             tac_server.configure(engines)
         with allure.step('set ldap server'):
-            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP1_SERVERS[random.choice(AddressingType.ALL_TYPES)]
+            ldap_server: RemoteAaaServerInfo = LdapServersP3.LDAP3_SERVERS[random.choice(AddressingType.ALL_TYPES)]
             ldap_server.configure(engines)
         with allure.step('set radius server'):
             rad_server: RemoteAaaServerInfo = RadiusVmServer.SERVER_BY_ADDRESSING_TYPE[
