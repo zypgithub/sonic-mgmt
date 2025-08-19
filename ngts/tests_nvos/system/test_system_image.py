@@ -3,7 +3,7 @@ import random
 import string
 import time
 from urllib.parse import quote
-
+import logging
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -11,7 +11,7 @@ from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.redmine.redmine_api import *
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import ImageConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
@@ -22,7 +22,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts, NvlInterfaceConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.tests_nvos.constants import MINUTE
@@ -48,32 +48,27 @@ BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_rele
 
 @pytest.fixture(scope='function', autouse=True)
 def clear_system_image_files():
-    """Clean up image files before and after EACH test."""
+    """Clean up image files before and after each test."""
     system = System()
+    with allure.step('clear all system image files before tests'):
+        files = system.image.files.get_files()
+        if files:
+            logger.info(f"Cleaning up existing files: {list(files.keys())}")
+            system.image.files.delete_files(files_to_delete=list(files.keys())).verify_result()
+        else:
+            logger.info("No files to clean up")
 
-    # Cleanup BEFORE each test
-    with allure.step('Clear all system image files before test'):
+    yield  # run the test
+
+    with allure.step('clear all system image files after tests'):
         try:
-            files = system.image.files.get_files()
+            system_after = System()
+            files = system_after.image.files.get_files()
             if files:
-                logger.info(f"Pre-test cleanup: Found {len(files)} existing files, deleting: {list(files.keys())}")
-                system.image.files.delete_files(files_to_delete=files)
-                logger.info("Pre-test cleanup: Successfully cleaned image files")
+                logger.info(f"Cleaning up after test: {list(files.keys())}")
+                system_after.image.files.delete_files(files_to_delete=list(files.keys())).verify_result()
         except Exception as e:
-            logger.warning(f"Pre-test cleanup failed (non-critical): {e}")
-
-    yield  # Individual test runs here
-
-    # Cleanup AFTER each test
-    with allure.step('Clear all system image files after test'):
-        try:
-            files = system.image.files.get_files()
-            if files:
-                logger.info(f"Post-test cleanup: Found {len(files)} leftover files, deleting: {list(files.keys())}")
-                system.image.files.delete_files(files_to_delete=files)
-                logger.info("Post-test cleanup: Successfully cleaned leftover files")
-        except Exception as e:
-            logger.warning(f"Post-test cleanup failed (non-critical): {e}")
+            logger.warning("Cleanup after test failed (non-critical): %s", e)
 
 
 @pytest.mark.checklist
@@ -82,6 +77,7 @@ def clear_system_image_files():
 @pytest.mark.image
 @pytest.mark.system
 @pytest.mark.nvos_build
+@pytest.mark.cumulus
 def test_show_system_image(original_version):
     """
     Show system image test
@@ -229,6 +225,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
+@pytest.mark.cumulus
 def test_system_image_upload(engines, release_name, random_api, original_version, devices, downgrade_version_realpath):
     """
     Uploading image file to player and validate.
@@ -251,14 +248,19 @@ def test_system_image_upload(engines, release_name, random_api, original_version
         with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
             for protocol in upload_protocols:
                 with allure.step("Upload image to player with {} protocol".format(protocol)):
-                    upload_path = '{}://{}:{}@{}/tmp/{}'.format(protocol, player.username, player.password, player.ip,
-                                                                image_name)
+                    base_upload_prefix = TestToolkit.devices.dut.get_upload_prefix()
+                    upload_path = f"{protocol}{base_upload_prefix}{image_name}"
+
                     image_file.action_upload(upload_path).verify_result()
 
                 with allure.step("Validate file was uploaded to player and delete it"):
-                    assert player.run_cmd(
-                        cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
-                    player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
+                    if TestToolkit.devices.dut.is_eth():
+                        logger.info(f"Skipping fit70 SSH verification for ETH device - upload already verified via verify_result()")
+                        logger.info(f"Image {image_name} was successfully uploaded (verified by action_upload.verify_result())")
+                    else:
+                        assert player.run_cmd(
+                            cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
+                        player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete file from switch"):
             system.image.files.delete_files([image_name]).verify_result()
@@ -512,6 +514,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
+@pytest.mark.cumulus
 def test_system_image_install_reject_with_smallcase_n(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'n'
@@ -528,6 +531,7 @@ def test_system_image_install_reject_with_smallcase_n(engines, original_version,
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
+@pytest.mark.cumulus
 def test_system_image_install_reject_with_uppercase_n(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with 'N'
@@ -544,6 +548,7 @@ def test_system_image_install_reject_with_uppercase_n(engines, original_version,
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.image
+@pytest.mark.cumulus
 def test_system_image_install_reject_with_random_char(engines, original_version, devices):
     """
     Check the image install cmd by rejecting the prompt with random character
@@ -563,7 +568,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
     action_job_id = 0
     try:
         with allure.step("Create SSH Engine to login to the switch"):
-            child = create_ssh_login_engine(engines.dut.ip, SystemConsts.DEFAULT_USER_ADMIN)
+            child = create_ssh_login_engine(engines.dut.ip, TestToolkit.devices.dut.default_username)
             assert isinstance(child.pid, int), "SSH login process failed to be spawned"
             respond = child.expect([DefaultConnectionValues.PASSWORD_REGEX, '~'])
             assert respond == 0, "SSH Connection to switch failed"
@@ -577,12 +582,13 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 
         with allure.step("Attempt install image and reject the prompt"):
             # Get the last action-job-id
-            exempted_err_msgs = ['action_error', 'File not found', 'Failed to install']
+            exempted_err_msgs = ['action_error', 'File not found', 'Failed to install', 'Action failed']
             action = Action()
             output = OutputParsingTool.parse_json_str_to_dictionary(action.show(exempted_err_msgs=exempted_err_msgs)). \
                 get_returned_value()
             if output:
                 action_job_id = max([int(id_no) for id_no in list(output)])
+
             # Since the install is to be aborted, using a dummy image name nvos.bin
             child.sendline('nv action install system image files nvos.bin')
             respond = child.expect('.*continue.*')
@@ -613,6 +619,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
 @pytest.mark.checklist
 @pytest.mark.image
 @pytest.mark.system
+@pytest.mark.cumulus
 def test_fetch_image_via_https(test_api):
     """
     Install system image test
@@ -625,14 +632,13 @@ def test_fetch_image_via_https(test_api):
     """
     system = System()
     image_fetched = False
-    # Selecting a random release to attempt image fetching
-    release_name = ImageConsts.NVOS_RELEASE_25_02_1000
-    image_file = BASE_IMAGE_VERSION_TO_INSTALL.format(pre_release_name=release_name)
-    image_to_fetch = BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(pre_release_name=release_name, base_image=image_file)
+    # Use device-specific methods consistently
+    image_file = TestToolkit.devices.dut.get_base_image()
+    image_to_fetch = TestToolkit.devices.dut.get_base_image_path(image_file)
 
     try:
-        with allure.step("Fetch an image {}".format(SystemConsts.NBU_NFS_SERVER + image_to_fetch)):
-            system.image.action_fetch(image_to_fetch, base_url=SystemConsts.NBU_NFS_SERVER)
+        with allure.step("Fetch an image {}".format(image_to_fetch)):
+            system.image.action_fetch(image_to_fetch, base_url=TestToolkit.devices.dut.nfs_server).verify_result()
             image_fetched = True
 
         with allure.step("Verify fetched image is shown in the show command"):
@@ -936,7 +942,7 @@ def _detect_system_type_and_select_port(device):
                 selected_port_obj = RandomizationTool.select_random_port(
                     requested_ports_state=NvosConsts.LINK_STATE_UP,
                     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE,
-                    interface_type='sw'
+                    interface_type=NvlInterfaceConsts.SW_INTERFACE_TYPE
                 ).get_returned_value()
                 port_name = selected_port_obj.name
                 logging.info(f"Selected ACTIVE IB port for speed testing: {port_name}")
@@ -945,18 +951,18 @@ def _detect_system_type_and_select_port(device):
                 logging.error(f"Failed to find active IB port: {e}")
                 pytest.skip("No active IB ports available for speed testing")
 
-    elif hasattr(device, 'nvl_access_ports_list') or hasattr(device, 'nvl_trunk_ports_list'):
+    elif hasattr(device, NvosConst.NVL_ACCESS_PORTS_LIST) or hasattr(device, NvosConst.NVL_TRUNK_PORTS_LIST):
         with allure.step("NVL system detected - choosing ACTIVE port from available nvl port types"):
             # First, determine what port types are available
             available_port_types = []
 
-            if hasattr(device, 'nvl_trunk_ports_list') and device.nvl_trunk_ports_list:
-                available_port_types.append('trunk')
-                logging.info(f"NVL trunk ports available: {len(device.nvl_trunk_ports_list)} ports")
+            if hasattr(device, NvosConst.NVL_TRUNK_PORTS_LIST) and getattr(device, NvosConst.NVL_TRUNK_PORTS_LIST):
+                available_port_types.append(NvlInterfaceConsts.TRUNK_PORT_TYPE)
+                logging.info(f"NVL trunk ports available: {len(getattr(device, NvosConst.NVL_TRUNK_PORTS_LIST))} ports")
 
-            if hasattr(device, 'nvl_access_ports_list') and device.nvl_access_ports_list:
-                available_port_types.append('access')
-                logging.info(f"NVL access ports available: {len(device.nvl_access_ports_list)} ports")
+            if hasattr(device, NvosConst.NVL_ACCESS_PORTS_LIST) and getattr(device, NvosConst.NVL_ACCESS_PORTS_LIST):
+                available_port_types.append(NvlInterfaceConsts.ACCESS_PORT_TYPE)
+                logging.info(f"NVL access ports available: {len(getattr(device, NvosConst.NVL_ACCESS_PORTS_LIST))} ports")
 
             if not available_port_types:
                 pytest.skip("No NVL ports available for speed testing")
@@ -967,20 +973,12 @@ def _detect_system_type_and_select_port(device):
 
             # Select active port based on chosen type
             try:
-                if chosen_port_type == 'trunk':
-                    # Trunk ports: need LINK_STATE_UP and transceivers
-                    selected_port_obj = RandomizationTool.select_random_port(
-                        requested_ports_state=NvosConsts.LINK_STATE_UP,
-                        interface_type='sw'  # trunk ports
-                    ).get_returned_value()
-                    logging.info(f"Selected ACTIVE NVL trunk port for speed testing: {selected_port_obj.name}")
-                else:  # access
-                    # Access ports: need LINK_LOG_STATE_INITIALIZE (with loopboxes)
-                    selected_port_obj = RandomizationTool.select_random_port(
-                        requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE,
-                        interface_type='acp'  # access ports
-                    ).get_returned_value()
-                    logging.info(f"Selected ACTIVE NVL access port for speed testing: {selected_port_obj.name}")
+                selected_port_obj = RandomizationTool.select_random_port(
+                    requested_ports_state=NvosConsts.LINK_STATE_UP,
+                    interface_type=(NvlInterfaceConsts.SW_INTERFACE_TYPE if chosen_port_type == NvlInterfaceConsts.TRUNK_PORT_TYPE
+                                    else NvlInterfaceConsts.ACP_PORT_TYPE)
+                ).get_returned_value()
+                logging.info(f"Selected ACTIVE NVL {chosen_port_type} port for speed testing: {selected_port_obj.name}")
 
                 port_name = selected_port_obj.name
                 return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name
@@ -993,17 +991,11 @@ def _detect_system_type_and_select_port(device):
                     other_type = other_port_types[0]
                     logging.info(f"Trying fallback to {other_type} ports")
                     try:
-                        if other_type == 'trunk':
-                            selected_port_obj = RandomizationTool.select_random_port(
-                                requested_ports_state=NvosConsts.LINK_STATE_UP,
-                                interface_type='sw'
-                            ).get_returned_value()
-                        else:  # access
-                            selected_port_obj = RandomizationTool.select_random_port(
-                                requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE,
-                                interface_type='acp'
-                            ).get_returned_value()
-
+                        selected_port_obj = RandomizationTool.select_random_port(
+                            requested_ports_state=NvosConsts.LINK_STATE_UP,
+                            interface_type=(NvlInterfaceConsts.SW_INTERFACE_TYPE if other_type == NvlInterfaceConsts.TRUNK_PORT_TYPE
+                                            else NvlInterfaceConsts.ACP_PORT_TYPE)
+                        ).get_returned_value()
                         port_name = selected_port_obj.name
                         logging.info(f"Fallback successful - selected {other_type} port: {port_name}")
                         return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name

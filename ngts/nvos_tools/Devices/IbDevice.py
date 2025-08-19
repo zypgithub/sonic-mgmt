@@ -10,7 +10,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts, SyslogConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts, SyslogConsts, ImageConsts)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -129,6 +129,13 @@ class IbSwitch(BaseSwitch):
     def get_lldp_port_name_from_dump(self, lldp_dict):
         """Return the port name from parsed LLDP dump; ib uses Port ID TLV."""
         return lldp_dict[TcpDumpConsts.LLDP_PORT_ID]
+
+    def get_upload_prefix(self):
+        return "://{}:{}@{}/tmp/".format(
+            NvosConst.ROOT_USER,
+            NvosConst.ROOT_PASSWORD,
+            NvosConst.FIT70,
+        )
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -445,6 +452,12 @@ class IbSwitch(BaseSwitch):
         self.techsupport_skynet_hw_mgmt_empty_files_to_ignore = ['udev_events.log']
         # System message constants for IB devices - set after pre/post login messages are initialized
         self.default_user_name = SystemConsts.DEFAULT_USER_ADMIN
+        # System image constants for IB devices
+        self.nfs_server = SystemConsts.NBU_NFS_SERVER
+        self.upload_path = '://{}:{}@{}/tmp/'.format(
+            NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD, NvosConst.FIT70)
+        self.default_username = SystemConsts.DEFAULT_USER_ADMIN
+        self.release_name = ImageConsts.NVOS_RELEASE_25_02_1000
 
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
@@ -634,6 +647,19 @@ class IbSwitch(BaseSwitch):
         """
         # Use defaults from TrafficErrorCounters helper
         self.traffic_error_counters = TrafficErrorCounters.get_default()
+
+    def get_base_image(self):
+        release_name = ImageConsts.NVOS_RELEASE_25_02_1000
+        return ImageConsts.BASE_IMAGE_VERSION_TO_INSTALL.format(
+            pre_release_name=release_name
+        )
+
+    def get_base_image_path(self, image_file):
+        release_name = ImageConsts.NVOS_RELEASE_25_02_1000
+        return ImageConsts.BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(
+            pre_release_name=release_name,
+            base_image=image_file
+        )
 
     def sleep_after_system_reboot(self):
         pass

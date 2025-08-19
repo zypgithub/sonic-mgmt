@@ -6,12 +6,13 @@ from typing import List
 
 from packaging.version import Version
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts, ImageConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_config_utils import clear_cl_conf
@@ -60,9 +61,11 @@ class EthSwitch(BaseSwitch):
 
     def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
         with allure.step('Show setup versions'):
+            system = System(force_api=ApiType.NVUE)
+            platform = Platform()
             outputs = {
-                'system version': dut_engine.run_cmd('nv show system version'),
-                'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+                'system version': system.version.show(dut_engine=dut_engine),
+                'platform firmware': platform.firmware.show(dut_engine=dut_engine),
             }
             res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
             return '\n'.join(res)
@@ -111,8 +114,12 @@ class EthSwitch(BaseSwitch):
         self.ntp_multiple_servers_values_dict = NtpConsts.CUMULUS_MULTIPLE_SERVERS_CONFIG_DICT
 
         # System message constants for ETH devices
-        self.default_user_name = CumulusConsts.DEFAULT_USER_CUMULUS
         self.post_logout_message = SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE
+
+        # System image constants for ETH devices
+        self.nfs_server = CumulusConsts.CL_NFS_SERVER
+        self.upload_path = '://{}:{}@{}/tmp/'.format(NvosConst.ROOT_USER, NvosConst.ROOT_PASSWORD, NvosConst.FIT70)
+        self.default_username = SystemConsts.DEFAULT_USER_CL
 
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",
@@ -166,6 +173,26 @@ class EthSwitch(BaseSwitch):
         self.expected_selector_dictionary = NvosConst.EXPECTED_SELECTOR_DICTIONARY
         self.welf_format_regex = r'id=firewall time="[^"]+" fw="{}" severity="[^"]+"(?: [^=]+="[^"]+")* msg=".*"'
         self.vrf_mgmt = CumulusConsts.VRF_MGMT
+
+    def get_base_image(self):
+        release_name = ImageConsts.CL_RELEASE_5_16_0
+        return ImageConsts.CL_BASE_IMAGE_VERSION_TO_INSTALL.format(
+            pre_release_name=release_name
+        )
+
+    def get_base_image_path(self, image_file):
+        release_name = ImageConsts.CL_RELEASE_5_16_0
+        return ImageConsts.CL_BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(
+            pre_release_name=release_name,
+            base_image=image_file
+        )
+
+    def get_upload_prefix(self):
+        return "://{}:{}@{}/tmp/".format(
+            NvosConst.ROOT_USER,
+            NvosConst.ROOT_PASSWORD,
+            NvosConst.FIT70
+        )
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         with allure.step('Wait for OS to become functional'):

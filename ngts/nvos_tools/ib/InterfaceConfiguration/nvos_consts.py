@@ -23,6 +23,9 @@ class NvosConsts:
 class NvlInterfaceConsts:
     NVL_PORT_TYPE = "nvl"
     ACP_PORT_TYPE = "acp"
+    SW_INTERFACE_TYPE = "sw"   # trunk/switch ports (interface_type for select_random_port)
+    TRUNK_PORT_TYPE = "trunk"  # port type label (trunk vs access)
+    ACCESS_PORT_TYPE = "access"
 
 
 class InterfaceConsts:

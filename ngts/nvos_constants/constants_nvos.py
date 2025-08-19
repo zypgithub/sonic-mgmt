@@ -115,6 +115,8 @@ class CumulusConsts:
     MIN_PSU_VPD_PATTERN = re.compile(r"MIN_PSU\s*[=:]\s*\d+")
     VRF_MGMT = "mgmt"
 
+    CL_NFS_SERVER = "http://tetrabuild-1.mvlab.labs.mlnx"
+
 
 class TestConsts:
     PASSED = "passed"
@@ -138,6 +140,9 @@ class NvosConst:
     NVL5 = 'NVLink-5 switch'
     NVL6 = 'NVLink-6 switch'
     NVL7 = 'NVLink-7 Switch'
+    NVL_ACCESS_PORTS_LIST = 'nvl_access_ports_list'
+    NVL_TRUNK_PORTS_LIST = 'nvl_trunk_ports_list'
+    ALL_NVL_PORTS_LIST = 'all_nvl_ports_list'
     QTM3_AND_NEWER = [QTM3, QTM4]
     DESCRIPTION = 'description'
     PORT_STATUS_UP = 'up'
@@ -567,9 +572,9 @@ class SystemConsts:
     CONTACT = 'contact'
     LOCATION = 'location'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
-    FILE_TRANSFER_PROTOCOLS = ['scp', 'sftp']
     LIST_OF_COMMANDS_FILE_PATH = '/var/tmp/list_of_executed_commands.txt'
-    TECHSUPPORT_SIZE_LIMIT = 135  # DEPRECATED: Use devices.dut.constants.techsupport_size_limit_mb instead
+    FILE_TRANSFER_PROTOCOLS = ['scp', 'sftp']
+    TECHSUPPORT_SIZE_LIMIT = 75  # in MBs
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
     TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
                                               'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
@@ -595,8 +600,11 @@ class SystemConsts:
     MAX_SYSTEM_DATE = MAX_SYSTEM_YEAR + "-12-31"
     MIN_SYSTEM_DATETIME = MIN_SYSTEM_DATE + " 00:00:00"
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
+    TECHSUPPORT_THRESHOLD = 150
+    TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
 
     NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
+
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
     POST_LOGOUT_MESSAGE = 'post-logout'
@@ -693,6 +701,7 @@ class SystemConsts:
     ACTIONS_GENERATE_SINCE = 'since'
 
     DEFAULT_USER_ADMIN = 'admin'
+    DEFAULT_USER_CL = 'cumulus'
     DEFAULT_USER_MONITOR = 'monitor'
     USER_ROLE = 'role'
     USER_STATE = 'state'
@@ -1540,6 +1549,9 @@ class ImageConsts:
                                        'fit70')
     SCP_PATH_SERVER = 'scp://{username}:{password}@{ip}{path}'
     NVOS_RELEASE_25_02_1000 = "25.02.1000"
+    CL_RELEASE_5_16_0 = "5.16.0"
+    CL_BASE_IMAGE_VERSION_TO_INSTALL = "cumulus-linux-mlx-amd64.bin"
+    CL_BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/devenv/release/{pre_release_name}/passed-mlx-amd64/build/images/{base_image}"
 
 
 class RbacConsts:
