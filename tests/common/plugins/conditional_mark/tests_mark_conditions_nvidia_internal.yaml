@@ -874,12 +874,6 @@ process_monitoring/test_critical_process_monitoring.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3464488 and 'nvda_bf-9009' in platform"
 
-process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3240997 on hwsku Mellanox-SN2700"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3240997 and hwsku in ['Mellanox-SN2700']"
-
 sub_port_interfaces/:
   skip:
     reason: "Sub port interfaces is not supported on 202411 and greater releases"
