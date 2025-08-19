@@ -534,7 +534,6 @@ class SystemConsts:
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
 
     NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
-
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
     POST_LOGOUT_MESSAGE = 'post-logout'
@@ -832,7 +831,7 @@ class SystemConsts:
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
         "System will be rebooted",
-        "System will power cycle in a few seconds"
+        "Rebooting System in cold mode",
     )
 
     LOCALHOST = "127.0.0.1"

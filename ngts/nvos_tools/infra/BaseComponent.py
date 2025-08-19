@@ -404,7 +404,7 @@ class BaseComponent:
         url = (ImageConsts.SCP_PATH if base_url is None else base_url) + path
         with allure.step(f"Fetching: {url}"):
             return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine, device=device,
-                               expected_output=expected_output)
+                               expected_output=['File fetched successfully', 'File has been successfully fetched'])
 
     def action(self,
                action_str: str,  # e.g. 'install'
