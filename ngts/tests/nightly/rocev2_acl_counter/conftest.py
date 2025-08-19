@@ -68,12 +68,12 @@ def toggle_tested_port(interfaces, cli_objects, players):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def rocev2_acl_rule_list(interfaces):
+def rocev2_acl_rule_list(interfaces, platform_params):
     """
     Pytest fixture which is to generate acl rocev2 config
     :param interfaces: interfaces object fixture
     """
-    yield gen_acl_rule_list(interfaces)
+    yield gen_acl_rule_list(interfaces, platform_params)
 
 
 @pytest.fixture(scope='module', autouse=False)
@@ -95,7 +95,7 @@ def apply_rocev2_acl_config(topology_obj, interfaces, engines, rocev2_acl_rule_l
 
 
 @pytest.fixture(scope='module', autouse=False)
-def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects):
+def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects, platform_params):
     """
     Pytest fixture which is doing configuration for lag
     :param engines: engines object fixture
@@ -107,9 +107,10 @@ def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects):
     cli_obj = topology_obj.players['dut']['cli']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed(
         [interfaces.dut_ha_2, interfaces.dut_hb_1, interfaces.dut_hb_2])
+    new_speed = "10G" if platform_params.filtered_platform != "sn6600" else "100G"
     interfaces_config_dict = {
-        'dut': [{'iface': interfaces.dut_ha_2, 'speed': '10G',
-                 'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_ha_2, '10G')}
+        'dut': [{'iface': interfaces.dut_ha_2, 'speed': new_speed,
+                 'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_ha_2, new_speed)}
                 ]
     }
     InterfaceConfigTemplate.configuration(topology_obj, interfaces_config_dict)
@@ -120,7 +121,7 @@ def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects):
 
 
 @pytest.fixture(scope='module', autouse=True)
-def pre_configure(request, engines, topology_obj, interfaces, cli_objects, players, adapt_speed_for_lag):
+def pre_configure(request, engines, topology_obj, interfaces, cli_objects, players, adapt_speed_for_lag, platform_params):
     """
     Pytest fixture which is doing basic configuration for rocev2 test
     :param request: request object fixture
@@ -150,7 +151,10 @@ def pre_configure(request, engines, topology_obj, interfaces, cli_objects, playe
 
     LagLacpConfigTemplate.configuration(topology_obj, lag_lacp_config_dict)
     IpConfigTemplate.configuration(topology_obj, ip_config_dict)
-    engines.dut.run_cmd(f"sudo config mirror_session span add port0 {interfaces.dut_hb_2} {interfaces.dut_ha_1},{DUT_PORTCHANNEL_NAME}")
+    cmd = f"sudo config mirror_session span add port0 {interfaces.dut_hb_2} {interfaces.dut_ha_1},{DUT_PORTCHANNEL_NAME}"
+    if platform_params.filtered_platform == "sn6600":
+        cmd += " rx"
+    engines.dut.run_cmd(cmd)
 
     def recover_config():
         engines.dut.run_cmd(f"sudo config mirror_session remove port0 ")
@@ -175,7 +179,7 @@ def gen_arp_table_via_ping(players, interfaces):
     ping_ports(V6_CONFIG)
 
 
-def gen_acl_rule_list(interfaces):
+def gen_acl_rule_list(interfaces, platform_params):
     """
     This method is to generate acl rule list
     :param interfaces: interfaces object fixture
@@ -192,6 +196,8 @@ def gen_acl_rule_list(interfaces):
             logger.info(f"Selected bth_opcode is{tested_bth_opcode}")
 
         for acl_rule in ROCEV2_ACL_BASIC_TEST_DATA:
+            if platform_params.filtered_platform == "sn6600" and "e_mirror" in acl_rule["name"]:
+                continue
             acl_rule_new = copy.copy(acl_rule)
             acl_rule_new.update(test_scenario)
             if test_scenario['scenario'] == "bth_aeth_together_random":
