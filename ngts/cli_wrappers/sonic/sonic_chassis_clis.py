@@ -54,7 +54,7 @@ class SonicChassisCli(ChassisCliCommon):
 
     def get_pci_conf(self):
         mst_status = self.show_mst_status()
-        return re.search("(.*pciconf0)", mst_status).group(1)
+        return re.search("(.*mt5.*pciconf0)", mst_status).group(1)
 
     def get_fw_info(self):
         return self.engine.run_cmd(f"sudo flint -d {self.get_pci_conf()} q")

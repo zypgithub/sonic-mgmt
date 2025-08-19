@@ -435,4 +435,6 @@ def lb_has_sw_control_ports(lb, sw_control_ports):
     :param: sw_control_ports: sw_control_ports fixture
     :returns: A boolean stating whether the lb contain a sw_control port
     """
+    if not lb:
+        return False
     return lb[0] in sw_control_ports or lb[1] in sw_control_ports
