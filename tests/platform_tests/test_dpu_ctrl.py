@@ -202,6 +202,7 @@ def verify_dpu_ip_pinable(duthost, dpu_list, dpu_bridge_midplane_ip_map):
     for dpu in dpu_list:
         with allure.step(f"Verify {dpu} is pingable"):
             duthost.shell(f"ping -c 5 {dpu_bridge_midplane_ip_map[dpu]}")
+    return True
 
 
 def get_dpu_status(duthost):
@@ -254,8 +255,8 @@ def verify_dpu_ip_links_and_pci_link_and_dpu_ip_pingable(duthost, dpu_bridge_mid
         verify_dpu_pci_links(duthost, dpu_list, is_link_existing)
     if is_link_existing:
         with allure.step("Verify dpu ip is pingable"):
-            verify_dpu_ip_pinable(duthost, dpu_list, dpu_bridge_midplane_ip_map)
-
+            pytest_assert(wait_until(60, 10, 0, verify_dpu_ip_pinable, duthost, dpu_list, dpu_bridge_midplane_ip_map),
+            f"Not all the DPUs are pingable")
 
 def do_verification_after_power_off_dpu(duthost, test_dpu_list, test_dpu_npu_port_list, dpu_bridge_midplane_ip_map):
     with allure.step(f"verify {test_dpu_list} are down"):
