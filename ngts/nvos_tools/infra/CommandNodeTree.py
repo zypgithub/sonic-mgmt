@@ -8,8 +8,9 @@ class CommandNode:
 class CommandNodeTree:
     def __init__(self):
         self.root = CommandNode()
+        self.command_list = []
 
-    def build_tree(self, command_str):
+    def insert_to_tree(self, command_str):
         """
         Insert command node corresponding to a command string
         :param  command_str :   Command string
@@ -22,6 +23,26 @@ class CommandNodeTree:
                 command_node.sub_command[component] = CommandNode()
             command_node = command_node.sub_command[component]
         command_node.is_end_of_command = True
+
+    def create_command_list(self, engines, exclude_cmds=[], prune_cmds=[]):
+        self.command_list = []
+        output = engines.dut.run_cmd("nv list-commands")
+        for line in output.strip().splitlines():
+            command = line.strip()
+            if len(exclude_cmds) != 0:
+                if any(char in command for char in exclude_cmds):
+                    continue
+            for char in command:
+                if char in prune_cmds:
+                    command = command.split(char)[0]
+                    break
+            if len(command) > 180:
+                command = command[0:170] + "-truncated"
+            self.command_list.append(command)
+
+    def build_tree(self):
+        for command in self.command_list:
+            self.insert_to_tree(command)
 
     def search_command(self, command):
         """
