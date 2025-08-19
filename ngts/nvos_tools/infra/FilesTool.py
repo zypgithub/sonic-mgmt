@@ -15,14 +15,46 @@ class FilesTool:
     @staticmethod
     def get_subfiles_list(engine, folder_path, subfiles_pattern=""):
         """
-        :param subfiles_pattern:
-        :param engine:
-        :param folder_path: a full path for a specific folder
-        :return: list of all subfiles in the folder
+        Get list of subfiles from a folder, optionally filtered by a pattern.
+
+        Args:
+            engine: The test engine to run commands on
+            folder_path: Full path to the folder to list
+            subfiles_pattern: Optional regex pattern to filter directories or files
+
+        Returns:
+            List of sub directories or files names that match the pattern
+
+        Example:
+            get_subfiles_list(engine, '/var/run/hw-management/ui/voltage', 'PMIC|PDB|HSC|FAN')
         """
-        output = engine.run_cmd('ls {}/*'.format(folder_path))
-        reg = r'\b(?:{})-\d+\+[^\s]+\b|\b(?:{})\+\d*[^\s]+\b'.format(subfiles_pattern, subfiles_pattern)
-        return re.findall(reg, output)
+        try:
+            output = engine.run_cmd(f'find {folder_path} -mindepth 2')
+
+            if not output.strip():
+                return []
+
+            # Extract just the directory names (remove the full path)
+            dirs = [line.split('/')[-1] for line in output.splitlines() if line.strip()]
+
+            # If no pattern specified, return all directories
+            if not subfiles_pattern:
+                return dirs
+
+            # Filter directories based on the pattern
+            if '|' in subfiles_pattern:
+                # For OR patterns, use simple substring matching (much faster than regex)
+                patterns = subfiles_pattern.split('|')
+                return [dir_name for dir_name in dirs
+                        if any(pattern in dir_name for pattern in patterns)]
+            else:
+                # For single patterns, use simple substring matching
+                return [dir_name for dir_name in dirs
+                        if subfiles_pattern in dir_name]
+
+        except Exception as e:
+            logger.info(f"Error getting subfiles from {folder_path}: {e}")
+            return []
 
     @staticmethod
     def file_exists(engine, file_path):

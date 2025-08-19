@@ -858,7 +858,7 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
 
     def _init_led_list(self):
         super()._init_led_list()
-        self.led_list = list(set(self.led_list) - {'FAN9', 'FAN10'})
+        self.led_list = ['FAN1', 'FAN2', 'FAN3', 'FAN4', 'FAN5', 'FAN6', "FAN7", "FAN8", "STATUS", "UID"]
 
     def _init_psu_list(self):
         self.psu_list = []
@@ -879,26 +879,39 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             PlatformConsts.SYSTEM_TYPE: "Q3401_RD",
             "asic-model": self.asic_type,
         })
-        self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
-                                'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
-                                'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
-                                'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
-                                'PMIC-4-12V-VDD-ASIC2-In-1', 'PMIC-4-ASIC2-VDD-Out-1',
-                                'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
-                                'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
-                                'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1',
-                                'PMIC-7-12V-VDD-ASIC3-In-1', 'PMIC-7-ASIC3-VDD-Out-1',
-                                'PMIC-8-12V-HVDD-DVDD-ASIC3-In-1', 'PMIC-8-ASIC3-DVDD-PL0-Out-2',
-                                'PMIC-8-ASIC3-HVDD-PL0-Out-1', 'PMIC-9-12V-HVDD-DVDD-ASIC3-In-1',
-                                'PMIC-9-ASIC3-DVDD-PL1-Out-2', 'PMIC-9-ASIC3-HVDD-PL1-Out-1',
-                                'PMIC-10-12V-VDD-ASIC4-In-1', 'PMIC-10-ASIC4-VDD-Out-1',
-                                'PMIC-11-12V-HVDD-DVDD-ASIC4-In-1', 'PMIC-11-ASIC4-DVDD-PL0-Out-2',
-                                'PMIC-11-ASIC4-HVDD-PL0-Out-1', 'PMIC-12-12V-HVDD-DVDD-ASIC4-In-1',
-                                'PMIC-12-ASIC4-DVDD-PL1-Out-2', 'PMIC-12-ASIC4-HVDD-PL1-Out-1', 'PMIC-13-12V-MAIN-In-1',
-                                'PMIC-13-CEX-VDD-Out-1']
-
+        self.voltage_sensors = [
+            # PMIC sensors for ASIC1
+            'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
+            'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
+            'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
+            'PMIC-3-ASIC1-DVDD-PL1-Out-2', 'PMIC-3-ASIC1-HVDD-PL1-Out-1',
+            # PMIC sensors for ASIC2
+            'PMIC-4-12V-VDD-ASIC2-In-1', 'PMIC-4-ASIC2-VDD-Out-1',
+            'PMIC-5-12V-HVDD-DVDD-ASIC2-In-1', 'PMIC-5-ASIC2-DVDD-PL0-Out-2',
+            'PMIC-5-ASIC2-HVDD-PL0-Out-1', 'PMIC-6-12V-HVDD-DVDD-ASIC2-In-1',
+            'PMIC-6-ASIC2-DVDD-PL1-Out-2', 'PMIC-6-ASIC2-HVDD-PL1-Out-1',
+            # PMIC sensors for ASIC3
+            'PMIC-7-12V-VDD-ASIC3-In-1', 'PMIC-7-ASIC3-VDD-Out-1',
+            'PMIC-8-12V-HVDD-DVDD-ASIC3-In-1', 'PMIC-8-ASIC3-DVDD-PL0-Out-2',
+            'PMIC-8-ASIC3-HVDD-PL0-Out-1', 'PMIC-9-12V-HVDD-DVDD-ASIC3-In-1',
+            'PMIC-9-ASIC3-DVDD-PL1-Out-2', 'PMIC-9-ASIC3-HVDD-PL1-Out-1',
+            # PMIC sensors for ASIC4
+            'PMIC-10-12V-VDD-ASIC4-In-1', 'PMIC-10-ASIC4-VDD-Out-1',
+            'PMIC-11-12V-HVDD-DVDD-ASIC4-In-1', 'PMIC-11-ASIC4-DVDD-PL0-Out-2',
+            'PMIC-11-ASIC4-HVDD-PL0-Out-1', 'PMIC-12-12V-HVDD-DVDD-ASIC4-In-1',
+            'PMIC-12-ASIC4-DVDD-PL1-Out-2', 'PMIC-12-ASIC4-HVDD-PL1-Out-1',
+            # PMIC sensors for main system
+            'PMIC-13-12V-MAIN-In-1', 'PMIC-13-CEX-VDD-Out-1',
+            # Additional voltage sensors from nv show platform environment output
+            'FAN-HSC1-Volt-In', 'FAN-HSC1-Volt-Out',
+            'HSC1-VinDC-In', 'HSC1-VinDC-Out',
+            'HSC2-VinDC-In', 'HSC2-VinDC-Out',
+            'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1'
+        ]
 
 # -------------------------- Taipan Switch ----------------------------
+
+
 class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
 
     def __init__(self, switch_class=NvosConst.TAIPAN_SWITCH):

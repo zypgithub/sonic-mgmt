@@ -132,18 +132,47 @@ def test_database_platform_environment_voltage(engines, devices):
                                                                    grep_str="VOLTAGE").splitlines()
 
     with allure.step("Check the Sensors output from CLI and db tables"):
-        # since sensor names are formatted differently in DB vs. CLI, we normalize them to the same form by removing all
-        # spaces and other non-alphanumeric characters
-        def normalization(s): return re.sub(r'[^a-z0-9]', '', s.lower())
+        # Normalize sensor names by removing all non-alphanumeric characters
+        def normalization(s):
+            return re.sub(r'[^a-z0-9]', '', s.lower())
+
+        def transform_sensor_for_database(sensor_name):
+            """
+            Transform filesystem sensor names to match database format.
+
+            Args:
+                sensor_name: Sensor name from filesystem (e.g., 'FAN+HSC1+VinDC+Volt+In')
+
+            Returns:
+                Transformed name ready for database comparison (e.g., 'VOLTAGE_INFO|FAN HSC1 Volt In')
+            """
+            # Handle FAN+HSC1 sensors: remove only VinDC, keep Volt
+            if 'FAN+HSC1' in sensor_name:
+                return sensor_name.replace('+VinDC', '')
+
+            # Handle other sensors: remove only Volt/Vol suffixes
+            return sensor_name.replace('+Volt', '').replace('+Vol', '')
+
+        def normalize_for_database_comparison(sensor_name):
+            """
+            Apply database transformation and normalization for comparison.
+            """
+            transformed = transform_sensor_for_database(sensor_name)
+            return normalization("VOLTAGE_INFO|" + transformed)
 
         with allure.independent_step("Verify for every sensor in sensors_dict[VOLTAGE], it exist in nv show platform environment voltage"):
-            ValidationTool.validate_equal_with_normalization(cli_sensors_list, devices.dut.sensors_dict["VOLTAGE"],
-                                                             normalization).verify_result()
+            ValidationTool.validate_equal_with_normalization(
+                cli_sensors_list,
+                devices.dut.sensors_dict["VOLTAGE"],
+                normalization
+            ).verify_result()
 
         with allure.independent_step("Verify for every sensor: VOLTAGE_INFO|<sensor_name> table exist in STATE_DB"):
             ValidationTool.validate_equal_with_normalization(
-                database_output, sensors_list, normalization,
-                lambda s: normalization("VOLTAGE_INFO|" + s.replace('+Volt', '').replace('+Vol', ''))
+                database_output,
+                sensors_list,
+                normalization,
+                normalize_for_database_comparison
             ).verify_result()
 
 
