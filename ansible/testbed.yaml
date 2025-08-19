@@ -10401,7 +10401,7 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: croc-chipsim-64-ptf-any
+- conf-name: ci-croc-chipsim-122-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10411,11 +10411,11 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - croc-chipsim-64
+    - ci-croc-chipsim-122
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: croc-chipsim-65-ptf-any
+- conf-name: ci-croc-chipsim-124-ptf-any
   group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
@@ -10425,7 +10425,7 @@
   server: server_54
   vm_base: VM0000
   dut:
-    - croc-chipsim-65
+    - ci-croc-chipsim-124
   inv_name: lab
   comment: Mellanox MTR testbed
 

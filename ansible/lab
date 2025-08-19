@@ -240,8 +240,8 @@ croc-simx-97      ansible_host=10.237.6.97 ansible_hostv6="" sonic_version=v2 hw
 croc-simx-98      ansible_host=10.237.6.98 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-62      ansible_host=10.237.211.62 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-63      ansible_host=10.237.211.63 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
-croc-chipsim-64      ansible_host=10.237.211.64 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
-croc-chipsim-65      ansible_host=10.237.211.65 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+ci-croc-chipsim-122      ansible_host=10.220.74.122 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+ci-croc-chipsim-124      ansible_host=10.220.74.124 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-66      ansible_host=10.237.211.66 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-67      ansible_host=10.237.211.67 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 croc-chipsim-69      ansible_host=10.237.211.69 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
