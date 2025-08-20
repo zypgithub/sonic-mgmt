@@ -1020,12 +1020,6 @@ tests/nightly/component_versions/test_component_versions.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4517284 and 'sn6600' in platform"
 
-tests/nightly/rocev2_acl_counter/test_rocev2_acl_counter.py:
-  skip:
-    reason: "RX-only mirror is not supported on sn6600 platform, need to adapt the testcase"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4537627 and 'sn6600' in platform"
-
 tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4525926 and sn6600 platform"
