@@ -77,20 +77,20 @@ TEST_GROUP_MAP = {
 }
 
 CONTROL_PLANE_TESTS_MAP = {
-    'community': {'setups': ['r-leopard-01_setup', 'mtvr-leopard-01_setup'], 'tests': ['community/mgmtvrf.db', 'community/system.db']},
+    'community': {'setups': ['r-leopard-01_setup', 'mtvr-leopard-01_setup', 'r-panther-02_setup'], 'tests': ['community/mgmtvrf.db', 'community/system.db']},
     'canonical': {'setups': ['sonic_lionfish_r-lionfish-13'], 'tests': ['community/ipv6_mgmt.db']}
 }
 
 SETUPS_GROUPS_MAP = {
     'community_set1': {
-        ('t0', 'spc1'): {'r-panther-01_setup': SETUPS_GROUP_1, 'arc-switch1004_setup': SETUPS_GROUP_2},
-        ('t1', 'spc1'): {'arc-switch1025_setup': SETUPS_GROUP_1, 'r-panther-02_setup': SETUPS_GROUP_2},
+        ('t0', 'spc1'): {'r-panther-02_setup': SETUPS_GROUP_1, 'arc-switch1004_setup': SETUPS_GROUP_2},
+        ('t1', 'spc1'): {'arc-switch1025_setup': SETUPS_GROUP_1, 'r-panther-01_setup': SETUPS_GROUP_2},
         ('t0', 'spc3'): {'r-tigon-04_setup': SETUPS_GROUP_1, 'mtvr-leopard-01_setup': SETUPS_GROUP_2},
         ('t1', 'spc3'): {'r-leopard-01_setup': SETUPS_GROUP_1, 'r-tigon-11_setup': SETUPS_GROUP_2},
     },
     'community_set2': {
-        ('t0', 'spc1'): {'r-panther-40_setup': SETUPS_GROUP_1, 'r-panther-23_setup': SETUPS_GROUP_2},
-        ('t1', 'spc1'): {'r-panther-42_setup': SETUPS_GROUP_1, 'r-panther-45_setup': SETUPS_GROUP_2},
+        ('t0', 'spc1'): {'r-panther-42_setup': SETUPS_GROUP_1, 'r-panther-23_setup': SETUPS_GROUP_2},
+        ('t1', 'spc1'): {'r-panther-40_setup': SETUPS_GROUP_1, 'r-panther-45_setup': SETUPS_GROUP_2},
         ('t0', 'spc3'): {'mtvr-leopard-09_setup': SETUPS_GROUP_1, 'r-tigon-21_setup': SETUPS_GROUP_2},
         ('t1', 'spc3'): {'r-leopard-58_setup': SETUPS_GROUP_1, 'r-tigon-20_setup': SETUPS_GROUP_2}
     },
@@ -104,6 +104,7 @@ SETUPS_GROUPS_MAP = {
             'sonic_leopard_r-leopard-56': SETUPS_GROUP_2,
             'sonic_leopard_r-leopard-32': SETUPS_GROUP_2
         },
+        ('ptf_any', 'spc5'): {'sonic_bobcat_bobcat-10': SETUPS_GROUP_1}
     }
 }
 # In canonical we have odd number of setups.
