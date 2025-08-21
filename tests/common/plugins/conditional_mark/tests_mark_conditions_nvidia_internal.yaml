@@ -1020,5 +1020,11 @@ tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
     conditions:
     - "https://redmine.mellanox.com/issues/4525926 and 'sn6600' in platform"
 
+tests/nightly/rocev2_acl_counter/test_rocev2_acl_counter.py:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4600600 on sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4600600 and 'sn6600' in platform"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
 
