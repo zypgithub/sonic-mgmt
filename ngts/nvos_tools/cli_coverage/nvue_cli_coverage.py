@@ -320,15 +320,28 @@ class NVUECliCoverage:
     @classmethod
     def update_version_details(cls):
         with allure.step("Update version details"):
+            # First priority: Use TestToolkit.branch if available
+            if TestToolkit.branch:
+                cls.swversion = TestToolkit.branch
+                logging.info(f"Using TestToolkit.branch for sw version: {cls.swversion}")
+            else:
+                # Fallback: Use original detection logic
+                logging.info("TestToolkit.branch not available, using original version detection")
+
+            # Always detect build_id using original logic
             if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE:
                 cls.build_id = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()['build']
-                cls.swversion = cls.build_id.split()[-1]
+                # Only set sw_version from build_id if TestToolkit.branch is not available
+                if not TestToolkit.branch:
+                    cls.swversion = cls.build_id.split()[-1]
             else:
                 nvos_version = OutputParsingTool.parse_json_str_to_dictionary(System().version.image.show()).get_returned_value()['build-id']
                 with allure.step(f"the build-id is {nvos_version}"):
-                    release = TestToolkit.version_to_release(nvos_version).replace("nvos-", "")
-                    cls.swversion = release.replace("-", ".")
                     cls.build_id = nvos_version.replace("nvos-", "")
+                    # Only set sw_version from detected version if TestToolkit.branch is not available
+                    if not TestToolkit.branch:
+                        release = TestToolkit.version_to_release(nvos_version).replace("nvos-", "")
+                        cls.swversion = release.replace("-", ".")
 
     @classmethod
     def run(cls, item, start_time, project='nvos', department='verification', nvue_dir='/auto/sw/tools/comet/nvos/'):

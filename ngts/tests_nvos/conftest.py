@@ -88,6 +88,7 @@ def pytest_addoption(parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+    parser.addoption("--remote_test_path", action="store", default=None, help="Remote test path from MARS")
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -541,6 +542,48 @@ def release_name(request):
     :return: release_name
     """
     return request.config.getoption('--release_name')
+
+
+@pytest.fixture(scope='function', autouse=True)
+def branch_name(request):
+    """
+    Fixture that extracts branch name from --remote_test_path and sets it to TestToolkit.branch
+    :param request: pytest builtin
+    :return: branch_name
+    """
+    TestToolkit.branch = ""
+    remote_test_path = request.config.getoption('--remote_test_path')
+    logger.info(f"remote_test_path: {remote_test_path}")
+
+    if remote_test_path:
+        raw_branch = remote_test_path.split('/')[0]
+        logger.info(f"raw_branch from remote_test_path: {raw_branch}")
+
+        # Handle different branch name patterns:
+        # 1. SONIC_CANONICAL-sonic-mgmt_develop.db.1 → develop
+        # 2. SONIC_CANONICAL-sonic-mgmt_nvos_ver-25-02-5000.db → 25.02.5000
+
+        if 'sonic-mgmt_' in raw_branch:
+            # Extract everything after sonic-mgmt_
+            after_prefix = raw_branch.split('sonic-mgmt_')[1]
+
+            if after_prefix.startswith('develop'):
+                branch_name = 'develop'
+            elif after_prefix.startswith('nvos_ver-'):
+                # Extract version like 25-02-5000 and convert to 25.02.5000
+                version_part = after_prefix.replace('nvos_ver-', '').split('.')[0]  # "25-02-5000"
+                branch_name = version_part.replace('-', '.')  # "25.02.5000"
+            else:
+                # Fallback: take everything before first dot
+                branch_name = after_prefix.split('.')[0]
+        else:
+            # Fallback: use the raw branch name
+            branch_name = raw_branch
+
+        TestToolkit.branch = branch_name
+        logger.info(f"branch is: {TestToolkit.branch}")
+
+    return TestToolkit.branch
 
 
 @pytest.fixture(scope='session', autouse=True)

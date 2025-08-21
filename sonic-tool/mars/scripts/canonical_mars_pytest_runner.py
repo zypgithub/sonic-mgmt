@@ -45,6 +45,11 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
         if '--alluredir' not in self.raw_options:
             self.raw_options += ' --alluredir="/tmp/allure-results" '
+        
+        # Append --remote_test_path only for NVOS tests that declare this option
+        # to avoid pytest parse failures in other projects.
+        if getattr(self, 'remote_test_path', None) and 'tests_nvos' in str(self.test_script):
+            self.raw_options += f' --remote_test_path="{self.remote_test_path}"'
 
         self.target_cli_type = None
         allure_project_id_suffix = ""
