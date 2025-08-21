@@ -71,6 +71,12 @@ def apply_dns_servers_resolve_conf(dut_engine):
     dut_engine.run_cmd(f'sudo mv {tmp_resolv_conf_path} {SonicConst.RESOLV_CONF_PATH}')
 
 
+def vxlan_evpn_configuration_needed(platform_params):
+    if is_redmine_issue_active([4435626])[0] and platform_params.filtered_platform in ['sn5640', 'sn6600', 'sn5810_ld']:
+        return False
+    return True
+
+
 @pytest.fixture(scope='package', autouse=True)
 def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, platform_params, upgrade_params,
                             run_config_only, run_test_only, run_cleanup_only, shared_params, is_air,
@@ -300,19 +306,21 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
         acl_helper.add_acl_rules(engines.dut, cli_objects.dut, acl_table_config_list)
         if is_support_rocev2_acl_counter_feature(cli_objects, is_simx, base_sonic_branch):
             copy_apply_rocev2_acl_config(engines.dut, "rocev2_acl.json", ROCEV2_ACL_COUNTER_PATH)
-        if not upgrade_params.is_upgrade_required:
-            VxlanConfigTemplate.configuration(topology_obj, vxlan_config_dict)
+        if vxlan_evpn_configuration_needed(platform_params):
+            if not upgrade_params.is_upgrade_required:
+                VxlanConfigTemplate.configuration(topology_obj, vxlan_config_dict)
 
-        if is_evpn_support(base_sonic_branch):
-            VlanConfigTemplate.configuration(topology_obj, vrf_vlan_config_dict)
-            VrfConfigTemplate.configuration(topology_obj, vrf_config_dict)
-            IpConfigTemplate.configuration(topology_obj, vrf_ip_config_dict)
-            VxlanConfigTemplate.configuration(topology_obj, evpn_vxlan_config_dict)
-            RouteConfigTemplate.configuration(topology_obj, vrf_static_route_config_dict)
-            # in case there is useless bgp configuration exist
-            clean_frr_vrf_config(topology_obj, clean_frr_base_config_list)
-            FrrConfigTemplate.configuration(topology_obj, frr_config_dict)
-
+            if is_evpn_support(base_sonic_branch):
+                VlanConfigTemplate.configuration(topology_obj, vrf_vlan_config_dict)
+                VrfConfigTemplate.configuration(topology_obj, vrf_config_dict)
+                IpConfigTemplate.configuration(topology_obj, vrf_ip_config_dict)
+                VxlanConfigTemplate.configuration(topology_obj, evpn_vxlan_config_dict)
+                RouteConfigTemplate.configuration(topology_obj, vrf_static_route_config_dict)
+                # in case there is useless bgp configuration exist
+                clean_frr_vrf_config(topology_obj, clean_frr_base_config_list)
+                FrrConfigTemplate.configuration(topology_obj, frr_config_dict)
+        else:
+            logger.info("Skipping Vxlan and Evpn config in for {} due to issue 4013023 on it".format(platform_params.filtered_platform))
         with allure.step('Doing debug logs print'):
             log_debug_info(cli_objects.dut)
 
@@ -361,21 +369,22 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
 
     if run_cleanup_only or full_flow_run:
         logger.info('Starting PushGate Common configuration cleanup')
-        if not upgrade_params.is_upgrade_required:
-            VxlanConfigTemplate.cleanup(topology_obj, vxlan_config_dict)
-        if is_evpn_support(base_sonic_branch):
-            with allure.step('Removing "docker_routing_config_mode" from config_db.json'):
-                cli_objects.dut.general.update_config_db_docker_routing_config_mode(
-                    topology_obj, remove_docker_routing_config_mode=True)
-            logger.info('Check that links in UP state')
-            cli_objects.dut.interface.check_link_state(ports_list)
+        if vxlan_evpn_configuration_needed(platform_params):
+            if not upgrade_params.is_upgrade_required:
+                VxlanConfigTemplate.cleanup(topology_obj, vxlan_config_dict)
+            if is_evpn_support(base_sonic_branch):
+                with allure.step('Removing "docker_routing_config_mode" from config_db.json'):
+                    cli_objects.dut.general.update_config_db_docker_routing_config_mode(
+                        topology_obj, remove_docker_routing_config_mode=True)
+                logger.info('Check that links in UP state')
+                cli_objects.dut.interface.check_link_state(ports_list)
 
-            clean_frr_vrf_config(topology_obj, clean_frr_base_config_list)
-            IpConfigTemplate.cleanup(topology_obj, vrf_ip_config_dict)
-            VrfConfigTemplate.cleanup(topology_obj, vrf_config_dict)
-            RouteConfigTemplate.cleanup(topology_obj, vrf_static_route_config_dict)
-            VxlanConfigTemplate.cleanup(topology_obj, evpn_vxlan_config_dict)
-            VlanConfigTemplate.cleanup(topology_obj, vrf_vlan_config_dict)
+                clean_frr_vrf_config(topology_obj, clean_frr_base_config_list)
+                IpConfigTemplate.cleanup(topology_obj, vrf_ip_config_dict)
+                VrfConfigTemplate.cleanup(topology_obj, vrf_config_dict)
+                RouteConfigTemplate.cleanup(topology_obj, vrf_static_route_config_dict)
+                VxlanConfigTemplate.cleanup(topology_obj, evpn_vxlan_config_dict)
+                VlanConfigTemplate.cleanup(topology_obj, vrf_vlan_config_dict)
 
         if is_support_rocev2_acl_counter_feature(cli_objects, is_simx, base_sonic_branch):
             acl_type_list = ['CUSTOM_L3']
