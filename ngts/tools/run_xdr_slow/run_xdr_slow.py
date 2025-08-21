@@ -41,15 +41,16 @@ import paramiko
 import json
 
 
-def get_log_port(table: str, label_port: int, lane_bmap: str):
+def get_log_port(table: str, label_port: str, lane_bmap: str, primary_asic: int = 0):
     """
     Fetches the log_port value based on label_port and lane_bmap values from a given table.
     Returns only the last two digits of log_port after removing the '0x100' prefix.
 
     Args:
         table (str): The table as a multiline string.
-        label_port (int): The switch number (label_port).
+        label_port (str): The switch number (label_port).
         lane_bmap (str): The lane_bmap value (either '0x01' or '0x80').
+        primary_asic (int): The primary asic number (0 or 1) to determine local_port mapping.
 
     Returns:
         str: The corresponding log_port value without the '0x100' prefix, e.g., '09'.
@@ -58,6 +59,15 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
         ValueError: If the specified label_port and lane_bmap combination are not found in the table.
     """
 
+    # Map the port number based on primary asic
+    if primary_asic == '1':
+        # For primary asic 1, subtract 9 from the port number to get the correct local_port
+        mapped_label_port = str(int(label_port) - 9)
+        print(f"Primary asic {primary_asic}: mapping port {label_port} -> local_port {mapped_label_port}")
+    else:
+        mapped_label_port = label_port
+
+    print(f"Searching for label_port={mapped_label_port}, lane_bmap={lane_bmap} in table")
     # Split the table into rows
     rows = table.splitlines()
     header = rows[1]  # Header row with column names
@@ -78,12 +88,12 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
             row_lane_bmap = cols[col_indexes["lane_bmap"]].strip()
 
             # Match the given label_port and lane_bmap
-            if row_label_port == label_port and row_lane_bmap == lane_bmap:
+            if row_label_port == mapped_label_port and row_lane_bmap == lane_bmap:
                 # Extract the last two digits of log_port, remove the "0x100" prefix
                 log_port_value = cols[col_indexes["log_port"]].strip()
                 return log_port_value[-2:]  # Return the last two characters
-        except ValueError:
-            continue  # Skip rows with non-numeric values in relevant columns
+        except (ValueError, IndexError):
+            continue  # Skip rows with non-numeric values in relevant columns or missing columns
 
     raise ValueError(f"Entry not found for label_port={label_port}, lane_bmap={lane_bmap}")
 
@@ -101,7 +111,7 @@ def get_local_port_and_lane_bmap(port_name):
     match = re.search(r'[sS][wW]\s*(\d+)p(\d+)s(\d+)', port_name)
 
     if match:
-        port_number = match.group(1)
+        port_number = int(match.group(1))
         local_port = int(match.group(2))
         split_port = int(match.group(3))
 
@@ -123,7 +133,7 @@ def get_local_port_and_lane_bmap(port_name):
         else:
             raise ValueError(f"Unsupported split_port value: {split_port}")
 
-        return port_number, lane_bmap
+        return str(port_number), lane_bmap
 
     raise ValueError(f"Invalid port name format: {port_name}")
 
@@ -161,8 +171,8 @@ def get_local_port(ssh_client, port_name, primary_asic):
     if error:
         print(f"Error getting local port: {error}")
         return None
-    local_port, lane_bmap = get_local_port_and_lane_bmap(port_name)
-    return get_log_port(table_output, local_port, lane_bmap)
+    switch_number, lane_bmap = get_local_port_and_lane_bmap(port_name)
+    return get_log_port(table_output, switch_number, lane_bmap, primary_asic)
 
 
 def run_mlxreg_command(ssh_client, device_path, local_port, action):
