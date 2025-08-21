@@ -5,6 +5,7 @@ import pytest
 import yaml
 from tests.common.helpers.assertions import pytest_assert
 from tests.common import mellanox_data
+from .test_dpu_ctrl import get_dpu_status, all_dpu_up
 
 from tests.platform_tests.sensors_utils.psu_sensor_utils import SensorHelper
 
@@ -13,6 +14,7 @@ pytestmark = [
 ]
 
 SENSORS_DATA_FILE = "../../ansible/group_vars/sonic/sku-sensors-data.yml"
+SENSORS_DATA_DARKMODE_FILE = "../../ansible/group_vars/sonic/smartswitch-darkmode-data.yaml"
 
 
 def to_json(obj):
@@ -24,11 +26,25 @@ def to_yaml(obj):
 
 
 @pytest.fixture(scope='module')
-def sensors_data():
+def sensors_data(duthosts, rand_one_dut_hostname):
     """
     Parses SENSORS_DATA_FILE yaml.
     """
-    sensors_data_file_full_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), SENSORS_DATA_FILE)
+
+    # The logic to use a different YAML file
+    # for the smartswitch with DPUs in Dark mode
+    duthost = duthosts[rand_one_dut_hostname]
+    if "sn4280" not in duthost.facts['platform'] or all_dpu_up(duthost):
+        # Regular switch or Smartswitch with DPUs in Light mode
+        sensors_data_file_full_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), SENSORS_DATA_FILE)
+    else:
+        # To handle the Dark mode need to use a different sensor YAML file
+        # Make sure all DPUs are down
+        dpu_status = get_dpu_status(duthost)
+        logging.debug(f"DPU status: {dpu_status}")
+        assert all(dpu_record['dpu ready'] == "False" for dpu_record in dpu_status), f"Expecting all DPUs down in the dark mode, found: {dpu_status}"
+        sensors_data_file_full_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), SENSORS_DATA_DARKMODE_FILE)
+
     return yaml.safe_load(open(sensors_data_file_full_path).read())
 
 
