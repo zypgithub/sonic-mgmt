@@ -621,6 +621,11 @@ class SonicInstallationSteps:
                         os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                 with allure.step('Apply NAT config to smartSwitch'):
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
+            else:
+                with allure.step('Disable DPUs for darkmode'):
+                    _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
+                    cli.shutdown_dpu(dpu_index_list)
+                    cli.save_configuration()
 
             # Only check port status at canonical setup, there is an ansible counterpart for community setup
             for dut in setup_info['duts']:

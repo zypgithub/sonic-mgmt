@@ -1831,6 +1831,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for dpu_index in dpu_index_list:
             self.engine.run_cmd(f'sudo config chassis modules startup DPU{dpu_index}')
 
+    def shutdown_dpu(self, dpu_index_list):
+        for dpu_index in dpu_index_list:
+            self.engine.run_cmd(f'sudo config chassis modules shutdown DPU{dpu_index}')
+
     def get_dpus_status(self):
         dpu_status = self.engine.run_cmd(f'show chassis module status')
         return generic_sonic_output_parser(dpu_status, output_key="Name")
