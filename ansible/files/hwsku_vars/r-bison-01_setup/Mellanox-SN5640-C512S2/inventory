@@ -81,6 +81,16 @@ all:
               base_mac: 50:00:E6:01:94:EA
               serial: MT251160517M
               model: MSN5640
+            r-bison-02:
+              ansible_host: r-bison-02
+              ansible_ssh_user: "{{ lookup('env','SONIC_SWITCH_USER') }}"
+              ansible_ssh_pass: "{{ lookup('env','SONIC_SWITCH_PASSWORD') }}"
+              os: sonic
+            r-moose-06:
+              ansible_host: r-moose-06
+              ansible_ssh_user: "{{ lookup('env','SONIC_SWITCH_USER') }}"
+              ansible_ssh_pass: "{{ lookup('env','SONIC_SWITCH_PASSWORD') }}"
+              os: sonic
 
     leaf_topo_1:
       hosts:
