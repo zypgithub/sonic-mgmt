@@ -3079,6 +3079,20 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bison-04-t1-isolated-d56u1-lag
+  group-name: vm-t1
+  topo: t1-isolated-d56u1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bison-04
+  ptf_ip: 10.215.40.182/20
+  ptf_ipv6:
+  server: server_95
+  vm_base: VM5557
+  dut:
+    - r-bison-04
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-bison-04-t1-isolated-d56u2
   group-name: vm-t1
   topo: t1-isolated-d56u2
