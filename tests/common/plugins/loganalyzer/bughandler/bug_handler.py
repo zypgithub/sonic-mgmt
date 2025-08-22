@@ -3,19 +3,17 @@ import logging
 import json
 import os
 import time
-from optparse import OptionParser 
 import argparse
 import tarfile
 import gzip
-import paramiko
-import six
-import socket
+import random
+import string
 from pathlib import Path
 from argparse import RawTextHelpFormatter
 from datetime import datetime
 from tests.common.plugins.loganalyzer.bug_handler_helper import handle_log_analyzer_errors
 from tests.common.plugins.loganalyzer.system_msg_handler import AnsibleLogAnalyzer
-from tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore import get_ignore_list, get_extended_ignore_list
+from tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore import get_extended_ignore_list
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 logger = logging.getLogger()
 RM_URL = "https://redmine.mellanox.com/issues/"
@@ -24,7 +22,9 @@ DEFAULT_MATCH_FILE_LIST = ["loganalyzer_common_match.txt"]
 DEFAULT_EXPECT_FILE_LIST = ["loganalyzer_common_expect.txt"]
 DEFAULT_IGNORE_FILE_LIST = ["loganalyzer_common_ignore.txt"]
 
-TMP_SYSLOG_FOLDER = "/tmp/syslogs"
+# Generate random suffix to distinguish multiple parallel instances
+RANDOM_SUFFIX = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+TMP_SYSLOG_FOLDER = f"/tmp/syslogs_{RANDOM_SUFFIX}"
 TMP_TECHSUPPORT_DUMP = "/tmp/"
 
 logging.basicConfig(
@@ -70,7 +70,8 @@ def run_bug_handler(action):
                         'report_url': allure_report_url}
     log_analyzer_res = handle_log_analyzer_errors(cli_type,
                                                   branch, test_name, duthost,
-                                                  bug_handler_dict, setup_name, bug_handler_actions)
+                                                  bug_handler_dict, setup_name, bug_handler_actions,
+                                                  log_errors_dir_path=Path(f"/tmp/loganalyzer/custom_{RANDOM_SUFFIX}"))
     
     logger.info(f"Bug handler result: {json.dumps(log_analyzer_res, indent=2)}")
     print(f"Bug handler result: {json.dumps(log_analyzer_res, indent=2)}")
@@ -116,7 +117,7 @@ def save_matching_errors(result_log_errors):
     if result_log_errors:
         log_errors = ''
         log_errors += ''.join(result_log_errors)
-        tmp_folder = "/tmp/loganalyzer/custom"
+        tmp_folder = f"/tmp/loganalyzer/custom_{RANDOM_SUFFIX}"
         os.makedirs(tmp_folder, exist_ok=True)
         cur_time = time.strftime("%d_%m_%Y_%H_%M_%S", time.gmtime())
         marker_prefix = "stand_alone_test"
@@ -193,7 +194,7 @@ def extract_log_from_dut(options):
     sonic = LinuxSshEngine(ip=dut, username=username, password=password, ssh_port=ssh_port)
 
     timestamp = options.time_stamp_start
-    find_syslog_cmd = f"sudo find /var/log -newermt \'{timestamp}\' | grep syslog"
+    find_syslog_cmd = f"sudo find /var/log -type f -newermt \'{timestamp}\' | grep syslog"
     log_files = sonic.run_cmd(find_syslog_cmd).split('\n')
 
     os.makedirs(TMP_SYSLOG_FOLDER, exist_ok=True)
@@ -261,7 +262,7 @@ def get_syslog_from_compressed_file(compressed_file):
                         decom_str = gzip.decompress(inf.read()).decode('utf-8')
                         tof.write(decom_str)
                 else:
-                    os.copy(f, TMP_SYSLOG_FOLDER)
+                    os.system(f"cp {syslog_path}/{f} {TMP_SYSLOG_FOLDER}")
             
         except Exception as err:
             raise err
@@ -320,7 +321,7 @@ def prepare_files_for_regex(branch):
     tar_branch = branch if branch == "develop" else f"develop-{branch}"
     tarball_file = f"/auto/sw_regression/system/SONIC/MARS/tarballs/SONIC_CANONICAL-sonic-mgmt_{tar_branch}.db.1.tgz"
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    sonic_mgmt_unzip_folder = f"sonic-mgmt_{branch}-{int(datetime.now().timestamp())}"
+    sonic_mgmt_unzip_folder = f"sonic-mgmt_{branch}-{int(datetime.now().timestamp())}-{RANDOM_SUFFIX}"
     ignore_folder = current_folder + "/" + sonic_mgmt_unzip_folder
     if os.path.exists(tarball_file):
         dynamic_ignore = f"sonic-mgmt/tests/common/plugins/loganalyzer_dynamic_errors_ignore/"
