@@ -3740,44 +3740,6 @@ def gnmi_connection(request, setup_connection):
     yield connection
 
 
-def is_sai_profile_multi_binding_enabled(duthost):
-    """
-    Check if SAI_ACL_MULTI_BINDING_ENABLED is enabled in syncd docker's sai.profile
-
-    Args:
-        duthost: DUT host object
-
-    Returns:
-        bool: True if SAI_ACL_MULTI_BINDING_ENABLED=1 exists in sai.profile, False otherwise
-    """
-    try:
-        # Check if sai.profile exists in syncd docker
-        result = duthost.shell(
-            "docker exec syncd ls /tmp/sai.profile", module_ignore_errors=True)
-        if result['rc'] != 0:
-            return False
-
-        # Check if SAI_ACL_MULTI_BINDING_ENABLED=1 exists in the file
-        result = duthost.shell(
-            "docker exec syncd grep 'SAI_ACL_MULTI_BINDING_ENABLED=1' /tmp/sai.profile", module_ignore_errors=True)
-        return result['rc'] == 0
-    except Exception as e:
-        logger.error("Failed to check sai.profile: %s", str(e))
-        return False
-
-
-@pytest.fixture(scope="module")
-def is_multi_binding_acl_enabled(duthosts, tbinfo):
-    """
-    Check if multi-binding ACL is enabled on the DUT
-    """
-    for duthost in duthosts:
-        if not is_sai_profile_multi_binding_enabled(duthost):
-            if is_mellanox_device(duthost) and 'dualtor' in tbinfo['topo']['name']:
-                pytest.fail(
-                    "No multi-binding ACL supported on this platform, please check the sai.profile")
-            pytest.skip("No multi-binding ACL supported on this platform")
-
 class DualtorMuxPortSetupConfig(enum.Flag):
     """Dualtor mux port setup config."""
     DUALTOR_SKIP_SETUP_MUX_PORTS = enum.auto()

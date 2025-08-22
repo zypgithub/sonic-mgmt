@@ -13,6 +13,9 @@ import re
 
 import ptf.testutils as testutils
 import ptf.packet as packet
+from scapy.layers.l2 import Ether
+from scapy.layers.inet import IP
+from scapy.packet import Raw
 
 from abc import abstractmethod
 from ptf.mask import Mask
@@ -1422,6 +1425,12 @@ class BaseEverflowTest(object):
                     inner_packet.set_do_not_care_scapy(packet.IP, "chksum")
                     inner_packet.set_do_not_care_scapy(packet.IP, "ttl")
 
+                if multi_binding_acl:
+                    inner_packet.set_do_not_care_scapy(packet.Ether, "dst")
+                    inner_packet.set_do_not_care_scapy(packet.Ether, "src")
+                    inner_packet.set_do_not_care_scapy(packet.IP, "chksum")
+                    inner_packet.set_do_not_care_scapy(packet.IP, "ttl")
+
                 logging.info("Expected inner packet: %s", mirror_packet_sent.summary())
                 pytest_assert(inner_packet.pkt_match(mirror_packet_sent),
                               "Mirror payload does not match received packet")
@@ -1438,7 +1447,8 @@ class BaseEverflowTest(object):
         if asic_type == "mellanox":
             if six.PY2:
                 if multi_binding_acl:
-                    padded = binascii.unhexlify("0" * 44) + str(padded)[:24] + binascii.unhexlify("0" * 40) + str(padded)[24:]
+                    padded = binascii.unhexlify("0" * 44) + str(padded)[:24] + binascii.unhexlify("0" * 40) + \
+                        str(padded)[24:]
                 else:
                     padded = binascii.unhexlify("0" * 44) + str(padded)
             else:

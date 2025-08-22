@@ -36,6 +36,7 @@ from tests.common.validation.sai.acl_validation import validate_acl_asicdb_entri
 from tests.common.utilities import is_ipv4_address
 from tests.common.utilities import is_ipv6_only_topology
 from tests.common.dualtor.dual_tor_utils import show_muxcable_status
+from tests.common.fixtures.duthost_utils import is_multi_binding_acl_enabled  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

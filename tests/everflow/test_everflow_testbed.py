@@ -28,6 +28,7 @@ from tests.common.dualtor.mux_simulator_control import toggle_all_simulator_port
 from tests.common.dualtor.dual_tor_common import mux_config                                               # noqa: F401
 from tests.common.helpers.ptf_tests_helper import find_links
 from ipaddress import ip_address, IPv4Address
+from tests.common.fixtures.duthost_utils import is_multi_binding_acl_enabled  # noqa: F401
 
 pytestmark = [
     pytest.mark.topology("t0", "t1", "t2", "lt2", "ft2", "m0", "m1")

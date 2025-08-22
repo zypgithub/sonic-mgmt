@@ -276,7 +276,7 @@ def shutdown_ebgp(duthosts, rand_one_dut_hostname):
         # Shutdown all eBGP neighbors
         duthost.command("sudo config bgp shutdown all")
         # Verify that the total eBGP routes are 0.
-        pt_assert(wait_until(120, 2, 5, check_ebgp_routes, 0, 0, duthost),
+        pt_assert(wait_until(60, 2, 5, check_ebgp_routes, 0, 0, duthost),
                   "eBGP routes are not 0 after shutting down all neighbors on {}".format(duthost))
         pt_assert(wait_until(orch_cpu_timeout, 2, 0, check_orch_cpu_utilization, duthost, orch_cpu_threshold),
                   "Orch CPU utilization {} > orch cpu threshold {} after shutdown all eBGP"
@@ -822,7 +822,7 @@ def duthosts_ipv6_mgmt_only(duthosts, backup_and_restore_config_db_on_duts):
                     try:
                         # Add a temporary debug log to see if the DUT is reachable via IPv6 mgmt-ip. Will remove later
                         duthost_interface = duthost.shell("sudo ifconfig eth0")['stdout']
-                        logging.debug(f"Checking host[{duthost.hostname}] ifconfig eth0: [{duthost_interface}]")
+                        logging.debug(f"Checking host[{duthost.hostname}] ifconfig eth0:[{duthost_interface}]")
                         ssh_client.connect(ip_addr_without_mask,
                                            username="WRONG_USER", password="WRONG_PWD", timeout=15)
                     except AuthenticationException:
@@ -834,12 +834,10 @@ def duthosts_ipv6_mgmt_only(duthosts, backup_and_restore_config_db_on_duts):
                     finally:
                         ssh_client.close()
 
-        if (not ipv6_address[duthost.hostname] and not has_available_ipv6_addr or
-                ipaddress.IPv6Address(ipv6_address[duthost.hostname][0]).is_link_local):
-            pytest.skip(f"{duthost.hostname} doesn't have IPv6 Management IP address or doesn't have available IPv6 "
-                        f"Management IP address")
-        if ipv6_address[duthost.hostname] and not has_available_ipv6_addr:
-            pytest.fail(f"{duthost.hostname}  IPv6 address configuration presents but not applied to mgmt port")
+        pt_assert(len(ipv6_address[duthost.hostname]) > 0,
+                  f"{duthost.hostname} doesn't have IPv6 Management IP address")
+        pt_assert(has_available_ipv6_addr,
+                  f"{duthost.hostname} doesn't have available IPv6 Management IP address")
 
     # Remove IPv4 mgmt-ip
     for duthost in duthosts.nodes:
@@ -1140,9 +1138,48 @@ def assert_addr_in_output(addr_set: Dict[str, List], hostname: str,
     for addr in addr_set[hostname]:
         if expect_exists:
             pt_assert(addr in cmd_output,
-                      f"{addr} not in {hostname} {cmd_desc}")
+                      f"{addr} not appeared in {hostname} {cmd_desc}")
             logger.info(f"{addr} exists in the output of {cmd_desc}")
         else:
             pt_assert(addr not in cmd_output,
                       f"{hostname} {cmd_desc} still with addr {addr}")
-            logger.info(f"{addr} not in the output of {cmd_desc} which is expected")
+            logger.info(f"{addr} not exists in the output of {cmd_desc} which is expected")
+
+
+def is_sai_profile_multi_binding_enabled(duthost):
+    """
+    Check if SAI_ACL_MULTI_BINDING_ENABLED is enabled in syncd docker's sai.profile
+
+    Args:
+        duthost: DUT host object
+
+    Returns:
+        bool: True if SAI_ACL_MULTI_BINDING_ENABLED=1 exists in sai.profile, False otherwise
+    """
+    try:
+        # Check if sai.profile exists in syncd docker
+        result = duthost.shell(
+            "docker exec syncd ls /tmp/sai.profile", module_ignore_errors=True)
+        if result['rc'] != 0:
+            return False
+
+        # Check if SAI_ACL_MULTI_BINDING_ENABLED=1 exists in the file
+        result = duthost.shell(
+            "docker exec syncd grep 'SAI_ACL_MULTI_BINDING_ENABLED=1' /tmp/sai.profile", module_ignore_errors=True)
+        return result['rc'] == 0
+    except Exception as e:
+        logger.error("Failed to check sai.profile: %s", str(e))
+        return False
+
+
+@pytest.fixture(scope="module")
+def is_multi_binding_acl_enabled(duthosts, tbinfo):
+    """
+    Check if multi-binding ACL is enabled on the DUT
+    """
+    for duthost in duthosts:
+        if not is_sai_profile_multi_binding_enabled(duthost):
+            if is_mellanox_device(duthost) and 'dualtor' in tbinfo['topo']['name']:
+                pytest.fail(
+                    "No multi-binding ACL supported on this platform, please check the sai.profile")
+            pytest.skip("No multi-binding ACL supported on this platform")
