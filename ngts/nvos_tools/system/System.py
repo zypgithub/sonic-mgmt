@@ -105,7 +105,7 @@ class System(BaseComponent):
         self.validate_health_status(expected_status)
 
     def action_reboot(self, flags: Union[str, Tuple[str]] = (), send_user_confirmation=None, reboot_params=True,
-                      engine=None, device=None, expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES):
+                      engine=None, device=None, additional_params=None, expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES):
         """
         See documentation of BaseComponent.action().
         Examples for `flags`: 'force' ; 'force immediate' ; ['force', 'immediate'] ; ''
@@ -116,7 +116,7 @@ class System(BaseComponent):
 
             start_time = time.time()
             result = self.action(ActionConsts.REBOOT, flags=flags, engine=engine, device=device,
-                                 send_user_confirmation=send_user_confirmation, reboot_params=reboot_params,
+                                 send_user_confirmation=send_user_confirmation, reboot_params=reboot_params, additional_params=additional_params,
                                  expected_output=expected_output)
             end_time = time.time()
             duration = end_time - start_time

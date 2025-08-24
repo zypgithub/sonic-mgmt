@@ -1487,21 +1487,13 @@ class RebootConsts:
     KERNEL_PANIC = 'Kernel Panic'
     PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
+    REMOTE_REBOOT = "remote-reboot"
 
     DEFAULT_MODES = [POWER_CYCLE, HALT, COLD, IMMEDIATE]
     REBOOT_USER_NA = "N/A"
     REBOOT_USER_ADMIN = "admin"
     REBOOT_USER_SYSTEM = "system"
 
-    REBOOT_REASON_MAP = {
-        HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_ADMIN),
-        POWER_CYCLE: (REBOOT_REASON_POWER_CYCLE, REBOOT_USER_NA),
-        COLD: ("reboot", REBOOT_USER_ADMIN),
-        IMMEDIATE: ("Platform reset", REBOOT_USER_ADMIN),
-        FACTORY_RESET: ("reboot", REBOOT_USER_SYSTEM),
-        POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, REBOOT_USER_NA),
-        PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, REBOOT_USER_NA)
-    }
     POWER_CYCLE_NOT_SUPPORTED_ERR_MSG = "Power cycle mode is not supported on this system"
 
 

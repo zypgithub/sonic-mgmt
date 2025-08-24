@@ -16,7 +16,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.bmc
-def test_system_power_button(engines, topology_obj):
+def test_system_power_button(engines, devices, topology_obj):
     """
     Test cover juliet power button functionality
         Test flow:
@@ -25,7 +25,7 @@ def test_system_power_button(engines, topology_obj):
             3. check reboot reason
     """
     system = System()
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.POWER_BUTTON]
+    expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.POWER_BUTTON]
 
     try:
         with allure.step('Simulate power button and check switch is down'):

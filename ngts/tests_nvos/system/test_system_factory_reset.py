@@ -57,7 +57,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
     TestToolkit.tested_api = test_api
     system = System()
     cluster = Cluster()
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.FACTORY_RESET]
+    expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
 
     with allure.step('pre factory reset steps'):
         apply_and_save_port, current_time, just_apply_port, health_status, machine_type, not_apply_port, \

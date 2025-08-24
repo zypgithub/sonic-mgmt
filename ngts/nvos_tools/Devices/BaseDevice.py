@@ -91,6 +91,7 @@ class BaseDevice(ABC):
         self.supports_tpm_testing = True
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
         self.allow_cpld_update = False
+        self.reboot_reason_dict = {}
 
     def _init_fan_list(self):
         self.fan_list = []

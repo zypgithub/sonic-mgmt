@@ -9,7 +9,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, SystemConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -319,6 +319,16 @@ class IbSwitch(BaseSwitch):
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
         self.techsupport_upload_success_message = 'File upload successfully'
         self.techsupport_delete_success_message = 'File delete successfully'
+
+        self.reboot_reason_dict = {
+            RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
+            RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
+            RebootConsts.PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
+            RebootConsts.REMOTE_REBOOT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA)
+        }
 
         self.category_default_disabled_dict = {
             StatsConsts.HISTORY_DURATION: StatsConsts.HISTORY_DURATION_DEFAULT,
@@ -1269,6 +1279,16 @@ class JulietSwitch(NvLinkSwitch):
                 'filename': 'cec1736-apfw-0000012.fwpkg',
                 'version_name': '0ACTV_00.00.018d',
                 'date': '08/21/2024'})
+
+        self.reboot_reason_dict = {
+            RebootConsts.HALT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.POWER_CYCLE: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
+            RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
+            RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA)
+        }
 
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"

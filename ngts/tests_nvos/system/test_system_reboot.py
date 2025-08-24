@@ -30,7 +30,7 @@ def test_reboot_command(engines, devices, test_name):
         1. run nv action reboot system
     """
     system = System(None)
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[RebootConsts.COLD]
+    expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.COLD]
 
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
@@ -132,7 +132,8 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
         result_obj = _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode)
         result_obj.verify_result()
-        expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
+
+        expected_reason, expected_user = devices.dut.reboot_reason_dict[mode]
 
         with allure.step("Validate reboot reason and user"):
             validate_reboot_reason_and_user(system, expected_reason, expected_user)
@@ -147,20 +148,14 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
 
 @pytest.mark.system
-def test_reboot_via_psu_off(engines, devices, topology_obj):
+def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:
-        1. run remote reboot script to turn off PSU and turn on the PSU
+        1. run remote reboot script to turn electrical source power off and on
         2. Validate reboot reason in system events
     """
-    with allure.step('Check whether device has BMC'):
-        if devices.dut.has_bmc:
-            mode = RebootConsts.POWER_CYCLE
-        else:
-            mode = RebootConsts.PSU_OFF
     system = System()
-
-    expected_reason, expected_user = RebootConsts.REBOOT_REASON_MAP[mode]
+    expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.REMOTE_REBOOT]
 
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
@@ -169,7 +164,7 @@ def test_reboot_via_psu_off(engines, devices, topology_obj):
         noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
         dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
 
-    with allure.step("Reboot the system using PSU off-on"):
+    with allure.step("Reboot the system using remote reboot"):
         DutUtilsTool.dut_psu_control(engines, topology_obj, dhcp_hostname=dhcp_hostname)
 
     res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
@@ -206,7 +201,7 @@ def _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode):
         reboot_params.should_wait_till_system_ready = mode != RebootConsts.HALT
         reboot_result_obj, _ = OperationTime.save_duration(f"reboot {mode}", '', test_name,
                                                            system.action_reboot,
-                                                           flags=['mode', mode],
+                                                           additional_params={'mode': mode},
                                                            reboot_params=reboot_params)
         time.sleep(10)
 
