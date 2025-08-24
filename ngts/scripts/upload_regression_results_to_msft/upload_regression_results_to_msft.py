@@ -373,7 +373,7 @@ class ReleaseResultsUploader:
     def review_result(self, result, message):
         redmine_issue = None
         community_issue_url = None
-        if result == "skipped":
+        if result == "skipped" or result == "fail":
             redmine_issue = re.search(r"https:\/\/redmine\.mellanox\.com\/issues\/(\d+)", str(message))
             if redmine_issue:
                 redmine_id = redmine_issue.group(1)
