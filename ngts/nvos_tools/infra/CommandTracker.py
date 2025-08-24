@@ -1,5 +1,6 @@
 import time
 import logging
+import inspect
 from typing import List, Tuple, Optional
 from functools import wraps
 
@@ -17,6 +18,7 @@ class CommandTracker:
         self.is_enabled = True
         self._wrapped_engines = set()  # Track which engines we've already wrapped
         self._monkey_patching_enabled = False  # Track if monkey patching is active
+        self._visited_ids = set()  # Track visited objects to avoid cycles
 
     def clear(self):
         """Clear all tracked commands - call at start of each test."""
@@ -180,6 +182,28 @@ class CommandTracker:
                 engine.send_config_set = self.track_send_config_set(engine.send_config_set)
                 wrapped_methods.append('send_config_set')
 
+            # Also wrap underlying Netmiko connection if exposed as `engine.engine`
+            # This ensures commands issued via send_command/send_command_timing are tracked
+            try:
+                inner = getattr(engine, 'engine', None)
+                if inner is not None:
+                    inner_id = id(inner)
+                    if inner_id not in self._wrapped_engines:
+                        netmiko_wrapped = False
+                        if hasattr(inner, 'send_command'):
+                            inner.send_command = self.track_command(inner.send_command)
+                            netmiko_wrapped = True
+                        if hasattr(inner, 'send_command_timing'):
+                            inner.send_command_timing = self.track_command(inner.send_command_timing)
+                            netmiko_wrapped = True
+                        if netmiko_wrapped:
+                            self._wrapped_engines.add(inner_id)
+                            wrapped_methods.append('engine.send_command')
+                            wrapped_methods.append('engine.send_command_timing')
+            except Exception:
+                # Be conservative: failure to wrap inner engine should not break test execution
+                pass
+
             if wrapped_methods:
                 self._wrapped_engines.add(engine_id)
                 methods_str = ', '.join(wrapped_methods)
@@ -198,30 +222,76 @@ class CommandTracker:
             max_depth: Maximum recursion depth to prevent infinite loops
             _current_depth: Internal parameter for recursion tracking
         """
+        # Reset visited set at the start of a new traversal
+        if _current_depth == 0:
+            self._visited_ids.clear()
+
         if _current_depth >= max_depth:
             return
+
+        # Avoid infinite recursion on cyclic graphs
+        try:
+            obj_id = id(obj)
+        except Exception:
+            obj_id = None
+        if obj_id is not None:
+            if obj_id in self._visited_ids:
+                return
+            self._visited_ids.add(obj_id)
 
         if hasattr(obj, 'run_cmd') or hasattr(obj, 'run_cmd_set') or hasattr(obj, 'send_config_set'):
             # This looks like an engine, wrap it
             self.wrap_engine(obj)
-        elif hasattr(obj, '__dict__'):
-            # Search object attributes
-            for attr_name in dir(obj):
-                if not attr_name.startswith('_'):  # Skip private attributes
-                    try:
-                        attr_value = getattr(obj, attr_name)
-                        if not callable(attr_value):  # Skip methods
-                            self.wrap_engines_recursively(attr_value, max_depth, _current_depth + 1)
-                    except (AttributeError, TypeError):
-                        continue
         elif isinstance(obj, dict):
             # Search dictionary values
             for value in obj.values():
                 self.wrap_engines_recursively(value, max_depth, _current_depth + 1)
-        elif isinstance(obj, (list, tuple)):
-            # Search list/tuple items
+        elif isinstance(obj, (list, tuple, set)):
+            # Search iterable items
             for item in obj:
                 self.wrap_engines_recursively(item, max_depth, _current_depth + 1)
+        elif hasattr(obj, '__dict__'):
+            # Prefer __dict__ to avoid triggering properties/descriptors
+            for attr_name, attr_value in obj.__dict__.items():
+                if attr_name.startswith('_'):
+                    continue
+                if callable(attr_value):
+                    continue
+                self.wrap_engines_recursively(attr_value, max_depth, _current_depth + 1)
+            # Fallback: inspect non-data attributes on the class without invoking properties
+            for attr_name in dir(obj):
+                if attr_name.startswith('_'):
+                    continue
+                # Skip if already seen via __dict__
+                if attr_name in obj.__dict__:
+                    continue
+                try:
+                    class_attr = getattr(type(obj), attr_name, None)
+                    # Skip properties and data descriptors to avoid executing code
+                    if isinstance(class_attr, property) or inspect.isdatadescriptor(class_attr):
+                        continue
+                    # Accessing here should be safe (non-descriptor), but guard anyway
+                    attr_value = getattr(obj, attr_name, None)
+                except Exception:
+                    continue
+                if callable(attr_value):
+                    continue
+                self.wrap_engines_recursively(attr_value, max_depth, _current_depth + 1)
+        else:
+            # Last resort: try to iterate attributes carefully
+            try:
+                for attr_name in dir(obj):
+                    if attr_name.startswith('_'):
+                        continue
+                    class_attr = getattr(type(obj), attr_name, None)
+                    if isinstance(class_attr, property) or inspect.isdatadescriptor(class_attr):
+                        continue
+                    attr_value = getattr(obj, attr_name, None)
+                    if callable(attr_value):
+                        continue
+                    self.wrap_engines_recursively(attr_value, max_depth, _current_depth + 1)
+            except Exception:
+                return
 
     def log_summary(self):
         """Log a summary of command execution statistics."""

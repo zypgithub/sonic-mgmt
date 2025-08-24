@@ -323,7 +323,7 @@ class NVUECliCoverage:
             # First priority: Use TestToolkit.branch if available
             if TestToolkit.branch:
                 cls.swversion = TestToolkit.branch
-                logging.info(f"Using TestToolkit.branch for sw version: {cls.swversion}")
+                logging.info(f"Using TestToolkit.branch for sw-version: {cls.swversion}")
             else:
                 # Fallback: Use original detection logic
                 logging.info("TestToolkit.branch not available, using original version detection")

@@ -150,6 +150,7 @@ def summarize_test_run(tests, report_url):
       - broken, unknown => counted as failed
     Returns a dict with the stats.
     """
+    logger.info(f"Total number of tests collected: {len(tests)}")
     # Counters
     passed = skipped = failed = broken = unknown = 0
 

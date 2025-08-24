@@ -30,7 +30,6 @@ def acl_cleanup(engines):
     with allure.step("ACL cleanup"):
         try:
             Acl().unset()
-            engines.dut.run_cmd("history -w")
             Port('').interface.unset(apply=True, ask_for_confirmation=True)
 
         except ValueError as e:
