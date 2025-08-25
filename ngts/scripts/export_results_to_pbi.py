@@ -116,28 +116,82 @@ def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summa
         mssql_connection_obj.disconnect_db()
 
 
-def parse_suites(node, base_url, suite_chain=[], results=[]):
+def _fetch_test_case_data(base_url: str, uid: str) -> dict:
+    """Fetch a single test-case JSON by uid. Returns {} on failure."""
+    if not uid:
+        return {}
+    test_case_url = f"{base_url}/data/test-cases/{uid}.json"
+    try:
+        resp = requests.get(test_case_url, timeout=10)
+        resp.raise_for_status()
+        return resp.json() or {}
+    except Exception:
+        return {}
+
+
+def _append_test_result(results: list, suite_chain: list, base_url: str, node: dict):
+    """Append a normalized test result, fetching per-test JSON if needed."""
+    uid = node.get("uid", "")
+    name = node.get("name", "Unknown")
+    status = node.get("status")
+    duration_ms = None
+    time_block = node.get("time") or {}
+    if isinstance(time_block, dict):
+        duration_ms = time_block.get("duration")
+
+    # Fallback: read from test-case JSON when status/duration are missing in suites
+    if status is None or duration_ms is None:
+        tc = _fetch_test_case_data(base_url, uid)
+        if status is None:
+            status = tc.get("status")
+        if duration_ms is None:
+            time_block = tc.get("time") or {}
+            if isinstance(time_block, dict):
+                duration_ms = time_block.get("duration")
+
+    duration_min = (duration_ms / 60000.0) if isinstance(duration_ms, (int, float)) else 0.0
+    test_url = f"{base_url}/index.html#testresult/{uid}" if uid else None
+
+    results.append({
+        SUITE_PATH: " > ".join(suite_chain),
+        TEST_NAME: name,
+        STATUS: status or "unknown",
+        DURATION: duration_min,
+        TEST_URL: test_url,
+    })
+
+
+def parse_suites(node, base_url, suite_chain=None, results=None):
+    """Recursively parse an Allure suites tree, robust to different layouts."""
+    if results is None:
+        results = []
+    if suite_chain is None:
+        suite_chain = []
+
+    # Handle top-level list of nodes
+    if isinstance(node, list):
+        for child in node:
+            parse_suites(child, base_url, suite_chain, results)
+        return results
+
+    if not isinstance(node, dict):
+        return results
 
     current_name = node.get("name", "Unknown")
     new_chain = suite_chain + [current_name]
 
-    for child in node.get("children", []):
-        # If child has a "status", it's a test node
-        if "status" in child:
-            test_uid = child.get("uid", "")
-            # Build a direct URL for the test
-            test_url = f"{base_url}/index.html#testresult/{test_uid}" if test_uid else None
-
-            results.append({
-                SUITE_PATH: " > ".join(new_chain),
-                TEST_NAME: child["name"],
-                STATUS: child["status"],
-                DURATION: child["time"]["duration"] / 60000,
-                TEST_URL: test_url  # new field
-            })
-        else:
-            # Otherwise, it’s another suite node—recurse
-            parse_suites(child, base_url, new_chain, results)
+    children = node.get("children")
+    if isinstance(children, list) and children:
+        for child in children:
+            grand_children = child.get("children") if isinstance(child, dict) else None
+            is_leaf = not grand_children or (isinstance(child, dict) and child.get("type") == "test")
+            if is_leaf and isinstance(child, dict):
+                _append_test_result(results, new_chain, base_url, child)
+            else:
+                parse_suites(child, base_url, new_chain, results)
+    else:
+        if isinstance(node, dict) and "uid" in node:
+            _append_test_result(results, suite_chain, base_url, node)
 
     return results
 
@@ -199,9 +253,19 @@ def summarize_results_and_upload(report_url, allure_project, session_id, target_
     if TopologyConsts.NVOS.lower() in allure_project.lower():
         try:
             base_url = os.path.dirname(report_url.rstrip('/'))
-            suites_resp = requests.get(f"{base_url}/data/suites.json")
-            suites_resp.raise_for_status()
-            suites_data = suites_resp.json()
+
+            # Try common paths for suites data
+            suites_data = None
+            for suites_path in ("data/suites.json", "widgets/suites.json"):
+                try:
+                    suites_resp = requests.get(f"{base_url}/{suites_path}", timeout=10)
+                    suites_resp.raise_for_status()
+                    suites_data = suites_resp.json()
+                    break
+                except Exception:
+                    continue
+            if suites_data is None:
+                raise Exception("Could not retrieve suites data from Allure report")
 
             logger.info("Parse run results:")
             parsed_results = parse_suites(suites_data, base_url)
