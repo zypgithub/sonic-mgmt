@@ -271,11 +271,10 @@ class ReleaseResultsUploader:
             logger.error(f"Error loading redmine issues file: {e}")
             raise e
 
-    def update_commercials_in_columns(self, df, i, old_hostname, new_hostname, commercial_name):
+    def update_commercials_in_columns(self, df, i, old_hostname, new_hostname):
         test_name = df.loc[i, "test name"]
         testbed = df.loc[i, "testbed"]
-        internal_name = self.get_internal_name(old_hostname)
-        df.loc[i, "test name"] = self.handle_hostname_in_testbed_and_test_name(test_name, old_hostname, commercial_name)
+        df.loc[i, "test name"] = self.handle_hostname_in_testbed_and_test_name(test_name, old_hostname, new_hostname)
         df.loc[i, "testbed"] = self.handle_hostname_in_testbed_and_test_name(testbed, old_hostname, new_hostname)
         if isinstance(df.loc[i, "message"], str):
             for internal_name, commercial_name in ResultUploaderConst.HOST_INTERNAL_NAMES_MAP.items():
@@ -298,13 +297,13 @@ class ReleaseResultsUploader:
             platform = df.loc[i, "platform"]
             commercial_name = re.search(r"x86_64-\w*_(\w+\d{4}\w*)-.*", platform).group(1)
             new_hostname = self.get_new_hostname(old_hostname, commercial_name)
-            df = self.update_commercials_in_columns(df, i, old_hostname, new_hostname, commercial_name)
+            df = self.update_commercials_in_columns(df, i, old_hostname, new_hostname)
             message = df.loc[i, "message"]
             host_commercial_name_col.append(new_hostname)
             junit_xml_path = self.handle_sanitize_data(df, i, junit_xml_path, session_id,
                                                        old_hostname, new_hostname, test_name, result)
             junit_xml_path = self.handle_redmine_url_update(df, i, junit_xml_path, session_id, result, message)
-            self.handle_remove_failures(row_idx_to_remove, i, session_id, junit_xml_path, test_name, modify_xml)
+            self.handle_remove_failures(row_idx_to_remove, i, session_id, junit_xml_path, test_name, modify_xml, commercial_name)
             self.update_xml_path_if_modified(df, i)
         self.handle_update_of_modified_xml_path(df)
         new_host_col = pd.DataFrame({'host': host_commercial_name_col})
@@ -422,12 +421,22 @@ class ReleaseResultsUploader:
             self.modified_xml_path[junit_xml_path] = updated_junit_xml_path
         return updated_junit_xml_path
 
-    def handle_remove_failures(self, row_idx_to_remove, row_idx, session_id, junit_xml_path, test_name, modify_xml):
-        updated_junit_xml_path = self.remove_failures(session_id, junit_xml_path, test_name, modify_xml)
+    def handle_remove_failures(self, row_idx_to_remove, row_idx, session_id, junit_xml_path, test_name, modify_xml, commercial_name):
+        updated_junit_xml_path = self.remove_failures(session_id, junit_xml_path, test_name, modify_xml, commercial_name)
         if updated_junit_xml_path:
             row_idx_to_remove.append(row_idx)
 
-    def remove_failures(self, session, junit_xml_path, test_name_to_remove, modify_xml):
+    def check_tests_without_setup_name(self, test_name, test_name_to_remove, commercial_name):
+        pattern = rf"\b\w+-{commercial_name}-\d+\b"
+        commercial_name_match = re.search(pattern, test_name)
+        commercial_name_match_to_remove = re.search(pattern, test_name_to_remove)
+        if commercial_name_match and commercial_name_match_to_remove:
+            test_name_without_commercial_name = test_name.replace(commercial_name_match.group(), "")
+            test_name_to_remove_without_commercial_name = test_name_to_remove.replace(commercial_name_match_to_remove.group(), "")
+            return test_name_without_commercial_name == test_name_to_remove_without_commercial_name
+        return False
+
+    def remove_failures(self, session, junit_xml_path, test_name_to_remove, modify_xml, commercial_name):
         updated_junit_xml_path = None
         if modify_xml == ResultUploaderConst.REMOVE_FAILED_TESTCASE:
             mytree = ET.parse(junit_xml_path)
@@ -436,11 +445,11 @@ class ReleaseResultsUploader:
                 for testcase in testsuite.findall('testcase'):
                     classname_path = self.parse_classname(testcase.attrib['classname'])
                     test_name = f"{classname_path}::{testcase.attrib['name']}"
-                    if test_name == test_name_to_remove:
+                    if test_name == test_name_to_remove or self.check_tests_without_setup_name(test_name, test_name_to_remove, commercial_name):
+                        logger.info(f"Remove: {test_name_to_remove} from {junit_xml_path}")
                         testsuite.remove(testcase)
             updated_junit_xml_path = self.get_updated_junit_xml_path(junit_xml_path, session)
             mytree.write(updated_junit_xml_path)
-            logger.info(f"Remove: {test_name_to_remove} from {junit_xml_path}")
             logger.info(f"Create: new updated xml at {updated_junit_xml_path}")
         return updated_junit_xml_path
 
@@ -735,17 +744,17 @@ class ReleaseResultsUploader:
             logger.warning(f"Couldn't parse any testcase in junit file {junit_xml_path}")
         return excel_rows
 
-    def handle_hostname_in_testbed_and_test_name(self, name, host, host_name_to_replace):
-        sanitized_naming = name.replace(host, host_name_to_replace)
+    def handle_hostname_in_testbed_and_test_name(self, data, host, host_name_to_replace):
+        sanitized_data = data.replace(host, host_name_to_replace)
         internal_name = self.get_internal_name(host)
         if internal_name:
-            internal_name_match = re.search(rf"\b\w+-{internal_name}-\d+\b", sanitized_naming)
+            internal_name_match = re.search(rf"\b\w+-{internal_name}-\d+\b", sanitized_data)
             if internal_name_match:
                 logger.warning(f"Found internal name {internal_name_match.group()} in test name "
-                               f"{sanitized_naming} for host {host}, might be a bug in the test name "
+                               f"{sanitized_data} for host {host}, might be a bug in the test name "
                                f"or dual-tor host")
-                sanitized_naming = sanitized_naming.replace(internal_name_match.group(), host_name_to_replace)
-        return sanitized_naming
+                sanitized_data = sanitized_data.replace(internal_name_match.group(), host_name_to_replace)
+        return sanitized_data
 
     def parse_junit_file(self, session_id, junit_xml_path):
         """
