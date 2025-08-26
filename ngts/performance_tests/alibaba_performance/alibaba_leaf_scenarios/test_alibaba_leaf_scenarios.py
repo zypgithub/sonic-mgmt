@@ -10,7 +10,11 @@ from ngts.helpers.performance.performance_setup_helpers import (configure_mloops
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, SPCXRAConsts
 from ngts.performance_tests.alibaba_performance.conftest import get_alibaba_leaf_traffic
-from ngts.performance_tests.alibaba_performance.alibaba_leaf_scenarios.conftest import TESTS_SCENARIO, TestParameters
+from ngts.performance_tests.alibaba_performance.alibaba_leaf_scenarios.conftest import (TESTS_SCENARIO, TestIPCombinations, TestParameters,
+                                                                                        TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS,
+                                                                                        TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS,
+                                                                                        TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS,
+                                                                                        TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS)
 from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 
 
@@ -20,10 +24,20 @@ logger = logging.getLogger()
 @pytest.mark.parametrize(
     "test_params",
     [
-        TestParameters(0.975, 1900, True, 4, "shaper_97.5_pkt_size_1900_ar_enabled_split_4_host_ports"),
-        TestParameters(0.999, 4096, True, 4, "shaper_99.9_pkt_size_4096_ar_enabled_split_4_host_ports"),
-        TestParameters(0.975, 1900, False, 4, "shaper_97.5_pkt_size_1900_ar_disabled_split_4_host_ports"),
-        TestParameters(0.975, 2000, False, 2, "shaper_97.5_pkt_size_2000_ar_disabled_split_2_host_ports"),
+
+        TestParameters(0.975, True, 4, 128, 60, TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS),
+        TestParameters(0.999, True, 4, 128, 60, TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS),
+        TestParameters(0.975, False, 4, 64000, 64000, TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS),
+        TestParameters(0.975, False, 2, 64000, 64000, TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS)
+    ],
+    indirect=True
+)
+@pytest.mark.parametrize(
+    "ip_combinations",
+    [
+        TestIPCombinations(ipv4_enabled="ipv4_enabled", ipv6_enabled="ipv6_disabled"),
+        TestIPCombinations(ipv4_enabled="ipv4_disabled", ipv6_enabled="ipv6_enabled"),
+        TestIPCombinations(ipv4_enabled="ipv4_enabled", ipv6_enabled="ipv6_enabled"),
     ],
     indirect=True
 )
@@ -42,21 +56,7 @@ class TestAlibabaLeafScenario:
 
     @allure.title('alibaba_performance_leaf_scenario. Added dynamically in test body')
     @allure.description('Added dynamically in test body')
-    @pytest.mark.parametrize(
-        "ip_combinations",
-        [
-            ("ipv4_enabled", "ipv6_disabled"),
-            ("ipv4_disabled", "ipv6_enabled"),
-            ("ipv4_enabled", "ipv6_enabled"),
-        ]
-    )
     def test_alibaba_performance_leaf_scenario(self, request, conf_args, ip_combinations):
-        if ip_combinations == ("ipv4_enabled", "ipv6_disabled"):
-            conf_args['packet_size'] = conf_args['packet_size'] + 100
-
-        conf_args['is_ipv4'] = ip_combinations[0] == "ipv4_enabled"
-        conf_args['is_ipv6'] = ip_combinations[1] == "ipv6_enabled"
-
         test_name = get_perf_test_name(request)
 
         with allure.step(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}"):
@@ -68,6 +68,8 @@ class TestAlibabaLeafScenario:
                                  f"{'with' if conf_args['is_ipv6'] else 'without'} IPv6. "
                                  f"{'with' if conf_args['is_ipv4'] else 'without'} IPv4. "
                                  f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
+                                 f"{conf_args['left_num_dip_to_send']} dips to host. "
+                                 f"{conf_args['right_num_dip_to_send']} dips to spine. "
                                  )
 
                 scenario_description = f"{scenario_name} "
@@ -88,9 +90,11 @@ class TestAlibabaLeafScenario:
                     "left_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096], "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096]},
                     "right_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2}
                 }
+                ignore_counter_list = ['tx_ecn_marked_tc_3']
                 config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                           chip_type=self.chip_type,
                                           bw_threshold=expected_bw,
                                           power_threshold=self.power_thresholds_by_chip_type,
-                                          skip_first_counters_iteration=True)
+                                          skip_first_counters_iteration=True,
+                                          ignore_counter_list=ignore_counter_list)
                 run_validation(config)

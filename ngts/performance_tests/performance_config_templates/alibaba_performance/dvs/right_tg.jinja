@@ -2,7 +2,7 @@
     "sdk_test_info":
         {
             "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
-            "sdk_test_name": "SpcxTG"
+            "sdk_test_name": "MultiDipsTG"
         },
     "{{ PerfConsts.SDK_TEST_CONF }}": {
             {% set ports = right_left_ports_dict %}
@@ -20,6 +20,14 @@
             "source_ip": {% if conf_args.is_ipv6 %} "192:168:0:0:0:0:0:1" {% else %} "4.4.4.4" {% endif %},
             "packet_size": 4096,
             "vlan": 5,
+
+            {# Support for multi-destination IPs #}
+            "is_ipv4": "{{conf_args.is_ipv4}}",
+            "is_ipv6": "{{conf_args.is_ipv6}}",
+            "start_dip_ipv4": "{{conf_args.dip_right_to_left_start_ipv4}}",
+            "start_dip_ipv6": "{{conf_args.dip_right_to_left_start_ipv6}}",
+            "num_dip_ipv4_to_send": "{{conf_args.right_num_dip_to_send}}",
+            "num_dip_ipv6_to_send": "{{conf_args.right_num_dip_to_send}}",
 
             "left_dst_ip": "None",
             "right_dst_ip": "None",

@@ -61,6 +61,14 @@
         "left_mac": "00:01:02:03:04:06",
         "right_mac": "00:00:00:00:10:60",
 
+        {# UC route IP configuration #}
+        "ipv4_traffic": "{{conf_args.is_ipv4}}",
+        "ipv6_traffic": "{{conf_args.is_ipv6}}",
+
+        {# Number of DIPs to send #}
+        "num_dip_ipv4_to_send": "{{conf_args.left_num_dip_to_send}}",
+        "num_dip_ipv6_to_send": "{{conf_args.left_num_dip_to_send}}",
+
         {# ECMP configuration #}
         {% if conf_args.ecmp_type_stateless is defined %}
         "ecmp_type_stateless": "{{ conf_args.ecmp_type_stateless }}",

@@ -41,12 +41,11 @@ def get_multiple_ip_stream_list(spine_tg, traffic_parameters, json_path, conf_ar
 
     for traffic_type, traffic_enabled in zip(["ipv4", "ipv6"], [conf_args["is_ipv4"], conf_args["is_ipv6"]]):
         if traffic_enabled:
-            for index in range(conf_args[f"{direction_from}_num_dip_to_send"]):
-                traffic_parameters["IP"]["dst"] = conf_args["ip_to_mac_dict"][direction_from][traffic_type][index][0]
-                traffic_parameters["IP"]["src"] = conf_args[f"{traffic_type}_source_ip"]
-                traffic_parameters["is_ipv6"] = traffic_type == "ipv6"
-                stream_name = f"From {direction_from} {ports_from} to {direction_to} {ports_to}. Packet number {index} to {traffic_parameters['IP']['dst']}"
-                logger.info(f"Stream name: {stream_name}")
-                stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name, tc=dscp_to_tc(PerfConsts.DVS_LOSSLESS_TC, 2))
-                stream_list.append(stream)
+            traffic_parameters["IP"]["dst"] = conf_args["ip_to_mac_dict"][direction_from][traffic_type][0][0]
+            traffic_parameters["IP"]["src"] = conf_args[f"{traffic_type}_source_ip"]
+            traffic_parameters["is_ipv6"] = traffic_type == "ipv6"
+            stream_name = f"From {direction_from} {ports_from} to {direction_to} {ports_to}. Packet number {0} to {traffic_parameters['IP']['dst']}"
+            logger.info(f"Stream name: {stream_name}")
+            stream = create_json_traffic_stream(spine_tg, traffic_parameters, stream_name, tc=dscp_to_tc(PerfConsts.DVS_LOSSLESS_TC, 2))
+            stream_list.append(stream)
     create_json_traffic_file_with_stream_list(spine_tg, traffic_parameters, json_path, stream_list)
