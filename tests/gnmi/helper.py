@@ -1,6 +1,9 @@
 import time
 import logging
 import pytest
+import re
+import ipaddress
+from datetime import datetime
 import json
 from tests.common.utilities import wait_until
 from tests.common.helpers.gnmi_utils import GNMIEnvironment, add_gnmi_client_common_name, del_gnmi_client_common_name, \
@@ -165,6 +168,27 @@ def check_system_time_sync(duthost):
         return False
 
 
+def gnmi_capabilities(duthost, localhost):
+    env = GNMIEnvironment(duthost, GNMIEnvironment.GNMI_MODE)
+    dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
+    ip = f"[{duthost.mgmt_ip}]" if dut_facts.get('is_mgmt_ipv6_only', False) else duthost.mgmt_ip
+    port = env.gnmi_port
+    # Run gnmi_cli in gnmi container as workaround
+    cmd = "docker exec %s gnmi_cli -client_types=gnmi -a %s:%s " % (env.gnmi_container, ip, port)
+    cmd += "-client_crt /etc/sonic/telemetry/gnmiclient.crt "
+    cmd += "-client_key /etc/sonic/telemetry/gnmiclient.key "
+    cmd += "-ca_crt /etc/sonic/telemetry/gnmiCA.pem "
+    cmd += "-logtostderr -capabilities"
+    output = duthost.shell(cmd, module_ignore_errors=True)
+    if output['stderr']:
+        dump_gnmi_log(duthost)
+        dump_system_status(duthost)
+        verify_tcp_port(localhost, ip, port)
+        return -1, output['stderr']
+    else:
+        return 0, output['stdout']
+
+
 def gnmi_set(duthost, ptfhost, delete_list, update_list, replace_list, cert=None):
     """
     Send GNMI set request with GNMI client
@@ -222,7 +246,10 @@ def gnmi_set(duthost, ptfhost, delete_list, update_list, replace_list, cert=None
     cmd += '--xpath ' + xpath
     cmd += ' '
     cmd += '--value ' + xvalue
-    ptfhost.shell(f"ping {ip} -c 3", module_ignore_errors=True)
+    if ":" in duthost.mgmt_ip:
+        ptfhost.shell(f"ping6 {duthost.mgmt_ip} -c 3", module_ignore_errors=True)
+    else:
+        ptfhost.shell(f"ping {duthost.mgmt_ip} -c 3", module_ignore_errors=True)
     output = ptfhost.shell(cmd, module_ignore_errors=True)
     error = "GRPC error\n"
     if error in output['stdout']:
@@ -300,7 +327,8 @@ def gnmi_subscribe_polling(duthost, ptfhost, path_list, interval_ms, count):
         logger.error("path_list is None")
         return "", ""
     env = GNMIEnvironment(duthost, GNMIEnvironment.GNMI_MODE)
-    ip = duthost.mgmt_ip
+    dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
+    ip = f"[{duthost.mgmt_ip}]" if dut_facts.get('is_mgmt_ipv6_only', False) else duthost.mgmt_ip
     port = env.gnmi_port
     interval = interval_ms / 1000.0
     # Run gnmi_cli in gnmi container as workaround
@@ -401,7 +429,8 @@ def gnmi_subscribe_streaming_onchange(duthost, ptfhost, path_list, count):
 
 def gnoi_reboot(duthost, method, delay, message):
     env = GNMIEnvironment(duthost, GNMIEnvironment.GNMI_MODE)
-    ip = duthost.mgmt_ip
+    dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
+    ip = f"[{duthost.mgmt_ip}]" if dut_facts.get('is_mgmt_ipv6_only', False) else duthost.mgmt_ip
     port = env.gnmi_port
     # Run gnoi_client in gnmi container as workaround
     cmd = "docker exec %s gnoi_client -target %s:%s " % (env.gnmi_container, ip, port)
@@ -420,7 +449,8 @@ def gnoi_reboot(duthost, method, delay, message):
 
 def gnoi_request(duthost, localhost, module, rpc, request_json_data):
     env = GNMIEnvironment(duthost, GNMIEnvironment.GNMI_MODE)
-    ip = duthost.mgmt_ip
+    dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
+    ip = f"[{duthost.mgmt_ip}]" if dut_facts.get('is_mgmt_ipv6_only', False) else duthost.mgmt_ip
     port = env.gnmi_port
     cmd = "docker exec %s gnoi_client -target %s:%s " % (env.gnmi_container, ip, port)
     cmd += "-cert /etc/sonic/telemetry/gnmiclient.crt "

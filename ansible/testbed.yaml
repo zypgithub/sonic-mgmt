@@ -6067,7 +6067,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6081,7 +6081,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6095,7 +6095,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57  
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6109,7 +6109,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6123,7 +6123,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6137,7 +6137,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-02
   ptf_ip: 10.215.32.182/16
-  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57
+  ptf_ipv6: 2001:db8:1234:5678:c827:84ff:fe99:cd57/64
   server: server_67
   vm_base: VM3233
   dut:
@@ -6151,7 +6151,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:
@@ -6165,7 +6165,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:
@@ -6179,7 +6179,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:
@@ -6193,7 +6193,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:
@@ -6207,7 +6207,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:
@@ -6221,7 +6221,7 @@
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
   ptf_ip: 10.215.34.121/16
-  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93
+  ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
   dut:

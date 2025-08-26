@@ -10,8 +10,6 @@ generate dump and back up the dump for later analysis.
 import argparse
 import os
 import subprocess
-import socket
-import ipaddress
 
 # Third-party libs
 from fabric import Config
@@ -21,19 +19,8 @@ from fabric.transfer import Transfer
 # Home-brew libs
 from lib import constants
 from lib.utils import parse_topology, get_logger
-from paramiko.ssh_exception import NoValidConnectionsError, SSHException
 
 logger = get_logger("DumpBackup")
-
-
-def _is_ipv6_address(ip_str):
-    """Check if the given string is an IPv6 address."""
-    try:
-        addr = ipaddress.ip_address(ip_str)
-        return isinstance(addr, ipaddress.IPv6Address)
-    except ValueError:
-        return False
-
 
 def _parse_args():
     # Parse arguments
@@ -90,8 +77,11 @@ def main():
         generate_dump_cmd = "sudo generate_dump -s '%s'" % args.since
         ssh_port_param = "-p {}".format(dut.ssh_port) if hasattr(dut, "ssh_port") else ""
 
-        # Handle IPv6 addresses by adding -6 flag to SSH
-        ipv6_flag = "-6" if _is_ipv6_address(dut_device.BASE_IP) else ""
+        # Handle IPv6 addresses by adding -6 flag to SSH if dut is_mgmt_ipv6_only is True
+        # in basic_facts
+        dut_facts = dut.dut_basic_facts()['ansible_facts']['dut_basic_facts']
+        is_mgmt_ipv6_only = dut_facts.get('is_mgmt_ipv6_only', False)
+        ipv6_flag = "-6" if is_mgmt_ipv6_only else ""
         cmd_run = 'sshpass -p {} ssh {} {} {}@{} -o StrictHostKeyChecking=no "{}"'.format(
             dut_device_password, ipv6_flag, ssh_port_param, dut_device_username, dut_device.BASE_IP, generate_dump_cmd)
 

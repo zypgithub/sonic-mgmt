@@ -1,0 +1,7 @@
+
+---
+# Host-specific variables for r-panther-02
+# This file overrides group_vars settings for this specific host
+
+# Override NTP servers with IPv6 server
+ntp_servers: ['2001:db8:1234:5678:92b1:1cff:fe04:11c2']
