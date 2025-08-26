@@ -81,6 +81,12 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_suppress_fib_pending.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_vnet.cases </cases>
+    </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_update_replication.cases </cases>
+    </test>
 
     <!-- Test cases in tests/fib/ -->
     <test>
