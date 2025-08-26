@@ -1,5 +1,6 @@
 import logging
 import random
+import pytest
 
 from infra.tools.connection_tools.utils import generate_strong_password
 from ngts.tools.test_utils import allure_utils as allure
@@ -7,10 +8,22 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, PasswordHardeningConsts
 from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope='function')
+def enable_password_hardening_state():
+    system = System(force_api=ApiType.NVUE)
+    system.security.password_hardening.set(PasswordHardeningConsts.STATE,
+                                           PasswordHardeningConsts.State.ENABLED.value, apply=True).verify_result()
+    yield
+
+    system.security.password_hardening.set(PasswordHardeningConsts.STATE,
+                                           PasswordHardeningConsts.State.DISABLED.value, apply=True).verify_result()
 
 
 def test_set_password(engines):
@@ -26,8 +39,12 @@ def test_set_password(engines):
             7. connect as admin
             8. connect as monitor
     """
-    with allure.step('generating valid password'):
+    with allure.step('verifying password hardening default values'):
         system = System(force_api=ApiType.NVUE)
+        security_output_dict = OutputParsingTool.parse_json_str_to_dictionary(system.security.password_hardening.show()).get_returned_value()
+        ValidationTool.compare_dictionaries(PasswordHardeningConsts.PASSWORD_HARDENING_DEFAULT_DICT, security_output_dict).verify_result()
+
+    with allure.step('generating valid password'):
         new_password = generate_strong_password()
     with allure.step('creating two user with different roles'):
         viewer_name, viewer_password = system.aaa.user.set_new_user()
@@ -40,7 +57,7 @@ def test_set_password(engines):
         ConnectionTool.create_ssh_conn(engines.dut.ip, configurator_name, new_password).verify_result()
 
 
-def test_set_invalid_password(engines):
+def test_set_invalid_password(engines, enable_password_hardening_state):
     """
 
         Test flow:
@@ -61,7 +78,7 @@ def test_set_invalid_password(engines):
     NvueGeneralCli.detach_config(engines.dut)
 
 
-def test_set_invalid_password_length(engines):
+def test_set_invalid_password_length(engines, enable_password_hardening_state):
     """
 
         Test flow:
@@ -153,7 +170,7 @@ def verify_invalid_messages(supported_rules, set_output):
         assert expected_output.sort() == output_lines.sort(), "at least one of the error messages is missing, output = {output} expected = {expected}".format(output=output_lines, expected=expected_output)
 
 
-def test_password_history(engines):
+def test_password_history(engines, enable_password_hardening_state):
     """
         as part of password-hardening we can change the history count,
         meaning the new password should be different than <history count> previous passwords

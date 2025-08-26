@@ -1497,6 +1497,58 @@ class RebootConsts:
     POWER_CYCLE_NOT_SUPPORTED_ERR_MSG = "Power cycle mode is not supported on this system"
 
 
+class PasswordHardeningConsts:
+    # Field names
+    DIGITS_CLASS = 'digits-class'
+    EXPIRATION = 'expiration'
+    EXPIRATION_WARNING = 'expiration-warning'
+    HISTORY_CNT = 'history-cnt'
+    LEN_MIN = 'len-min'
+    LOWER_CLASS = 'lower-class'
+    REJECT_USER_PASSW_MATCH = 'reject-user-passw-match'
+    SPECIAL_CLASS = 'special-class'
+    STATE = 'state'
+    UPPER_CLASS = 'upper-class'
+
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class DigitsClass(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class LowerClass(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class UpperClass(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class SpecialClass(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class RejectUserPasswMatch(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    # Default values
+    PASSWORD_HARDENING_DEFAULT_DICT = {
+        DIGITS_CLASS: DigitsClass.DISABLED.value,
+        EXPIRATION: '99999',
+        EXPIRATION_WARNING: '7',
+        HISTORY_CNT: 0,
+        LEN_MIN: 1,
+        LOWER_CLASS: LowerClass.DISABLED.value,
+        REJECT_USER_PASSW_MATCH: RejectUserPasswMatch.DISABLED.value,
+        SPECIAL_CLASS: SpecialClass.DISABLED.value,
+        STATE: State.DISABLED.value,
+        UPPER_CLASS: UpperClass.DISABLED.value
+    }
+
+
 class SyslogConsts:
     FORMAT = 'format'
     FIREWAL_NAME = 'firewall-name'
@@ -2051,7 +2103,7 @@ class PtpConsts:
 
     TC_STATE = 'tc'
     MTPCPC_REGISTER = 'MTPCPC'
-    MTPCPC_INDEXES = '--indexes "lp_msb=0x0,local_port=0x0,pport=0x0"'
+    MTPCPC_INDEXES = '--indexes "lp_msb=0x0,local_port=0x0"'
     ING_CORRECTION_MSG_TYPE = 'ing_correction_message_type'
     EGR_CORRECTION_MSG_TYPE = 'egr_correction_message_type'
     REG_NA_VALUE = '0xffffffff'
