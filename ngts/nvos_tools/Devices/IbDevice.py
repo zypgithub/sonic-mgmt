@@ -1872,6 +1872,21 @@ class JulietNonScaleoutSwitchGB300QS(JulietNonScaleoutSwitchGB300):
                                                       "model": ExpectedString(regex="692-9K33R-00MV-JQS")})
 
 
+# -------------------------- JulietNonScaleoutSwitchGB300QS Switch ----------------------------
+
+
+class JulietNonScaleoutSwitchGB300PS(JulietNonScaleoutSwitchGB300):
+
+    def __init__(self):
+        super().__init__()
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="692-9K33R-00MV-JCR")})
+
+
 # -------------------------- JulietNonScaleoutNoNCISwitch Switch ----------------------------
 
 
