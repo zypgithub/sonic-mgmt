@@ -1689,6 +1689,12 @@ generic_config_updater/test_srv6:
 #######################################
 #####           gnmi              #####
 #######################################
+gnmi:
+  skip:
+    reason: Skip all gnmi tests on 202412 vs testbed, since it won't impact gnmi show command
+    conditions:
+      - "release in ['202412']"
+
 gnmi/test_gnmi.py:
   skip:
     reason: "dut ipv6 mgmt ip not supported"
@@ -1710,6 +1716,7 @@ gnmi/test_gnmi_configdb.py:
     conditions:
       - "'t2' in topo_name"
       - "is_multi_asic==True"
+      - "release in ['202412']"
 
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_01:
   skip:
@@ -1770,8 +1777,10 @@ gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_streaming_sample_02:
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_full_01:
   skip:
     reason: "The test refers to a stale implementation of GNOI.System.Reboot."
+    conditions_logical_operator: or
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/17436"
+      - "release in ['202412']"
 
 gnmi/test_gnoi_killprocess.py:
   skip:
@@ -1784,6 +1793,7 @@ gnmi/test_gnoi_system_reboot.py::test_gnoi_system_reboot_warm:
     conditions:
       - "topo_type not in ['t0']"
       - "topo_name in ['dualtor', 'dualtor-56', 'dualtor-120', 'dualtor-aa', 'dualtor-aa-56', 'dualtor-aa-64-breakout']"
+      - "release in ['202412']"
 
 #######################################
 #####           hash              #####
@@ -2319,10 +2329,11 @@ mclag/test_mclag_l3.py:
 #######################################
 memory_checker/test_memory_checker.py:
   skip:
-    reason: "Testcase ignored due to GitHub issue: https://github.com/sonic-net/sonic-buildimage/issues/19295"
+    reason: "Testcase ignored due to GitHub issue: https://github.com/sonic-net/sonic-buildimage/issues/19295 / Skip this test as it won't impact gnmi show command"
+    conditions_logical_operator: or
     conditions:
-      - https://github.com/sonic-net/sonic-buildimage/issues/19295
-      - "'sn4280' in platform"
+      - "https://github.com/sonic-net/sonic-buildimage/issues/19295 and 'sn4280' in platform"
+      - "release in ['202412']"
 
 #######################################
 #####            mpls             #####
