@@ -32,7 +32,10 @@ def start_components_update(_args):
     update_via_parameter = bool(_args.bmc_path or _args.bios_path or _args.erot_path or _args.fpga_path)
     rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
     json_dict = create_json_dict(_args.fw_versions_json_file)
-    devices_with_rel_prod_erot = {'juliet-160', 'juliet-195'}
+    devices_with_rel_prod_erot = {
+        "juliet-160": {Defaults.EROT_NAME, Defaults.BIOS_NAME, Defaults.BMC_NAME},
+        "juliet-195": {Defaults.EROT_NAME, Defaults.BIOS_NAME, Defaults.BMC_NAME},
+    }
 
     components_mapping = {
         Defaults.BMC_NAME: "bmc_path",
@@ -64,7 +67,7 @@ def start_components_update(_args):
         if update_via_parameter:
             install_path = _args.__dict__[components_mapping[component_name]]
         else:
-            if component_name == Defaults.EROT_NAME and switch_name in devices_with_rel_prod_erot:
+            if switch_name in devices_with_rel_prod_erot and component_name in devices_with_rel_prod_erot[switch_name]:
                 required_version = json_dict['prod'][component_name]['latest']['version_name']
                 install_path = json_dict['prod'][component_name]['latest']['path']
             else:
