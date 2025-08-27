@@ -900,8 +900,7 @@ def insert_operation_time_to_db(setup_name, session_id, platform_params, topolog
     if len(pytest.operation_list) > 0:
         try:
             type = platform_params['filtered_platform']
-            version = OutputParsingTool.parse_json_str_to_dictionary(System().version.show()).get_returned_value()[
-                'image']
+            version = System().version.get_nvos_image_version()
             release_name = TestToolkit.version_to_release(version)
             if not TestToolkit.is_special_run() and pytest.is_mars_run and release_name and not pytest.is_ci_run:
                 insert_operation_duration_to_db(setup_name, type, version, session_id, release_name)
