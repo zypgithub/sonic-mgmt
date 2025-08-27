@@ -47,12 +47,7 @@ CONFIG_MESSAGES = {
     **dash_crm_config.ROUTE_GROUP_CONFIG,
     **dash_crm_config.ROUTE_VNET_CONFIG,
     **dash_crm_config.ROUTING_TYPE_CONFIG,
-    **dash_crm_config.ROUTE_RULE_CONFIG,
-    **dash_crm_config.ROUTE_ACL_GROUP1_CONFIG,
-    **dash_crm_config.ROUTE_ACL_GROUP1_RULE1_CONFIG,
-    **dash_crm_config.ROUTE_ACL_GROUP2_CONFIG,
-    **dash_crm_config.ROUTE_ACL_GROUP2_RULE1_CONFIG,
-    **dash_crm_config.ROUTE_ACL_GROUP2_RULE2_CONFIG
+    **dash_crm_config.ROUTE_RULE_CONFIG
 }
 
 

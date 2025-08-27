@@ -451,6 +451,12 @@ dash/test_dash_vnet.py::test_outbound_vnet_direct:
     conditions:
     - "https://redmine.mellanox.com/issues/3634592 and 'nvda_bf' in platform"
 
+dash/test_dash_crm.py::test_dash_acl:
+  skip:
+    reason: "Dash crm acl cases are broken due to changes made by MSFT in the dash flow. Skip those cases for now and track with RM task: https://redmine.mellanox.com/issues/4605445"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4605445"
+
 drop_packets/test_wjh.py:
   skip:
     reason: "WJH test doesn't support dualtor topology"
