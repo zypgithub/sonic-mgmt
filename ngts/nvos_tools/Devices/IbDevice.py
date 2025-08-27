@@ -919,6 +919,16 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1'
         ]
 
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {
+            "state": FansConsts.STATE_OK.lower(),
+            "direction": 'F2B',
+            "current-speed": ExpectedString(range_min=2741, range_max=15525),
+            "min-speed": ExpectedString(regex="(2741|2842)"),
+            "max-speed": ExpectedString(regex="(15525|14493)")}
+        self.platform_inventory_switch_values.update({"hardware-version": 'A9',
+                                                      "model": '920-9B36M-00MX-8NS'})
 # -------------------------- Taipan Switch ----------------------------
 
 
