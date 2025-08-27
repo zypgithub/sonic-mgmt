@@ -3,10 +3,8 @@ import logging
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.Files import Files
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import ActionConsts, PlatformConsts, ApiType
+from ngts.nvos_constants.constants_nvos import ActionConsts, PlatformConsts
 
 logger = logging.getLogger()
 
@@ -17,7 +15,7 @@ class Transceiver(BaseComponent):
         self.files = Files(self)
 
     def show_detailed(self):
-        op_param = "" if self._api_to_use == ApiType.OPENAPI else 'detail'
+        op_param = '--view=detail'
         return self.show(op_param=op_param)
 
     def action_reset(self, transceiver_name, expected_str="", dut_engine=None):
@@ -49,5 +47,5 @@ class Transceiver(BaseComponent):
             return dict_of_transceivers
 
     def get_list_of_connected_transceivers(self):
-        dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show()).get_returned_value()
-        return [tarnsceiver for tarnsceiver, info in dict_of_transceivers.items() if info.get("status") == "Inserted"]
+        dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show(op_param='--view=brief')).get_returned_value()
+        return list(dict_of_transceivers.keys())
