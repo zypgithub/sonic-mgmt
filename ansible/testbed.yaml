@@ -6150,7 +6150,7 @@
   topo: t0
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
@@ -6164,7 +6164,7 @@
   topo: t0-56
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
@@ -6178,7 +6178,7 @@
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
@@ -6192,7 +6192,7 @@
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
@@ -6206,7 +6206,7 @@
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501
@@ -6220,7 +6220,7 @@
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
-  ptf_ip: 10.215.34.121/16
+  ptf_ip: 10.210.26.182/16
   ptf_ipv6: 2001:db8:1234:5678:a4f4:cff:fec1:2b93/64
   server: server_70
   vm_base: VM3501

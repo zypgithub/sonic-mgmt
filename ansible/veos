@@ -283,7 +283,6 @@ all:
         server_95:
         server_96:
 
-
 vm_host_1:
   hosts:
     ARC-HOST60:
@@ -451,8 +450,8 @@ vm_host_69:
 
 vm_host_70:
   hosts:
-    R-R740-13_2:
-      ansible_host: r-r740-13
+    R-R620-07:
+      ansible_host: r-r620-07
 
 vm_host_71:
   hosts:
@@ -3001,69 +3000,69 @@ vms_69:
 vms_70:
   hosts:
     VM3501:
-      ansible_host: 10.215.34.122
+      ansible_host: 10.210.26.183
     VM3502:
-      ansible_host: 10.215.34.123
+      ansible_host: 10.210.26.184
     VM3503:
-      ansible_host: 10.215.34.124
+      ansible_host: 10.210.26.185
     VM3504:
-      ansible_host: 10.215.34.125
+      ansible_host: 10.210.26.186
     VM3505:
-      ansible_host: 10.215.34.126
+      ansible_host: 10.210.26.187
     VM3506:
-      ansible_host: 10.215.34.127
+      ansible_host: 10.210.26.188
     VM3507:
-      ansible_host: 10.215.34.128
+      ansible_host: 10.210.26.189
     VM3508:
-      ansible_host: 10.215.34.129
+      ansible_host: 10.210.26.190
     VM3509:
-      ansible_host: 10.215.34.130
+      ansible_host: 10.210.26.191
     VM3510:
-      ansible_host: 10.215.34.131
+      ansible_host: 10.210.26.192
     VM3511:
-      ansible_host: 10.215.34.132
+      ansible_host: 10.210.26.193
     VM3512:
-      ansible_host: 10.215.34.133
+      ansible_host: 10.210.26.194
     VM3513:
-      ansible_host: 10.215.34.134
+      ansible_host: 10.210.26.195
     VM3514:
-      ansible_host: 10.215.34.135
+      ansible_host: 10.210.26.196
     VM3515:
-      ansible_host: 10.215.34.136
+      ansible_host: 10.210.26.197
     VM3516:
-      ansible_host: 10.215.34.137
+      ansible_host: 10.210.26.198
     VM3517:
-      ansible_host: 10.215.34.138
+      ansible_host: 10.210.26.199
     VM3518:
-      ansible_host: 10.215.34.139
+      ansible_host: 10.210.26.200
     VM3519:
-      ansible_host: 10.215.34.140
+      ansible_host: 10.210.26.201
     VM3520:
-      ansible_host: 10.215.34.141
+      ansible_host: 10.210.26.202
     VM3521:
-      ansible_host: 10.215.34.142
+      ansible_host: 10.210.26.203
     VM3522:
-      ansible_host: 10.215.34.143
+      ansible_host: 10.210.26.204
     VM3523:
-      ansible_host: 10.215.34.144
+      ansible_host: 10.210.26.205
     VM3524:
-      ansible_host: 10.215.34.145
+      ansible_host: 10.210.26.206
     VM3525:
-      ansible_host: 10.215.34.146
+      ansible_host: 10.210.26.207
     VM3526:
-      ansible_host: 10.215.34.147
+      ansible_host: 10.210.26.208
     VM3527:
-      ansible_host: 10.215.34.148
+      ansible_host: 10.210.26.209
     VM3528:
-      ansible_host: 10.215.34.149
+      ansible_host: 10.210.26.210
     VM3529:
-      ansible_host: 10.215.34.150
+      ansible_host: 10.210.26.211
     VM3530:
-      ansible_host: 10.215.34.151
+      ansible_host: 10.210.26.212
     VM3531:
-      ansible_host: 10.215.34.152
+      ansible_host: 10.210.26.213
     VM3532:
-      ansible_host: 10.215.34.153
+      ansible_host: 10.210.26.214
 
 vms_71:
   hosts:
@@ -9771,7 +9770,7 @@ server_70:
     vm_host_70:
     vms_70:
   vars:
-    host_var_file: host_vars/R-R740-13_2.yml
+    host_var_file: host_vars/R-R620-07.yml
 
 server_71:
   children:
