@@ -994,6 +994,13 @@ vrf/:
   skip:
     reason: "VRF is not supported on 202411 and greater releases"
 
+crm/test_crm.py::test_crm_nexthop\[.*:
+  regex: true
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4520694"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4520694"
+
 vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case4:
   skip:
     reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438716"
