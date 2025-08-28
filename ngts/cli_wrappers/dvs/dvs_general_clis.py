@@ -88,6 +88,9 @@ class DvsGeneralCli(GeneralCliCommon):
         cmd = f"SITE={PerfConsts.USED_SITE} nis_add.sh"
         self.engine.run_cmd(cmd)
 
+        cmd = "prepare_switch_for_regression.sh"
+        self.engine.run_cmd(cmd)
+
     def set_aliases(self):
         logger.info("Setting aliases for sdk install, clean switch and fw burn commands")
         sdk_install_alias_cmd = f"alias sdk_install={PerfConsts.SDK_INSTALL_PATH}"
