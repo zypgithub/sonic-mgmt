@@ -18,6 +18,9 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope='function')
 def required_for_redundancy(devices):
+    if len(devices.dut.psu_list) == 0:
+        pytest.skip("No PSUs found on the DUT")
+
     min_required = len(devices.dut.psu_list) // 2
     required_for_redundancy = {PlatformConsts.PS_REDUNDANCY_NO: min_required,
                                PlatformConsts.PS_REDUNDANCY_GRID: min_required * 2,
@@ -38,18 +41,22 @@ def clear_platform_ps_redundancy(platform, engines):
 
 @pytest.mark.platform
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_ps_redundancy(test_api):
+def test_show_platform_ps_redundancy(test_api, devices):
     """nv show platform ps-redundancy"""
     TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
         platform = Platform()
 
-    with allure.step("Check show platform ps-redundancy output"):
-        output = OutputParsingTool.parse_json_str_to_dictionary(platform.ps_redundancy.show()).get_returned_value()
-        ValidationTool.verify_field_exist_in_json_output(output,
-                                                         [PlatformConsts.PS_REDUNDANCY_POLICY,
-                                                          PlatformConsts.PS_REDUNDANCY_MIN_REQ]).verify_result()
+    if len(devices.dut.psu_list) == 0:
+        with allure.step("Check show platform ps-redundancy is not supported"):
+            platform.ps_redundancy.show(should_succeed=False)
+    else:
+        with allure.step("Check show platform ps-redundancy output"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(platform.ps_redundancy.show()).get_returned_value()
+            ValidationTool.verify_field_exist_in_json_output(output,
+                                                             [PlatformConsts.PS_REDUNDANCY_POLICY,
+                                                              PlatformConsts.PS_REDUNDANCY_MIN_REQ]).verify_result()
 
 
 @pytest.mark.platform

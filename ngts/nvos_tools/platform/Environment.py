@@ -27,6 +27,10 @@ class Environment(BaseComponent):
 
     def get_available_psus(self, invert=False):
         """Returns a list of all PSUs (as strings) whose status is 'ok'. If invert=True return all other PSUs instead"""
-        output = OutputParsingTool.parse_json_str_to_dictionary(self.psu.show()).get_returned_value()
-        return list(psu for psu, fields in output.items() if (
-            fields[PlatformConsts.INV_STATE] == PlatformConsts.INV_OK) != invert)
+        try:
+            output = OutputParsingTool.parse_json_str_to_dictionary(self.psu.show()).get_returned_value()
+            return list(psu for psu, fields in output.items() if (
+                fields[PlatformConsts.INV_STATE] == PlatformConsts.INV_OK) != invert)
+        except Exception as e:
+            logging.error(f"Error getting available PSUs: {e}")
+            return []

@@ -966,6 +966,7 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz", "fan.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/taipan_versions.json"
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
