@@ -155,6 +155,9 @@ def generate_and_copy_sonic_dump_runner(topology_obj, device_engine, device_alia
     logger.info(f"Destination file for {device_alias}: {dest_file}")
     copy_dump_file(device_engine, remote_dump_path, dest_file)
     logger.info(f"Completed {device_alias} sysdump: {dest_file}")
+    logger.info(f"Removing the dump file from the device {device_alias}")
+    device_engine.run_cmd(f'sudo rm -rf {remote_dump_path}')
+    logger.info(f"Removing the dump file from the device {device_alias} completed")
     return dest_file
 
 
