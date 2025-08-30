@@ -16,9 +16,11 @@ def device_type(request):
 
 
 @pytest.fixture()
-def dut_host(engines, request, device_type):
+def dut_host(engines, request, device_type, topology_obj):
     if device_type == 'dpu':
-        specified_installed_dpus = get_specified_installed_dpus()
+        dut_alias = 'dut'
+        dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+        specified_installed_dpus = get_specified_installed_dpus(dut_alias, dut_name)
         if specified_installed_dpus:
             dpu_name = random.choice(specified_installed_dpus)
         else:

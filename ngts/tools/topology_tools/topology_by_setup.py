@@ -2,25 +2,35 @@ from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setu
 from ngts.constants.constants import PlayersAliases
 import logging
 from ngts.common.util import get_specified_installed_dpu_indexes
+
 logger = logging.getLogger()
 
 
-def need_dpu_player(setup_name):
-    return 'bobcat' in setup_name or 'CI_sonic_SS' in setup_name
+def need_dpu_player(dut_alias, noga_name):
+    return dut_alias.startswith("dut") and (not dut_alias.endswith("_serial")) and "bobcat" in noga_name
 
 
-def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
+def get_topology_by_setup_name_and_aliases(
+    setup_name, slow_cli, override_type=False
+):
     topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
     topology = update_dut_alias(topology)
-    if need_dpu_player(setup_name):
-        add_dpu_player(topology, slow_cli, override_type)
-
+    for dut_alias, dut_info in list(topology.players.items()):
+        dut_name = dut_info["attributes"].noga_query_data["attributes"][
+            "Common"
+        ]["Name"]
+        if need_dpu_player(dut_alias, dut_name):
+            add_dpu_player(
+                topology, slow_cli, override_type, dut_alias, dut_name
+            )
     return topology
 
 
 def update_dut_alias(topology):
     if 'dut' not in topology.players.keys():
-        # For the lower tor in dual-tor topology, the key of dut name got from noga is 'dut-b'
+        # For the lower tor in dual-tor or smartswitch-ha topology,
+        # or other setups with two duts,
+        # the key of dut name got from noga is 'dut-b'
         # If the topology only has key 'dut-b' without key 'dut', means it is deployed as a normal setup
         # Change the 'dut-b' to 'dut' in this case
         if 'dut-b' in topology.players.keys():
@@ -37,15 +47,15 @@ def update_dut_alias(topology):
     return topology
 
 
-def add_dpu_player(topology, slow_cli, override_type):
+def add_dpu_player(topology, slow_cli, override_type, dut_alias, dut_name):
     dpu_player_entry = {'DESCRIPTION': 'dpu0',
                         'SSH_PORT': 5021,
                         'XML_RPC_PORT': 9999,
                         'TYPE_TITLE': "Switch",
                         'TYPE': '11',
-                        'IP': topology.players['dut']['engine'].ip,
+                        'IP': topology.players[dut_alias]['engine'].ip,
                         }
-    dpu_indexes = get_specified_installed_dpu_indexes()
+    dpu_indexes = get_specified_installed_dpu_indexes(dut_alias, dut_name)
     base_dpu_ssh_nat_port = 5021
 
     for dpu_index in dpu_indexes:

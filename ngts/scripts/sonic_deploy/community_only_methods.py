@@ -86,7 +86,7 @@ def check_mst_dark_mode(cli_obj):
         logger.info("MST is healthy, no need to restart")
 
 
-def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_obj, deploy_dpu=False):
+def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_objs, deploy_dpu=False):
     """
     Method which doing minigraph deploy on DUT
     """
@@ -107,7 +107,8 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
             except Exception as err:
                 logger.warning("Failed in Deploying minigraph. Got error: %s", err)
                 logger.warning("Performing a reboot and retrying")
-                cli_obj.reboot_reload_flow(topology_obj=topology_obj, ports_list=['Ethernet0'])
+                for cli_obj in cli_objs:
+                    cli_obj.reboot_reload_flow(topology_obj=topology_obj, ports_list=['Ethernet0'])
         logger.info("Deploying minigraph")
         return execute_script(cmd, ansible_path)
 

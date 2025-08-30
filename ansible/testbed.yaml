@@ -1018,6 +1018,24 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: r-bobcat-03-t1-smartswitch-ha
+  group-name: vm-t1
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bobcat-03
+  ptf_ip: 10.215.28.182/16
+  ptf_ipv6:
+  server: server_69
+  vm_base: VM3401
+  dut:
+    - r-bobcat-03
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-bobcat-03-t0-88-o8c80
   group-name: vm-t1
   topo: t0-88-o8c80
@@ -1089,6 +1107,70 @@
     - r-bobcat-01-dpu-3
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: r-bobcat-01-t1-smartswitch-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bobcat-01
+  ptf_ip: 10.215.28.216/16
+  ptf_ipv6:
+  server: server_72
+  vm_base: VM3701
+  dut:
+    - r-bobcat-01
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: sonic-bobcat-01-03-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bobcat-01
+  ptf_ip: 10.215.28.216/16
+  ptf_ipv6:
+  server: server_72
+  vm_base: VM3701
+  dut:
+    - r-bobcat-01
+    - r-bobcat-03
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
+
+- conf-name: sonic-bobcat-01-03-ha-t1-smartswitch-ha
+  group-name: vm-t2
+  topo: t1-smartswitch-ha
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-bobcat-01
+  ptf_ip: 10.215.28.216/16
+  ptf_ipv6:
+  server: server_72
+  vm_base: VM3701
+  dut:
+    - r-bobcat-01
+    - r-bobcat-03
+    - r-bobcat-01-dpu-0
+    - r-bobcat-01-dpu-1
+    - r-bobcat-01-dpu-2
+    - r-bobcat-01-dpu-3
+    - r-bobcat-03-dpu-0
+    - r-bobcat-03-dpu-1
+    - r-bobcat-03-dpu-2
+    - r-bobcat-03-dpu-3
+  inv_name: lab
+  comment: Smartswitch HA testbed
 
 - conf-name: r-bobcat-01-t0-88-o8c80
   group-name: vm-t2

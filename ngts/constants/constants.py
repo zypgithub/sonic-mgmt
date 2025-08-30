@@ -1191,6 +1191,8 @@ class MarsConstants:
         "t0-isolated-d32u32s2", "t0-isolated-v6-d32u32s2", "t0-isolated-d2u254s2", "t1-isolated-v6-d56u2", "t1-48-lag"
     )
     TOPO_ARRAY_DUALTOR = ("dualtor", "dualtor-64", "dualtor-aa", "dualtor-64-breakout", "dualtor-aa-64-breakout")
+    TOPO_ARRAY_HA = ("t1-smartswitch-ha",)
+
     REBOOT_TYPES = {
         "reboot": "reboot",
         "fast-reboot": "fast-reboot",

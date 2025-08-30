@@ -23,6 +23,36 @@ logger = logging.getLogger()
 class SonicInstallationSteps:
 
     @staticmethod
+    def pre_installation_steps_ha(sonic_topo, neighbor_type,
+                                  base_version, target_version,
+                                  setup_info, port_number,
+                                  threads_dict, destination_hwsku):
+        """
+        Pre-installation steps for HA setup
+        """
+        setup_name = setup_info['setup_name']
+        ansible_path = setup_info['ansible_path']
+        # Get ptf docker tag
+        ptf_tag = SonicInstallationSteps.get_ptf_tag_sonic(base_version, target_version)
+        for dut in setup_info['duts']:
+            dut_name = dut['dut_name']
+            cached_hwsku = get_cached_hwsku(dut_name)
+            if cached_hwsku:
+                # override the individual setup files if found
+                SonicInstallationSteps.override_hwsku_files({"setup_name": f"{dut_name}_setup"}, cached_hwsku)
+                # remove any cached topos from the DUTs
+                SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=[dut_name],
+                                                         setup_name=None, sonic_topo=sonic_topo)
+        # remove the HA topologies separately
+        SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
+        SonicInstallationSteps.remove_topologies(ansible_path=ansible_path, dut_names=None,
+                                                 setup_name=setup_name, sonic_topo=sonic_topo)
+        SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
+                                                                  dut_name, sonic_topo, neighbor_type,
+                                                                  ptf_tag, port_number,
+                                                                  ansible_path, setup_info, destination_hwsku)
+
+    @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
             destination_hwsku, is_performance=False):
@@ -41,7 +71,10 @@ class SonicInstallationSteps:
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
-        if is_community(sonic_topo):
+        if setup_name.endswith('-ha'):
+            # Run the pre-installation steps for HA setup
+            SonicInstallationSteps.pre_installation_steps_ha(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, threads_dict, destination_hwsku)
+        elif is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
             SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
             if dut_name == 'r-bison-01':
@@ -100,7 +133,7 @@ class SonicInstallationSteps:
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "r-bison-16" != dut_name and
                 "r-bison-01" != dut_name and "r-bison-04" != dut_name and "r-bison-06" != dut_name and
-                "r-bison-08" != dut_name):
+                "r-bison-08" != dut_name and not setup_name.endswith('-ha')):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
@@ -140,6 +173,7 @@ class SonicInstallationSteps:
             SonicInstallationSteps.copy_csv_inventory_lab(setup_info['duts'][0]['dut_name'] + '_setup',
                                                           destination_hwsku)
         else:
+            # Single DUT and HA setup
             SonicInstallationSteps.copy_csv_inventory_lab(setup_name, destination_hwsku)
 
     @staticmethod
@@ -275,12 +309,7 @@ class SonicInstallationSteps:
                                                            setup_name=setup_name,
                                                            dut_names=dut_names,
                                                            sonic_topo=topo)
-                if is_dualtor_aa_topo(topo):
-                    cmd = "./testbed-cli.sh -t testbed.yaml -k {NEIGHBOR_TYPE} remove-topo {SETUP}-{TOPO} vault".format(
-                        SETUP=setup, TOPO=topo, NEIGHBOR_TYPE=cached_vm_type)
-                else:
-                    cmd = "./testbed-cli.sh -k {NEIGHBOR_TYPE} remove-topo {SETUP}-{TOPO} vault".format(
-                        SETUP=setup, TOPO=topo, NEIGHBOR_TYPE=cached_vm_type)
+                cmd = "./testbed-cli.sh -k {NEIGHBOR_TYPE} remove-topo {SETUP}-{TOPO} vault".format(SETUP=setup, TOPO=topo, NEIGHBOR_TYPE=cached_vm_type)
                 logger.info("Remove topo {}".format(topo))
                 logger.info("Running CMD: {}".format(cmd))
                 try:
@@ -290,7 +319,7 @@ class SonicInstallationSteps:
 
         logger.info("Removing topologies to get the clear environment")
         with allure.step("Remove Topologies (community step)"):
-            if setup_name and is_dualtor_topo(sonic_topo):
+            if setup_name and (is_dualtor_topo(sonic_topo) or setup_name.endswith('-ha')):
                 topologies = SonicInstallationSteps.get_topologies_to_remove(setup_name)
                 _remove_topologies(setup_name, topologies)
             if dut_names:
@@ -307,6 +336,8 @@ class SonicInstallationSteps:
         else:
             if 'dual-tor' in dut_name:
                 topos_to_remove = MarsConstants.TOPO_ARRAY_DUALTOR
+            elif dut_name.endswith('-ha'):
+                topos_to_remove = MarsConstants.TOPO_ARRAY_HA
             else:
                 topos_to_remove = MarsConstants.TOPO_ARRAY
         return topos_to_remove
@@ -314,12 +345,10 @@ class SonicInstallationSteps:
     @staticmethod
     def get_add_topology_cmd(setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag, hwsku=None):
         testbed_file = ''
-        if is_dualtor_topo(sonic_topo):
+        if is_dualtor_topo(sonic_topo) or setup_name.endswith('-ha'):
             dut_name = setup_name
-            if is_dualtor_aa_topo(sonic_topo):
-                testbed_file = '-t testbed.yaml'
-        cmd = "./testbed-cli.sh {TESTBED_FILE} -k {NEIGHBOR_TYPE} -h {HWSKU} add-topo {SWITCH}-{TOPO} vault -e " \
-              "ptf_imagetag={PTF_TAG} -vvvvv".format(TESTBED_FILE=testbed_file, SWITCH=dut_name,
+        cmd = "./testbed-cli.sh -k {NEIGHBOR_TYPE} -h {HWSKU} add-topo {SWITCH}-{TOPO} vault -e " \
+              "ptf_imagetag={PTF_TAG} -vvvvv".format(SWITCH=dut_name,
                                                      TOPO=sonic_topo, PTF_TAG=ptf_tag, NEIGHBOR_TYPE=neighbor_type,
                                                      HWSKU=hwsku)
         return cmd
@@ -469,7 +498,7 @@ class SonicInstallationSteps:
                 "mtvr-moose-14" in setup_name):
             hwskus = ['Mellanox-SN5600-V256', 'Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']
             need_gen_mingraph = True
-        if "bobcat" in setup_name and "bobcat-10" not in setup_name:
+        if setup_name.endswith('-ha') or ("bobcat" in setup_name and "bobcat-10" not in setup_name):
             hwskus = ['ACS-SN4280', 'Mellanox-SN4280-O28', 'Mellanox-SN4280-O8C80', 'Mellanox-SN4280-O8C40']
             need_gen_mingraph = True
         if "r-tigon-04" in setup_name:
@@ -516,9 +545,14 @@ class SonicInstallationSteps:
                 execute_script(f'sed -i "s/400000/100000/g" {sonic_mgmt_hwsku_path}/{c224o8}/port_config.ini',
                                ansible_path)
         if need_gen_mingraph:
-            generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
+            if setup_name.endswith('-ha'):
+                generate_minigraph(ansible_path, setup_info, setup_name, sonic_topo, None)
+            else:
+                generate_minigraph(ansible_path, setup_info, dut_name, sonic_topo, None)
 
-        cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
+        for dut in setup_info['duts']:
+            cli = dut['cli_obj']
+            cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
 
         if not is_community(sonic_topo) and not is_performance:
             # Enable Port Init Profile for Canonical setups
@@ -532,16 +566,20 @@ class SonicInstallationSteps:
                 config_y_cable_simulator(ansible_path=ansible_path, setup_name=setup_name, sonic_topo=sonic_topo)
                 for dut in setup_info['duts']:
                     add_host_for_y_cable_simulator(dut, setup_info)
-            if is_dualtor_topo(sonic_topo):
+            if setup_name.endswith('-ha'):
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
                                   recover_by_reboot=False, topology_obj=topology_obj,
-                                  cli_obj=cli)
+                                  cli_objs=None, deploy_dpu=deploy_dpu)
+            elif is_dualtor_topo(sonic_topo):
+                deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
+                                  recover_by_reboot=False, topology_obj=topology_obj,
+                                  cli_objs=[cli])
             else:
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
                     deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                       recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
-                                      cli_obj=general_cli_obj, deploy_dpu=deploy_dpu)
+                                      cli_objs=[general_cli_obj], deploy_dpu=deploy_dpu)
                     if deploy_dpu:
                         dut['engine'].run_cmd('sudo config save -y')
             logger.info("Deploying DASH API")
@@ -566,12 +604,19 @@ class SonicInstallationSteps:
                 logger.info("Validating DPU configuration")
                 if dut_engine.run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) != 'dpu.conf':
                     with allure.step('Startup dpu and save config'):
-                        _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
-                        general_cli_obj.startup_dpu(dpu_index_list)
-                        general_cli_obj.save_configuration()
+                        for dut in setup_info['duts']:
+                            dut_alias = dut['dut_alias']
+                            dut_name = dut['dut_name']
+                            cli_obj = dut['cli_obj']
+                            # TODO parallelize this
+                            _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
+                            cli_obj.startup_dpu(dpu_index_list)
+                            cli_obj.save_configuration()
                 logger.info("Applying NAT config to smartSwitch")
                 with allure.step('Apply NAT config to smartSwitch'):
-                    enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
+                    for player_alias, player in topology_obj.players.items():
+                        if player_alias.startswith('dpu'):
+                            enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(player['engine'])
             logger.info("Validating Post InstallDUT configuration")
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
@@ -623,9 +668,14 @@ class SonicInstallationSteps:
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
             elif 'bobcat' in setup_name:
                 with allure.step('Disable DPUs for darkmode'):
-                    _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
-                    cli.shutdown_dpu(dpu_index_list)
-                    cli.save_configuration()
+                    for dut in setup_info['duts']:
+                        dut_alias = dut['dut_alias']
+                        dut_name = dut['dut_name']
+                        cli_obj = dut['cli_obj']
+                        # TODO parallelize this
+                        _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
+                        cli_obj.shutdown_dpu(dpu_index_list)
+                        cli_obj.save_configuration()
 
             # Only check port status at canonical setup, there is an ansible counterpart for community setup
             for dut in setup_info['duts']:

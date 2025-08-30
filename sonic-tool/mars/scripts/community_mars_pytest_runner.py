@@ -251,7 +251,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             duts = read_duts_from_testbed_yaml(f"{self.dut_name}-{self.sonic_topo}")
             self.Logger.info(f"duts :{duts}")
             duts.remove(self.dut_name)
-            dpu_duts = get_installed_dpu_duts(duts, self.Players[0].player_ip, self.Logger)
+            dpu_duts = get_installed_dpu_duts(self.dut_name, duts, self.Players[0].player_ip, self.Logger)
             self.Logger.info(f" dpu duts: {dpu_duts}")
             self.Logger.info(f" self.run_test_on_dpu_only: {self.run_test_on_dpu_only}, {type(self.run_test_on_dpu_only)}")
 
@@ -385,8 +385,9 @@ def read_duts_from_testbed_yaml(testbed_name):
     return duts
 
 
-def get_installed_dpu_duts(dpu_duts, player_ip, logger):
-    installed_dpus_file_path = "/root/mars/workspace/sonic-mgmt/installed_dpus"
+def get_installed_dpu_duts(dut_name, dpu_duts, player_ip, logger):
+    installed_dpus_file_path = f"/root/mars/workspace/sonic-mgmt/installed_dpus_{dut_name}"
+    logger.info(f"installed_dpus_file_path is {installed_dpus_file_path}")
     conn = connect(player_ip)
     if conn.modules.os.path.exists(installed_dpus_file_path):
         with conn.builtins.open(installed_dpus_file_path, 'r') as f:

@@ -657,7 +657,15 @@ class DeployOrchestrator:
             # DPU installation if needed
             if self.context.deploy_dpu:
                 with allure.step(f'Start to install the bfb image on DPUs:{self.context.base_version_dpu}'):
-                    DeployDpuHelper.bfb_install_dpu(self.context.topology_obj, self.context.setup_info, self.context.base_version_dpu)
+                    install_threads = []
+                    executor = concurrent.futures.ThreadPoolExecutor()
+                    for dut in self.context.setup_info['duts']:
+                        install_threads.append((f"DPU image install on {dut['dut_name']}",
+                                               executor.submit(DeployDpuHelper.bfb_install_dpu,
+                                                               self.context.topology_obj,
+                                                               self.context.base_version_dpu,
+                                                               dut['dut_alias'], dut['dut_name'], dut['cli_obj'])))
+                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=1500)
 
         # Phase 3: Verify pre-installation processes
         with allure.step('verify pre installation processes are done'):
@@ -690,23 +698,23 @@ class DeployDpuHelper:
     """Handle DPU-specific deployment operations"""
 
     @staticmethod
-    def bfb_install_dpu(topology_obj, setup_info, base_version_dpu):
+    def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj):
 
-        cli_obj = setup_info['duts'][0]['cli_obj']
-        rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj)
+        rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
 
-        with allure.step("Disable dark mode"):
-            DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list)
+        with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
+            DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
 
         with allure.step('Copying image to switch dut'):
             dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
             dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-            retry_call(lambda: topology_obj.players['dut']['engine'].run_cmd(
-                f"sudo curl {dpu_image_url} --retry 3 --output {dest_file}", validate=True),
+            retry_call(lambda: topology_obj.players[dut_alias]['engine'].run_cmd(
+                f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
                 tries=5, delay=2)
 
         with allure.step('Install BFB image on all DPUs'):
-            output = topology_obj.players['dut']['engine'].run_cmd(
+            # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
+            output = topology_obj.players[dut_alias]['engine'].run_cmd(
                 f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
             failures = []
             for index in dpu_index_list:
@@ -717,20 +725,19 @@ class DeployDpuHelper:
                 assert False, f"Failed to install bfb image on DPU: {failures}."
 
             if installed_dpus:
-                save_specified_installed_dpus(installed_dpus)
+                save_specified_installed_dpus(installed_dpus, dut_alias, dut_name)
 
     @staticmethod
-    def disable_dark_mode(topology_obj, cli_obj, dpu_index_list):
-
-        if topology_obj.players['dut']['engine'].run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) == 'dpu.conf':
-            if "DARK_MODE=true" in topology_obj.players['dut']['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
+    def disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias):
+        if topology_obj.players[dut_alias]['engine'].run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) == 'dpu.conf':
+            if "DARK_MODE=true" in topology_obj.players[dut_alias]['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
                 with allure.step('Disable dark mode and power cycle'):
-                    topology_obj.players['dut']['engine'].run_cmd(
+                    topology_obj.players[dut_alias]['engine'].run_cmd(
                         'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
                     time.sleep(60)
                     cli_obj.remote_reboot(topology_obj)
                     cli_obj.verify_dockers_are_up()
-                    dpu_ready = topology_obj.players['dut']['engine'].run_cmd(
+                    dpu_ready = topology_obj.players[dut_alias]['engine'].run_cmd(
                         "dpuctl dpu-status | awk '{print $2}'")
                     assert "False" not in dpu_ready, "Not all DPUs are ready."
         else:
