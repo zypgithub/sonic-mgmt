@@ -117,6 +117,8 @@ class Test_Alibaba_scenarios_with_reset:
     @allure.title('test_Alibaba_scenario - {scenario_name} with {packet_size}B packets and {hash_type} hash')
     @allure.description('Added dynamically in test body')
     def test_alibaba_scenario(self, request, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture):
+        if self.ip == InfraConst.IPV6 and is_redmine_issue_active([4584135])[0] and scenario_name == "p4_1_leaf_seven_acl":
+            pytest.skip("Skipping test due to active Redmine issue 4584135 for IPv6")
         test_name = get_perf_test_name(request)
 
         with allure.step("Adding dynamic description to allure report"):

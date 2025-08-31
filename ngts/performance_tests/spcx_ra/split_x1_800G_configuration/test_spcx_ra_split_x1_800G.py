@@ -55,6 +55,8 @@ class TestSPCXRA_x1Split_800G:
     @pytest.mark.parametrize("packet_size", PerfConsts.PACKET_SIZE_LIST)
     @allure.description('Calculate the port utilization on the DUT with AR enabled and IBM enabled')
     def test_ar_perf_max_bandwidth_ibm(self, request, packet_size):
+        if self.ip == InfraConst.IPV6 and is_redmine_issue_active([4584138])[0]:
+            pytest.skip("Skipping test due to active Redmine issue 4584138 for IPv6")
 
         test_name = get_perf_test_name(request)
 
