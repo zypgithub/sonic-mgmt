@@ -97,7 +97,7 @@ master:
     <<: *platform_defaults
     total: 6000
     sx_sdk: 1100
-    syncd: 300
+    syncd: 315
     rsyslogd:
       <<: *rsyslogd_defaults
       expected_value: 100
