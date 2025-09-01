@@ -6,7 +6,7 @@ from retry import retry
 
 logger = logging.getLogger()
 
-counterpoll_name_list = ["flowcnt-trap", "pg-drop", "port", "port-buffer-drop", "queue", "rif", "acl", "tunnel", "watermark"]
+counterpoll_name_list = ["flowcnt-trap", "pg-drop", "port", "port-buffer-drop", "queue", "rif", "acl", "tunnel", "watermark", "wredqueue"]
 
 
 @pytest.mark.disable_loganalyzer
