@@ -10779,6 +10779,230 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: ci-croc-chipsim-81-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-croc-chipsim-81
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-croc-chipsim-82-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-croc-chipsim-82
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-croc-chipsim-83-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-croc-chipsim-83
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-croc-chipsim-84-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-croc-chipsim-84
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  
+- conf-name: ci-nvl-chipsim-85-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-nvl-chipsim-85
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-nvl-chipsim-86-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-nvl-chipsim-86
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-qtm4-chipsim-87-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-qtm4-chipsim-87
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-qtm4-chipsim-88-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-qtm4-chipsim-88
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  
+- conf-name: ci-sonic-mgmt-chipsim-61-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-sonic-mgmt-chipsim-61
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: ci-sonic-mgmt-chipsim-62-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - ci-sonic-mgmt-chipsim-62
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: nvos-chipsim-63-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-63
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: nvos-chipsim-64-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-64
+  inv_name: lab
+  comment: Mellanox MTR testbed
+  
+- conf-name: nvos-chipsim-65-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-65
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: nvos-chipsim-66-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-66
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: nvos-chipsim-67-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-67
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: nvos-chipsim-68-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - nvos-chipsim-68
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: r-anaconda-25-ptf-any
   group-name: vm-t1
   topo: ptf-any
