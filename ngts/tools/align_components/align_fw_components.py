@@ -44,7 +44,7 @@ def start_components_update(_args):
         Defaults.EROT_NAME: "erot_path",
         Defaults.BIOS_NAME: "bios_path",
         Defaults.PLDM_NAME: "pldm_path",
-        Defaults.MCU_NAME: "mcu_path"
+        Defaults.SMA_NAME: "sma_path"
     }
     components_to_update = _get_components_for_update(_args, update_via_parameter)
     if _has_non_encrypted_fpga(bmc_ip) and any(Defaults.FPGA_NAME in comp for comp in components_to_update):
@@ -57,8 +57,8 @@ def start_components_update(_args):
     if Defaults.FPGA_NAME not in str(respond).lower():
         components_to_update = [comp for comp in components_to_update if Defaults.FPGA_NAME not in comp.lower()]
 
-    if (not update_via_parameter) and (Defaults.MCU_NAME in json_dict.get(provisioning, {})):
-        components_to_update.append(Defaults.MCU_NAME)
+    if (not update_via_parameter) and (Defaults.SMA_NAME in json_dict.get(provisioning, {})):
+        components_to_update.append(Defaults.SMA_NAME)
 
     components: List[Component] = []
     for component_name in components_to_update:
@@ -134,8 +134,8 @@ def _get_components_for_update(_args, update_via_parameter):
         components_to_update.append(Defaults.EROT_NAME)
     if _args.fpga_path:
         components_to_update.append(Defaults.FPGA_ENCRYPTED_NAME)
-    if _args.mcu_path:
-        components_to_update.append(Defaults.MCU_NAME)
+    if _args.sma_path:
+        components_to_update.append(Defaults.SMA_NAME)
     return components_to_update
 
 
@@ -200,8 +200,8 @@ def parse_args():
                         help='Path to erot fwpkg', required=False, type=parse_mars_default, default=None)
     parser.add_argument('--cpld_path',
                         help='Path to cpld fwpkg', required=False, type=parse_mars_default, default=None)
-    parser.add_argument('--mcu_path',
-                        help='Path to mcu fwpkg', required=False, type=parse_mars_default, default=None)
+    parser.add_argument('--sma_path',
+                        help='Path to sma fwpkg', required=False, type=parse_mars_default, default=None)
     parser.add_argument('--pldm_path',
                         help='Path to pldm fwpkg', required=False, type=parse_mars_default, default=None)
 
