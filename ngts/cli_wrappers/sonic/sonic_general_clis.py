@@ -455,9 +455,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
                                       setup_info=None, dut_alias=None, is_air=False, use_custom_config_db_air=False):
-
-        with allure.step('Verify dockers are up'):
-            self.verify_dockers_are_up()
+        # docker containers are not stable before all the platform configs are applied
+        # will be verified after config_db is updated
+        if not is_air:
+            with allure.step('Verify dockers are up'):
+                self.verify_dockers_are_up()
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
@@ -477,7 +479,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.engine.disconnect()
 
         if apply_base_config:
-            self.update_platform_params(platform_params, setup_name)
+            # hwsku for Air setups are read from the simulation metadata, there is no need to update the platform params
+            if not is_air:
+                self.update_platform_params(platform_params, setup_name)
             with allure.step("Apply basic config"):
                 self.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=disable_ztp,
                                         configure_dns=configure_dns, is_air=is_air, use_custom_config_db_air=use_custom_config_db_air)
@@ -880,7 +884,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
     def apply_basic_config(self, topology_obj, setup_name, platform_params, reload_before_qos=False,
                            disable_ztp=False, configure_dns=True, is_air=False, use_custom_config_db_air=False):
-        with allure.step("Upload port_config.ini and config_db.json with reboot of dut"):
+        with allure.step("Upload port_config.ini and config_db.json with reload of dut"):
             retry_call(self.apply_config_files,
                        fargs=[topology_obj, setup_name, platform_params, is_air, use_custom_config_db_air],
                        tries=3,
@@ -901,8 +905,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step("Apply qos and dynamic buffer config"):
                 self.cli_obj.qos.reload_qos()
                 self.verify_dockers_are_up(dockers_list=['swss'])
-                if is_redmine_issue_active([3589124])[0]:
-                    time.sleep(120)
                 self.cli_obj.qos.stop_buffermgrd()
                 self.cli_obj.qos.start_buffermgrd()
 
@@ -931,6 +933,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
+        config_db = None
 
         if is_air:
             if use_custom_config_db_air:
@@ -939,15 +942,19 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                     f"with use_custom_config_db_air flag, config_db.json file should be in {InfraConst.MARS_TOPO_FOLDER_PATH}/{setup_name}")
                 logger.info(f"Using custom config_db.json file for {setup_name} from {InfraConst.MARS_TOPO_FOLDER_PATH}/{setup_name}")
             else:
-                self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
+                config_db = self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
         elif not self.is_performance_setup(setup_name):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
-        self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, shared_path)
+        self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, config_db)
+        if not is_air:
+            config_file_prefix = self.get_config_file_prefix(setup_name)
+            config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
+            self.create_extended_config_db_file(setup_name, config_db, file_name=config_db_file_name)
         self.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
                                   chip_type=self.get_chip_gen(platform_params), enable_im=True)
-        self.reboot_reload_flow(topology_obj=topology_obj)
+        self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
 
     def upload_port_config_ini(self, platform, hwsku, shared_path):
         switch_config_ini_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
@@ -965,14 +972,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             prefix = self.hostname() + '_'
         return prefix
 
-    def upload_config_db_file(self, topology_obj, setup_name, hwsku, platform, shared_path):
-        config_db_file = self.get_updated_config_db(topology_obj, setup_name, hwsku, platform)
-        source_file = os.path.join(shared_path, config_db_file)
-        logger.info(f'Copy file {source_file} to /tmp directory on a switch')
-        self.engine.copy_file(source_file=source_file,
-                              dest_file=SonicConst.CONFIG_DB_JSON, file_system='/tmp/',
-                              overwrite_file=True, verify_file=False)
-        self.engine.run_cmd(f'sudo mv /tmp/{SonicConst.CONFIG_DB_JSON} {SonicConst.CONFIG_DB_JSON_PATH}')
+    def upload_config_db_file(self, topology_obj, setup_name, hwsku, platform, config_db=None):
+        config_file_prefix = self.get_config_file_prefix(setup_name)
+        if config_db is None:
+            config_db = self.get_config_db_json_obj(setup_name, config_file_prefix + SonicConst.CONFIG_DB_JSON)
+        if not self.is_performance_setup(setup_name):
+            config_db = self.get_updated_config_db(topology_obj, setup_name, hwsku, platform, config_db)
+
+        save_config_db_json(self.engine, config_db)
         if self.is_performance_setup(setup_name):
             self.reload_configuration(force=True)
 
@@ -1029,42 +1036,26 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # ET.indent(tree, space="\t", level=0)
         tree.write(filepath, encoding="utf-8")
 
-    def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform):
-        branch = get_sonic_branch(topology_obj, self.cli_obj.dut_alias)
-        config_file_prefix = self.get_config_file_prefix(setup_name)
-        if self.is_performance_setup(setup_name):
-            return f"{config_file_prefix}config_db.json"
-        config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
-        base_config_db_json_file_name = SonicConst.CONFIG_DB_JSON
-        base_config_db_json_file_name = config_file_prefix + base_config_db_json_file_name
-        base_config_db_json = self.get_config_db_json_obj(setup_name, base_config_db_json_file_name)
-        self.create_extended_config_db_file(setup_name, base_config_db_json, file_name=config_db_file_name)
-        self.update_config_db_metadata_router(setup_name, config_db_file_name)
-        self.update_config_db_metadata_mgmt_port(setup_name, config_db_file_name)
-        self.update_config_db_metadata_hwsku(setup_name, hwsku, config_db_file_name)
-        self.update_config_db_features(setup_name, hwsku, platform, config_db_file_name)
-        self.update_config_db_feature_config(setup_name, "database", "auto_restart", "always_enabled",
-                                             config_db_file_name)
+    def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform, config_db):
+        self.update_config_db_metadata_router(config_db)
+        self.update_config_db_metadata_mgmt_port(config_db)
+        self.update_config_db_metadata_hwsku(hwsku, config_db)
+        self.update_config_db_features(setup_name, hwsku, platform, config_db)
+        self.update_config_db_feature_config("database", "auto_restart", "always_enabled", config_db)
         default_mtu = "9100"
-        self.update_config_db_port_mtu_config(setup_name, default_mtu, config_db_file_name)
-        self.update_config_db_breakout_cfg(topology_obj, setup_name, hwsku, platform, config_db_file_name)
-        # TODO: WA for the PR: https://github.com/sonic-net/sonic-buildimage/pull/16116,
-        #  after the PR merged, it can be removed
-        self.update_database_version(setup_name, config_db_file_name)
-        self.update_config_db_simx_setup_metadata_mac(setup_name, config_db_file_name)
-        self.restore_container_autorestart(setup_name, config_db_file_name)
-        return config_db_file_name
+        self.update_config_db_port_mtu_config(default_mtu, config_db)
+        self.update_config_db_breakout_cfg(topology_obj, setup_name, hwsku, platform, config_db)
+        self.update_config_db_simx_setup_metadata_mac(setup_name, config_db)
+        self.restore_container_autorestart(config_db)
+        return config_db
 
-    def update_config_db_simx_setup_metadata_mac(self, setup_name, config_db_json_file_name):
+    def update_config_db_simx_setup_metadata_mac(self, setup_name, config_db):
         expected_base_mac_file_path = f'/tmp/simx_base_mac_{self.engine.ip}'
         if os.path.exists(expected_base_mac_file_path):
             mac_address = os.popen(f"cat {expected_base_mac_file_path}").read()
             logger.info(f"Update the mac address for simx setup to: {mac_address}")
-            config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-            config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.MAC] = \
+            config_db[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.MAC] = \
                 mac_address
-
-            return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     @staticmethod
     def get_image_unsupported_features(current_features, image_supported_features):
@@ -1084,12 +1075,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for feature in image_unsupported_features:
             self.remove_feature_from_syslog_config_feature(config_db_json_data, feature)
 
-    def update_config_db_features(self, setup_name, hwsku, platform, config_db_json_file_name):
+    def update_config_db_features(self, setup_name, hwsku, platform, config_db):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
         image_supported_features = init_config_db_json[ConfigDbJsonConst.FEATURE]
-        current_features = config_db_json[ConfigDbJsonConst.FEATURE]
-        auto_techsupport_features = config_db_json.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE, {})
+        current_features = config_db[ConfigDbJsonConst.FEATURE]
+        auto_techsupport_features = config_db.get(ConfigDbJsonConst.AUTO_TECHSUPPORT_FEATURE, {})
         for feature, feature_properties in image_supported_features.items():
             if feature not in current_features:
                 current_features[feature] = feature_properties
@@ -1100,15 +1090,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         image_unsupported_features = self.get_image_unsupported_features(current_features, image_supported_features)
         self.remove_config_db_unsupported_features(
             current_features, image_unsupported_features, auto_techsupport_features)
-        self.remove_unsupported_features_from_syslog_config_feature(config_db_json, image_unsupported_features)
+        self.remove_unsupported_features_from_syslog_config_feature(config_db, image_unsupported_features)
 
         if 'doai' not in current_features:
-            config_db_json.pop('AR_GLOBAL', None)
+            config_db.pop('AR_GLOBAL', None)
 
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
-
-    def update_config_db_metadata_router(self, setup_name, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+    def update_config_db_metadata_router(self, config_db_json):
         hwsku = config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU]
         localhost_type = ConfigDbJsonConst.TOR_ROUTER
         if 'bobcat' in self.hostname():
@@ -1117,7 +1104,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             localhost_type = ConfigDbJsonConst.SONIC_HOST
         config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.TYPE] = \
             localhost_type
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_docker_routing_config_mode(self, topology_obj, mode='split-unified',
                                                     remove_docker_routing_config_mode=False):
@@ -1132,17 +1118,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         save_config_db_json(self.engine, config_db)
         self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
 
-    def update_config_db_metadata_mgmt_port(self, setup_name, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+    def update_config_db_metadata_mgmt_port(self, config_db):
+        config_db[ConfigDbJsonConst.MGMT_PORT] = json.loads(ConfigDbJsonConst.MGMT_PORT_VALUE)
 
-        config_db_json[ConfigDbJsonConst.MGMT_PORT] = json.loads(ConfigDbJsonConst.MGMT_PORT_VALUE)
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
-
-    def update_config_db_metadata_hwsku(self, setup_name, hwsku, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-        config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU] = \
+    def update_config_db_metadata_hwsku(self, hwsku, config_db):
+        config_db[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU] = \
             hwsku
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
     def update_config_db_hostname(self, setup_name, hostname, config_db_json_file_name):
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
@@ -1150,30 +1131,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             hostname
         return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
 
-    def update_config_db_feature_config(self, setup_name, feature_name, feature_config_key, feature_config_value,
-                                        config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-        config_db_json[ConfigDbJsonConst.FEATURE][feature_name][feature_config_key] = feature_config_value
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+    def update_config_db_feature_config(self, feature_name, feature_config_key, feature_config_value, config_db):
+        config_db[ConfigDbJsonConst.FEATURE][feature_name][feature_config_key] = feature_config_value
 
-    def update_config_db_port_mtu_config(self, setup_name, mtu, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-        for k, _ in config_db_json[ConfigDbJsonConst.PORT].items():
-            config_db_json[ConfigDbJsonConst.PORT][k]["mtu"] = mtu
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
-
-    def update_database_version(self, setup_name, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
-        cur_version = self.get_image_sonic_version()
-        if 'VERSIONS' not in config_db_json.keys():
-            config_db_json['VERSIONS'] = {}
-        if 'DATABASE' not in config_db_json['VERSIONS'].keys():
-            config_db_json['VERSIONS']['DATABASE'] = {}
-        if "201911" in cur_version:
-            config_db_json['VERSIONS']['DATABASE']["VERSION"] = "version_1_0_6"
-        else:
-            config_db_json['VERSIONS']['DATABASE']["VERSION"] = "version_2_0_0"
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+    def update_config_db_port_mtu_config(self, mtu, config_db):
+        for k, _ in config_db[ConfigDbJsonConst.PORT].items():
+            config_db[ConfigDbJsonConst.PORT][k]["mtu"] = mtu
 
     @staticmethod
     def remove_feature_from_syslog_config_feature(config_db_json_data, feature_name):
@@ -1183,17 +1146,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 config_db_json_data[syslog_config_key].pop(feature_name)
                 logger.info(f"Remove {feature_name} from SYSLOG_CONFIG_FEATURE")
 
-    def restore_container_autorestart(self, setup_name, config_db_json_file_name):
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)
+    def restore_container_autorestart(self, config_db):
         with allure.step("Restoring container autorestart"):
             feature_key = "FEATURE"
-            if feature_key in config_db_json:
+            if feature_key in config_db:
                 feature_status_dict = self.show_and_parse_feature_status()
                 for feature in feature_status_dict:
-                    if feature in config_db_json[feature_key]:
+                    if feature in config_db[feature_key]:
                         auto_restart_state = feature_status_dict[feature]["AutoRestart"]
-                        config_db_json[feature_key][feature]["auto_restart"] = auto_restart_state
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+                        config_db[feature_key][feature]["auto_restart"] = auto_restart_state
 
     def update_config_db_metadata_mgmt_ip(self, setup_name, ip, file_name=SonicConst.CONFIG_DB_JSON):
         def _get_subnet_mask(ip, interfaces_ips_output):
@@ -1235,12 +1196,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 return False
         return True
 
-    def update_config_db_breakout_cfg(self, topology_obj, setup_name, hwsku, platform, config_db_json_file_name):
+    def update_config_db_breakout_cfg(self, topology_obj, setup_name, hwsku, platform, config_db):
         init_config_db_json = self.get_init_config_db_json_obj(hwsku, platform, setup_name)
-        config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name)
         if init_config_db_json.get("BREAKOUT_CFG") and not self.is_bluefield(hwsku):
-            config_db_json = self.update_breakout_cfg(topology_obj, init_config_db_json, config_db_json, hwsku)
-        return self.create_extended_config_db_file(setup_name, config_db_json, file_name=config_db_json_file_name)
+            self.update_breakout_cfg(topology_obj, init_config_db_json, config_db, hwsku)
 
     @staticmethod
     def is_bluefield(hwsku):
@@ -1319,7 +1278,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         breakout_cfg_dict = {port: breakout_mode for port, breakout_mode in breakout_cfg_dict.items()
                              if port in port_info_dict}
         config_db_json["BREAKOUT_CFG"] = breakout_cfg_dict
-        return config_db_json
 
     def is_supported_split_mode(self, hwsku, split_num):
         split_supported_without_unmap = self.is_platform_supports_split_without_unmap(hwsku) or split_num == 2
@@ -1599,8 +1557,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         gw_ip = ips_dict[HostsConstants.OOB_MGMT_SERVER]
         dut_ip = ips_dict[HostsConstants.DUT]
         config_db_dict['MGMT_INTERFACE'] = {f'eth0|{dut_ip}/24': {'gwaddr': gw_ip}}
-        config_db_path = os.path.join(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name, SonicConst.CONFIG_DB_JSON)
-        self.create_extended_config_db_file(setup_name, config_db_dict, config_db_path)
+        return config_db_dict
 
     def get_simx_version_and_chip_type(self):
         """

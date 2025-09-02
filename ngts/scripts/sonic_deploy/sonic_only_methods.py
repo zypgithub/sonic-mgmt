@@ -621,7 +621,7 @@ class SonicInstallationSteps:
                         os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
                 with allure.step('Apply NAT config to smartSwitch'):
                     enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
-            else:
+            elif 'bobcat' in setup_name:
                 with allure.step('Disable DPUs for darkmode'):
                     _, dpu_index_list, _ = get_installed_dpu_info(topology_obj)
                     cli.shutdown_dpu(dpu_index_list)
