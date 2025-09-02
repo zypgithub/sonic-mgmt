@@ -31,19 +31,6 @@ def loganalyzer_ignore(cond: bool = True):
             TestToolkit.end_code_section_loganalyzer_ignore()
 
 
-def get_real_file_path(file_path: str) -> str:
-    """
-    @summary: Get the real file path from a given path
-    """
-    real_path = os.path.realpath(file_path)
-    containing_dir = os.path.dirname(real_path)
-    filename = os.path.basename(real_path)
-    dir_content = os.listdir(containing_dir)
-    matching_filename = [dir_file for dir_file in dir_content if fnmatch.fnmatch(dir_file, filename)][0]
-    real_file_path = os.path.join(containing_dir, matching_filename)
-    return real_file_path
-
-
 def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION_NAME,
                               allowed_limit: int = DiskConsts.PARTITION_CAPACITY_LIMIT,
                               minimum_free_space: float = DiskConsts.MINIMUM_FREE_SPACE):

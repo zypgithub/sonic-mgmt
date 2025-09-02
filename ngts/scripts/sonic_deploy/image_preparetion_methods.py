@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 import time
@@ -8,9 +9,21 @@ import json
 from ngts.scripts.sonic_deploy.image_http_request_handler import ImageHTTPRequestHandler
 from ngts.constants.constants import MarsConstants
 from ngts.constants.performance_constants import PerfConsts
-from ngts.tools.test_utils.nvos_general_utils import get_real_file_path
 
 logger = logging.getLogger()
+
+
+def get_real_file_path(file_path: str) -> str:
+    """
+    @summary: Get the real file path from a given path
+    """
+    real_path = os.path.realpath(file_path)
+    containing_dir = os.path.dirname(real_path)
+    filename = os.path.basename(real_path)
+    dir_content = os.listdir(containing_dir)
+    matching_filename = [dir_file for dir_file in dir_content if fnmatch.fnmatch(dir_file, filename)][0]
+    real_file_path = os.path.join(containing_dir, matching_filename)
+    return real_file_path
 
 
 def get_real_paths(base_version, target_version, cli_type):

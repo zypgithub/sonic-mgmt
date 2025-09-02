@@ -35,9 +35,13 @@ from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.helpers.interface_helpers import get_dut_default_ports_list
 from ngts.helpers.run_process_on_host import run_background_process_on_host
 
+
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
+from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
+from ngts.scripts.sonic_deploy.os_upgrade_flag import set_os_upgrade_flag
+
 from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
 from ngts.tests.nightly.show_techsupport.constants import HealthEventConst
 from ngts.tests.nightly.show_techsupport.test_health_event import get_health_event_config
@@ -1863,6 +1867,78 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 assert dpu_status[dpu_name]['Oper-Status'] == 'Online' and dpu_status[dpu_name]['Admin-Status'] == 'up', \
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
         logger.info("all dpus:{dpu_index_list} are up")
+
+    def pre_installation_steps(self, context, threads_dict):
+        """Execute SONiC pre-installation steps - base implementation"""
+        SonicInstallationSteps.pre_installation_steps(
+            context.sonic_topo, context.neighbor_type, context.base_version, context.target_version,
+            context.setup_info, context.port_number, context.is_simx,
+            threads_dict, context.destination_hwsku, context.is_performance
+        )
+
+    def post_installation_steps(self, context, image_helper=None):
+        """Execute SONiC post-installation steps - base implementation"""
+        last_dut = context.all_duts[-1] if context.all_duts else context.primary_dut
+        SonicInstallationSteps.post_installation_steps(
+            context.topology_obj, context.sonic_topo, context.recover_by_reboot, context.setup_name,
+            context.platform_params, context.apply_base_config, context.target_version,
+            context.is_shutdown_bgp, context.reboot_after_install, context.deploy_only_target,
+            context.fw_pkg_path, context.reboot, context.additional_apps, context.setup_info,
+            last_dut['dut_alias'], context.is_performance, context.chip_type, context.deploy_dpu, context.is_air
+        )
+
+        # SONiC-specific post-upgrade operations
+        if context.base_version and context.target_version and not context.deploy_only_target:
+            if not set_os_upgrade_flag():
+                logger.warning("Failed to set the OS upgrade flag")
+
+        # Clean reboot-cause history after upgrade (SONiC-specific)
+        with allure.step('clean reboot-cause history after upgrade'):
+            # see the fix for 202505 https://github.com/sonic-net/sonic-host-services/pull/293
+            logger.info("Cleaning reboot-cause history to avoid timezone conflicts between versions")
+            image_helper.cleanup_reboot_cause_history(context.topology_obj, context.setup_info)
+        # Configure DNS for IPv6 setups
+        self._configure_ipv6_dns_for_sonic_mgmt_container(context.setup_info)
+
+    def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
+                           apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
+                           target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
+                           fanout_deploy_threads=None, serial_log_analyzers=None, dut_ip='',
+                           fanout_target_version=None):
+        """Execute SONiC deploy image steps - base implementation"""
+        SonicInstallationSteps.deploy_image(
+            cli=self, topology_obj=topology_obj, setup_name=setup_name,
+            platform_params=platform_params, image_url=image_url, deploy_type=deploy_type,
+            apply_base_config=apply_base_config, reboot_after_install=reboot_after_install,
+            is_shutdown_bgp=is_shutdown_bgp, fw_pkg_path=fw_pkg_path,
+            destination_hwsku=destination_hwsku, setup_info=setup_info,
+            dut_alias=dut_alias, fanout_deploy_threads=fanout_deploy_threads,
+            fanout_target_version=fanout_target_version
+        )
+
+    def _configure_ipv6_dns_for_sonic_mgmt_container(self, setup_info):
+        """
+        Configure DNS server for IPv6 setups in sonic-mgmt container.
+        Move the default docker dns server to the end of file /etc/resolv.conf
+        for ipv6 setups, i.e. r-panther-02 and r-panther-42
+
+        :param setup_info: Setup information containing DUT details
+        """
+        # Get DUT IP from setup_info
+        dut_ip = setup_info['duts'][0]['dut_ip']
+        if ":" in dut_ip or dut_ip.endswith(".v6lab"):
+            logger.info(f"Configuring IPv6 DNS for sonic-mgmt container (DUT IP: {dut_ip})")
+            default_docker_dns_server = 'nameserver 127.0.0.11'
+            with open('/etc/resolv.conf', 'r') as f:
+                lines = f.readlines()
+            with open('/etc/resolv.conf', 'w') as f:
+                for line in lines:
+                    if default_docker_dns_server == line.strip():
+                        continue
+                    else:
+                        f.write(line)
+                f.write(default_docker_dns_server)
+            logger.info("IPv6 DNS configuration completed for sonic-mgmt container")
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

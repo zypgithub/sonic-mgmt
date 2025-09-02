@@ -13,6 +13,7 @@ from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
+from ngts.scripts.sonic_deploy.dvs_only_methods import DvsInstallationSteps
 
 from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
@@ -108,3 +109,19 @@ class DvsGeneralCli(GeneralCliCommon):
         logger.info(
             f"dut: {dut_name} {'supports' if image_supports else 'does not support'} version: {base_version_url}")
         return image_supports
+
+    def pre_installation_steps(self, context, threads_dict):
+        """Execute DVS pre-installation steps"""
+        DvsInstallationSteps.pre_installation_steps(context.setup_info)
+
+    def post_installation_steps(self, context, image_helper=None):
+        """Execute DVS post-installation steps"""
+        DvsInstallationSteps.post_installation_steps(context.setup_info['duts'], context.target_version)
+
+    def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
+                           apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
+                           target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
+                           fanout_deploy_threads=None, serial_log_analyzers=None, dut_ip='',
+                           fanout_target_version=None):
+        """Execute DVS deploy image steps"""
+        self.deploy_image(PerfConsts.DVS_GA_IMAGE, topology_obj, dut_alias)

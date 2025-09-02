@@ -17,6 +17,7 @@ from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
+from ngts.constants.constants import SerialLoggerConst
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -619,3 +620,32 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         output = self.engine.run_cmd("nv show platform -o json", print_output=False)
         output = json.loads(output)
         return output['system-mac']
+
+    def pre_installation_steps(self, context, threads_dict):
+        """Execute NVUE pre-installation steps"""
+        from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+        NvosInstallationSteps.pre_installation_steps(context.setup_info, context.base_version, context.target_version)
+
+    def post_installation_steps(self, context, image_helper=None):
+        """Execute NVUE post-installation steps"""
+        from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+        NvosInstallationSteps.post_installation_steps(
+            context.topology_obj, context.workspace_path, context.setup_info,
+            context.serial_log_analyzers[self.engine.ip],
+            context.request.config.rootdir, context.base_version,
+            context.target_version, context.verify_secure_boot
+        )
+
+    def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
+                           apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
+                           target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
+                           fanout_deploy_threads=None, serial_log_analyzers=None, dut_ip='',
+                           fanout_target_version=None):
+        """Execute NVUE deploy image steps"""
+        from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+        base_image_url = image_url
+        self.engine.password = self.device.get_default_password_by_version(base_image_url)
+        with serial_log_analyzers[dut_ip].stage(SerialLoggerConst.MANUFACTURE_STAGE):
+            NvosInstallationSteps.deploy_image(self, topology_obj, setup_name, platform_params, base_image_url,
+                                               deploy_type, apply_base_config, reboot_after_install, fw_pkg_path,
+                                               target_image_url, dut_alias)

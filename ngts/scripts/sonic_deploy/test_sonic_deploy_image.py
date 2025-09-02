@@ -3,7 +3,7 @@ import allure
 import logging
 
 from retry.api import retry_call
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topology
+from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.scripts.sonic_deploy.community_only_methods import config_y_cable_simulator, add_host_for_y_cable_simulator
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, is_community
 
@@ -30,7 +30,7 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
     :param is_air: is_air fixture
     :return: raise assertion error in case of script failure
     """
-    setup_info = get_info_from_topology(topology_obj, workspace_path)
+    setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     for dut in setup_info['duts']:
         try:
             # when bgp is up, dut can not access the external IP such as nbu-mtr-nfs.nvidia.com. So shutdown bgp

@@ -4,7 +4,7 @@ import pytest
 import allure
 
 from ngts.constants.constants import CliType
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topology, get_hwsku
+from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 
 logger = logging.getLogger()
 
@@ -17,7 +17,7 @@ def test_fanout_upgrade(topology_obj, workspace_path, setup_name, fanout_target_
     if not fanout_target_version:
         pytest.skip("Skip it when fanout_target_version is not specified")
 
-    setup_info = get_info_from_topology(topology_obj, workspace_path)
+    setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     setup_info['setup_name'] = setup_name
     install_threads = {}
 

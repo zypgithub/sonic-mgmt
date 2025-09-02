@@ -7,7 +7,7 @@ import pytest
 from collections import defaultdict
 from ngts.constants.constants import SonicConst
 from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topology
+from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 
 
 logger = logging.getLogger()
@@ -96,7 +96,7 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
     """
 
     dut_name = cli_objects.dut.chassis.get_hostname()
-    setup_info = get_info_from_topology(topology_obj, workspace_path)
+    setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     csv_path = setup_info['ansible_path'] + 'files/sonic_nvidia_links.csv'
     ansible_cmd = f"ansible-playbook -i lab testbed_set_l2_mode.yml --vault-password-file=vault -l {dut_name} -vvv"
     csv_port_config = read_csv_config(csv_path, dut_name)
@@ -116,7 +116,7 @@ def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_p
     This test will restore the default mode
     """
     dut_name = cli_objects.dut.chassis.get_hostname()
-    setup_info = get_info_from_topology(topology_obj, workspace_path)
+    setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     ansible_cmd = f"./testbed-cli.sh deploy-mg {dut_name}-{sonic_topo} lab vault -vvv"
 
     with allure.step("Deploy minigraph"):

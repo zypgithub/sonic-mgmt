@@ -6,7 +6,7 @@ import pytest
 
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topology
+from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
@@ -20,7 +20,7 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
                                 additional_apps, workspace_path, chip_type, use_custom_config_db_air):
     try:
         with allure.step('Collecting setup info'):
-            setup_info = get_info_from_topology(topology_obj, workspace_path)
+            setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
             setup_info['setup_name'] = setup_name
             dut = setup_info['duts'][0]
 

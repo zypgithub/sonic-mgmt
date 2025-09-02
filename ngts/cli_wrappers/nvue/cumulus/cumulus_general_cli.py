@@ -2,6 +2,9 @@ import logging
 import re
 import os
 import glob
+import time
+from retry import retry
+
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.constants.constants import InfraConst
@@ -10,8 +13,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import SecureBootConsts
-import time
-from retry import retry
+from ngts.scripts.sonic_deploy.cumulus_only_methods import CumulusInstallationSteps
 
 logger = logging.getLogger()
 
@@ -248,3 +250,22 @@ class CumulusGeneralCli(NvueGeneralCli):
         except Exception as e:
             logger.info(f'Switch is not in ONIE install mode')
             return False
+
+    def pre_installation_steps(self, context, threads_dict):
+        """Execute Cumulus pre-installation steps"""
+        CumulusInstallationSteps.pre_installation_steps(context.setup_info, context.base_version, context.target_version)
+
+    def post_installation_steps(self, context, image_helper=None):
+        """Execute Cumulus post-installation steps"""
+        CumulusInstallationSteps.post_installation_steps(context.setup_info, context.is_performance)
+
+    def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
+                           apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
+                           target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
+                           fanout_deploy_threads=None, serial_log_analyzers=None, dut_ip='',
+                           fanout_target_version=None):
+        """Execute Cumulus deploy image steps"""
+        super().deploy_image_steps(topology_obj, setup_name, platform_params, image_url, deploy_type,
+                                   apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
+                                   target_image_url, destination_hwsku, setup_info, dut_alias,
+                                   fanout_deploy_threads, serial_log_analyzers, dut_ip, fanout_target_version)

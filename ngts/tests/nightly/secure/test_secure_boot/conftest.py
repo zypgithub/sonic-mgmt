@@ -3,7 +3,7 @@ import logging
 
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.tests.nightly.secure.constants import SecureBootConsts
-from ngts.scripts.sonic_deploy.test_deploy_and_upgrade import get_info_from_topology
+from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
 
 logger = logging.getLogger()
@@ -18,7 +18,7 @@ def post_secure_boot_steps(secure_boot_helper, topology_obj, setup_name, platfor
     It would recover exactly the same environment as ngts/scripts/sonic_deploy/test_sonic_deploy_image.py does
     after secure boot test
     """
-    setup_info = get_info_from_topology(topology_obj, SecureBootConsts.WORKSPACE_PATH)
+    setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, SecureBootConsts.WORKSPACE_PATH)
 
     yield
 
