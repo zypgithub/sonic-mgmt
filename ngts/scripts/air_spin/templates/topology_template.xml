@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TOPOLOGY>
+
+    <HOSTS name="TEST_SERVER">
+        <HOST>
+            <TYPE>Linux</TYPE>
+            <BASE_IP>10.213.86.60</BASE_IP>
+	    <CONNECTIONS>
+                <CONNECTION CONN_TYPE="SSH">
+                    <CLI_TYPE>SHELL</CLI_TYPE>
+		            <IP>10.213.86.60</IP>
+                </CONNECTION>
+            </CONNECTIONS>
+            <USERS>
+                <USER>
+                    <USERNAME>$TEST_SERVER_USER</USERNAME>
+                    <PASSWORD>$TEST_SERVER_PASSWORD</PASSWORD>
+                </USER>
+            </USERS>
+            <MAC_ADDRESS>18:66:da:f4:7e:fc</MAC_ADDRESS>
+        </HOST>
+    </HOSTS>
+
+    <HOSTS name="SONIC_MGMT">
+        <HOST>
+            <TYPE>Linux</TYPE>
+            <BASE_IP>{{hypervisor.ip}}</BASE_IP>
+	    <CONNECTIONS>
+                <CONNECTION CONN_TYPE="SSH">
+                    <CLI_TYPE>SHELL</CLI_TYPE>
+                    <IP>{{hypervisor.ip}}</IP>
+                </CONNECTION>
+            </CONNECTIONS>
+            <USERS>
+                <USER>
+                    <USERNAME>$SONIC_MGMT_USER</USERNAME>
+                    <PASSWORD>$SONIC_MGMT_PASSWORD</PASSWORD>
+                </USER>
+            </USERS>
+            <MAC_ADDRESS>{{hypervisor.mac}}</MAC_ADDRESS>
+        </HOST>
+    </HOSTS>
+
+
+
+</TOPOLOGY>

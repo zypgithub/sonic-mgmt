@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SETUPDEF>
+    <owner> SONiC </owner>
+    <reporter_group_name> SONiC </reporter_group_name>
+
+    <!-- Add a players entry for each player that is going to run steps in your topology -->
+    <players> {{hypervisor.ip}} </players>
+    <steps>
+        <default> steps/nvidia_air_regression_deploy.steps </default>
+    </steps>
+
+     <execution_block>
+        <block_id> B_ID1 </block_id>
+        <entry_points> SONIC_MGMT </entry_points>
+        <tests_dbs_tarball>  </tests_dbs_tarball>
+     </execution_block>
+
+    <topology_file> topo/{{dut.setup_name}}/topology.xml </topology_file>
+
+    <extra_info>
+        <setup_name> {{dut.setup_name}} </setup_name>
+        <dut_name> {{dut.dut_name}} </dut_name>
+        <dut_hwsku> {{dut.dut_hwsku}} </dut_hwsku>
+        <chip_type> {{dut.chip_type}} </chip_type>
+        <base_version> {{dut.base_version}} </base_version>
+	<deploy_type> onie </deploy_type>
+        <target_version> </target_version>
+        <simx> yes </simx>
+	<target_ip> 1.2.3.4 </target_ip>
+
+        <!-- Topology for SONiC testing, for example: t0, t1, t1-lag, ptf32, etc. -->
+        <topology> {{dut.topology}} </topology>
+
+        <!-- Specify whether reboot is required after deploy, options: no, random, reboot, fast-reboot, warm-reboot -->
+        <reboot_after_deploy> no </reboot_after_deploy>
+
+        <!-- Pull sonic-mgmt docker image on test server using the specified information.
+             Consumed by script: "sonic-tool/mars/scripts/update_sonic_mgmt_docker.py"
+
+             docker_registry_url: Optional. If no value is specified, value of DOCKER_REGISTRY in
+                                  "sonic-tool/mars/scripts/lib/constants.py" will be used.
+             sonic_mgmt_repo_name: Optional. Default value: "sonic-mgmt".
+             sonic_mgmt_docker_tag: Optional. Default value: "latest".
+        -->
+        <docker_registry_url> harbor.mellanox.com/sonic </docker_registry_url>
+        <sonic_mgmt_docker_name> docker-ngts </sonic_mgmt_docker_name>
+        <sonic_mgmt_docker_tag> latest </sonic_mgmt_docker_tag>
+
+        <!-- Repo info of the sonic-mgmt git repository
+             sonic_mgmt_repo_url: Optional. If no value is specified, value of SONIC_MGMT_REPO_URL in
+                                  "sonic-tool/mars/scripts/lib/constants.py" will be used.
+             sonic_mgmt_repo_name: Mandaory. Used by many test cases.
+             sonic_mgmt_repo_branch: Mandatory. Used by some test cases.
+        -->
+        <sonic_mgmt_repo_url> http://10.7.77.140:8080/switchx/sonic/sonic-mgmt </sonic_mgmt_repo_url>
+        <sonic_mgmt_repo_name> sonic-mgmt </sonic_mgmt_repo_name>
+        <sonic_mgmt_repo_branch> {{dut.sonic_mgmt_repo_branch}} </sonic_mgmt_repo_branch>
+
+        <!-- Checkout the sonic-mgmt git repository to this path on the sonic-mgmt docker container
+             sonic_mgmt_workspace: Mandatory. Used by many scripts and test cases.
+        -->
+        <sonic_mgmt_workspace> /root/mars/workspace </sonic_mgmt_workspace>
+
+        <!-- Specify info related with dump device log after testing
+             dump_log_since: Optional. Default: "12 hours ago". Time range of logs to be collected in dump.
+             dump_backup_location: Optional. If no value is specified, value of DUT_LOG_BACKUP_PATH in
+                                  "sonic-tool/mars/scripts/lib/constants.py" will be used.
+        -->
+        <dump_log_since> '12 hours ago' </dump_log_since>
+        <dump_backup_location> /.autodirect/sw_regression/system/SONIC/MARS/results </dump_backup_location>
+
+        <!-- Location for storing json metadata collected for pytest testing -->
+        <json_root_dir> /.autodirect/sw_regression/system/SONIC/MARS/metadata </json_root_dir>
+
+        <!-- Specify the tarball to be used for testing. This tarball should contain all the DBs, CASEs and scripts.
+             Files under SONIC/MARS/conf/test_dbs/ are used by MARS to generate these tarballs. Generated tarballs
+             are under SONIC/MARS/tarballs/
+        -->
+        <custom_tarball_name> {{dut.custom_tarball_name}} </custom_tarball_name>
+
+    </extra_info>
+</SETUPDEF>
