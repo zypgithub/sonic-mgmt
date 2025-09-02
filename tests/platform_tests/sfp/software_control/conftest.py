@@ -1,7 +1,7 @@
 import pytest
 
 from tests.common.utilities import skip_release
-from tests.platform_tests.sfp.software_control.helpers import sc_supported, sc_ms_sku, PLATFORM_GENERATION
+from tests.common.helpers.software_control import sc_supported, sc_ms_sku, PLATFORM_GENERATION
 
 
 @pytest.fixture(autouse=True, scope="module")
