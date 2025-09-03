@@ -314,11 +314,13 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     conditions:
     - "'simx' in platform"
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436229 and ACS-MSN4600C"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436229 and ACS-MSN4600C or due to RM issue: https://redmine.mellanox.com/issues/4597093 and bison/moose testbed"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4436229 and hwsku in ['ACS-MSN4600C']"
     - "https://redmine.mellanox.com/issues/4516317"
+    - "https://redmine.mellanox.com/issues/4597093 and 'bison' in testbed"
+    - "https://redmine.mellanox.com/issues/4597093 and 'moose' in testbed"
 
 tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evpn_vxlan_basic:
   skip:
