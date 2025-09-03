@@ -2993,9 +2993,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-01-t1-isolated-v6-d56u2
+- conf-name: r-bison-01-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
-  topo: t1-isolated-v6-d56u2
+  topo: t1-isolated-v6-d56u1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-01
   ptf_ip: 10.215.45.3/20
@@ -3203,9 +3203,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-04-t1-isolated-v6-d56u2
+- conf-name: r-bison-04-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
-  topo: t1-isolated-v6-d56u2
+  topo: t1-isolated-v6-d56u1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-04
   ptf_ip: 10.215.40.182/20
@@ -3399,9 +3399,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-06-t1-isolated-v6-d56u2
+- conf-name: r-bison-06-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
-  topo: t1-isolated-v6-d56u2
+  topo: t1-isolated-v6-d56u1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-06
   ptf_ip: 10.215.49.42/20
@@ -3567,9 +3567,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-08-t1-isolated-v6-d56u2
+- conf-name: r-bison-08-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
-  topo: t1-isolated-v6-d56u2
+  topo: t1-isolated-v6-d56u1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-08
   ptf_ip: 10.215.51.62/20
@@ -3721,9 +3721,9 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
-- conf-name: r-bison-16-t1-isolated-v6-d56u2
+- conf-name: r-bison-16-t1-isolated-v6-d56u1-lag
   group-name: vm-t1
-  topo: t1-isolated-v6-d56u2
+  topo: t1-isolated-v6-d56u1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-bison-16
   ptf_ip: 10.215.34.2/20

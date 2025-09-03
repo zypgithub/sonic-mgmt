@@ -52,7 +52,7 @@ class QosBase:
         "t0-isolated-d96u32s2"
     ]
     SUPPORTED_T1_TOPOS = ["t1-lag", "t1-64-lag", "t1-56-lag", "t1-backend", "t1-28-lag", "t1-32-lag", "t1-48-lag",
-                          "t1-isolated-d28u1", "t1-isolated-v6-d28u1", "t1-isolated-d56u2", "t1-isolated-v6-d56u2",
+                          "t1-isolated-d28u1", "t1-isolated-v6-d28u1", "t1-isolated-d56u2", "t1-isolated-v6-d56u1-lag",
                           "t1-isolated-d56u1-lag", "t1-isolated-v6-d56u1-lag",
                           "t1-isolated-d448u16", "t1-isolated-v6-d448u16", "t1-isolated-d224u8",
                           "t1-isolated-d128", "t1-isolated-d32",
