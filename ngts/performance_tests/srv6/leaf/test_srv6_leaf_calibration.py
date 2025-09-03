@@ -189,6 +189,53 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         if total_violations_list:
             raise TestIssue("\n".join(total_violations_list))
 
+    @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
+    @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
+    @pytest.mark.parametrize("acl_mode", MRCConsts.ACL_MODES)
+    def test_leaf_srv6_trimming_many_to_few(self, request, traffic_type, workload, acl_mode):
+        pytest.skip("This test is not running in regression, only used for manual calibration of many to few ingress ports num")
+        total_results_df = []
+        total_violations_list = []
+        test_name = get_perf_test_name(request)
+        if acl_mode:
+            with allure.step(f"Load ports acl conf"):
+                dut_ports = self.cli_object.performance.get_dut_ports()
+                self.cli_object.acl.load_acl_rules_from_template(self.conf_args["template_path"], "add_msft_acl.jinja", dut_ports)
+        for num_of_ports in MRCConsts.PORTS_NUM_LIST:
+            with allure.step(f"num_of_ports: {num_of_ports}"):
+                for M in MRCConsts.M_LIST:
+                    with allure.step(f"M: {M}"):
+                        for option in MRCConsts.OPTION_LIST:
+                            with allure.step(f"option: {option}"):
+                                egress_ports, ingress_ports, port_group_df, pairing = self.cli_object.performance.get_leaf_many_to_few_port_group_df_for_debug(M, num_of_ports, option)
+                                self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
+                                with allure.step(f"Set test configuration description"):
+                                    add_test_mongo_metadata(test_name,
+                                                            {MongoDbConsts.CONF_NAME: f"leaf-many-to-few",
+                                                             MongoDbConsts.PORT_GROUP_DF: port_group_df,
+                                                             MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
+                                                             MongoDbConsts.TEST_WORKLOAD: workload})
+                                traffic_validation_jsons_list, violations_list, trimmed_untrimmed_dropped_percentages = self.many_to_few_traffic_test_runner(test_name, traffic_type, workload,
+                                                                                                                                                             egress_ports=egress_ports, ingress_ports=ingress_ports, M=M,
+                                                                                                                                                             tc_threshold=MRCConsts.LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH, pairing=pairing)
+                                traffic_validation_json = traffic_validation_jsons_list.pop()
+                                avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json, MRCConsts.EGRESS_PORT_GROUP_NAME)
+                                tc_occ_dict = get_tc_occ(traffic_validation_json, tc_list=MRCConsts.WORKLOAD_1_TC_LIST, port_group_name=MRCConsts.EGRESS_PORT_GROUP_NAME)
+                                average_row = trimmed_untrimmed_dropped_percentages.pop()
+                                average_row['incast'] = M
+                                average_row['num_of_ingress_ports'] = num_of_ports
+                                average_row[ValidationConsts.TX_RATE] = convert_to_percentage(avg_ports_tx)
+                                average_row[ValidationConsts.RX_RATE] = convert_to_percentage(avg_ports_rx)
+                                average_row.update(tc_occ_dict)
+                                total_results_df.append(average_row)
+                            total_violations_list.append(f"Violations for M: {M}, num_of_ports: {num_of_ports}")
+                            total_violations_list.extend(violations_list)
+        total_results_df = pd.DataFrame(total_results_df)
+        with allure.step(f"Attach total_results_df"):
+            allure.attach(total_results_df.to_html(), "Total results dataframe", attachment_type=allure.attachment_type.HTML)
+        if total_violations_list:
+            raise TestIssue("\n".join(total_violations_list))
+
     def get_comparison_value(self, traffic_validation_json, trimming_size):
         avg_ports_tx, avg_ports_rx = get_ports_avg_bw(traffic_validation_json, port_group_name=MRCConsts.EGRESS_PORT_GROUP_NAME)
         with allure.step(f"Get comparison value for trimming size: {trimming_size}, avg ports tx: {avg_ports_tx}, avg ports rx: {avg_ports_rx}"):

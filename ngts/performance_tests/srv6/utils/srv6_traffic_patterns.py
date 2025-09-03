@@ -1,7 +1,7 @@
 import os
 from collections import deque
 from ngts.constants.constants import BugHandlerConst
-from ngts.constants.performance_constants import PerfConsts
+from ngts.constants.performance_constants import PerfConsts, PortMappingOptionsConsts
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list
 from ngts.performance_tests.srv6.utils.srv6_workloads import create_round_robin_stream
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
@@ -174,13 +174,16 @@ def get_ingress_ports_by_tg(ingress_ports, src_ports):
 
 def get_many_to_few_traffic(players, conf_args, traffic_type, dut_interfaces_ipv6_configuration_dict,
                             egress_ports, ingress_ports, create_workload_stream, congestion=False,
-                            template_suite="traffic_packets_json_files"):
+                            template_suite="traffic_packets_json_files", pairing=None):
     traffic_jsons = {}
     ports = players['dut']['cli'].performance.get_right_left_ports_dict()
     left_ports, right_ports = ports["left_ports"], ports["right_ports"]
     tg_src_ports = {PerfConsts.LEFT_TG_ALIAS: left_ports,
                     PerfConsts.RIGHT_TG_ALIAS: right_ports}
-    ingress_egress_ports_pairing = get_ingress_egress_ports_pairing(ingress_ports, egress_ports)
+    if pairing is None:
+        ingress_egress_ports_pairing = get_ingress_egress_ports_pairing(ingress_ports, egress_ports)
+    else:
+        ingress_egress_ports_pairing = pairing
     for tg_alias, src_ports in tg_src_ports.items():
         get_tg_many_to_few_traffic_params(players, tg_alias, conf_args,
                                           traffic_type, template_suite, create_workload_stream,
@@ -217,6 +220,185 @@ def get_ingress_egress_ports_pairing(ingress_ports, egress_ports):
     sublist_size = len(ingress_ports) // len(egress_ports)
     ingress_egress_ports_pairing = [ingress_ports[i:i + sublist_size] for i in range(0, len(ingress_ports), sublist_size)]
     return list(zip(ingress_egress_ports_pairing, egress_ports))
+
+
+def get_ingress_egress_ports_pairing_for_debug(ingress_ports, egress_ports, M, option):
+    """
+    A function to get the pairing of ingress and egress ports for many to few traffic.
+    Args:
+        ingress_ports: the list of ingress ports
+        egress_ports: the list of egress ports
+        M: the number of ingress ports per egress port
+        option: the option for the pairing
+
+    Option 1: 4 consecutive ingress ports to egress ports in the same 8x group
+    Option 2: out of the 4 consecutive ingress ports, 2 sends to egress ports in the one 8x group, and the other 2 sends to egress ports in the different 8x group
+    Option 3: out of the 4 consecutive ingress ports, each sends to egress port in a different 8x group
+    Option 4: out of the 4 consecutive ingress ports, 2 sends to egress ports in the one 8x group, 1 sends to egress port in a different 8x group,
+    and the other 1 sends to egress port in a different 8x group than the first 2.
+    Option 5: out of the 4 consecutive ingress ports, 3 sends to egress ports in a one 8x group,
+    and the other 1 sends to egress port in a different 8x group than the first one.
+
+    Returns:
+        the pairing of ingress and egress ports
+    """
+    egress_port_num = len(ingress_ports) // M
+    ingress_port_num = egress_port_num * M
+    pairing = []
+    idx_list = list(range(len(ingress_ports)))
+    index_8x_groups = [idx_list[i:i + 8] for i in range(0, len(egress_ports), 8)]
+    egress_ports_counters_dict = {egress_port: M for egress_port in range(len(egress_ports))}
+    if option == PortMappingOptionsConsts.EGRESS_SAME_8X_OPTION:
+        for idx in range(0, len(ingress_ports), 4):
+            group_idx, group, idx_list = get_x8_group_elements_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, 4)
+            for i in range(4):
+                pairing.append(([ingress_ports[idx + i]], egress_ports[idx_list[i]]))
+                update_group_by_counters_values(egress_ports_counters_dict, group, idx_list[i], 1)
+            index_8x_groups = [group for group in index_8x_groups if len(group) > 0]
+    elif option == PortMappingOptionsConsts.EGRESS_2_IN_SAME_8X_2_IN_OTHER_8X_OPTION:
+        for idx in range(0, len(ingress_ports), 4):
+            first_group_idx, first_8x_group, first_8x_index = update_pairing_for_option_2(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, idx)
+            update_pairing_for_option_2(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, idx + 2, group_idx_list=[first_group_idx])
+            index_8x_groups = [group for group in index_8x_groups if len(group) > 0]
+    elif option == PortMappingOptionsConsts.EGRESS_DIFFERENT_8X_OPTION:
+        for idx in range(0, len(ingress_ports), 4):
+            first_group_idx, first_8x_group, first_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1)
+            second_group_idx, second_8x_group, second_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx])
+            third_group_idx, third_8x_group, third_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx, second_group_idx])
+            forth_group_idx, forth_8x_group, forth_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx, second_group_idx, third_group_idx])
+            update_group_by_counters_values(egress_ports_counters_dict, first_8x_group, first_8x_index, 1)
+            update_group_by_counters_values(egress_ports_counters_dict, second_8x_group, second_8x_index, 1)
+            update_group_by_counters_values(egress_ports_counters_dict, third_8x_group, third_8x_index, 1)
+            update_group_by_counters_values(egress_ports_counters_dict, forth_8x_group, forth_8x_index, 1)
+            index_8x_groups = [group for group in index_8x_groups if len(group) > 0]
+            pairing.append(([ingress_ports[idx]], egress_ports[first_8x_index]))
+            pairing.append(([ingress_ports[idx + 1]], egress_ports[second_8x_index]))
+            pairing.append(([ingress_ports[idx + 2]], egress_ports[third_8x_index]))
+            pairing.append(([ingress_ports[idx + 3]], egress_ports[forth_8x_index]))
+    elif option == PortMappingOptionsConsts.EGRESS_2_IN_SAME_8X_1_IN_OTHER_8X_LAST_IN_OTHER_8X_OPTION:
+        for idx in range(0, len(ingress_ports), 4):
+            first_group_idx, first_8x_group, first_8x_index_list = update_pairing_for_option_4(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, idx)
+            second_group_idx, second_8x_group, second_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx])
+            third_group_idx, third_8x_group, third_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx, second_group_idx])
+            update_group_by_counters_values(egress_ports_counters_dict, second_8x_group, second_8x_index, 1)
+            update_group_by_counters_values(egress_ports_counters_dict, third_8x_group, third_8x_index, 1)
+            index_8x_groups = [group for group in index_8x_groups if len(group) > 0]
+            pairing.append(([ingress_ports[idx + 2]], ingress_ports[second_8x_index]))
+            pairing.append(([ingress_ports[idx + 3]], ingress_ports[third_8x_index]))
+    elif option == PortMappingOptionsConsts.EGRESS_3_IN_SAME_8X_1_IN_OTHER_8X_OPTION:
+        for idx in range(0, len(ingress_ports), 4):
+            first_group_idx, first_8x_group, first_8x_index = update_pairing_for_option_5(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, idx)
+            second_group_idx, second_8x_group, second_8x_index = get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, group_idx_list=[first_group_idx])
+            update_group_by_counters_values(egress_ports_counters_dict, second_8x_group, second_8x_index, 1)
+            index_8x_groups = [group for group in index_8x_groups if len(group) > 0]
+            pairing.append(([ingress_ports[idx + 3]], egress_ports[second_8x_index]))
+    elif option == PortMappingOptionsConsts.EGRESS_SEQUENTIAL_OPTION:
+        egress_idx = 0
+        for idx in range(0, ingress_port_num, M):
+            for i in range(M):
+                pairing.append(([ingress_ports[idx + i]], egress_ports[egress_idx]))
+            egress_idx += 1
+    return pairing
+
+
+def update_group_by_counters_values(egress_ports_counters_dict, group, idx_ele, counter_val):
+    """
+    Update the counters values of the egress ports in the group.
+
+    Args:
+        egress_ports_counters_dict: the dictionary of the counters values of the egress ports
+        group: the group of the egress ports
+        idx_ele: the index of the egress port in the group
+        counter_val: the value to subtract from the counters values of the egress port
+    """
+    egress_ports_counters_dict[idx_ele] -= counter_val
+    if egress_ports_counters_dict[idx_ele] == 0:
+        group.remove(idx_ele)
+
+
+def update_pairing_for_option_2(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, cur_idx, group_idx_list=None):
+    group_idx, group, idx_list = get_x8_group_elements_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, 2, group_idx_list=group_idx_list)
+    for i in range(2):
+        pairing.append(([ingress_ports[cur_idx + i]], egress_ports[idx_list[i]]))
+        update_group_by_counters_values(egress_ports_counters_dict, group, idx_list[i], 1)
+    return group_idx, group, idx_list
+
+
+def update_pairing_for_option_4(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, cur_idx, group_idx_list=None):
+    group_idx, group, idx_list = get_x8_group_elements_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, 2, group_idx_list=group_idx_list)
+    for i in range(2):
+        pairing.append(([ingress_ports[cur_idx + i]], egress_ports[idx_list[i]]))
+        update_group_by_counters_values(egress_ports_counters_dict, group, idx_list[i], 1)
+    return group_idx, group, idx_list
+
+
+def update_pairing_for_option_5(pairing, ingress_ports, egress_ports, egress_ports_counters_dict, index_8x_groups, cur_idx, group_idx_list=None):
+    group_idx, group, idx_list = get_x8_group_elements_by_counters_values(egress_ports_counters_dict, index_8x_groups, 1, 3, group_idx_list=group_idx_list)
+    for i in range(3):
+        pairing.append(([ingress_ports[cur_idx + i]], egress_ports[idx_list[i]]))
+        update_group_by_counters_values(egress_ports_counters_dict, group, idx_list[i], 1)
+    return group_idx, group, idx_list
+
+
+def get_x8_group_by_counters_values(egress_ports_counters_dict, index_8x_groups, counter_val, group_idx_list=None):
+    """
+    Get the group of the egress ports with the counters values greater than the counter value.
+
+    Args:
+        egress_ports_counters_dict: the dictionary of the counters values of the egress ports
+        index_8x_groups: the list of the groups of the egress ports
+        counter_val: the value to compare the counters values of the egress ports
+        group_idx_list: the list of the indices of the groups to exclude
+
+    Returns:
+        the index of the group, the group, and the element of the group
+    """
+    chosen_idx, chosen_group, chosen_ele = None, None, None
+    for idx, group in enumerate(index_8x_groups):
+        if group_idx_list:
+            if all([group_idx != idx for group_idx in group_idx_list]):
+                for ele in group:
+                    if egress_ports_counters_dict[ele] >= counter_val:
+                        chosen_idx, chosen_group, chosen_ele = idx, group, ele
+        else:
+            for ele in group:
+                if egress_ports_counters_dict[ele] >= counter_val:
+                    chosen_idx, chosen_group, chosen_ele = idx, group, ele
+    return chosen_idx, chosen_group, chosen_ele
+
+
+def get_x8_group_elements_by_counters_values(egress_ports_counters_dict, index_8x_groups, counter_val, elements_num, group_idx_list=None):
+    """
+    Get the elements of the group of the egress ports with the counters values greater than the counter value.
+
+    Args:
+        egress_ports_counters_dict: the dictionary of the counters values of the egress ports
+        index_8x_groups: the list of the groups of the egress ports
+        counter_val: the value to compare the counters values of the egress ports
+        elements_num: the number of the elements to get
+        group_idx_list: the list of the indices of the groups to exclude
+
+    Returns:
+        the index of the group, the group, and the list of the elements of the group
+    """
+    chosen_idx, chosen_group, ele_list = None, None, []
+    for idx, group in enumerate(index_8x_groups):
+        if group_idx_list:
+            if all([group_idx != idx for group_idx in group_idx_list]):
+                for ele in group:
+                    if egress_ports_counters_dict[ele] >= counter_val:
+                        ele_list.append(ele)
+                        if len(ele_list) == elements_num:
+                            return idx, group, ele_list
+                ele_list = []
+        else:
+            for ele in group:
+                if egress_ports_counters_dict[ele] >= counter_val:
+                    ele_list.append(ele)
+                    if len(ele_list) == elements_num:
+                        return idx, group, ele_list
+            ele_list = []
+    return chosen_idx, chosen_group, ele_list
 
 
 def get_cycle_ports_pairs(upstream, downstream):

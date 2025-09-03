@@ -2,13 +2,13 @@ import os
 import json
 import allure
 import logging
-from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_few_traffic, get_many_to_one_traffic
 import pytest
 import random
 import re
 import numpy as np
 import time
 import pandas as pd
+from collections import defaultdict
 from ngts.helpers.performance.traffic_helpers import (pick_random_non_consecutive_ports,
                                                       pick_random_consecutive_ports,
                                                       validate_per_tc, compare_tc_occ_to_reference,
@@ -20,7 +20,7 @@ from ngts.helpers.performance.performance_setup_helpers import (Validation, Vali
 from ngts.constants.constants import CliType, InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
-from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic)
+from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic, get_many_to_few_traffic, get_many_to_one_traffic)
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
@@ -101,6 +101,7 @@ class TestSRv6Base:
                 self.cli_object.interface.clear_queue_counters()
 
             with allure.step(f"Run traffic"):
+                start_time = time.time()
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
             samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
@@ -119,18 +120,23 @@ class TestSRv6Base:
                 traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
             with allure.step(f"stop traffic"):
                 stop_traffic(self.players)
+                end_time = time.time()
+                duration = end_time - start_time
             with allure.step(f"validate trimmed untrimmed dropped percentages"):
                 if len(ingress_ports) == MRCConsts.INCAST_VALUE_WITH_TRIMMING_DROP:
                     self.cli_object.performance.validate_ets(egress_port, MRCConsts.ETS_TC_LIST, violations_list)
                 trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_port, trimming_queue=MRCConsts.TRIMMING_TC,
                                                                                                                                 drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                                                violations_list=violations_list)
+                                                                                                                                violations_list=violations_list,
+                                                                                                                                duration=duration)
+                self.cli_object.trimming.validate_trimming_counters(egress_port, violations_list)
                 add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 
     def many_to_few_traffic_test_runner(self, test_name, traffic_type, workload,
-                                        egress_ports, ingress_ports, tc_threshold, M, get_ports_from_start=False):
+                                        egress_ports, ingress_ports, tc_threshold, M, get_ports_from_start=False, pairing=None):
+        configure_mloops(self.players)
         with allure.step(f"Clear counters"):
             self.cli_object.interface.clear_counters()
             self.cli_object.trimming.clear_trimming_counters()
@@ -140,9 +146,10 @@ class TestSRv6Base:
                                                     self.dut_interfaces_ipv6_configuration_dict,
                                                     egress_ports, ingress_ports,
                                                     create_workload_stream=get_workload_method(workload),
-                                                    congestion=True)
-
-            run_traffic(self.players, self.scenario, traffic_jsons)
+                                                    congestion=True,
+                                                    pairing=pairing)
+            start_time = time.time()
+            run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
         samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
         bw_threshold = self.get_many_to_few_bw_threshold(traffic_type)
@@ -160,15 +167,48 @@ class TestSRv6Base:
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
         with allure.step(f"stop traffic"):
             stop_traffic(self.players)
+            end_time = time.time()
+            duration = end_time - start_time
         with allure.step(f"validate trimmed untrimmed dropped percentages"):
             if M == MRCConsts.INCAST_VALUE_WITH_TRIMMING_DROP:
                 self.cli_object.performance.validate_ets(egress_ports, MRCConsts.ETS_TC_LIST, violations_list)
+            pairing_df = None
+            if pairing:
+                pairing_df = self.convert_pairing_into_df(pairing)
             trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
                                                                                                                             drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                                            violations_list=violations_list)
+                                                                                                                            violations_list=violations_list,
+                                                                                                                            duration=duration, pairing_df=pairing_df)
+            self.cli_object.trimming.validate_trimming_counters(egress_ports, violations_list)
             add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
-        if violations_list:
-            raise TestIssue("\n".join(violations_list))
+        return traffic_validation_jsons_list, violations_list, trimmed_untrimmed_dropped_percentages
+
+    def convert_pairing_into_df(self, pairing):
+        port_group_df = []
+        dut_ports = self.cli_object.performance.get_dut_ports()
+        sorted_sdk_ports = sorted(self.cli_object.performance.get_hex_int_sdk_ports(dut_ports))
+        ingress_sdk_port_dict = defaultdict(list)
+        ingress_sonic_port_dict = defaultdict(list)
+        ingress_idx_dict = defaultdict(list)
+        egress_port_idx_dict = {}
+        for ingress_port_list, egress_port in pairing:
+            egress_int_port = self.cli_object.performance.get_hex_int_sdk_port(egress_port)
+            egress_port_idx = sorted_sdk_ports.index(egress_int_port)
+            egress_port_idx_dict[egress_port] = egress_port_idx
+            for ingress_port in ingress_port_list:
+                ingress_int_port = self.cli_object.performance.get_hex_int_sdk_port(ingress_port)
+                ingress_port_idx = sorted_sdk_ports.index(ingress_int_port)
+                sdk_ingress_port = self.cli_object.performance.get_sdk_port(ingress_port)
+                ingress_sdk_port_dict[egress_port].append(str(sdk_ingress_port))
+                ingress_sonic_port_dict[egress_port].append(str(ingress_port))
+                ingress_idx_dict[egress_port].append(str(ingress_port_idx))
+        for egress_port in ingress_sdk_port_dict.keys():
+            port_group_df.append({ValidationConsts.OS_PORT_NAME: egress_port,
+                                  "egress_idx": egress_port_idx_dict[egress_port],
+                                  "ingress_sdk_ports": ",".join(ingress_sdk_port_dict[egress_port]),
+                                  "ingress_sonic_ports": ",".join(ingress_sonic_port_dict[egress_port]),
+                                  "ingress_ports_sdk_idx": ",".join(ingress_idx_dict[egress_port])})
+        return pd.DataFrame(port_group_df)
 
     def get_egress_port_group_df(self, port_number, get_ports_from_start=False):
         port_group_df = []

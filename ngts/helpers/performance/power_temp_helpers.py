@@ -67,8 +67,8 @@ def get_avg_samples_power_dataframe(cli_obj, chip_type, power_samples):
         power_df = get_power_dataframe(cli_obj, sensors_output, chip_type)
         df_list.append(power_df)
     df_result = get_base_df(df_list)
-    power_df[PowerConsts.POWER_CURRENT] = calculate_avg_on_all_samples(df_list, power_samples, PowerConsts.POWER_CURRENT)
-    power_df[PowerConsts.POWER_WATT] = calculate_avg_on_all_samples(df_list, power_samples, PowerConsts.POWER_WATT)
+    power_df[PowerConsts.POWER_CURRENT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_CURRENT)
+    power_df[PowerConsts.POWER_WATT] = calculate_avg_on_all_samples(df_list, PowerConsts.POWER_WATT)
     return power_df
 
 

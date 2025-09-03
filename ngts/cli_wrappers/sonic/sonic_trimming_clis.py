@@ -98,23 +98,24 @@ class SonicTrimmingCli(TrimmingCommon):
                              f"--dscp {MRCConsts.MRC_TRIMMED_DSCP} "
                              f"--queue {MRCConsts.MRC_TRIMMED_TC}")
 
-    def validate_trimming_counters(self, interface_list, queues_list, violations_list):
+    def validate_trimming_counters(self, interface_list, violations_list):
         """
         validate that trimming counters are set correctly for all interfaces
         :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
-        :param queues_list: list of queues, i.e [1, 2]
         :param violations_list: list of violations
         """
+        interfaces_with_dropped_trimming_counters = []
         for interface in interface_list:
-            queuestat_dict = self.cli_obj.interface.parse_port_queuestat(interface)
-            logging.info(f"queuestat for {interface}:\n{queuestat_dict}")
-            for queue in queues_list:
-                queue_trimmed_pkts, queue_drop_pkts = self.cli_obj.interface.get_trimming_counters(queuestat_dict, queue)
-                were_trimmed_packet_dropped = queue_drop_pkts - queue_trimmed_pkts > 0
-                if were_trimmed_packet_dropped:
-                    violations_list.append(f"Dropped packets detected on queue {queue} for {interface}")
+            portstat_dict = self.cli_obj.interface.parse_port_portstat(interface, trim_flag=True)
+            logging.info(f"portstat for {interface}:\n{portstat_dict}")
+            portstat_trimmed_pkts, portstat_dropped_trimmed_pkts = self.get_trimming_portstat_counters(portstat_dict)
+            if portstat_dropped_trimmed_pkts > 0:
+                interfaces_with_dropped_trimming_counters.append(interface)
+        if interfaces_with_dropped_trimming_counters:
+            interfaces = ", ".join(interfaces_with_dropped_trimming_counters)
+            violations_list.append(f"Dropped packets detected on interfaces: {interfaces}")
 
-    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
+    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False, duration=None, pairing_df=None):
         """
         validate that packets sent to queue drop_queue which are dropped are trimmed on queue trimming_queue for all interfaces
         :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
@@ -150,13 +151,20 @@ class SonicTrimmingCli(TrimmingCommon):
                     untrimmed_bytes_percentage = convert_to_percentage(total_drop_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
                     trimming_percentage = convert_to_percentage(trimming_queue_counter_pkts / total_packets_egress_port)
                     trimming_bytes_percentage = convert_to_percentage(trimming_queue_counter_pkts_bytes / total_packets_egress_port_bytes)
-                    queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: interface,
+                    if duration:
+                        trimming_packets_per_second = trimming_queue_counter_pkts / duration
+                    else:
+                        trimming_packets_per_second = 0
+                    queue_packet_percentages_dict = {ValidationConsts.PORT: self.cli_obj.performance.get_sdk_port(interface),
+                                                     ValidationConsts.OS_PORT_NAME: interface,
                                                      ValidationConsts.OS_PORT_ALIAS: self.cli_obj.performance.sonic_ports_aliases_dict[interface],
                                                      ValidationConsts.UNTRIMMED_PERCENTAGE: untrimmed_percentage,
                                                      ValidationConsts.TRIMMING_PERCENTAGE: trimming_percentage,
                                                      ValidationConsts.DROPPED_WITHOUT_TRIMMING_PERCENTAGE: dropped_without_trimming_percentage,
+                                                     ValidationConsts.DROPPED_WITHOUT_TRIMMING: bool(dropped_without_trimming),
                                                      ValidationConsts.UNTRIMMED_BYTES_PERCENTAGE: untrimmed_bytes_percentage,
-                                                     ValidationConsts.TRIMMING_BYTES_PERCENTAGE: trimming_bytes_percentage}
+                                                     ValidationConsts.TRIMMING_BYTES_PERCENTAGE: trimming_bytes_percentage,
+                                                     ValidationConsts.TRIMMING_PPS: trimming_packets_per_second}
                     queue_packet_percentages.append(queue_packet_percentages_dict)
                     if trimming_queue_drop_pkts > 0:
                         violations_list.append(f"Dropped packets detected on Trimming queue {trimming_queue} for {interface}")
@@ -165,9 +173,18 @@ class SonicTrimmingCli(TrimmingCommon):
                     if return_dict:
                         return queue_packet_percentages_dict
         queue_packet_percentages_df = pd.DataFrame(queue_packet_percentages)
+        average_row = queue_packet_percentages_df.mean(numeric_only=True)
+        average_row[ValidationConsts.PORT] = "Average"
+        average_row[ValidationConsts.OS_PORT_NAME] = "Average"
+        average_row[ValidationConsts.OS_PORT_ALIAS] = "Average"
+        average_row[ValidationConsts.DROPPED_WITHOUT_TRIMMING] = queue_packet_percentages_df[ValidationConsts.DROPPED_WITHOUT_TRIMMING].all()
+        queue_packet_percentages_df = pd.concat([queue_packet_percentages_df, average_row.to_frame().T], ignore_index=True)
+        if pairing_df is not None:
+            queue_packet_percentages_df = pd.merge(queue_packet_percentages_df, pairing_df, on=ValidationConsts.OS_PORT_NAME, how='left')
+
         with allure.step(f"Attach queue_packet_percentages_df"):
             allure.attach(queue_packet_percentages_df.to_html(), "Queue packet percentages dataframe", attachment_type=allure.attachment_type.HTML)
-        return queue_packet_percentages
+        return queue_packet_percentages_df.to_dict(orient='records')
 
     def update_queue_counters(self, show_queue_counters_dict, queue,
                               queue_pkts_counter, queue_drop_pkts_counter,
@@ -216,3 +233,8 @@ class SonicTrimmingCli(TrimmingCommon):
         for entity in MRCConsts.TRIMMING_COUNTERPOLL_LIST:
             self.cli_obj.counterpoll.enable_counterpoll(entity)
             self.cli_obj.counterpoll.set_counterpoll_interval(entity, MRCConsts.TRIMMING_COUNTERPOLL_INTERVAL)
+
+    def get_trimming_portstat_counters(self, portstat_dict):
+        portstat_trimmed_pkts = int(portstat_dict["TRIM_TX_PKTS"].replace(",", ""))
+        portstat_dropped_trimmed_pkts = int(portstat_dict["TRIM_DRP_PKTS"].replace(",", ""))
+        return portstat_trimmed_pkts, portstat_dropped_trimmed_pkts

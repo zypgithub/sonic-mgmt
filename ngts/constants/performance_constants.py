@@ -77,8 +77,10 @@ class ValidationConsts:
     UNTRIMMED_PERCENTAGE = "untrimmedPercentage"
     TRIMMING_PERCENTAGE = "trimmingPercentage"
     DROPPED_WITHOUT_TRIMMING_PERCENTAGE = "droppedWithoutTrimmingPercentage"
+    DROPPED_WITHOUT_TRIMMING = "droppedWithoutTrimmingPackets"
     UNTRIMMED_BYTES_PERCENTAGE = "untrimmedBytesPercentage"
     TRIMMING_BYTES_PERCENTAGE = "trimmingBytesPercentage"
+    TRIMMING_PPS = "trimmingPacketsPerSecond"
     POWER_SAMPLES = "Power_samples"
     TEMPERATURE_SAMPLES = "Temperature_samples"
     TEMPERATURE = "temperature"
@@ -361,7 +363,55 @@ class MongoDbConsts:
     MONGO_DB_SANDBOX_TESTING_TIMEOUT = 30
 
 
+class PortMappingOptionsConsts:
+    """
+    This class contains the port mapping options for the performance tests
+
+    Port Mapping Table:
+    +----------+-------------------+-------------------------+----------------------+------------------------------------------+-----------------------------+-------------------+
+    | Ingress  | Option 1:         | Option 2:               | Option 3:            | Option 4:                                | Option 5:                   | Option 6:         |
+    |          | 4 ports in        | 2 in same 8x,           | Each in              | 2 in same 8x, 1 in another 8x,           | 3 in same 8x,               | Sequential        |
+    |          | same 8x           | 2 in other 8x           | different 8x         | last one in another 8x                   | 1 in another 8x             | M-to-1 mapping    |
+    +----------+-------------------+-------------------------+----------------------+------------------------------------------+-----------------------------+-------------------+
+    |    0     |        0          |           0             |          0           |                 0                        |              0              |         0         |
+    |    1     |        1          |           0             |          8           |                 0                        |              0              |         0         |
+    |    2     |        2          |           8             |         16           |                 8                        |              1              |         1         |
+    |    3     |        3          |           8             |         24           |                16                        |              8              |         1         |
+    |    4     |        0          |           1             |          0           |                 1                        |              1              |         2         |
+    |    5     |        1          |           1             |          8           |                 1                        |              2              |         2         |
+    |    6     |        2          |           9             |         16           |                 8                        |              2              |         3         |
+    |    7     |        3          |           9             |         24           |                16                        |              8              |         3         |
+    |    8     |        4          |           2             |          1           |                 2                        |              3              |         4         |
+    |    9     |        5          |           2             |          9           |                 2                        |              3              |         4         |
+    |   10     |        6          |          10             |         17           |                 9                        |              4              |         5         |
+    |   11     |        7          |          10             |         25           |                17                        |              9              |         5         |
+    |   12     |        4          |           3             |          1           |                 3                        |              4              |         6         |
+    |   13     |        5          |           3             |          9           |                 3                        |              5              |         6         |
+    |   14     |        6          |          11             |         17           |                 9                        |              5              |         7         |
+    |   15     |        7          |          11             |         25           |                17                        |              9              |         7         |
+    +----------+-------------------+-------------------------+----------------------+------------------------------------------+-----------------------------+-------------------+
+
+    """
+    EGRESS_SAME_8X_OPTION = 1
+    EGRESS_2_IN_SAME_8X_2_IN_OTHER_8X_OPTION = 2
+    EGRESS_DIFFERENT_8X_OPTION = 3
+    EGRESS_2_IN_SAME_8X_1_IN_OTHER_8X_LAST_IN_OTHER_8X_OPTION = 4
+    EGRESS_3_IN_SAME_8X_1_IN_OTHER_8X_OPTION = 5
+    EGRESS_SEQUENTIAL_OPTION = 6
+
+
 class MRCConsts:
+    DOWNLINKS = "Downlinks"
+    UPLINKS = "Uplinks"
+    T0_DOWNLINKS_LIST = []
+    T0_UPLINKS_LIST = []
+    T0_DOWNLINKS_LIST.extend(list(range(64)))
+    T0_DOWNLINKS_LIST.extend(list(range(192, 320)))
+    T0_DOWNLINKS_LIST.extend(list(range(448, 512)))
+    T0_UPLINKS_LIST.extend(list(range(64, 192)))
+    T0_UPLINKS_LIST.extend(list(range(320, 448)))
+    T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT = {DOWNLINKS: [f"Ethernet{index}" for index in T0_DOWNLINKS_LIST],
+                                               UPLINKS: [f"Ethernet{index}" for index in T0_UPLINKS_LIST]}
     EIGHT_X_SKIP_GAP = 8
     FOUR_X_SKIP_GAP = 4
     TRIMMING_COUNTERPOLL_LIST = [ValidationConsts.PORT, ValidationConsts.QUEUE, ValidationConsts.ACL]
@@ -383,6 +433,10 @@ class MRCConsts:
     MIN_INGRESS_PORTS_NUM = 9
     MAX_INGRESS_PORTS_NUM = 10
     INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM))
+    ACL_MODES = [False, True]
+    PORTS_NUM_LIST = [120, 240, 360, 448, 512]
+    M_LIST = list(range(2, MAX_INGRESS_PORTS_NUM))
+    OPTION_LIST = [PortMappingOptionsConsts.EGRESS_SAME_8X_OPTION]  # can also include 2, 3, 4, 5
     HWSKU_BY_CHIP_TYPE = {
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},

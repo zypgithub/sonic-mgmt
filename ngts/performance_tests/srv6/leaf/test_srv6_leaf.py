@@ -70,7 +70,6 @@ class TestSRv6Leaf(TestSRv6Base):
                                                   self.dut_interfaces_ipv6_configuration_dict,
                                                   create_workload_stream, left_ports=upstream, right_ports=downstream)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
-
         with allure.step(f"Verifying the traffic for all egress ports"):
             additional_validations = self.get_additional_validations(traffic_type)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
@@ -140,9 +139,11 @@ class TestSRv6Leaf(TestSRv6Base):
                                      MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                      MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                      MongoDbConsts.TEST_WORKLOAD: workload})
-        self.many_to_few_traffic_test_runner(test_name, traffic_type, workload,
-                                             egress_ports=egress_ports, ingress_ports=ingress_ports, M=M,
-                                             tc_threshold=MRCConsts.LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH)
+        traffic_validation_jsons_list, violations_list, trimmed_untrimmed_dropped_percentages = self.many_to_few_traffic_test_runner(test_name, traffic_type, workload,
+                                                                                                                                     egress_ports=egress_ports, ingress_ports=ingress_ports, M=M,
+                                                                                                                                     tc_threshold=MRCConsts.LEAF_MANY_TO_FEW_TRAFFIC_TC_OCC_TH)
+        if violations_list:
+            raise TestIssue("\n".join(violations_list))
 
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
     def test_victim_flow_srv6(self, request, victim_flow_port_group_df, traffic_type, packet_size=4096):

@@ -12,13 +12,14 @@ from jsonmerge import merge
 import allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.constants.constants import BugHandlerConst, InfraConst, CliType, SonicConst, ConfigDbJsonConst
-from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts, MRCConsts, MongoDbConsts, PortMappingOptionsConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
 from ngts.helpers.interface_helpers import get_alias_letter, get_alias_number, convert_letter_to_idx
 from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict, generate_mac_range
 from ngts.helpers.config_db_utils import save_config_db_json
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import is_ipv6, pick_random_non_consecutive_ports
+from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_ingress_egress_ports_pairing_for_debug
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
@@ -691,21 +692,44 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def get_leaf_many_to_few_port_group_df(self, M, num_of_ingress_ports):
         port_group_df = []
-        ports = self.cli_obj.performance.get_right_left_ports_dict()
-        left_ports = copy.deepcopy(ports["left_ports"])
-        right_ports = copy.deepcopy(ports["right_ports"])
+        downlinks = MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.DOWNLINKS]
+        uplinks = MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.UPLINKS]
         egress_ports_num = num_of_ingress_ports // M
-        left_start_index = random.randint(0, len(left_ports) - egress_ports_num)
-        right_start_index = random.randint(0, len(right_ports) - num_of_ingress_ports)
-        egress_ports = pick_random_non_consecutive_ports(left_ports, egress_ports_num, MRCConsts.EIGHT_X_SKIP_GAP)
-        ingress_ports = right_ports[right_start_index:right_start_index + num_of_ingress_ports]
-        sdk_port_list_egress = self.cli_obj.performance.get_sdk_ports(egress_ports)
-        sdk_port_list_ingress = self.cli_obj.performance.get_sdk_ports(ingress_ports)
+        uplinks_start_index = random.randint(0, len(uplinks) - num_of_ingress_ports)
+        egress_ports = pick_random_non_consecutive_ports(downlinks, egress_ports_num, MRCConsts.EIGHT_X_SKIP_GAP)
+        ingress_ports = uplinks[uplinks_start_index:uplinks_start_index + num_of_ingress_ports]
+        sdk_port_list_egress = self.get_sdk_ports(egress_ports)
+        sdk_port_list_ingress = self.get_sdk_ports(ingress_ports)
         for port in sdk_port_list_egress:
             port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.EGRESS_PORT_GROUP_NAME})
         for port in sdk_port_list_ingress:
             port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.INGRESS_PORT_GROUP_NAME})
         return egress_ports, ingress_ports, port_group_df
+
+    def get_leaf_many_to_few_port_group_df_for_debug(self, M, num_of_ingress_ports, option):
+        port_group_df = []
+        dut_ports = self.get_dut_ports()
+        downlinks = MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.DOWNLINKS]
+        uplinks = MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.UPLINKS]
+        sorted_sdk_downlinks = sorted(self.get_hex_int_sdk_ports(downlinks))
+        sorted_sdk_uplinks = sorted(self.get_hex_int_sdk_ports(uplinks))
+        sorted_sdk_dut_ports = sorted(self.get_hex_int_sdk_ports(dut_ports))
+        half_ingress_ports_num = num_of_ingress_ports // 2
+        sorted_sdk_sonic_downlinks = [self.sdk_to_sonic_ports_dict[hex(port)] for port in sorted_sdk_downlinks]
+        sorted_sdk_sonic_uplinks = [self.sdk_to_sonic_ports_dict[hex(port)] for port in sorted_sdk_uplinks]
+        sorted_sdk_sonic_dut_ports = [self.sdk_to_sonic_ports_dict[hex(port)] for port in sorted_sdk_dut_ports]
+        pairing_downlinks_to_uplinks = get_ingress_egress_ports_pairing_for_debug(sorted_sdk_sonic_downlinks[:half_ingress_ports_num], sorted_sdk_sonic_uplinks, M, option)
+        pairing_uplinks_to_downlinks = get_ingress_egress_ports_pairing_for_debug(sorted_sdk_sonic_uplinks[:half_ingress_ports_num], sorted_sdk_sonic_downlinks, M, option)
+        pairing = pairing_downlinks_to_uplinks + pairing_uplinks_to_downlinks
+        if option == PortMappingOptionsConsts.EGRESS_SEQUENTIAL_OPTION:
+            pairing = get_ingress_egress_ports_pairing_for_debug(sorted_sdk_sonic_dut_ports, sorted_sdk_sonic_dut_ports, M, option)
+        egress_ports = list(set([t[1] for t in pairing]))
+        ingress_ports = [t[0][0] for t in pairing]
+        sdk_port_list_egress = self.get_sdk_ports(egress_ports)
+        sdk_port_list_ingress = self.get_sdk_ports(ingress_ports)
+        for port in sdk_port_list_egress:
+            port_group_df.append({ValidationConsts.PORT: port, MongoDbConsts.PORT_GROUP_NAME: MRCConsts.EGRESS_PORT_GROUP_NAME})
+        return egress_ports, ingress_ports, port_group_df, pairing
 
     def validate_ets(self, interface_list, queues_list, violations_list):
         """

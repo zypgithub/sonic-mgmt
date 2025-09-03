@@ -208,8 +208,8 @@ def restructure_bw(validation_json):
     final_df = pd.DataFrame()
     for port_group, df_list in df_dict.items():
         df_result = get_base_df(df_list)
-        df_result[ValidationConsts.TX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.TX_RATE)
-        df_result[ValidationConsts.RX_RATE] = calculate_avg_on_all_samples(df_list, bw_samples, ValidationConsts.RX_RATE)
+        df_result[ValidationConsts.TX_RATE] = calculate_avg_on_all_samples(df_list, ValidationConsts.TX_RATE)
+        df_result[ValidationConsts.RX_RATE] = calculate_avg_on_all_samples(df_list, ValidationConsts.RX_RATE)
         final_df = pd.concat([final_df, df_result])
     return final_df
 
@@ -236,7 +236,7 @@ def get_tc_pg_average_info(tc_pg_samples, df_key):
     for port_group, df_list in df_dict.items():
         df_result = get_base_df(df_list)
         for key in ValidationConsts.DATAFRAME_KEYS_DICT[df_key]:
-            df_result[key] = calculate_avg_on_all_samples(df_list, tc_pg_samples, key)
+            df_result[key] = calculate_avg_on_all_samples(df_list, key)
         df_result[MongoDbConsts.PORT_GROUP_NAME] = port_group
         final_df = pd.concat([final_df, df_result])
     return final_df.to_dict(orient='records')
@@ -246,8 +246,8 @@ def get_base_df(df_list):
     return df_list[0].copy()
 
 
-def calculate_avg_on_all_samples(df_list, samples, sample_key):
-    return round(sum(df[sample_key] for df in df_list) / len(samples), 3)
+def calculate_avg_on_all_samples(df_list, sample_key):
+    return sum(df[sample_key] for df in df_list) / len(df_list)
 
 
 def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df, trimmed_untrimmed_dropped_percentages):
@@ -267,7 +267,7 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
         merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
     if trimmed_untrimmed_dropped_percentages:
         trimmed_untrimmed_dropped_percentages_df = pd.DataFrame(trimmed_untrimmed_dropped_percentages)
-        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.OS_PORT_NAME, how='left')
+        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.PORT, how='left')
     df_as_dict = merged_df.to_dict(orient='records')
     return filter_all_Nan_values(df_as_dict)
 

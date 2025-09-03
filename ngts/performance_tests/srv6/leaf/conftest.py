@@ -1,6 +1,7 @@
 import allure
 import pytest
-from ngts.constants.constants import SonicConst
+import os
+from ngts.constants.constants import SonicConst, BugHandlerConst
 from ngts.constants.performance_constants import Cl_Consts, PerfConsts, MRCConsts
 from ngts.helpers.performance.performance_setup_helpers import apply_test_configuration, restore_basic_configuration, save_base_configuration
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_tg_bisection_traffic_params
@@ -37,7 +38,10 @@ def conf_args(chip_type, players):
         "dut_mac": players['dut']['cli'].performance.mac,
         "dut": "leaf",
         "chip_type": chip_type,
-        "downlinks_tg": PerfConsts.RIGHT_TG_ALIAS
+        "downlinks_tg": PerfConsts.RIGHT_TG_ALIAS,
+        "template_path": os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                      PerfConsts.DEFAULT_PERF_TEMPLATES_DIR, "srv6", "sonic")
+
     }
     return conf_args
 

@@ -1,0 +1,19 @@
+{
+    "ACL_RULE": {
+        {% for i in range(10) %}
+        "ports_with_msft_acl|DROP_IPV6_SRC_IP_RULE_{{loop.index + 1}}": {
+            "SRC_IPV6": "7000:a800::{{loop.index + 1}}/128",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "{{loop.index + 9900}}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+    "ACL_TABLE": {
+        "ports_with_msft_acl": {
+            "policy_desc": "table of ports",
+            "ports": {{ports_list | tojson}},
+            "stage": "ingress",
+            "type": "L3V6"
+        }
+    }
+}

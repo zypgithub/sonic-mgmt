@@ -855,6 +855,22 @@ class SonicInterfaceCli(InterfaceCliCommon):
         return generic_sonic_output_parser(show_interface_queuestat_output, headers_ofset=2, len_ofset=3,
                                            data_ofset_from_start=4, data_ofset_from_end=None, column_ofset=2, output_key='TxQ')
 
+    def parse_port_portstat(self, interface, trim_flag=False):
+        """
+        parse port portstat
+        :param interface: port name, i.e Ethernet111
+        :param trim_flag: False by default, if True, add --trim to the command
+        :return: dict , i.e,
+        {'IFACE': 'Ethernet30', 'STATE': 'U', 'TRIM_PKTS': '3,699,151,700', 'TRIM_TX_PKTS': '3,699,151,700', 'TRIM_DRP_PKTS': '0'}
+        """
+        cmd_suffix = "--trim" if trim_flag else ""
+        show_interface_portstat_output = self.engine.run_cmd(f"sudo portstat -i {interface} {cmd_suffix}")
+        parsed_output = generic_sonic_output_parser(show_interface_portstat_output,
+                                                    headers_ofset=1, len_ofset=2,
+                                                    data_ofset_from_start=3, data_ofset_from_end=None,
+                                                    column_ofset=2, output_key='IFACE')
+        return parsed_output[interface]
+
     def get_trimming_counters(self, queuestat_dict, queue):
         queue_trimmed_pkts = int(queuestat_dict[f"UC{queue}"]["Trim/pkts"].replace(",", ""))
         queue_drop_pkts = int(queuestat_dict[f"UC{queue}"]["Drop/pkts"].replace(",", ""))
