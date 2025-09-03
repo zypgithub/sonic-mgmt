@@ -2213,7 +2213,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
 class RosalindSwitch(RosalindSurrogateSwitch):
 
-    def __init__(self):
+    def __init__(self, asic_amount=4):
         super().__init__(asic_amount=4)
 
     def _init_constants(self):
