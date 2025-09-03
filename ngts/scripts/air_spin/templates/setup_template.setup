@@ -8,13 +8,15 @@
     <steps>
         <default> steps/nvidia_air_regression_deploy.steps </default>
     </steps>
-
+     
+     {% for block in execution_block %}
      <execution_block>
-        <block_id> B_ID1 </block_id>
-        <entry_points> SONIC_MGMT </entry_points>
-        <tests_dbs_tarball>  </tests_dbs_tarball>
+     <block_id> B_ID{{ loop.index }} </block_id>
+     <entry_points> {{ block.entry_points }} </entry_points>
+     <tests_dbs_tarball> {{ block.tests_dbs_tarball }} </tests_dbs_tarball>
      </execution_block>
-
+     {% endfor %}
+     
     <topology_file> topo/{{dut.setup_name}}/topology.xml </topology_file>
 
     <extra_info>
@@ -23,6 +25,8 @@
         <dut_hwsku> {{dut.dut_hwsku}} </dut_hwsku>
         <chip_type> {{dut.chip_type}} </chip_type>
         <base_version> {{dut.base_version}} </base_version>
+        <custom_links_path> {{dut.custom_links_path}} </custom_links_path>
+        <dynamic_setup> yes </dynamic_setup>
 	<deploy_type> onie </deploy_type>
         <target_version> </target_version>
         <simx> yes </simx>

@@ -18,8 +18,6 @@ if [ $# -eq 0 ]; then
 fi
 
 handle_create(){
-    echo "Creating air simulation"
-    echo "get_cwd: $(pwd)"
     python3 ngts/scripts/air_spin/cli.py create $@
 }
 

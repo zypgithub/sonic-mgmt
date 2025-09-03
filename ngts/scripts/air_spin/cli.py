@@ -1,10 +1,5 @@
 import argparse
-import logging
-import sys
 from ngts.scripts.air_spin.api import AirSpinApi
-
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
 
 
 def main():
@@ -15,7 +10,7 @@ def main():
     )
     subparsers = parser.add_subparsers(required=True)
     create_parser = subparsers.add_parser("create", help="Create new air simulation")
-    create_parser.add_argument("--setup_name", required=True, help="Setup Simulation name")
+    create_parser.add_argument("--setup_name", default="", help="Setup Simulation name")
     create_parser.add_argument("--topology_type", required=True, help="Topology type", choices=["community", "canonical"])
     create_parser.add_argument("--simx_version", default="", help="Simx version")
     create_parser.add_argument("--base_version", required=True, help="Base version")
@@ -25,8 +20,9 @@ def main():
     create_parser.add_argument("--dut_name", default="", help="DUT name")
     create_parser.add_argument("--dut_hwsku", required=True, help="DUT hwsku")
     create_parser.add_argument("--chip_type", default="", help="Chip type")
-    create_parser.add_argument("--topology_links_path", default="", help="Topology links path")
+    create_parser.add_argument("--custom_links_path", default="", help="Custom links path json file name")
     create_parser.add_argument("--organization_name", default="SONIC", help="Organization name")
+    create_parser.add_argument("--dbs_to_run_path", default="", help="path to file containing dbs to run, for example \"communty/pretest.db,canonical/nightly.db\"")
     create_parser.set_defaults(func=handle_create)
     args = parser.parse_args()
     api = AirSpinApi()
@@ -38,8 +34,6 @@ def main():
 
 def handle_create(args, api):
     """handle create command"""
-    logger.info(f"Creating AIR SIMULATION {args.setup_name}")
-
     api.create_simulation(
         setup_name=args.setup_name,
         topology_type=args.topology_type,
@@ -52,7 +46,8 @@ def handle_create(args, api):
         branch=args.branch,
         topology=args.topology,
         organization_name=args.organization_name,
-        topology_links_path=args.topology_links_path
+        custom_links_path=args.custom_links_path,
+        dbs_to_run_path=args.dbs_to_run_path
     )
 
 
