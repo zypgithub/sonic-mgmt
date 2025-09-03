@@ -293,9 +293,10 @@ tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhc
 
 tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
   skip:
-    reason: "Testcase is not supported on simx"
+    reason: "Testcase is not supported on simx or ignored due to RM issue: https://redmine.mellanox.com/issues/4618360 for bison setup"
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4618360 and 'sn5640' in platform"
 
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
