@@ -114,6 +114,7 @@ autorestart/test_container_autorestart.py::test_containers_autorestart.*teamd.*:
     reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336"
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/10336"
+      - "'isolated' in topo_name"
 
 #######################################
 #####            bfd              #####
