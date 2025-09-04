@@ -2185,6 +2185,9 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         super()._init_temperature()
         self.temperature_sensors = [
             "ASIC1",
+            "ASIC2",
+            "ASIC3",
+            "ASIC4",
             "CPU-Pack-Temp",
             "Drive-Temp",
             "HSC-VinDC-Temp",
