@@ -11,11 +11,6 @@
             <!-- OPTIONAL TAGS -->
             <tags> DUALTOR </tags>
             <ignore>
-                <condition>
-                    <key> dut_hwsku </key>
-                    <op> not in </op>
-                    <value> ["Mellanox-SN4700-V64"] </value>
-                </condition>
                 <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
                 <condition>
                     <key> skip_main_hwsku_only_cases </key>
