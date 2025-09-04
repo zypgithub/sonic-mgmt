@@ -15,6 +15,7 @@ logger = logging.getLogger()
 
 @pytest.mark.version
 @pytest.mark.system
+@pytest.mark.nvos_chipsim_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_version(test_api, engines, devices, nv_command):
     """
