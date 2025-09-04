@@ -23,6 +23,7 @@ class Firmware(BaseComponent):
         self.transceiver = Transceiver(self)
         self.bmc = PlatformComponent(self, component_name='BMC')
         self.fpga = PlatformComponent(self, component_name='FPGA')
+        self.sma = PlatformComponent(self, component_name='SMA')
         self.bios = PlatformComponent(self, component_name='BIOS')
         self.cpld = PlatformComponent(self, component_name='CPLD1')
         self.erot = PlatformComponent(self, component_name='EROT')

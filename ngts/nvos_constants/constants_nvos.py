@@ -906,6 +906,7 @@ class PlatformConsts:
     FW_CPLD = "CPLD"
     FW_SSD = "SSD"
     FW_FPGA = "FPGA"
+    FW_SMA = "SMA"
     FW_BMC = "BMC"
     FW_FIELD_NAME_DICT = {"Actual FW": "actual-firmware"}
     FW_ACTUAL = "actual-firmware"
@@ -1726,6 +1727,7 @@ class OperationTimeConsts:
                   'cluster update log level': 6,
                   'install bmc': 1200,
                   'install fpga': 900,
+                  'install sma': 900,
                   'install asic': 600,
                   'install bios': 600,
                   'install cpld': 720,

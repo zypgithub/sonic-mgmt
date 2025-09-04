@@ -197,7 +197,6 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     """
     container_iface_mac = mac_address
     create_mgmt_network(conn)
-
     container_mountpoints_dict = constants.SONIC_MGMT_MOUNTPOINTS.items()
     if conn.host in constants.MTBC_SERVER_LIST:
         container_mountpoints_dict += constants.SONIC_MGMT_MOUNTPOINTS_MTBC.items()
@@ -209,7 +208,6 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
             container_mountpoints_list.append("-v {}:{}:rw".format(key, value))
         else:
             container_mountpoints_list.append("-v {}:{}:rslave".format(key, value))
-
     container_mountpoints = " ".join(container_mountpoints_list)
 
     parsed_mars_docker_env_secrets = parse_escape_docker_env_secrets(os.getenv("MARS_DOCKER_ENV_SECRETS"))
@@ -228,11 +226,10 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         MARS_DOCKER_ENV_SECRETS=" --env ".join(parsed_mars_docker_env_secrets),
         SKIP_WEEKEND_CASES=skip_weekend_cases
     )
-
     logger.info("Try to remove existing docker container anyway")
     conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
-
     @retry(exceptions=AssertionError, tries=10, delay=60)
+
     def _create_container():
         conn.run(cmd, warn=True)
         logger.info("Created container, wait a few seconds for it to start")
@@ -244,7 +241,6 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         except UnexpectedExit as err:
             logger.error(err)
             assert False, "Failed to inspect the docker status."
-
         if not container_state["Running"]:
             logger.error("The created container is not started, try to restart it")
             if not start_container(conn, container_name, max_retries=1):
@@ -252,9 +248,7 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
                              "Remove the container and delay 60s before recreating.")
                 conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
                 assert False, "Failed to create the container."
-
     _create_container()
-
     validate_docker_is_up(conn, container_name)
     logger.info("Configure container after starting it")
     copy_script_cmd = "docker cp {SCRIPT_PATH} " \
@@ -265,9 +259,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     if not configure_docker_route(conn, container_name):
         logger.error("Configure docker container failed.")
         sys.exit(1)
-
-
 @retry(Exception, tries=3, delay=10)
+
 def validate_docker_is_up(conn, container_name):
     """
     This function will run a dummy echo command on docker containers,
@@ -282,7 +275,6 @@ def validate_docker_is_up(conn, container_name):
                 .format(CONTAINER_NAME=container_name))
     conn.run("docker exec {CONTAINER_NAME} bash -c \"echo \"UP\"\"".format(CONTAINER_NAME=container_name))
 
-
 def configure_docker_route(conn, container_name):
     """
     @summary: Configure docker container.
@@ -291,10 +283,8 @@ def configure_docker_route(conn, container_name):
     @param container_name: Docker container name to be started
     @return: Returns True if configurations are successful. In case of exception, return False.
     """
-
     try:
         logger.info("Try to configure route and execute dhclient on container")
-
         # Remove existing default IP assigned by dockerd to macvlan eth0 interface
         available_ips_info = conn.run('docker exec {CONTAINER_NAME} bash -c "sudo ip -j address"'
                                       .format(CONTAINER_NAME=container_name)).stdout.strip()
@@ -307,7 +297,6 @@ def configure_docker_route(conn, container_name):
                         cmd = 'ip addr del {}/{} dev {}'.format(ip_data['local'], ip_data['prefixlen'], CONTAINER_IFACE)
                         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo {CMD}"'
                                  .format(CONTAINER_NAME=container_name, CMD=cmd))
-
         # Connect default bridge network in container which will be used for access hypervisor IP
         conn.run('docker network connect bridge {CONTAINER_NAME}'.format(CONTAINER_NAME=container_name))
         # Remove default route via "bridge" network(added by default after connect network)
@@ -322,17 +311,14 @@ def configure_docker_route(conn, container_name):
         # Run dhclient on macvlan network and get public IP/default route from DHCP server based on MAC address
         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo dhclient {CONTAINER_IFACE} -v"'
                  .format(CONTAINER_NAME=container_name, CONTAINER_IFACE=CONTAINER_IFACE))
-
         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo /etc/init.d/ssh restart"'
                  .format(CONTAINER_NAME=container_name))
-
         logger.info("Successfully configured route and executed dhclient on container")
         return True
     except UnexpectedExit as e:
         logger.error("Exception: %s" % repr(e))
         logger.error("Configure route & dhclient on container failed.")
         return False
-
 
 def cleanup_dangling_docker_images(test_server):
     """
@@ -345,56 +331,44 @@ def cleanup_dangling_docker_images(test_server):
 
 
 def main():
-
     args = _parse_args()
-
     registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
     logger.info("Default registry_url=%s" % registry_url)
     if args.registry_url:
         registry_url = args.registry_url
         logger.info("Override default registry_url value, now registry_url=%s" % registry_url)
-
     docker_image_name = 'docker-ngts'
     if args.docker_tag:
         docker_tag = args.docker_tag
     else:
         docker_tag = get_docker_default_tag(docker_image_name)
-
     if args.dut_name:
         container_name = '{}_{}'.format(args.dut_name, docker_image_name)
     else:
         container_name = args.docker_name
-
     topo = parse_topology(args.topo)
     test_server_device = topo.get_device_by_topology_id(constants.TEST_SERVER_DEVICE_ID)
     test_server_device_username, test_server_device_password = topo.get_user_access(test_server_device.USERS[0])
     docker_host = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
     mac = docker_host.MAC_ADDRESS
-
     test_server = Connection(test_server_device.BASE_IP, user=test_server_device_username,
                              config=Config(overrides={"run": {"echo": True}}),
                              connect_kwargs={"password": test_server_device_password})
-
     if args.send_takeover_notification == 'yes':
         send_takeover_notification(topo)
-
     logger.info("Set hypervisor timezone to IST")
     retry_call(test_server.run, fargs=["sudo timedatectl set-timezone Israel"], tries=3, delay=5, logger=logger)
-
     logger.info("Pull docker image to ensure that it is up to date")
     retry_call(test_server.run, fargs=["docker pull {}/{}:{}".format(registry_url, docker_image_name, docker_tag)],
                tries=3, delay=10, logger=logger)
-
     logger.info("Check current docker container and image status")
     inspect_res = inspect_container(test_server, "{}/{}".format(registry_url, docker_image_name), docker_tag,
                                     container_name)
-
     if not inspect_res["image_exists"]:
         logger.error("No docker image. Please check using commands:")
         logger.error("    curl -X GET http://{}/v2/_catalog".format(registry_url))
         logger.error("    curl -X GET http://{}/v2/{}/tags/list".format(registry_url, docker_image_name))
         sys.exit(1)
-
     delete_container_required = args.delete_container
     if not delete_container_required:
         if inspect_res["container_matches_image"]:
@@ -415,14 +389,12 @@ def main():
                 else:
                     logger.error("Starting container %s failed. Will delete it and re-create" % container_name)
                     delete_container_required = True
-
     logger.info("Need to create and start sonic-mgmt container")
     create_and_start_container(test_server, "{}/{}".format(registry_url, docker_image_name),
                                docker_tag, container_name, mac, args.skip_weekend_cases)
 
     logger.info("Try to delete dangling docker images to save space")
     cleanup_dangling_docker_images(test_server)
-
     logger.info("################### DONE ###################")
 
 

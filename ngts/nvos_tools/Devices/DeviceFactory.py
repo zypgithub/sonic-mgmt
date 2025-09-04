@@ -12,7 +12,7 @@ from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, C
                                               JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch,
                                               JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
-                                              JulietNonScaleoutSwitchGB300PS, TaipanSwitch)
+                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch)
 
 logger = logging.getLogger()
 
@@ -65,6 +65,7 @@ class DeviceFactory:
             'N5500_LD - JulietNonScaleoutSwitchGB300PS': JulietNonScaleoutSwitchGB300PS,
             'N6100_LD - Rosalind': RosalindSwitch,
             'N6150_LD - RosalindSurrogate': RosalindSurrogateSwitch,
+            'N6100_LD - RosalindChipless': RosalindChipless,
             'N6100_LD_simx - Rosalind': RosalindSimx,
         }
 

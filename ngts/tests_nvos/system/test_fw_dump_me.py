@@ -27,12 +27,9 @@ def test_fw_dump_me(engines, devices):
     ibv_num = str(random.randint(0, devices.dut.asic_amount - 1) if hasattr(devices.dut, 'asic_amount') else '')
     # just multi asic systems have asic_amount attribute
     syncd_ibv = "syncd-ibv0{}".format(ibv_num)
-    sdk_dump_folder = "/var/log/mellanox/sdk-dumps/"
 
-    list_file = engines.dut.run_cmd("ls /var/log/mellanox/")
-    if "sdk-dumps" not in list_file.split():
-        dev = "_dev{}".format(ibv_num)
-        sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
+    dev = "_dev{}".format(ibv_num) if devices.dut.switch_class == NvosConst.JULIET_SWITCH else ""
+    sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
 
     with allure.step('Upload sdk fw crush file to switch'):
         player_engine = engines['sonic_mgmt']

@@ -192,6 +192,7 @@ juliet-124      ansible_host=10.7.145.124 ansible_hostv6="" sonic_version=v2 hws
 juliet-184      ansible_host=10.7.148.184 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-surrogate-41      ansible_host=10.7.145.41 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6150_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-surrogate-54      ansible_host=10.7.145.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6150_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+rosalind-chipless-117      ansible_host=10.7.145.117 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6100_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-191      ansible_host=10.7.148.191 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-1363     ansible_host=10.220.13.63 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-1364     ansible_host=10.220.13.64 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
@@ -287,7 +288,7 @@ ci-sonic-mgmt-chipsim-62      ansible_host=10.220.75.62 ansible_hostv6="" sonic_
 nvos-chipsim-63      ansible_host=10.220.75.63 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 nvos-chipsim-64      ansible_host=10.220.75.64 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 nvos-chipsim-65      ansible_host=10.220.75.65 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
-nvos-chipsim-66      ansible_host=10.220.75.66 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000    
+nvos-chipsim-66      ansible_host=10.220.75.66 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 nvos-chipsim-67      ansible_host=10.220.75.67 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 nvos-chipsim-68      ansible_host=10.220.75.68 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mlx-2410b-01      ansible_host=10.188.108.46 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="Mellanox-SN2410" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000

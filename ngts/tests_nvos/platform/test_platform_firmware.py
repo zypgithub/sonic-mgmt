@@ -49,7 +49,7 @@ def validate_firmware_components(platform, firmware_items, dut_engine):
     for component in firmware_items:
         # WA for the weekend, need to check if it's a bug
         if component == 'BMC' and is_bug_active(4543350):
-            break
+            continue
         # WA --------------------------------------------
 
         try:

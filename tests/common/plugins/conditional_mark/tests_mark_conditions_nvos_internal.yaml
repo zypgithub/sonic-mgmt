@@ -175,7 +175,7 @@ tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160 and juliet-146 due to hardware issues"
     conditions_logical_operator: or
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
 
@@ -500,6 +500,24 @@ tests_nvos/checklist/test_fpga_install.py:
     conditions:
       - "'surrogate' in testbed or 'rosalind' in testbed"
 
+tests_nvos/checklist/test_sma_install.py:
+  skip:
+    reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
+    conditions:
+      - "'surrogate' not in testbed and 'rosalind' not in testbed"
+
+tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_sma_firmware_install:
+  skip:
+    reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
+    conditions:
+      - "'surrogate' not in testbed and 'rosalind' not in testbed"
+
+tests_nvos/checklist/test_sma_info.py:
+  skip:
+    reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
+    conditions:
+      - "'surrogate' not in testbed and 'rosalind' not in testbed"
+
 tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
   skip:
     reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
@@ -508,17 +526,15 @@ tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_stat
 
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
-    reason: "Testcase skipped on Juliet systems, feature is pruned in Juliet"
-    conditions:
-      - "'juliet' in testbed or 'rosalind' in testbed"
+    - reason: "Testcase skipped on Juliet or Rosalind systems, feature is pruned in Juliet"
+      conditions:
+        - "'juliet' in testbed or 'rosalind' in testbed"
 
-tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
-  skip:
-    reason: "Testcase skipped on black mamba dgx system due to RM issue: https://redmine.mellanox.com/issues/4583761"
-    conditions_logical_operator: and
-    conditions:
-      - "'mamba-dgx' in testbed"
-      - https://redmine.mellanox.com/issues/4583761
+    - reason: "Testcase skipped on black mamba dgx system due to RM issue: https://redmine.mellanox.com/issues/4583761"
+      conditions_logical_operator: and
+      conditions:
+        - "'mamba-dgx' in testbed"
+        - https://redmine.mellanox.com/issues/4583761
 
 tests_nvos/general/test_kernel_crash.py:
   skip:
@@ -538,7 +554,7 @@ tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
   skip:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
@@ -800,4 +816,5 @@ ngts/tests_nvos/system/test_physical_monitor.py::test_physical_monitor:
     reason: "[NVOS - Design] Bug SW #4553201: [Non-Functional] | Physical monitor feature doesn't work on NVOS branch 5000"
     conditions:
       - https://redmine.mellanox.com/issues/4553201
+
 ########################## NVOS IGNORE END ##########################

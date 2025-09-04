@@ -24,6 +24,7 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ErotComponent import ErotComponent
+from ngts.nvos_tools.infra.SmaComponent import SmaComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PortFastRecovery import PortFastRecovery
@@ -130,7 +131,9 @@ class FaeFirmware(BaseComponent):
         self.ssd = FaePlatformComponent(self, 'SSD')
         self.bmc = FaePlatformComponent(self, 'BMC')  # TODO: Fix after bug closed https://redmine.mellanox.com/issues/3955495
         self.fpga = FaePlatformComponent(self, 'FPGA')
+        self.sma = FaePlatformComponent(self, 'SMA')
         self.erot_id: Dict[str, ErotComponent] = DefaultDict(lambda erot_id: ErotComponent(self, erot_name=erot_id))
+        self.sma_id: Dict[str, SmaComponent] = DefaultDict(lambda sma_id: SmaComponent(self, sma_name=sma_id))
 
     def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):

@@ -504,3 +504,11 @@ class BaseSwitch(BaseDevice):
             self.constants.firmware.extend(
                 PlatformConsts.FW_CPLD + str(i) for i in range(1, self.cpld_amount + 1)
             )
+
+    def _extend_firmware_by_sma_amount(self):
+        # We display SMA, and SMA1, SMA2. Similar to erot not CPLD.
+        if hasattr(self, "sma_amount"):
+            self.constants.firmware.extend(
+                f"{PlatformConsts.FW_SMA}{i if i else ''}"
+                for i in range(0, self.sma_amount + 1)
+            )

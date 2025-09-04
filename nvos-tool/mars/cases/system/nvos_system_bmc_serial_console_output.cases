@@ -28,7 +28,7 @@
       <condition>
         <key>dut_type</key>
         <op> not in </op>
-        <value>[juliet, rosalind-surrogate]</value>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
       </condition>
     </ignore>
   </case>

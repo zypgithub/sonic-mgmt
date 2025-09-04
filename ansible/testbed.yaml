@@ -9562,6 +9562,20 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: rosalind-chipless-117-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-dummy
+  ptf_ip: 1.1.1.1/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - rosalind-chipless-117
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
 - conf-name: juliet-191-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10834,7 +10848,7 @@
     - ci-croc-chipsim-84
   inv_name: lab
   comment: Mellanox MTR testbed
-  
+
 - conf-name: ci-nvl-chipsim-85-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10890,7 +10904,7 @@
     - ci-qtm4-chipsim-88
   inv_name: lab
   comment: Mellanox MTR testbed
-  
+
 - conf-name: ci-sonic-mgmt-chipsim-61-ptf-any
   group-name: vm-t1
   topo: ptf-any
@@ -10946,7 +10960,7 @@
     - nvos-chipsim-64
   inv_name: lab
   comment: Mellanox MTR testbed
-  
+
 - conf-name: nvos-chipsim-65-ptf-any
   group-name: vm-t1
   topo: ptf-any
