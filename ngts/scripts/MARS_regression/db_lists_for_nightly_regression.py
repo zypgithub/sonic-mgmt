@@ -104,7 +104,10 @@ SETUPS_GROUPS_MAP = {
             'sonic_leopard_r-leopard-56': SETUPS_GROUP_2,
             'sonic_leopard_r-leopard-32': SETUPS_GROUP_2
         },
-        ('ptf_any', 'spc5'): {'sonic_bobcat_bobcat-10': SETUPS_GROUP_1}
+        ('ptf_any', 'spc5'): {'sonic_bobcat_bobcat-10': SETUPS_GROUP_1,
+                              'sonic_bison_mtvr-bison-133': SETUPS_GROUP_1,
+                              'sonic_moose_mtvr-moose-10': SETUPS_GROUP_1}
     }
 }
-# In canonical we have odd number of setups.
+}
+    # In canonical we have odd number of setups.
