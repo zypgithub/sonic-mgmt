@@ -87,4 +87,4 @@ bobcat-1254,Ethernet216,leopard-1253,Ethernet216,100000,185,Access,on
 bobcat-1254,Ethernet218,leopard-1253,Ethernet218,100000,186,Access,on
 bobcat-1254,Ethernet220,leopard-1253,Ethernet220,100000,187,Access,on
 bobcat-1254,Ethernet222,leopard-1253,Ethernet222,100000,188,Access,on
-leopard-1253,Ethernet248,fit-sonic-vrt-80,ens2f0,100000,101-188,Trunk
+leopard-1253,Ethernet248,fit-sonic-vrt-80,ens1f0,100000,101-188,Trunk
