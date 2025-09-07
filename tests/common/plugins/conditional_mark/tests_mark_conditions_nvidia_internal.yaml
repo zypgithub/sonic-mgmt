@@ -274,10 +274,10 @@ tests/push_build_tests/L2/vxlan/test_vxlan.py:
 
 tests/push_build_tests/L2/vlan/test_vlan.py::TestVLAN::test_vlan_on_split_port:
   skip:
-    reason: "Testcase ignored due to issue 4444119 for simx platform"
+    reason: "Testcase ignored due to issue 4622896 for simx platform"
     conditions_logical_operator: or
     conditions:
-    - "https://redmine.mellanox.com/issues/4444119 and 'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4622896 and 'simx' in platform"
 
 tests/push_build_tests/L3/dhcp_relay/test_dhcp_relay.py::TestDHCPRelay::test_dhcp_relay_release_message:
   skip:
