@@ -9,13 +9,16 @@ import pytest
 import logging
 import allure
 import copy
+import os
 import ipaddress
 from dataclasses import dataclass
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration)
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, MultiNosSharedData
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
+from ngts.constants.constants import BugHandlerConst
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import generate_incremental_addresses
 
 logger = logging.getLogger()
@@ -192,9 +195,9 @@ def conf_args(test_params, shaper_value, ar_enabled, split_host_ports, num_left_
                  }
     # Reduce scale in case of 64K dips in IPv6- not enough space in KVD.
     if ipv4_enabled == "ipv4_disabled" and ipv6_enabled == "ipv6_enabled" and conf_args['left_num_dip_to_send'] == 64000:
-        conf_args['left_num_dip_to_send'] = 57984
-        conf_args['right_num_dip_to_send'] = 57984
-        conf_args['num_routes_ipv6'] = 57984
+        conf_args['left_num_dip_to_send'] = 55000
+        conf_args['right_num_dip_to_send'] = 55000
+        conf_args['num_routes_ipv6'] = 55000
 
     right_side_ipv4_to_mac_list = generate_incremental_addresses(conf_args["neigh_mac_right_to_left_start"],
                                                                  conf_args["dip_right_to_left_start_ipv4"],
@@ -219,7 +222,29 @@ def conf_args(test_params, shaper_value, ar_enabled, split_host_ports, num_left_
 
 
 @pytest.fixture(scope='class', autouse=True)
-def basic_setup_configuration(players, conf_args):
+def move_alibaba_acl_dump(players):
+    """
+    Move the Alibaba ACL dump to the DUT, using the shared JSON file.
+    """
+
+    acl_dump_path = '/tmp'
+    acl_dump_name = 'acl_list.txt'
+    players[PerfConsts.DUT_ALIAS]['cli'].performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_PATH, data=acl_dump_path)
+    players[PerfConsts.DUT_ALIAS]['cli'].performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_NAME, data=acl_dump_name)
+    acl_dump_original_file = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", TESTS_SCENARIO, "acl_list.txt")
+
+    player_cli_obj = players[PerfConsts.PERF_SETUP_DUT_ALIASES[0]]['cli']
+    player_cli_obj.performance.engine.copy_file(
+        source_file=acl_dump_original_file,
+        file_system=acl_dump_path,
+        dest_file=acl_dump_name,
+        overwrite_file=True,
+        verify_file=False
+    )
+
+
+@pytest.fixture(scope='class', autouse=True)
+def basic_setup_configuration(players, conf_args, move_alibaba_acl_dump):
     try:
         with allure.step('Save Players initial Configuration'):
             save_base_configuration(players)
@@ -231,6 +256,10 @@ def basic_setup_configuration(players, conf_args):
     finally:
         with allure.step('Restore Base Configuration on all Players'):
             restore_basic_configuration(players)
+            # TODO: Remove this once we have a better way to undo SDK tests
+            if is_redmine_issue_active([4644033])[0]:
+                player_cli_obj = players[PerfConsts.PERF_SETUP_DUT_ALIASES[0]]['cli']
+                player_cli_obj.performance.execute_cmd('> /var/log/syslog')
 
 
 @pytest.fixture(scope='function', autouse=True)
