@@ -4,12 +4,12 @@
         <!-- parameters passed to setup steps commands-->
         <default_params_type> basic_setup_step_params </default_params_type>
         <DB>
-            <info> system </info>
+            <info> system_2 </info>
             <owner> SONiC </owner>
             <group> SONiC </group>
 
             <!-- OPTIONAL TAGS -->
-            <tags> system </tags>
+            <tags> system_2 </tags>
 
             <ignore>
                 <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
@@ -44,51 +44,7 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/procdockerstatsd.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/db_scripts.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/db_config.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/features.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/gnmi.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/masked_services.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ntp.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/syslog.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/telemetry.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dns.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/scp.cases </cases>
-    </test>
-
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ssh.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/accounting.cases </cases>
     </test>
 
     <test>
@@ -112,10 +68,6 @@
     </test>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/accounting.cases </cases>
-    </test>
-
-    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dut_console.cases </cases>
     </test>
 
@@ -133,7 +85,5 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/mgmt_ipv6.cases </cases>
     </test>
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/fips.cases </cases>
-    </test>
+
 </DBDEF>

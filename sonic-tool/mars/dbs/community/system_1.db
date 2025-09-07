@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DBDEF>
+    <global>
+        <!-- parameters passed to setup steps commands-->
+        <default_params_type> basic_setup_step_params </default_params_type>
+        <DB>
+            <info> system_1 </info>
+            <owner> SONiC </owner>
+            <group> SONiC </group>
+
+            <!-- OPTIONAL TAGS -->
+            <tags> system_1 </tags>
+
+            <ignore>
+                <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
+                <condition>
+                    <key> skip_main_hwsku_only_cases </key>
+                    <op> == </op>
+                    <value> yes </value>
+                </condition>
+            </ignore>
+
+            <!-- pre db commands - executed once before DB run -->
+            <pre>
+            </pre>
+            <post></post>
+        </DB>
+        <Test>
+            <!--Must reset any dynamic ignore tags created by other tests-->
+            <pre>
+                <type> reg_exec_func </type>
+                <name> reset dynamic ignore tags </name>
+                <mars_cmd_func> reset_dynamic_tags </mars_cmd_func>
+                <tout> 60 </tout>
+                <params>
+                    <tags_type> ignore_tags </tags_type>
+                </params>
+            </pre>
+            <post>
+            </post>
+        </Test>
+        <Case>
+        </Case>
+    </global>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/procdockerstatsd.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/db_scripts.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/db_config.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/features.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/gnmi.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/masked_services.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ntp.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/syslog.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/telemetry.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/scp.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dns.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/ssh.cases </cases>
+    </test>
+
+</DBDEF>

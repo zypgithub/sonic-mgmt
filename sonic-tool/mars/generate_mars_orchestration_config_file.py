@@ -60,7 +60,8 @@ community_develop_set_2_dbs = [
 ]
 
 community_develop_generic_dbs = [
-    'system.db',
+    'system_1.db',
+    'system_2.db',
     'mgmtvrf.db',
 ]
 
