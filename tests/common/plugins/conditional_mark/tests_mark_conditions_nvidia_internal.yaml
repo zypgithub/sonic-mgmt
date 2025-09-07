@@ -730,10 +730,11 @@ platform_tests/test_secure_upgrade.py:
 platform_tests.cli.test_show_platform.py::test_show_platform_ssdhealth:
   regex: true
   skip:
-    reason: "Simx doesn't support due to QEMU Disk and it is not meaningful to simulate it"
+    reason: "Simx doesn't support due to QEMU Disk and it is not meaningful to simulate it Or due to RM issue: https://redmine.mellanox.com/issues/4623416"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4623416"
 
 platform_tests/daemon/test_pcied.py::test_pmon_pcied_term_and_start_status:
   xfail:
