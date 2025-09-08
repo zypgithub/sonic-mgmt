@@ -93,4 +93,7 @@
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
     </test>
+    <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_factory_reset.cases </cases>
+    </test>
 </DBDEF>

@@ -1,6 +1,7 @@
 import os
 import json
 from enum import Enum
+from pathlib import Path
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -105,10 +106,13 @@ class NvosConst:
     NOT_AVAILABLE = 'N/A'
     ALL = 'all'
     DEFAULT_CONFIG_FILE_NAME = "nvos_default_config_IB.yml"
+    DEFAULT_RESOURCES_PATH = Path('ngts/tools/test_utils/nvos_resources')
+    DEFAULT_NVOS_CONFIG_PATH = DEFAULT_RESOURCES_PATH / "nvos_configuration_files"
     DEFAULT_CONFIG_PATH = "/tools/test_utils/nvos_resources/clear_config/"
     SCP_PATH_SWITCH = 'scp {path} {username}@{ip}:{dest_path}'
     PATH_TO_CONFIG_FILES_ON_DUT = "/host/config_files"
     PATH_TO_TMP_ON_DUT = "/tmp/"
+    PATH_TO_FW_IMAGES = "/host/fw-images"
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -1085,10 +1089,21 @@ class PowerCappingConsts:
     DEFAULT_PROFILE_ID = 'compute'
     ACTIVE = 'active'
     STATE = 'state'
+
+    # Enum-based profile names for CLI
+    class ProfileName(Enum):
+        CUSTOM_PROFILE_1 = 'custom-profile-1'
+        CUSTOM_PROFILE_2 = 'custom-profile-2'
+        CUSTOM_PROFILE_3 = 'custom-profile-3'
+        CUSTOM_PROFILE_4 = 'custom-profile-4'
+        CUSTOM_PROFILE_5 = 'custom-profile-5'
+
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
+    ENUM_PROFILES = [profile.value for profile in ProfileName]
+
     PROFILES_DEFAULT_DICT = {
         'compute': {
-            'long-term-power-allocation': '450',
+            'long-term-power-allocation': '475',
             'short-term-power-allocation': '575'
         },
         'networking': {
@@ -1719,11 +1734,15 @@ class OperationTimeConsts:
                   'start stop cluster': 285,
                   'cluster update log level': 6,
                   'install bmc': 1200,
+                  'bmc install without reboot': 710,
                   'install fpga': 900,
+                  'fpga install without reboot': 130,
                   'install sma': 900,
                   'install asic': 600,
                   'install bios': 600,
+                  'bios install without reboot': 250,
                   'install cpld': 720,
+                  'cpld install without reboot': 400,
                   'install erot': 420,
                   ActionConsts.POWER_CYCLE: 360,
                   'juliet-power-cycle': 330,

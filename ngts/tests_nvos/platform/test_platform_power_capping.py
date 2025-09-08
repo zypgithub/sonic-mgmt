@@ -88,47 +88,51 @@ def test_set_platform_power_capping(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fae_platform_power_capping_limitation(engines, test_api):
+def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random_api):
     """
     Test Objective:
-    Verify the limitation of creating and activating up to 5 power capping profiles in FAE.
+    Verify the creation and activation of enum-based power capping profiles in FAE.
 
     Test Flow:
-    1. Create 5 power capping profiles and activate each one.
-    2. Attempt to create a 6th power capping profile and expect failure.
+    1. Create power capping profiles using enum-based names and activate each one.
+    2. Verify each profile is active and present in the profiles list.
     3. Return to the default power capping profile.
     4. Cleanup by unsetting all newly created profiles.
     """
-    TestToolkit.tested_api = test_api
-    profiles = [RandomizationTool.get_random_string(8, ascii_letters=string.ascii_letters + string.digits)
-                for _ in range(PowerCappingConsts.NUM_PROFILES_LIMIT + 1)]
-    limit = PowerCappingConsts.NUM_PROFILES_LIMIT
+    TestToolkit.tested_api = random_api
+    # Use enum-based profile names instead of random strings
+    profiles = PowerCappingConsts.ENUM_PROFILES
 
     with allure.step("Create Fae & Platform object"):
         fae = NvCommand().fae
         platform = NvCommand().platform
 
-    with allure.step(f"Create {limit} power-capping profiles and try to activate"):
-        for profile_id in profiles[:limit]:
+    with allure.step(f"Create new power-capping profiles and try to activate"):
+        for profile_id in profiles:
             set_new_profile(fae, profile_id)
-            TestToolkit.GeneralApi[test_api].apply_config(engines.dut, verify_execution=True)
+            TestToolkit.GeneralApi[random_api].apply_config(engines.dut, verify_execution=True)
             platform.power_capping.set_active_profile(profile_id, apply=True).verify_result()
 
-    with allure.step(f"Attempt to create a {limit + 1}th power-profile and expect failure"):
-        set_new_profile(fae, profile_id)
-        output = TestToolkit.GeneralApi[test_api].apply_config(engines.dut)
-        assert 'Can not configure active power-profile attributes' in output, "action succeeded while expected to fail"
+            with allure.independent_step("Verify power-capping profile is active"):
+                profile_show_output = platform.power_capping.show()
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, PowerCappingConsts.ACTIVE_PROFILE, profile_id).verify_result()
+
+            with allure.independent_step("Verify power-capping profile is present in profiles show"):
+                profile_show_output = platform.power_capping.profiles.show()
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(profile_show_output).get_returned_value()
+                ValidationTool.verify_field_value_exist_in_output_dict(output_dictionary, profile_id).verify_result()
 
     with allure.step("Return to default power capping profile"):
         NvueGeneralCli.detach_config(engines.dut)
         platform.power_capping.unset_active_profile(apply=True).verify_result()
 
     with allure.step("Cleanup - unset all newly created profiles"):
-        for profile_id in profiles[:limit]:
-            fae.platform.power_capping.profile_id[profile_id].unset().verify_result()
+        for profile_id in profiles:
+            fae.platform.power_capping.profile_id[profile_id].unset(apply=True).verify_result()
 
-        TestToolkit.GeneralApi[test_api].apply_config(engines.dut, verify_execution=True)
+            with allure.independent_step("Verify power-capping enum profile is returning 'No Data' in show"):
+                output = fae.platform.power_capping.profile_id[profile_id].show(should_succeed=False)
 
 
 @pytest.mark.platform
@@ -149,7 +153,8 @@ def test_set_fae_platform_power_capping_configurations(engines, test_api):
     with allure.step("Create Fae object"):
         fae = NvCommand().fae
 
-    profiles = PowerCappingConsts.PROFILES[:-1]  # Exclude default profile
+    # Use enum profiles excluding the default profile
+    profiles = [p for p in PowerCappingConsts.PROFILES if p != PowerCappingConsts.DEFAULT_PROFILE_ID]
     random_profile_id = random.choice(profiles)
 
     # Dictionary to store the attribute values
@@ -189,14 +194,15 @@ def test_set_fae_platform_power_capping_configurations(engines, test_api):
 def test_power_capping_bad_flow(engines, test_api):
     """
     Test Objective:
-    Verify scenarios where invalid operations are performed on power capping profiles.
+    Validate that invalid operations on power capping profiles are properly rejected and produce expected errors.
 
     Test Flow:
-    1. Verify power-capping default profile is active.
-    2. Configure attributes for active profile and verify failure during config apply.
-    3. Attempt to show a non-existing power capping profile in FAE and verify failure.
-    4. Attempt to show a non-existing power capping profile on the platform and verify failure.
-    5. Attempt to create a new power capping profile with invalid name and verify failure.
+    1. Confirm the default power-capping profile is active.
+    2. Attempt to configure attributes for the active profile and verify that applying the configuration fails as expected.
+    3. Attempt to display a non-existent power capping profile in FAE and verify that the operation fails.
+    4. Attempt to display a non-existent power capping profile on the platform and verify that the operation fails.
+    5. Attempt to create a new power capping profile with an invalid name and verify that the operation fails.
+    6. Attempt to apply a profile with incomplete attributes and verify that the operation fails due to missing required properties.
     """
 
     TestToolkit.tested_api = test_api
@@ -228,8 +234,19 @@ def test_power_capping_bad_flow(engines, test_api):
         platform.power_capping.profiles.profile_id['non_existing_profile'].show(should_succeed=False)
 
     with allure.step("Create profile with invalid name"):
-        new_name = RandomizationTool.get_random_string(PowerCappingConsts.CHARS_LIMIT + 1, ascii_letters=string.ascii_letters + string.digits)
+        new_name = RandomizationTool.get_random_string(8, ascii_letters=string.ascii_letters + string.digits)
         fae.platform.power_capping.profile_id[new_name].set_attribute(attribute, 1, apply=True).verify_result(False)
+
+    with allure.step("Test incomplete profiles"):
+        profile_name = PowerCappingConsts.ENUM_PROFILES[0]
+        fae_profile = fae.platform.power_capping.profile_id[profile_name]
+        # Pick random attributes (not all required) - between 3-8 attributes
+        num_attributes = random.randint(3, 8)
+        random_attributes = random.sample(PowerCappingConsts.ATTRIBUTES, num_attributes)
+        for attr in random_attributes:
+            fae_profile.set_attribute(attr, get_random_value(attr, valid=True))
+        output = TestToolkit.GeneralApi[test_api].apply_config(engines.dut, verify_execution=False)
+        assert 'is a required property' in output, 'operation succeeded while expected to fail'
 
 
 @pytest.mark.platform
@@ -350,6 +367,13 @@ def get_random_value(attribute, valid=True):
 
 
 def set_new_profile(fae, profile_id, attributes=PowerCappingConsts.ATTRIBUTES):
+    """
+    Set up a new power capping profile with the given attributes.
+
+    @param fae: FAE object
+    @param profile_id: Profile ID (should be a valid enum profile name)
+    @param attributes: List of attributes to set
+    """
     fae_profile = fae.platform.power_capping.profile_id[profile_id]
     for attribute in attributes:
         attribute_value = get_random_value(attribute, valid=True)

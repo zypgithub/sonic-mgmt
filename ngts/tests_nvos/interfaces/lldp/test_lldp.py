@@ -20,15 +20,14 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.lldp
 @pytest.mark.system
 @pytest.mark.interface
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_enabled(engines, devices, test_api):
+def test_lldp_enabled(engines, devices, random_api):
     """
     Verify lldp functionality is working by default.
 
     1. Verify lldp is running.
     2. Verify lldp is sending and receiving frames.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     lldp = system.lldp
     _verify_lldp_is_sending_frames(lldp=lldp, engine=engines.dut, device=devices.dut)

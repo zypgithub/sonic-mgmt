@@ -10,6 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_parse_output
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 
 logger = logging.getLogger()
 
@@ -90,7 +91,7 @@ def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devices, nv_command):
+def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devices, nv_command, wrong_shunt_resistor_system):
     """
     Validate ASIC Power Telemetry feature counters updates.
         Test flow:
@@ -98,6 +99,9 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
             2. Validate values from NVUE command and GNMI
             3. Validate reboot and check counters reset
     """
+    if wrong_shunt_resistor_system:
+        pytest.skip('system has wrong shunt resistor - part number is 692-9K33R-00MV-JQS, causing unexpected behavior like wrong power reads - https://nvbugspro.nvidia.com/bug/5242705')
+
     TestToolkit.tested_api = test_api
 
     with allure.step("Check gnmi is installed and running"):

@@ -641,7 +641,7 @@ def _download_file_and_run_ztp(engines, system, file='', step='', step_status_co
 
 def _run_system_ztp_with_empty_config(engines, system):
     with allure.step("Run nv action run system ztp"):
-        NvueGeneralCli.apply_config(engine=engines.dut, rev_id='empty')
+        NvueGeneralCli.apply_config(engine=engines.dut, rev_id='empty', option='-y')
         NvueGeneralCli.save_config(engine=engines.dut)
         system.ztp.action_run_ztp().verify_result()
 

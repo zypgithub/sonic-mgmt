@@ -31,3 +31,9 @@ master:
    # nbrmgrd: 2
    # vxlanmgrd: 2
    # sensord: 2
+  N5500_LD: # Juliet GB300
+    total: 35
+    sx_sdk: 5
+    syncd: 5
+    nmx: 5
+    gnmi: 5

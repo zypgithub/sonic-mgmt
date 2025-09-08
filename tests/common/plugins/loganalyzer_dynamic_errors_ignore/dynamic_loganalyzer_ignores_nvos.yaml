@@ -939,6 +939,8 @@
     - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to restore partition \d+ uuid \d+ with GRPC error NMX_ST_RESOURCE_NOT_IN_USE.*ClusterGrpcError: Return code in RPC response: NMX_ST_RESOURCE_NOT_IN_USE, type: UpdatePartitionResponse.*'
     - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to create partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*ClusterGrpcError: Return code in RPC response: NMX_ST_RESOURCE_IN_USE, type: CreatePartitionResponse.*'
     - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to create partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*Traceback \(most recent call last\):.*'
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to update partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*ClusterGrpcError: Return code in RPC response: NMX_ST_RESOURCE_IN_USE, type: CreatePartitionResponse.*'
+    - '.*ERR nvued:.*ERROR: lifecycle\.py:\d+ failed to update partition \d+ with GRPC error NMX_ST_RESOURCE_IN_USE.*Traceback \(most recent call last\):.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/cluster/test_cluster_partition.py::test_cluster_partition_bad_flow
@@ -996,6 +998,14 @@
         - tests_nvos/system/test_system_documents.py::test_upload_document
         - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
         - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload
+
+# NVOS : Errors which should be ignored in tests nvl5 ports
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
 
 # NVOS : Errors which should be ignored in tests nvl5 ports
 - Errors_list:
@@ -1367,6 +1377,7 @@
     - '.*ERR health-statsd#health_history: Fan: Failed to get fan information.*'
     - '.*ERR health-statsd#health_history: PSU: Failed to get information.*'
     - '.*ERR health-statsd#health_history: Containers: is not Status ok.*'
+    - '.*ERR health-statsd#health_history: Containers: Status is not ok.*'
     - '.*ERR health-statsd#health_history: Disk check: is not Status ok.*'
     - '.*ERR health-statsd#health_history: memory_check: is not Status ok.*'
     - '.*ERR health-statsd#health_history: Summary: Not OK.*'
@@ -1578,6 +1589,7 @@
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure
+      - tests_nvos/system/test_techsupport_feature.py::test_techsupport_with_dockers_down
 
 # NVOS bug will not fix
 - Errors_list:
@@ -2029,18 +2041,21 @@
 
 - Errors_list:
     - ".*address/host 'dummy.server1' unusable.*"
+    - '.*ERR\\s+ntpd\\[[\\d+a-fA-F]+\\]:\\s+SYNC:\\s+Found\\s+\\d+\\s+servers,\\s+suggest\\s+minsane\\s+at\\s+least\\s+\\d+.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/ntp/test_system_ntp.py::test_configure_ntp_multiple_servers
 
 - Errors_list:
-    - '.*ERR healthd\: Voltage sensor reading is not available.*'
+    - '.*ERR .* Voltage sensor reading is not available.*'
     - '.*ERR health-statsd#health_history.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/platform/test_recover_from_bmc_reset.py
+        - tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow
+        - tests_nvos/general/security/bmc/test_reset_bmc_root_password.py
       Redmine:
-        - 4371089
+        - 4210208
 
 - Errors_list:
     - '.*pmon#psud: PSU temperature warning: PSU \d temperature too hot, temperature=\d+.\d+, threshold=\d+.\d+.*'
@@ -2098,14 +2113,6 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_ztp.py::test_ztp_provisioning_script_negative
 
-# NVOS: Expected logs when SSD is full
-- Errors_list:
-    - '.*ERR kernel:.* I/O error.*'
-    - '.*WARNING kernel:.* EXT4-fs warning.*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_reboot_with_high_ssd_usage
-
 # NVOS: Expected logs
 - Errors_list:
     - '.*WARNING cpu_memory_container_checker: Memory usage (\d+(\.\d+)?)% is above expected threshold (\d+(\.\d+)?)%'
@@ -2113,6 +2120,14 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/test_cpu_memory_monitoring.py
+
+# NVOS: Expected logs when SSD is full
+- Errors_list:
+    - '.*ERR kernel:.* I/O error.*'
+    - '.*WARNING kernel:.* EXT4-fs warning.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_ssd_cleanup.py::test_ssd_cleanup_reboot_with_high_ssd_usage
 
 - Errors_list:
     - '.*ERR healthd\: Voltage sensor reading is not available.*'
@@ -2137,12 +2152,6 @@
         - tests_nvos/system/test_system_reboot.py::test_reboot_via_psu_off
 
 - Errors_list:
-    - '.*send_packet: Network is down.*'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/system/test_system_message.py::test_system_reload_for_system_message
-
-- Errors_list:
     - '.*ERR pmon#syseepromd.* Leakage sensor leakage.* does not exist.*'
   Conditions:
     - Affected_test_cases:
@@ -2162,4 +2171,13 @@
         - tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py::test_tpm_reboot_cases
         - tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_reboot_system_keeps_data
         - tests_nvos/checklist/test_cpld_upgrade.py::test_cpld_upgrade
+        - tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_reboot_system
+
+- Errors_list:
+    - ".*ERR clusterd.*gRPC failure, reason: StatusCode.DEADLINE_EXCEEDED, details: Deadline Exceeded.*"
+    - ".*ERR clusterd.*Timeout on healthcheck to cluster app nmx-controller.*"
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_start_stop_cluster.py
+
 # --------------------------------------------------

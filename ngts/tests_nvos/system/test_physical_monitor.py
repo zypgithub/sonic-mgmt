@@ -1,4 +1,5 @@
 import pytest
+import logging
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Union, Iterable, Dict
@@ -137,6 +138,8 @@ def assert_event(event: Dict[str, str], asic: int):
         ), event).verify_result()
         if not is_bug_active(4506815):  # bug in system events: timestamps are UTC instead of local
             event_time = ClockTools.parse_datetime(event[EventConsts.TIME_CREATED])
-            assert (datetime.now() - event_time).total_seconds() < 5, (
-                f"Current datetime is {datetime.now().isoformat()}, event timestamp doesn't match: {event}"
+            now = datetime.now(tz=event_time.tzinfo)
+            logging.debug(f"Event time: {event_time}, current time: {now}")
+            assert (now - event_time).total_seconds() < 5, (
+                f"Current datetime is {now.isoformat()}, event timestamp doesn't match: {event}"
             )

@@ -27,8 +27,7 @@ AUTHENTICATION_FAILED = 'Authentication failure: unable to connect linux'
 
 
 @pytest.mark.bmc
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_reset_bmc_password_to_default(engines, topology_obj, test_api):
+def test_reset_bmc_password_to_default(engines, topology_obj, random_api):
     """
     1. Reset BMC password.
     2. Login with default.
@@ -37,6 +36,7 @@ def test_reset_bmc_password_to_default(engines, topology_obj, test_api):
     5. restore to original
     """
 
+    # LA ignores some BMC errors during this test, pending on FR 4210208
     dut: LinuxSshEngine = engines.dut
     platform = Platform()
     root_pass = BmcUsers.root.another_password
@@ -81,6 +81,7 @@ def test_reset_bmc_password_to_default_while_locked_out(engines, topology_obj, t
     Run the reset command after being temporarily locked out from the BMC due to too many failed connection attempts to root user.
     Expected: The password will reset, and after the temporary block will end (600 sec) you will be able to connect with ‘0penBmcTempPass!’.
     '''
+    # LA ignores some BMC errors during this test, pending on FR 4210208
     dut: LinuxSshEngine = engines.dut
     platform = Platform()
     root_pass = BmcUsers.root.another_password
@@ -122,6 +123,7 @@ def test_reset_bmc_root_password_while_bmc_down(engines, devices, topology_obj, 
     4. verify bmc admin can login only with TPM password
     """
 
+    # LA ignores some BMC errors during this test, pending on FR 4210208
     dut: LinuxSshEngine = engines.dut
     platform = Platform()
     root_password = BmcUsers.root.another_password

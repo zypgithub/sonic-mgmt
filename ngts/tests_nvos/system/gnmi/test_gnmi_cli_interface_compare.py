@@ -14,6 +14,7 @@ from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, pa
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.constants.constants import GnmiConsts
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -21,6 +22,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.gnmi
+@pytest.mark.timeout(6 * MINUTE, func_only=True)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
     """
@@ -35,22 +37,14 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
     tested_ports = []
 
     with allure.step("Select link-up port"):
-        result_obj = RandomizationTool.select_random_ports()
-        if not result_obj.result:
-            res = result_obj.verify_result(False)
-            logger.info(res)
-        else:
-            res = result_obj.verify_result(True)
-            tested_ports.append(res[0].name)
+        port_name = select_single_port_name()
+        if port_name:
+            tested_ports.append(port_name)
 
     with allure.step("Select link-down port"):
-        result_obj = RandomizationTool.select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_DOWN)
-        if not result_obj.result:
-            res = result_obj.verify_result(False)
-            logger.info(res)
-        else:
-            res = result_obj.verify_result(True)
-            tested_ports.append(res[0].name)
+        port_name = select_single_port_name(NvosConsts.LINK_STATE_DOWN)
+        if port_name:
+            tested_ports.append(port_name)
 
     with allure.step("Get GNMI client"):
         client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
@@ -62,6 +56,9 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
             if port is not None:
                 port_instance = Port(port)
                 logger.info(f"Current port: {port}.")
+
+                with allure.step("Sleep for 2 mins"):
+                    time.sleep(120)
 
                 with allure.step("Start gnmi session and get output"):
                     gnmi_prev_output_as_dict = {}
@@ -107,12 +104,28 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
                     else:
                         if is_bug_active(4566854):
                             adjusted_cli_output.pop("time-since-last-clear-min", None)
-                        for attribute, value in adjusted_cli_output.items():
-                            with allure.independent_step(f"Testing {attribute}"):
-                                assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
+                            for attribute, value in adjusted_cli_output.items():
                                 gnmi_value = gnmi_output_as_dict[attribute]
-                                if (gnmi_value != value) and not handle_numeric_values(gnmi_value, value):
-                                    logger.warning(f"Output mismatch. CLI={value}, GNMI={gnmi_output_as_dict[attribute]}")
+                                with allure.independent_step(f"Testing {attribute}"):
+                                    logger.info(f"CLI value = {value}, gnmi value = {gnmi_value}")
+                                    assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
+                                    assert (gnmi_value == value) or handle_numeric_values(gnmi_value,
+                                                                                          value), f"Output mismatch"
+
+
+def select_single_port_name(requested_ports_state=None):
+    """
+    Select a single port name using RandomizationTool with optional state.
+    Logs the verification result on failure and returns None.
+    """
+    return_value = None
+    result_obj = RandomizationTool.select_random_port(requested_ports_state=requested_ports_state)
+    if not result_obj.result:
+        result_obj.verify_result(False)
+    else:
+        port_obj = result_obj.verify_result(True)
+        return_value = port_obj.name
+    return return_value
 
 
 def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):

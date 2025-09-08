@@ -1,12 +1,14 @@
+from typing import Dict, Optional
 import concurrent.futures
+from pathlib import Path
 import datetime
 import logging
 import os
 import random
 import smtplib
 import time
+import json
 from email.mime.text import MIMEText
-from typing import Dict
 import requests_cache
 import re
 
@@ -33,7 +35,6 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra import ExceptionTool
-from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DiskTool import DiskTool
@@ -57,6 +58,9 @@ from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_m
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
+from ngts.ngts_types import EnginesT
 
 logger = logging.getLogger()
 
@@ -66,7 +70,7 @@ EXPECTED_KERNEL_PATTERNS = [
 ]
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser):
     """
     Parse NVOS pytest options
     :param parser: pytest build in
@@ -88,6 +92,10 @@ def pytest_addoption(parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+    parser.addoption("--skip_clear_config", action="store_true", default=False, help="skip the clear_config fixture at the end of the test")
+    parser.addoption('--upgrade-matrix-json', type=_validate_matrix_arg, help='Path to matrix json file or json string')
+    parser.addoption("--override-target-version", action="store_true", default=None,
+                     help="Override the target version with the target from the upgrade downgrade matrix")
     parser.addoption("--remote_test_path", action="store", default=None, help="Remote test path from MARS")
 
 
@@ -139,31 +147,6 @@ def check_disk_usage(request, engines):
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
                     assert delta_kb <= expected_threshold, f"Wrote {delta_kb}KB (max {expected_threshold}KB allowed)"
-
-
-@pytest.fixture(autouse=True)
-def check_log_size(request, engines):
-    def __get_syslog_file_size_kb(filename='syslog') -> int:
-        return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
-    marker_name = 'check_log_size'
-    should_check = is_cur_test_has_marker(request, marker_name)
-    if should_check:
-        with allure.step('get syslog size before (in KB)'):
-            size_before = __get_syslog_file_size_kb()
-    yield
-    if should_check:
-        with allure.step('get syslog size after (in KB)'):
-            size_after = __get_syslog_file_size_kb()
-            if size_after <= size_before:
-                logging.info('log was rotated')
-                size_after += __get_syslog_file_size_kb('syslog.1')
-            test_addition_to_syslog = size_after - size_before
-        allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
-        if is_cur_test_passed(request):
-            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
-            if expected_threshold and isinstance(expected_threshold, int):
-                with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
-                    assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
 
 
 @pytest.fixture(autouse=True)
@@ -386,7 +369,7 @@ def sonic_mgmt_ipv6_addr(engines):
     return sonic_mgmt_ipv6_addr
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def uninstall_requests_cache():
     """
     Uninstall requests cache for all tests to prevent interference with OpenAPI calls.
@@ -767,7 +750,7 @@ def list_of_executed_commands(engines, run_cli_coverage_flow, request):
 
 
 @pytest.fixture(scope="function")
-def clear_config(request, devices, engines, default_config_yml_path, root_dir, markers=None):
+def clear_config(request, devices, engines, default_config_yml_path, root_dir, skip_clear_config, markers=None):
     yield
 
     TestToolkit.tested_api = ApiType.NVUE
@@ -775,13 +758,16 @@ def clear_config(request, devices, engines, default_config_yml_path, root_dir, m
     logging.info(f"------- Test '{request.node.name}' {test_result} -------")
 
     try:
-        if test_result != TestConsts.SKIPPED and not is_cur_test_has_marker(request, 'skip_clear_config'):
+        should_skip = skip_clear_config or test_result == TestConsts.SKIPPED or is_cur_test_has_marker(request, 'skip_clear_config')
+        if not should_skip:
             with allure.step(f"Clear config for test {request.node.name}"):
                 """ if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
                      clear_security_config(item)
                 if hasattr(item, 'security_pexpect_ssh_session') and item.security_pexpect_ssh_session:
                     security_cleanup(item.security_pexpect_ssh_session)"""
                 devices.dut.clear_config(engines.dut, markers, default_config_yml_path, root_dir)
+        else:
+            logging.info("skipping clear_config functionality")
     except Exception as err:
         logging.warning("Failed to clear config:" + str(err))
     finally:
@@ -951,6 +937,15 @@ def disable_cli_coverage(request):
     :param request: pytest builtin
     """
     pytest.disable_cli_coverage = request.config.getoption('--disable_cli_coverage')
+
+
+@pytest.fixture(autouse=True)
+def skip_clear_config(request):
+    """
+    Method for getting skip_clear_config from pytest arguments
+    :param request: pytest builtin
+    """
+    return request.config.getoption('--skip_clear_config')
 
 
 def run_cli_coverage(item, markers):
@@ -1131,3 +1126,30 @@ def handle_la_marker_in_manufacture(engines, loganalyzer):
     oldest_syslog_id = get_oldest_syslog_id(engines.dut)
     new_marker = get_new_start_string(engines.dut, oldest_syslog_id, marker)
     insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
+
+
+def _validate_matrix_arg(matrix_arg: str) -> Optional[Dict]:
+    """
+    Validate matrix argument.
+    If the argument is a path to a json file, return the json object.
+    If the argument is a json string, return the json object.
+    If the argument is not a valid json string, raise a ValueError.
+    """
+    if matrix_arg.endswith('.json'):
+        path = Path(matrix_arg)
+        if not path.exists():
+            return
+
+        with path.open() as f:
+            matrix_arg = f.read()
+
+    try:
+        return json.loads(matrix_arg)
+    except json.JSONDecodeError:
+        raise ValueError(f"Invalid JSON string: {matrix_arg}")
+
+
+@pytest.fixture(scope='session')
+def provisioning(engines: EnginesT) -> str:
+    """ returns whether the system is dev or prod """
+    return DEVELOPMENT if SecureBootTool.is_dev_system(engines.dut) else PRODUCTION

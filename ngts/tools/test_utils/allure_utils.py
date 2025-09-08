@@ -18,7 +18,7 @@ _allure_step_stack = []  # push/pop items when enter/exit allure step. each item
 
 def print_step_log_info(log_info_msg: str, lineno, filename):
     """Prints log message with a 'fake' context (file-name and line-number)."""
-    formatters = {handler: handler.formatter for handler in logger.handlers}
+    formatters = {handler: handler.formatter for handler in logger.handlers if handler.formatter}
     for handler, formatter in formatters.items():
         orig_logger_format: str = formatter._fmt
         new_logger_format = orig_logger_format.replace('%(filename)s', filename).replace('%(lineno)s', str(lineno))

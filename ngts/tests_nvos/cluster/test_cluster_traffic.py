@@ -50,13 +50,21 @@ def test_cluster_traffic_basic_test(engines, devices, test_api, has_loopbox, sta
             logger.info("Setting cluster state to enabled")
             ClusterTools.start_cluster(cluster, setup_name, output_format)
 
+        with allure.step("Check cluster status"):
+            playbook = "check_cluster_status.yml"
+            status_check = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
+                                                                              playbook,
+                                                                              '-e "nvflash_path=nvflash/nvflash_eng" -vvv')
+
         with allure.step("Running run_mpi_basic_test"):
             playbook = "run_mpi_basic_test.yml"
             traffic_status = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
                                                                                 playbook,
                                                                                 '-e "nvflash_path=nvflash/nvflash_eng" ' +
                                                                                 "--skip-tags 'check_status' -vvv")
-            assert traffic_status, f"Playbook {playbook} failed. Please check test log to see what step failed"
+
+        # Final assertion - show what failed
+        _assert_test_results(status_check, traffic_status)
 
     finally:
         pass
@@ -79,13 +87,21 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
             logger.info("Setting cluster state to enabled")
             ClusterTools.start_cluster(cluster, setup_name, output_format)
 
+        with allure.step("Check cluster status"):
+            playbook = "check_cluster_status.yml"
+            status_check = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
+                                                                              playbook,
+                                                                              '-e "nvflash_path=nvflash/nvflash_eng" -vvv')
+
         with allure.step("Running run_mpi_all_test"):
             playbook = "run_mpi_all_test.yml"
             traffic_status = AnsiblePlaybooksTool.run_playbook_and_check_result(ansible_inventory_file,
                                                                                 playbook,
                                                                                 '-e "nvflash_path=nvflash/nvflash_eng" ' +
                                                                                 "--skip-tags 'check_status' -vvv")
-            assert traffic_status, f"Playbook {playbook} failed. Please check test log to see what step failed"
+
+        # Final assertion - show what failed
+        _assert_test_results(status_check, traffic_status)
 
     finally:
         pass

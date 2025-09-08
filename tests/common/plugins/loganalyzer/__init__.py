@@ -1,5 +1,7 @@
 import logging
+import allure
 import pytest
+import time
 
 from .loganalyzer import LogAnalyzer, DisableLogrotateCronContext
 from tests.common.errors import RunAnsibleModuleFail
@@ -98,7 +100,14 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
             analyzer = LogAnalyzer(ansible_host=duthost, marker_prefix=request.node.name, request=request)
             analyzer.load_common_config()
             analyzers[duthost.hostname] = analyzer
-    markers = parallel_run(analyzer_add_marker, [analyzers], {}, duthosts, timeout=120)
+
+    with allure.step("Marker"):
+        markers_start_time = time.time()
+        markers = parallel_run(analyzer_add_marker, [analyzers], {}, duthosts, timeout=120)
+        markers_end_time = time.time()
+        markers_execution_time = markers_end_time - markers_start_time
+        logging.info(f"Marker took {markers_execution_time:.2f} seconds to execute")
+        allure.attach(f"Marker took {markers_execution_time:.2f} seconds to execute")
 
     yield analyzers
 

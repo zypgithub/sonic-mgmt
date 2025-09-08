@@ -52,7 +52,7 @@ def test_show_fetch_file(engines):
     }
 
     with allure.step('fetch {}'.format(yaml_file)):
-        system.config.action_fetch(remote_url, base_url='')
+        system.config.action_fetch(remote_url, action_expected_str)
 
     with allure.step('verify nv show system config files command after fetch'):
         assert expected_dict == \
@@ -80,7 +80,7 @@ def test_export_applied_configurations(engines):
     """
     system = System(None)
     files_path = '/host/config_files/'
-    action_expected_str = "Exporting completed"
+    action_expected_str = "Action succeeded"
     with allure.step('export {}'.format('current_conf.yaml')):
         system.config.action_export('current_conf.yaml', action_expected_str)
 
@@ -132,18 +132,18 @@ def test_rename_and_upload(engines):
         remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + yaml_file)
 
     with allure.step('fetch {}'.format(yaml_file)):
-        system.config.action_fetch(remote_url, base_url='')
+        system.config.action_fetch(remote_url)
 
     with allure.step('Rename image and verify'):
         new_name = RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits) + '.yaml'
         expected_str = "config file {} renamed to {}".format(yaml_file, new_name)
         fetched_config_file = system.config.files.file_name[yaml_file]
-        fetched_config_file.rename_and_verify(new_name)
+        fetched_config_file.rename_and_verify(new_name, expected_str)
 
     with allure.step('upload file'):
         upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
 
-        fetched_config_file.action_upload(upload_path).verify_result()
+        fetched_config_file.action_upload(upload_path)
         with allure.step("Validate file was uploaded"):
             with allure.step("file exist under upload path"):
                 assert remote_server_engine.run_cmd(
@@ -179,14 +179,14 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete all files'):
         delete_all = system.config.files.file_name['']
-        delete_all.action_delete().verify_result()
+        delete_all.action_delete()
 
     with allure.step('fetch 3 yaml files'):
         for file in YAML_FILES_LIST:
             with allure.step('get the remote url'):
                 remote_url = generate_scp_uri_using_player(engines.sonic_mgmt, YAML_FILES_PATH + file)
             with allure.step('fetch {}'.format(file)):
-                system.config.action_fetch(remote_url, base_url='')
+                system.config.action_fetch(remote_url)
 
     with allure.step('run nv config replace'):
         output = TestToolkit.GeneralApi[TestToolkit.tested_api].replace_config(engines.dut, YAML_FILES_LIST[0])
@@ -204,7 +204,7 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete one of the config files'):
         file_to_delete = system.config.files.file_name[YAML_FILES_LIST[1]]
-        file_to_delete.action_delete().verify_result()
+        file_to_delete.action_delete("Action succeeded")
 
         with allure.step('verify show command output after delete'):
             show_output = OutputParsingTool.parse_json_str_to_dictionary(system.config.files.show()).verify_result()
@@ -214,7 +214,7 @@ def test_patch_replace_delete(engines):
 
     with allure.step('delete all files'):
         delete_all = system.config.files.file_name['']
-        delete_all.action_delete().verify_result()
+        delete_all.action_delete()
 
         with allure.step('verify after delete all'):
             show_output = system.config.files.show(output_format='auto')
@@ -239,10 +239,10 @@ def test_config_bad_flow(engines):
     with allure.step('trying to upload non exist file'):
         with allure.step('get remote server engine'):
             upload_path = generate_scp_uri_using_player(engines.sonic_mgmt, '/tmp/')
-        fetched_config_file.action_upload(upload_path).verify_result(False, "File not found")
+        fetched_config_file.action_upload(upload_path, "File not found")
 
     with allure.step('trying to rename non exist file'):
-        fetched_config_file.action_rename("Not_file").verify_result(False, "File not found")
+        fetched_config_file.action_rename("Not_file", "File not found")
 
     with allure.step('trying to delete non exist file'):
-        fetched_config_file.action_delete().verify_result(False, "File not found")
+        fetched_config_file.action_delete("File not found")

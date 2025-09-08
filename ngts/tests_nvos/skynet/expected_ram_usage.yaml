@@ -21,7 +21,7 @@ master:
   #  bgpmon: 20
   #  fpmsyncd: 5
     orchagent: 55
-    ntpd: 5
+    ntpd: 5 
    # neighsyncd: 5
    # vlanmgrd: 5
     intfmgrd: 5
@@ -31,3 +31,9 @@ master:
    # nbrmgrd: 5
    # vxlanmgrd: 5
    # sensord: 10
+  N5500_LD: # Juliet GB300
+    total: 7634
+    sx_sdk: 1200
+    syncd: 300
+    nmx: 500
+    gnmi: 500

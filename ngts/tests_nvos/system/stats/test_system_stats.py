@@ -1026,10 +1026,14 @@ def clear_all_internal_and_external_files(engine, system, category_list):
 
 def check_category_internal_files_exist(engine, category_list):
     output = engine.run_cmd("ls /var/stats")
-    output_list = list(filter(None, output.split(' ')))
-    assert len(output_list) == len(category_list), "Categories number of files is not as expected"
-    for cat in category_list:
-        assert cat in output, f"{cat} internal file is missing"
+    output_list = list(filter(None, output.strip().split()))
+    expected_files = [f"{cat}.csv" for cat in category_list]
+    missing = [file for file in expected_files if file not in output_list]
+    extra = [file for file in output_list if file not in expected_files]
+    if "mgmt-interface.csv.old" in extra:
+        extra.remove("mgmt-interface.csv.old")
+    assert not missing, f"Missing expected files: {missing}"
+    assert not extra, f"Unexpected extra files found: {extra}"
 
 
 def validate_upload_stats_file(engines, system, file, delete=True):

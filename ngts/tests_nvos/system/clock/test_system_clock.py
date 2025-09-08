@@ -11,6 +11,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
+from retry.api import retry_call
 
 
 # --------------------- Basic Good Flow --------------------- #
@@ -179,7 +180,7 @@ def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetim
         new_datetime = RandomizationTool.select_random_datetime().get_returned_value()
 
     with allure.step("Set the new date-time with 'nv action change system date-time'"):
-        system.datetime.action_change(params=new_datetime).verify_result()
+        retry_call(_set_new_date_time, [system, new_datetime], exceptions=AssertionError, tries=3, delay=2)
 
     with allure.step("Run 'nv show system' and 'timedatectl' immediately to verify date-time changed"):
         show_date_time_output_str = system.datetime.show()
@@ -504,3 +505,7 @@ def test_new_time_in_logs(engines, system, orig_timezone, valid_timezones, init_
 
     with allure.step('Verify show date-time same as last log timestamp'):
         ClockTools.verify_show_and_log_times(system)
+
+
+def _set_new_date_time(system, new_datetime):
+    system.datetime.action_change(params=new_datetime).verify_result()

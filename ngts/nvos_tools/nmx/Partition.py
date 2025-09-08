@@ -28,7 +28,7 @@ class Partition(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Delete partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_delete,
-                                                                "Action succeeded", engine,
+                                                                "successfully deleted", engine,
                                                                 self.get_resource_path())
 
 
@@ -63,5 +63,5 @@ class PartitionId(BaseComponent):
         engine = engine if engine else TestToolkit.engines.dut
         with allure.step('Delete partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_delete,
-                                                                "Action succeeded", engine,
+                                                                "successfully deleted", engine,
                                                                 self.get_resource_path())

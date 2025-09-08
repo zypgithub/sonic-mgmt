@@ -358,3 +358,69 @@ def test_unset_system_message(engines, devices, test_api):
 
     finally:
         clear_system_messages(system, engines)
+
+
+@pytest.mark.banner
+@pytest.mark.system
+@pytest.mark.simx
+def test_system_reload_for_system_message(engines, devices, random_api):
+    """
+    Run reload system  command and verify the system messages are changed to default
+        Test flow:
+            1. Run 'nv set system message pre-login'
+            2. Run 'nv set system message post-login'
+            3. Run 'nv set system message post-logout'
+            4. Run 'nv show system message' and verify system messages are set
+            5. Run system reload
+            6. Run 'nv show system message' and verify systems messages are set to defaults
+    """
+    TestToolkit.tested_api = random_api
+    new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
+    new_post_login_msg = "Testing POST LOGIN MESSAGE"
+    new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
+    system = System()
+
+    try:
+        with allure.step('Run set system message pre-login command and apply config'):
+            system.message.set(op_param_name=SystemConsts.PRE_LOGIN_MESSAGE, op_param_value=f'"{new_pre_login_msg}"',
+                               apply=True, dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system message post-login command and apply config'):
+            system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE, op_param_value=f'"{new_post_login_msg}"',
+                               apply=True, dut_engine=engines.dut).verify_result()
+
+        with allure.step('Run set system message post-logout command and apply config'):
+            system.message.set(op_param_name=SystemConsts.POST_LOGOUT_MESSAGE, op_param_value=f'"{new_post_logout_msg}"',
+                               apply=True, dut_engine=engines.dut).verify_result()
+
+        with allure.step('Verify system messages are changed to new messages in show system'):
+            message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
+                                                        new_pre_login_msg).verify_result()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
+                                                        new_post_login_msg).verify_result()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
+                                                        new_post_logout_msg).verify_result()
+
+        with allure.step('Run system reload command and apply config'):
+            reload_cmd_set = "nv action reboot system"
+            # Reload system and wait until the system is ready
+            DutUtilsTool.reload(engine=engines.dut, device=devices.dut, command=reload_cmd_set, confirm=True,
+                                reboot_params=RebootParams(should_wait_till_system_ready=True)
+                                ).verify_result()
+            # Reconnect
+            ssh_connection = ConnectionTool.create_ssh_conn(engines.dut.ip, engines.dut.username, engines.dut.password).get_returned_value()
+
+        with allure.step('Verify system messages are changed to default in show system'):
+            TestToolkit.tested_api = ApiType.NVUE
+            message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.PRE_LOGIN_MESSAGE,
+                                                        devices.dut.pre_login_message).verify_result()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGIN_MESSAGE,
+                                                        devices.dut.post_login_message).verify_result()
+            ValidationTool.verify_field_value_in_output(message_output, SystemConsts.POST_LOGOUT_MESSAGE,
+                                                        SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE).verify_result()
+            TestToolkit.tested_api = random_api
+
+    finally:
+        clear_system_messages(system, engines)

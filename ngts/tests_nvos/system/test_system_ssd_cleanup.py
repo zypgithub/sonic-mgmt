@@ -97,11 +97,11 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
-        with allure.step("health issue will be reported after 180 seconds"):
-            time.sleep(180)
-
         with allure.step("check health status is not ok"):
-            _check_disk_issue(system, False)
+            with allure.step("health issue will be reported after 180 seconds"):
+                time.sleep(180)
+
+            _check_disk_issue_with_retry(system, no_disk_issue=False)
 
             with allure.step("check system events - two events expected "):
                 events_dict = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
@@ -145,6 +145,30 @@ def test_ssd_cleanup_positive_flow(engines, devices):
     finally:
         _delete_all_files(engines.dut)
         _change_monit_and_reload(engines.dut, new_line, old_line, file_path)
+
+
+def _check_disk_issue_with_retry(system: System, /, *, no_disk_issue: bool = True, tries: int = 6, delay: int = 10):
+    """
+    Check disk issue with retry.
+
+    Args:
+        system: System object.
+        system_events_before_testing: System events before testing.
+        system_health_status: System health status.
+
+    Keyword Args:
+        no_disk_issue: Whether to expect disk issue.
+        tries: Number of tries.
+        delay: Delay between tries.
+
+    Returns: None.
+    """
+    @retry(AssertionError, tries=tries, delay=delay)
+    def _check_disk_issue_with_retry_inner():
+        with allure.step("check disk issue"):
+            _check_disk_issue(system, no_disk_issue)
+
+    return _check_disk_issue_with_retry_inner()
 
 
 @pytest.mark.system

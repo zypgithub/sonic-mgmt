@@ -40,7 +40,7 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
+def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox, standalone_system):
     """
     validate all show fae interface nvl5 commands.
 
@@ -52,7 +52,7 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox):
     5. Clear counters
     """
 
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     dut_device = devices.dut
     platform = Platform()
 
@@ -281,6 +281,11 @@ def test_interface_xdr_slow_speed_access_ports(engines, devices, random_api, set
 @pytest.mark.interface
 @pytest.mark.multiplanar
 def test_interface_xdr_slow_speed_trunk_ports(engines, devices, random_api, setup_name, standalone_system):
+    skip_if_no_trunk_links(devices)
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    _set_unset_interface_xdr_slow_speed(engines, devices, random_api, setup_name,
+                                        standalone_system, summarized_switch_ports, prefix='sw')
+
     skip_if_no_trunk_links(devices)
     summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
     _set_unset_interface_xdr_slow_speed(engines, devices, random_api, setup_name,

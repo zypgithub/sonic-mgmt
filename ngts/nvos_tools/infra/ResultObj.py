@@ -32,6 +32,9 @@ class ResultObj:
         self.update(result, info, returned_value, issue_type, duration)
         self._add_instance(self)
 
+    def __repr__(self):
+        return f'{self.__class__.__name__}({self.result}, {self.info=!r}, {self.returned_value=!r}, {self.issue_type=}, {self.duration=})'
+
     def update(self, result, info="", returned_value=None, issue_type=IssueType.Unknown, duration=None):
         self._result = result
         self._info = info

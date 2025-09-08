@@ -25,3 +25,13 @@ class OpenApiPlatformCli(OpenApiBaseCli):
             params["parameters"] = {'new-name': file_name}
         return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_fetch_firmware(engine, resource_path, remote_url):
+        logging.info("Running action: 'fetch' on dut using OpenApi")
+        params = {
+            "state": "start",
+            "parameters": {"remote-url": remote_url}
+        }
+        return OpenApiCommandHelper.execute_action(ActionType.FETCH, engine.engine.username, engine.engine.password,
+                                                   engine.ip, resource_path, params)

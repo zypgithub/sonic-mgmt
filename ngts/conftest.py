@@ -8,7 +8,7 @@ NOTE: Add here only fixtures and methods that can be used for canonical and comm
 if your methods only apply for canonical setups please add them in ngts/tests/conftest.py
 
 """
-from typing import Callable
+from typing import Callable, List
 import json
 import logging
 import os
@@ -43,7 +43,27 @@ logger = logging.getLogger()
 CleanUpT = Callable[[Callable[[], None]], None]
 
 
-def pytest_sessionstart(session):
+def _disable_logging_root_handlers():
+    """
+    Disable logging root handlers if pytest is running in live mode (-s / --capture=no).
+    """
+    root, has_live_hdlr = logging.getLogger(), False
+    stream_hdlrs: List[logging.StreamHandler] = []
+
+    from _pytest.logging import _LiveLoggingStreamHandler
+
+    for hdlr in root.handlers:
+        if isinstance(hdlr, _LiveLoggingStreamHandler):  # pytest live logging handler
+            has_live_hdlr = True
+        elif isinstance(hdlr, logging.StreamHandler):  # default python root logging stream handler
+            stream_hdlrs.append(hdlr)
+
+    if has_live_hdlr:
+        for hdlr in stream_hdlrs:
+            hdlr.setLevel(logging.ERROR)
+
+
+def pytest_sessionstart(session: pytest.Session):
     """Clear cached variables from previous pytest session"""
 
     session.config.cache.set(PytestConst.LA_DYNAMIC_IGNORES_LIST, None)
@@ -52,8 +72,11 @@ def pytest_sessionstart(session):
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_BRANCH_NAME, None)
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_IMAGE_TYPE, None)
 
+    # Disable stream logging if pytest is running in live mode
+    _disable_logging_root_handlers()
 
-def pytest_collection(session):
+
+def pytest_collection(session: pytest.Session):
     topology = get_topology_from_noga(session)
     logger.debug('Get switch devdescription from Noga')
     switch_attributes = topology.players['dut']['attributes'].noga_query_data['attributes']
@@ -61,6 +84,12 @@ def pytest_collection(session):
 
     platform = json.loads(devinfo).get('platform')
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_PLATFORM_TYPE, platform)
+
+    # If pytest is running in collect-only mode, skip the rest of the code
+    # WHY? because we want the collection mode to run faster
+    if session.config.getoption('--collect-only'):
+        return
+
     if is_deploy_run():
         # Required for prevent SSH attempts into DUT at the beginning of deploy image test(in case when device in ONIE)
         branch = 'master'
@@ -354,6 +383,16 @@ def standalone_system(setup_name):
     :return: if setup has loopbox or not
     """
     return setup_name not in Configurations.non_standalone_systems
+
+
+@pytest.fixture(scope='session')
+def wrong_shunt_resistor_system(setup_name):
+    """
+    Method to check if system has loopbox.
+    :param setup_name: the setup name
+    :return: if setup has loopbox or not
+    """
+    return setup_name in Configurations.systems_with_wrong_shunt_resistor
 
 
 @pytest.fixture(scope="session")
@@ -880,3 +919,31 @@ def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
 
         request.addfinalizer(wrapped_fn)
     return _register
+
+
+@pytest.fixture
+def unregister_cleanup(request: pytest.FixtureRequest):
+    """
+    Fixture for removing a finalizer from the request
+    :param request: pytest builtin
+    :return: function for removing a finalizer
+
+    Usage:
+    ```python
+    def my_cleanup():
+        ...
+
+    def test_my_test(register_cleanup, unregister_cleanup):
+        # do something
+        register_cleanup(my_cleanup)
+        # do something
+        unregister_cleanup(my_cleanup)
+        # do something
+    ```
+    """
+    def _unregister_cleanup(cleanup_func):
+        try:
+            request.session._setupstate.stack[request.node][0].remove(cleanup_func)
+        except ValueError:  # the function pointer is not registered in the stack
+            pass
+    return _unregister_cleanup

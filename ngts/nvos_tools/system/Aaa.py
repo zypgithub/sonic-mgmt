@@ -18,3 +18,4 @@ class Aaa(BaseComponent):
         self.ldap = Ldap(self)
         self.tacacs = Tacacs(self)
         self.authentication = Authentication(self)
+        self.allow_reset_local_passwords = BaseComponent(self, path='/allow-reset-local-passwords')

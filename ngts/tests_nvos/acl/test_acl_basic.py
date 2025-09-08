@@ -640,6 +640,7 @@ def test_acl_match_dest_port(engines, random_api, topology_obj):
     2. send packet
     3. validate counter increased
     """
+    TestToolkit.tested_api = random_api
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     dest_port_list = ['ANY', 'ssh', 1244]

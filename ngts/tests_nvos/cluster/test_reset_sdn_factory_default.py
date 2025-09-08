@@ -28,9 +28,15 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
     config_files_deleted = False
+    cluster = Cluster()
+
     try:
+        with allure.step("Disable cluster"):
+            cluster.unset(apply=True).verify_result()
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down')
+
         with allure.step("Run sdn reset factory while cluster is disabled"):
-            cluster = Cluster()
             sdn = Sdn()
             output = sdn.factory_default.action_reset(param='force').verify_result(should_succeed=False)
 
@@ -44,7 +50,8 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
 
     finally:
         cluster.unset(apply=True).verify_result()
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                         nmx_c_expected_state='down')
 
 
 @pytest.mark.nmx

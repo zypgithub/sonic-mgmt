@@ -13,6 +13,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.DutUtilsTool import ping_device
 from ngts.nvos_tools.infra.RandomizationTool import random_api
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.System import System
@@ -29,18 +30,18 @@ logger = logging.getLogger()
                                                      [random_api(), "force"],
                                                      [ApiType.NVUE, "force immediate"]  # todo openapi multiple flags
                                                      ])
-def test_power_cycle_system(engines, devices, test_name, test_api, force_str):
+def test_power_cycle_system(engines, devices, topology_obj, test_name, test_api, force_str):
     """Test for `nv action power-cycle system [force] [immediate]`. See documentation of _test functions below."""
     TestToolkit.tested_api = test_api
     if ActionConsts.POWER_CYCLE in devices.dut.supported_commands:
         with allure.step("Test action power-cycle"):
-            _test_command_supported(engines, devices, test_name, test_api, force_str)
+            _test_command_supported(engines, devices, topology_obj, test_name, test_api, force_str)
     else:
         with allure.step("action power-cycle not supported. Test negative flow"):
             _test_command_not_supported(engines, devices, test_name, test_api, force_str)
 
 
-def _test_command_supported(engines, devices, test_name, test_api, force_str):
+def _test_command_supported(engines, devices, topology_obj, test_name, test_api, force_str):
     """
     - Make some config change (in order to verify it is removed after the reset)
     - nv action power-cycle system [force]
@@ -60,7 +61,7 @@ def _test_command_supported(engines, devices, test_name, test_api, force_str):
         logger.info(f"power-cycle took {duration} seconds")
 
     with allure.step("Assert that power-cycle happened"):
-        bmc_uptime = get_bmc_uptime_seconds(engines.dut)
+        bmc_uptime = get_bmc_uptime_seconds(engines.dut, topology_obj)
         assert bmc_uptime < (datetime.now() - start_time).total_seconds(), \
             f"Power-cycle did not actually happen: {bmc_uptime=}"
 
@@ -97,7 +98,8 @@ def do_power_cycle(force_str: str) -> ResultObj:
                                      expected_output='System will power cycle in a few seconds')
 
 
-def get_bmc_uptime_seconds(engine: LinuxSshEngine) -> float:
-    bmc_response = json.loads(BmcTool.send_get_request(engine, BmcTool.BMC_LOCAL_IP, "Managers/BMC_0"
-                                                       ).get_returned_value())
+def get_bmc_uptime_seconds(engine: LinuxSshEngine, topology_obj) -> float:
+    bmc_ip_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['bmc_ip']
+    assert ping_device(bmc_ip_address), "BMC IP {} is not reachable".format(bmc_ip_address)
+    bmc_response = json.loads(BmcTool.send_get_request(engine, bmc_ip_address, "Managers/BMC_0").get_returned_value())
     return bmc_response["Oem"]["Nvidia"]["UptimeSeconds"]

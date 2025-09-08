@@ -132,3 +132,7 @@ def get_switch_type(topology):
     finally:
         logging.info(f"Switch type: {switch_type}")
         return switch_type
+
+
+def get_file_hash(engine: LinuxSshEngine, file_path: str) -> str:
+    return engine.run_cmd(f"sha1sum {file_path}").split(' ')[0]

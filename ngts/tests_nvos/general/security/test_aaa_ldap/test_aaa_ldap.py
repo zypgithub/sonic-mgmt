@@ -352,30 +352,33 @@ def test_cert_verify(test_flow, test_api, addressing_type, engines, devices, top
         for encryption_mode in LdapEncryptionModes.ALL_MODES:
             with allure.independent_step(f'Verify with encryption mode: {encryption_mode}'):
                 user_to_validate = random.choice(ldap_server_info.users)
+                try:
+                    with allure.step('Add the server CA certificate to the switch'):
+                        add_ldap_server_certificate_to_switch(engines.dut, engines)
 
-                with allure.step('Add the server CA certificate to the switch'):
-                    add_ldap_server_certificate_to_switch(engines.dut, engines)
+                    with allure.step(f'Configure encryption mode: {encryption_mode}'):
+                        update_ldap_encryption_mode(engines, item, ldap_server_info, server_resource, encryption_mode,
+                                                    False)
+                        wait_for_ldap_nvued_restart_workaround(item)
 
-                with allure.step(f'Configure encryption mode: {encryption_mode}'):
-                    update_ldap_encryption_mode(engines, item, ldap_server_info, server_resource, encryption_mode,
-                                                False)
-                    wait_for_ldap_nvued_restart_workaround(item)
-
-                with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
-                    verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
-                                verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
-
-                with allure.step('Restore certificates file'):
-                    remove_ldap_server_certificate_to_switch(engines.dut)
-                    if is_bug_active(4273468):
-                        restart_nslcd(engines.dut)
-                    wait_for_ldap_nvued_restart_workaround(item)
-
-                if encryption_mode != LdapEncryptionModes.NONE:
-                    with allure.step(
-                            f'Verify auth with LDAP user when there is no CA cert in the switch - expect fail'):
-                        verify_auth(test_flow, engines, topology_obj, bad_flow_users=[user_to_validate],
+                    with allure.step(f'Verify auth with LDAP user when there is CA cert in the switch - expect success'):
+                        verify_auth(test_flow, engines, topology_obj, good_flow_users=[user_to_validate],
                                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+
+                    with allure.step('Restore certificates file'):
+                        remove_ldap_server_certificate_to_switch(engines.dut)
+                        if is_bug_active(4273468):
+                            restart_nslcd(engines.dut)
+                        wait_for_ldap_nvued_restart_workaround(item)
+
+                    if encryption_mode != LdapEncryptionModes.NONE:
+                        with allure.step(
+                                f'Verify auth with LDAP user when there is no CA cert in the switch - expect fail'):
+                            verify_auth(test_flow, engines, topology_obj, bad_flow_users=[user_to_validate],
+                                        verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
+                except Exception as e:
+                    System().security.ca_certificate.cert_id[LdapConsts.CA_CERT_ID].action_delete().ignore_result()
+                    raise e
 
 
 @pytest.mark.security

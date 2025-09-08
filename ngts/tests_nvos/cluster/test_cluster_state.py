@@ -20,8 +20,10 @@ logger = logging.getLogger()
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     try:
@@ -69,7 +71,7 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
         with allure.step("Apply a non defined state"):
             output = cluster.set(op_param_name="state", op_param_value=ClusterConsts.UNDEFINED_STATE).get_returned_value(should_succeed=False)
             output = output.split('\n')[-1]
-            assert ClusterConsts.UNDEFINED_STATE_DICT[TestToolkit.tested_api] in output, f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[TestToolkit.tested_api]}, " \
+            assert ClusterConsts.UNDEFINED_STATE_DICT[random_api] in output, f"Expected error message {ClusterConsts.UNDEFINED_STATE_DICT[random_api]}, " \
                 f"actual message received {output}"
 
         with allure.step("Running 'nv set cluster state enabled' and validating state changed"):
@@ -111,7 +113,7 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -132,7 +134,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state_with_stressed_resources(engines, devices, random_api, test_name, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):

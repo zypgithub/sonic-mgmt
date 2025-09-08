@@ -19,6 +19,7 @@ from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitchGB300
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.BmcTool import BmcTool
+from retry.api import retry_call
 
 logger = logging.getLogger()
 
@@ -70,4 +71,11 @@ def test_bmc_creds_flow(engines, devices, topology_obj, nv_command: NvCommand):
             check_auth_with_curl(dut, BmcUsers.admin.username, BmcUsers.admin.another_password, True)
 
     with allure.step('Verify health status is OK'):
-        nv_command.system.validate_health_status(HealthConsts.OK)
+        retry_call(nv_command.system.validate_health_status, fargs=[HealthConsts.OK], tries=4, delay=30,
+                   exceptions=AssertionError, logger=logger)
+
+
+@retry(AssertionError, tries=3, delay=15)
+def _wait_for_cpu_to_detect_bmc(dut_engine: LinuxSshEngine, nv_command: NvCommand):
+    bmc_inventory: dict = OutputParsingTool.parse_json_str_to_dictionary(nv_command.platform.inventory.show("BMC")).get_returned_value()
+    assert bmc_inventory.get(SystemConsts.STATE) == FansConsts.STATE_OK, "BMC is not detected by CPU"

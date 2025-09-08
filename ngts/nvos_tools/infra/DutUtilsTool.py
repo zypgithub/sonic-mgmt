@@ -288,7 +288,7 @@ def _ping_device(ip_add):
             raise Exception(f"ip address {ip_add} is unreachable")
 
 
-@retry(Exception, tries=80, delay=15)
+@retry(Exception, tries=48, delay=5)
 def wait_for_system_table_to_exist(engine):
     output = DatabaseTool.sonic_db_cli_hgetall(engine=engine, asic="", db_name=DatabaseConst.STATE_DB_NAME,
                                                table_name='\"SYSTEM_READY|SYSTEM_STATE\"')
@@ -298,7 +298,7 @@ def wait_for_system_table_to_exist(engine):
     return True
 
 
-@retry(Exception, tries=80, delay=15)
+@retry(Exception, tries=36, delay=5)
 def wait_until_cli_is_up(engine):
     logger.info('Checking the status of nvued')
     output = DutUtilsTool.run_cmd_with_disconnect(engine, 'nv show system')
@@ -306,7 +306,7 @@ def wait_until_cli_is_up(engine):
         raise Exception("Waiting for NVUE to become functional")
 
 
-@retry(Exception, tries=15, delay=10)
+@retry(Exception, tries=24, delay=5)
 def wait_on_systemctl_initialization(engine):
     if not is_bug_active(4434382):
         output = DutUtilsTool.run_cmd_with_disconnect(engine, SystemConsts.SYSTEMCTL_STATUS_CMD)

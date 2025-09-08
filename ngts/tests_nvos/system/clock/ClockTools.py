@@ -1,5 +1,6 @@
 import random
 import time
+import pytz
 
 from ngts.tools.test_utils import allure_utils as allure
 import logging
@@ -121,7 +122,14 @@ class ClockTools:
     @staticmethod
     def parse_datetime(s: str) -> datetime:
         """Parses YYYY-MM-DD hh:mm:ss into datetime object."""
-        return datetime.strptime(s, StatsConsts.SYSTEM_TIME_FORMAT)
+        logging.debug(f"Parsing datetime: {s}")
+        if (num_spaces := s.count(' ')) == 1:  # most likely a local time
+            return datetime.strptime(s, StatsConsts.SYSTEM_TIME_FORMAT)
+        elif num_spaces == 2:  # it's a timezone aware datetime
+            s, tz = s.rsplit(maxsplit=1)
+            logging.debug(f"Parsed datetime: {s}, timezone: {tz}")
+            return pytz.timezone(tz).localize(datetime.strptime(s, StatsConsts.SYSTEM_TIME_FORMAT))
+        raise ValueError(f"Invalid datetime format: {s}")
 
     @staticmethod
     def alternate_capital_lower(s):

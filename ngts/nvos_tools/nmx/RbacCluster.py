@@ -85,7 +85,7 @@ class RbacAppMode(BaseComponent):
         resource_path = self.get_resource_path()
         with allure.step(f"Update cluster app RBAC mode to '{mode}': {resource_path}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
-                                                   resource_path, 'mode', mode)
+                                                   resource_path, 'rbac_mode', mode)
 
     def action_restore(self, dut_engine=None, should_succeed: bool = True) -> bool:
         """nv action restore cluster apps <app-name> rbac mode"""

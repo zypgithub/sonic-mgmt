@@ -31,5 +31,14 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_nvl5_platform.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_init_flow_services_dockers.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_sanity.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/CI/nvos_ci_cluster_app_mngr_security_cli.cases </cases>
+	</test>
 
 </DBDEF>

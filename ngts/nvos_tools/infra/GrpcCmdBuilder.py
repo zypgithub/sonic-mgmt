@@ -3,6 +3,8 @@ import json
 import os
 from typing import Dict, Optional, Union
 
+from ngts.nvos_tools.infra.IpTool import IpTool
+
 
 class GrpcCmdBuilder:
     CMD_TEMPLATE = "grpcurl {rpc_header} {opts} {host}:{port} {endpoint}"
@@ -55,8 +57,15 @@ class GrpcCmdBuilder:
         self.endpoint_loc = endpoint
         return self
 
+    def _handle_ipv6(self) -> str:
+        host = self.host
+        if not IpTool.is_address_ipv6(host) or host.startswith("["):
+            return host
+        return f"[{host}]"
+
     def build(self) -> str:
         self.endpoint_loc.strip()
         self.options.strip()
         self.rpc_header.strip()
-        return GrpcCmdBuilder.CMD_TEMPLATE.format(host=self.host, port=self.port, opts=self.options, endpoint=self.endpoint_loc, rpc_header=self.rpc_header).strip()
+        host = self._handle_ipv6()
+        return GrpcCmdBuilder.CMD_TEMPLATE.format(host=host, port=self.port, opts=self.options, endpoint=self.endpoint_loc, rpc_header=self.rpc_header).strip()

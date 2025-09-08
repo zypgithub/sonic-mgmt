@@ -252,6 +252,7 @@ def test_techsupport_bmc_badflow(engines, test_name):
     8. Perform cleanup operations.
     """
 
+    # LA ignores some BMC errors during this test, pending on FR 4210208
     system = System()
     try:
         dut_engine: LinuxSshEngine = TestToolkit.engines.dut

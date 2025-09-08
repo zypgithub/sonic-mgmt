@@ -516,7 +516,7 @@ def verify_config_files_content_not_changed(sdn, initial_config_contents, engine
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
-        if file_type == 'chassis_mapping' and is_bug_active(4222718):
+        if file_type == 'chassis_mapping':
             continue
         init_file_content = initial_config_contents.get(file_type)
         if set(current_file_content.split('\n')) != set(init_file_content.split('\n')):

@@ -58,11 +58,11 @@ class ClusterAppUserCfgJsonFields:
 
 class ClusterAppConsts:
 
-    def __init__(self, app_name: str, external_port):
+    def __init__(self, app_name: str, external_port, state: str = Defaults.STATE):
         self.app_name: str = app_name
         self.user_config_json_path: str = USR_CFG_JSON_PATH
         self.user_config_json_fields: ClusterAppUserCfgJsonFields = ClusterAppUserCfgJsonFields(app_name)
-        self.fields_that_must_exist_in_user_config_json: dict = {self.user_config_json_fields.state: Defaults.STATE}
+        self.fields_that_must_exist_in_user_config_json: dict = {self.user_config_json_fields.state: state}
         self.cert_private_key_path: str = f'/etc/{app_name}/cert' + '/{}.key'
         self.cert_public_key_path: str = f'/etc/{app_name}/cert' + '/{}.crt'
         self.cacert_path: str = f'/etc/{app_name}/ca_cert' + '/{}.crt'
@@ -76,7 +76,8 @@ NMX_C_CONSTS = ClusterAppConsts(
 
 NMX_T_CONSTS = ClusterAppConsts(
     app_name=ClusterApps.NMX_TELEMETRY,
-    external_port=DEFAULT_NMX_T_MGMT_PORT
+    external_port=DEFAULT_NMX_T_MGMT_PORT,
+    state=ENABLED
 )
 
 APP_CONSTS: Dict[str, ClusterAppConsts] = {ClusterApps.NMX_CONTROLLER: NMX_C_CONSTS,

@@ -16,6 +16,8 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger()
+WAIT_FOR_PORT_STATE_TRIES = 15
+WAIT_FOR_PORT_STATE_DELAY = 5
 
 
 class PortRequirements:
@@ -192,8 +194,7 @@ class Port(BaseComponent):
                                                                        output_format=output_format)
 
     @staticmethod
-    @retry(Exception, tries=15, delay=5)
-    def wait_for_port_state(port_obj, expected_state):
+    def _wait_for_port_state(port_obj, expected_state):
         with allure.step("Waiting for port {} state {}".format(port_obj.name, expected_state)):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 port_obj.interface.link.show()).get_returned_value()
@@ -241,3 +242,13 @@ class Port(BaseComponent):
     def get_transceiver_name(self):
         """ 'swA1p1pl3' --> 'swA1' """
         return re.search(r'^\D+\d+', self.name).group(0)
+
+    @staticmethod
+    def wait_for_port_state(port_obj, expected_state, tries=None, delay=None):
+        tries, delay = tries or WAIT_FOR_PORT_STATE_TRIES, delay or WAIT_FOR_PORT_STATE_DELAY
+
+        @retry(Exception, tries=tries, delay=delay)
+        def _wait_for_port_state():
+            Port._wait_for_port_state(port_obj, expected_state)
+
+        return _wait_for_port_state()

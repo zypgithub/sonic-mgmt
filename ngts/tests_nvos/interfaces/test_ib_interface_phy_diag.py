@@ -193,8 +193,8 @@ def _get_test_ports(engine, device) -> Tuple[Port, Port, Port, Port, Port]:
         '10.7.148.127': ('sw11p1s1', 'sw12p1s1', 'sw12p2s1'),
         '10.7.148.146': ('sw7p1s1', 'sw13p1s1', 'sw13p2s1'),
         '10.7.148.147': ('sw7p1s1', 'sw13p1s1', 'sw13p2s1'),
-        '10.7.145.52': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
-        '10.7.145.53': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
+        '10.7.148.160': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
+        '10.7.148.161': ('sw17p1s1', 'sw18p1s1', 'sw2p2s1'),
     }
     test_port, remote_port, other_port = [Port(p) for p in PORTS[engine.ip]]
     if isinstance(device, JulietSwitch):

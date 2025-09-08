@@ -37,9 +37,8 @@ INVALID_SHOW_EXPECTED_OUTPUT = {'NVUE': INVALID_SHOW_EXPECTED_OUTPUT_NVUE, 'Open
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = 'NVUE'
+def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     def verify_apps_attributes(output):
@@ -104,7 +103,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
             logger.info("Make sure there are no extra Unexpected apps")
             assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
 
-        # TestToolkit.tested_api = test_api
+        # TestToolkit.tested_api = random_api
 
         ClusterTools.stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system)
 
@@ -119,7 +118,7 @@ def test_cluster_app_start_stop(engines, devices, test_api, has_loopbox, standal
 def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     if has_loopbox:
         pytest.skip("Skipping test - tested on systems without loopbox - same flow.")
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -147,7 +146,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
 def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_api, test_name, has_loopbox, standalone_system, setup_name):
     if has_loopbox:
         pytest.skip("Skipping test - tested on systems without loopbox - same flow.")
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):
@@ -179,7 +178,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
-    TestToolkit.tested_api = 'NVUE'
+    TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
 
     with allure.step("Create Cluster object"):

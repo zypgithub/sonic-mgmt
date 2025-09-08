@@ -1,9 +1,9 @@
 import pytest
 import logging
+import time
 
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tools.test_utils import allure_utils as allure

@@ -26,6 +26,7 @@ BMC_LOG_LINES_MAX = 30
 
 @pytest.mark.disable_loganalyzer
 def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
+    # LA ignores some BMC errors during this test, pending on FR 4210208
     if is_bug_active(4359149) and isinstance(devices.dut, JulietNonScaleoutSwitchGB300):
         pytest.skip("Skipping test because we have a bug in bmc reset factory for gb300.")
     system = System()

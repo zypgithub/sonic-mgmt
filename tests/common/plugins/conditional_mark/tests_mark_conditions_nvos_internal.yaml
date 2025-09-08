@@ -172,21 +172,23 @@ tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
-    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160 and juliet-146 due to hardware issues"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed"
-      - "'juliet-146' in testbed"
-      - "'juliet-160' in testbed"
-
-tests_nvos/checklist/test_bios_manual_update.py:
-  skip:
-    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow. Also skipped on juliet-160 and juliet-146 due to hardware issues"
+    reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160, juliet-146 and juliet-195 due to hardware issues"
     conditions_logical_operator: or
     conditions:
       - "'juliet' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
+      - "'juliet-195' in testbed"
+
+tests_nvos/checklist/test_bios_manual_update.py:
+  skip:
+    reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow. Also skipped on juliet-160, juliet-146 due to hardware issues"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet' not in testbed"
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
+      - "'juliet-195' in testbed"
 
 tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
   skip:
@@ -816,5 +818,12 @@ ngts/tests_nvos/system/test_physical_monitor.py::test_physical_monitor:
     reason: "[NVOS - Design] Bug SW #4553201: [Non-Functional] | Physical monitor feature doesn't work on NVOS branch 5000"
     conditions:
       - https://redmine.mellanox.com/issues/4553201
+
+tests_nvos/platform/test_platform_staged_boot.py:
+  skip:
+    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
 
 ########################## NVOS IGNORE END ##########################

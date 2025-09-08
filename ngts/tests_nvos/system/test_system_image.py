@@ -321,15 +321,14 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
                 file_rand_name.action_install(reboot_params=False).verify_result(False, "Image does not exist")
 
         with allure.step("Boot-next bad flows"):
-            if not original_images[other_partition][ImageConsts.BUILD_ID]:
+            if not original_images[ImageConsts.PARTITION2_IMG][ImageConsts.BUILD_ID]:
                 with allure.independent_step(
-                        f"Boot-next {other_partition}, even though we have no image there"):
-                    system.image.action_boot_next(other_partition).verify_result(
-                        should_succeed=False, expected_value=f"No image on {other_partition}")
+                        f"Boot-next {ImageConsts.PARTITION2_IMG}, even though we have no image there"):
+                    system.image.action_boot_next(ImageConsts.PARTITION2_IMG, f"No image on {ImageConsts.PARTITION2_IMG}")
             with allure.independent_step("Boot-next random string"):
-                system.image.action_boot_next(RandomizationTool.get_random_string(10)).verify_result(False)
+                system.image.action_boot_next(RandomizationTool.get_random_string(10), "Error")
             with allure.independent_step("Boot-next the same partition (to revert any changes that may have happened)"):
-                system.image.action_boot_next(original_image_partition).verify_result()
+                system.image.action_boot_next(original_image_partition)
 
         with allure.step("Rename bad flows"):
             with allure.step("Rename image file that does not exist"):

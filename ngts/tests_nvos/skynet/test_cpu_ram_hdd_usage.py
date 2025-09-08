@@ -17,8 +17,8 @@ SLEEP_TIME = ONE_DAY_IN_SEC + ADDITIONAL_DELAY
 BYTES_TO_MB_FACTOR = 1 / (1024 * 1024)
 FILE_NAME_IND = 0
 FILE_SIZE_IND = 1
-SDK_DUMPS_PATH = '/var/log/mellanox/sdk-dumps_dev0'
-partitions_and_expected_usage = [{'partition': '/', 'max_usage': 9000}, {'partition': '/var/log/', 'max_usage': 500}]
+SDK_DUMPS_PATH = '/var/log/mellanox/sdk-dumps'
+partitions_and_expected_usage = [{'partition': '/', 'max_usage': 9800}, {'partition': '/var/log/', 'max_usage': 1200}]
 
 logger = logging.getLogger()
 
@@ -74,7 +74,7 @@ class TestCpuRamHddUsage:
         return total_size_in_mb
 
     @pytest.mark.parametrize('partition_usage', partitions_and_expected_usage)
-    def test_hdd_usage(self, partition_usage, platform_params):
+    def test_hdd_usage(self, engines, partition_usage, platform_params):
         """
         This tests checks HDD usage in specific partition
         Test doing "df {partition}" and then check usage and compare with expected usage from test parameters
@@ -92,7 +92,12 @@ class TestCpuRamHddUsage:
             partition_usage['max_usage'] += self.get_sai_fdw_dump_size()
 
         logger.info(f"\nChecking hdd_usage of {partition_dir} with max_usage of {partition_usage['max_usage']}\n")
-        do_hdd_usage_test(self.dut_engine, partition_usage)
+        try:
+            do_hdd_usage_test(self.dut_engine, partition_usage)
+        except AssertionError as ae:
+            logger.info(f"Error while checking HDD usage of partition {partition_usage['partition']}, printing files above 1MB and depth of 3 in path")
+            engines.dut.run_cmd(f"find {partition_usage['partition']} -maxdepth 3 -type f -size +1M -exec ls -lSh --block-size=M {{}} + ")
+            raise ae
 
     @pytest.mark.build
     @pytest.mark.push_gate

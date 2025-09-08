@@ -168,10 +168,10 @@ class TestToolkit:
         """
         try:
             with allure.step("Get log analyzer marker"):
-                markers = engine.run_cmd('grep " start-LogAnalyzer-" /var/log/syslog')
+                markers = engine.run_cmd('zgrep -h -a " start-LogAnalyzer-" /var/log/syslog.* /var/log/syslog | tail -n 1')
                 last_marker = markers.split("\n")[-1]
                 return last_marker if get_full_line else re.findall(r'\bstart-LogAnalyzer-\S+', last_marker)[0]
-        except BaseException as e:
+        except Exception as e:
             ExceptionTool.log_exception(e)
             return ""
 
@@ -182,7 +182,7 @@ class TestToolkit:
             with allure.step("Add log analyzer marker"):
                 if marker:
                     engine.run_cmd(f"logger -p info '{marker}'")
-        except BaseException as e:
+        except Exception as e:
             logging.warning("Failed to add log analyzer marker: " + ExceptionTool.format_exception(e))
 
     @staticmethod
@@ -195,7 +195,7 @@ class TestToolkit:
             with allure.step("Adding log analyzer marker as the first log line"):
                 oldest_syslog_id = get_oldest_syslog_id(engine)
                 insert_new_start_string(engine, oldest_syslog_id, marker)
-        except BaseException as e:
+        except Exception as e:
             ExceptionTool.log_exception(e)
 
     @staticmethod

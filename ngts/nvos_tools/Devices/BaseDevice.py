@@ -429,6 +429,7 @@ class BaseSwitch(BaseDevice):
             "part-number": None,
             "serial-number": None,
             "asic-model": "",
+            "asic-revision": "0x00A0",
             "system-uuid": ExpectedString(regex=r"[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}"),
         }
         self.disk_default_partition_name = DiskConsts.DEFAULT_PARTITION_NAME

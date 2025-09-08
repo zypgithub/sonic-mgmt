@@ -5,14 +5,18 @@ import re
 import time
 import pytest
 from typing import List
+from datetime import datetime
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts, LogsSources
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.platform.Platform import Platform
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
+from ngts.constants.constants import BugHandlerConst
+from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.FilesTool import FilesTool
@@ -51,7 +55,8 @@ def test_show_log(engines):
             show_output = system.log.file.show_log(exit_cmd='q')
             ValidationTool.verify_expected_output(show_output, 'part-number').verify_result()
 
-        with allure.independent_step(f'Run show system image and verify “system/image” in the {LogsSources.NVUED} logs'):
+        with allure.independent_step(
+                f'Run show system image and verify “system/image” in the {LogsSources.NVUED} logs'):
             system.image.show()
             system.log.verify_expected_logs(logs_to_find=["system/image"], logs_source=LogsSources.NVUED,
                                             engine=engines.dut, only_latest_log=True)
@@ -151,6 +156,7 @@ def test_log_files_rotation_default_fields(engines):
 
 def _log_files_rotation_default_fields(system_log_obj, default_max_number, default_size):
     with allure.step("Run nv show system log rotation command and validate fields"):
+        logging.info("Run nv show system log rotation command and validate fields")
         show_output = system_log_obj.rotation.show()
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
 
@@ -596,7 +602,6 @@ def _delete_log_files(engines, system_log_obj, file_name):
     """
     system = System()
     platform = Platform()
-
     with allure.step("Rotate log 5 times to create log files"):
         for i in range(0, 5):
             system_log_obj.rotate_logs()
@@ -660,6 +665,19 @@ def _delete_log_files(engines, system_log_obj, file_name):
             with allure.step("Run system log file follow to view platform firmware logs"):
                 system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
 
+            with allure.step("Run show command to view system image"):
+                start_time = datetime.strptime(ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show()),
+                                               BugHandlerConst.TIMESTAMP_FORMATS[4])
+                system.image.show()
+
+            with allure.step("Run nv show system log command follow to view system logs"):
+                output = system_log_obj.file.show_log(exit_cmd='q')
+                last_line = output.splitlines()[-4]
+                date_match = re.search(fr'{NvosConst.DATE_TIME_REGEX[0]}', last_line)
+                parsed_time = datetime.strptime(date_match.group(), BugHandlerConst.TIMESTAMP_FORMATS[3])
+                parsed_time = parsed_time.replace(year=datetime.now().year)
+                assert start_time <= parsed_time, "Syslog file does not contain new data, system might be"
+
 
 @pytest.mark.check_log_size(expect=10000)
 @pytest.mark.system
@@ -678,6 +696,7 @@ def test_log_idle(engines):
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+DEBUG nvued.+[\n]?', None),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: sysstat-collect.service: Deactivated successfully.*[\n]?', 1),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: logrotate.service: Deactivated successfully.*[\n]?', 1),
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd*Deactivated successfully.*[\n]?', 3),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO healthd\[\d+\]\: System health takes [\d\.]+ seconds for one iteration[\n]?', math.ceil(rotate_sleep_time_sec / 3))
     ]
 

@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, PasswordHardeningConsts
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 
 logger = logging.getLogger()
 
@@ -69,6 +70,8 @@ def test_set_invalid_password(engines, enable_password_hardening_state):
     with allure.step('generate invalid password'):
         system = System(force_api=ApiType.NVUE)
         secutiry_output = system.security.password_hardening.show()
+        with allure.step('Enable password hardening feature'):
+            system.security.password_hardening.set(PwhConsts.STATE, PwhConsts.ENABLED, apply=True).verify_result()
         password_min_len, enabled_rules = system.security.password_hardening.parse_password_hardening_enabled_rules(secutiry_output)
         invalid_password, random_labels = generate_invalid_password(enabled_rules, password_min_len)
     with allure.step('try to set the invalid password and verify the output message'):
@@ -204,6 +207,8 @@ def test_password_history(engines, enable_password_hardening_state):
     """
     with allure.step("test password history with default history-cnt = 10"):
         system = System(force_api=ApiType.NVUE)
+        with allure.step('Enable password hardening feature'):
+            system.security.password_hardening.set(PwhConsts.STATE, PwhConsts.ENABLED, apply=True).verify_result()
         with allure.step('generate two valid password'):
             new_password_1 = system.security.password_hardening.generate_password(is_valid=True)
             new_password_2 = system.security.password_hardening.generate_password(is_valid=True)

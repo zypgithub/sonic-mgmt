@@ -231,18 +231,42 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
 
     Test flow:
         1. run nv action generate system tech-support 4 times in a row
+        2. run nv show system tech-support files
+        3. validate the output format
     """
     serial_analyzer, = serial_log_analyzers.values()
     system = System(None)
     operation = devices.dut.generate_tech_support
     files_names = []
     with allure.step('Run show/action system tech-support 4 times in a row'):
+        output_dictionary_before = list(Tools.OutputParsingTool.parse_show_files_to_dict(
+            system.techsupport.show()).get_returned_value().values())
         for i in range(0, 4):
-            with allure.step("Generate Tech-Support for the {} time".format(i)):
-                with serial_analyzer.stage(f"Generate tech-support {i}"):
+            with allure.step("Generate Tech-Support for the {} time".format(i + 1)):
+                with serial_analyzer.stage(f"Generate tech-support {i + 1}"):
                     folder, duration = system.techsupport.action_generate(test_name=test_name)
                 OperationTime.verify_operation_time(duration, operation).verify_result()
                 files_names.append(system.techsupport.file_name)
+
+            with allure.step("Validate output"):
+                output_dictionary_after = list(Tools.OutputParsingTool.parse_show_files_to_dict(
+                    system.techsupport.show()).get_returned_value().values())
+                validate_techsupport_output(output_dictionary_before, output_dictionary_after, i + 1)
+
+            with allure.step('Validate show tech-support command format'):
+                show_output = system.techsupport.show()
+                output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+                assert SystemConsts.LATEST_KEY in output_dict, \
+                    f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {output_dict.keys()}"
+                latest_file = output_dict.pop(SystemConsts.LATEST_KEY)[SystemConsts.PATH_KEY]
+                output_dict = {key: value[SystemConsts.PATH_KEY] for key, value in output_dict.items()}
+                assert latest_file == find_latest_key(output_dict), (
+                    f"Output of show tech-support contains a file marked 'latest', but that file either doesn't exist or is not"
+                    f" really the latest file. File is {latest_file}."
+                )
+                assert list(output_dict.keys()) == [full_path.replace(SystemConsts.TECHSUPPORT_FILES_PATH, '')
+                                                    for full_path in output_dict.values()], \
+                    f"Output of show tech-support has mismatch between keys (file names) and full-paths: {output_dict.items()}"
 
     for file_name in files_names:
         system.techsupport.files.file_name[file_name].action_delete()

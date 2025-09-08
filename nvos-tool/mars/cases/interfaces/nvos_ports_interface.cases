@@ -56,7 +56,7 @@
   </case>
 
   <case>
-    <name> L1 saving power test </name>
+    <name> Link phy-diag tests </name>
     <info> </info>
     <cmd>
       <params>

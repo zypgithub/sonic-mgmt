@@ -89,15 +89,6 @@ class File(BaseComponent):
             self._resource_path = f'/{new_name}'
         return result
 
-    def action_install(self, reboot_params, force=True, additional_flags=(), send_user_confirmation=None,
-                       expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES) -> ResultObj:
-        flags = ([ActionParamConsts.FORCE] if force else []) + (
-            additional_flags.split() if isinstance(additional_flags, str) else list(additional_flags))
-        result = self.action(ActionConsts.INSTALL, flags=flags, send_user_confirmation=send_user_confirmation,
-                             reboot_params=reboot_params, expected_output=expected_output)
-        return result
-
-    # todo: remove the install methods below, they're replaced by the one above and kept for backwards compatibility
     def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='', deny_reboot=False, skip_version_check=False) -> ResultObj:
         return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value, deny_reboot=deny_reboot, skip_version_check=skip_version_check)
 
@@ -108,23 +99,30 @@ class File(BaseComponent):
 
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None, recovery_engine=None, topology_obj=None, param_value='',
                              should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False, skip_version_check=False) -> ResultObj:
+
         engine = dut_engine if dut_engine else TestToolkit.engines.dut
         device = device if device else TestToolkit.devices.dut
         topology_obj = topology_obj or TestToolkit.topology_obj
         resource_path = self.get_resource_path()
         params = []
         param_value_list = []
-        if 'platform' in resource_path:
-            params.append('skip-reboot')
-            param_value_list.append(True)
+
         if skip_version_check:
             params.append('skip-version-check')
             param_value_list.append(True)
+
+        if force:
+            params.append('force')
+            param_value_list.append(param_value)
+        elif 'platform' in resource_path:
+            params.append('skip-reboot')
+            param_value_list.append(True)
+
         with allure.step(f"Install file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action_deprecated, expected_str,
                 engine, device, action_type='install', resource_path=resource_path,
-                param_name='force' if force else params, param_value=param_value if force else param_value_list,
+                param_name=params, param_value=param_value_list,
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
                 topology_obj=topology_obj, track_boot_intervals=track_boot_intervals, press_y=press_y,
                 should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout,

@@ -43,3 +43,12 @@ class PlatformComponent(BaseComponent):
 
     def show_files_as_list(self) -> List[str]:
         return OutputParsingTool.parse_show_files_to_names(self.files.show()).get_returned_value()
+
+    def action_fetch_firmware(self, url, expected_str="", dut_engine=None):
+        if not dut_engine:
+            dut_engine = TestToolkit.engines.dut
+        with allure.step('Trying to fetch {}'.format(url)):
+            return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_fetch_firmware,
+                                                                expected_str, dut_engine,
+                                                                self.get_resource_path(),
+                                                                url).verify_result()

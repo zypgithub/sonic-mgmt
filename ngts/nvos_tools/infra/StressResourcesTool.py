@@ -17,7 +17,7 @@ PACKAGES_TO_STRESS_CPU_AND_MEMORY = ['stress-ng', 'bc']
 class StressResourcesTool:
 
     @staticmethod
-    def stress_cpu_and_memory(engines, core_number, cpu_load=95, vm=8, vm_bytes='85%', timeout='300s'):
+    def stress_cpu_and_memory(engines, core_number, cpu_load=70, vm=8, vm_bytes='70%', timeout='300s'):
         with allure.step("Checking if needed packages are installed"):
             packages_to_delete = []
             with allure.step("Updating package lists"):

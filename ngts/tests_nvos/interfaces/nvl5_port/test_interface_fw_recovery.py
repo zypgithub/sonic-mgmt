@@ -129,7 +129,7 @@ def test_fw_recovery_bad_flow(devices, engines, test_name, test_api):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.parametrize('config', FAE_RECOVERY_CONFIG_PARAMS)
-def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalone_system, config):
+def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalone_system: bool, has_loopbox: bool, config):
     """
     @summary:
         Verify that firmware recovery settings (mode and timeout) can be applied and updated on trunk ports (sw).
@@ -141,9 +141,12 @@ def test_set_fae_fw_recovery_trunk_ports(engines, devices, random_api, standalon
     4. Update timeout higher and lower, verifying group vs. local effects.
     5. Disable recovery and confirm defaults restored.
     """
+    if not has_loopbox:
+        pytest.skip("Skipping test on standalone system without loopbox (no links in up state)")
+
     skip_if_no_trunk_links(devices)
     port_name = select_random_nvl_port_name(devices, 'sw')
-    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl5_trunk_ports_list)
+    summarized_switch_ports = summarize_switch_ports(devices.dut.nvl_trunk_ports_list)
 
     _run_fae_mode_timeout_test(
         test_api=random_api,

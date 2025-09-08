@@ -54,6 +54,10 @@ class FWComponentsTool:
                     FWComponentsTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = FWComponentsTool.PLATFORM_COMPONENTS_DICT
             provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            # if device is juliet-160 or juliet-195, we need to use the production version
+            device_name = TestToolkit.topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+            if device_name in ["juliet-160", "juliet-195"]:
+                provisioning = PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
             filename = getattr(component_image_info.keys(), "filename", None)
             if not filename:

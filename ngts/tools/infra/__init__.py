@@ -78,12 +78,18 @@ def log_folder(setup_name, session_id, topology_obj):
     return env_log_folder
 
 
-def create_nvos_result_dir(setup_name, session_id, suffix_path_name):
+def create_nvos_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     result_path = '/'.join(
         [InfraConst.NVOS_REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
     create_folder(result_path)
     dump_path = '/'.join([NvosConst.MARS_DUMPS_FOLDER, setup_name, session_id, suffix_path_name])
-    create_folder(dump_path)
+    folder = pathlib.Path(dump_path)
+    if session_id == 'manual_run' and not folder.exists():
+        sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
+        sonic_mgmt_engine.run_cmd(f"sudo mkdir -p {folder} && sudo chmod 777 {folder} ")
+        return f"Created and set permissions for {folder}"
+    else:
+        create_folder(dump_path)
     return dump_path
 
 
@@ -105,7 +111,7 @@ def create_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     if not session_id:
         session_id = 'manual_run'
     if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == "NVUE":
-        return create_nvos_result_dir(setup_name, session_id, suffix_path_name)
+        return create_nvos_result_dir(setup_name, session_id, suffix_path_name, topology_obj)
     else:
         return create_sonic_result_dir(setup_name, session_id, suffix_path_name)
 

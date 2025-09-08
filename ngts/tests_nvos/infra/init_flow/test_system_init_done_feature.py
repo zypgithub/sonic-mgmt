@@ -1,11 +1,17 @@
+import logging
+import pytest
+import time
+
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_constants.constants_nvos import *
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from ngts.nvos_constants.constants_nvos import DatabaseConst, SystemConsts, NvosConst, LogsSources
+from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+import ngts.tools.test_utils.allure_utils as allure
+from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.general.security.conftest import *
 from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
@@ -170,5 +176,9 @@ def connect_before_ssh(topology_obj, engine):
             serial = SerialConsoleTool.get_serial_console_session(topology_obj)
         with allure.step('exit existing login'):
             SerialConsoleTool.exit_existing_login(serial)
+        with allure.step('wait for prompt'):
+            serial.serial_engine.expect(
+                [DefaultConnectionValues.SERIAL_CONNECTION_CONTEXT] + DefaultConnectionValues.DEFAULT_PROMPTS
+            )
         SerialConsoleTool.login_nos(serial_engine=serial, username=engine.username, password=engine.password, start_login_tries=10, handle_change_password_prompt=False)
         return serial

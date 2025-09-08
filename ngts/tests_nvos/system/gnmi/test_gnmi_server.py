@@ -188,8 +188,7 @@ def test_updates_on_gnmi_stream_mode(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_gnmi_bad_flow(test_api, engines, devices, setup_name):
+def test_gnmi_bad_flow(random_api, engines, devices, setup_name):
     """
     Check gnmi bad flow:
         Test flow:
@@ -198,7 +197,7 @@ def test_gnmi_bad_flow(test_api, engines, devices, setup_name):
             3. Subscribe to the gnmi server for data that is not supported
             5. Subscribe to the gnmi server with bad xpath
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
     xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'

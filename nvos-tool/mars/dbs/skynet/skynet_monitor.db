@@ -11,6 +11,21 @@
 		</DB>
 		<Test>
 			<post> </post>
+            <on_not_success>
+                <name> Send Failure Report </name>
+                <type> setup_mode </type>
+                <cmd>
+                    <type> reg_exec_cmd </type>
+                    <players_selection>
+                        <ep_targets> SONIC_MGMT </ep_targets>
+                    </players_selection>
+                    <name> Send Failure Report </name>
+                    <tout> 900 </tout>
+                    <params>
+                        <exec> PYTHONPATH=/devts/ /ngts_venv/bin/python /devts/infra/tools/sql/skynet_failure_report.py  --setup_name=[[conf:extra_info.setup_name]] --session_id=[[run_time:session_id]] --project_name NVOS --report_recipients nvos-skynet-maintainers@exchange.nvidia.com </exec>
+                    </params>
+                </cmd>
+            </on_not_success>
 		</Test>
 		<Case>
             <pre> </pre>

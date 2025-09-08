@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
@@ -195,9 +196,11 @@ class BmcTool:
     @staticmethod
     def _build_curl_base(method, bmc_ip_address, component_path):
         """Build base curl command with authentication and URL."""
+        if IpTool.is_address_ipv6(bmc_ip_address):
+            bmc_ip_address = f'[{bmc_ip_address}]'
         return (
             f"curl -s -k -u {ROOT}:{BMC_USER_BACKUP_PASSWORD} "
-            f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method} --fail && echo"
+            f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method}"
         )
 
     @staticmethod
@@ -213,7 +216,7 @@ class BmcTool:
 
         with allure.step(f"Send GET request to {bmc_ip_address}"):
             curl_get_cmd = BmcTool._build_curl_base(OpenApiReqType.GET, bmc_ip_address, component_path)
-            curl_get_output = engine.run_cmd(curl_get_cmd, validate=True)
+            curl_get_output = engine.run_cmd(curl_get_cmd + ' --fail && echo', validate=True)
 
             if not curl_get_output:
                 return ResultObj(False, "Received empty response from BMC")
@@ -221,7 +224,7 @@ class BmcTool:
             return ResultObj(True, "", curl_get_output)
 
     @staticmethod
-    def send_patch_request(engine, bmc_ip_address, component_path, new_values, expected_value) -> ResultObj:
+    def send_patch_request(engine, bmc_ip_address, component_path, new_values, expected_value="") -> ResultObj:
         """
         Send a PATCH request to BMC Redfish API.
 
@@ -237,7 +240,7 @@ class BmcTool:
             json_data = json.dumps(new_values)
             curl_path_cmd = (
                 f"{BmcTool._build_curl_base(OpenApiReqType.PATCH, bmc_ip_address, component_path)} "
-                f"-H 'Content-Type: application/json' -d '{json_data}'"
+                f"-H 'Content-Type: application/json' -d '{json_data}' --fail && echo"
             )
             curl_patch_output = engine.run_cmd(curl_path_cmd, validate=True)
 

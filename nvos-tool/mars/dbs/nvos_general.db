@@ -61,4 +61,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_kernel_crash.cases </cases>
 	</test>
+
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/general/nvos_general_action_commands.cases </cases>
+	</test>
 </DBDEF>

@@ -134,9 +134,12 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
         with allure.step('Run restore manager (disable manager communication)'):
             restore_cluster_app_manager_state(app.manager)
         with allure.independent_step('Verify in manager show that related fields restored to default'):
-            verify_manager_show(app_name, expect_state=DISABLED)
+            if app_name == ClusterApps.NMX_TELEMETRY:
+                verify_manager_show(app_name, expect_state=ENABLED)
+            else:
+                verify_manager_show(app_name, expect_state=DISABLED)
             with allure.independent_step('verify files and fields in json'):
-                verify_files(app_name, engines.dut, {consts.user_config_json_fields.state: DISABLED})
+                verify_files(app_name, engines.dut, {consts.user_config_json_fields.state: consts.fields_that_must_exist_in_user_config_json[consts.user_config_json_fields.state]})
     with allure.step('check values after disable cluster'):
         with allure.step('disable cluster'):
             disable_cluster()
@@ -172,6 +175,7 @@ def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api, app_name,
     cluster = Cluster()
     app = cluster.apps.app_name[app_name]
     cert = TestCert.cert_valid_1
+    consts = APP_CONSTS[app_name]
     with allure.step('Make sure cluster disabled'):
         cluster.set(STATE, DISABLED, apply=True).verify_result()
     with allure.step('verify show outputs NAs'):
@@ -216,7 +220,7 @@ def test_cluster_app_mngr_security_cli_fail_when_cluster_off(test_api, app_name,
         with allure.step('enable cluster'):
             enable_cluster()
         with allure.independent_step('verify manager show'):
-            verify_manager_show(app_name, expect_state=Defaults.STATE, expect_cert=Defaults.CERT,
+            verify_manager_show(app_name, expect_state=consts.fields_that_must_exist_in_user_config_json[consts.user_config_json_fields.state], expect_cert=Defaults.CERT,
                                 expect_cacert=Defaults.CACERT,
                                 expect_encryption=Defaults.ENCRYPTION)
         with allure.independent_step('verify cert show'):
@@ -570,8 +574,8 @@ def test_cluster_app_mngr_no_connection_when_state_disabled(app_name, ca_type):
     with allure.step('enable cluster manager'):
         enable_cluster_app_manager_state(manager)
 
-    with allure.step('disable manager (restore)'):
-        restore_cluster_app_manager_state(manager)
+    with allure.step('disable manager'):
+        disable_cluster_app_manager_state(manager)
 
     with allure.step('verify cluster manager client cannot connect'):
         verify_no_client_connection(app_name, cert, cert)

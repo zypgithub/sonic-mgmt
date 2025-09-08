@@ -2,6 +2,7 @@ import logging
 import random
 import pytest
 import time
+import re
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -228,8 +229,17 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                err_msg = f"'{resiliency_mode}' is not one of {ClusterConsts.RESILIENCY_MODES}"
-                assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
+                if is_bug_active(4497969) and random_api == 'NVUE':
+                    err_msg = "Error: Invalid Command"
+                    assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
+                else:
+                    expected_err_regex = rf"'{resiliency_mode}' is not one of \[(.*?)\]"
+                    msg = f"Expected message to include {expected_err_regex}, instead\n {output}"
+                    match = re.search(expected_err_regex, output)
+                    assert match, msg
+                    extracted_resiliency_modes = set([item.strip().strip("'") for item in match.group(1).split(',')])
+                    assert extracted_resiliency_modes == set(ClusterConsts.RESILIENCY_MODES), msg
+
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
                 TestToolkit.tested_api = random_api
@@ -248,7 +258,10 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                err_msg = "Valid range is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
+                if is_bug_active(4552019):
+                    err_msg = "Valid range for mcast-limit is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
+                else:
+                    err_msg = "Valid range is 0 - 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)

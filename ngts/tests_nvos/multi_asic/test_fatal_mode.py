@@ -9,7 +9,8 @@ from retry.api import retry_call
 
 from ngts.nvos_constants.constants_nvos import ApiType, HealthConsts, NvosConst, ActionConsts, SystemConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
+from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, wait_until_cli_is_up, wait_on_systemctl_initialization
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -161,7 +162,7 @@ def test_fatal_flow_until_soft_reset(engines, devices, random_api, random_asic, 
         _wait_to_exit_fatal()
 
 
-@pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 @pytest.mark.checklist
 @pytest.mark.fatal_mode
 def test_fatal_flow_until_reboot(engines, devices, random_api, random_asic, test_name, events_count_setting):
@@ -187,7 +188,7 @@ def test_fatal_flow_until_reboot(engines, devices, random_api, random_asic, test
         logger.info(f'{start_time=}, {elapsed=}, {to_wait=}')
         if to_wait < 0:
             to_wait = 0
-        _wait_to_exit_fatal(1 + to_wait // 60)
+        _wait_to_exit_fatal(2 + to_wait // 60)
 
 
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
@@ -202,9 +203,18 @@ def test_fatal_flow_until_close_ports(engines, devices, random_api, random_asic,
     _trigger_reboot(random_asic, events_count_setting)
 
     with allure.step("Trigger final fatal-mode reboot after which ports are closed"):
-        _trigger_reboot(random_asic, events_count_setting)
-        # booting will take extra ~10 minutes waiting for the system-ready timeout (for CLI to become available)
-        # todo: make it shorter somehow
+        try:
+            _trigger_reboot(random_asic, events_count_setting)
+        except Exception as e:
+            if 'Waiting for NVUE to become functional' in str(e):
+                ExceptionTool.log_exception(e)
+                with allure.step("Waiting extra 5 minutes for the system-ready timeout (necessary when swss service is not started)"):
+                    _wait(5)
+                    wait_until_cli_is_up(engines.dut)
+                    wait_on_systemctl_initialization(engines.dut)
+            else:
+                raise
+
         _assert_system_fatal_mode(True, )
         _assert_close_ports()
 

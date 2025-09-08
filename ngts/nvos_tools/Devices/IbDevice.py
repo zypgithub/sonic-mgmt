@@ -436,6 +436,7 @@ class IbSwitch(BaseSwitch):
                                           "nv show platform boot-policy",
                                           "nv show platform cable-cartridge",
                                           "nv show platform chassis-location",
+                                          "nv show system cli",
                                           "nv show cluster",
                                           "nv show sdn",
                                           "nv show fae interface {port} link link-training"]
@@ -1307,6 +1308,7 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
+        self.nmx_simulation_gpu_count = 72
         self.number_of_transceivers = 72
         self.cpld_amount = 4
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
@@ -1397,7 +1399,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.asic_type = NvosConst.NVL5
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
-        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation, redfish_aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl, gnmi, syslog, bmc', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
             'nmx-controller': {
                 **{  # Unpack
@@ -1794,7 +1796,7 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
-        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
         self.constants = self.constants._replace(log_dump_files=log_dump_files)

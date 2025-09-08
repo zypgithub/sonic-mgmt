@@ -31,7 +31,7 @@ def setup_api_security_mode(mode: str, server_cert: CertInfo, server_ca: CertInf
 def get_tmp_revision_number_for_test_only(client_certs: CertInfo = None):
     if client_certs:
         OpenApiRequest.update_client_certs_info(client_certs)
-    System(force_api=ApiType.OPENAPI).gnmi_server.unset().verify_result()
+    System(force_api=ApiType.OPENAPI).lldp.unset().verify_result()
     revision_num = OpenApiRequest.changeset
     OpenApiRequest.clear_changeset_and_payload()
     OpenApiRequest.update_client_certs_info(None)
