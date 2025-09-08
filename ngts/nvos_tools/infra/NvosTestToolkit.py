@@ -131,11 +131,12 @@ class TestToolkit:
             from  'nvos-25.02.2000'  to 'nvos-25-02-2000'
             from 'nvos-25.02.1910-014' to  'nvos-25-02-2000'
             from 'nvos-25.02.1320-014' to  'nvos-25-02-1400'
+            from 'nvos-25.02.5930' to 'nvos-25-02-6000'
         """
         if not re.match(TestToolkit.devices.dut.full_version_pattern, version):
             return ''
 
-        pattern = r'(\d+)-(\d+)$'
+        pattern = r'(\d+)(?:-(\d+))?$'
         match = re.search(pattern, version)
         if match:
             num_str = match.group(1)  # extract the number string '0930' from 'nvos-25.02.0930-011'
@@ -147,6 +148,23 @@ class TestToolkit:
             result = version
         result = result.replace('.', '-')
         return result
+
+    @staticmethod
+    def version_path_to_release_name(version):
+        """
+        return the relevant release according to the version path.
+        if its private version or unknown will return ''
+        examples:
+            from '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-amd64-25.02.5930-025.bin' to 'nvos-25-02-6000'
+        """
+        pattern = r'(\d+\.\d+\.\d+)(?:-(\d+))?(?:\.bin)?$'
+        match = re.search(pattern, version)
+        if match and match.group(0):
+            version_num = match.group(1)
+            version_with_nvos_prefix = f'nvos-{version_num}'
+            return TestToolkit.version_to_release(version_with_nvos_prefix)
+        logger.error(f"Could not extract version name from path: {version}, using master")
+        return 'master'
 
     @staticmethod
     def run_log_analyzer_bug_handler():

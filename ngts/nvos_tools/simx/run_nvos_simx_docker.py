@@ -3,50 +3,51 @@ import pytest
 import allure
 import os
 import time
+import argparse
 from retry import retry
 
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.conftest import devices
 
 logger = logging.getLogger()
 
-path_to_source_code = "/auto/sw_system_project/NVOS_INFRA/ChipSim/nvos/scripts"
-chipsim_script_file_name = "run_nvos_in_chipsim.py"
+base_chipsim_script_path = "/auto/sw_system_project/NVOS_INFRA/ChipSim/{release_name}/nvos/scripts/run_nvos_in_chipsim.py"
+master_folder_name = "nvos-master"
 
 
-def test_run_nvos_simx_docker(topology_obj, target_version, devices):
-    dut_engine = topology_obj.players['dut']['engine']
+def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_image, use_master_script, is_regression_run):
+    with allure.step("Get server and dut details"):
+        dut_engine = topology_obj.players['dut']['engine']
+        server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
+        server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD")).returned_value
+        dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+        logger.info(f"DUT ip: {dut_engine.ip}({dut_name}) on server: {server_name}")
 
-    server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
-    server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD")).returned_value
-
-    dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
-
-    with allure.step("Check existence of relevant files"):
-        assert os.path.isdir(path_to_source_code), "Relevant script files can't be found in " + path_to_source_code
+    with allure.step("Get path to chipsim script"):
+        path_to_chipsim_script = _get_path_to_chipsim_script(target_version, use_master_script)
+        logger.info(f"Path to chipsim script: {path_to_chipsim_script}")
 
     with allure.step("Start the NVOS simx docker"):
-        start_simx_docker(target_version, dut_engine, server_engine, devices)
+        if not use_bin_image:
+            with allure.step("Get path to disk image"):
+                target_version = _get_path_to_disk_image(target_version, is_regression_run)
+                logger.info(f"Path to disk image: {target_version}")
+        start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script)
 
-    with allure.step("Wait until the switch is ready (~5 min)"):
-        wait_till_the_switch_is_ready(dut_engine.ip)
-
-    with allure.step("Wait until ssh is ready"):
-        wait_till_ssh_is_ready(dut_engine)
-
-    with allure.step("Apply basic config"):
-        set_base_configurations(dut_engine=dut_engine, apply=True)
+    _wait_till_switch_is_ready(dut_engine)
 
 
-def start_simx_docker(target_version, dut_engine, server_engine, devices):
-    cmd = f"sudo {path_to_source_code}/{chipsim_script_file_name} --ip {dut_engine.ip} --nos-image {target_version} "
+def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script):
+    image_type = "--nos-image" if ".bin" in target_version else "--simulator-image"
+    cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version} "
 
     output = server_engine.run_cmd(cmd)
 
     time.sleep(5)
-    assert "NOS installed successfully" in output, "Failed to start simx docker"
+    assert any(msg in output for msg in ["NOS installed successfully", "Serial connection: telnet"]), "Failed to start simx docker"
 
 
 def wait_till_the_switch_is_ready(switch_ip):
@@ -59,6 +60,87 @@ def wait_till_the_switch_is_ready(switch_ip):
     logging.info("All simx docker components are active")
 
 
+def test_wait_till_the_switch_is_ready(topology_obj):
+    dut_engine = topology_obj.players['dut']['engine']
+    server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
+    logger.info(f"DUT ip: {dut_engine.ip} on server: {server_name}")
+    _wait_till_switch_is_ready(dut_engine)
+
+
+def _wait_till_switch_is_ready(dut_engine):
+    with allure.step("Wait until the switch is ready (~5 min)"):
+        wait_till_the_switch_is_ready(dut_engine.ip)
+
+    with allure.step("Wait until ssh is ready"):
+        wait_till_ssh_is_ready(dut_engine)
+
+    with allure.step("Apply basic config"):
+        set_base_configurations(dut_engine=dut_engine, apply=True)
+
+
 @retry(Exception, tries=10, delay=5)
 def wait_till_ssh_is_ready(dut_engine):
     dut_engine.run_cmd('nv show system version')
+
+
+def _get_path_to_chipsim_script(target_version, use_master_script):
+    if use_master_script:
+        version_name = master_folder_name
+    else:
+        version_name = TestToolkit.version_path_to_release_name(target_version)
+
+    path_to_script = base_chipsim_script_path.format(release_name=version_name)
+
+    if not os.path.exists(path_to_script):
+        logging.warning(f"ChipSim script not found at: {path_to_script}")
+        logging.info("Using master version instead")
+        path_to_script = base_chipsim_script_path.format(release_name=master_folder_name)
+
+    return path_to_script
+
+
+def _get_path_to_disk_image(target_version, is_regression_run):
+    if is_regression_run:
+        return _get_path_to_disk_image_for_regression(target_version)
+    else:
+        return _get_path_to_disk_image_for_ci(target_version)
+
+
+def _get_path_to_disk_image_for_regression(target_version):
+    """
+    Convert a .bin file path to a .img file path for regression
+    examples:
+        from '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-amd64-25.02.5930-025.bin'
+        to '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-disk-amd64-25.02.5930-025.img'
+    """
+    if target_version.endswith('.bin'):
+        disk_image_path = target_version.replace('nvos-', 'nvos-disk-').replace('.bin', '.img')
+    else:
+        disk_image_path = target_version
+
+    if os.path.exists(disk_image_path):
+        return disk_image_path
+
+    logging.warning(f"Disk image not found at: {disk_image_path}")
+    logging.info("Using .bin file instead")
+    return target_version
+
+
+def _get_path_to_disk_image_for_ci(target_version):
+    """
+    Convert a .bin file path to a .img file path for CI
+    examples:
+        from '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10398/nvos/nvos.bin'
+        to '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10398/nvos/nvos-disk.img'
+    """
+    if target_version.endswith('.bin'):
+        disk_image_path = target_version.replace('nvos.bin', 'nvos-disk.img')
+    else:
+        disk_image_path = target_version
+
+    if os.path.exists(disk_image_path):
+        return disk_image_path
+
+    logging.warning(f"Disk image not found at: {disk_image_path}")
+    logging.info("Using .bin file instead")
+    return target_version
