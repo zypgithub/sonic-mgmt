@@ -129,6 +129,10 @@ class BaseComponent:
                                             dut_engine, client_certs_after_apply, check_engine_connectivity)
                             output = output + "\n" + res
                         return output
+                    elif isinstance(op_param_value, list):
+                        op_param_value = ' '.join(op_param_value)
+                        return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
+                                         dut_engine, client_certs_after_apply, check_engine_connectivity)
                     elif isinstance(op_param_value, str) or isinstance(op_param_value, int):
                         return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
                                          dut_engine, client_certs_after_apply, check_engine_connectivity)

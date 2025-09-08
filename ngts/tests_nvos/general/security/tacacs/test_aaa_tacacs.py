@@ -430,7 +430,7 @@ def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
 
         with allure.step('Set tacacs in authentication order and failthrough off'):
             configure_resource(engines, resource_obj=aaa.authentication, conf={
-                AuthConsts.ORDER: f'{AuthConsts.TACACS} {AuthConsts.LOCAL}',
+                AuthConsts.ORDER: [AuthConsts.TACACS, AuthConsts.LOCAL],
                 AuthConsts.FAILTHROUGH: AaaConsts.DISABLED
             }, apply=True, verify_apply=False)
 

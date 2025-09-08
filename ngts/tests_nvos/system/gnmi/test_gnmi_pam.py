@@ -85,7 +85,7 @@ def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuse
                 if auth_method in RemoteAaaType.ALL_TYPES:
                     user = aaa_users[auth_method]
                     with allure.step(f'enable {auth_method} authentication'):
-                        auth.set(AuthConsts.ORDER, f'{auth_method} {AuthConsts.LOCAL}', apply=True).verify_result()
+                        auth.set(AuthConsts.ORDER, [auth_method, AuthConsts.LOCAL], apply=True).verify_result()
                         if auth_method == RemoteAaaType.LDAP:
                             wait_for_ldap_nvued_restart_workaround(None)
                         else:
@@ -154,7 +154,7 @@ def test_gnmi_auth_failthrough(test_flow, engines, local_adminuser, aaa_users):
     auth_methods = [AuthConsts.LOCAL, rand_aaa_method]
     random.shuffle(auth_methods)
 
-    order = ' '.join(auth_methods)
+    order = auth_methods
     method2 = auth_methods[1]
     failthrough = AaaConsts.ENABLED if test_flow == TestFlowType.GOOD_FLOW else AaaConsts.DISABLED
 

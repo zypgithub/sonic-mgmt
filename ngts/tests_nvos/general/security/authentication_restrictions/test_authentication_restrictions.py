@@ -577,7 +577,7 @@ def test_auth_restrictions_remote_counting(test_api, engines, request, devices, 
     with allure.step('Enable tacacs'):
         aaa = System().aaa
         configure_resource(engines, aaa.authentication, conf={
-            AuthConsts.ORDER: f'{AuthConsts.TACACS} {AuthConsts.LOCAL}',
+            AuthConsts.ORDER: [AuthConsts.TACACS, AuthConsts.LOCAL],
             AuthConsts.FAILTHROUGH: AaaConsts.ENABLED
         })
 

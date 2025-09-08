@@ -354,7 +354,6 @@ def configure_authentication(engines, devices, order=None, failthrough=None, fal
         auth_obj = System().aaa.authentication
         if order:
             logging.info(f'Set authentication order: {order}')
-            order = ' '.join(order)
             auth_obj.set(AuthConsts.ORDER, order, dut_engine=dut_engine).verify_result()
         if failthrough:
             logging.info(f'Set authentication failthrough: {failthrough}')
