@@ -12,7 +12,8 @@ def save_file(path, content):
 
 
 def create_dir(path):
-    os.makedirs(path, exist_ok=True, mode=0o777)
+    os.makedirs(path, exist_ok=True)
+    os.system(f"chmod 777 {path}")
     print(f"Created directory: {path}")
 
 
