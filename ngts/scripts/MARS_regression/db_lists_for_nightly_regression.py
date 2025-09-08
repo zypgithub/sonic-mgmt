@@ -109,5 +109,4 @@ SETUPS_GROUPS_MAP = {
                               'sonic_moose_mtvr-moose-10': SETUPS_GROUP_1}
     }
 }
-}
-    # In canonical we have odd number of setups.
+# In canonical we have odd number of setups.
