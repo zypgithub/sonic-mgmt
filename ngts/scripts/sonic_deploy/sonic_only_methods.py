@@ -688,6 +688,7 @@ class SonicInstallationSteps:
                         # TODO parallelize this
                         _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
                         cli_obj.shutdown_dpu(dpu_index_list)
+                        cli.shutdown_dpu_data_interfaces(setup_name)
                         cli_obj.save_configuration()
 
             # Only check port status at canonical setup, there is an ansible counterpart for community setup

@@ -2163,6 +2163,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         for dpu_index in dpu_index_list:
             self.engine.run_cmd(f'sudo config chassis modules shutdown DPU{dpu_index}')
 
+    def shutdown_dpu_data_interfaces(self, setup_name):
+        if 'bobcat' in setup_name:
+            self.engine.run_cmd(f'sudo config interface shutdown Ethernet224-248')
+
     def get_dpus_status(self):
         dpu_status = self.engine.run_cmd(f'show chassis module status')
         return generic_sonic_output_parser(dpu_status, output_key="Name")
