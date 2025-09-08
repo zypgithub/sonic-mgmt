@@ -67,6 +67,7 @@ class CumulusGeneralCli(NvueGeneralCli):
         self.engine.run_cmd('python -m venv sdk_env --system-site-packages', timeout=120, retry_run=True)
         self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install --upgrade pip --root-user-action=ignore', timeout=120, retry_run=True)
         self.engine.run_cmd('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore', timeout=120, retry_run=True)
+        self.engine.send_cmd_with_retry('sudo /home/cumulus/sdk_env/bin/pip install -r /tmp/requirements.txt --root-user-action=ignore', retries=5, timeout=120, normalize=True)
 
     def install_apt_get_pkg(self):
         self.engine.run_cmd('sudo apt-get install build-essential -y', timeout=120, retry_run=True)
