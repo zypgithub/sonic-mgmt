@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any, List, Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.tests_nvos.general.security.tpm_attestation import constants as tpmconst
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -14,6 +15,23 @@ SECONDARY_SED_TPM_BANK = '0x81010002'
 class TpmTool:
     def __init__(self, engine: LinuxSshEngine):
         self.engine = engine
+        self.tpm_pass = None
+
+    def _require_tpm_pass(self, device: BaseDevice) -> bool:
+        if self.tpm_pass is not None:
+            return True
+        if getattr(device, 'requires_tpm_pass', False):
+            try:
+                tpm_pass = self.engine.run_cmd(f'sudo dd if={tpmconst.TPM_PASS_LOCATION} bs=1 skip=4 2>/dev/null | base64 -d | awk 1')
+            except Exception as e:
+                logging.error(f'Error extracting TPM pass: {e}')
+                raise e
+            self.tpm_pass = tpm_pass.strip()
+            if not self.tpm_pass:
+                raise Exception('TPM pass is empty while it should be filled')
+            logging.info(f'TPM pass extracted: {self.tpm_pass}')
+            return True
+        return False
 
     """ API methods """
 
@@ -89,29 +107,35 @@ class TpmTool:
             tpm_pass = self.engine.run_cmd('sudo python3 -c "from sonic_platform.bmc import BMC; print(BMC(\'10.0.1.1\').get_login_password())"')
             return tpm_pass.strip()
 
-    def get_sed_password_primary_bank(self):
-        return self._get_sed_password(PRIMARY_SED_TPM_BANK)
+    def get_sed_password_primary_bank(self, device: BaseDevice):
+        return self._get_sed_password(PRIMARY_SED_TPM_BANK, device)
 
-    def get_sed_password_secondary_bank(self):
-        return self._get_sed_password(SECONDARY_SED_TPM_BANK)
+    def get_sed_password_secondary_bank(self, device: BaseDevice):
+        return self._get_sed_password(SECONDARY_SED_TPM_BANK, device)
 
-    def set_sed_password_primary_bank(self, new_password: str):
-        return self._store_sed_password(PRIMARY_SED_TPM_BANK, new_password)
+    def set_sed_password_primary_bank(self, new_password: str, device: BaseDevice):
+        return self._store_sed_password(PRIMARY_SED_TPM_BANK, new_password, device)
 
-    def set_sed_password_secondary_bank(self, new_password: str):
-        return self._store_sed_password(SECONDARY_SED_TPM_BANK, new_password)
+    def set_sed_password_secondary_bank(self, new_password: str, device: BaseDevice):
+        return self._store_sed_password(SECONDARY_SED_TPM_BANK, new_password, device)
 
     """ Helper methods """
 
-    def _get_sed_password(self, tpm_bank_context: str):
+    def _get_sed_password(self, tpm_bank_context: str, device: BaseDevice):
         with allure.step('get sed password from tpm'):
+            if self._require_tpm_pass(device):
+                return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}' -p {self.tpm_pass}")
             return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}'")
 
-    def _store_sed_password(self, tpm_bank_context: str, sed_password: str):
+    def _store_sed_password(self, tpm_bank_context: str, sed_password: str, device: BaseDevice):
         with allure.step('store sed password in tpm bank'):
             self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c "{tpm_bank_context}" > /dev/null 2>&1')
             self.engine.run_cmd('sudo tpm2_createprimary -C o --key-algorithm=rsa --key-context=prim.ctx > /dev/null 2>&1')
             self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -i - > /dev/null 2>&1')
+            if self._require_tpm_pass(device):
+                self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -p {self.tpm_pass} -i - > /dev/null 2>&1')
+            else:
+                self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -i - > /dev/null 2>&1')
             self.engine.run_cmd('sudo tpm2_load -C prim.ctx -u seal.pub -r seal.priv -n seal.name -c seal.ctx')
             self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c seal.ctx "{tpm_bank_context}"')
             self.engine.run_cmd('sudo rm -f seal.* prim.ctx')

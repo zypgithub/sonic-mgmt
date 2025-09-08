@@ -1,4 +1,5 @@
 TPM_DIR = '/host/tpm'
+TPM_PASS_LOCATION = '/sys/firmware/efi/efivars/TpmSealCtx-36bfcbde-d710-4903-ba2e-c03ec245dcee'
 
 AIK_FILENAME = 'IAK.crt'
 AIK_FILE_PATH = f'{TPM_DIR}/{AIK_FILENAME}'

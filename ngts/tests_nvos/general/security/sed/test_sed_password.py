@@ -6,7 +6,9 @@ import pytest
 
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.system.System import *
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_constants.constants_nvos import ApiType
 
 
 @pytest.mark.system
@@ -73,7 +75,7 @@ def test_back_old_pass(engines, devices, sed_default_password):
     _verify_tpm_banks_password(tpm_tool, sed_default_password)
 
     with allure.step("Set primary tpm bank to new password"):
-        tpm_tool.set_sed_password_primary_bank(new_sed_password)
+        tpm_tool.set_sed_password_primary_bank(new_sed_password, devices.dut)
 
     with allure.step("Reboot the system"):
         system.reboot.action_reboot(engine=switch, device=devices.dut)
@@ -108,7 +110,7 @@ def test_back_new_pass(engines, devices, sed_default_password):
 
     with allure.step("Set secondary tpm bank to wrong password"):
         wrong_password = "i_am_wrong_password"
-        tpm_tool.set_sed_password_secondary_bank(wrong_password)
+        tpm_tool.set_sed_password_secondary_bank(wrong_password, devices.dut)
 
     with allure.step("Reboot the system"):
         system.reboot.action_reboot(engine=switch, device=devices.dut)

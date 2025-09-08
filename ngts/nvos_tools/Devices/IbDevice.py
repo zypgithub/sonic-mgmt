@@ -2167,6 +2167,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.fnm_fae_link_speed = '100G'
         self.nvl_port_type = 'nvl'
         self.num_of_cartridges = 4
+        self.requires_tpm_pass = True
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled
@@ -2403,6 +2404,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.sma_amount = 2
         self.sma_components = list(f"{PlatformConsts.FW_SMA}{i if i else ''}" for i in range(0, self.sma_amount + 1))
         self._extend_firmware_by_sma_amount()
+        self.requires_tpm_pass = True
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
