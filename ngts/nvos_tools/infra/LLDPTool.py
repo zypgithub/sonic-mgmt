@@ -7,6 +7,7 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from ngts.nvos_constants.constants_nvos import TcpDumpConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 
 
 class LLDPTool:
@@ -67,3 +68,10 @@ class LLDPTool:
             if match:
                 res[key] = match.group(1)
         return res
+
+    @staticmethod
+    @retry(AssertionError, 10, 5)
+    def verify_ip_address_is_set(engine: PexpectSerialEngine, mgmt_interface: Port, ip_address: str):
+        with allure.step(f"Verify ip address {ip_address} is set"):
+            ip_address_output = mgmt_interface.interface.ip.address.show(dut_engine=engine)
+            ValidationTool.verify_expected_output(ip_address_output, ip_address).verify_result()
