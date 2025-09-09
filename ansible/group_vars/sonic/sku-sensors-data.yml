@@ -2075,10 +2075,7 @@ sensors_checks:
       - mp2975-i2c-20-6a/PMIC-11 DPU3 VDD_CPU (out)/in2_lcrit_alarm
       - mp2975-i2c-20-6a/PMIC-11 DPU3 VDD_CPU Rail Curr (out)/curr2_alarm
 
-      # https://redmine.mellanox.com/issues/4601092
-      # This sensor is not named correctly, should be DPU4
-      # The ticket above is to verify if this is the correct sensor
-      # - mp2975-i2c-21-69/PMIC-12 12V DPU3 VDD VDDQ_DDR (in)/power1_alarm
+      - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR (in)/power1_alarm
       - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR (in1)/in1_crit_alarm
       - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR Rail Curr (in1)/curr1_alarm
       - mp2975-i2c-21-69/PMIC-12 DPU4 VDD (out1)/in2_crit_alarm

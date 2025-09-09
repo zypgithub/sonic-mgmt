@@ -11,10 +11,11 @@ def need_dpu_player(setup_name):
 
 def get_topology_by_setup_name_and_aliases(setup_name, slow_cli, override_type=False):
     topology = get_topology_by_setup_name(setup_name, slow_cli, override_type)
+    topology = update_dut_alias(topology)
     if need_dpu_player(setup_name):
         add_dpu_player(topology, slow_cli, override_type)
 
-    return update_dut_alias(topology)
+    return topology
 
 
 def update_dut_alias(topology):
