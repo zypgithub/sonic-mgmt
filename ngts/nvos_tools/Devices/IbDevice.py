@@ -889,6 +889,24 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             PlatformConsts.SYSTEM_TYPE: "Q3401_RD",
             "asic-model": self.asic_type,
         })
+        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
+        self.category_disabled_dict = {
+            self.category_list[0]: self.category_default_disabled_dict,
+            self.category_list[1]: self.category_default_disabled_dict,
+            self.category_list[2]: self.category_disk_default_disable_dict,
+            self.category_list[3]: self.category_default_disabled_dict,
+            self.category_list[4]: self.category_default_disabled_dict,
+            self.category_list[5]: self.category_default_disabled_dict
+        }
+        self.category_list_default_dict = {
+            self.category_list[0]: self.category_default_dict,
+            self.category_list[1]: self.category_default_dict,
+            self.category_list[2]: self.category_disk_default_dict,
+            self.category_list[3]: self.category_default_dict,
+            self.category_list[4]: self.category_default_dict,
+            self.category_list[5]: self.category_default_dict
+        }
+        self.stats_temperature_header_num_of_lines = 35
         self.voltage_sensors = [
             # PMIC sensors for ASIC1
             'PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
@@ -948,6 +966,23 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             PlatformConsts.SYSTEM_TYPE: "Q3450_LD",
             "asic-model": self.asic_type,
         })
+        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
+        self.category_disabled_dict = {
+            self.category_list[0]: self.category_default_disabled_dict,
+            self.category_list[1]: self.category_default_disabled_dict,
+            self.category_list[2]: self.category_disk_default_disable_dict,
+            self.category_list[3]: self.category_default_disabled_dict,
+            self.category_list[4]: self.category_default_disabled_dict,
+            self.category_list[5]: self.category_default_disabled_dict
+        }
+        self.category_list_default_dict = {
+            self.category_list[0]: self.category_default_dict,
+            self.category_list[1]: self.category_default_dict,
+            self.category_list[2]: self.category_disk_default_dict,
+            self.category_list[3]: self.category_default_dict,
+            self.category_list[4]: self.category_default_dict,
+            self.category_list[5]: self.category_default_dict
+        }
         self.voltage_sensors = [
             "HSC-1-VinDC-In", "HSC-1-VinDC-Out", "HSC-2-VinDC-In", "HSC-2-VinDC-Out", "HSCC-1-Conv-In-1",
             "HSCC-1-Conv-Out-1", "HSCC-2-Conv-In-1", "HSCC-2-Conv-Out-1", "PMIC-1-12V-VDD-ASIC1-In-1",
