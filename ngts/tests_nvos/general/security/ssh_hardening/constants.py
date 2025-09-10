@@ -7,6 +7,13 @@ class SshHardeningConsts:
     MACS = 'MACs'
     KEX_ALGOS = 'kex-algorithms'
     AUTH_KEY_TYPES = 'auth-key-types'
+    PUBLIC_KEY_LENGTH_DICT = {
+        'ecdsa-sha2-nistp521': 521,
+        'ecdsa-sha2-nistp384': 384,
+        'ecdsa-sha2-nistp256': 256,
+        'ssh-ed25519': 1024,
+        'ssh-rsa': 4096
+    }
 
     OPTIONS_FOR_FUNCTIONAL_TEST = [CIPHERS, MACS, KEX_ALGOS]
 

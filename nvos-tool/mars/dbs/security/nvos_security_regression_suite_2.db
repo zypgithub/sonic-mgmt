@@ -70,6 +70,9 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_pka.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_trusted_auth.cases </cases>
+	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_rbac.cases </cases>
     </test>

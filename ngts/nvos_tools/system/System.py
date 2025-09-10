@@ -32,6 +32,7 @@ from ngts.nvos_tools.system.Ntp import Ntp
 from ngts.nvos_tools.system.Profile import Profile
 from ngts.nvos_tools.system.Reboot import Reboot
 from ngts.nvos_tools.system.Security import Security
+from ngts.nvos_tools.system.SshServer import SshServer
 from ngts.nvos_tools.system.SnmpServer import SnmpServer
 from ngts.nvos_tools.system.Stats import Stats
 from ngts.nvos_tools.system.Syslog import Syslog
@@ -55,7 +56,7 @@ class System(BaseComponent):
         self.debug_log = DebugLog(self)
         self.snmp_server = SnmpServer(self)
         self.security = Security(self)
-        self.ssh_server = BaseComponent(self, path='/ssh-server')
+        self.ssh_server = SshServer(self)
         self.system_cli = BaseComponent(self, path='/cli')
         self.serial_console = BaseComponent(self, path='/serial-console')
         self.syslog = Syslog(self)

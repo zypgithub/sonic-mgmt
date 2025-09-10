@@ -46,3 +46,4 @@ venv
 file.log
 log.txt
 .devcontainer/
+.cache/

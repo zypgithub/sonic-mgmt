@@ -9,7 +9,8 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
-from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path
+from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
 
 
 @pytest.mark.security
@@ -347,7 +348,7 @@ def test_ssh_pka_connections_stress(engines):
         with allure.step("generate 20 different keys for admin"):
             public_keys_list = []
             private_keys_paths_list = []
-            keys_list = list(public_key_length.keys())
+            keys_list = list(SshHardeningConsts.PUBLIC_KEY_LENGTH_DICT.keys())
             for i in range(4):
                 for key in keys_list:
                     public_key, key_type, private_path = _generate_new_key(engine=engines.dut,
