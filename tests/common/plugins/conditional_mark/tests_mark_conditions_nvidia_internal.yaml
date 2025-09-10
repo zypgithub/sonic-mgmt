@@ -338,9 +338,11 @@ tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py::TestEvpnVxlan::test_evp
 
 tests/push_build_tests/L3/static_route/test_static_route.py::test_basic_static_route:
   xfail:
-    reason: "Xfail due to https://redmine.mellanox.com/issues/4499617"
+    reason: "Xfail due to https://redmine.mellanox.com/issues/4499617 or ignored for 5810 platform due to RM issue: https://redmine.mellanox.com/issues/4566594"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4499617"
+    - "https://redmine.mellanox.com/issues/4566594 and '5810' in platform"
 
 tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggle_peer_port:
   skip:
