@@ -667,6 +667,12 @@ platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
     conditions:
     - "'nvda_bf' in platform"
 
+generic_config_updater/test_dynamic_acl.py::test_gcu_acl_forward_rule_removal:
+  skip:
+    reason: "skip for IPv6-only topologies"
+    conditions:
+      - "'-v6-' in topo_name"
+
 platform_tests/mellanox/test_check_sfp_using_ethtool.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
