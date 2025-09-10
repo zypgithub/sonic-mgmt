@@ -117,6 +117,12 @@ class FaePlatform(BaseComponent):
         self.debug = Debug(self)
         self.asic = Asic(self)
         self.power_capping = FaePowerCapping(self)
+        self.write_protection = WriteProtection(self)
+
+
+class WriteProtection(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path="/write-protection")
 
 
 class FaeFirmware(BaseComponent):
