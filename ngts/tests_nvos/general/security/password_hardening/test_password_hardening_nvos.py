@@ -856,6 +856,7 @@ def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
     username = dut.username
     password = dut.password
     new_password1, new_password2 = generate_strong_password(15), generate_strong_password(15)
+    pwh = system.security.password_hardening
 
     password_history_err = 'Password should be different than.*previous passwords'
 
@@ -885,6 +886,8 @@ def test_password_hardening_history_with_reboot(engines, devices, topology_obj):
         with allure.step('wait for System is ready'):
             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, devices.dut.timeout_system_is_ready)
 
+    with allure.step('Enable the feature'):
+        pwh.set(PwhConsts.STATE, PwhConsts.ENABLED, apply=True).verify_result()
     with allure.step('reset admin password'):
         system.aaa.user.user_id['admin'].unset(apply=True).verify_result()
     with allure.step('save config'):
