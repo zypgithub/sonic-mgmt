@@ -86,7 +86,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
     def get_physical_ports(self):
         output = self.engine.run_cmd("nv sh platform -o json", print_output=False)
         output = json.loads(output)
-        if output['product-name'] == 'SN5640':
+        if output['asic-model'] == 'Spectrum-5':
             # for Spectrum 5 the number of ports is 66 but reported as 130
             return 66
         port_layout = output["port-layout"]
