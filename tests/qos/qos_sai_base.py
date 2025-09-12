@@ -1101,11 +1101,6 @@ class QosSaiBase(QosBase):
                     if portIndex not in uplinkPortIds:
                         downlinkPortIds.append(portIndex)
 
-            if is_supported_per_dir:
-                for portIndex, _ in testPortIps[src_dut_index][src_asic_index].items():
-                    if portIndex not in uplinkPortIds:
-                        downlinkPortIds.append(portIndex)
-
             if 'backend' in topo:
                 # since backend T0 utilize dot1q encap pkts, testPortIds need to be repopulated with the
                 # associated sub-interfaces stored in testPortIps
