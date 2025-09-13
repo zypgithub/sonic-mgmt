@@ -12,7 +12,7 @@ from tests.packet_trimming.packet_trimming_helper import (
     configure_trimming_action, configure_trimming_acl, verify_srv6_packet_with_trimming, cleanup_trimming_acl,
     verify_trimmed_packet, reboot_dut, check_connected_route_ready, get_switch_trim_counters_json,
     get_port_trim_counters_json, disable_egress_data_plane, enable_egress_data_plane,
-    verify_queue_and_port_trim_counter_consistency, get_queue_trim_counters_json)
+    verify_queue_and_port_trim_counter_consistency, get_queue_trim_counters_json, compare_counters)
 
 logger = logging.getLogger(__name__)
 
@@ -220,43 +220,9 @@ class BasePacketTrimming:
             kwargs.update({'duthost': duthost, 'ptfadapter': ptfadapter})
             verify_trimmed_packet(**kwargs)
 
-        with allure.step("Get packet trimming counter when trimming is enabled"):
-            from infra.tools.redmine.redmine_api import is_redmine_issue_active
-            if not is_redmine_issue_active([4558645])[0]:
-                # Get queue level counter
-                port = test_params['egress_ports'][0]['dut_members'][0]
-                queue_trim_counter_trim_enable = get_queue_trim_counters_json(duthost, port)['UC'+str(TRIM_QUEUE)]
-                logger.info(f"Queue trim counter when trimming is enabled: {queue_trim_counter_trim_enable}")
-
-                # Get port level counter
-                port_trim_counters_trim_enable = get_port_trim_counters_json(duthost, port)
-                port_trim_counter_trim_enable = port_trim_counters_trim_enable['TRIM_PKTS']
-                port_trim_sent_counter_trim_enable = port_trim_counters_trim_enable['TRIM_TX_PKTS']
-                port_trim_drop_counter_trim_enable = port_trim_counters_trim_enable['TRIM_DRP_PKTS']
-                logger.info(f"Port trim counter when trimming is enabled: {port_trim_counters_trim_enable}")
-
         with allure.step("Disable trimming"):
             for buffer_profile in test_params['trim_buffer_profiles']:
                 configure_trimming_action(duthost, test_params['trim_buffer_profiles'][buffer_profile], "off")
-
-        with allure.step("Get packet trimming counter when trimming is disabled"):
-            if not is_redmine_issue_active([4558645])[0]:
-                # Get queue level counter
-                queue_trim_counter_trim_disable = get_queue_trim_counters_json(duthost, port)['UC'+str(TRIM_QUEUE)]
-                logger.info(f"Queue trim counter when trimming is disabled: {queue_trim_counter_trim_disable}")
-
-                # Get port level counter
-                port_trim_counters_trim_disable = get_port_trim_counters_json(duthost, port)
-                port_trim_counter_trim_disable = port_trim_counters_trim_disable['TRIM_PKTS']
-                port_trim_sent_counter_trim_disable = port_trim_counters_trim_disable['TRIM_TX_PKTS']
-                port_trim_drop_counter_trim_disable = port_trim_counters_trim_disable['TRIM_DRP_PKTS']
-                logger.info(f"Port trim counter when trimming is disabled: {port_trim_counters_trim_disable}")
-
-                # Compare trim counters
-                pytest_assert(queue_trim_counter_trim_enable == queue_trim_counter_trim_disable)
-                pytest_assert(port_trim_counter_trim_enable == port_trim_counter_trim_disable)
-                pytest_assert(port_trim_sent_counter_trim_enable == port_trim_sent_counter_trim_disable)
-                pytest_assert(port_trim_drop_counter_trim_enable == port_trim_drop_counter_trim_disable)
 
         with allure.step(f"Verify no trimming action in {self.trimming_mode} mode when disable trimming"):
             self.configure_trimming_global_by_mode(duthost)
@@ -283,7 +249,6 @@ class BasePacketTrimming:
                 logger.info(f"Trimming config toggle test iteration {i + 1}")
                 for buffer_profile in test_params['trim_buffer_profiles']:
                     configure_trimming_action(duthost, test_params['trim_buffer_profiles'][buffer_profile], "off")
-                for buffer_profile in test_params['trim_buffer_profiles']:
                     configure_trimming_action(duthost, test_params['trim_buffer_profiles'][buffer_profile], "on")
 
         with allure.step(f"Verify trimming still works after feature toggles in {self.trimming_mode} mode"):
@@ -323,7 +288,7 @@ class BasePacketTrimming:
 
         with allure.step("Verify connected route is ready after port toggles"):
             for egress_port in test_params['egress_ports']:
-                pytest_assert(wait_until(30, 5, 0, check_connected_route_ready, duthost, egress_port['name']),
+                pytest_assert(wait_until(30, 5, 0, check_connected_route_ready, duthost, egress_port),
                               "Connected route is not ready")
 
         with allure.step("Verify trimming still works after admin toggles"):
@@ -374,22 +339,8 @@ class BasePacketTrimming:
 
         with allure.step("Verify connected route is ready after reload/cold reboot"):
             for egress_port in test_params['egress_ports']:
-                pytest_assert(wait_until(30, 5, 0, check_connected_route_ready, duthost, egress_port['name']),
+                pytest_assert(wait_until(30, 5, 0, check_connected_route_ready, duthost, egress_port),
                               "Connected route is not ready")
-
-        with allure.step("Verify counter is not clear after config reload"):
-            from infra.tools.redmine.redmine_api import is_redmine_issue_active
-            if not is_redmine_issue_active([4558645])[0] and reboot_type == "reload":
-                # Verify queue level counter is not clear
-                port = test_params['egress_ports'][0]['dut_members'][0]
-                queue_trim_counter = get_queue_trim_counters_json(duthost, port)['UC'+str(TRIM_QUEUE)]["trimpacket"]
-                logger.info(f"Queue trim counter: {queue_trim_counter}")
-                pytest_assert(queue_trim_counter > 0)
-
-                # Verify port level counter is not clear
-                port_trim_counter = get_port_trim_counters_json(duthost, port)['TRIM_PKTS']
-                logger.info(f"Port trim counter: {port_trim_counter}")
-                pytest_assert(port_trim_counter > 0)
 
         if is_mellanox_device(duthost):
             with allure.step("Disable packet aging for mellanox device after config reload"):
@@ -444,7 +395,9 @@ class BasePacketTrimming:
 
             # Verify the trim sent counter on the switch level is equal to the sum of the trim sent counter on the
             # port level
-            pytest_assert(sum(ports_trim_sent_counters) == switch_trim_sent_value and switch_trim_sent_value != 0)
+            pytest_assert(sum(ports_trim_sent_counters) == switch_trim_sent_value and switch_trim_sent_value != 0,
+                          "Trim sent counter on switch level is not equal to the sum of trim sent counter on port "
+                          "level")
 
         with allure.step("Verify TrimDrop counters on switch level"):
             original_schedulers = {}
@@ -463,7 +416,7 @@ class BasePacketTrimming:
                 # Get the TrimDrop counters on switch level
                 switch_trim_drop_value = get_switch_trim_counters_json(duthost)['trim_drop']
                 logger.info(f"switch_trim_drop_value: {switch_trim_drop_value}")
-                pytest_assert(switch_trim_drop_value > 0)
+                pytest_assert(switch_trim_drop_value > 0, "Trim drop counter on switch level is not greater than 0")
 
             finally:
                 # Enable the trimmed queue with original scheduler
@@ -471,3 +424,49 @@ class BasePacketTrimming:
                     for dut_member in port['dut_members']:
                         original_scheduler = original_schedulers.get(dut_member)
                         enable_egress_data_plane(duthost, dut_member, TRIM_QUEUE, original_scheduler)
+
+        with allure.step("Verify trimming counter when trimming feature toggles"):
+            trim_queue = 'UC'+str(TRIM_QUEUE)
+
+            # Get queue level and port level counter when trimming is enabled
+            port = test_params['egress_ports'][0]['dut_members'][0]
+            queue_trim_counter_trim_enable = get_queue_trim_counters_json(duthost, port)[trim_queue]
+            logger.info(f"Queue trim counter when trimming is enabled: {queue_trim_counter_trim_enable}")
+
+            port_trim_counters_trim_enable = get_port_trim_counters_json(duthost, port)
+            logger.info(f"Port trim counter when trimming is enabled: {port_trim_counters_trim_enable}")
+
+            # Disable trimming
+            for buffer_profile in test_params['trim_buffer_profiles']:
+                configure_trimming_action(duthost, test_params['trim_buffer_profiles'][buffer_profile], "off")
+            for buffer_profile in trim_counter_params['trim_buffer_profiles']:
+                configure_trimming_action(duthost, trim_counter_params['trim_buffer_profiles'][buffer_profile], "off")
+
+            # Get queue level and port level counter when trimming is disabled
+            queue_trim_counter_trim_disable = get_queue_trim_counters_json(duthost, port)[trim_queue]
+            logger.info(f"Queue trim counter when trimming is disabled: {queue_trim_counter_trim_disable}")
+
+            port_trim_counters_trim_disable = get_port_trim_counters_json(duthost, port)
+            logger.info(f"Port trim counter when trimming is disabled: {port_trim_counters_trim_disable}")
+
+            # Compare trim counters when trimming enable and disable
+            compare_counters(queue_trim_counter_trim_enable, queue_trim_counter_trim_disable, ['trimpacket'])
+            compare_counters(port_trim_counters_trim_enable, port_trim_counters_trim_disable, ['TRIM_PKTS'])
+
+            # Enable trimming again
+            for buffer_profile in test_params['trim_buffer_profiles']:
+                configure_trimming_action(duthost, test_params['trim_buffer_profiles'][buffer_profile], "on")
+            for buffer_profile in trim_counter_params['trim_buffer_profiles']:
+                configure_trimming_action(duthost, trim_counter_params['trim_buffer_profiles'][buffer_profile], "on")
+
+            # Get queue level and port level counter after trimming feature toggles
+            queue_trim_counter_after_toggle = get_queue_trim_counters_json(duthost, port)[trim_queue]
+            logger.info(f"Queue trim counter after trimming feature toggles: {queue_trim_counter_after_toggle}")
+
+            port_trim_counters_after_toggle = get_port_trim_counters_json(duthost, port)
+            logger.info(f"Port trim counter after trimming feature toggles: {port_trim_counters_after_toggle}")
+
+            # Compare trim counters when trimming enable and feature toggles
+            compare_counters(queue_trim_counter_trim_enable, queue_trim_counter_after_toggle, ['trimpacket'])
+            compare_counters(port_trim_counters_trim_enable, port_trim_counters_after_toggle,
+                             ['TRIM_PKTS', 'TRIM_TX_PKTS', 'TRIM_DRP_PKTS'])
