@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 import json
 import os
-import pytest
 import yaml
-import glob
 import logging
 import re
-import os
 import sys
 import subprocess
+logger = logging.getLogger()
+# Check and install python-gerrit-api if needed
+try:
+    import gerrit
+    logger.info("python-gerrit-api is already installed")
+except ImportError:
+    logger.info("python-gerrit-api not found, installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "python-gerrit-api"])
+    logger.info("Successfully installed python-gerrit-api")
 
 path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
@@ -20,10 +26,6 @@ from datetime import datetime, timedelta
 from gerrit.base import GerritClient
 from ngts.constants.constants import Sonic_Cache, MarsConstants
 from infra.tools.redmine.redmine_api import get_issues_active_status
-from tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore import get_ignore_list, get_redmine_issues_status
-from tests.common.plugins.conditional_mark.issue import get_conditions_redmine_issues_status, get_conditions_list
-import tests.common.plugins.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore as la_dynamic_errors_ignore_module
-import tests.common.plugins.conditional_mark.issue as issue_module
 
 logger = logging.getLogger()
 
@@ -86,42 +88,68 @@ def get_active_branches(client, all_branches):
     return active_branches
 
 
-def redmine_issues_per_branch(client, branch):
+def extract_redmine_issues_from_branch(client, branch):
     """
-    Overwrite the existing LA files in sonic-mgmt with the latest version from the branch.
-    Return the redmine issues status dict for the branch.
+    Extract all Redmine issues from a specific branch by reading the YAML files.
+    Returns a set of unique issue IDs from both LA and conditional files.
     """
     project = client.projects.get(Sonic_Cache.PROJECT_NAME)
     branch_obj = project.branches.get(branch)
+
+    all_issues = set()
+
+    # Extract issues from LA dynamic files
     for la_file in LA_DYNAMIC_FILES:
         try:
             la_content = branch_obj.get_file_content(la_file, decode=True)
-            la_local_path = os.path.join(MarsConstants.SONIC_MGMT_DIR, la_file)
-            with open(la_local_path, "w") as f:
-                yaml.dump(yaml.safe_load(la_content), f)
+            la_data = yaml.safe_load(la_content)
+            la_json = json.dumps(la_data)
+            branch_la_issues = re.findall(r"\"Redmine\":\s*\[(\d+)\]", la_json)
+            all_issues.update(branch_la_issues)
         except Exception as e:
             logger.error(f"Skipped missing or invalid file {la_file} in branch {branch}: {e}")
-    la_issues_active_status_dict = la_dynamic_errors_ignore_module.get_redmine_issues_status()
-    return la_issues_active_status_dict
 
-
-def conditions_per_branch(client, branch):
-    """
-    Overwrite the existing conditions files in sonic-mgmt with the latest version from the branch.
-    Return the conditional mark dict for the branch.
-    """
-    project = client.projects.get(Sonic_Cache.PROJECT_NAME)
-    branch_obj = project.branches.get(branch)
+    # Extract issues from conditional mark files
     for file_path in CONDITIONAL_MARK_FILES:
         try:
             file_content = branch_obj.get_file_content(CONDITIONAL_MARK_PREFIX + file_path, decode=True)
-            local_path = os.path.join(MarsConstants.SONIC_MGMT_DIR + CONDITIONAL_MARK_PREFIX, file_path)
-            with open(local_path, "w") as f:
-                yaml.dump(yaml.safe_load(file_content), f)
+            file_data = yaml.safe_load(file_content)
+            file_json = json.dumps(file_data)
+            branch_conditional_issues = re.findall(r"https:\/\/redmine\.mellanox\.com\/issues\/(\d+)", file_json)
+            all_issues.update(branch_conditional_issues)
         except Exception as e:
             logger.error(f"Skipped missing or invalid file {file_path} in branch {branch}: {e}")
-    conditional_mark_dict = issue_module.get_conditions_redmine_issues_status()
-    return conditional_mark_dict
+
+    return all_issues
+
+
+def collect_all_unique_issues(client, active_branches):
+    """
+    Collect all unique Redmine issues from all active branches.
+    Returns a set of all unique issue IDs.
+    """
+    all_issues = set()
+
+    logger.info(f"Collecting unique Redmine issues from {len(active_branches)} active branches")
+
+    for branch in active_branches:
+        logger.info(f"Processing branch: {branch}")
+        branch_issues = extract_redmine_issues_from_branch(client, branch)
+        all_issues.update(branch_issues)
+
+    logger.info(f"Found {len(all_issues)} unique Redmine issues across all branches")
+
+    return all_issues
+
+
+def get_status_for_all_issues(all_issues):
+    """
+    Get the status for all unique issues in a single API call.
+    Returns a dictionary mapping issue IDs to their status.
+    """
+    logger.info(f"Getting status for {len(all_issues)} unique Redmine issues")
+    issues_status_dict = get_issues_active_status(list(all_issues))
+    return issues_status_dict
 
 
 def get_service_env_vars():
@@ -165,7 +193,7 @@ def copy_cache_to_host_server(combined_issues_status, temp_file, remote_temp_fil
         raise
 
 
-def copy_cache_to_target_path(combined_issues_status, remote_temp_file):
+def copy_cache_to_target_path(remote_temp_file):
     """
     Copy the redmine cache to the target path.
     """
@@ -179,7 +207,6 @@ def copy_cache_to_target_path(combined_issues_status, remote_temp_file):
         f"{SERVICE_ACCOUNT_USER}@{HOST_SERVER_IP}",
         f"sudo cp {remote_temp_file} {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE} && sudo chmod 644 {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE} && rm {remote_temp_file}"
     ]
-
     logger.info(f"Service account copying from /tmp to {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE}")
     result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=300)
 
@@ -199,7 +226,7 @@ def write_redmine_cache(combined_issues_status):
     remote_temp_file = "/tmp/redmine_cache_temp.json"
     try:
         copy_cache_to_host_server(combined_issues_status, temp_file, remote_temp_file)
-        copy_cache_to_target_path(combined_issues_status, remote_temp_file)
+        copy_cache_to_target_path(remote_temp_file)
     except subprocess.TimeoutExpired:
         logger.error("Timeout while copying cache to host server")
         raise
@@ -212,33 +239,18 @@ def write_redmine_cache(combined_issues_status):
         logger.info("Successfully wrote redmine cache to target server")
 
 
-def generate_redmine_cache():
+def get_all_active_branches_issues_status():
     """
-    Generate the JSON file containing the redmine issues status for all active branches.
+    Generate the dictionary containing the redmine issues status for all active branches.
     """
     username = Sonic_Cache.gerrit_username
     token = Sonic_Cache.gerrit_api_token
     client = GerritClient(base_url=Sonic_Cache.GERRIT_API_URL, username=username, password=token)
     all_branches = get_all_branches(client)
     active_branches = get_active_branches(client, all_branches)
-    la_dynamic_errors_ignore_module.get_ignore_list = get_ignore_list.__wrapped__
-    issue_module.get_conditions_list = get_conditions_list.__wrapped__
-    la_dynamic_errors_ignore_module.get_redmine_issues_status = get_redmine_issues_status.__wrapped__
-    issue_module.get_conditions_redmine_issues_status = get_conditions_redmine_issues_status.__wrapped__
-    combined_issues_status = {}
-    for branch in active_branches:
-        la_issues_active_status_dict = redmine_issues_per_branch(client, branch)
-        conditional_mark_dict = conditions_per_branch(client, branch)
-        branch_redmine_issues = merge_dicts(la_issues_active_status_dict, conditional_mark_dict)
-        combined_issues_status.update(branch_redmine_issues)
-
-    write_redmine_cache(combined_issues_status)
-
-    return combined_issues_status
-
-
-def merge_dicts(dict1, dict2):
-    return {**dict1, **{k: v for k, v in dict2.items() if k not in dict1}}
+    all_issues = collect_all_unique_issues(client, active_branches)
+    all_issues_status = get_status_for_all_issues(all_issues)
+    return all_issues_status
 
 
 if __name__ == "__main__":
@@ -250,9 +262,14 @@ if __name__ == "__main__":
 
     try:
         # Run the main test function
-        result = generate_redmine_cache()
-        logger.info("Successfully generated Redmine cache")
-        logger.info(f"Number of issues processed: {len(result)}")
+        combined_issues_status = get_all_active_branches_issues_status()
+        if not combined_issues_status:
+            logger.warning("No redmine issues found - this might indicate API issues during maintenance")
+            logger.warning("Skipping cache update to avoid overwriting with empty data")
+        else:
+            write_redmine_cache(combined_issues_status)
+            logger.info("Successfully generated Redmine cache")
+            logger.info(f"Number of issues processed: {len(combined_issues_status)}")
         sys.exit(0)
     except Exception as e:
         logger.error(f"Failed to generate Redmine cache: {str(e)}", exc_info=True)

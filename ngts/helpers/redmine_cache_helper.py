@@ -1,6 +1,5 @@
 import json
 import logging
-import traceback
 import os
 
 from ngts.constants.constants import Sonic_Cache
@@ -17,13 +16,8 @@ def access_redmine_cache(redmine_issues_list, use_active_status=True):
         issue_list (list): List of issue IDs to check
         use_active_status (bool): If True, use get_issues_active_status, else use get_issues_status
     returns:
-        dict: Dictionary of issue statuses
+        dict: Dictionary of issues status
     """
-    # Check if any caller in the stack is from redmine_refresh.py, if yes, return active status
-    stack = traceback.extract_stack()
-    if any('redmine_refresh.py' in frame.filename for frame in stack):
-        return get_issues_active_status(redmine_issues_list)
-
     missing_issues = []
     try:
         logger.info(f"Reading from cache: {Sonic_Cache.REDMINE_ISSUES_STATUS_CACHE}")
