@@ -69,7 +69,7 @@ class TestAutoTechSupport:
     dut_cli = None
     dockers_list = []
     # The restapi docker doesn't mount the /etc/sonic directory, which result in the core_file_generator script
-    # is not available in restapi container. So it's skipped from the test
+    # is not available in reatapi container. So it's skipped from the test
     unsupported_dockers_list = ['restapi']
     number_of_test_dockers = 0
     test_docker = None
@@ -138,7 +138,7 @@ class TestAutoTechSupport:
 
     def test_sanity(self, cleanup_list):
         """
-        Basic sanity test for auto techsupport feature
+        Basic sanity test for auto tehcsupport feature
         Test logic is as follows:
         - Validate CLI default values(global and features)
         - Create core file in SONiC host(not in docker) - verify that techsupport generation not started
@@ -656,8 +656,10 @@ def is_techsupport_generation_in_expected_state(duthost, expected_in_progress=Tr
     """
     with allure.step('Checking techsupport generation process'):
         techsupport_in_progress = False
-        get_running_tech_procs_cmd = 'ps -aux | grep "[c]oredump_gen_handler"'
-        num_of_process = len(duthost.shell(get_running_tech_procs_cmd, module_ignore_errors=True)['stdout_lines'])
+        processes_to_be_ignored = 2
+        get_running_tech_procs_cmd = 'ps -aux | grep "coredump_gen_handler"'
+        # Need to ignore 2 lines: one line with "grep...", another line with ansible module which call "grep..."
+        num_of_process = len(duthost.shell(get_running_tech_procs_cmd)['stdout_lines']) - processes_to_be_ignored
         logger.info('Number of running autotechsupport processes: {}'.format(num_of_process))
 
         if num_of_process >= 1:
@@ -703,14 +705,15 @@ def validate_saidump_file_inside_techsupport(duthost, techsupport_folder):
     with allure.step('Validate SAI dump file is included in the tech-support dump'):
         saidump_files_inside_techsupport = \
             duthost.shell(f'ls {techsupport_folder}/sai_failure_dump')['stdout_lines']
-        assert saidump_files_inside_techsupport, 'Expected SAI dump file(folder(s)) not available in techsupport dump'
+        assert saidump_files_inside_techsupport, 'Expected SAI dump file(folder) not available in techsupport dump'
         # Check sai_sdk_dump only for mellanox platform, and not for DPU
         if duthost.facts['asic_type'] in ["mellanox"] and "dpu" not in duthost.hostname:
             # sai XML dump is only support on the switch
             sai_sdk_dump = duthost.command(f"ls {techsupport_folder}/sai_sdk_dump/")["stdout_lines"]
             assert len(sai_sdk_dump), "Folder 'sai_sdk_dump' in dump archive is empty. Expected not empty folder"
             sai_xml_regex = re.compile(r'sai_[\w-]+\.xml(?:\.gz)?')
-            assert any(sai_xml_regex.fullmatch(file_name) for file_name in sai_sdk_dump), "No SAI XML file found in sai_sdk_dump folder"
+            assert any(sai_xml_regex.fullmatch(file_name) for file_name in sai_sdk_dump), \
+                   "No SAI XML file found in sai_sdk_dump folder"
 
 
 def validate_techsupport_since(duthost, techsupport_folder, expected_oldest_log_line_timestamps_list):
@@ -882,7 +885,7 @@ def validate_techsupport_generation(duthost, dut_cli, is_techsupport_expected, e
     :param is_techsupport_expected: True/False, if expect techsupport - then True
     :param expected_core_file: expected core file name which we will check in techsupport file
     :param since_value_in_seconds: int, value in seconds which used in validation for since parameter
-    :param available_tech_support_files: list, has available techsupport files
+    :param available_tech_support_files: list, has available techupport files
     :param is_sai_dump_expected: bool, true if expected saidump folder, else False
     :param delay_before_validation: int, value in seconds how long need to wait before start validation
     :return: AssertionError in case of failure
@@ -1168,7 +1171,7 @@ def validate_expected_stub_files(duthost, validation_folder, expected_stub_files
     :param duthost: duthost object
     :param validation_folder: path to folder in which we will do validation
     :param expected_stub_files_list: expected files list
-    :param expected_number_of_additional_files: expected number of additional files in folder
+    :param expected_number_of_additional_files: expected number of additonal files in folder
     :param not_expected_stub_files_list: not expected files list
     :param expected_max_folder_size: expected maximum folder size
     """

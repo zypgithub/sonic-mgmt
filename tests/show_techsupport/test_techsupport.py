@@ -9,7 +9,7 @@ import tech_support_cmds as cmds
 from random import randint
 from collections import defaultdict
 from tests.common.helpers.assertions import pytest_assert, pytest_require
-from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError, get_bughandler_instance
+from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError
 from tests.common.utilities import wait_until, check_msg_in_syslog
 from log_messages import LOG_EXPECT_ACL_RULE_CREATE_RE, LOG_EXPECT_ACL_RULE_REMOVE_RE, LOG_EXCEPT_MIRROR_SESSION_REMOVE
 from pkg_resources import parse_version
@@ -53,11 +53,6 @@ SESSION_INFO = {
 
 DPU_PLATFORM_DUMP_FILES = ["sysfs_tree", "sys_version", "dmesg",
                            "dmidecode", "lsmod", "lspci", "top", "bin/platform-dump.sh"]
-
-# TODO: WA for issue RM#4119718, remove after it is closed
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-if is_redmine_issue_active([4119718])[0]:
-    DPU_PLATFORM_DUMP_FILES.remove("dmidecode")
 
 # ACL PART #
 
@@ -144,8 +139,7 @@ def acl(duthosts, enum_rand_one_per_hwsku_frontend_hostname, acl_setup, request)
     acl_facts = duthost.acl_facts()["ansible_facts"]["ansible_acl_facts"]
     pytest_require(ACL_TABLE_NAME in acl_facts, "{} acl table not exists")
 
-    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
-                              bughandler=get_bughandler_instance({"type": "default"}))
+    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
     loganalyzer.load_common_config()
 
     try:
@@ -249,8 +243,7 @@ def mirroring(duthosts, enum_rand_one_per_hwsku_frontend_hostname, neighbor_ip, 
     try:
         yield
     finally:
-        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
-                                  bughandler=get_bughandler_instance({"type": "default"}))
+        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
         loganalyzer.load_common_config()
 
         try:
@@ -409,7 +402,8 @@ def validate_dump_file_content(duthost, dump_folder_path):
         if "dpu" not in duthost.hostname:
             # sai XML dump is only support on the switch
             sai_xml_regex = re.compile(r'sai_[\w-]+\.xml(?:\.gz)?')
-            assert any(sai_xml_regex.fullmatch(file_name) for file_name in sai_sdk_dump), "No SAI XML file found in sai_sdk_dump folder"
+            assert any(sai_xml_regex.fullmatch(file_name) for file_name in sai_sdk_dump), \
+                   "No SAI XML file found in sai_sdk_dump folder"
     assert len(dump) > MIN_FILES_NUM, "Seems like not all expected files available in 'dump' folder in dump archive. " \
                                       "Test expects not less than 50 files. Available files: {}".format(dump)
     assert len(etc) > MIN_FILES_NUM, "Seems like not all expected files available in 'etc' folder in dump archive. " \
