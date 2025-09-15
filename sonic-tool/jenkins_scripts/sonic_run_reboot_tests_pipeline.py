@@ -213,7 +213,9 @@ def prepare_cases_files(reboot_type_iterations_dict,
     """
     Prepare CASES files and store them into sonic-mgmt folder
     """
-    if upgrade_testcase == "test_multi_hop_upgrade_path" or upgrade_testcase == "test_warm_upgrade_sad_path":
+    if upgrade_testcase == "test_multi_hop_upgrade_path":
+        case_timeout = 86400
+    elif upgrade_testcase == "test_warm_upgrade_sad_path":
         case_timeout = 54000
     else:
         case_timeout = 5400
