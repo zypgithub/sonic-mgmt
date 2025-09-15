@@ -7,6 +7,7 @@ import logging
 
 logging_logger = logging.getLogger()
 
+
 # internal used function
 def _parse_column_positions(sep_line, sep_char='-'):
     prev = ' ',
@@ -67,12 +68,13 @@ def parse_show(output_lines):
 
     return result
 
-def __retry_internal(f, exceptions=Exception, tries=-1, delay=0, logger=logging_logger):
+
+def __retry_internal(f, exceptions=Exception, tries=3, delay=2, logger=logging_logger):
     """
     @summary: Execute function with retry mechanism
     @param f: Function to execute
     @param exceptions: Exceptions to retry on
-    @param tries: Retry attempts (-1 = infinite)
+    @param tries: Retry attempts
     @param delay: Base delay between retries
     @param logger: Logger instance
     @return: Function result
@@ -89,19 +91,19 @@ def __retry_internal(f, exceptions=Exception, tries=-1, delay=0, logger=logging_
                 logger.warning('%s, retrying in %s seconds...', e, delay)
             time.sleep(delay)
 
-def retry_call(f, fargs=None, fkwargs=None, exceptions=Exception, tries=-1, delay=0, logger=logging_logger):
+
+def retry_call(f, fargs=None, fkwargs=None, exceptions=Exception, tries=3, delay=2, logger=logging_logger):
     """
     @summary: Call function with retry mechanism
     @param f: Target function
     @param fargs: Positional args
     @param fkwargs: Keyword args
     @param exceptions: Exceptions to retry on
-    @param tries: Retry attempts (-1 = infinite)
+    @param tries: Retry attempts
     @param delay: Base delay between retries
     @param logger: Logger instance
     @return: Function result
     """
     def _wrapped_f():
         return f(*(fargs or []), **(fkwargs or {}))
-
     return __retry_internal(_wrapped_f, exceptions, tries, delay, logger)
