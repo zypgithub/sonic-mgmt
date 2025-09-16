@@ -95,9 +95,9 @@ def pytest_addoption(parser):
     logger.info('Parsing fanout_target_version')
     parser.addoption("--fanout_target_version", help="The target version of fanout. Only for SONiC.", default=None)
 
-    logger.info('Parsing use_custom_config_db_air')
-    parser.addoption('--use_custom_config_db_air', action='store_true', required=False, default=False,
-                     help='Use custom config_db.json file for AIR simulations')
+    logger.info('Parsing custom_config_db_air_path')
+    parser.addoption('--custom_config_db_air_path', required=False, default="", action="store",
+                     help='path to custom config_db.json file for AIR simulations')
 
 
 @pytest.fixture(scope="module")
@@ -346,10 +346,15 @@ def deploy_dpu(base_version_dpu, platform_params):
 
 
 @pytest.fixture(scope="module")
-def use_custom_config_db_air(request):
+def custom_config_db_air_path(request):
     """
-    Method for getting use_custom_config_db_air from pytest arguments
+    Method for getting custom_config_db_air_path from pytest arguments
     :param request: pytest builtin
-    :return: use_custom_config_db_air (True or False)
+    :return: path to custom config_db.json file
     """
-    return request.config.getoption('--use_custom_config_db_air')
+    custom_config_db_air = request.config.getoption('--custom_config_db_air_path')
+    if custom_config_db_air and not os.path.exists(custom_config_db_air):
+        raise ValueError(f"Custom config_db.json file does not exist: {custom_config_db_air}")
+    if not custom_config_db_air:
+        return None
+    return custom_config_db_air

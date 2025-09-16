@@ -39,8 +39,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interfaces_list: a list of interfaces which should be enabled, example: ["Ethernet0", "Ethernet4"]
         :return: command output
         """
-        for interface in interfaces_list:
-            self.enable_interface(interface)
+        interfaces_to_enable = ','.join(interfaces_list)
+        return self.engine.run_cmd("sudo config interface startup {}".format(interfaces_to_enable))
 
     def disable_interface(self, interface):
         """

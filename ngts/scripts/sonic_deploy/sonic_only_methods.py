@@ -417,7 +417,7 @@ class SonicInstallationSteps:
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
                                 deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
                                 is_performance, chip_type, deploy_dpu=False, xml_rpc=True, is_air=False,
-                                use_custom_config_db_air=False):
+                                custom_config_db_air_path=None):
         """
         Post-installation steps
         :param topology_obj: topology object
@@ -439,8 +439,7 @@ class SonicInstallationSteps:
         :param chip_type: the type of chip
         :param deploy_dpu: deploy dpu flag
         :param is_air: is_air fixture
-        :param use_custom_config_db_air: flag only for nvidia air, if True - use custom config_db.json file
-                                        if False - generate config_db.json from default hwsku
+        :param custom_config_db_air_path: path to custom config_db.json file
         """
         ansible_path = setup_info['ansible_path']
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
@@ -455,7 +454,7 @@ class SonicInstallationSteps:
                                                               configure_dns=True, is_air=is_air, disable_ztp=True,
                                                               setup_info=setup_info,
                                                               dut_alias=dut_alias,
-                                                              use_custom_config_db_air=use_custom_config_db_air)
+                                                              custom_config_db_air_path=custom_config_db_air_path)
         dut_name = setup_info['duts'][0]['dut_name']
         dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
         sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
