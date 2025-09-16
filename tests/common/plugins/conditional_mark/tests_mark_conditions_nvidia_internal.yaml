@@ -394,6 +394,12 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
 ########################## NGTS IGNORE END ##########################
 
 ########################## Community IGNORE START ##########################
+iface_loopback_action/test_iface_loopback_action_wjh.py:
+  xfail:
+    reason: "Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20670 issue"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/20670 and is_smartswitch==True and topo_name.startswith('t1-')"
+
 autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-26-None-teamd]:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3587377"
