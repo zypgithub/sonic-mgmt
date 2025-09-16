@@ -538,3 +538,9 @@ r, ".*ERR sfputil: Failed to read from file /sys/module/sx_core/asic\d+/module\d
 
 # This is a deprecation warning not a functional error, which matches the regex "kernel:.*allocation", not an err.
 r, ".*kernel.*gpio.*Static allocation of GPIO base is deprecated.*"
+
+# Ignore error log due to missing feature which targeted to 2026-rel
+r, ".*CMD-IFC timeout for device.*"
+r, ".*Register access failed.*"
+r, ".*Failed to access PMAOS.*"
+r, ".*Failed in sx_netdev_module_get_present.*"
