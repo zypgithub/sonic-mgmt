@@ -248,7 +248,7 @@ tests/push_build_tests/L2/lldp/test_lldp.py:
     conditions:
     - "https://redmine.mellanox.com/issues/3950049"
 
-tests/push_build_tests/L2/lldp/test_xlan.py::test_vxlan_decap:
+tests/push_build_tests/L2/vxlan/test_xlan.py::test_vxlan_decap:
   skip:
     reason: "Testcase ignored due to RM issue https://redmine.mellanox.com/issues/4622134 on bison testbed"
     conditions:
