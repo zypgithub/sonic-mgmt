@@ -121,7 +121,7 @@ class CumulusGeneralCli(NvueGeneralCli):
         serial_engine = self.enter_serial_connection_context(topology_obj, dut_alias)
         with allure.step('wait for System is ready in serial'):
             logger.info(f"Waiting for system to be ready")
-            system_ready_pattern = 'cumulus login:'
+            system_ready_pattern = 'login:'
             serial_engine.run_cmd('', system_ready_pattern, timeout=2 * self.device.timeout_system_is_ready, send_without_enter=True)
         with allure.step('Set default password'):
             logging.info(f"Login using default user {self.device.default_username}")
