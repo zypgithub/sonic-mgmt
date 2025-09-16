@@ -190,12 +190,12 @@ def send_and_verify_traffic(ptfadapter,
     ptf_dst_port_list = []
     ptfadapter.dataplane.flush()
     logger.info("Send packet(s) from port {} from downstream to upstream".format(ptf_src_port_id))
-    for pkt in pkt_list:
-        testutils.send(ptfadapter, ptf_src_port_id, pkt, count=DEFAULT_PKT_COUNT)
 
     try:
-        for exp_pkt in exp_pkt_list:
-            result = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids, timeout=0.2)
+        for pkt, exp_pkt in zip(pkt_list, exp_pkt_list):
+            testutils.send(ptfadapter, ptf_src_port_id, pkt, count=DEFAULT_PKT_COUNT)
+            logger.info(f"Send packet: {pkt}, expected packet: {exp_pkt}")
+            result = testutils.verify_packet_any_port(ptfadapter, exp_pkt, ports=ptf_dst_port_ids, timeout=1)
             if isinstance(result, bool):
                 logger.info("Return a dummy value for VS platform")
                 port_index = 0
