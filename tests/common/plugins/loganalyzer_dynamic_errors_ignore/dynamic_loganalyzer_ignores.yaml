@@ -1891,3 +1891,9 @@
   Conditions:
   - Redmine:
     - 4470668
+
+- Errors_list:
+  - '.*ERR\s+pmon\#thermalctld:\s+Unable\s+to\s+obtain\s+temperature\s+data\s+for\s+DPU.*'
+  Conditions:
+  - Redmine:
+    - 4618682
