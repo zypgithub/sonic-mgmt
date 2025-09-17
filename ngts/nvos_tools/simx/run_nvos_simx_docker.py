@@ -16,6 +16,7 @@ logger = logging.getLogger()
 
 base_chipsim_script_path = "/auto/sw_system_project/NVOS_INFRA/ChipSim/{release_name}/nvos/scripts/run_nvos_in_chipsim.py"
 master_folder_name = "nvos-master"
+ci_chipsim_script_path = "{ci_temp_path}/scripts/run_nvos_in_chipsim.py"
 
 
 def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_image, use_master_script, is_regression_run):
@@ -27,14 +28,16 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
         logger.info(f"DUT ip: {dut_engine.ip}({dut_name}) on server: {server_name}")
 
     with allure.step("Get path to chipsim script"):
-        path_to_chipsim_script = _get_path_to_chipsim_script(target_version, use_master_script)
+        path_to_chipsim_script = _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script)
         logger.info(f"Path to chipsim script: {path_to_chipsim_script}")
 
     with allure.step("Start the NVOS simx docker"):
         if not use_bin_image:
             with allure.step("Get path to disk image"):
                 target_version = _get_path_to_disk_image(target_version, is_regression_run)
-                logger.info(f"Path to disk image: {target_version}")
+                logger.info(f"Path to image: {target_version}")
+        else:
+            logging.info("'--use_bin_image' flag was provided, force using .bin image")
         start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script)
 
     _wait_till_switch_is_ready(dut_engine)
@@ -83,11 +86,37 @@ def wait_till_ssh_is_ready(dut_engine):
     dut_engine.run_cmd('nv show system version')
 
 
-def _get_path_to_chipsim_script(target_version, use_master_script):
+def _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script):
+    if is_regression_run:
+        return _get_path_to_chipsim_script_for_regression(target_version, use_master_script)
+    else:
+        return _get_path_to_chipsim_script_for_ci(target_version)
+
+
+def _get_path_to_chipsim_script_for_ci(target_version):
+    """
+    Convert a CI bin path to a CI source code path for chipsim script
+    examples:
+        from '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10475/nvos/nvos.bin'
+        to '/auto/sw_system_project/devops/sw-r2d2-bot/nos/nvos_ci/10475/nvos_source_code'
+    """
+    ci_path = ci_chipsim_script_path.format(ci_temp_path=target_version.replace('/nvos/nvos.bin', '/nvos_source_code'))
+
+    if not os.path.exists(ci_path):
+        logging.warning(f"ChipSim script not found at: {ci_path}")
+        logging.info("Using master version instead")
+        ci_path = base_chipsim_script_path.format(release_name=master_folder_name)
+
+    return ci_path
+
+
+def _get_path_to_chipsim_script_for_regression(target_version, use_master_script):
     if use_master_script:
         version_name = master_folder_name
+        logging.info("Using master chipsim script")
     else:
         version_name = TestToolkit.version_path_to_release_name(target_version)
+        logging.info(f"Using release {version_name} chipsim scrip")
 
     path_to_script = base_chipsim_script_path.format(release_name=version_name)
 
@@ -101,8 +130,10 @@ def _get_path_to_chipsim_script(target_version, use_master_script):
 
 def _get_path_to_disk_image(target_version, is_regression_run):
     if is_regression_run:
+        logging.info("Regression run")
         return _get_path_to_disk_image_for_regression(target_version)
     else:
+        logging.info("CI run")
         return _get_path_to_disk_image_for_ci(target_version)
 
 
