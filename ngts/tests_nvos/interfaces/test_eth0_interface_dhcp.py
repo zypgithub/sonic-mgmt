@@ -122,7 +122,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                                                           expected_value="on")
 
     with allure.step(f'Negative validation with auto neg, {IbInterfaceConsts.LINK_AUTO_NEGOTIATE} must be on with default 1G speed'):
-        mgmt_port.interface.link.set(op_param_name='auto_negotiate', op_param_value='off',
+        mgmt_port.interface.link.set(op_param_name='auto_negotiate', op_param_value='disabled',
                                      apply=True).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
 
@@ -163,7 +163,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                 wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, duplex)
 
     with allure.step('Set autoneg to off'):
-        mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='off', apply=True,
+        mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='disabled', apply=True,
                                      ask_for_confirmation=True).verify_result()
         Port.wait_for_port_state(mgmt_port, "up")
         wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_OFF)

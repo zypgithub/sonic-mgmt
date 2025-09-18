@@ -58,8 +58,8 @@ class IbInterfaceConsts:
     XDR = "xdr"
     NDR = "ndr"
     SDR = "sdr"
-    LINK_AUTO_NEG_ON = 'on'
-    LINK_AUTO_NEG_OFF = 'off'
+    LINK_AUTO_NEG_ON = 'enabled'
+    LINK_AUTO_NEG_OFF = 'disabled'
     LINK_DIAGNOSTICS = "diagnostics"
     LINK_DIAGNOSTICS_UNPLUGGED_PORT = {'1024': {'status': 'Cable is unplugged'}}
     LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT = {'1': {'status': 'Closed by command'}}
