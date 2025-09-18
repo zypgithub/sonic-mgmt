@@ -82,7 +82,11 @@ class SecureBootHelper:
         self.serial_engine.run_cmd("mkdir {}".format(SecureBootConsts.MOUNT_FOLDER))
         output = self.serial_engine.run_cmd(SecureBootConsts.EFI_PARTITION_CMD,
                                             SecureBootConsts.LAST_OCCURENCE_REGEX.format('#'))[0]
-        uefi_partition = re.findall('\\/dev\\/sda\\d', output)[0]
+        uefi_partitions = re.findall('\\/dev\\/sda\\d', output)
+        if not uefi_partitions:
+            uefi_partitions = re.findall('\\/dev\\/nvme\\S+', output)
+        assert uefi_partitions, "No UEFI partition found"
+        uefi_partition = uefi_partitions[0]
         self.serial_engine.run_cmd("mount -o rw,auto,user,fmask=0022,dmask=0000 {} {}".
                                    format(uefi_partition, SecureBootConsts.MOUNT_FOLDER))
 
