@@ -6146,7 +6146,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t0
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
@@ -6160,7 +6160,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t0-56
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t0-56
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
@@ -6174,7 +6174,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t1
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t1
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
@@ -6188,7 +6188,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-t1-lag
-  group-name: vm-t2
+  group-name: vm-t1
   topo: t1-lag
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
@@ -6202,7 +6202,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-ptf32
-  group-name: vm-t2
+  group-name: vm-t1
   topo: ptf32
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42
@@ -6216,7 +6216,7 @@
   comment: Mellanox MTR testbed
 
 - conf-name: r-panther-42-ptf-any
-  group-name: vm-t2
+  group-name: vm-t1
   topo: ptf-any
   ptf_image_name: docker-ptf-mlnx
   ptf: ptf-r-panther-42

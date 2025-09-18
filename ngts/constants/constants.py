@@ -1656,9 +1656,7 @@ class DoroceConsts:
     ALLOWED_PERCENTAGE_DEVIATION = 2
 
 
-SETUPS_WITH_NON_DEFAULT_PTF = ['r-panther-42_setup', 'r-bobcat-01', 'mtvr-tigon-04_setup',
-                               'mtvr-tigon-07_setup', 'r-panther-45_setup', 'r-panther-48_setup',
-                               'mtvr-panther-03_setup']
+SETUPS_WITH_NON_DEFAULT_PTF = ['r-bobcat-01', 'bobcat-1254', 'mtvr-bobcat-04']
 FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"
 INSTALLED_DPUS = '/root/mars/workspace/sonic-mgmt/installed_dpus'
 
