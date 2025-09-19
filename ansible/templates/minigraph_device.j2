@@ -14,6 +14,10 @@
           <MultiPortsInterface>false</MultiPortsInterface>
           <PortName>0</PortName>
           <Priority>0</Priority>
+{% set intf = port_name[index] %}
+{% if subtype is defined and subtype == 'SmartSwitch' and intf[8:]|int >= 224 %}
+          <role>Dpc</role>
+{% endif %}
 {% if (inventory_hostname == "mtbc-sonic-01-2410") %}
     {% if index >= 48 %}
           <Speed>100000</Speed>
