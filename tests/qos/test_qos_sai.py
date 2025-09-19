@@ -1313,7 +1313,8 @@ class TestQosSai(QosSaiBase):
             "src_port_vlan": dutConfig["testPorts"]["src_port_vlan"],
             "pkts_num_leak_out": dutQosConfig["param"][portSpeedCableLength]["pkts_num_leak_out"],
             "pkts_num_trig_egr_drp": qosConfig["lossy_queue_1"]["pkts_num_trig_egr_drp"],
-            "hwsku": dutTestParams['hwsku']
+            "hwsku": dutTestParams['hwsku'],
+            "ip_type": dutConfig["ip_type"]
         })
 
         if "platform_asic" in dutTestParams["basicParams"]:
@@ -1481,7 +1482,8 @@ class TestQosSai(QosSaiBase):
             "hwsku": dutTestParams['hwsku'],
             "dual_tor": dutConfig['dualTor'],
             "dual_tor_scenario": dutConfig['dualTorScenario'],
-            "tc_to_dscp_count_map": tc_to_dscp_count
+            "tc_to_dscp_count_map": tc_to_dscp_count,
+            'ip_type': dutConfig["ip_type"]
         })
 
         if "platform_asic" in dutTestParams["basicParams"]:
@@ -1788,7 +1790,8 @@ class TestQosSai(QosSaiBase):
             "pkts_num_fill_min": qosConfig[pgProfile]["pkts_num_fill_min"],
             "pkts_num_fill_shared": pktsNumFillShared,
             "cell_size": qosConfig[pgProfile]["cell_size"],
-            "hwsku": dutTestParams['hwsku']
+            "hwsku": dutTestParams['hwsku'],
+            "ip_type": dutConfig["ip_type"]
         })
 
         if "platform_asic" in dutTestParams["basicParams"]:
@@ -1997,7 +2000,8 @@ class TestQosSai(QosSaiBase):
             "pkts_num_trig_drp": triggerDrop,
             "cell_size": qosConfig[queueProfile]["cell_size"],
             "hwsku": dutTestParams['hwsku'],
-            "dut_asic": dutConfig["dutAsic"]
+            "dut_asic": dutConfig["dutAsic"],
+            "ip_type": dutConfig["ip_type"]
         })
 
         if "platform_asic" in dutTestParams["basicParams"]:
