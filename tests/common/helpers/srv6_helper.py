@@ -1,5 +1,6 @@
 import logging
 import sys
+import random
 from io import StringIO
 import ptf.testutils as testutils
 import ptf.packet as scapy
@@ -256,7 +257,10 @@ def create_srv6_packet(
         inner_src_ip,
         inner_dst_ip,
         inner_src_ipv6,
-        inner_dst_ipv6):
+        inner_dst_ipv6,
+        inner_ttl=64,
+        outer_hop_limit=64,
+        random_ttl=True):
     """
     Create SRv6 packets for testing
 
@@ -281,11 +285,20 @@ def create_srv6_packet(
         inner_dst_ip (str): Inner destination IPv4 address
         inner_src_ipv6 (str): Inner source IPv6 address
         inner_dst_ipv6 (str): Inner destination IPv6 address
+        inner_ttl (int): TTL/hop limit value for inner packet (default: 64)
+        outer_hop_limit (int): Hop limit value for outer IPv6 packet (default: 64)
+        random_ttl (bool): Enable random TTL generation (default: False)
 
     Returns:
         tuple: (srv6_pkt, exp_pkt) - Created SRv6 packet and expected packet
     """
     srv6_next_header = SRv6Packets.srv6_next_header
+
+    # Generate random TTL values if enabled
+    if random_ttl:
+        inner_ttl = random.randint(2, 255)
+        outer_hop_limit = random.randint(2, 255)
+        logger.info(f"Generated random TTL values: inner_ttl={inner_ttl}, outer_hop_limit={outer_hop_limit}")
 
     if dscp_mode == SRv6.uniform_mode:
         exp_dscp = exp_dscp_uniform
@@ -297,14 +310,16 @@ def create_srv6_packet(
             eth_src=router_mac,
             ip_src=inner_src_ip,
             ip_dst=inner_dst_ip,
-            ip_dscp=inner_dscp if inner_dscp else 0
+            ip_dscp=inner_dscp if inner_dscp else 0,
+            ip_ttl=inner_ttl
         )
 
         exp_inner_pkt = testutils.simple_tcp_packet(
             eth_src=router_mac,
             ip_src=inner_src_ip,
             ip_dst=inner_dst_ip,
-            ip_dscp=exp_dscp if exp_dscp else 0
+            ip_dscp=exp_dscp if exp_dscp else 0,
+            ip_ttl=inner_ttl
         )
         scapy_ver = scapy.IP
     else:
@@ -312,14 +327,16 @@ def create_srv6_packet(
             eth_src=router_mac,
             ipv6_src=inner_src_ipv6,
             ipv6_dst=inner_dst_ipv6,
-            ipv6_dscp=inner_dscp if inner_dscp else 0
+            ipv6_dscp=inner_dscp if inner_dscp else 0,
+            ipv6_hlim=inner_ttl
         )
 
         exp_inner_pkt = testutils.simple_tcpv6_packet(
             eth_src=router_mac,
             ipv6_src=inner_src_ipv6,
             ipv6_dst=inner_dst_ipv6,
-            ipv6_dscp=exp_dscp if exp_dscp else 0
+            ipv6_dscp=exp_dscp if exp_dscp else 0,
+            ipv6_hlim=inner_ttl
         )
         scapy_ver = scapy.IPv6
 
@@ -335,6 +352,7 @@ def create_srv6_packet(
                     srh_seg_left=seg_left,
                     srh_seg_list=sef_list,
                     ipv6_tc=outer_dscp * 4 if outer_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     srh_nh=srv6_next_header[scapy_ver],
                     inner_frame=inner_pkt[scapy_ver],
                 )
@@ -346,6 +364,7 @@ def create_srv6_packet(
                     srh_seg_left=exp_seg_left,
                     srh_seg_list=sef_list,
                     ipv6_tc=exp_dscp * 4 if exp_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     srh_nh=srv6_next_header[scapy_ver],
                     inner_frame=exp_inner_pkt[scapy_ver],
                 )
@@ -357,6 +376,7 @@ def create_srv6_packet(
                     ipv6_src=outer_src_pkt_ip,
                     ipv6_dst=outer_dst_pkt_ip,
                     ipv6_tc=outer_dscp * 4 if outer_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     inner_frame=inner_pkt[scapy_ver],
                 )
                 exp_pkt = testutils.simple_ipv6ip_packet(
@@ -365,6 +385,7 @@ def create_srv6_packet(
                     ipv6_src=outer_src_pkt_ip,
                     ipv6_dst=exp_outer_dst_pkt_ip,
                     ipv6_tc=exp_dscp * 4 if exp_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     inner_frame=exp_inner_pkt[scapy_ver],
                 )
 
@@ -387,6 +408,7 @@ def create_srv6_packet(
                     srh_seg_left=seg_left,
                     srh_seg_list=sef_list,
                     ipv6_tc=outer_dscp * 4 if outer_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     srh_nh=srv6_next_header[scapy_ver],
                     inner_frame=inner_pkt[scapy_ver],
                 )
@@ -398,6 +420,7 @@ def create_srv6_packet(
                     ipv6_src=outer_src_pkt_ip,
                     ipv6_dst=outer_dst_pkt_ip,
                     ipv6_tc=outer_dscp * 4 if outer_dscp else 0,
+                    ipv6_hlim=outer_hop_limit,
                     inner_frame=inner_pkt[scapy_ver],
                 )
 
