@@ -120,9 +120,11 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_even
 
 tests/nightly/secure:
   skip:
-    reason: "Skipped on gaur testbeds"
+    reason: "Skipped on gaur and bobcat testbeds"
+    conditions_logical_operator: or
     conditions:
     - "'r-gaur-04' in testbed or 'mtvr-gaur-02' in testbed or 'mtvr-gaur-03' in testbed"
+    - "'sn4280' in platform"
 
 tests/nightly/p4/examples_application/p4_gtp_parser/test_gtp_parser.py:
   skip:
