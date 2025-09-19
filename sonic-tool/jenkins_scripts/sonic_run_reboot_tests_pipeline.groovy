@@ -297,8 +297,24 @@ def prepareRunCmd(setup_name, custom_tarball, base_version = env.base_version, t
         echo "Target version is not provided, the test will be executed without the upgrade"
         target_version = base_versions_list
     }
+    initial_deploy_version = target_version
+    // Override target version if test yaml file is provided and deploy_version
+    // is specified in the test yaml file for the given setup
+    // This is the image version for initial deployment
+    if (env.test_config_yaml_file) {
+        try {
+            test_config = readYaml(file: env.test_config_yaml_file)
+            deploy_version = test_config.all_tests.find { it.setup_name == setup_name }?.deploy_version
+            if (deploy_version && deploy_version.trim() != "") {
+                echo "Deploy version for ${setup_name} is ${deploy_version}"
+                initial_deploy_version = deploy_version
+            }
+        } catch (Exception e) {
+            echo "No deploy version specified for ${setup_name} in ${env.test_config_yaml_file}"
+        }
+    }
 
-    base_ver_arg = "--meinfo_base_version ${target_version}"
+    base_ver_arg = "--meinfo_base_version ${initial_deploy_version}"
     topology = "t0"
 	if (TOPOLOGYS.containsKey(setup_name)) {
 		topology = TOPOLOGYS[setup_name]

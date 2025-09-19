@@ -16,18 +16,21 @@ cold_reboot: &cold_reboot cold
 # platform specific default values
 
 all_tests: # group by setup_name
-  - setup_name: r-panther-23_setup
+  - setup_name: mtvr-leopard-09_setup
+    # This is the image version for initial deployment.
+    # Fallback to target_version(pipeline parameter) if not provided.
+    deploy_version: *202405_version
     tests:
-    - reboot_type: *fast_reboot
-      base_version:
-        - *202305_version
-      target_version: *202405_version
-      iterations: 1
-    - reboot_type: *cold_reboot
-      base_version:
-        - *202311_version
-      target_version: *target_version
-      iterations: 1
+    # - reboot_type: *fast_reboot
+    #   base_version:
+    #     - *202305_version
+    #   target_version: *202405_version
+    #   iterations: 1
+    # - reboot_type: *cold_reboot
+    #   base_version:
+    #     - *202311_version
+    #   target_version: *target_version
+    #   iterations: 1
     - reboot_type: *warm_reboot
       upgrade_testcase: test_upgrade_path # only warm reboot can select upgrade testcase
       base_version:
@@ -43,26 +46,10 @@ all_tests: # group by setup_name
       target_version: *target_version
       iterations: 1
     - reboot_type: *warm_reboot
-      upgrade_testcase: test_warm_upgrade_sad_path # only warm reboot can select upgrade testcase
-      base_version:
-        - *202405_version
-        - *2505_rc_18
-      target_version: *target_version
-      iterations: 1
-    - reboot_type: *warm_reboot
-      upgrade_testcase: test_double_upgrade_path # only warm reboot can select upgrade testcase
+      upgrade_testcase: test_multi_hop_sad_upgrade_path # only warm reboot can select upgrade testcase
       base_version:
         - *202305_version
         - *202405_version
       target_version: *target_version
       iterations: 1
-  - setup_name: r-panther-23_setup
-    tests:
-    - reboot_type: *warm_reboot
-      # test_multi_hop_upgrade_path,test_upgrade_path, test_warm_upgrade_sad_path, etc..
-      # are mutually exclusive with each other for a specific setup
-      upgrade_testcase: test_multi_hop_upgrade_path # only warm reboot can select upgrade testcase
-      base_version:
-        - *base_version
-      target_version: *target_version
-      iterations: 0
+

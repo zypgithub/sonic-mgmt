@@ -50,6 +50,7 @@ UNKNOWN = 'unknown'
 UPGRADE_TC_PROJECT_ID_DICT = {
     "test_upgrade_path": "upgrade-reboot",
     "test_multi_hop_upgrade_path": "multi-hop-upgrade",
+    "test_multi_hop_sad_upgrade_path": "multi-hop-sad-upgrade",
     "test_warm_upgrade_sad_path": "warm-upgrade-sad",
     "test_double_upgrade_path": "double-upgrade",
 }
@@ -148,7 +149,19 @@ CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE = '''<case>
     <tout> {timeout} </tout>
     <cmd>
          <params>
-             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py </static_args>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py::test_multi_hop_upgrade_path </static_args>
+         </params>
+    </cmd>
+</case>
+'''
+
+CASES_FILE_REBOOT_WITH_MULTI_HOP_SAD_UPGRADE_TESTCASE_TEMPLATE = '''<case>
+    <info> Multi Hop Sad Upgrade Case </info>
+    <name> Multi Hop Sad Upgrade </name>
+    <tout> {timeout} </tout>
+    <cmd>
+         <params>
+             <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\\\'--neighbor_type [[conf:extra_info.neighbor_type]] --log-cli-level debug --downgrade_type=onie --show-capture=no -ra --showlocals --upgrade_type={test_type} --multi_hop_upgrade_path={multi_hop_upgrade_path} --restore_to_image={target_version} --packet_capture_location physical_port --clean-alluredir --alluredir=/tmp/allure-results {allure_project_id_param} --allure_server_addr=\\\"10.215.11.120\\\"\\\'" --test-scripts upgrade_path/test_multi_hop_upgrade_path.py::test_multi_hop_warm_upgrade_sad_path </static_args>
          </params>
     </cmd>
 </case>
@@ -214,7 +227,9 @@ def prepare_cases_files(reboot_type_iterations_dict,
     Prepare CASES files and store them into sonic-mgmt folder
     """
     if upgrade_testcase == "test_multi_hop_upgrade_path":
-        case_timeout = 86400
+        case_timeout = 7200     # 2 hours
+    elif upgrade_testcase == "test_multi_hop_sad_upgrade_path":
+        case_timeout = 90000 # 25 hours
     elif upgrade_testcase == "test_warm_upgrade_sad_path":
         case_timeout = 54000
     else:
@@ -237,6 +252,14 @@ def prepare_cases_files(reboot_type_iterations_dict,
         for _ in range(iterations_number):
             if upgrade_testcase == "test_multi_hop_upgrade_path":
                 file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_UPGRADE_TESTCASE_TEMPLATE.format(
+                    test_type=test_type,
+                    multi_hop_upgrade_path=base_ver_images,
+                    target_version=target_ver,
+                    timeout=case_timeout,
+                    allure_project_id_param=base_allure_project_id_param
+                )
+            elif upgrade_testcase == "test_multi_hop_sad_upgrade_path":
+                file_data += CASES_FILE_REBOOT_WITH_MULTI_HOP_SAD_UPGRADE_TESTCASE_TEMPLATE.format(
                     test_type=test_type,
                     multi_hop_upgrade_path=base_ver_images,
                     target_version=target_ver,
