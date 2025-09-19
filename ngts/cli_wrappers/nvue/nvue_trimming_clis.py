@@ -40,7 +40,8 @@ class NvueTrimmingCli(TrimmingCommon):
 
     def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue=[], drop_queues=[], violations_list=[], initial_trimming_counters=0, return_dict=False):
         with allure.step("Get trimming counters for all egress interfaces"):
-            trimmed_packets = self.cli_obj.trimming.get_trimming_counters() - initial_trimming_counters
+            queue_counters = self.cli_obj.interface.get_interface_queue_counters(interface_list, counters_type="egress-queue-stats", sub_type=["tx-frames"])
+            trimmed_packets = sum(queue_counters[interface][trimming_queue]["tx-frames"] for interface in interface_list)
             drop_counters = self.cli_obj.interface.get_interface_counters(interface_list, counters_type="tx-drop")
             try:
                 total_drop_packets = sum(drop_counters.values())
@@ -48,6 +49,8 @@ class NvueTrimmingCli(TrimmingCommon):
                 logging.error("Drop Counters are not available for all interfaces")
                 logging.error(drop_counters)
                 raise TestIssue(f"Error getting drop counters for {interface_list}")
+            trimming_percentage = convert_to_percentage(trimmed_packets / total_drop_packets)
+            dropped_without_trimming_percentage = convert_to_percentage((total_drop_packets - trimmed_packets) / total_drop_packets)
             if trimmed_packets == total_drop_packets:
                 logging.info("All packets are dropped and trimmed")
                 logging.info(f"Dropped packets: {total_drop_packets}")
@@ -55,9 +58,9 @@ class NvueTrimmingCli(TrimmingCommon):
                 logging.error(f"Dropped packets: {total_drop_packets}")
                 logging.error(f"Trimmed packets: {trimmed_packets}")
                 logging.error(f"Dropped without trimming : {total_drop_packets - trimmed_packets}")
+                logging.error(f"Trimmed percentage: {trimming_percentage}")
+                logging.error(f"Dropped without trimming percentage: {dropped_without_trimming_percentage}")
                 violations_list.append("Some packets are not dropped and trimmed")
-            trimming_percentage = convert_to_percentage(trimmed_packets / total_drop_packets)
-            dropped_without_trimming_percentage = convert_to_percentage((total_drop_packets - trimmed_packets) / total_drop_packets)
             if return_dict:
                 queue_packet_percentages_dict = {ValidationConsts.OS_PORT_NAME: ', '.join(interface_list),
                                                  ValidationConsts.TRIMMING_PERCENTAGE: trimming_percentage,

@@ -12,14 +12,15 @@
     model: sn5600
     nvue-api-version: nvue_v1
     rev-id: 1.0
-    version: Cumulus Linux 5.11.0   
+    version: Cumulus Linux 5.15.0   
 - set:
     interface:
       eth0:
-        ip:
-          address:
-            dhcp: {}
-          vrf: mgmt
+        ipv4:
+          dhcp-client:
+            state: enabled
+            set-hostname: disabled
+        vrf: mgmt
         type: eth
     {% if split_left!=1 %}
     {% for port in left_ports  %}
@@ -43,15 +44,17 @@
     {% for port in left_ports %}
     {% for split in range(0, split_left) %}
       {{ port }}{% if split_left != 1 %}s{{ split }} {% endif %}:
-        ip:
+        ipv4:
           address:
             {{ left_address_list["v4"][counter.value] }}/24 : {}
+        ipv6:
+          address:
             {{ left_address_list["v6"][counter.value] }}/120 : {}
         {% set counter.value = counter.value + 1 %}
         {% if two_sided_ar=='True' %}
         router:
           adaptive-routing:
-            enable: on
+            state: enabled
         {% endif %}
         type: swp
     {% endfor %}
@@ -60,14 +63,16 @@
     {% for port in right_ports %}
       {% for split in range(0, split_right)%}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
-        ip:
+        ipv4:
           address:
             {{ right_address_list["v4"][counter.value] }}/24 : {}
+        ipv6:
+          address:
             {{ right_address_list["v6"][counter.value] }}/120 : {}
         {% set counter.value = counter.value + 1 %}
         router:
           adaptive-routing:
-            enable: on
+            state: enabled
         type: swp
       {% endfor %}
     {% endfor %}
@@ -80,19 +85,11 @@
           xoff-threshold: 65000
           xon-threshold: 65000
       roce:
-        enable: on
+        state: enabled
         mode: lossless
     router:
       adaptive-routing:
-        enable: on
-    service:
-      ntp:
-        mgmt:
-          server:
-            0.cumulusnetworks.pool.ntp.org: {}
-            1.cumulusnetworks.pool.ntp.org: {}
-            2.cumulusnetworks.pool.ntp.org: {}
-            3.cumulusnetworks.pool.ntp.org: {}
+        state: enabled
     system:
       aaa:
         user:
@@ -112,8 +109,6 @@
           acl-default-whitelist:
             inbound: {}
       hostname: dut
-      reboot:
-        mode: cold
       ssh-server:
         state: enabled
         max-sessions-per-connection: 30
@@ -121,7 +116,7 @@
           throttle-start: 30
         permit-root-login: enabled
       telemetry:
-        enable: on
+        state: enabled
       wjh:
         channel:
           forwarding:
@@ -130,7 +125,7 @@
               l2: {}
               l3: {}
               tunnel: {}
-        enable: on
+        state: enabled
     vrf:
       default:
         router:

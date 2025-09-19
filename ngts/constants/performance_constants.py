@@ -3,35 +3,6 @@ from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
-class Cl_Consts:
-    CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
-    CL_LOG_PORT_FILE = 'log_port_cumulus.py'
-    CL_LOG_BW_FILE = 'collect_bw_cumulus.py'
-    BONUS_PORTS = {
-        'Spectrum-3': [],
-        'Spectrum-4': ['swp65'],
-        'Spectrum-5': ['swp65', 'swp66']
-    }
-    CL_HOME_DIR = "/home/cumulus"
-    CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
-    CL_GRUB_PATH = 'boot'
-    CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
-    COMMON_IP_PREFIX_LEFT = "130"
-    COMMON_IP_PREFIX_RIGHT = "110"
-    SRV6_SPEED_BY_CHIP_TYPE = {
-        "SPC4": "200000000",
-        "SPC5": "100000000"
-    }
-    SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
-        "SPC4": 4,
-        "SPC5": 8
-    }
-    SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
-        "SPC4": 4,
-        "SPC5": 8
-    }
-
-
 class ValidationConsts:
     PORT_GROUPS = "port_groups"
     TC_DATAFRAME = "tc_dataframe"
@@ -234,7 +205,7 @@ class PerfConsts:
     SONIC_DVS_GRUB_PATH = 'host'
     GRUB_PATH_DICT = {
         "SONiC": SONIC_DVS_GRUB_PATH,
-        "Cumulus": Cl_Consts.CL_GRUB_PATH,
+        "Cumulus": 'boot',
         "DVS": SONIC_DVS_GRUB_PATH
     }
     SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.{SDK_VERSION}_amd64.deb"
@@ -319,6 +290,35 @@ class PerfConsts:
         "SPC5": 480
     }
     TIMEOUT_FOR_INSTALL_MODE = 120
+
+
+class Cl_Consts:
+    CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
+    CL_LOG_PORT_FILE = 'log_port_cumulus.py'
+    CL_LOG_BW_FILE = 'collect_bw_cumulus.py'
+    BONUS_PORTS = {
+        'Spectrum-3': [],
+        'Spectrum-4': ['swp65'],
+        'Spectrum-5': ['swp65', 'swp66']
+    }
+    CL_HOME_DIR = "/home/cumulus"
+    CL_PYTHON_PATH = "/home/cumulus/sdk_env/bin/python3.11"
+    CL_GA_IMAGE = "/auto/sw_system_project/NVOS_INFRA/cumulus_images/GA/5.10/cumulus-linux-mlx-amd64.bin.devsigned"
+    COMMON_IP_PREFIX_LEFT = "130"
+    COMMON_IP_PREFIX_RIGHT = "110"
+    SRV6_SPEED_BY_CHIP_TYPE = {
+        "SPC4": "200000000",
+        "SPC5": "100000000"
+    }
+    SRV6_SPLIT_LEFT_BY_CHIP_TYPE = {
+        "SPC4": 4,
+        "SPC5": 8
+    }
+    SRV6_SPLIT_RIGHT_BY_CHIP_TYPE = {
+        "SPC4": 4,
+        "SPC5": 8
+    }
+    SDK_DEB_DIR_TEMPLATE = os.path.join(PerfConsts.SDK_VERSION_PATH, "sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/")
 
 
 class SPCXRAConsts:

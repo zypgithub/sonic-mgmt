@@ -30,9 +30,11 @@ class CumulusInstallationSteps:
             logging.info("Updating /etc/apt/sources.list")
             CumulusInstallationSteps.update_apt_sources_list(dut)
             if is_performance:
-                logging.info(f"Updating the hostname for performance setups.")
+                logging.info(f"Disabling set hostname for performance setups.")
                 dut_hostname = dut['dut_alias'].replace("_", "-")
-                dut['engine'].run_cmd_set([f"nv set system hostname {dut_hostname}", "nv config apply -y"], patterns_list=["applied_and_saved"])
+                dut['engine'].run_cmd_set(["nv set interface eth0 ipv4 dhcp-client set-hostname disabled",
+                                           f"nv set system hostname {dut_hostname}", "nv config apply -y"],
+                                          patterns_list=["applied_and_saved"])
                 logging.info("Bringing up all the ports")
                 dut['cli'].interface.initialize_physical_ports()
                 logging.info("Restarting lldpd to clear LLDP neighbors")

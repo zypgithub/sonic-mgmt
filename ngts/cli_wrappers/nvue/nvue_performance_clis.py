@@ -533,7 +533,7 @@ class NvuePerformanceCli(PerformanceCommon):
             if "swp" not in interface:  # skip non-switch ports
                 continue
             else:
-                ip_addresses = interface_output[interface]["ip"]['address'].keys()
+                ip_addresses = interface_output[interface]["ipv6"]['address'].keys()
                 for ip in ip_addresses:
                     if is_ipv6(ip) and ("fe80" not in ip):
                         ipv6_address = ip.split("/")[0]

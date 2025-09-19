@@ -184,7 +184,7 @@ class PerformanceCommon:
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
 
-    @retry(exceptions=TestIssue, tries=1, delay=2)
+    @retry(exceptions=TestIssue, tries=2, delay=2)
     def configure_mloops(self, validate_mloops=True):
         try:
             logging.info(f"Configure Mloop on {self.dut_alias}")
@@ -197,7 +197,7 @@ class PerformanceCommon:
             logging.warning(f"Failed to configure Mloop on {self.dut_alias}: {e}")
             raise TestIssue(msg=f"Failed to configure Mloop on {self.dut_alias}: {e}")
 
-    @retry(exceptions=TestIssue, tries=2, delay=15)
+    @retry(exceptions=TestIssue, tries=2, delay=10)
     def run_traffic(self, scenario, traffic_jsons):
         self.cli_obj.interface.clear_counters()
         json_path = traffic_jsons[self.dut_alias]
@@ -212,6 +212,7 @@ class PerformanceCommon:
             logging.error(f"Error running traffic: {e}")
             raise TestIssue(msg=f"Error running traffic: {e}")
 
+    @retry(exceptions=TestIssue, tries=2, delay=2)
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
         env_variables = []
@@ -221,15 +222,24 @@ class PerformanceCommon:
             self.execute_cmd(set_interval_cmd)
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=env_variables))
+        try:
+            self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=env_variables))
+        except Exception as e:
+            logging.error(f"Error running traffic validator: {e}")
+            raise TestIssue(msg=f"Error running traffic validator: {e}")
         self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
                               overwrite_file=True, verify_file=False, direction='get')
 
+    @retry(exceptions=TestIssue, tries=2, delay=2)
     def stop_traffic(self):
         logging.info(f"Remove Mloop configuration from {self.dut_alias}")
         remove_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_REMOVE_MLOOP_CONFIGURATION}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(remove_mloops_cmd))
+        try:
+            self.execute_cmd(self.get_cmd_for_sdk(remove_mloops_cmd))
+        except Exception as e:
+            logging.error(f"Error stopping traffic: {e}")
+            raise TestIssue(msg=f"Error stopping traffic: {e}")
 
     def copy_traffic_json_to_player(self, scenario, json_path, dst_dut_dir="/tmp"):
         file_name = f"{scenario.replace('/', '_')}_traffic.json"

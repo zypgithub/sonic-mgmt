@@ -10,7 +10,7 @@
     model: sn5600
     nvue-api-version: nvue_v1
     rev-id: 1.0
-    version: Cumulus Linux 5.14.0
+    version: Cumulus Linux 5.15.0
 - set:
     acl:
       acl-drop-arp:
@@ -51,10 +51,11 @@
             200-800: {}
     interface:
       eth0:
-        ip:
-          address:
-            dhcp: {}
-          vrf: mgmt
+        ipv4:
+          dhcp-client:
+            state: enabled
+            set-hostname: disabled
+        vrf: mgmt
         type: eth
     {% if split_right!=1 %}
     {% for port in port_list['dut']  %}
@@ -90,7 +91,7 @@
             br_default:
               access: {{ counter.value + 200 }}
               {% set counter.value = counter.value + 1 %}
-              learning: off
+              learning: disabled
         type: swp
     {% endfor %}
     {% endfor %}
@@ -113,27 +114,19 @@
             br_default:
               access: {{ counter.value + 200 }}
               {% set counter.value = counter.value + 1 %}
-              learning: off
+              learning: disabled
         type: swp
     {% endfor %}
     {% endfor %}
     {% for vlan in range(200, 200 + address_list|length ) %}
       vlan{{ vlan }}:
         base-interface: br_default
-        ip:
+        ipv6:
           address:
             {{ address_list[loop.index0] }}/48: {}
         type: svi
         vlan: {{ vlan }}
     {% endfor %}
-    service:
-      ntp:
-        mgmt:
-          server:
-            0.cumulusnetworks.pool.ntp.org: {}
-            1.cumulusnetworks.pool.ntp.org: {}
-            2.cumulusnetworks.pool.ntp.org: {}
-            3.cumulusnetworks.pool.ntp.org: {}
     system:
       aaa:
         user:
@@ -153,8 +146,6 @@
           acl-default-whitelist:
             inbound: {}
       hostname: right-tg
-      reboot:
-        mode: cold
       ssh-server:
         max-sessions-per-connection: 30
         max-unauthenticated:
@@ -167,4 +158,4 @@
               l2: {}
               l3: {}
               tunnel: {}
-        enable: on
+        state: enabled
