@@ -395,7 +395,7 @@ class SonicPerformanceCli(PerformanceCommon):
         return {'connected_ports': self.connected_ports,
                 'unconnected_ports': self.unconnected_ports}
 
-    def configure_mloops(self):
+    def configure_mloops(self, validate_mloops=True):
         logging.info(f"Configure Mloop on {self.dut_alias}")
         self.update_mloops_conf_on_syncd()
         self.execute_cmd(self.get_cmd_for_sdk(f"python3 {PerfConsts.DISABLE_MAC_SCRIPT}"))
@@ -403,7 +403,8 @@ class SonicPerformanceCli(PerformanceCommon):
         configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
         self.logrotate("rsyslog")
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
-        self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.connected_ports)
+        if validate_mloops:
+            self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.connected_ports)
         self.configure_ports_shaper(shaper_value=PerfConsts.SHAPER_VALUE)
 
     def update_mloops_conf_on_syncd(self):

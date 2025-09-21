@@ -25,7 +25,7 @@ def get_bisection_traffic(players, conf_args, traffic_type,
 @pytest.fixture(scope='class', autouse=True)
 def conf_args(chip_type, players):
     sku = MRCConsts.HWSKU_BY_CHIP_TYPE[chip_type]["leaf"]
-    is_cumulus = players["dut"]["is_cumulus"]
+    is_cumulus = players["dut"].get("is_cumulus", False)
     conf_args = {
         "is_ipv6": True,
         "packet_size": 4096,
