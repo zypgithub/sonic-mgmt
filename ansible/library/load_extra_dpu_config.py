@@ -110,6 +110,20 @@ class LoadExtraDpuConfigModule(object):
         if SUCCESS_THRESHOLD < 1.0 and required_success_count == 0:
             required_success_count = 1
 
+        # Wait for DHCP server to be ready and at least required_success_count DPUs to have DHCP leases
+        if not self.wait_for_dhcp_readiness():
+            self.module.fail_json(
+                msg="DHCP server is not ready on switch after {} retries".format(
+                    MAX_RETRIES
+                )
+            )
+        if not self.wait_for_dhcp_leases_dpu_count(required_success_count):
+            self.module.fail_json(
+                msg="DHCP leases are not ready on switch (required {}) after {} retries.".format(
+                    required_success_count, MAX_RETRIES
+                )
+            )
+
         self.module.log("Configuring {} DPUs, requiring at least {} successful configurations".format(
             self.dpu_num, required_success_count))
 
@@ -160,6 +174,47 @@ class LoadExtraDpuConfigModule(object):
                         required_success_count, success_count, self.dpu_num, failure_count))
 
         return success_count, failure_count
+
+    def get_dchp_readiness(self):
+        # look for the bridge-midplane interface in the output
+        rc, out, err = self.module.run_command("show dhcp_server ipv4 info")
+        if rc != 0:
+            return False
+        # need to find the line with "bridge-midplane" and "enabled" in it
+        for line in out.split("\n"):
+            if "bridge-midplane" in line and "enabled" in line:
+                return True
+        return False
+
+    def wait_for_dhcp_readiness(self):
+        retry_count = 0
+        while retry_count < MAX_RETRIES:
+            if self.get_dchp_readiness():
+                return True
+            time.sleep(RETRY_DELAY)
+            retry_count += 1
+        return False
+
+    def get_dhcp_leases_dpu_count(self):
+        # check the output for the number of DPU leases
+        rc, out, err = self.module.run_command("show dhcp_server ipv4 lease")
+        if rc != 0:
+            return 0
+        lease_count = 0
+        for line in out.split("\n"):
+            if "bridge-midplane|dpu" in line:
+                lease_count += 1
+        return lease_count
+
+    def wait_for_dhcp_leases_dpu_count(self, required_count):
+        retry_count = 0
+        while retry_count < MAX_RETRIES:
+            if self.get_dhcp_leases_dpu_count() >= required_count:
+                return True
+            time.sleep(RETRY_DELAY)
+            retry_count += 1
+        return False
+
 
     def run(self):
         success_count, failure_count = self.configure_dpus()
