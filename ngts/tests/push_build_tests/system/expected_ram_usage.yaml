@@ -77,7 +77,7 @@ master:
     hostcfgd: 50
     featured: 20
     caclmgrd: 20
-    containerd: 270
+    containerd: 310
     healthd: 140
   # SPC1
   SN2700: # Panther
