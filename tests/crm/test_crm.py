@@ -684,6 +684,13 @@ def test_crm_nexthop(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_f
     asic_type = duthost.facts['asic_type']
     skip_stats_check = True if asic_type == "vs" else False
     RESTORE_CMDS["crm_threshold_name"] = "ipv{ip_ver}_nexthop".format(ip_ver=ip_ver)
+    # Get "crm_stats_ipv[4/6]_nexthop" used and available counter value
+    get_nexthop_stats = "{db_cli} COUNTERS_DB HMGET CRM:STATS \
+                            crm_stats_ipv{ip_ver}_nexthop_used \
+                            crm_stats_ipv{ip_ver}_nexthop_available"\
+                                .format(db_cli=asichost.sonic_db_cli,
+                                        ip_ver=ip_ver)
+    crm_stats_nexthop_used, crm_stats_nexthop_available = get_crm_stats(get_nexthop_stats, duthost)
     if duthost.facts["asic_type"] in ["marvell-prestera", "marvell", "mellanox"]:
         dut_interface = crm_interface[0] if duthost.facts["asic_type"] == "mellanox" else "Ethernet1"
         mask = "24" if ip_ver == "4" else "64"
@@ -717,13 +724,6 @@ def test_crm_nexthop(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_f
                             .format(ip_cmd=asichost.ip_cmd,
                                     nexthop=nexthop,
                                     iface=crm_interface[0])
-    # Get "crm_stats_ipv[4/6]_nexthop" used and available counter value
-    get_nexthop_stats = "{db_cli} COUNTERS_DB HMGET CRM:STATS \
-                            crm_stats_ipv{ip_ver}_nexthop_used \
-                            crm_stats_ipv{ip_ver}_nexthop_available"\
-                                .format(db_cli=asichost.sonic_db_cli,
-                                        ip_ver=ip_ver)
-    crm_stats_nexthop_used, crm_stats_nexthop_available = get_crm_stats(get_nexthop_stats, duthost)
     # Add nexthop
     asichost.shell(nexthop_add_cmd)
 
