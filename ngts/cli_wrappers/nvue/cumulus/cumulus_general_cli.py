@@ -223,13 +223,7 @@ class CumulusGeneralCli(NvueGeneralCli):
                     GrubMenuTool.select_grub_menu_item(serial_engine, 'ONIE')
 
                     logger.info("Pressing Enter to enter ONIE grub menu")
-                    _, respond = serial_engine.run_cmd('\r',
-                                                       expected_value=[
-                                                           'Due to security constraints, this option will uninstall your current OS',
-                                                           'Answer "YES" to continue',
-                                                           '\\*ONIE:.*'
-                                                       ],
-                                                       timeout=30, send_without_enter=True)
+                    _, respond = serial_engine.run_cmd('\r', expected_value='.*', timeout=30, send_without_enter=True)
 
         with allure.step(f'in ONIE grub menu: Go to {onie_menu_entry}'):
             GrubMenuTool.select_grub_menu_item(serial_engine, onie_menu_entry)
