@@ -114,7 +114,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1500
     syncd: 300
-    total: 6000
+    total: 8000
   MSN4600C: # Tigon
     <<: *platform_defaults
     sx_sdk: 1200
