@@ -48,7 +48,7 @@ def validate_firmware_components(platform, firmware_items, dut_engine):
     errors = {}
     for component in firmware_items:
         # WA for the weekend, need to check if it's a bug
-        if component == 'BMC' and is_bug_active(4543350):
+        if 'EROT-ASIC' in component and is_bug_active(4543350):
             continue
         # WA --------------------------------------------
 
