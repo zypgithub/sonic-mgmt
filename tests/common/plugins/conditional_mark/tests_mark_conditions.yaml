@@ -106,6 +106,16 @@ arp/test_wr_arp.py:
       - "is_mgmt_ipv6_only==True" # Does not support ipv6 mgmt ip on dut, specially the ferret server
 
 #######################################
+######        autorestart          #####
+########################################
+autorestart/test_container_autorestart.py::test_containers_autorestart.*teamd.*:
+  regex: true
+  xfail:
+    reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336"
+    conditions:
+      - "https://github.com/sonic-net/sonic-buildimage/issues/10336"
+
+#######################################
 #####            bfd              #####
 #######################################
 bfd/test_bfd.py:
@@ -3199,9 +3209,9 @@ platform_tests/test_reload_config.py::test_reload_configuration_checks:
 #######################################
 process_monitoring/test_critical_process_monitoring.py::test_monitoring_critical_processes:
   xfail:
-    reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336 on hwsku Mellanox-SN2700"
+    reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336"
     conditions:
-    - "https://github.com/sonic-net/sonic-buildimage/issues/10336 and platform in ['x86_64-mlnx_msn2700-r0', 'x86_64-mlnx_msn2700a1-r0']"
+    - "https://github.com/sonic-net/sonic-buildimage/issues/10336"
 
 process_monitoring/test_critical_process_monitoring.py::test_orchagent_heartbeat:
   skip:
