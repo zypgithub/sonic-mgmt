@@ -530,7 +530,7 @@ class SonicSecureBootHelper(SecureBootHelper):
             with allure.step("Set dut NTP timezone to {} time.".format('Israel')):
                 dut_engine = topology_obj.players['dut']['engine']
                 dut_engine.disconnect()
-                dut_engine.run_cmd('sudo timedatectl set-timezone {}'.format('Israel'), validate=True)
+                dut_engine.run_cmd('sudo timedatectl set-timezone {}'.format('Asia/Jerusalem'), validate=True)
 
             with allure.step("Init telemetry keys"):
                 dut_cli.general.init_telemetry_keys()

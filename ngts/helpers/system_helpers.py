@@ -62,3 +62,9 @@ def copy_files_to_syncd(engine, files_list, directory, syncd_dir='/'):
                          )
         engine.run_cmd('docker cp {} {}'.format(dst, f'syncd:{syncd_dir}'))
         engine.run_cmd("sudo docker exec -i syncd bash -c 'chmod +x {}'".format(file))
+
+
+def set_timezone(engine, timezone):
+    if timezone == 'Israel':
+        timezone = 'Asia/Jerusalem'
+    engine.run_cmd(f'sudo timedatectl set-timezone {timezone}', validate=True)

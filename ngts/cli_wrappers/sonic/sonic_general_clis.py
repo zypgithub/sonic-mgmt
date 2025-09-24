@@ -11,6 +11,7 @@ from retry import retry
 from retry.api import retry_call
 
 import ngts.helpers.json_file_helper as json_file_helper
+from ngts.helpers.system_helpers import set_timezone as system_set_timezone
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
 from infra.tools.general_constants.air_constants import HostsConstants
@@ -471,7 +472,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if set_timezone:
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
                 self.engine.disconnect()
-                self.engine.run_cmd('sudo timedatectl set-timezone {}'.format(set_timezone), validate=True)
+                system_set_timezone(self.engine, set_timezone)
 
         with allure.step("Init telemetry keys"):
             self.init_telemetry_keys()
@@ -738,7 +739,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if set_timezone:
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
                 self.engine.disconnect()
-                self.engine.run_cmd('sudo timedatectl set-timezone {}'.format(set_timezone), validate=True)
+                system_set_timezone(self.engine, set_timezone)
 
         with allure.step("Init telemetry keys"):
             self.init_telemetry_keys()

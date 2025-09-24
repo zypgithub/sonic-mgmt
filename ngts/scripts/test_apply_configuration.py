@@ -4,6 +4,7 @@ import logging
 import pytest
 from retry import retry
 from ngts.constants.constants import SonicConst
+from ngts.helpers.system_helpers import set_timezone
 
 logger = logging.getLogger()
 
@@ -32,7 +33,7 @@ def test_apply_basic_conf(topology_obj, setup_name, platform_params, is_simx, is
         configure_machine_conf(dut_engine, is_simx, platform_params)
         timezone = "Israel"
         with allure.step("Set dut timezone to {}".format(timezone)):
-            dut_engine.run_cmd('sudo timedatectl set-timezone {}'.format(timezone), validate=True)
+            set_timezone(dut_engine, timezone)
         with allure.step("Apply port_config.ini and config_db.json"):
             require_to_reload_before_qos = require_to_configure_machine_conf(is_simx, platform_params.platform)
             cli_object.general.apply_basic_config(topology_obj, setup_name, platform_params,
