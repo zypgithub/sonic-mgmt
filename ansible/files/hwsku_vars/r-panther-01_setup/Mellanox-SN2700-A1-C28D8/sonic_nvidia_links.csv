@@ -23,8 +23,8 @@ r-panther-01,Ethernet80,r-panther-07,ethernet 1/21,100000,121,Access
 r-panther-01,Ethernet84,r-panther-07,ethernet 1/22,100000,122,Access
 r-panther-01,Ethernet88,r-panther-07,ethernet 1/23,100000,123,Access
 r-panther-01,Ethernet92,r-panther-07,ethernet 1/24,100000,124,Access
-r-panther-01,Ethernet96,r-panther-07,ethernet 1/25,100000,125,Access
-r-panther-01,Ethernet100,r-panther-07,ethernet 1/26/1,10000,126,Access
+r-panther-01,Ethernet96,r-panther-07,ethernet 1/25/1,50000,125,Access
+r-panther-01,Ethernet100,r-panther-07,ethernet 1/25/2,50000,126,Access
 r-panther-01,Ethernet104,r-panther-07,ethernet 1/27,100000,127,Access
 r-panther-01,Ethernet108,r-panther-07,ethernet 1/28,100000,128,Access
 r-panther-01,Ethernet112,r-panther-07,ethernet 1/29/1,50000,129,Access
@@ -35,4 +35,4 @@ r-panther-01,Ethernet120,r-panther-07,ethernet 1/31/1,50000,133,Access
 r-panther-01,Ethernet122,r-panther-07,ethernet 1/31/2,50000,134,Access
 r-panther-01,Ethernet124,r-panther-07,ethernet 1/32/1,50000,135,Access
 r-panther-01,Ethernet126,r-panther-07,ethernet 1/32/2,50000,136,Access
-r-panther-07,ethernet 1/26/2,r-r740-12,p5p1,100000,101-136,Trunk
+r-panther-07,ethernet 1/26,r-r740-12,p5p1,100000,101-136,Trunk
