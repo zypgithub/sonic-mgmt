@@ -90,10 +90,12 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
 
 def get_dut_info(ansible_dir, dut_host):
+    original_dir = os.getcwd()
     os.chdir(ansible_dir)
 
     cmd = "ansible -m command -i inventory {} -a 'show version'".format(dut_host)
     output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+    os.chdir(original_dir)
 
     version_reg = re.compile(r"sonic software version: +([^\s]+)\s", re.IGNORECASE)
     platform_reg = re.compile(r"platform: +([^\s]+)\s", re.IGNORECASE)
