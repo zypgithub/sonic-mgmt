@@ -1897,3 +1897,17 @@
   Conditions:
   - Redmine:
     - 4618682
+
+- Errors_list:
+  - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object key SAI_OBJECT_TYPE_ROUTE_ENTRY.*doesn.t exist.*'
+  - '.*ERR syncd#SDK:.*\[SAI_ROUTE.ERR\].*\/src\/mlnx_sai_route.c.*mlnx_get_route: Failed to get \d+ route entries Entry Not Found.*'
+  - '.*ERR syncd#SDK: :- sendApiResponse: api SAI_COMMON_API_BULK_REMOVE failed in syncd mode: SAI_STATUS_FAILURE.*'
+  - '.*ERR swss#orchagent: :- flush_removing_entries: EntityBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_FAILURE.*'
+  - '.*ERR swss#orchagent: :- removeRoutePost: Failed to remove route prefix:.*'
+  Conditions:
+  - Affected_test_cases:
+    - crm/test_crm.py::test_crm_nexthop_group
+    GitHub:
+    - https://github.com/sonic-net/sonic-mgmt/issues/20563
+    Platform:
+    - sn4700
