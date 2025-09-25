@@ -412,6 +412,18 @@ def check_arp(duthost, port_name, ip_address):
     return False
 
 
+def check_all_status_correct(port_channel_status):
+    for _, status in list(port_channel_status["ports"].items()):
+        if not status["runner"]["selected"]:
+            logger.error("status of lag member error: {}".format(status))
+            return False
+        if "partner_retry_count" in status["runner"]:
+            if status["runner"]["partner_retry_count"] != 3:
+                logger.error("partner retry count is incorrect; expected 3, but is {}".format(status["runner"]["partner_retry_count"]))
+                return False
+    return True
+
+
 def test_lag_member_status(duthost, most_common_port_speed, ptf_dut_setup_and_teardown):
     """
     Test ports' status of members in a lag
@@ -427,12 +439,7 @@ def test_lag_member_status(duthost, most_common_port_speed, ptf_dut_setup_and_te
     number_of_lag_member = ports_num if ports_num < number_of_lag_member else number_of_lag_member
     pytest_assert("ports" in port_channel_status and number_of_lag_member == len(port_channel_status["ports"]),
                   "get port status error")
-    for _, status in list(port_channel_status["ports"].items()):
-        pytest_assert(status["runner"]["selected"], "status of lag member error")
-        if "partner_retry_count" in status["runner"]:
-            pytest_assert(status["runner"]["partner_retry_count"] == 3,
-                          "partner retry count is incorrect; expected 3, but is {}"
-                          .format(status["runner"]["partner_retry_count"]))
+    wait_until(10, 1, 0, check_all_status_correct, duthost.get_port_channel_status(DUT_LAG_NAME))
 
 
 def run_lag_member_traffic_test(duthost, dut_vlan, ptf_ports, ptfhost):
