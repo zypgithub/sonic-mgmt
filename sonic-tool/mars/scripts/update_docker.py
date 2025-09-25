@@ -10,6 +10,7 @@ run commands on it. Purpose is to prepare the SONiC testing topology using the t
 # Builtin libs
 import argparse
 import json
+import socket
 import os
 import re
 import sys
@@ -329,7 +330,9 @@ def cleanup_dangling_docker_images(test_server):
     """
     test_server.run("docker system prune --all -f", warn=True)
 
-
+# we got intermittent socket errors randomly occurs in CI
+# there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
+@retry(socket.error, tries=3, delay=10)
 def main():
     args = _parse_args()
     registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
