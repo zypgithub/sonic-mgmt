@@ -51,8 +51,8 @@ class SonicOnieCli:
                        logger=logger)
             self.engine.timeout = 10
 
-    def run_cmd_set(self, cmd_list, custum_prompts=""):
-        prompts = custum_prompts if custum_prompts else DEFAULT_PROMPT
+    def run_cmd_set(self, cmd_list, custom_prompts=""):
+        prompts = custom_prompts if custom_prompts else DEFAULT_PROMPT
         stdout = ""
         pexpect_entry = ""
         for cmd in cmd_list:
@@ -67,7 +67,7 @@ class SonicOnieCli:
 
     def get_stdout(self, stdout=""):
         stdout += self.engine.before.decode('ascii')
-        logger.info(stdout)
+        logger.info("stdout: " + stdout)
         return stdout
 
     def confirm_onie_boot_mode_install(self):
@@ -128,7 +128,7 @@ class SonicOnieCli:
         logger.info('in set efi next boot')
         boot_line_pattern = re.compile(r'^Boot(\d+)\* ONIE.*$', re.IGNORECASE | re.MULTILINE)
         for _ in range(3):
-            efibootmgr_output, _ = self.run_cmd_set(['efibootmgr'], custum_prompts=["ONIE:~ #", pexpect.EOF])
+            efibootmgr_output, _ = self.run_cmd_set(['efibootmgr'], custom_prompts=["ONIE:~ #", pexpect.EOF])
             match = boot_line_pattern.search(efibootmgr_output)
             if match:
                 onie_boot_num = match.group(1)
@@ -172,7 +172,7 @@ class SonicOnieCli:
 
         logger.info('Starting download sonic image via http')
         download_image_cmd = f"wget -O {local_image_file} {full_image_path}"
-        retry_call(self.run_cmd_set, fargs=[[download_image_cmd]], tries=5, delay=10, logger=logger)
+        retry_call(self.run_cmd_set, fargs=[[download_image_cmd]], fkwargs={"custom_prompts": "100%"}, tries=5, delay=10, logger=logger)
 
         logger.info('Starting onie-nos-install sonic image')
         stdout, pexpect_entry = self.run_cmd_set([f"onie-nos-install {local_image_file}"], prompts)
