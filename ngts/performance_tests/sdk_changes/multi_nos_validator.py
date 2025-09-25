@@ -21,7 +21,7 @@ from libs.utils.basic_test import PLATFORM, RUN_SUITE
 import libs.python_wrappers.cos.shared_buffer_wrappers as sb_lib
 import libs.python_wrappers.port.port_wrappers as port_lib
 import libs.python_wrappers.tele.tele_wrappers as tele_lib
-from libs.performance_infra.python_ixia_wrapper import retry
+from libs.utils.sdk_exception import SdkException
 import libs.python_wrappers.bulk_counter.bulk_counter_wrappers as bulk_counter_lib
 import libs.utils.test_infra_trap as trap_lib
 from libs.base_classes.multi_nos.multi_nos_basic_test import MultiNosTest, PACKET_SIZE
@@ -226,8 +226,15 @@ class TrafficValidator(MultiNosTest):
         self.logger.debug("Starting HFT session")
         bulk_counter_lib.bulk_counters_transaction_set(self.handle, hft_counter_buffer)
 
-        # wait for mocs done event
-        self.trap_thread_pool.trap_data_validate_bulk_counters(trap_fd_hft, [hft_counter_buffer], timeout=30)
+        self._wait_for_hft_event(trap_fd_hft)
+
+    @common_lib.retry_on_failure_till_timeout(timeout=10)
+    def _wait_for_hft_event(self, trap_fd_hft):
+        trap_queue = self.trap_thread_pool._queue_dict[trap_fd_hft]
+        trap_list = list(trap_queue.queue)
+        trap_id_list = [trap.recv_info.trap_id for trap in trap_list]
+        if SX_TRAP_ID_BULK_COUNTER_DONE_EVENT not in trap_id_list:
+            raise SdkException("HFT event not received")
 
     def start_hft_session(self, ports: list, counters: list, prio_list: list = None, tc_list: list = None,
                           pg_list: list = None,
@@ -424,7 +431,6 @@ class TrafficValidator(MultiNosTest):
 
         """
         self.logger.debug('Clean buffer statistics for clean occupency and watermark')
-        sb_lib.clear_all_ports_sb_statistics(self.handle, self.connected_ports)
 
         hft_occ_watermark_counters = [
             SX_BULK_CNTR_HFT_SAMPLE_COUNTER_EGRESS_PORT_TRAFFIC_CLASS_BUFFER_CURRENT_OCCUPANCY_E,
@@ -435,6 +441,7 @@ class TrafficValidator(MultiNosTest):
         self.logger.debug('Starting HFT measurement')
         tc_pg_dict = {}
         for port_group_name, port_group in self.port_groups.items():
+            sb_lib.clear_all_ports_sb_statistics(self.handle, port_group)
             sample_list = self.start_hft_session(port_group, counters=hft_occ_watermark_counters,
                                                  sample_count=1000, tc_list=list(range(MultiNosConstants.TC_NUM)),
                                                  pg_list=list(range(MultiNosConstants.PG_NUM)))

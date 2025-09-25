@@ -121,6 +121,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
 
     def get_down_ports(self):
         loopback_port = "lo"
+        docker_port = "docker0"
         output = self.engine.run_cmd("nv sh interface down -o json", print_output=False)
         output = json.loads(output)
         down_ports = [*output.keys()]
@@ -129,6 +130,7 @@ class NvueInterfaceCli(SonicInterfaceCli):
             down_ports.pop(down_ports.index(port))
         try:
             down_ports.pop(down_ports.index(loopback_port))
+            down_ports.pop(down_ports.index(docker_port))
         except ValueError:
             pass
         return down_ports

@@ -2,6 +2,7 @@
 {% set total_ports = parameter_dict.total_ports %}
 {% set split_right = parameter_dict.split_right %}
 {% set address_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+{% set bgp_neighbors = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=(total_ports//2)*split_right) %}
 {% set mloop_ports = down_ports() %}
 {% set speed = parameter_dict.speed | int %}
 - header:
@@ -11,7 +12,7 @@
     version: Cumulus Linux 5.11.0
 - set:
     acl:
-      acl-drop-arp:
+      acl-drop-arp-bgp:
         rule:
           '1':
             action:
@@ -37,6 +38,22 @@
                 protocol: ipv6
           '4':
             action:
+              deny: {}
+            match:
+              ip:
+                protocol: 6
+              mac:
+                protocol: ipv4
+          '5':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 6
+              mac:
+                protocol: ipv6
+          '6':
+            action:
               permit: {}
         type: mac
     bridge:
@@ -55,6 +72,11 @@
             set-hostname: disabled
         vrf: mgmt
         type: eth
+      lo:
+        ipv4:
+          address:
+            130.130.130.1/24: {}
+        type: loopback
     {% if split_right!=1 %}
     {% for port in port_list['dut']  %}
       {{ port }}:
@@ -91,7 +113,7 @@
     {% for split in range(0, split_right | int ) %}
       {{ port }}{% if split_right != 1 %}s{{ split }} {% endif %}:
         acl:
-          acl-drop-arp:
+          acl-drop-arp-bgp:
             inbound: {}
         bridge:
           domain:
@@ -142,11 +164,47 @@
         max-unauthenticated:
           throttle-start: 30
         permit-root-login: enabled
-      wjh:
-        channel:
-          forwarding:
-            trigger:
-              l2: {}
-              l3: {}
-              tunnel: {}
+    router:
+      bgp:
         state: enabled
+        autonomous-system: leaf
+        router-id: 2.2.2.2
+    vrf:
+      default:
+        router:
+          bgp:
+            address-family:
+              ipv4-unicast:
+                network:
+                  130.130.130.0/24: {}
+                multipaths:
+                  ebgp: 256
+                state: enabled
+              ipv6-unicast:
+                multipaths:
+                  ebgp: 256
+                state: enabled
+            autonomous-system: leaf    
+            neighbor:
+              {% for neighbor in bgp_neighbors["v4"] %}
+              {{ neighbor }}:
+                peer-group: v4_group
+                type: numbered
+              {% endfor %}
+              {% for neighbor in bgp_neighbors["v6"] %}
+              {{ neighbor }}:
+                peer-group: v6_group
+                type: numbered
+              {% endfor %}
+            peer-group:
+              v4_group:
+                address-family:
+                  ipv4-unicast:
+                    state: enabled
+                remote-as: external
+              v6_group:
+                address-family:
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+            state: enabled

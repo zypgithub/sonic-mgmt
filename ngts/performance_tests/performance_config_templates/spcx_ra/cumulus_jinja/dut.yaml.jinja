@@ -3,10 +3,10 @@
 {% set split_left = parameter_dict.split_left %}
 {% set split_right = parameter_dict.split_right %}
 {% set total_ports = parameter_dict.total_ports %}
-{% set left_address_list = generate_ip_address_list("172.16.1.2", "172::1:2", mode="dual", number_of_address=(total_ports//2)*split_left) %}
+{% set left_address_list = generate_ip_address_list("172.15.1.2", "172::1:2", mode="dual", number_of_address=(total_ports//2)*split_left) %}
 {% set right_address_list = generate_ip_address_list("192.168.1.2", "192::1:2", mode="dual", number_of_address=(total_ports//2)*split_right) %}
-{% set left_to_right_next_hop_list = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_left) %}
-{% set right_to_left_next_hop_list = generate_ip_address_list("172.16.1.1", "172::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
+{% set right_bgp_neighbors = generate_ip_address_list("192.168.1.1", "192::1:1", mode="dual", number_of_address=(total_ports//2)*split_left) %}
+{% set left_bgp_neighbors = generate_ip_address_list("172.15.1.1", "172::1:1", mode="dual", number_of_address=(total_ports//2)*split_right) %}
 {% set two_sided_ar = parameter_dict.two_sided_ar | string %}
 - header:
     model: sn5600
@@ -90,6 +90,10 @@
     router:
       adaptive-routing:
         state: enabled
+      bgp:
+        state: enabled
+        autonomous-system: spine
+        router-id: 3.3.3.3
     system:
       aaa:
         user:
@@ -129,32 +133,57 @@
     vrf:
       default:
         router:
-          static:
-            110.110.110.0/24:
-              address-family: ipv4-unicast
-              via:
-                {% for nh in right_to_left_next_hop_list["v4"] %}
-                {{ nh }}:
-                  type: ipv4-address
-                {% endfor %}
-            130.130.130.0/24:
-              address-family: ipv4-unicast
-              via:
-                {% for nh in left_to_right_next_hop_list["v4"] %}
-                {{ nh }}:
-                  type: ipv4-address
-                {% endfor %}
-            110::/120:
-              address-family: ipv6-unicast
-              via:
-                {% for nh in right_to_left_next_hop_list["v6"] %}
-                {{ nh }}:
-                  type: ipv6-address
-                {% endfor %}
-            130::/120:
-              address-family: ipv6-unicast
-              via:
-                {% for nh in left_to_right_next_hop_list["v6"] %}
-                {{ nh }}:
-                  type: ipv6-address
-                {% endfor %}
+          bgp:
+            address-family:
+              ipv4-unicast:
+                multipaths:
+                  ebgp: 256
+                state: enabled
+              ipv6-unicast:
+                multipaths:
+                  ebgp: 256
+                state: enabled
+            autonomous-system: spine    
+            neighbor:
+              {% for neighbor in left_bgp_neighbors["v4"] %}
+              {{ neighbor }}:
+                peer-group: v4_group_left
+                type: numbered
+              {% endfor %}
+              {% for neighbor in left_bgp_neighbors["v6"] %}
+              {{ neighbor }}:
+                peer-group: v6_group_left
+                type: numbered
+              {% endfor %}
+              {% for neighbor in right_bgp_neighbors["v4"] %}
+              {{ neighbor }}:
+                peer-group: v4_group_right
+                type: numbered
+              {% endfor %}
+              {% for neighbor in right_bgp_neighbors["v6"] %}
+              {{ neighbor }}:
+                peer-group: v6_group_right
+                type: numbered
+              {% endfor %}
+            peer-group:
+              v4_group_left:
+                address-family:
+                  ipv4-unicast:
+                    state: enabled
+                remote-as: external
+              v6_group_left:
+                address-family:
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+              v4_group_right:
+                address-family:
+                  ipv4-unicast:
+                    state: enabled
+                remote-as: external
+              v6_group_right:
+                address-family:
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+            state: enabled  
