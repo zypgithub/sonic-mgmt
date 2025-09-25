@@ -23,6 +23,7 @@ from tests.common.utilities import get_inventory_files, get_host_visible_vars
 from tests.common.utilities import skip_release_for_platform
 from tests.common.utilities import wait_until
 
+
 pytestmark = [
     pytest.mark.sanity_check(skip_sanity=True),
     pytest.mark.disable_loganalyzer,  # disable automatic loganalyzer
@@ -34,13 +35,9 @@ CMD_SHOW_PLATFORM = "show platform"
 
 THERMAL_CONTROL_TEST_WAIT_TIME = 65
 THERMAL_CONTROL_TEST_CHECK_INTERVAL = 5
-
-BF_2_PLATFORM = 'arm64-nvda_bf-mbf2h536c'
-BF_3_PLATFORM = 'arm64-nvda_bf-bf3comdpu'
 VPD_DATA_FILE = "/var/run/hw-management/eeprom/vpd_data"
 
-BF_2_PLATFORM = 'arm64-nvda_bf-mbf2h536c'
-BF_3_PLATFORM = 'arm64-nvda_bf-9009d3b600cvaa'
+BF_3_PLATFORM = 'arm64-nvda_bf-bf3comdpu'
 
 
 @pytest.fixture(scope='module')
@@ -501,20 +498,10 @@ def test_show_platform_ssdhealth(duthosts, enum_supervisor_dut_hostname):
     """
     duthost = duthosts[enum_supervisor_dut_hostname]
     cmds_list = [CMD_SHOW_PLATFORM, "ssdhealth"]
-
-    platform_ssd_device_path_dict = {BF_3_PLATFORM: "/dev/nvme0"}
-    unsupported_ssd_values_per_platform = {BF_2_PLATFORM: ["Temperature"]}
-
-    # Build specific path to SSD device based on platform/ssd path mapping dict
-    platform = duthost.facts['platform']
-    if platform_ssd_device_path_dict.get(platform):
-        cmds_list.append(platform_ssd_device_path_dict[platform])
-
-    cmd = " ".join(cmds_list)
     supported_disks = ["SATA", "NVME"]
 
     platform_ssd_device_path_dict = {BF_3_PLATFORM: "/dev/nvme0"}
-    unsupported_ssd_values_per_platform = {BF_2_PLATFORM: ["Temperature"]}
+    unsupported_ssd_values_per_platform = {}
 
     # Build specific path to SSD device based on platform/ssd path mapping dict
     platform = duthost.facts['platform']
