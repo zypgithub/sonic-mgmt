@@ -229,7 +229,7 @@ def prepare_cases_files(reboot_type_iterations_dict,
     if upgrade_testcase == "test_multi_hop_upgrade_path":
         case_timeout = 7200     # 2 hours
     elif upgrade_testcase == "test_multi_hop_sad_upgrade_path":
-        case_timeout = 90000 # 25 hours
+        case_timeout = 126000 # 35 hours
     elif upgrade_testcase == "test_warm_upgrade_sad_path":
         case_timeout = 54000
     else:
