@@ -701,7 +701,7 @@ class DeployDpuHelper:
             dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
             dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
             topology_obj.players['dut']['engine'].run_cmd(
-                f"sudo curl {dpu_image_url} --output {dest_file}")
+                f"sudo curl {dpu_image_url} --retry 3 --output {dest_file}", validate=True)
 
         with allure.step('Install BFB image on all DPUs'):
             output = topology_obj.players['dut']['engine'].run_cmd(
