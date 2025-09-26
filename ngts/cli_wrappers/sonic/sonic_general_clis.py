@@ -452,6 +452,24 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
                 self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
 
+    def modify_init_cfg_timezone(self, timezone):
+        """
+        Modify timezone in /etc/sonic/init_cfg.json file
+
+        Args:
+            timezone (str): The timezone value to set
+        """
+        try:
+            logger.info('Modifying timezone in /etc/sonic/init_cfg.json to {}'.format(timezone))
+
+            # Update timezone in /etc/sonic/init_cfg.json
+            self.engine.run_cmd('sudo cp /etc/sonic/init_cfg.json /tmp/init_cfg.json')
+            self.engine.run_cmd('sudo sed -i \'s|"timezone": "[^"]*"|"timezone": "{}"|g\' /tmp/init_cfg.json'.format(timezone))
+            self.engine.run_cmd('sudo cp /tmp/init_cfg.json /etc/sonic/init_cfg.json')
+
+        except Exception as e:
+            logger.error('Failed to update timezone in init_cfg.json: {}'.format(str(e)))
+
     def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
@@ -461,6 +479,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if not is_air:
             with allure.step('Verify dockers are up'):
                 self.verify_dockers_are_up()
+
+        with allure.step("Modify default timezone"):
+            self.modify_init_cfg_timezone('Asia/Jerusalem')
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
