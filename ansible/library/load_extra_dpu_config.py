@@ -21,7 +21,7 @@ MAX_RETRIES = 5
 RETRY_DELAY = 60  # sec
 
 # Set to 1.0 for requiring all DPUs to succeed (after HW issues are resolved)
-SUCCESS_THRESHOLD = 0.5
+SUCCESS_THRESHOLD = 1.0
 
 
 class LoadExtraDpuConfigModule(object):
@@ -47,6 +47,13 @@ class LoadExtraDpuConfigModule(object):
                 self.module.fail_json(msg="No DPUs defined for hwsku: {}".format(self.hwsku))
         except KeyError:
             self.module.fail_json(msg="No DPU configuration found for hwsku: {}".format(self.hwsku))
+
+    def wait_for_dpu_path(self, ssh, dpu_ip, path_to_check):
+        try:
+            wait_for_path(ssh, dpu_ip, path_to_check, empty_ok=False, tries=MAX_RETRIES, delay=RETRY_DELAY)
+        except FileNotFoundError:
+            return False
+        return True
 
     def connect_to_dpu(self, dpu_ip):
         """Establish an SSH connection to the DPU with retry"""
@@ -144,6 +151,7 @@ class LoadExtraDpuConfigModule(object):
             try:
                 # Attempt each step and track success
                 if (self.transfer_to_dpu(ssh, dpu_ip) and
+                        self.wait_for_dpu_path(ssh, dpu_ip, DEFAULT_CONFIG_FILE) and
                         self.execute_command(ssh, dpu_ip, GEN_FULL_CONFIG_CMD) and
                         self.execute_command(ssh, dpu_ip, CONFIG_RELOAD_CMD) and
                         self.execute_command(ssh, dpu_ip, CONFIG_SAVE_CMD) and
