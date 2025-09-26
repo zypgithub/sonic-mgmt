@@ -51,14 +51,14 @@ class SonicOnieCli:
                        logger=logger)
             self.engine.timeout = 10
 
-    def run_cmd_set(self, cmd_list, custom_prompts=""):
+    def run_cmd_set(self, cmd_list, custom_prompts="", timeout=None):
         prompts = custom_prompts if custom_prompts else DEFAULT_PROMPT
         stdout = ""
         pexpect_entry = ""
         for cmd in cmd_list:
             logger.info(f'Executing command on {self.ip}: {cmd}')
             self.engine.sendline(cmd)
-            pexpect_entry = self.get_pexpect_entry(prompts)
+            pexpect_entry = self.get_pexpect_entry(prompts, timeout)
             stdout = self.get_stdout(stdout)
         return stdout, pexpect_entry
 
@@ -172,7 +172,7 @@ class SonicOnieCli:
 
         logger.info('Starting download sonic image via http')
         download_image_cmd = f"wget -O {local_image_file} {full_image_path}"
-        retry_call(self.run_cmd_set, fargs=[[download_image_cmd]], fkwargs={"custom_prompts": "100%"}, tries=5, delay=10, logger=logger)
+        retry_call(self.run_cmd_set, fargs=[[download_image_cmd]], fkwargs={"custom_prompts": "100%", "timeout": 300}, tries=5, delay=2, logger=logger)
 
         logger.info('Starting onie-nos-install sonic image')
         stdout, pexpect_entry = self.run_cmd_set([f"onie-nos-install {local_image_file}"], prompts)
