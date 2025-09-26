@@ -1,7 +1,8 @@
-FROM debian:buster-slim
-ARG VM_USER=root
-ARG VM_PASSWORD=3tango
+FROM debian:buster
+
 ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
+ARG VM_USER
+ARG VM_PASSWORD
 # Update sources.list for Debian 10 archive repositories
 RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list && \
     echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list && \
@@ -21,14 +22,14 @@ RUN pip3 install daemonize==2.5.0 scapy==2.4.0
 
 #Install FRR
 RUN curl -s https://deb.frrouting.org/frr/keys.asc | apt-key add -
-RUN echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) frr-stable | tee -a /etc/apt/sources.list.d/frr.list
+RUN echo deb https://deb.frrouting.org/frr $(lsb_release -s -c) frr-8 | tee -a /etc/apt/sources.list.d/frr.list
 RUN apt-get update
 RUN apt-get install -y frr frr-pythontools
 ADD docker-start /usr/sbin/docker-start
 RUN sed -i 's/bgpd=no/bgpd=yes/g' /etc/frr/daemons
 RUN sed -i 's/bfdd=no/bfdd=yes/g' /etc/frr/daemons
 
-
+RUN apt install -y teamd
 # Configure remote connection details
 RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
