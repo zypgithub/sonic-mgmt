@@ -1,7 +1,6 @@
 import logging
 import pytest
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku
-from tests.common import config_reload
 from tests.common.utilities import wait_until
 
 logger = logging.getLogger(__name__)
@@ -52,8 +51,6 @@ def restart_swss_container(duthosts, enum_rand_one_per_hwsku_frontend_hostname, 
     )
 
     yield
-
-    config_reload(duthost, safe_reload=True)
 
 
 def get_num_lldpctl_facts(duthost, enum_frontend_asic_index):
