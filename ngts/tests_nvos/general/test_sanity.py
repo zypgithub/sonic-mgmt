@@ -64,7 +64,6 @@ def test_ci_sanity_set(engines, topology_obj, devices):
 
 
 @pytest.mark.simx
-@pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
 def test_ci_sanity_fetch(engines, topology_obj, devices):
     with allure.step("Test action fetch"):

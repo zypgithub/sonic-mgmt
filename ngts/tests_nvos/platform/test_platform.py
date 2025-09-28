@@ -15,6 +15,7 @@ logger = logging.getLogger()
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.simx
+@pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_platform(engines, test_api, devices, nv_command):
