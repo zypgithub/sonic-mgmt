@@ -45,4 +45,4 @@ ptf-bobcat-1254 ansible_host=10.220.73.83 ansible_ssh_user="{{ lookup('env','PTF
 10.220.73.83 ansible_host=10.220.73.83 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
-pdu-10-193-230-193 ansible_host=10.193.230.193 protocol=snmp
+pdu-10-193-230-193 ansible_host=10.193.230.193 protocol=snmp pdu_ro_snmp_version=v3 pdu_ro_snmp_user="{{ lookup('env','SNMP_RO_USER') }}" pdu_ro_snmp_auth_type=sha pdu_ro_snmp_auth_pass="{{ lookup('env','SNMP_RO_AUTH_PASSWORD') }}" pdu_ro_snmp_priv_type=aes pdu_ro_snmp_priv_pass="{{ lookup('env','SNMP_RO_PRIV_PASSWORD') }}" pdu_rw_snmp_version=v3 pdu_rw_snmp_user="{{ lookup('env','SNMP_RW_USER') }}" pdu_rw_snmp_auth_type=sha pdu_rw_snmp_auth_pass="{{ lookup('env','SNMP_RW_AUTH_PASSWORD') }}" pdu_rw_snmp_priv_type=aes pdu_rw_snmp_priv_pass="{{ lookup('env','SNMP_RW_PRIV_PASSWORD') }}"
