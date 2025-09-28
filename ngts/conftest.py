@@ -727,7 +727,10 @@ def platform_params(show_platform_summary, setup_name, topology_obj):
     platform_data.filtered_platform = re.search(
         r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD|N5200_LD|N5600_LD|N5500_LD|N6150_LD|[Nn]6100_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
-    platform_data.hwsku = show_platform_summary['hwsku']
+    if 'air' in setup_name.lower():
+        platform_data.hwsku = json.loads(topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
+    else:
+        platform_data.hwsku = show_platform_summary['hwsku']
     platform_data.setup_name = setup_name
     platform_data.asic_type = show_platform_summary["asic_type"]
     platform_data.asic_count = show_platform_summary["asic_count"]
