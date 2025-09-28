@@ -6,6 +6,7 @@ from ngts.cli_wrappers.linux.linux_dhcp_clis import LinuxDhcpCli
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from retry.api import retry_call
+from ngts.helpers.general_helper import is_smartswitch_platform
 
 
 """
@@ -29,6 +30,16 @@ dhclient_stop_cmd = LinuxDhcpCli.stop_dhcp_client
 dhcp_pkt = 'Ether(src="{}",dst="{}")/IP(src="{}",dst="{}")/UDP(sport={},dport={})/' \
            'BOOTP({},xid=RandInt())/DHCP(options=[{}])'
 dhcp_option_53 = 'udp[250:1]'
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_dhcp_relay_v4_test(platform_params):
+    if is_smartswitch_platform(platform_params):
+        pytest.skip(
+            "Smartswitch not support the case. \
+             Because by default, dhcp relay v4 is enabled on smartswitch and is mainly for DPU.\
+             So when configuring dhcp relay in smartswitch, \
+             it will return error: Cannot change dhcp_relay configuration when dhcp_server feature is enabled.")
 
 
 class TestDHCPRelay:

@@ -8,11 +8,22 @@ from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.dhcp_relay_config_template import DhcpRelayConfigTemplate
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from ngts.helpers.general_helper import is_smartswitch_platform
 
 logger = logging.getLogger()
 num_of_dhcp_servers = 10
 dhcp_client_vlan = 100
 dhcp_servers_first_vlan = 101
+
+
+@pytest.fixture(scope='function')
+def skip_dhcp_relay_v4_test(platform_params):
+    if is_smartswitch_platform(platform_params):
+        pytest.skip(
+            "Smartswitch not support the case. \
+             Because by default, dhcp relay v4 is enabled on smartswitch and is mainly for DPU.\
+             So when configuring dhcp relay in smartswitch, \
+             it will return error: Cannot change dhcp_relay configuration when dhcp_server feature is enabled.")
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -81,7 +92,7 @@ def update_arp_for_peers_DHCP_servers(topology_obj, interfaces):
 
 
 @allure.title('Test DHCP Relay scale')
-def test_dhcp_relay_few_dhcp_servers(topology_obj, interfaces):
+def test_dhcp_relay_few_dhcp_servers(topology_obj, interfaces, skip_dhcp_relay_v4_test):
     """
     This test will check DHCP Relay functionality in case when few DHCP servers configured
     We send DHCP request from client and expected to see it on all DHCP servers which configured in relay settings
