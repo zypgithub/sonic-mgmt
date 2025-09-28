@@ -481,7 +481,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.verify_dockers_are_up()
 
         with allure.step("Modify default timezone"):
-            self.modify_init_cfg_timezone('Asia/Jerusalem')
+            self.modify_init_cfg_timezone(SonicConst.TIMEZONE)
 
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
@@ -1090,6 +1090,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.update_config_db_metadata_router(config_db)
         self.update_config_db_metadata_mgmt_port(config_db)
         self.update_config_db_metadata_hwsku(hwsku, config_db)
+        self.update_config_db_metadata_timezone(SonicConst.TIMEZONE, config_db)
         self.update_config_db_features(setup_name, hwsku, platform, config_db)
         self.update_config_db_feature_config("database", "auto_restart", "always_enabled", config_db)
         default_mtu = "9100"
@@ -1174,6 +1175,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def update_config_db_metadata_hwsku(self, hwsku, config_db):
         config_db[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU] = \
             hwsku
+
+    def update_config_db_metadata_timezone(self, timezone, config_db):
+        config_db[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST]['timezone'] = timezone
 
     def update_config_db_hostname(self, setup_name, hostname, config_db_json_file_name):
         config_db_json = self.get_config_db_json_obj(setup_name, config_db_json_file_name=config_db_json_file_name)

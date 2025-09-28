@@ -60,6 +60,7 @@ class SonicConst:
     PMON_DAEMON_CONTROL_JSON_PATH = "/usr/share/sonic/device/{PLATFORM}/pmon_daemon_control.json"
     SAI_PROFILE_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}/{HWSKU}/sai.profile"
     COPP_CONFIG = 'copp_cfg.json'
+    TIMEZONE = 'Asia/Jerusalem'
 
     BREAKOUT_MODE_WITH_DIFF_LANE_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G\(\d\)\+\dx\d+G\(\d\)"  # i.e, 2x25G(2)+1x50G(2)
 
