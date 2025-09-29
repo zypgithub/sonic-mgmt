@@ -93,6 +93,7 @@ class SonicSecureBootConsts(SecureBootConsts):
     PROD_CORRUPT_MFA_ERR_MSG = "Bad parameter"
     SECURE_FW_MSG = "Security Attributes:   secure-fw"
     SECURE_FW_DEV_MSG = "Security Attributes:   secure-fw, dev"
+    BISON_ONIE_TIMEOUT_FACTOR = 1.5
 
 
 class SecureUpgradeConsts:

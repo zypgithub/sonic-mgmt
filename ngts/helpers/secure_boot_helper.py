@@ -99,6 +99,7 @@ class SonicSecureBootHelper(SecureBootHelper):
     def is_sonic_mode(self):
         try:
             _, respond = self.serial_engine.run_cmd('\r', ["/home/admin#",
+                                                           DefaultConnectionValues.DEFAULT_USER + '@',
                                                            "Debian GNU/Linux.*",
                                                            "Please press Enter to activate this console",
                                                            DefaultConnectionValues.LOGIN_REGEX,
@@ -106,7 +107,7 @@ class SonicSecureBootHelper(SecureBootHelper):
                                                            "Malformed binary after Attribute Certificate Table",
                                                            "GNU GRUB  version"],
                                                     timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
-            if respond <= 1:
+            if respond <= 2:
                 logger.info("SONIC mode")
                 return True
             else:
@@ -206,8 +207,12 @@ class SonicSecureBootHelper(SecureBootHelper):
 
         with allure.step("ping till down after reboot from ONIE"):
             ping_till_alive(should_be_alive=False, destination_host=self.serial_engine.ip)
+
         with allure.step("ping till alive after system is down"):
             ping_till_alive(should_be_alive=True, destination_host=self.serial_engine.ip)
+
+        with allure.step("Verify dockers are up"):
+            self.cli_objects.dut.general.verify_dockers_are_up()
 
         with allure.step('Save the initial configuration'):
             self.cli_objects.dut.general.save_configuration()
@@ -216,6 +221,11 @@ class SonicSecureBootHelper(SecureBootHelper):
             self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_USER, DefaultConnectionValues.PASSWORD_REGEX)
             self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_PASSWORD,
                                        DefaultConnectionValues.DEFAULT_PROMPTS)
+
+    def ensure_onie_mode(self):
+        _, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
+                                                timeout=3)
+        assert respond == 0, "Switch is not in ONIE mode"
 
     def login_into_onie_mode(self):
         """
@@ -245,7 +255,7 @@ class SonicSecureBootHelper(SecureBootHelper):
             if respond == 0:
                 return True
             return False
-
+        logger.info(f"Polling for {SonicSecureBootConsts.ONIE_TIMEOUT} seconds to login into ONIE mode")
         success = wait_until(SonicSecureBootConsts.ONIE_TIMEOUT, 10, 0, press_enter_until_onie_login)
         if success:
             self.serial_engine.run_cmd(DefaultConnectionValues.ONIE_USERNAME, [DefaultConnectionValues.PASSWORD_REGEX] +
@@ -439,8 +449,10 @@ class SonicSecureBootHelper(SecureBootHelper):
 
     @retry(Exception, tries=5, delay=3)
     def validate_http_reachable(self, url):
-        _, respond = self.serial_engine.run_cmd(f'sudo curl -I {url}', ["OK"])
-        assert respond == 0
+        output = self.engines.dut.run_cmd(f'sudo curl -I {url}')
+        expected_msg = 'OK'
+        if expected_msg not in output:
+            raise Exception(f"Expected message {expected_msg} not found in output {output} {url} is not reachable")
 
     @retry(Exception, tries=5, delay=3)
     def validate_file_exist(self, file_path):

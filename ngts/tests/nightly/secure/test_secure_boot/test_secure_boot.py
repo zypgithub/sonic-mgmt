@@ -93,7 +93,7 @@ def test_sonic_secure_boot_from_onie(secure_boot_helper, request, image_path, to
 @pytest.mark.disable_loganalyzer
 @pytest.mark.parametrize("signed_type", [SonicSecureBootConsts.FWUTIL_KEY_MISMATCHED_SIGNED])
 def test_fwutil_install_onie_key_check_fail(secure_boot_helper, platform_params, signed_type, dut_secure_type,
-                                            recover_switch_after_secure_boot_violation_message):
+                                            recover_switch_after_secure_boot_violation_message, update_onie_timeout):
     """
     In this test case we want to validate unsuccessful upgrade of unsigned onie by fwutil
     """
@@ -106,13 +106,13 @@ def test_fwutil_install_onie_key_check_fail(secure_boot_helper, platform_params,
 
 @pytest.mark.disable_loganalyzer
 @pytest.mark.parametrize("signed_type", [SonicSecureBootConsts.FWUTIL_KEY_MISMATCHED_SIGNED])
-def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params, signed_type, dut_secure_type):
+def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params, signed_type, dut_secure_type, update_onie_timeout):
     """
     In this test case we want to validate unsuccessful upgrade of key mismatched bios by fwutil
     """
     with allure.step("Test secure boot of fwutil - bios upgrade"):
         is_bison = 'sn5640' in platform_params.platform
-        timeout_factor = 1.5 if is_bison else 1
+        timeout_factor = SonicSecureBootConsts.BISON_ONIE_TIMEOUT_FACTOR if is_bison else 1
         secure_boot_helper.fwutil_install_secure_boot_negative(
             SonicSecureBootConsts.BIOS_COMPONENT, signed_type, dut_secure_type, platform_params,
             SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[SonicSecureBootConsts.BIOS_COMPONENT],
