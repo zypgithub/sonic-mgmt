@@ -451,6 +451,7 @@ class ActionConsts:
     POWER_CYCLE = 'power-cycle'
     REBOOT = 'reboot'
     RENEW = 'renew'
+    ACTIVATE = 'activate'
 
 
 class ActionParamConsts:
@@ -2253,3 +2254,79 @@ class SecureConfig:
         config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
         with open(config_path, 'w') as f:
             json.dump(cls._config, f, indent=4)
+
+
+class CpoConsts:
+    """Constants for ELS Fiber Tuning testing"""
+
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+    class InitState(Enum):
+        COMPLETED = 'completed'
+        FAILED = 'failed'
+        NOT_REACHED = 'not-reached'
+
+    class ReadyState(Enum):
+        READY = 'ready'
+        NOT_READY = 'not-ready'
+        INITIALIZING = 'initializing'
+
+    # CPO Field Names
+    ELS_INITIALIZATION_STATE = 'els-initialization-state'
+    FIBER_CHECK_STATE = 'fiber-check-state'
+    FIBER_TUNING_STATE = 'fiber-tuning-state'
+    LASER_UP_STATE = 'laser-up-state'
+
+    # ELS Initialization Fields
+    FIBER_CHECK = 'fiber-check'
+    FIBER_TUNING = 'fiber-tuning'
+    LASER_UP = 'laser-up'
+    ERROR = 'error'
+
+    # Commands
+    ELS_INITIALIZATION = 'els-initialization'
+    ELS_INITIALIZATION_PER_LASER = 'els-initialization-per-laser'
+
+    # Default values
+    DEFAULT_STATE = State.ENABLED.value
+
+    # Valid states lists
+    VALID_STATES = [State.ENABLED.value, State.DISABLED.value]
+    VALID_INIT_STATES = [InitState.COMPLETED.value, InitState.FAILED.value, InitState.NOT_REACHED.value]
+    VALID_READY_STATES = [ReadyState.READY.value, ReadyState.NOT_READY.value, ReadyState.INITIALIZING.value]
+
+    # Field mappings
+    CPO_FIELDS = [
+        ELS_INITIALIZATION_STATE,
+        FIBER_CHECK_STATE,
+        FIBER_TUNING_STATE,
+        LASER_UP_STATE
+    ]
+
+    ELS_INIT_DEFAULT_DICT = {
+        FIBER_CHECK: InitState.NOT_REACHED.value,
+        FIBER_TUNING: InitState.NOT_REACHED.value,
+        LASER_UP: InitState.NOT_REACHED.value,
+    }
+
+    ELS_INIT_PER_LASER_DEFAULT_DICT = {
+        ERROR: "Operation failed - No specified reason",
+        FIBER_CHECK: InitState.NOT_REACHED.value,
+        FIBER_TUNING: InitState.NOT_REACHED.value,
+        LASER_UP: InitState.NOT_REACHED.value
+    }
+
+    # Number of lasers per ELS transceiver
+    NUMBER_OF_LASERS_PER_ELS = 8
+
+    # PMAOS module offset for ELS transceivers
+    # This offset is added to the ELS index when simulating plug/unplug events via PMAOS
+    PMAOS_MODULE_OFFSET = 71
+
+    LASER_FIELDS = [FIBER_CHECK, FIBER_TUNING, LASER_UP, ERROR]
+
+    # Error messages
+    INVALID_ELS_INDEX_ERROR = "Invalid ELS index, expected range: 1-18"
+    CANNOT_TUNE_NON_ELS_ERROR = "Can not tune non-ELS transceiver"

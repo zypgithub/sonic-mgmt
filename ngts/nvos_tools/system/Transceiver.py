@@ -26,6 +26,10 @@ class Transceiver(BaseComponent):
         """nv action install platform transceiver firmware files <file-name> """
         return self.action_deprecated(ActionConsts.INSTALL, transceiver_name + ' firmware files ' + file_name, expected_output=expected_str, dut_engine=dut_engine)
 
+    def activate(self, transceiver_name, expected_str="", dut_engine=None):
+        """nv action activate platform transceiver <transceiver-name> """
+        return self.action(ActionConsts.ACTIVATE, ('transceiver-name', transceiver_name), expected_output=expected_str, engine=dut_engine)
+
     def get_dict_of_transceivers(self, cable_type):
         """
         Returns a dict of transceivers according to cable_type
