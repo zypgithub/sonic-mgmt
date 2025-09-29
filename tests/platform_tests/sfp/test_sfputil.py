@@ -43,7 +43,7 @@ DOM_ENABLED = "enabled"
 DOM_POLLING_CONFIG_VALUES = [DOM_DISABLED, DOM_ENABLED]
 
 WAIT_TIME_AFTER_LPMODE_SET = 3  # in seconds
-PARTIAL_INTERFACES_COUNT = 64
+PARTIAL_INTERFACES_MAX_COUNT = 64
 
 logger = logging.getLogger(__name__)
 
@@ -318,11 +318,11 @@ def get_phy_intfs_to_test_per_asic(duthost,
         is True if the interface is admin-up)
     """
     portmap, dev_conn = get_dev_conn(duthost,
-                               conn_graph_facts,
-                               enum_frontend_asic_index)
-    if limited_ports and len(portmap) > PARTIAL_INTERFACES_COUNT:
-        # Take first PARTIAL_INTERFACES_COUNT interfaces from portmap if there are more
-        partial_interfaces = list(portmap.keys())[:PARTIAL_INTERFACES_COUNT]
+                                     conn_graph_facts,
+                                     enum_frontend_asic_index)
+    if limited_ports and len(portmap) > PARTIAL_INTERFACES_MAX_COUNT:
+        # Take first PARTIAL_INTERFACES_MAX_COUNT interfaces from portmap if there are more
+        partial_interfaces = list(portmap.keys())[:PARTIAL_INTERFACES_MAX_COUNT]
         dev_conn = {k: dev_conn[k] for k in partial_interfaces if k in dev_conn}
     physical_port_idx_map = get_physical_port_indices(duthost, logical_intfs=dev_conn)
     phy_intfs_to_test_per_asic = {}
