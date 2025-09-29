@@ -27,16 +27,18 @@ def copy_event_trigger_script_to_dut(duthost):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def disable_auto_techsupport(duthost):
+def disable_auto_techsupport(duthost, cli_objects):
     """
     Fixture to disable auto techsupport.
     """
     with allure.step('Disable auto techsupport'):
         duthost.run_cmd('sudo config auto-techsupport global state disabled')
+        cli_objects.dut.general.save_configuration()
     yield
 
     with allure.step('Enable auto techsupport'):
         duthost.run_cmd('sudo config auto-techsupport global state enabled')
+        cli_objects.dut.general.save_configuration()
 
 
 @pytest.fixture
