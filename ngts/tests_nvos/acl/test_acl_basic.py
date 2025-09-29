@@ -84,7 +84,7 @@ def test_can_ping_from_eth1(engines, devices):
         logger.info("Successfully pinged sonic-mgmt through eth1")
     except Exception:
         logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
-        gateway = Port("eth0").interface.ip.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
+        gateway = Port("eth0").interface.ipv4.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
         devices.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
         raise
 

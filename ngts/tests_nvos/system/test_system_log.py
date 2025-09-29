@@ -707,8 +707,8 @@ def test_log_idle(engines):
         interface = Interface(None)
         eth_port_list = [Port(interface_name) for interface_name in re.findall(r'eth\d+', interface.show())]
         for port in eth_port_list:
-            port.interface.ip.action_renew_dhcp_client(ipv6=False).verify_result()
-            port.interface.ip.action_renew_dhcp_client(ipv6=True).verify_result()
+            port.interface.ipv4.action_renew_dhcp_client().verify_result()
+            port.interface.ipv6.action_renew_dhcp_client().verify_result()
         time.sleep(60)
 
     with allure.step("Rotate the log"):

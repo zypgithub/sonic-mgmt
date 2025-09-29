@@ -11,7 +11,8 @@ logger = logging.getLogger()
 @pytest.mark.ib
 @pytest.mark.nvos_ci
 @pytest.mark.nvos_build
-def test_ib0_show_interface(engines):
+def test_ib0_show_interface(engines, random_api):
+    TestToolkit.tested_api = random_api
     """
     Run show interface ib0 command and verify the required fields are exist
     command: nv show interface ib0 link
@@ -25,7 +26,8 @@ def test_ib0_show_interface(engines):
 
 
 @pytest.mark.ib
-def test_ib0_show_interface_link(engines):
+def test_ib0_show_interface_link(engines, random_api):
+    TestToolkit.tested_api = random_api
     """
     Run show interface ib0 link command and verify the required fields are exist
     only show cmds
@@ -45,7 +47,8 @@ def test_ib0_show_interface_link(engines):
 
 
 @pytest.mark.ib
-def test_ib0_show_interface_stats(engines):
+def test_ib0_show_interface_stats(engines, random_api):
+    TestToolkit.tested_api = random_api
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
@@ -61,7 +64,8 @@ def test_ib0_show_interface_stats(engines):
 
 
 @pytest.mark.ib
-def test_ib0_show_interface_ip(engines):
+def test_ib0_show_interface_ip(engines, random_api):
+    TestToolkit.tested_api = random_api
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
@@ -75,19 +79,24 @@ def test_ib0_show_interface_ip(engines):
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
                      'value according to the state of the port'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ib0_port.interface.ip.show()).get_returned_value()
+        # Test both IPv4 and IPv6 interfaces
+        output_dictionary_ipv4 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+            ib0_port.interface.ipv4.show()).get_returned_value()
+        output_dictionary_ipv6 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+            ib0_port.interface.ipv6.show()).get_returned_value()
 
-        validate_ip_fields(output_dictionary)
+        validate_ip_fields(output_dictionary_ipv4)
+        validate_ip_fields(output_dictionary_ipv6)
 
 
 def validate_interface_fields(output_dictionary):
-    with allure.step('Check that the following fields exist in the output: type, link, ip, ifindex'):
-        logging.info('Check that the following fields exist in the output: type, link, ip, ifindex')
+    with allure.step('Check that the following fields exist in the output: type, link, ipv4, ipv6, ifindex'):
+        logging.info('Check that the following fields exist in the output: type, link, ipv4, ipv6, ifindex')
         field_to_check = [IbInterfaceConsts.TYPE,
                           IbInterfaceConsts.LINK,
                           IbInterfaceConsts.IFINDEX,
-                          IbInterfaceConsts.IP]
+                          IbInterfaceConsts.IPV4,
+                          IbInterfaceConsts.IPV6]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
@@ -120,33 +129,3 @@ def validate_ip_fields(output_dictionary):
         logging.info('Check that all expected fields under eth ip field exist in the output')
         field_to_check = [IbInterfaceConsts.IP_ADDRESS]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_show_interface_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_show_interface(engines)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_show_interface_link_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_show_interface_link(engines)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_show_interface_stats_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_show_interface_stats(engines)
-
-
-@pytest.mark.openapi
-@pytest.mark.ib
-def test_ib0_show_interface_ip_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib0_show_interface_ip(engines)

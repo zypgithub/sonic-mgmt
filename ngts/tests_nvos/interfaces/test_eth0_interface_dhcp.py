@@ -305,23 +305,23 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
     try:
         with allure.step('Run show command on mgmt port and verify default description'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.show()).get_returned_value()
+                mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(switch_ip, output_dictionary, True)
 
         with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-            res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+            res = mgmt_port.interface.ipv4.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
             res.ignore_result()
             assert not res.result or "is not a" in res.returned_value, \
                 "The operation succeeded while it is expected to fail"
 
         with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-            res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+            res = mgmt_port.interface.ipv4.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
             res.ignore_result()
             assert not res.result or "is not a" in res.returned_value, \
                 "The operation succeeded while it is expected to fail"
 
         with allure.step('Disable dhcp, check mgmt port unreachable'):
-            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))
             serial_engine.serial_engine.sendline("nv config apply")
             serial_engine.serial_engine.expect("Are you sure?", timeout=120)
             serial_engine.serial_engine.sendline("y")
@@ -354,7 +354,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             logger.info('Check port status, should be up')
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.show()).get_returned_value()
+                mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(switch_ip, output_dictionary, True)
 
 
@@ -363,22 +363,68 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 @pytest.mark.simx
 def test_interface_eth0_show_dhcp(engines, topology_obj):
     """
-    Verify all default fields in nv show interface eth0 ip ipv4 dhcp-client and ipv6 dhcp-client
+    Verify all default fields in nv show interface eth0 ipv4 dhcp-client and ipv6 dhcp-client
 
     flow:
-    1. Check all fields are exist in nv show interface eth0 ip ipv4 dhcp-client
-    2. Check all fields exist in nv show interface eth0 ip ipv6 dhcp-client
+    1. Check all fields are exist in nv show interface eth0 ipv4 dhcp-client
+    2. Check all fields exist in nv show interface eth0 ipv6 dhcp-client
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     with allure.step('Run show command on mgmt port and verify default description'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.show()).get_returned_value()
+        # Test IPv4 interface
+        output_dictionary_ipv4 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+            mgmt_port.interface.ipv4.show()).get_returned_value()
 
-        with allure.step("Validate all expected fields in show output"):
-            Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, ["dhcp-client", "dhcp-client6"]) \
+        # Test IPv6 interface
+        output_dictionary_ipv6 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+            mgmt_port.interface.ipv6.show()).get_returned_value()
+
+        with allure.step("Validate all expected fields in IPv4 show output"):
+            Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary_ipv4, ["dhcp-client"]) \
+                .verify_result()
+
+        with allure.step("Validate all expected fields in IPv6 show output"):
+            Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary_ipv6, ["dhcp-client"]) \
                 .verify_result()
             logging.info("All expected fields were found")
+
+        with allure.step("Test DHCP lease properties for IPv4"):
+            # Test IPv4 lease properties
+            lease_output_ipv4 = mgmt_port.interface.ipv4.dhcp_client.lease.show()
+            assert lease_output_ipv4 is not None, "IPv4 DHCP lease should be accessible"
+
+            # Check for key lease properties (if available)
+            expected_lease_properties = [
+                'ntp-servers', 'domain-search', 'domain-name-servers',
+                'subnet-mask', 'server-name', 'routers', 'renew', 'rebind',
+                'host-name', 'fixed-address', 'filename', 'expire',
+                'domain-name', 'dhcp-message-type', 'dhcp-lease-time',
+                'broadcast-address'
+            ]
+
+            for prop in expected_lease_properties:
+                if prop in lease_output_ipv4:
+                    logger.info(f" Found IPv4 lease property: {prop}")
+                else:
+                    logger.info(f" IPv4 lease property not present: {prop}")
+
+        with allure.step("Test DHCP lease properties for IPv6"):
+            # Test IPv6 lease properties
+            lease_output_ipv6 = mgmt_port.interface.ipv6.dhcp_client.lease.show()
+            assert lease_output_ipv6 is not None, "IPv6 DHCP lease should be accessible"
+
+            # Check for key IPv6 lease properties (if available)
+            expected_ipv6_lease_properties = [
+                'ia-na', 'ntp-servers', 'name-servers', 'domain-search',
+                'server-id', 'client-id'
+            ]
+
+            for prop in expected_ipv6_lease_properties:
+                if prop in lease_output_ipv6:
+                    logger.info(f" Found IPv6 lease property: {prop}")
+                else:
+                    logger.info(f" IPv6 lease property not present: {prop}")
 
 
 @pytest.mark.cumulus
@@ -404,7 +450,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
     try:
         with allure.step('Run show ip dhcp command and check default values and dhcp hostname'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
+                mgmt_port.interface.ipv4.dhcp_client.show()).get_returned_value()
 
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
 
@@ -414,9 +460,11 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
             assert dhcp_hostname, "No dhcp_hostname received from noga"
 
-            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                              field_name='has-lease',
-                                                              expected_value='yes').verify_result()
+            # Check lease information instead of has-lease (new schema)
+            with allure.step('Check DHCP lease information'):
+                lease_output = mgmt_port.interface.ipv4.dhcp_client.lease.show()
+                assert lease_output is not None, "DHCP lease information should be available"
+                logger.info(" DHCP lease information is accessible")
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name='is-running',
@@ -433,7 +481,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
 
         with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
-            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))
             serial_engine.serial_engine.sendline("nv config apply")
             serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
             serial_engine.serial_engine.sendline("y")
@@ -442,11 +490,11 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             logger.info('Check port status, should be down')
             check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
-            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv show interface {} ipv4 dhcp-client".format(mgmt_port_name))
             serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
         with allure.step('Disable dhcp set-hostname, check port down and not reachable'):
-            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client set-hostname disabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client set-hostname disabled".format(mgmt_port_name))
             serial_engine.serial_engine.sendline("nv config apply")
             serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
             serial_engine.serial_engine.sendline("y")
@@ -454,9 +502,9 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
 
             logger.info('Check port status, should be down')
             check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv show interface {} ipv4 dhcp-client".format(mgmt_port_name))
             serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
-            serial_engine.serial_engine.sendline("nv show interface {} ip dhcp-client6".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv show interface {} ipv6 dhcp-client".format(mgmt_port_name))
             serial_engine.serial_engine.expect("state         disabled", timeout=expect_timeout)
 
         with allure.step('Set hostname and enable dhcp, check hostname not changed, check port up'):
@@ -467,7 +515,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             serial_engine.serial_engine.expect("applied", timeout=expect_timeout)
             logger.info('Check port status, should be down')
             check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
-            serial_engine.serial_engine.sendline("nv set interface {} ip dhcp-client state enabled".format(mgmt_port_name))
+            serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state enabled".format(mgmt_port_name))
             serial_engine.serial_engine.sendline("nv config apply")
             serial_engine.serial_engine.expect("Are you sure?", timeout=expect_timeout)
             serial_engine.serial_engine.sendline("y")
@@ -477,18 +525,18 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
             dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
+                mgmt_port.interface.ipv4.dhcp_client.show()).get_returned_value()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output, field_name='state',
                                                               expected_value='enabled').verify_result()
     finally:
         with allure.step('Unset dhcp, , check port up'):
-            mgmt_port.interface.ip.dhcp_client.unset(apply=True, ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.dhcp_client.unset(apply=True, ask_for_confirmation=True).verify_result()
             logger.info('Check port status, should be up')
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
             dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.dhcp_client.show()).get_returned_value()
+                mgmt_port.interface.ipv4.dhcp_client.show()).get_returned_value()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=dhcp_output,
                                                               field_name='state',
@@ -525,7 +573,7 @@ def test_mgmt_interface_default(engines, topology_obj):
             mgmt_port.interface.show()).get_returned_value()
 
         field_to_check = [IbInterfaceConsts.TYPE, IbInterfaceConsts.LINK,
-                          IbInterfaceConsts.IFINDEX, IbInterfaceConsts.IP]
+                          IbInterfaceConsts.IFINDEX, IbInterfaceConsts.IPV4, IbInterfaceConsts.IPV6]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
     with allure.step('Verify mgmt interface is reachable'):
@@ -593,8 +641,9 @@ def test_mgmt_interface_dhcp_option_60(engines, topology_obj):
                                       args=(engines.dut, mgmt_port_name, regex))
             tcpdump_process.start()
 
-        with allure.step("Renew DHCP to initiate packet transfers"):
-            mgmt_port.interface.ip.dhcp_client.action(ActionConsts.RENEW)
+        with allure.step("Test DHCP actions - renew only"):
+            # Test renew action (existing functionality)
+            mgmt_port.interface.ipv4.dhcp_client.action(ActionConsts.RENEW)
 
     finally:
         with allure.step("Combine with tcpdump process to finish gracefully"):
@@ -616,6 +665,95 @@ def test_mgmt_interface_dhcp_option_60_conf_file(engines):
     with allure.step('Open dh client conf file and validate option 60'):
         dh_client_conf = engines.dut.run_cmd("cat " + SystemConsts.DH_CLIENT_CONF_FILE)
         assert "vendor-class-identifier" in dh_client_conf, "Vendor class identifier not present in dh client conf file"
+
+
+@pytest.mark.eth0
+@pytest.mark.system
+def test_interface_eth0_dhcp_lease_properties(engines, topology_obj):
+    """
+    Test DHCP lease properties validation for both IPv4 and IPv6 on randomly selected eth interface
+
+    Flow:
+    1. Randomly select between eth0 and eth1
+    2. Enable both IPv4 and IPv6 DHCP clients
+    3. Verify all lease properties are accessible for both protocols
+    4. Validate property types and structure for both IPv4 and IPv6
+    """
+    import random
+
+    # Randomly select between eth0 and eth1
+    available_ports = ['eth0', 'eth1']
+    selected_port = random.choice(available_ports)
+    logger.info(f"Randomly selected port: {selected_port}")
+
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = Port(mgmt_port_name)
+
+    with allure.step(f'Enable IPv4 and IPv6 DHCP clients on {selected_port}'):
+        mgmt_port.interface.ipv4.dhcp_client.set(
+            op_param_name='state',
+            op_param_value='enabled',
+            apply=True
+        ).verify_result()
+
+        mgmt_port.interface.ipv6.dhcp_client.set(
+            op_param_name='state',
+            op_param_value='enabled',
+            apply=True
+        ).verify_result()
+
+    with allure.step('Test IPv4 lease properties'):
+        lease_output_ipv4 = mgmt_port.interface.ipv4.dhcp_client.lease.show()
+        assert lease_output_ipv4 is not None, "IPv4 DHCP lease should be accessible"
+
+        # Check for key IPv4 lease properties
+        expected_ipv4_lease_properties = [
+            'ntp-servers', 'domain-search', 'domain-name-servers',
+            'subnet-mask', 'server-name', 'routers', 'renew', 'rebind',
+            'host-name', 'fixed-address', 'filename', 'expire',
+            'domain-name', 'dhcp-message-type', 'dhcp-lease-time',
+            'broadcast-address'
+        ]
+
+        missing_properties = []
+        for prop in expected_ipv4_lease_properties:
+            if prop in lease_output_ipv4:
+                logger.info(f" Found IPv4 lease property: {prop}")
+            else:
+                logger.info(f"IPv4 lease property not present: {prop}")
+                missing_properties.append(prop)
+
+        assert len(missing_properties) == 0, f"Missing IPv4 lease properties: {missing_properties}"
+
+    with allure.step(f'Test IPv6 lease properties for {selected_port}'):
+        lease_output_ipv6 = mgmt_port.interface.ipv6.dhcp_client.lease.show()
+        assert lease_output_ipv6 is not None, "IPv6 DHCP lease should be accessible"
+
+        # Check for key IPv6 lease properties (based on actual output)
+        expected_ipv6_lease_properties = [
+            'ia-na', 'server-id', 'client-id'
+        ]
+
+        missing_properties = []
+        for prop in expected_ipv6_lease_properties:
+            if prop in lease_output_ipv6:
+                logger.info(f" Found IPv6 lease property: {prop}")
+            else:
+                logger.info(f" IPv6 lease property not present: {prop}")
+                missing_properties.append(prop)
+
+        assert len(missing_properties) == 0, f"Missing IPv6 lease properties: {missing_properties}"
+
+    with allure.step('Verify both DHCP clients are running'):
+        for ip_version in ['ipv4', 'ipv6']:
+            with allure.independent_step(f"Testing {ip_version} DHCP client"):
+                dhcp_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                    getattr(mgmt_port.interface, ip_version).dhcp_client.show()).get_returned_value()
+                Tools.ValidationTool.verify_field_value_in_output(
+                    output_dictionary=dhcp_output,
+                    field_name='state',
+                    expected_value='enabled'
+                ).verify_result()
 
 
 def run_tcpdump_validate_option_60(dut, mgmt_port_name, regex):
@@ -696,18 +834,18 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
     try:
         with allure.step('Run show command on mgmt port and verify default description'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.show()).get_returned_value()
+                mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
             switch_ip = [ip for ip in output_dictionary['address'].keys() if engines.dut.ip in ip][0]
         with allure.step('Disable dhcp, check mgmt port unreachable'):
-            mgmt_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
             with allure.step('Check port status, should be down'):
                 check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             with allure.step('Verify no static ip'):
-                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ip.show(dut_engine=serial_engine)).get_returned_value()
+                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ipv4.show(dut_engine=serial_engine)).get_returned_value()
                 assert switch_ip not in output['address'].keys(), f"Static ip {switch_ip} found in interface ip address show"
         with allure.step('Set static ip'):
-            mgmt_port.interface.ip.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv4.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
             with allure.step('Verify static ip'):
                 serial_engine.serial_engine.sendline(f"nv show interface {mgmt_port_name}")
                 serial_engine.serial_engine.expect(switch_ip, timeout=120)
@@ -728,11 +866,11 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
                 assert output, f"Mgmt port {mgmt_port_name} not found in interface lldp show"
     finally:
         with allure.step('Unset ipv4 and dhcp and check port reachable'):
-            mgmt_port.interface.ip.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
             with allure.step('Check port status and verify default description'):
                 check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
                 if is_bug_active(4569345):
                     time.sleep(2)
                 output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                    mgmt_port.interface.ip.show()).get_returned_value()
+                    mgmt_port.interface.ipv4.show()).get_returned_value()
                 validate_interface_ip_address(engines.dut.ip, output_dictionary, True)

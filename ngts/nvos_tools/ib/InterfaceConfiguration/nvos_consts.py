@@ -39,7 +39,8 @@ class IbInterfaceConsts:
     DHCP_SET_HOSTNAME = 'set-hostname'
     TYPE = "type"
     LINK = "link"
-    IP = "ip"
+    IPV4 = "ipv4"
+    IPV6 = "ipv6"
     IFINDEX = "ifindex"
     LINK_LOGICAL_PORT_STATE = "logical-state"
     LINK_LOGICAL_PORT_STATE_ACTIVE = 'Active'

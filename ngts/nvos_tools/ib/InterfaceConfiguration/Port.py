@@ -205,7 +205,7 @@ class Port(BaseComponent):
     def get_port_ip_addresses(self, dut_engine):
         with allure.step(f"Get mgmt port {self.name} ip addresses"):
             ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
-                self.interface.ip.address.show(dut_engine=dut_engine)).get_returned_value())
+                self.interface.ipv4.address.show(dut_engine=dut_engine)).get_returned_value())
         return ip_addresses_show[0].split("/")[0]
 
     @staticmethod

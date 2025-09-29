@@ -42,9 +42,9 @@ def test_configure_feature_state(engines, devices, start_sm, test_api):
     fae = Fae()
 
     try:
-        with allure.step("Renew interface eth0 and eth1 ip dhcp-client6"):
-            engines_dut.run_cmd('nv action renew interface eth0 ip dhcp-client6')
-            engines_dut.run_cmd('nv action renew interface eth1 ip dhcp-client6')
+        with allure.step("Renew interface eth0 and eth1 ipv6 dhcp-client"):
+            engines_dut.run_cmd('nv action renew interface eth0 ipv6 dhcp-client')
+            engines_dut.run_cmd('nv action renew interface eth1 ipv6 dhcp-client')
             time.sleep(30)
 
         with allure.step("Choose mgmt port (eth0|eth1) and get its addresses"):
@@ -119,6 +119,7 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
     engines_ha = engines.ha
     serial_engine = topology_obj.players['dut_serial']['engine']
     fae = Fae()
+    mgmt_port = None
 
     try:
         with allure.step("Choose mgmt port (eth0|eth1) and get its addresses"):
@@ -133,8 +134,8 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
                                apply=True).verify_result()
 
         with allure.step("Update mgmt port ipv4 address (static ip)"):
-            mgmt_port.interface.ip.address.set(op_param_name=UfmMadConsts.STATIC_IPV4, apply=True,
-                                               ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.address.set(op_param_name=UfmMadConsts.STATIC_IPV4, apply=True,
+                                                 ask_for_confirmation=True).verify_result()
 
         # Connection in SSH is lost, continue in serial port
         with allure.step("Validate ufm-mad state disabled and IP address is empty"):
@@ -159,7 +160,7 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
                                     UfmMadConsts.STATIC_IPV4, mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
         with allure.step("Update mgmt port ipv4 address when ufm-mad state is enabled"):
-            mgmt_port.interface.ip.address.unset(dut_engine=serial_engine, apply=True).verify_result()
+            mgmt_port.interface.ipv4.address.unset(dut_engine=serial_engine, apply=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
         # Connection in SSH is back, continue in engines.dut
@@ -173,8 +174,8 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
 
         with allure.step("Delete mgmt port ipv4 address (set ip 0.0.0.0/0)"):
-            mgmt_port.interface.ip.address.set(op_param_name=UfmMadConsts.ZEROS_IPV4, apply=True,
-                                               ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.address.set(op_param_name=UfmMadConsts.ZEROS_IPV4, apply=True,
+                                                 ask_for_confirmation=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
         with allure.step("Validate ufm-mad state enabled and IPV4 address is empty"):
@@ -187,7 +188,7 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
 
     finally:
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
-            mgmt_port.interface.ip.address.unset(dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv4.address.unset(dut_engine=serial_engine).verify_result()
             fae.ib.ufm_mad.unset(op_param=UfmMadConsts.STATE, apply=True, dut_engine=serial_engine).verify_result()
 
 
@@ -220,6 +221,7 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
     engines_ha = engines.ha
     serial_engine = topology_obj.players['dut_serial']['engine']
     fae = Fae()
+    mgmt_port = None
 
     try:
         with allure.step("Choose mgmt port (eth0|eth1) and get its addresses"):
@@ -230,8 +232,8 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
                                apply=True).verify_result()
 
         with allure.step("Update mgmt port ipv6 address (static ip)"):
-            mgmt_port.interface.ip.address.set(op_param_name=UfmMadConsts.STATIC_IPV6, apply=True,
-                                               ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv6.address.set(op_param_name=UfmMadConsts.STATIC_IPV6, apply=True,
+                                                 ask_for_confirmation=True).verify_result()
 
         # Connection in SSH is lost, continue in serial port
         with allure.step("Validate ufm-mad state disabled and IP address is empty"):
@@ -255,7 +257,7 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
                                     ipv6=UfmMadConsts.STATIC_IPV6)
 
         with allure.step("Update mgmt port ipv6 address when ufm-mad state is enabled"):
-            mgmt_port.interface.ip.address.unset(dut_engine=serial_engine, apply=True).verify_result()
+            mgmt_port.interface.ipv6.address.unset(dut_engine=serial_engine, apply=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
         # Connection in SSH is back, continue in engines.dut
@@ -269,8 +271,8 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
 
         with allure.step("Delete mgmt port ipv6 address (set ip 0:0:0:0:0:0:0:0/0)"):
-            mgmt_port.interface.ip.address.set(op_param_name=UfmMadConsts.ZEROS_IPV6, apply=True,
-                                               ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv6.address.set(op_param_name=UfmMadConsts.ZEROS_IPV6, apply=True,
+                                                 ask_for_confirmation=True).verify_result()
             time.sleep(UfmMadConsts.CONFIG_TIME)
 
         with allure.step("Validate ufm-mad state disabled and both IPV4 and IPV6 addresses are empty"):
@@ -283,7 +285,7 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
 
     finally:
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
-            mgmt_port.interface.ip.address.unset(dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv6.address.unset(dut_engine=serial_engine).verify_result()
             fae.ib.ufm_mad.unset(op_param=UfmMadConsts.STATE, apply=True, dut_engine=serial_engine).verify_result()
 
 
@@ -392,18 +394,35 @@ def choose_mgmt_port(dut_engine, devices):
 
 def get_mgmt_port_ip_addresses(mgmt_port, dut_engine):
     with allure.step(f"Get mgmt port {mgmt_port.name} ip addresses"):
-        ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
-            mgmt_port.interface.ip.address.show(dut_engine=dut_engine)).get_returned_value())
+        # Get IPv4 addresses - returns dict like {"10.7.148.248/21": {}}
+        ipv4_addresses_show = OutputParsingTool.parse_json_str_to_dictionary(
+            mgmt_port.interface.ipv4.address.show(dut_engine=dut_engine)).get_returned_value()
+
+        # Get IPv6 addresses - returns dict like {"fdfd:fdfd:7:145::1000:405d/128": {}}
+        ipv6_addresses_show = OutputParsingTool.parse_json_str_to_dictionary(
+            mgmt_port.interface.ipv6.address.show(dut_engine=dut_engine)).get_returned_value()
 
     ip_address = {}
-    ip_address.update({UfmMadConsts.IPV4: ip_addresses_show[0]})
 
-    if len(ip_addresses_show[2]) > len(ip_addresses_show[1]):
-        ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[1]})
-        ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[2]})
+    # Extract IPv4 address (first key from the dictionary)
+    if ipv4_addresses_show and len(ipv4_addresses_show) > 0:
+        ipv4_key = list(ipv4_addresses_show.keys())[0]
+        ip_address.update({UfmMadConsts.IPV4: ipv4_key})
     else:
-        ip_address.update({UfmMadConsts.IPV6: ip_addresses_show[2]})
-        ip_address.update({UfmMadConsts.IPV6_SLAAC: ip_addresses_show[1]})
+        ip_address.update({UfmMadConsts.IPV4: ""})
+
+    # Extract IPv6 addresses
+    if ipv6_addresses_show and len(ipv6_addresses_show) > 0:
+        ipv6_keys = list(ipv6_addresses_show.keys())
+        if len(ipv6_keys) >= 1:
+            ip_address.update({UfmMadConsts.IPV6: ipv6_keys[0]})
+        if len(ipv6_keys) >= 2:
+            ip_address.update({UfmMadConsts.IPV6_SLAAC: ipv6_keys[1]})
+        else:
+            ip_address.update({UfmMadConsts.IPV6_SLAAC: ipv6_keys[0] if ipv6_keys else ""})
+    else:
+        ip_address.update({UfmMadConsts.IPV6: ""})
+        ip_address.update({UfmMadConsts.IPV6_SLAAC: ""})
 
     return ip_address
 

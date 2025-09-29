@@ -52,11 +52,11 @@ def test_interface_ipoib_mapping_basic_functionality(engines, devices, start_sm)
                                           ask_for_confirmation=True).verify_result()
 
         ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
-        ib0_port.interface.ip.address.set(op_param_name=ip_address, apply=True,
-                                          ask_for_confirmation=True).verify_result()
+        ib0_port.interface.ipv4.address.set(op_param_name=ip_address, apply=True,
+                                            ask_for_confirmation=True).verify_result()
 
         ip_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ib0_port.interface.ip.show()).get_returned_value()
+            ib0_port.interface.ipv4.show()).get_returned_value()
 
         ib0_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             ib0_port.interface.link.show()).get_returned_value()
@@ -87,10 +87,10 @@ def test_interface_ipoib_mapping_basic_functionality(engines, devices, start_sm)
                 ValidationTool.verify_expected_output(show_output, "IB_INTERFACE_TABLE").verify_result()
 
     with allure_step("Unset ib0 interface"):
-        ib0_port.interface.ip.address.unset(apply=True).verify_result()
+        ib0_port.interface.ipv4.address.unset(apply=True).verify_result()
 
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ib0_port.interface.ip.show()).get_returned_value()
+            ib0_port.interface.ipv4.show()).get_returned_value()
 
         validate_interface_ip_address(ip_address, output_dictionary, False)
 
@@ -110,10 +110,10 @@ def test_interface_ipoib_ping_functionality(engines, devices, start_sm, players,
     # fae = Fae()
 
     with allure_step("Set ip on switch ipoib interface and host ib interface connected to switch"):
-        ib0_port.interface.ip.address.set(op_param_name='1.1.1.1/24', apply=True).verify_result()
+        ib0_port.interface.ipv4.address.set(op_param_name='1.1.1.1/24', apply=True).verify_result()
         Port.wait_for_port_state(ib0_port, "up")
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ib0_port.interface.ip.show()).get_returned_value()
+            ib0_port.interface.ipv4.show()).get_returned_value()
         validate_interface_ip_address('1.1.1.1/24', output_dictionary)
 
         HostMethods.host_ip_address_set(engines.ha, '1.1.1.2/24', interfaces.ha_dut_1)
@@ -123,7 +123,7 @@ def test_interface_ipoib_ping_functionality(engines, devices, start_sm, players,
 
         with allure_step("Unset ip address"):
             HostMethods.host_ip_address_unset(engines.ha, '1.1.1.2/24', interfaces.ha_dut_1)
-            ib0_port.interface.ip.address.unset(apply=True).verify_result()
+            ib0_port.interface.ipv4.address.unset(apply=True).verify_result()
 
 
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):

@@ -296,9 +296,9 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                     ip_address_full = IpTool.select_random_ipv6_address().verify_result()  # 40c9:7735:e23d:dd2a:ca43:c5e9:682e:decb/114
                     ip_address, prefix = ip_address_full.split("/")
                     with allure.step(f"Set random ipv6 address {ip_address} for {interface_name}"):
-                        mgmt_interface.interface.ip.address.set(op_param_name=ip_address_full, apply=True,
-                                                                ask_for_confirmation=True,
-                                                                dut_engine=serial_engine).verify_result()
+                    mgmt_interface.interface.ipv6.address.set(op_param_name=ip_address_full, apply=True,
+                                                              ask_for_confirmation=True,
+                                                              dut_engine=serial_engine).verify_result()
 
                     LLDPTool.verify_ip_address_is_set(engine=serial_engine, mgmt_interface=mgmt_interface, ip_address=ip_address_full)
 
@@ -308,8 +308,8 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                         assert ip_address in output, f"The ipv6 address {ip_address} is not in lldp frame"
 
                 finally:
-                    mgmt_interface.interface.ip.address.unset(apply=True, dut_engine=serial_engine,
-                                                              ask_for_confirmation=True).verify_result()
+                    mgmt_interface.interface.ipv6.address.unset(apply=True, dut_engine=serial_engine,
+                                                                ask_for_confirmation=True).verify_result()
                     if i < len(mgmt_ports) - 1:
                         time.sleep(INTERFACE_CLEANUP_DELAY)
 
@@ -374,12 +374,20 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
             with allure.independent_step(f"Testing {interface_name}"):
                 try:
                     with allure.step("Get ip addresses"):
-                        ip_addresses_dict = mgmt_interface.interface.ip.address.parse_show(dut_engine=serial_engine)
-                        ip_addresses = list(ip_addresses_dict.keys())
+                        # Get IPv4 addresses
+                        ipv4_addresses_dict = mgmt_interface.interface.ipv4.address.parse_show(dut_engine=serial_engine)
+                        ipv4_addresses = list(ipv4_addresses_dict.keys())
+
+                        # Get IPv6 addresses
+                        ipv6_addresses_dict = mgmt_interface.interface.ipv6.address.parse_show(dut_engine=serial_engine)
+                        ipv6_addresses = list(ipv6_addresses_dict.keys())
+
+                        # Combine both for backward compatibility
+                        ip_addresses = ipv4_addresses + ipv6_addresses
 
                     with allure.step(f"Disable dhcp-client for {interface_name}"):
-                        mgmt_interface.interface.ip.dhcp_client.set(SystemConsts.STATE, NvosConst.DISABLED, apply=True,
-                                                                    ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+                        mgmt_interface.interface.ipv4.dhcp_client.set(SystemConsts.STATE, NvosConst.DISABLED, apply=True,
+                                                                      ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
                         check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
 
                     with allure.step("Verify lldp frames do not contain hostname"):
@@ -391,7 +399,7 @@ def test_lldp_disable_dhcp(engines, devices, serial_engine):
                         assert interface_link[SystemConsts.MAC] in output, f"The {interface_link[SystemConsts.MAC]} is not found in output"
 
                 finally:
-                    mgmt_interface.interface.ip.dhcp_client.unset(apply=True, dut_engine=serial_engine, ask_for_confirmation=True).verify_result()
+                    mgmt_interface.interface.ipv4.dhcp_client.unset(apply=True, dut_engine=serial_engine, ask_for_confirmation=True).verify_result()
                     check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
 
 

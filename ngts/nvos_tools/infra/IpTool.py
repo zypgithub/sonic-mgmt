@@ -257,7 +257,7 @@ class IpTool:
     def is_dhcp_client6_has_lease(engine: LinuxSshEngine = None) -> bool:
         with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
             output_dictionary = OutputParsingTool.parse_show_output_to_dict(
-                NvCommand().port['eth0'].interface.ip.dhcp_client6.show(dut_engine=engine)).get_returned_value()
+                NvCommand().port['eth0'].interface.ipv6.dhcp_client.show(dut_engine=engine)).get_returned_value()
             return output_dictionary['has-lease'] == 'yes'
 
     @staticmethod
