@@ -394,7 +394,7 @@ def get_installed_dpu_duts(dpu_duts, player_ip, logger):
         logger.info(f"installed_dpus is {installed_dpus}")
         installed_dpu_duts = []
         for dpu in installed_dpus:
-            dpu_rename = f'{dpu.split("dpu")[0]}-{dpu.split("dpu")[1]}'
+            dpu_rename = f'dpu{dpu.split("dpu")[0]}-{dpu.split("dpu")[1]}'
             for dpu_dut in dpu_duts:
                 if dpu_rename in dpu_dut:
                     installed_dpu_duts.append(dpu_dut)
