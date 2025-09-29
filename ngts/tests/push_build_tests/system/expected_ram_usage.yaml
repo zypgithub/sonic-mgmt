@@ -131,26 +131,27 @@ master:
   # SPC4
   SN5600: # Moose/Albatross
     <<: *platform_defaults
-    sx_sdk: 1500
+    sx_sdk: 1600
     syncd: 350
     orchagent: 68
     thermalctld: 107
     telemetry: 90
     dialout: 90
+    total: 6800
   SN5610N: # Gaur
     <<: *platform_defaults
-    sx_sdk: 1500
+    sx_sdk: 1600
     syncd: 350
     thermalctld: 107
     telemetry: 90
     dialout: 90
-    total: 6000
+    total: 6800
   SN5640: # Bison
     <<: *platform_defaults
-    sx_sdk: 1500
+    sx_sdk: 1600
     syncd: 350
     thermalctld: 107
     telemetry: 100
     dialout: 90
     featured: 25
-    total: 6000
+    total: 6800
