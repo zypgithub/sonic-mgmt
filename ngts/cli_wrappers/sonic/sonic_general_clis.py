@@ -922,6 +922,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step("Reload the dut"):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
+        if "SN5800_LD" in platform_params['hwsku']:
+            return
 
         if not self.is_performance_setup(setup_name):
             with allure.step("Apply qos and dynamic buffer config"):
@@ -951,6 +953,27 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config_db_path = os.path.join(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name, SonicConst.CONFIG_DB_JSON)
         return os.path.exists(config_db_path)
 
+    def apply_multi_asic_config_db(self, engine, topology_obj, config_db_files_path):
+        """
+        Finish multi-asic setup
+        :param engine: SSH engine object
+        :param topology_obj: Topology object
+        """
+        logger.info(f"Copying config_db files from {config_db_files_path} to /tmp/")
+        config_files = [f for f in os.listdir(config_db_files_path) if f.startswith('config_db')]
+        for config_file in config_files:
+            logger.info(f"Copying config_db file {config_file} to /tmp/")
+            source_file = os.path.join(config_db_files_path, config_file)
+            self.engine.copy_file(source_file=source_file,
+                                  dest_file=config_file, file_system='/tmp/',
+                                  overwrite_file=True, verify_file=False)
+        engine.run_cmd(f'sudo mv /tmp/config_db* /etc/sonic/')
+        engine.run_cmd('sudo /usr/local/bin/db_migrator.py -o migrate')
+        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -j /etc/sonic/init_cfg.json -j /etc/sonic/config_db.json --write-to-db')
+        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -d -y /etc/sonic/sonic_version.yml -t /usr/share/sonic/templates/sonic-environment.j2,/etc/sonic/sonic-environment')
+        engine.run_cmd('sudo docker rm -f $(docker ps -aq)')
+        self.safe_reboot_flow(topology_obj, reboot_type='reboot')
+
     def apply_config_files(self, topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path=None):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
@@ -959,6 +982,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if is_air:
             if custom_config_db_air_path:
+                if re.search(r'SN5800_LD', hwsku):
+                    self.apply_multi_asic_config_db(self.engine, topology_obj, custom_config_db_air_path)
+                    logger.info(f"Applied multi-asic config_db for {setup_name} - finished applying config files")
+                    return
                 logger.info(f"Using custom config_db.json file for {setup_name} from {custom_config_db_air_path}")
                 with open(custom_config_db_air_path, 'r') as f:
                     config_db = json.load(f)
