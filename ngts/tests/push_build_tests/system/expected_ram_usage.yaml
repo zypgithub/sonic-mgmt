@@ -34,7 +34,7 @@ master:
     bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
-    orchagent: 65
+    orchagent: 75
     ntpd: 7
     neighsyncd: 7
     vlanmgrd: 7
@@ -133,7 +133,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 350
-    orchagent: 68
+    orchagent: 90
     thermalctld: 107
     telemetry: 90
     dialout: 90
@@ -142,6 +142,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 350
+    orchagent: 90
     thermalctld: 107
     telemetry: 90
     dialout: 90
@@ -150,6 +151,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 350
+    orchagent: 90
     thermalctld: 107
     telemetry: 100
     dialout: 90
