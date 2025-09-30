@@ -1,5 +1,6 @@
 import logging
 import re
+
 from datetime import datetime, timedelta
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
@@ -12,6 +13,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.constants.constants import BugHandlerConst
 from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.infra.FilesTool import FilesTool
 
 logger = logging.getLogger()
 
@@ -81,8 +83,7 @@ class TechSupport(BaseComponent):
         self.file_name = file_name if file_name else self.file_name
         with allure.step(f"extract {self.file_name}"):
             logging.info(f"extract {self.file_name}")
-            full_path = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
-            engine.run_cmd('sudo tar -xf ' + full_path + ' -C' + SystemConsts.TECHSUPPORT_FILES_PATH)
+            FilesTool.extract_tar_with_status_code(engine, SystemConsts.TECHSUPPORT_FILES_PATH, self.file_name).verify_result()
 
     def extract_techsupport_subfile(self, engine, sub_folder, filename, tech_support_dir=''):
         """

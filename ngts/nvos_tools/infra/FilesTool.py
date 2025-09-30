@@ -4,8 +4,11 @@ import re
 import os
 from datetime import datetime
 
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
 
@@ -111,6 +114,61 @@ class FilesTool:
         os.remove(local_file)
 
         return dest_file
+
+    @staticmethod
+    def run_prepare_expected_output_exit_code(engine: LinuxSshEngine, cmd: str, expected_output: str = "", expected_exit: str = "exit code 0") -> 'ResultObj':
+        """
+         Args:
+           expected_exit: Either 'exit code 0' for successful execution, or 'other exit code <exit_code>' for failure checks.
+           cmd: The shell command to execute on the remote machine.
+           expected_output: The expected output from the command; used as a prefix for verification.
+           engine: The engine object used to execute commands over SSH.
+
+           Flow:
+            1. Create a temporary log file on the target machine to capture all
+            output (stdout and stderr) from the command execution.
+            2. Construct and run a shell command that saves output to the log and appends exit code status.
+            3. Read the log file contents.
+            4. Verify if output and exit code are as expected.
+            5. Return a ResultObj with the verification result and diagnostic info.
+        """
+        with TempFileOnEngine(engine, "txt") as temp_file:
+            verifity_cmd = (
+                f"set -o pipefail; "
+                f"if {cmd} >> {temp_file.path} 2>&1; "
+                f"then sudo printf 'exit code 0\n' >> {temp_file.path}; "
+                f"else sudo printf 'other exit code %d\n' $? >> {temp_file.path}; fi"
+            )
+            logging.info(f"Running verify_command , cmd=: {cmd}")
+            engine.run_cmd(verifity_cmd)
+            exit_code_cmd_output = engine.run_cmd(f"sudo cat {temp_file.path}")
+            logging.info(f"output of cmd and exit code 0 or other: {exit_code_cmd_output}")
+
+        # double check (cmd output and exit code is as expected)
+        output_flag, exit_code_flag = exit_code_cmd_output.startswith(expected_output), False
+        debug_info = (f"cmd={cmd} ,exit_code_cmd_output =  {exit_code_cmd_output} "
+                      f", expected_output = {expected_output} , expected_exit = {expected_exit}, output_flag = {output_flag} ")
+        if output_flag:
+            exit_code_flag = expected_exit in exit_code_cmd_output.replace(expected_output, "")
+            debug_info += f", exit_code_flag = {exit_code_flag} "
+        return ResultObj(exit_code_flag and output_flag, debug_info)
+
+    @staticmethod
+    def extract_tar_with_status_code(engine: LinuxSshEngine, archive_directory_path: str, filename: str) -> 'ResultObj':
+        """
+             Note: archive_directory_path should end with /
+             flow:
+                1. Construct the full archive file path by concatenating directory and filename
+                2. Log the full archive file path for traceability
+                3. Build the tar extraction command with sudo privileges
+                4. Run FilesTool.run_prepare_expected_output_exit_code to execute the command, capture output and status, and verify the result
+                5. Return a ResultObj with verification status and details
+        """
+
+        full_path = archive_directory_path + filename
+        logging.info(f"Full archive path: {full_path}")
+        with allure.step("Extract archive and verify result.   and also Read verification result and tar output"):
+            return FilesTool.run_prepare_expected_output_exit_code(engine, f"sudo tar -xf {full_path} -C {archive_directory_path}")
 
 
 class EngineFile:
