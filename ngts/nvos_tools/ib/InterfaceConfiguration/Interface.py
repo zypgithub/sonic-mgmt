@@ -1,6 +1,7 @@
 from ngts.nvos_constants.constants_nvos import ConfState
 from .IfIndex import IfIndex
-from .Ip import Ip
+from .IpV4 import IpV4
+from .IpV6 import IpV6
 from .Link import LinkMgmt
 from .LldpInterface import LldpInterface
 from .Type import Type
@@ -32,7 +33,10 @@ class Interface(BaseComponent):
         self.port_obj = parent_obj
         self.type = Type(self.port_obj)
         self.ifindex = IfIndex(self.port_obj)
-        self.ip = Ip(self)
+        # New IPv4/IPv6 structure
+        self.ipv4 = IpV4(self)
+        self.ipv6 = IpV6(self)
+        self.vrf = BaseComponent(self, path='/vrf')
         self.link = LinkMgmt(self)
         self.plan_ports = self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.acl = Acl(self)
