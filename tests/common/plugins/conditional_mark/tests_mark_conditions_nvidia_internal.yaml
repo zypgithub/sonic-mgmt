@@ -931,12 +931,6 @@ sflow/test_sflow.py::TestSflowCollector::test_sflow_config:
     conditions:
     - "https://redmine.mellanox.com/issues/4492386"
 
-show_techsupport/test_techsupport_fw_stuck_dump_dpu.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4402135"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4402135 and 'bf3comdpu' in platform"
-
 smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_switch:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401509"
