@@ -150,7 +150,7 @@ master:
     sx_sdk: 1500
     syncd: 350
     thermalctld: 107
-    telemetry: 90
+    telemetry: 100
     dialout: 90
     featured: 25
     total: 6000
