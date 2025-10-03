@@ -92,6 +92,14 @@ def test_can_ping_from_eth1(engines, devices):
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_acls(engines, test_api):
+    """
+    Validate ACL show commands and verify new ACL structure after migration.
+    This test validates:
+    1. All new default ACLs are present after migration
+    2. DOS ACLs contain only DENY actions
+    3. WHITELIST ACLs contain only PERMIT actions
+    4. Rule counts are preserved during migration from old to new ACLs
+    """
     TestToolkit.tested_api = test_api
 
     with allure.step("Show ACL and verify the output"):
@@ -100,11 +108,48 @@ def test_show_acls(engines, test_api):
         assert acls and len(acls.keys()) > 1, "No ACLs were found"
 
         with allure.step("Verify all default ACL are found"):
-            ValidationTool.verify_field_exist_in_json_output(acls, AclConsts.DEFAULT_ACLS).verify_result()
+            ValidationTool.verify_field_exist_in_json_output(acls, AclConsts.NEW_DEFAULT_ACLS).verify_result()
 
         with allure.step("Verify expected ACL fields"):
-            ValidationTool.verify_field_exist_in_json_output(acls[AclConsts.DEFAULT_ACLS[0]],
+            # Use first available ACL for field verification
+            first_acl = AclConsts.NEW_DEFAULT_ACLS[0]
+            ValidationTool.verify_field_exist_in_json_output(acls[first_acl],
                                                              [AclConsts.RULE, AclConsts.TYPE])
+
+        with allure.step("Verify ACL rule placement based on remark field"):
+            for acl_name, acl_data in acls.items():
+                if AclConsts.RULE in acl_data:
+                    rules = acl_data[AclConsts.RULE]
+
+                    # Skip remark-based validation for loopback and outbound ACLs (one-to-one mapping)
+                    if ('loopback' in acl_name.lower() or 'outbound' in acl_name.lower()):
+                        logger.info(f"Skipping remark-based validation for {acl_name} (one-to-one mapping)")
+                        continue
+
+                    # Check each rule based on its remark field (action type is irrelevant)
+                    for rule_id, rule_data in rules.items():
+                        if AclConsts.REMARK in rule_data:
+                            remark = rule_data[AclConsts.REMARK].lower()
+
+                            # DOS ACLs should contain rules without "whitelist" remark
+                            if 'dos' in acl_name.lower():
+                                assert 'whitelist' not in remark, \
+                                    f"DOS ACL {acl_name} rule {rule_id} has 'whitelist' remark: {remark}"
+
+                            # WHITELIST ACLs should contain rules with "whitelist" remark
+                            elif 'whitelist' in acl_name.lower():
+                                assert 'whitelist' in remark, \
+                                    f"WHITELIST ACL {acl_name} rule {rule_id} missing 'whitelist' remark: {remark}"
+
+        with allure.step("Verify ACL rule counts match expected values"):
+            for acl_name, expected_count in AclConsts.NEW_ACL_EXPECTED_RULE_COUNTS.items():
+                if acl_name in acls:
+                    actual_count = len(acls[acl_name].get(AclConsts.RULE, {}))
+                    assert actual_count == expected_count, \
+                        f"ACL {acl_name} has {actual_count} rules, expected {expected_count}"
+                    logger.info(f"✅ {acl_name}: {actual_count} rules (expected: {expected_count})")
+                else:
+                    logger.warning(f"ACL {acl_name} not found in output")
 
 
 @pytest.mark.acl

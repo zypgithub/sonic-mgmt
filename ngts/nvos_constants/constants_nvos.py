@@ -2108,6 +2108,54 @@ class AclConsts:
     DEFAULT_ACLS = ["ACL_MGMT_INBOUND_CP_DEFAULT", "ACL_MGMT_INBOUND_CP_DEFAULT_IPV6", "ACL_MGMT_INBOUND_DEFAULT",
                     "ACL_MGMT_INBOUND_DEFAULT_IPV6", "ACL_MGMT_OUTBOUND_CP_DEFAULT",
                     "ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6"]
+    # New default ACL structure after upgrade - replaces old DEFAULT_ACLS
+    NEW_DEFAULT_ACLS = [
+        'acl-default-loopback',
+        'acl-default-loopback-ipv6',
+        'acl-default-dos',
+        'acl-default-whitelist',
+        'acl-default-dos-ipv6',
+        'acl-default-whitelist-ipv6',
+        'acl-default-outbound',
+        'acl-default-outbound-ipv6'
+    ]
+
+    # Expected rule counts for new ACLs after migration (based on remark field analysis)
+    NEW_ACL_EXPECTED_RULE_COUNTS = {
+        'acl-default-loopback': 1,  # from ACL_LOOPBACK_INBOUND_CP_DEFAULT
+        'acl-default-loopback-ipv6': 1,  # from ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6
+        'acl-default-dos': 61,  # 60 rules without "whitelist" remark from ACL_MGMT_INBOUND_CP_DEFAULT + 1 from ACL_MGMT_INBOUND_DEFAULT
+        'acl-default-dos-ipv6': 72,  # 71 rules without "whitelist" remark from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 + 1 from ACL_MGMT_INBOUND_DEFAULT_IPV6
+        'acl-default-whitelist': 25,  # 24 rules with "whitelist" remark + 1 rule with action="permit" but no whitelist remark from ACL_MGMT_INBOUND_CP_DEFAULT
+        'acl-default-whitelist-ipv6': 24,  # 23 rules with "whitelist" remark + 1 rule with action="permit" but no whitelist remark from ACL_MGMT_INBOUND_CP_DEFAULT_IPV6
+        'acl-default-outbound': 2,  # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT
+        'acl-default-outbound-ipv6': 2  # renamed from ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6
+    }
+
+    # ACL Migration Reference Information:
+    # The following shows how old ACLs were migrated to new ACLs during the upgrade process.
+    # This information is preserved for reference and debugging purposes.
+    #
+    # OLD ACL NAME                    -> NEW ACL NAME                    | MIGRATION TYPE
+    # -----------------------------------------------------------------------------------
+    # ACL_LOOPBACK_INBOUND_CP_DEFAULT  -> acl-default-loopback          | Renamed (interface-bound)
+    # ACL_LOOPBACK_INBOUND_CP_DEFAULT_IPV6 -> acl-default-loopback-ipv6 | Renamed (interface-bound)
+    # ACL_MGMT_INBOUND_CP_DEFAULT      -> acl-default-dos               | Split (DOS rules)
+    # ACL_MGMT_INBOUND_CP_DEFAULT      -> acl-default-whitelist         | Split (whitelist rules)
+    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 -> acl-default-dos-ipv6          | Split (DOS rules)
+    # ACL_MGMT_INBOUND_CP_DEFAULT_IPV6 -> acl-default-whitelist-ipv6    | Split (whitelist rules)
+    # ACL_MGMT_INBOUND_DEFAULT        -> acl-default-dos               | Merged into DOS ACL
+    # ACL_MGMT_INBOUND_DEFAULT_IPV6   -> acl-default-dos-ipv6          | Merged into DOS ACL
+    # ACL_MGMT_OUTBOUND_CP_DEFAULT    -> acl-default-outbound           | Renamed
+    # ACL_MGMT_OUTBOUND_CP_DEFAULT_IPV6 -> acl-default-outbound-ipv6   | Renamed
+    #
+    # Migration Details:
+    # - Interface-bound ACLs: Bound to specific interfaces (lo)
+    # - System control-plane ACLs: Bound to system control-plane
+    # - DOS ACLs: Contain rules that deny traffic (DoS protection)
+    # - Whitelist ACLs: Contain rules that permit traffic (whitelist)
+    # - Split based on rule "remark" field content
+    # - Merged ACLs: Combined into existing DOS ACLs
 
 
 class PtpConsts:
