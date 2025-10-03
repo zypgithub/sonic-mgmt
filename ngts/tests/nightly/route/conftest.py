@@ -1,6 +1,8 @@
 import ipaddress
 import os
 
+from retry.api import retry_call
+
 import pytest
 from infra.tools.yaml_tools.yaml_loops import ip_range
 
@@ -24,6 +26,17 @@ ROUTES_MAX_SCALE = {
     'SPC3': {IPV4: 100000, IPV6: 16000},
     'SPC4': {IPV4: 100000, IPV6: 16000},
     'SPC5': {IPV4: 100000, IPV6: 16000}
+}
+
+IP_CONFIG_DICT = {
+    IPV4: {
+        'dut': '160.0.0.1',
+        'hb': '160.0.0.2'
+    },
+    IPV6: {
+        'dut': '1600::1',
+        'hb': '1600::2'
+    }
 }
 
 
@@ -50,9 +63,10 @@ def prepare_data_for_route_app_config_generation(ip_list, interface, ip_version)
     :return: few lists: ip_list - list with IPs, list with masks for each IP route, next_hop_list - list with next-hops
     for each IP route, ifaces_list - list with ifaces for each IP route
     """
-    mask_list = (['32'] if ip_version == IPV4 else ['128']) * len(ip_list)
-    n_hop_list = (['160.0.0.2'] if ip_version == IPV4 else ['1600::2']) * len(ip_list)
-    ifaces_list = [interface] * len(ip_list)
+    ip_list_len = len(ip_list)
+    mask_list = (['32'] if ip_version == IPV4 else ['128']) * ip_list_len
+    n_hop_list = [IP_CONFIG_DICT[ip_version]['hb']] * ip_list_len
+    ifaces_list = [interface] * ip_list_len
 
     return ip_list, mask_list, n_hop_list, ifaces_list
 
@@ -133,6 +147,18 @@ def number_of_routes(request, chip_type):
         return 20000, ipv6_max_scale
 
 
+def verify_neighbor_learned(engine, neighbor_ip):
+    """
+    Checks if neighbor is learned
+
+    :param engine: engine
+    :param neighbor_ip: neighbor IP
+    :return bool: True if neighbor is learned, False otherwise
+    """
+    if neighbor_ip not in engine.run_cmd('ip neighbor'):
+        raise Exception(f'Neighbor {neighbor_ip} is not learned')
+
+
 @pytest.fixture
 def static_routes_ipv4(interfaces, engines, topology_obj, number_of_routes):
     """
@@ -154,24 +180,25 @@ def static_routes_ipv4(interfaces, engines, topology_obj, number_of_routes):
 
     copy_route_app_configs_to_dut(engines.dut)
 
+    neighbor_ip = IP_CONFIG_DICT[IPV4]['hb']
     # IP config which will be used in test
     ip_config_dict = {
         'dut': [
             {'iface': interfaces.dut_ha_1, 'ips': [('150.0.0.1', '24')]},
-            {'iface': interfaces.dut_hb_1, 'ips': [('160.0.0.1', '24')]},
-            {'iface': interfaces.dut_ha_2, 'ips': [('170.0.0.1', '24')]},
-            {'iface': interfaces.dut_hb_2, 'ips': [('180.0.0.1', '24')]}
-        ],
-        'ha': [
-            {'iface': interfaces.ha_dut_1, 'ips': [('150.0.0.2', '24')]},
-            {'iface': interfaces.ha_dut_2, 'ips': [('170.0.0.2', '24')]}
+            {'iface': interfaces.dut_hb_1, 'ips': [('160.0.0.1', '24')]}
         ],
         'hb': [
             {'iface': interfaces.hb_dut_1, 'ips': [('160.0.0.2', '24')]},
-            {'iface': interfaces.hb_dut_2, 'ips': [('180.0.0.2', '24')]},
         ]
     }
     IpConfigTemplate.configuration(topology_obj, ip_config_dict)
+
+    # send 1 packet to learn neighbor
+    engines.dut.run_cmd(f'ping {neighbor_ip} -c 1')
+    retry_call(verify_neighbor_learned,
+               fargs=[engines.dut, neighbor_ip],
+               tries=20,
+               delay=5)
 
     yield ip_list
 
@@ -197,28 +224,29 @@ def static_routes_ipv6(interfaces, engines, topology_obj, number_of_routes):
 
     ip_list = ip_range(first_ip, last_ip, ip_type='ipv6', step=1)
 
-    generate_test_config(interfaces, ip_list, 'v6')
+    generate_test_config(interfaces, ip_list, IPV6)
 
     copy_route_app_configs_to_dut(engines.dut)
 
+    neighbor_ip = IP_CONFIG_DICT[IPV6]['hb']
     # IP config which will be used in test
     ip_config_dict = {
         'dut': [
             {'iface': interfaces.dut_ha_1, 'ips': [('1500::1', '64')]},
-            {'iface': interfaces.dut_hb_1, 'ips': [('1600::1', '64')]},
-            {'iface': interfaces.dut_ha_2, 'ips': [('1700::1', '64')]},
-            {'iface': interfaces.dut_hb_2, 'ips': [('1800::1', '64')]},
-        ],
-        'ha': [
-            {'iface': interfaces.ha_dut_1, 'ips': [('1500::2', '64')]},
-            {'iface': interfaces.ha_dut_2, 'ips': [('1700::2', '64')]}
+            {'iface': interfaces.dut_hb_1, 'ips': [('1600::1', '64')]}
         ],
         'hb': [
-            {'iface': interfaces.hb_dut_1, 'ips': [('1600::2', '64')]},
-            {'iface': interfaces.hb_dut_2, 'ips': [('1800::2', '64')]}
+            {'iface': interfaces.hb_dut_1, 'ips': [(neighbor_ip, '64')]}
         ]
     }
     IpConfigTemplate.configuration(topology_obj, ip_config_dict)
+
+    # send 1 packet to learn neighbor
+    engines.dut.run_cmd(f'ping6 {neighbor_ip} -c 1')
+    retry_call(verify_neighbor_learned,
+               fargs=[engines.dut, neighbor_ip],
+               tries=20,
+               delay=5)
 
     yield ip_list
 
