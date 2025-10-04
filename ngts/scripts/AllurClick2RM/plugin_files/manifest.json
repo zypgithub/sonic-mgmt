@@ -1,0 +1,22 @@
+{
+      "manifest_version": 3,
+      "name": "Allure JSON Extractor",
+      "version": "1.0",
+      "description": "Adds a button on Allure test report pages to fetch test data via Allure JSON",
+      "content_scripts": [
+        {
+          "matches": [
+            "https://allure.nvidia.com/*/reports/*/index.html*"
+          ],
+          "js": [
+            "BugReportUI.js",
+            "BugDataCollector.js",
+            "Sender.js",
+            "content.js"
+          ]
+        }
+      ],
+      "permissions": [
+        "activeTab"
+      ]
+}
