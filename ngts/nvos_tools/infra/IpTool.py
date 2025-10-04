@@ -255,10 +255,20 @@ class IpTool:
 
     @staticmethod
     def is_dhcp_client6_has_lease(engine: LinuxSshEngine = None) -> bool:
-        with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
-            output_dictionary = OutputParsingTool.parse_show_output_to_dict(
-                NvCommand().port['eth0'].interface.ipv6.dhcp_client.show(dut_engine=engine)).get_returned_value()
-            return output_dictionary['has-lease'] == 'yes'
+        with allure.step('Check DHCP client6 lease information'):
+            try:
+                # Use the new lease structure instead of deprecated 'has-lease' property
+                mgmt_port = NvCommand().port['eth0']
+                lease_output = mgmt_port.interface.ipv6.dhcp_client.lease.show(dut_engine=engine)
+
+                # Check if lease information is available
+                if lease_output is not None and lease_output != {}:
+                    return True
+                else:
+                    return False
+            except Exception as e:
+                logger.warning(f"Error checking DHCP client6 lease: {e}")
+                return False
 
     @staticmethod
     def get_eth0_hostname(hostname: str) -> str:

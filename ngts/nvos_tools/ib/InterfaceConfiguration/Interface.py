@@ -155,12 +155,42 @@ class Interface(BaseComponent):
             return sorted(output_list, key=divide_interface_name)[3:]
 
     def get_ipv6_address(self):
-        output = OutputParsingTool.parse_show_interface_output_to_dictionary(self.show()).get_returned_value()
-        assert output, "show mgmt interface output is empty"
-        addresses = output['ip']['address'].keys()
-        for address in addresses:
-            if ":" in address and len(address) >= 32:
-                return address.split("/")[0]
+        """
+        Get IPv6 address for the interface
+        Returns the first IPv6 address found (without prefix)
+
+        :return: str IPv6 address or None
+        """
+        try:
+            # Try using the new ipv6 structure first
+            ipv6_addr = self.ipv6.get_primary_ip_address()
+            if ipv6_addr:
+                return ipv6_addr
+
+            # Fallback to parsing the show output for backward compatibility
+            output = OutputParsingTool.parse_show_interface_output_to_dictionary(self.show()).get_returned_value()
+            assert output, "show mgmt interface output is empty"
+
+            # Try new structure: ipv6 -> address
+            if 'ipv6' in output and 'address' in output['ipv6']:
+                addresses = output['ipv6']['address'].keys()
+                for address in addresses:
+                    if ":" in address:
+                        return address.split("/")[0]
+
+            # Try old structure: ip -> address (for backward compatibility)
+            if 'ip' in output and 'address' in output['ip']:
+                addresses = output['ip']['address'].keys()
+                for address in addresses:
+                    if ":" in address and len(address) >= 32:
+                        return address.split("/")[0]
+
+            logger.warning(f"No IPv6 address found for interface {self.port_obj.name if hasattr(self, 'port_obj') else 'unknown'}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error getting IPv6 address: {e}")
+            return None
 
 
 def divide_interface_name(string):

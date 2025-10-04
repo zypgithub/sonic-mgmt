@@ -11,6 +11,9 @@ class Action(BaseComponent):
         BaseComponent.__init__(self, parent=parent_obj, path='/action')
         self.log = Log(self)
         self.dscp = Dscp(self)
+        self.recent = Recent(self)
+        self.permit = Permit(self)
+        self.deny = Deny(self)
 
 
 class Log(BaseComponent):
@@ -25,3 +28,18 @@ class Log(BaseComponent):
 class Dscp(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/set/dscp')
+
+
+class Recent(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/recent')
+
+
+class Permit(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/permit')
+
+
+class Deny(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/deny')
