@@ -19,7 +19,7 @@ class NvueIbInterfaceCli(NvueBaseCli):
         :param port_name: the name of the port/ports
         :param fae_param: optional - run the command with fae
         """
-        cmd = 'nv action clear {fae_param} interface {port_name} link counters'.\
+        cmd = 'nv action clear {fae_param} interface {port_name} counters'.\
             format(fae_param=fae_param, port_name=port_name)
         cmd = " ".join(cmd.split())
         logging.info('Running ' + cmd)

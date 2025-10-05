@@ -27,7 +27,7 @@ def test_ib_clear_counters(engines, players, interfaces, start_sm, setup_name, f
     """
     Clear counters test
     Commands:
-        > nv action interface {port_name} link clear counters
+        > nv action interface {port_name} clear counters
 
     flow:
     1. Select a random port (which is up)
@@ -97,10 +97,10 @@ def test_range_clear_counters_positive(engines, devices, players, interfaces, st
         1. create new user
         2. run traffic
         3. pick random range - pick 4 points out of all interfaces list -
-        4. nv action clear interface <point2>-<point3>p(1-1 or 2-2) link counters
+        4. nv action clear interface <point2>-<point3>p(1-1 or 2-2) counters
         5. verify all clear counter files have been created under
         6. verify show counters command for traffic port != 0
-        7. nv action clear interface <traffic port>-<point1>p1-2, <point 4> link counters
+        7. nv action clear interface <traffic port>-<point1>p1-2, <point 4> counters
         8. verify files under user path
         9. verify show counters command for traffic port == 0
     """
@@ -225,7 +225,7 @@ def clear_counters_for_user(active_ssh_engine, active_user_name, inactive_user_n
                             inactive_ssh_engine, selected_port, fae_param=""):
     with allure.step('Clear counter for selected port "{}" for user {}'.format(selected_port.name,
                                                                                active_ssh_engine.username)):
-        selected_port.interface.link.stats.clear_stats(dut_engine=active_ssh_engine, fae_param=fae_param).\
+        selected_port.interface.counters.clear_counters(dut_engine=active_ssh_engine, fae_param=fae_param).\
             verify_result()
         with allure.step('Check selected port counters for user ' + active_user_name):
             if not check_port_counters(selected_port, True, active_ssh_engine).result:
@@ -241,12 +241,13 @@ def clear_counters_for_user(active_ssh_engine, active_user_name, inactive_user_n
 def check_port_counters(selected_port, should_be_zero, ssh_engine):
     logging.info("--- Counters for user: {}".format(ssh_engine.username))
     info = ""
+    # Get all counters - returns top-level fields (in-bytes, out-bytes, etc.)
     link_stats_dict = OutputParsingTool.parse_json_str_to_dictionary(
-        selected_port.interface.link.stats.show(dut_engine=ssh_engine)).get_returned_value()
+        selected_port.interface.counters.show(dut_engine=ssh_engine)).get_returned_value()
 
     info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_DROPS, should_be_zero, 0)
     info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_ERRORS, should_be_zero, 0)
-    info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS, should_be_zero, 0)
+    # Note: in-symbol-errors is not at top level, it's under ib.errors.symbol-errors
     info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_BYTES, should_be_zero,
                                     IbInterfaceConsts.MAX_BYTE_COUNTER_AFTER_CLEAR)
     info += _validate_link_counters(link_stats_dict, IbInterfaceConsts.LINK_STATS_IN_PKTS, should_be_zero,

@@ -5,6 +5,7 @@ from .IpV6 import IpV6
 from .Link import LinkMgmt
 from .LldpInterface import LldpInterface
 from .Type import Type
+from .Counters import Counters
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InternalNvosConsts, IbInterfaceConsts
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -41,6 +42,7 @@ class Interface(BaseComponent):
         self.plan_ports = self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.acl = Acl(self)
         self.lldp = LldpInterface(self)
+        self.counters = Counters(self)
 
     def wait_for_port_state(self, state, timeout=InternalNvosConsts.DEFAULT_TIMEOUT, logical_state=None, sleep_time=2,
                             dut_engine=None):

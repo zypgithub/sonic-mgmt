@@ -585,7 +585,7 @@ def test_mgmt_interface_default(engines, topology_obj):
 
     with allure.step('Check stats'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            mgmt_port.interface.link.stats.show()).get_returned_value()
+            mgmt_port.interface.counters.show()).get_returned_value()
         field_to_check = [IbInterfaceConsts.LINK_STATS_CARRIER_TRANSITION, IbInterfaceConsts.LINK_STATS_IN_BYTES,
                           IbInterfaceConsts.LINK_STATS_IN_DROPS, IbInterfaceConsts.LINK_STATS_IN_ERRORS,
                           IbInterfaceConsts.LINK_STATS_IN_PKTS, IbInterfaceConsts.LINK_STATS_OUT_BYTES,

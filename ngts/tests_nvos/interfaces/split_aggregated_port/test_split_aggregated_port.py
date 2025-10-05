@@ -117,7 +117,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
 
         with allure_step("Check counters before split, should be not 0"):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-                child_ports[0].interface.link.stats.show()).get_returned_value()
+                child_ports[0].interface.counters.show()).get_returned_value()
             assert output_dictionary[IbInterfaceConsts.LINK_STATS_IN_PKTS] == output_dictionary[
                 IbInterfaceConsts.LINK_STATS_OUT_PKTS]
 
@@ -126,6 +126,6 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
 
         with allure_step("Check counters after clear counters, should be 0"):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-                child_ports[0].interface.link.stats.show()).get_returned_value()
+                child_ports[0].interface.counters.show()).get_returned_value()
             assert output_dictionary[IbInterfaceConsts.LINK_STATS_IN_PKTS] == output_dictionary[
                 IbInterfaceConsts.LINK_STATS_OUT_PKTS]

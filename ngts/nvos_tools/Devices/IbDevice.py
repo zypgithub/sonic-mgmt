@@ -521,16 +521,14 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_OUT_ERRORS: GnmiConstants.OUT_ERRORS,
             IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS: GnmiConstants.SYMBOL_ERROR_COUNTER,
             IbInterfaceConsts.LINK_STATS_OUT_WAIT: GnmiConstants.XMIT_WAIT,
-            IbInterfaceConsts.LINK_STATS_QNT3[0]: GnmiConstants.LINK_ERROR_RECOVERY,
-            IbInterfaceConsts.LINK_STATS_QNT3[1]: GnmiConstants.LINK_DOWNED,
-            IbInterfaceConsts.LINK_STATS_QNT3[2]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[3]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[4]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[5]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[6]: GnmiConstants.QP1_DROPPED,
-            IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
-            # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
-            # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            # QTM3 top-level fields
+            IbInterfaceConsts.LINK_STATS_QNT3_TOP_LEVEL[0]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
+            # QTM3 fields under 'link' dictionary
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[0]: GnmiConstants.LINK_ERROR_RECOVERY,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[1]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[2]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[3]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[4]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
             IbInterfaceConsts.LINK_PLR_RCV_CODES_ERRORS: GnmiConstants.LINK_PLR_RCV_CODE_ERRORS,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,

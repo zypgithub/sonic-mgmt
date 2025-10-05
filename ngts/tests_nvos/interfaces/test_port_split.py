@@ -280,7 +280,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
 
     with allure.step("Check counters increased after first traffic run"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            parent_port.interface.link.stats.show()).get_returned_value()
+            parent_port.interface.counters.show()).get_returned_value()
         logger.info(f"Parent port ({parent_port.name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
 
         # Check that counters increased from 0 (since we cleared them)
@@ -302,7 +302,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
         child_baseline_counters = []
         for child_port in child_ports:
             counters = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-                child_port.interface.link.stats.show()).get_returned_value()
+                child_port.interface.counters.show()).get_returned_value()
             child_baseline_counters.append(counters)
             logger.info(f"Child port {child_port.name} baseline counters: in-pkts={counters['in-pkts']}, out-pkts={counters['out-pkts']}")
 
@@ -323,7 +323,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
         with allure.step("Run traffic and verify counters on s1"):
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-                child_ports[0].interface.link.stats.show()).get_returned_value()
+                child_ports[0].interface.counters.show()).get_returned_value()
             logger.info(f"Child port s1 ({child_ports[0].name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
             assert output_dictionary['in-pkts'] >= child_baseline_counters[0]['in-pkts'] + MIN_PACKET_INCREASE, \
                 f"Child port s1 {child_ports[0].name} in-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[0]['in-pkts']}, got {output_dictionary['in-pkts']}"
@@ -337,7 +337,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
         with allure.step("Run traffic and verify counters on s2"):
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-                child_ports[1].interface.link.stats.show()).get_returned_value()
+                child_ports[1].interface.counters.show()).get_returned_value()
             logger.info(f"Child port s2 ({child_ports[1].name}) counters after traffic: in-pkts={output_dictionary['in-pkts']}, out-pkts={output_dictionary['out-pkts']}")
             assert output_dictionary['in-pkts'] >= child_baseline_counters[1]['in-pkts'] + MIN_PACKET_INCREASE, \
                 f"Child port s2 {child_ports[1].name} in-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[1]['in-pkts']}, got {output_dictionary['in-pkts']}"

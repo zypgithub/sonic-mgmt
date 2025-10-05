@@ -23,7 +23,7 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
 from ngts.tools.test_utils.allure_utils import step as allure_step
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts, NvlInterfaceConsts
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, summarize_switch_ports
 from ngts.nvos_tools.nmx.Cluster import Cluster
@@ -139,6 +139,54 @@ def test_show_nvl5_interface_commands(engines, devices, test_api, has_loopbox, s
 
     with allure_step("Clear counters and validate"):
         selected_port.interface.action_clear_counter_for_all_interfaces(engines.dut).verify_result()
+
+    with allure_step('Verify NVL port counters CLI structure'):
+        with allure_step(f'Check available options under "nv show interface {selected_port.name} counters"'):
+            # Get counters output using framework method
+            counters_output = selected_port.interface.counters.show()
+
+            try:
+                counters_dict = OutputParsingTool.parse_json_str_to_dictionary(counters_output).get_returned_value()
+            except Exception as e:
+                pytest.fail(f"Failed to parse counters output: {e}")
+
+            # Get top-level keys (these represent available options)
+            available_options = list(counters_dict.keys())
+            logger.info(f"Available options under counters for NVL port {selected_port.name}: {available_options}")
+
+            with allure_step('Verify "nvl" and "link" options are present'):
+                # Check that 'nvl' and 'link' are present
+                assert NvlInterfaceConsts.NVL_PORT_TYPE in available_options, \
+                    f"Expected 'nvl' option to be present under counters for NVL port, but got: {available_options}"
+                assert IbInterfaceConsts.LINK in available_options, \
+                    f"Expected 'link' option to be present under counters for NVL port, but got: {available_options}"
+                logger.info("Verified 'nvl' and 'link' options are present for NVL port")
+
+            with allure_step('Verify "ib" option is NOT present'):
+                assert IbInterfaceConsts.IB_PORT_TYPE not in available_options, \
+                    f"'ib' option should NOT be present for NVL interfaces, but found in: {available_options}"
+                logger.info("Verified 'ib' option is not present for NVL port")
+
+        with allure_step(f'Check available options under "nv show interface {selected_port.name} counters nvl"'):
+            # Get NVL counters output using framework method
+            nvl_counters_output = selected_port.interface.counters.nvl.show()
+
+            try:
+                nvl_counters_dict = OutputParsingTool.parse_json_str_to_dictionary(nvl_counters_output).get_returned_value()
+            except Exception as e:
+                pytest.fail(f"Failed to parse NVL counters output: {e}")
+
+            # Get top-level keys under 'nvl' counters
+            nvl_options = list(nvl_counters_dict.keys())
+            logger.info(f"Available options under 'counters nvl' for {selected_port.name}: {nvl_options}")
+
+            with allure_step('Verify "fast-recovery" option is NOT present in NVL counters'):
+                assert IbInterfaceConsts.COUNTERS_FAST_RECOVERY not in nvl_options, \
+                    f"'{IbInterfaceConsts.COUNTERS_FAST_RECOVERY}' option should NOT be present under 'counters nvl' for NVL interfaces, " \
+                    f"but found in: {nvl_options}"
+                logger.info("Verified 'fast-recovery' option is not present in NVL counters")
+
+    logger.info("Test completed successfully: NVL interface counters CLI structure is correct")
 
 
 @pytest.mark.interface

@@ -58,7 +58,7 @@ def test_ib0_show_interface_stats(engines, random_api):
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            ib0_port.interface.link.stats.show()).get_returned_value()
+            ib0_port.interface.counters.show()).get_returned_value()
 
         validate_stats_fields(output_dictionary)
 

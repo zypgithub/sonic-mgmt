@@ -18,7 +18,7 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         :param port_name: the name of the port/ports
         :param fae_param: optional - run the command with fae
         """
-        resource_path = f'/interface/{port_name}/link/counters'
+        resource_path = f'/interface/{port_name}/counters'
         logging.info("Running action: 'clear' on dut using OpenApi, resource: {rsrc}".format(rsrc=resource_path))
         params = {
             "state": "start",

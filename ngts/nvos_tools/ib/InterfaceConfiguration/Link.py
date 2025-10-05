@@ -9,7 +9,6 @@ class LinkMgmt(BaseComponent):
         self.state = BaseComponent(self, path='/state')
         self.diagnostics = BaseComponent(self, path='/diagnostics')
         self.stats = MgmtStats(self)
-        self.counters = BaseComponent(self, path='/counters')
         self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.connection_mode = BaseComponent(self, path='/connection-mode')
         self.phy = Phy(self)

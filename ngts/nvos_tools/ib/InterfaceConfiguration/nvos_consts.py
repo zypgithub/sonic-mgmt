@@ -87,6 +87,12 @@ class IbInterfaceConsts:
     LINK_STATS_IN_BYTES = "in-bytes"
     LINK_STATS_IN_DROPS = "in-drops"
     LINK_STATS_IN_ERRORS = "in-errors"
+
+    # IB counters sub-options
+    COUNTERS_ERRORS = "errors"
+    COUNTERS_DROPS = "drops"
+    COUNTERS_FAST_RECOVERY = "fast-recovery"
+
     LINK_STATS_IN_SYMBOL_ERRORS = "in-symbol-errors"
     LINK_STATS_IN_PKTS = "in-pkts"
     LINK_STATS_UNICAST_IN_PKTS = "unicast-in-pkts"
@@ -103,16 +109,17 @@ class IbInterfaceConsts:
     LINK_STATS_RCV_ICRC_ERRORS = 'rcv-icrc-errors'
     LINK_STATS_TX_PARITY_ERRORS = 'tx-parity-errors'
     LINK_PLR_RCV_CODES_ERRORS = 'plr-rcv-codes-err'
-    LINK_STATS_QNT3 = ['link-error-recovery',
-                       'link-downed',
-                       'port-rcv-remote-physical-errors',
-                       'port-rcv-switch-relay-errors',
-                       'port-rcv-constraint-errors',
-                       'local-link-integrity-errors',
-                       'qp1-drops',
-                       'buffer-overrun-errors',
-                       LINK_STATS_RCV_ICRC_ERRORS,
-                       LINK_STATS_TX_PARITY_ERRORS]
+    # QTM3 fields split by location in the counters JSON structure:
+    # Fields at top level of counters output
+    LINK_STATS_QNT3_TOP_LEVEL = ['buffer-overrun-errors']
+    # Fields under 'link' dictionary (note: no 'link-' prefix in actual JSON)
+    LINK_STATS_QNT3_UNDER_LINK = ['error-recovery',
+                                  'port-rcv-remote-physical-errors',
+                                  'port-rcv-switch-relay-errors',
+                                  'port-rcv-constraint-errors',
+                                  'local-integrity-errors']
+    # Legacy: keeping for backward compatibility, but prefer using the split lists above
+    LINK_STATS_QNT3 = LINK_STATS_QNT3_TOP_LEVEL + LINK_STATS_QNT3_UNDER_LINK
     LINK_PHY_RAW_ERRORS = ["phy-raw-errors-lane0",
                            "phy-raw-errors-lane1",
                            "phy-raw-errors-lane2",
@@ -170,6 +177,13 @@ class IbInterfaceConsts:
     PC_XMT_DISCARDS_F = "SAI_PORT_STAT_INFINIBAND_PC_XMT_DISCARDS_F"
     XMT_DISCARD_EXTERNAL_CONTAIN = "SAI_PORT_STAT_INFINIBAND_XMT_DISCARD_EXTERNAL_CONTAIN"
     TOTAL_OUT_DROPS = "PORT_STAT_INFINIBAND_TOTAL_OUT_DROPS"
+
+    # IB counters expected fields list (defined at end to reference constants defined above)
+    IB_COUNTERS_EXPECTED_OPTIONS = [COUNTERS_ERRORS, COUNTERS_DROPS, COUNTERS_FAST_RECOVERY]
+
+    # Non-IB interfaces forbidden options (should not have these sub-options under counters)
+    # Note: 'nvl' is from NvlInterfaceConsts.NVL_PORT_TYPE, included as string to avoid cross-class reference
+    NON_IB_COUNTERS_FORBIDDEN_OPTIONS = [IB_PORT_TYPE, "nvl", LINK]
 
 
 class FWRecoveryConsts:

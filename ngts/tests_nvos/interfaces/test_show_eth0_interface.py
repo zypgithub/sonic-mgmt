@@ -70,7 +70,7 @@ def test_ib_show_interface_stats(engines):
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            mgmt_port.interface.link.stats.show()).get_returned_value()
+            mgmt_port.interface.counters.show()).get_returned_value()
 
         validate_stats_fields(output_dictionary)
 

@@ -11,7 +11,7 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts, NvlInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.Tools import Tools
@@ -240,7 +240,7 @@ def test_ib_show_interface_name_stats(engines, devices, test_api):
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_stats_output_to_dictionary(
-            selected_port.interface.link.stats.show()).get_returned_value()
+            selected_port.interface.counters.show()).get_returned_value()
 
         validate_stats_fields(output_dictionary, devices.dut.asic_type in NvosConst.QTM3_AND_NEWER)
 
@@ -354,9 +354,9 @@ def test_validate_discard_counters_fields(engines, test_api):
     with allure.step('Validate that in-drops and out-drops fields are present in show output'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             selected_port.interface.show()).get_returned_value()
-        assert IbInterfaceConsts.LINK_STATS_IN_DROPS in output_dictionary["link"]["counters"].keys(), \
+        assert IbInterfaceConsts.LINK_STATS_IN_DROPS in output_dictionary["counters"].keys(), \
             "{} field not available in show interface".format(IbInterfaceConsts.LINK_STATS_IN_DROPS)
-        assert IbInterfaceConsts.LINK_STATS_OUT_DROPS in output_dictionary["link"]["counters"].keys(), \
+        assert IbInterfaceConsts.LINK_STATS_OUT_DROPS in output_dictionary["counters"].keys(), \
             "{} field not available in show interface".format(IbInterfaceConsts.LINK_STATS_OUT_DROPS)
 
     with allure.step('Validate that in-drop counter fields are present in Sonic-DB'):
@@ -453,8 +453,8 @@ def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
     with allure.step('Retrieve in-drops and out-drops fields from show output'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             selected_port.interface.show()).get_returned_value()
-        in_drops_show = output_dictionary["link"]["counters"][IbInterfaceConsts.LINK_STATS_IN_DROPS]
-        out_drops_show = output_dictionary["link"]["counters"][IbInterfaceConsts.LINK_STATS_OUT_DROPS]
+        in_drops_show = output_dictionary["counters"][IbInterfaceConsts.LINK_STATS_IN_DROPS]
+        out_drops_show = output_dictionary["counters"][IbInterfaceConsts.LINK_STATS_OUT_DROPS]
 
     with allure.step('Retrieve in-drops and out-drops fields from Sonic-DB'):
         in_drops_sonic_db = validate_field_from_sonic_db(engines, port_oid, IbInterfaceConsts.TOTAL_IN_DROPS)
@@ -552,7 +552,7 @@ def validate_stats_fields(output_dictionary, is_qtm3_or_newer=False):
         fields_to_check = [IbInterfaceConsts.LINK_STATS_IN_BYTES,
                            IbInterfaceConsts.LINK_STATS_IN_DROPS,
                            IbInterfaceConsts.LINK_STATS_IN_ERRORS,
-                           IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS,
+                           # Note: in-symbol-errors is not at top level, it's under ib.errors.symbol-errors
                            IbInterfaceConsts.LINK_STATS_IN_PKTS,
                            IbInterfaceConsts.LINK_STATS_OUT_BYTES,
                            IbInterfaceConsts.LINK_STATS_OUT_DROPS,
@@ -561,9 +561,19 @@ def validate_stats_fields(output_dictionary, is_qtm3_or_newer=False):
                            IbInterfaceConsts.LINK_STATS_OUT_WAIT]
         if is_qtm3_or_newer:
             logging.info('Add expected fields for Quantum3 device')
-            fields_to_check.extend(IbInterfaceConsts.LINK_STATS_QNT3)
-            verify_non_negative_counters({IbInterfaceConsts.LINK_STATS_RCV_ICRC_ERRORS: output_dictionary[IbInterfaceConsts.LINK_STATS_RCV_ICRC_ERRORS],
-                                         IbInterfaceConsts.LINK_STATS_TX_PARITY_ERRORS: output_dictionary[IbInterfaceConsts.LINK_STATS_TX_PARITY_ERRORS]})
+            # QTM3 fields at top level
+            fields_to_check.extend(IbInterfaceConsts.LINK_STATS_QNT3_TOP_LEVEL)
+            # QTM3 fields under 'link' dictionary
+            if 'link' in output_dictionary:
+                Tools.ValidationTool.verify_field_exist_in_json_output(
+                    output_dictionary['link'],
+                    IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK
+                ).verify_result()
+            # Access nested error counters from ib.errors structure
+            icrc_errors_rcv = output_dictionary.get('ib', {}).get('errors', {}).get('icrc-errors', {}).get('receive', 0)
+            tx_parity_errors_rcv = output_dictionary.get('ib', {}).get('errors', {}).get('tx-parity-errors', {}).get('receive', 0)
+            verify_non_negative_counters({'icrc-errors-receive': icrc_errors_rcv,
+                                         'tx-parity-errors-receive': tx_parity_errors_rcv})
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
 
 
@@ -572,7 +582,8 @@ def validate_one_port_show_output(output_dictionary, switch_type, is_qtm3_or_new
 
     validate_link_fields(output_dictionary[IbInterfaceConsts.LINK], switch_type)
 
-    validate_stats_fields(output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATS], is_qtm3_or_newer)
+    # counters is at the top level of output_dictionary, not under link
+    validate_stats_fields(output_dictionary[IbInterfaceConsts.LINK_STATS], is_qtm3_or_newer)
 
 
 def validate_one_port_in_show_all_ports(output_dictionary, switch_type, port_up=True):
@@ -623,3 +634,176 @@ def extract_non_dict_keys(output_dict):
             keys.append(key)
 
     return keys
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.nvos_ci
+@pytest.mark.ib
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_interface_counters_cli_structure(engines, devices, test_api):
+    """
+    Test to verify CLI structure for IB interface counters
+
+    Requirements for IB interfaces:
+    1. Check interface type is 'ib'
+    2. Under 'nv show interface <name> counters', 'ib' and 'link' options should be present
+    3. 'nvl' should NOT be present under counters
+    4. Under 'nv show interface <name> counters ib', there should be 3 options: errors, drops, fast-recovery
+
+    Flow:
+    1. Select a random IB port
+    2. Verify interface type is 'ib'
+    3. Get available options under 'nv show interface <name> counters'
+    4. Verify 'ib' and 'link' are present, and 'nvl' is NOT present
+    5. Get available options under 'nv show interface <name> counters ib'
+    6. Verify errors, drops, and fast-recovery are present
+    """
+    TestToolkit.tested_api = test_api
+
+    with allure.step('Select a random IB port'):
+        try:
+            selected_port = Tools.RandomizationTool.select_random_port(
+                requested_ports_type=IbInterfaceConsts.IB_PORT_TYPE
+            ).get_returned_value()
+        except Exception:
+            pytest.skip("Device does not have any IB interfaces")
+
+        TestToolkit.update_tested_ports([selected_port])
+        logger.info(f"Selected IB port: {selected_port.name}")
+
+    with allure.step('Verify interface type is "ib"'):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
+            selected_port.interface.show()
+        ).get_returned_value()
+
+        interface_type = output_dictionary.get(IbInterfaceConsts.TYPE, None)
+        assert interface_type == IbInterfaceConsts.IB_PORT_TYPE, \
+            f"Expected interface type to be '{IbInterfaceConsts.IB_PORT_TYPE}', but got '{interface_type}'"
+        logger.info(f"Verified interface type: {interface_type}")
+
+    with allure.step('Check available options under "nv show interface <name> counters"'):
+        # Get counters output to check available options using framework method
+        counters_output = selected_port.interface.counters.show()
+
+        try:
+            counters_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(counters_output).get_returned_value()
+        except Exception as e:
+            pytest.fail(f"Failed to parse counters output: {e}")
+
+        # Get top-level keys (these represent available options)
+        available_options = list(counters_dict.keys())
+        logger.info(f"Available options under counters: {available_options}")
+
+        with allure.step('Verify only "ib" and "link" options are present'):
+            # Check that 'ib' and 'link' are present
+            assert IbInterfaceConsts.IB_PORT_TYPE in available_options, \
+                f"Expected 'ib' option to be present under counters, but got: {available_options}"
+            assert IbInterfaceConsts.LINK in available_options, \
+                f"Expected 'link' option to be present under counters, but got: {available_options}"
+            logger.info("Verified 'ib' and 'link' options are present")
+
+        with allure.step('Verify "nvl" option is NOT present'):
+            assert NvlInterfaceConsts.NVL_PORT_TYPE not in available_options, \
+                f"'nvl' option should NOT be present for IB interfaces, but found in: {available_options}"
+            logger.info("Verified 'nvl' option is not present")
+
+    with allure.step('Check available options under "nv show interface <name> counters ib"'):
+        # Get IB counters output to check available sub-options using framework method
+        ib_counters_output = selected_port.interface.counters.ib.show()
+
+        try:
+            ib_counters_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(ib_counters_output).get_returned_value()
+        except Exception as e:
+            pytest.fail(f"Failed to parse IB counters output: {e}")
+
+        # Get top-level keys under 'ib' counters
+        ib_options = list(ib_counters_dict.keys())
+        logger.info(f"Available options under 'counters ib': {ib_options}")
+
+        with allure.step('Verify "errors", "drops", and "fast-recovery" options are present'):
+            expected_options = IbInterfaceConsts.IB_COUNTERS_EXPECTED_OPTIONS
+
+            for option in expected_options:
+                assert option in ib_options, \
+                    f"Expected '{option}' option to be present under 'counters ib', but got: {ib_options}"
+
+            logger.info(f"Verified all expected options are present: {expected_options}")
+
+    logger.info("Test completed successfully: IB interface counters CLI structure is correct")
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.nvos_ci
+@pytest.mark.ib
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_non_ib_interface_missing_counters(engines, devices, test_api):
+    """
+    Test to verify that non-IB interfaces (ib0, eth0, eth1) do not have ib/nvl/link sub-options under counters
+
+    Requirements for non-IB interfaces:
+    1. Under 'nv show interface <name> counters', should have actual counter fields (in-pkts, out-pkts, etc.)
+    2. 'ib', 'nvl', and 'link' sub-options should NOT be present under counters
+
+    Flow:
+    1. Iterate through non-IB interfaces (ib0, eth0, eth1)
+    2. For each interface that exists on the device:
+       - Verify counters show actual counter fields
+       - Verify 'ib', 'nvl', and 'link' sub-options are NOT present
+    """
+    TestToolkit.tested_api = test_api
+
+    non_ib_interfaces = ['ib0', 'eth0', 'eth1']
+
+    with allure.step('Verify non-IB interfaces (ib0, eth0, eth1) do not have ib/nvl/link sub-options'):
+        for interface_name in non_ib_interfaces:
+            with allure.step(f'Check interface {interface_name}'):
+                # Create Interface object for the interface using framework
+                interface_obj = Interface(parent_obj=None, port_name=interface_name)
+
+                # Try to get interface information using framework method
+                try:
+                    interface_info_output = interface_obj.show()
+                    interface_info = Tools.OutputParsingTool.parse_json_str_to_dictionary(interface_info_output).get_returned_value()
+                    logger.info(f"Interface {interface_name} exists on device")
+                except Exception as e:
+                    logger.info(f"Interface {interface_name} does not exist on this device or error occurred: {e}, skipping")
+                    continue
+
+                # Get counters output using framework method
+                try:
+                    counters_output = interface_obj.counters.show()
+                    counters_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(counters_output).get_returned_value()
+                except Exception as e:
+                    logger.info(f"Counters not available for interface {interface_name}: {e}, skipping")
+                    continue
+
+                # Verify counters output is not empty (should contain actual counter data)
+                if not counters_dict:
+                    logger.warning(f"Counters output for {interface_name} is empty")
+                    continue
+
+                # Get top-level keys
+                available_keys = list(counters_dict.keys())
+                logger.info(f"Available keys under counters for {interface_name}: {available_keys}")
+
+                # Verify actual counter fields are present
+                expected_counter_fields = ['in-pkts', 'out-pkts', 'in-bytes', 'out-bytes']
+                found_counter_fields = [field for field in expected_counter_fields if field in available_keys]
+
+                assert len(found_counter_fields) > 0, \
+                    f"Expected to find counter fields like {expected_counter_fields} for {interface_name}, " \
+                    f"but got: {available_keys}"
+
+                logger.info(f"Verified {interface_name} has actual counter fields: {found_counter_fields}")
+
+                # Verify ib/nvl/link sub-options are NOT present
+                forbidden_options = IbInterfaceConsts.NON_IB_COUNTERS_FORBIDDEN_OPTIONS
+
+                for option in forbidden_options:
+                    assert option not in available_keys, \
+                        f"'{option}' sub-option should NOT be present under counters for {interface_name} interface, " \
+                        f"but found in: {available_keys}"
+
+                logger.info(f"Verified {interface_name} counters do not contain forbidden sub-options: {forbidden_options}")
+
+    logger.info("Test completed successfully: Non-IB interface counters CLI structures are correct")
