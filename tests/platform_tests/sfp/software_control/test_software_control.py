@@ -6,7 +6,9 @@ from tests.platform_tests.sfp.util import get_sfp_type_per_interface, get_dev_co
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.platform.transceiver_utils import get_passive_cable_port_list
 from tests.common.platform.interface_utils import get_lport_to_first_subport_mapping
-
+from tests.common.utilities import wait_until
+from tests.common.helpers.assertions import pytest_assert
+from tests.platform_tests.conftest import check_pmon_uptime_minutes
 
 
 pytestmark = [
@@ -27,6 +29,12 @@ class TestSoftwareControlFunctional:
         self.enum_frontend_asic_index = enum_frontend_asic_index
         self.conn_graph_facts = conn_graph_facts
         self.sc_port_list = helpers.get_ports_supporting_sc(self.duthost, only_ports_index_up=True)
+
+    @pytest.fixture(autouse=True)
+    def verify_pmon_uptime(self):
+        pytest_assert(wait_until(360, 10, 0, check_pmon_uptime_minutes, self.duthost),
+                "Pmon docker is not ready for test")
+
     def test_sc_check_show_interfaces_transceiver_eeprom(self):
         """
         @summary: Check SFP transceiver info using 'show interface transceiver eeprom'
