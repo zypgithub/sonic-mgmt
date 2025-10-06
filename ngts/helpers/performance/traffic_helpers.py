@@ -315,41 +315,7 @@ def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
         bw_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
 
         is_global_threshold = isinstance(bw_threshold, (int, float))
-        # TODO: remove this if statement once the issue is fixed (keep only the else part)
-        if is_redmine_issue_active([4545618])[0]:
-            try:
-                for sample_id, bw_sample in bw_samples.items():
-                    for port_group_name, group_data in bw_sample.items():
-                        bw_stats = group_data[ValidationConsts.BW_STATS]
-                        tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
-                        if tx_threshold is None and rx_threshold is None:
-                            violations_list.append(f"No threshold specified for port group {port_group_name}.")
-                            continue
-
-                        if tx_threshold is not None and bw_stats[ValidationConsts.TX_RATE_MIN] < tx_threshold:
-                            violations_list.append(
-                                f"TX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {tx_threshold}."
-                            )
-                        if validate_bw_rx and rx_threshold is not None and bw_stats[ValidationConsts.RX_RATE_MIN] < rx_threshold:
-                            violations_list.append(
-                                f"RX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {rx_threshold}."
-                            )
-            except Exception as e:
-                lower_tx_bw_sample = []
-                lower_rx_bw_sample = []
-                for sample_id, bw_sample in bw_samples.items():
-                    bw_stats = bw_sample[ValidationConsts.BW_STATS]
-                    if bw_stats[ValidationConsts.TX_RATE_MIN] < bw_threshold:
-                        lower_tx_bw_sample.append(sample_id)
-                    if validate_bw_rx and bw_stats[ValidationConsts.RX_RATE_MIN] < bw_threshold:
-                        lower_rx_bw_sample.append(sample_id)
-                if lower_tx_bw_sample:
-                    violations_list.append(f"Not all tx bandwidth samples were higher than threshold {bw_threshold}, "
-                                           f"please check {lower_tx_bw_sample}")
-                if lower_rx_bw_sample:
-                    violations_list.append(f"Not all rx bandwidth samples were higher than threshold {bw_threshold}, "
-                                           f"please check {lower_rx_bw_sample}")
-        else:
+        for sample_id, bw_sample in bw_samples.items():
             for port_group_name, group_data in bw_sample.items():
                 bw_stats = group_data[ValidationConsts.BW_STATS]
                 tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)

@@ -41,7 +41,7 @@ def basic_setup_configuration(players, conf_args):
             restore_basic_configuration(players)
 
 
-def get_many_to_1_traffic(conf_args, num_lossy_packets, num_lossless_packets, template_suite="traffic_packets_json_files"):
+def get_many_to_1_traffic(conf_args, num_lossy_packets, num_lossless_packets, num_of_traffic_ports, template_suite="traffic_packets_json_files"):
     """
     Generate traffic configuration for many-to-1 lossy/lossless scenario.
 
@@ -66,8 +66,9 @@ def get_many_to_1_traffic(conf_args, num_lossy_packets, num_lossless_packets, te
     with open(conf_path) as f:
         conf_json = json.load(f)
 
+    ingress_ports = conf_args[PerfConsts.PORT_GROUPS][PerfConsts.LEFT_TG_ALIAS]["traffic_from_10_ports_group"][:num_of_traffic_ports]
     traffic_parameters = {
-        "ports": conf_args[PerfConsts.PORT_GROUPS][PerfConsts.LEFT_TG_ALIAS]["traffic_from_10_ports_group"],
+        "ports": ingress_ports,
         "MAC": {"src": conf_json["smac"], "dst": conf_json["left_mac"]},
         "IP": {"src": conf_json["source_ip"], "dst": conf_json["left_dst_ip"]},
         "UDP": {"src": PerfConsts.UDP_SOURCE_PORT, "dst": PerfConsts.ROCE_PORT},
@@ -93,7 +94,7 @@ def get_many_to_1_traffic(conf_args, num_lossy_packets, num_lossless_packets, te
     create_empty_json_traffic_file(empty_traffic_script_path)
     traffic_jsons[PerfConsts.RIGHT_TG_ALIAS] = empty_traffic_script_path
 
-    return traffic_jsons
+    return traffic_jsons, ingress_ports
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -108,12 +109,14 @@ def conf_args(players):
     all_ports_after_split = get_all_players_ports(players, split_right, split_left)
 
     conf_args = {"congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
+                 "sdk_test_name": "Lossy10To1LossyDut",
                  "auto_buffer_mode": "False",
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "is_ipv6": False,
                  "split_right": 2,
                  "split_left": 2,
                  "two_sided_ar": True,
+                 "fboss_enabled": True,
                  "scenario": TESTS_SCENARIO,
                  "left_num_packets": 0,  # Override in the test
                  "right_num_packets": 0,  # Override in the test
@@ -137,3 +140,11 @@ def conf_args(players):
                  }
                  }
     return conf_args
+
+
+@pytest.fixture(scope='function', autouse=False)
+def disable_fboss_on_dut(cli_objects, conf_args):
+    conf_args["fboss_enabled"] = False
+    cli_objects.dut.performance.restore_basic_configuration()
+    cli_objects.dut.performance.apply_configuration_file(scenario=TESTS_SCENARIO, conf_args=conf_args)
+    yield

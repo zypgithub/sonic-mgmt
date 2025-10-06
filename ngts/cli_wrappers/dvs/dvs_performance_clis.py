@@ -17,6 +17,19 @@ class DvsPerformance(PerformanceCommon):
         self.connected_ports, self.unconnected_ports = self.get_player_ports()
         self.port_groups = None
 
+    def configure_reserved_buffer_size(self, shared_buffer_size, port_group_df, collectors_list=[ValidationConsts.COUNTERS_SAMPLES, ValidationConsts.BW_SAMPLES]):
+        self.set_configuration_file(port_group_df, shared_buffer_size, collectors_list)
+        configure_shared_buffer_size_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names HeadroomConfig"
+        self.execute_cmd(self.get_cmd_for_sdk(configure_shared_buffer_size_cmd))
+
+    def set_configuration_file(self, port_group_df, shared_buffer_size, collectors_list=None):
+        conf_path = os.path.join(PerfConsts.CONFIG_FILES_DIR, f"{self.dut_alias}_conf.json")
+        conf_json = {"sdk_test_conf": {ValidationConsts.PORT_GROUPS: port_group_df,
+                                       ValidationConsts.SHARED_BUFFER_SIZE: shared_buffer_size}}
+        if collectors_list:
+            conf_json["sdk_test_conf"][ValidationConsts.COLLECTORS_LIST] = collectors_list
+        self.save_configuration_file(conf_path, conf_json)
+
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
         Returns:

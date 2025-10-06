@@ -57,6 +57,7 @@ def conf_args():
                  "scenario": TESTS_SCENARIO,
                  "left_num_packets": 0,
                  "right_num_packets": 0,
+                 "sdk_test_name": "LossyLosslessDut400G"
                  }
     return conf_args
 

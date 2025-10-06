@@ -2,7 +2,7 @@
     {# Path to the SDK test script #}
     "sdk_test_info": {
         "sdk_test_path":  "sx_sdk_py_tests/tests/multi_os_tests/lossy_losless_tests/lossy_lossless_dut.py",
-        "sdk_test_name": "LossyLosslessDut400G"
+        "sdk_test_name": "{{conf_args.sdk_test_name}}"
     },
 
     {# Test configurations #}
@@ -65,6 +65,7 @@
             "auto_buffer_mode": "{{ conf_args.auto_buffer_mode }}",
             "congestion_thresh_lo": {{ conf_args.congestion_thresh_lo }},
             "two_sided_ar": "{{ conf_args.two_sided_ar }}",
+            "fboss_enabled": "{{ conf_args.fboss_enabled }}",
 
             {# Port split configurations #}
             {% set split_left = conf_args.split_left %}

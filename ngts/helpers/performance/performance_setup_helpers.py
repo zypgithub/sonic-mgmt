@@ -223,7 +223,8 @@ def stop_traffic(players, step="Stopping Traffic - Tear down"):
 
 def validate_traffic_results(players, test_name, scenario, samples_params_dict,
                              players_to_be_validated=PerfConsts.PERF_SETUP_DUT_ALIASES,
-                             attach_to_allure=True):
+                             attach_to_allure=True,
+                             add_validator_results_to_mongo_db=True):
     traffic_validation_jsons_list = []
     for player_alias in players_to_be_validated:
         cli_object = players[player_alias]['cli']
@@ -244,7 +245,8 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
                                              attach_to_allure)
         traffic_validation_jsons_list.append(traffic_json)
 
-        add_test_mongo_metadata(test_name, {MongoDbConsts.VALIDATOR_RESULTS: traffic_json})
+        if add_validator_results_to_mongo_db:
+            add_test_mongo_metadata(test_name, {MongoDbConsts.VALIDATOR_RESULTS: traffic_json})
     return traffic_validation_jsons_list
 
 
@@ -257,7 +259,7 @@ def attach_json_to_allure(json_path, attachment_name, attach_to_allure=True):
     return json_obj
 
 
-def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_allure=True):
+def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_allure=True, add_validator_results_to_mongo_db=True):
     """
     Executes traffic validation based on the provided configuration.
 
@@ -275,7 +277,8 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
         traffic_validation_jsons_list = validate_traffic_results(players=config.players, test_name=config.test_name,
                                                                  scenario=config.scenario,
                                                                  samples_params_dict=config.samples_params_dict,
-                                                                 attach_to_allure=attach_to_allure)
+                                                                 attach_to_allure=attach_to_allure,
+                                                                 add_validator_results_to_mongo_db=add_validator_results_to_mongo_db)
 
         # Process each traffic validation JSON result
 

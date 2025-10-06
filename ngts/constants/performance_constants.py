@@ -5,6 +5,8 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 class ValidationConsts:
     PORT_GROUPS = "port_groups"
+    SHARED_BUFFER_SIZE = "shared_buffer_size"
+    COLLECTORS_LIST = "collectors_list"
     TC_DATAFRAME = "tc_dataframe"
     PG_DATAFRAME = "pg_dataframe"
     TC_PG_SAMPLES = "TC_PG_samples"
@@ -60,6 +62,7 @@ class ValidationConsts:
 
 class PerfConsts:
     # Performance Setup Aliases
+    RESERVED_BUFFER_SIZE_WITH_NO_DROPS = [54]
     LEFT_TG_ALIAS = "left_tg"
     RIGHT_TG_ALIAS = "right_tg"
     DUT_ALIAS = "dut"
@@ -79,6 +82,7 @@ class PerfConsts:
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SHAPER_VALUE = 0.99
     SRV6_SHAPER_VALUE = 0.96
+    DVS_SHAPER_VALUE = 0.975
     OCC_AVG_TH = 400
     TC_NUM = 7
     # Thresholds
@@ -291,6 +295,7 @@ class PerfConsts:
         "SPC5": 480
     }
     TIMEOUT_FOR_INSTALL_MODE = 120
+    MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
 
 
 class Cl_Consts:
