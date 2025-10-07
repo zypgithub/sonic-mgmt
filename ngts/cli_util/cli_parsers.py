@@ -58,6 +58,7 @@ def generic_sonic_output_parser(output, headers_ofset=0, len_ofset=1, data_ofset
     result_dict = {}
     result_list = []
     last_line_key = ""
+    line_dict = {}
     for line in data:
         if line == '':
             continue
