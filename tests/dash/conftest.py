@@ -141,6 +141,14 @@ def dash_pl_config(duthost, dpuhosts, dpu_index, config_facts, minigraph_facts):
                     continue
             if REMOTE_PTF_INTF in dash_info and LOCAL_PTF_INTF in dash_info:
                 break
+    dpuhost = dpuhosts[dpu_index]
+    dash_info[DPU_DATAPLANE_PORT] = dpuhost.dpu_dataplane_port
+    dash_info[DPU_DATAPLANE_IP] = dpuhost.dpu_data_port_ip
+    dash_info[DPU_DATAPLANE_MAC] = dpuhost.dpu_dataplane_mac
+
+    dash_info[NPU_DATAPLANE_PORT] = dpuhost.npu_dataplane_port
+    dash_info[NPU_DATAPLANE_IP] = dpuhost.npu_data_port_ip
+    dash_info[NPU_DATAPLANE_MAC] = dpuhost.npu_dataplane_mac
 
     dpuhost = dpuhosts[dpu_index]
     dash_info[DPU_DATAPLANE_PORT] = dpuhost.dpu_dataplane_port
@@ -442,9 +450,8 @@ def set_vxlan_udp_sport_range(dpuhosts, dpu_index):
 
     logger.info(f"Setting VXLAN source port config: {vxlan_sport_config}")
     config_path = "/tmp/vxlan_sport_config.json"
-    for config in vxlan_sport_config:
-        dpuhost.copy(content=json.dumps([config], indent=4), dest=config_path, verbose=False)
-        apply_swssconfig_file(dpuhost, config_path)
+    dpuhost.copy(content=json.dumps(vxlan_sport_config, indent=4), dest=config_path, verbose=False)
+    apply_swssconfig_file(dpuhost, config_path)
     if 'pensando' in dpuhost.facts['asic_type']:
         logger.warning("Applying Pensando DPU VXLAN sport workaround")
         dpuhost.shell("pdsctl debug update device --vxlan-port 4789 --vxlan-src-ports 5120-5247")

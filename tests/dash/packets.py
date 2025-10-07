@@ -183,6 +183,7 @@ def inbound_pl_packets(
         ip_id=0,
     )
 
+    l4_protocol_key = get_scapy_l4_protocol_key(inner_packet_type)
     exp_inner_packet[l4_protocol_key] = inner_packet[l4_protocol_key]
 
     exp_vxlan_packet = testutils.simple_vxlan_packet(
@@ -294,7 +295,7 @@ def outbound_pl_packets(
             udp_dport=vxlan_udp_dport,
             udp_sport=vxlan_udp_sport,
             with_udp_chksum=False,
-            vxlan_vni=outer_vni if floating_nic else int(pl.VM_VNI),
+            vxlan_vni=outer_vni if floating_nic else int(pl.VNET1_VNI),
             inner_frame=inner_packet,
         )
     elif outer_encap == "gre":
