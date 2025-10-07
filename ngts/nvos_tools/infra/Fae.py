@@ -215,6 +215,7 @@ class FaeSystem(BaseComponent):
         self.dockers = BaseComponent(self, path='/control/dockers')
         self.resource_limit = BaseComponent(self, path='/control/dockers/resource-limit')
         self.cpo = BaseComponent(self, path='/cpo')
+        self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """

@@ -120,4 +120,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_dns.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_asic_debug_config.cases </cases>
+	</test>
 </DBDEF>

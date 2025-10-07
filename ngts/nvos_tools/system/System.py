@@ -82,6 +82,7 @@ class System(BaseComponent):
         self.disk = Disk(self)
         self.memory = BaseComponent(self, path='/memory')
         self.cpu = BaseComponent(self, path='/cpu')
+        self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
 
     @staticmethod
     def get_expected_fields(device, resource):

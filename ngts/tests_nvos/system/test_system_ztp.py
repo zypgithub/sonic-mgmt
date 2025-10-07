@@ -10,7 +10,7 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
-from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels
+from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels, ActionConsts
 from retry import retry
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Tools import Tools
@@ -617,6 +617,42 @@ def test_ztp_hashed_password(engines, devices, topology_obj):
 
     except Exception as e:
         logger.info(f"Received Exception during test_ztp_hashed_password: {e}")
+        raise e
+    finally:
+        _ztp_cleanup(engines, system)
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_fetch_asic_debug_config(engines, devices):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Apply json file with asic-debug-config
+        3. Verify config fetched
+    """
+    system = System(None)
+
+    try:
+        _run_system_ztp_with_empty_config(engines, system)
+
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES, tries=2, delay=1)
+
+        with allure.step("Running positive ztp asic-debug-fetch script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_ASIC_DEBUG_CONFIG,
+                                       '01-fetch-asic-debug-config-file', SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Verify file fetched successfully"):
+            output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
+                system.asic_debug_config.show('files')).get_returned_value()
+            ValidationTool.verify_expected_output(output_dictionary,
+                                                  SystemConsts.PASS_ASIC_DEBUG_CONFIG_ZTP).verify_result()
+
+        with allure.step("Delete asic-debug-config yaml"):
+            system.asic_debug_config.action(ActionConsts.DELETE, additional_params={'files': f'{SystemConsts.PASS_ASIC_DEBUG_CONFIG_ZTP}'})
+
+    except Exception as e:
+        logger.info(f"Received Exception during test_ztp_fetch_asic_debug_config: {e}")
         raise e
     finally:
         _ztp_cleanup(engines, system)
