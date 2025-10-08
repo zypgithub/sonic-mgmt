@@ -38,3 +38,16 @@ class RegisterTool:
         set_params = "error_type_admin=0x4,error_injection_time=0xFFFF,time_res=1"
         return RegisterTool.set_mst_register_value(engine, mst_dev_name, UfmMadConsts.PREI_REGISTER,
                                                    set_params, additional_params=indexes)
+
+    @staticmethod
+    def get_paos_register(engine, mst_dev_name, local_port, lp_msb="0", plane_ind="0"):
+        indexes = f"-i local_port={local_port},lp_msb={lp_msb},plane_ind={plane_ind}"
+        return RegisterTool.get_mst_register_value(engine, mst_dev_name, UfmMadConsts.PAOS_REGISTER,
+                                                   additional_params=indexes, grep_pattern='""')
+
+    @staticmethod
+    def update_paos_register(engine, mst_dev_name, local_port, admin_status, lp_msb="0", plane_ind="0"):
+        indexes = f"-i local_port={local_port},lp_msb={lp_msb},plane_ind={plane_ind}"
+        set_params = f"admin_status={admin_status},ase=1"
+        return RegisterTool.set_mst_register_value(engine, mst_dev_name, UfmMadConsts.PAOS_REGISTER,
+                                                   set_params, additional_params=indexes)

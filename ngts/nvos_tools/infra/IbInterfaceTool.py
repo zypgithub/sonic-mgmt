@@ -61,6 +61,31 @@ class IbInterfaceTool:
             time.sleep(sleep)
 
     @staticmethod
+    def get_port_admin_state_paos(engine, port_name, lp_msb="0", plane_ind="0"):
+        with allure.step(f"Get PAOS admin state for port {port_name}"):
+            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
+            local_port = IbInterfaceTool.get_local_port_hex(engine, device, port_name)
+            return RegisterTool.get_paos_register(engine, mst_dev_name, local_port, lp_msb, plane_ind)
+
+    @staticmethod
+    def set_port_admin_state_paos_down(engine, port_name, lp_msb="0", plane_ind="0", sleep=5):
+        with allure.step(f"Set PAOS admin state DOWN for port {port_name}"):
+            admin_status = "2"  # Admin state down
+            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
+            local_port = IbInterfaceTool.get_local_port_hex(engine, device, port_name)
+            RegisterTool.update_paos_register(engine, mst_dev_name, local_port, admin_status, lp_msb, plane_ind)
+            time.sleep(sleep)
+
+    @staticmethod
+    def set_port_admin_state_paos_up(engine, port_name, lp_msb="0", plane_ind="0", sleep=5):
+        with allure.step(f"Set PAOS admin state UP for port {port_name}"):
+            admin_status = "1"  # Admin state up
+            mst_dev_name = IbInterfaceTool.get_mst_dev_name(engine, port_name=port_name)
+            local_port = IbInterfaceTool.get_local_port_hex(engine, device, port_name)
+            RegisterTool.update_paos_register(engine, mst_dev_name, local_port, admin_status, lp_msb, plane_ind)
+            time.sleep(sleep)
+
+    @staticmethod
     @lru_cache
     def get_mst_dev_name(engine, module_name=None, port_name=None):
         if not (module_name or port_name):

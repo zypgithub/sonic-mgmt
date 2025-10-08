@@ -2010,6 +2010,7 @@ class UfmMadConsts:
     IBSNI_REGISTER = 'IBSNI'
     PMAOS_REGISTER = 'PMAOS'
     PREI_REGISTER = 'PREI'
+    PAOS_REGISTER = 'PAOS'
     NVMAD_PATH = '/auto/sw_system_project/MLNX_OS_INFRA/mad_repository'
     MAD_NO_IPV4 = '0.0.0.0'
     MAD_NO_IPV6 = '0:0:0:0::0:0'
