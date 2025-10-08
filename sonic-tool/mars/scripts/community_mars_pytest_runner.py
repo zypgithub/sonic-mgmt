@@ -245,13 +245,22 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         pytest_bin_name = "python3 -m pytest"
         random_seed = int(time.time())
 
-        testbed = f'{self.dut_name}-{self.sonic_topo}'
+        if self.setup_name.endswith("-ha") or 'dualtor' in (self.sonic_topo):
+            # HA and dualtor setups use setup_name and topo to form testbed name
+            testbed = f'{self.setup_name}-{self.sonic_topo}'
+        else:
+            testbed = f'{self.dut_name}-{self.sonic_topo}'
         self.Logger.info(f"testbed: {testbed}")
+        # support multiple duts for ha testbed
+        self.dut_name_list = [temp_dut_name.strip() for temp_dut_name in self.dut_name.split(',')]
         if 'bobcat' in self.dut_name:
-            duts = read_duts_from_testbed_yaml(f"{self.dut_name}-{self.sonic_topo}")
+            duts = read_duts_from_testbed_yaml(testbed)
             self.Logger.info(f"duts :{duts}")
-            duts.remove(self.dut_name)
-            dpu_duts = get_installed_dpu_duts(self.dut_name, duts, self.Players[0].player_ip, self.Logger)
+            for temp_dut_name in self.dut_name_list:
+                duts.remove(temp_dut_name)
+            dpu_duts = []
+            for temp_dut_name in self.dut_name_list:
+                dpu_duts.extend(get_installed_dpu_duts(temp_dut_name, duts, self.Players[0].player_ip, self.Logger))
             self.Logger.info(f" dpu duts: {dpu_duts}")
             self.Logger.info(f" self.run_test_on_dpu_only: {self.run_test_on_dpu_only}, {type(self.run_test_on_dpu_only)}")
 
@@ -282,23 +291,6 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          )
         if 'bobcat' in self.dut_name and self.run_test_on_dpu_only != "True":
             cmd += f" --dpu-pattern {','.join(dpu_duts)}"
-        # For dualtor test, need to use setup name in --testbed
-        if 'dualtor' in (self.sonic_topo):
-            cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
-                           ../ansible/library/ --testbed {SETUP_NAME}-{SONIC_TOPO} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
-                           --allow_recover  --session_id {SESSION_ID} --mars_key_id {MARS_KEY_ID} \
-                           --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure"
-            cmd = cmd.format(PYTEST_BIN_NAME=pytest_bin_name,
-                             SCRIPTS=self.test_scripts,
-                             DUT_NAME=self.dut_name,
-                             SETUP_NAME=self.setup_name,
-                             SONIC_TOPO=self.sonic_topo,
-                             SESSION_ID=self.session_id,
-                             MARS_KEY_ID=self.mars_key_id,
-                             REPORT_FILE=self.report_file,
-                             OPTIONS=self.raw_options,
-                             ALLURE_PROJ=allure_proj_pytest_arg,
-                             RANDOM_SEED=random_seed)
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file
         epoint = self.EPoints[0]
@@ -397,7 +389,7 @@ def get_installed_dpu_duts(dut_name, dpu_duts, player_ip, logger):
         for dpu in installed_dpus:
             dpu_rename = f'dpu{dpu.split("dpu")[0]}-{dpu.split("dpu")[1]}'
             for dpu_dut in dpu_duts:
-                if dpu_rename in dpu_dut:
+                if dpu_dut.startswith(dut_name) and dpu_dut.endswith(dpu_rename):
                     installed_dpu_duts.append(dpu_dut)
                     break
         logger.info(f"installed_dpu_duts is {installed_dpu_duts}")
