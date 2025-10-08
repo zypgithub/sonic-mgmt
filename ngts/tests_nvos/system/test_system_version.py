@@ -34,7 +34,9 @@ def test_show_system_version(test_api, engines, devices, nv_command):
 
 
 @pytest.mark.nvos_chipsim_ci
-def test_show_system_version_sanity(devices, nv_command):
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_show_system_version_sanity(test_api, devices, nv_command):
+    TestToolkit.tested_api = test_api
     _verify_system_show_version_sanity(devices, nv_command)
 
 
