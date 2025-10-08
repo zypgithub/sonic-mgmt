@@ -51,6 +51,15 @@
             {% set ip_mode = "v4" %}
             {% endif %}
 
+            {# Port split configurations #}
+            {% set split_left = conf_args.split_left %}
+            {% set split_right = conf_args.split_right %}
+            {% set split_ports = get_split_ports(split_right, split_left) %}
+            {% set right_split_ports = split_ports["right_split_ports"] %}
+            {% set left_split_ports = split_ports["left_split_ports"] %}
+
+            "split_ports": {{ split_ports | tojson }},
+
             {# Generate IP list for right-side ports #}
             "right_side_ports_to_ip_dict": {{ generate_ip_list(address_start = ip_address, step = 1, mode = ip_mode, list_of_ports = right_split_ports ) | tojson }},
 
@@ -65,16 +74,13 @@
             "auto_buffer_mode": "{{ conf_args.auto_buffer_mode }}",
             "congestion_thresh_lo": {{ conf_args.congestion_thresh_lo }},
             "two_sided_ar": "{{ conf_args.two_sided_ar }}",
+
+            {# Buffer configuration #}
             "fboss_enabled": "{{ conf_args.fboss_enabled }}",
-
-            {# Port split configurations #}
-            {% set split_left = conf_args.split_left %}
-            {% set split_right = conf_args.split_right %}
-            {% set split_ports = get_split_ports(split_right, split_left) %}
-            {% set right_split_ports = split_ports["right_split_ports"] %}
-            {% set left_split_ports = split_ports["left_split_ports"] %}
-
-            "split_ports": {{ split_ports | tojson }},
+            "adjust_buffer_config": "{{ conf_args.adjust_buffer_config }}",
+            {% if conf_args.num_of_downlink_ports is defined %}
+            "num_of_downlink_ports": {{ conf_args.num_of_downlink_ports }},
+            {% endif %}
 
             {# Configure port groups - either from provided config or default mapping #}
             {% if conf_args.port_groups is defined %}

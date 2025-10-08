@@ -15,6 +15,9 @@ class DvsPerformance(PerformanceCommon):
         self.base_ports, self.ports_lanes = self.get_base_ports()
         self.right_left_ports_dict = self.get_right_left_ports_dict()
         self.connected_ports, self.unconnected_ports = self.get_player_ports()
+        self.original_connected_ports = self.connected_ports
+        self.original_unconnected_ports = self.unconnected_ports
+        self.original_port_lanes = self.ports_lanes
         self.port_groups = None
 
     def configure_reserved_buffer_size(self, shared_buffer_size, port_group_df, collectors_list=[ValidationConsts.COUNTERS_SAMPLES, ValidationConsts.BW_SAMPLES]):
@@ -91,6 +94,9 @@ class DvsPerformance(PerformanceCommon):
     def restore_basic_configuration(self):
         restart_cmd = "dvs_stop.sh && dvs_start.sh --sdk_bridge_mode=HYBRID"
         self.execute_cmd(restart_cmd)
+        self.connected_ports = self.original_connected_ports
+        self.unconnected_ports = self.original_unconnected_ports
+        self.ports_lanes = self.original_port_lanes
 
     def set_ports(self, ports_list, port_state):
         for port in ports_list:

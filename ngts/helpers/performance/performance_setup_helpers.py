@@ -207,13 +207,17 @@ def dynamic_configuration_helper(players, scenario, performance_parameters, step
                                            performance_clis_function_args=(scenario, performance_parameters), step=step)
 
 
-def run_traffic(players, scenario, traffic_jsons, step="Running Traffic - Test body", attach_traffic_json=True):
+def run_traffic(players, scenario, traffic_jsons, step="Running Traffic - Test body", attach_traffic_json=True, parallel_run=True):
 
-    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
-                                           action="run traffic",
-                                           performance_clis_function_name="run_traffic",
-                                           performance_clis_function_args=(scenario, traffic_jsons),
-                                           step=step)
+    if parallel_run:
+        call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                               action="run traffic",
+                                               performance_clis_function_name="run_traffic",
+                                               performance_clis_function_args=(scenario, traffic_jsons),
+                                               step=step)
+    else:
+        for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
+            players[player_alias]['cli'].performance.run_traffic(scenario, traffic_jsons)
     if attach_traffic_json:
         attach_json_traffic_to_allure(players, tg_players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
                                       traffic_jsons=traffic_jsons)
@@ -408,6 +412,10 @@ def get_topology_obj(players):
 
 def create_acl_dump(players):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_acl_dump()
+
+
+def create_sdk_dump(players, full_path):
+    return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
 
 
 def update_port_group_in_df(port_group_df, port_group_name, port_list):

@@ -1,12 +1,13 @@
 import allure
 import logging
 import pandas as pd
+import os
 import copy
-from ngts.performance_tests.lossy_lossless.lossy_lossless_10_to_1.conftest import get_many_to_1_traffic
+
+from ngts.performance_tests.lossy_lossless.lossy_lossless_many_to_1.conftest import get_many_to_1_traffic, TestConfig, TRAFFIC_PORTS_GROUP_NAME_TEMPLATE
 import pytest
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation,
-                                                                get_topology_obj, configure_mloops, stop_traffic)
+from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation, get_topology_obj, configure_mloops, stop_traffic)
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts, MRCConsts
 from ngts.helpers.performance.traffic_helpers import get_ports_avg_bw
 
@@ -15,7 +16,14 @@ logger = logging.getLogger()
 PACKET_SIZE_LIST = PerfConsts.PACKET_SIZE_LIST
 
 
-class TestLossyLosslessManyToOne:
+@pytest.mark.parametrize(
+    "test_config",
+    [
+        TestConfig(num_of_traffic_ports=1, num_of_lossy_packets=8, num_of_lossless_packets=0, packet_size=4096, split_left=2, split_right=2, auto_buffer_mode=True, fboss_enabled=False, adjust_buffer_config=False, test_id="Drop_over_max_scenario_1_to_1")
+    ],
+    indirect=True
+)
+class TestDropOverMax:
     @pytest.fixture(autouse=True)
     def setup(self, players, engines, power_thresholds_by_chip_type, chip_type, is_ipv6, conf_args):
         self.topology_obj = get_topology_obj(players)
@@ -31,60 +39,38 @@ class TestLossyLosslessManyToOne:
         self.is_ipv6 = is_ipv6
 
     @pytest.fixture
-    def scenario_name(self):
-        return 'lossy_lossless_scenario_4_many_to_1'
-
-    @allure.title('Lossy lossless scenario 4. Many to 1')
-    @allure.description('Lossy lossless scenario 4. Send many (10) to 1 one sided traffic')
-    def test_basic_loosy_lossless_scenario_4_many_to_1(self, request, scenario_name, packet_size=4096):
-        test_name = get_perf_test_name(request)
-        num_lossy_packets = 8
-        num_lossless_packets = 0
-        self.traffic_jsons, ingress_ports = get_many_to_1_traffic(self.conf_args, num_lossy_packets,
-                                                                  num_lossless_packets, num_of_traffic_ports=10)
-
-        with allure.step(f"Run traffic on all the ports:"):
-            run_traffic(self.players, self.scenario, self.traffic_jsons)
-
-        with allure.step(f"Verifying the traffic for packet size {packet_size}"):
-            bw_threshold = {
-                "dont_care_ports": {
-                    ValidationConsts.TX: 0,
-                    ValidationConsts.RX: 0
-                },
-                "traffic_from_10_ports_group": {
-                    ValidationConsts.TX: None,
-                    ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
-                },
-                "single_port_group": {
-                    ValidationConsts.RX: None,
-                    ValidationConsts.TX: PerfConsts.DVS_SHAPER_VALUE
-                }
-            }
-            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                      chip_type=self.chip_type, bw_threshold=bw_threshold,
-                                      tc_occ_threshold=None,
-                                      run_validate_counters=False,
-                                      power_threshold=self.power_thresholds_by_chip_type)
-            run_validation(config)
+    def scenario_name(self, test_config):
+        return test_config.test_id
 
     @allure.title('drop over max scenario')
     @allure.description('Lossy drop over max test scenario send 1 to 1 one sided traffic')
     @pytest.mark.parametrize("reserved_buffer_size", PerfConsts.RESERVED_BUFFER_SIZE_WITH_NO_DROPS)
-    def test_drop_over_max(self, request, reserved_buffer_size, disable_fboss_on_dut):
+    def test_drop_over_max(self, request, scenario_name, reserved_buffer_size, test_config):
         """
         Drop over max test scenario send 1 to 1 one sided lossy traffic,
         checks if the result headroom buffer size is enough to avoid rx no buffer drops
         on the ingress port
         """
         test_name = get_perf_test_name(request)
-        num_lossy_packets = 8
-        num_lossless_packets = 0
-        self.traffic_jsons, _ = get_many_to_1_traffic(self.conf_args, num_lossy_packets,
-                                                      num_lossless_packets, num_of_traffic_ports=1)
+        num_lossy_packets = test_config.num_of_lossy_packets
+        num_lossless_packets = test_config.num_of_lossless_packets
+        num_of_traffic_ports = test_config.num_of_traffic_ports
+        test_id = test_config.test_id
+
+        with allure.step(f"Change test name and description"):
+            description = (
+                f"{test_id} test. Drop over max test scenario send {num_of_traffic_ports} to 1 one sided lossy traffic, "
+                f"{num_lossy_packets} lossy packets, {num_lossless_packets} lossless packets, "
+                f"reserved buffer size {reserved_buffer_size}"
+            )
+            allure.dynamic.title(test_id)
+            allure.dynamic.description(description)
+
+        self.traffic_jsons = get_many_to_1_traffic(self.conf_args, num_lossy_packets,
+                                                   num_lossless_packets, num_of_traffic_ports)
 
         port_group_df = {
-            MRCConsts.INGRESS_PORT_GROUP_NAME: self.conf_args[PerfConsts.PORT_GROUPS][PerfConsts.DUT_ALIAS]["traffic_from_10_ports_group"][:1]
+            MRCConsts.INGRESS_PORT_GROUP_NAME: self.conf_args[PerfConsts.PORT_GROUPS][PerfConsts.DUT_ALIAS][TRAFFIC_PORTS_GROUP_NAME_TEMPLATE.format(num_of_traffic_ports)][:1]
         }
         bw_threshold = self.get_drop_over_max_bw_threshold()
         with allure.step(f"Testing reserved buffer size {reserved_buffer_size}"):
@@ -98,7 +84,6 @@ class TestLossyLosslessManyToOne:
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
                                       tc_occ_threshold=None,
-                                      temperature_threshold=None,
                                       power_threshold=None,
                                       run_validate_no_drops_on_tg_ports=None,
                                       run_validate_counters=True,
@@ -107,22 +92,33 @@ class TestLossyLosslessManyToOne:
 
     @allure.title('drop over max scenario')
     @allure.description('Lossy drop over max test scenario send 1 to 1 one sided traffic')
-    def test_drop_over_max_scenario_callibration(self, request, disable_fboss_on_dut):
+    @pytest.mark.skip("Skipping drop over max scenario, this test is only for manual calibration")
+    def test_drop_over_max_scenario_callibration(self, request, scenario_name, test_config):
         """
         Drop over max test scenario send 1 to 1 one sided lossy traffic,
         it runs a binary search between reserved buffer for pg 0 defined range and
         finds the minimal reserved buffer for pg 0 size with no drops
         """
-        pytest.skip("Skipping drop over max scenario, this test is only for manual calibration")
         results_df = []
         test_name = get_perf_test_name(request)
-        num_lossy_packets = 8
-        num_lossless_packets = 0
-        self.traffic_jsons, ingress_port = get_many_to_1_traffic(self.conf_args, num_lossy_packets,
-                                                                 num_lossless_packets, num_of_traffic_ports=1)
+        num_lossy_packets = test_config.num_of_lossy_packets
+        num_lossless_packets = test_config.num_of_lossless_packets
+        num_of_traffic_ports = test_config.num_of_traffic_ports
+        test_id = test_config.test_id
+
+        with allure.step(f"Change test name and description"):
+            description = (
+                f"{test_id} calibration test. Drop over max test scenario send {num_of_traffic_ports} to 1 one sided lossy traffic, "
+                f"{num_lossy_packets} lossy packets, {num_lossless_packets} lossless packets"
+            )
+            allure.dynamic.title(f"{test_id}_calibration")
+            allure.dynamic.description(description)
+
+        self.traffic_jsons = get_many_to_1_traffic(self.conf_args, num_lossy_packets,
+                                                   num_lossless_packets, num_of_traffic_ports)
 
         port_group_df = {
-            MRCConsts.INGRESS_PORT_GROUP_NAME: self.conf_args[PerfConsts.PORT_GROUPS][PerfConsts.DUT_ALIAS]["traffic_from_10_ports_group"][:1]
+            MRCConsts.INGRESS_PORT_GROUP_NAME: self.conf_args[PerfConsts.PORT_GROUPS][PerfConsts.DUT_ALIAS][TRAFFIC_PORTS_GROUP_NAME_TEMPLATE.format(num_of_traffic_ports)][:1]
         }
         bw_threshold = self.get_drop_over_max_bw_threshold()
         min_buffer_size = 1

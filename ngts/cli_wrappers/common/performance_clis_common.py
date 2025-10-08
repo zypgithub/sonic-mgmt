@@ -3,6 +3,7 @@ import os
 import re
 import json
 import pandas as pd
+import allure
 from retry import retry
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
 from infra.tools.exceptions.test_issue import TestIssue
@@ -336,9 +337,57 @@ class PerformanceCommon:
         """
         pass
 
+    def run_customer_examples_on_sdk(self, example_name):
+        """
+        Execute a customer example script on the SDK.
+
+        Args:
+            example_name (str): The name of the example script to run (e.g., "sx_api_flex_acl_dump.py").
+
+        Returns:
+            The result of executing the command via execute_cmd().
+        """
+        return self.execute_cmd(self.get_cmd_for_sdk(example_name))
+
     def create_acl_dump(self):
+        """
+        Generate an ACL dump using the SDK API examples.
+
+        This method runs the sx_api_flex_acl_dump.py script to create a dump of
+        all the ACL configurations.
+
+        Returns:
+            The output from running the ACL dump command.
+        """
         create_acl_dump_cmd = "sx_api_flex_acl_dump.py"
-        return self.execute_cmd(self.get_cmd_for_sdk(create_acl_dump_cmd))
+        return self.run_customer_examples_on_sdk(create_acl_dump_cmd)
+
+    def create_sdk_dump(self, sonic_mgmt_path, sdk_dump_file_name="sdkdump", sdk_dump_file_system='/var/log/sdk_dbg'):
+        """
+        Generate an SDK debug dump and retrieve its contents.
+
+        This method executes the SDK dump generation script, copies the resulting dump
+        file from the device to the local management system, and returns the dump contents
+        as a string.
+
+        Args:
+            sonic_mgmt_path (str): The local path where the SDK dump file will be copied.
+            sdk_dump_file_name (str, optional): The name of the SDK dump file. Defaults to "sdkdump".
+            sdk_dump_file_system (str, optional): The remote filesystem path where the dump is generated.
+                Defaults to '/var/log/sdk_dbg'.
+
+        Returns:
+            str: The contents of the SDK dump file as a string.
+        """
+        create_sdk_dump_cmd = "sx_api_dbg_generate_dump.py"
+        self.run_customer_examples_on_sdk(create_sdk_dump_cmd)
+
+        os.environ[PerfConsts.SDK_DUMP_FILE_SYSTEM] = sonic_mgmt_path
+        self.engine.copy_file(source_file=sdk_dump_file_name, file_system=sdk_dump_file_system, dest_file=sonic_mgmt_path, overwrite_file=True, verify_file=False, direction='get')
+
+        with open(sonic_mgmt_path) as f:
+            sdk_dump_str = f.read()
+        return sdk_dump_str
 
     def dynamic_configuration_helper(self, scenario, performance_parameters):
         """
