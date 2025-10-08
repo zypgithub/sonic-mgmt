@@ -744,5 +744,9 @@ class DeployDpuHelper:
             with allure.step('Disable dark mode by config chassis modules startup DPU'):
                 cli_obj.verify_dpus_down(dpu_index_list)
                 cli_obj.startup_dpu(dpu_index_list)
-                cli_obj.verify_dpus_up(dpu_index_list)
+                try:
+                    cli_obj.verify_dpus_up(dpu_index_list)
+                except AssertionError:
+                    logger.warning("Failed to verify DPUs are up, checking if they can receive the new image")
+                    cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
                 cli_obj.save_configuration()

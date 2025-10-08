@@ -1860,7 +1860,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
         logger.info("all dpus:{dpu_index_list} are down")
 
-    @retry(Exception, tries=60, delay=3)
+    # retry for ~140s if the dpus are up
+    @retry(Exception, tries=47, delay=3)
     def verify_dpus_up(self, dpu_index_list):
         """
         Verifying the Oper-Status are Online and Admin-Status are up for the specified DPUs
@@ -1871,7 +1872,31 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 dpu_name = f"DPU{dpu_index}"
                 assert dpu_status[dpu_name]['Oper-Status'] == 'Online' and dpu_status[dpu_name]['Admin-Status'] == 'up', \
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
-        logger.info("all dpus:{dpu_index_list} are up")
+        logger.info(f"all dpus:{dpu_index_list} are up")
+
+    def verify_dpu_boot_progress(self, dpu_index_list, bad_states):
+        """
+        Parses the output of the command 'dpuctl dpu-status' and verifies the boot progress of the specified DPUs,
+        Output example:
+        DPU    dpu ready    dpu shutdown ready    boot progress      Force Power Required
+        -----  -----------  --------------------  -----------------  ----------------------
+        dpu0   True         False                 5 - OS is running  False
+        dpu1   True         False                 5 - OS is running  False
+        dpu2   True         False                 5 - OS is running  False
+        dpu3   True         False                 5 - OS is running  False
+        Verifying the boot progress of the specified DPUs, if it is not in the bad_states
+        otherwise raise an exception
+        """
+        with allure.step('Check the boot progress of the DPUs'):
+            dpu_ctl_output = self.engine.run_cmd('dpuctl dpu-status')
+            dpu_ctl_parsed = generic_sonic_output_parser(dpu_ctl_output, output_key="DPU")
+            for dpu_index in dpu_index_list:
+                dpu_name = f"dpu{dpu_index}"
+                dpu_boot_progress = dpu_ctl_parsed[dpu_name]['boot progress']
+                dpu_boot_progress_code = int(dpu_boot_progress.split()[0])
+                assert dpu_boot_progress_code not in bad_states, \
+                    f'For {dpu_name}, dpu boot progress is "{dpu_boot_progress}"'
+                logger.info(f"all dpus:{dpu_index_list} are ready for image install")
 
     def pre_installation_steps(self, context, threads_dict):
         """Execute SONiC pre-installation steps - base implementation"""
