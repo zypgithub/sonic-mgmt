@@ -60,7 +60,6 @@ def test_mgmt_show_interface_link(engines):
 @pytest.mark.ib
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.nvos_chipsim_ci
 def test_ib_show_interface_stats(engines):
     """
     Run show interface command and verify the required fields exist
@@ -96,7 +95,7 @@ def test_ib_show_interface_ip(engines):
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            mgmt_port.interface.ip.show()).get_returned_value()
+            mgmt_port.interface.ipv4.show()).get_returned_value()
 
         validate_ip_fields(output_dictionary)
 
@@ -105,10 +104,10 @@ def check_dhcp(mgmt_port, ipv4=True):
     # Run the desired show command (ipv4 / ipv6)
     if ipv4:
         with allure.step('Run show command on dhcp-client (ipv4) of eth0 mgmt port'):
-            output_json = mgmt_port.interface.ip.dhcp_client.show()
+            output_json = mgmt_port.interface.ipv4.dhcp_client.show()
     else:  # ipv6
         with allure.step('Run show command on dhcp-client (ipv6) of eth0 mgmt port'):
-            output_json = mgmt_port.interface.ip.dhcp_client6.show()
+            output_json = mgmt_port.interface.ipv6.dhcp_client6.show()
 
     output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(output_json).get_returned_value()
 
