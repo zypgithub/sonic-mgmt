@@ -15,6 +15,15 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope="function", autouse=True)
 def confirm_setup_ready(cli_objects):
+    #TODO: WA for issue RM#4643466, revert when the issue is fixed
+    from infra.tools.redmine.redmine_api import is_redmine_issue_active
+    if is_redmine_issue_active([4643466])[0] and \
+        'bobcat' in cli_objects.dut.chassis.get_hostname():
+        cli_objects.dut.general.shutdown_dpu(list(range(4)))
+        dpu_interfaces = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
+        cli_objects.dut.interface.disable_interfaces(dpu_interfaces)
+        cli_objects.dut.general.verify_dpus_down(list(range(4)))
+
     admin_up_ports = cli_objects.dut.interface.get_admin_up_ports()
 
     yield
@@ -111,7 +120,7 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
 
 
 @allure.title('Restore default mode')
-def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_path, platform_params, is_air):
+def test_restore_default_mode(cli_objects, engines, sonic_topo, topology_obj, workspace_path, platform_params, is_air):
     """
     This test will restore the default mode
     """
@@ -119,8 +128,15 @@ def test_restore_default_mode(cli_objects, sonic_topo, topology_obj, workspace_p
     setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     ansible_cmd = f"./testbed-cli.sh deploy-mg {dut_name}-{sonic_topo} lab vault -vvv"
 
-    with allure.step("Deploy minigraph"):
-        run_testbed_cli_script(ansible_cmd, setup_info['ansible_path'])
+    if 'bobcat' in dut_name:
+        # The ansible playbook deploy-mg will fail on smartswitch as the DPUs are not reachable
+        # Reload the minigraph directly on the switch
+        with allure.step("Reload minigraph directly on the switch"):
+            engines.dut.run_cmd(f'sudo config load_minigraph --override_config -y')
+            cli_objects.dut.general.verify_dockers_are_up()
+    else:
+        with allure.step("Deploy minigraph"):
+            run_testbed_cli_script(ansible_cmd, setup_info['ansible_path'])
     with allure.step('Apply DNS servers configuration'):
         for dut in setup_info['duts']:
             general_cli_obj = dut['cli_obj']
