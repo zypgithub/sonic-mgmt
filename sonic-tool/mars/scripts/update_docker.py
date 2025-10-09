@@ -130,11 +130,11 @@ def create_mgmt_network(conn):
         our_addr = ip_info.split()[1].split('/')[0]
         net_info_data = conn.run('ip route | grep -m1 "scope link src {}"'.format(our_addr)).stdout.strip()
         net_info = net_info_data.split()[0]
-        ipv6_info = conn.run("ip -6 addr | grep  -A1 ' '{} | grep 'inet6'".format(ip_iface)).stdout.strip()
+        ipv6_info = conn.run("ip -6 addr show {} | grep 'inet6' | grep -v '/128'".format(ip_iface)).stdout.strip()
         our_addr_v6 = ipv6_info.split()[1]
         ipv6 = IPv6Interface(our_addr_v6)
         ipv6_net_info = str(ipv6.network)
-        ipv6_gw = str(ipv6.network.network_address) + "1"
+        ipv6_gw = str(ipv6.network.network_address + 1)
         cmd = 'docker network create -d macvlan --ipv6 --gateway={} --subnet={} --gateway={} --subnet={} -o parent={} {}'.format(ip_gw, net_info, ipv6_gw, ipv6_net_info, ip_iface, NETWORK_NAME)
         conn.run(cmd)
         if not conn.run(GET_NETWORK_CMD, warn=True).stdout.strip():
