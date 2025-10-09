@@ -10,7 +10,6 @@ run commands on it. Purpose is to prepare the SONiC testing topology using the t
 # Builtin libs
 import argparse
 import json
-import socket
 import os
 import re
 import sys
@@ -21,7 +20,7 @@ from ipaddress import IPv6Interface
 # Third-party libs
 from fabric import Config
 from fabric import Connection
-from invoke.exceptions import UnexpectedExit
+from invoke.exceptions import UnexpectedExit, ThreadException
 from retry import retry
 from retry.api import retry_call
 # Home-brew libs
@@ -186,7 +185,9 @@ def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_n
         conn.run("echo \"{LINE}\" >> {SCRIPT_PATH}".format(LINE=line, SCRIPT_PATH=export_env_var_script_path), warn=True)
     return export_env_var_script_path
 
-
+# we got intermittent threaded socket errors randomly occurs in CI
+# there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
+@retry(ThreadException, tries=3, delay=10)
 def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases):
     """
     @summary: Create and start specified container from specified image
@@ -330,9 +331,6 @@ def cleanup_dangling_docker_images(test_server):
     """
     test_server.run("docker system prune --all -f", warn=True)
 
-# we got intermittent socket errors randomly occurs in CI
-# there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
-@retry(socket.error, tries=3, delay=10)
 def main():
     args = _parse_args()
     registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
