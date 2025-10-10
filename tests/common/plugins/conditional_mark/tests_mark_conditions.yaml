@@ -4657,3 +4657,7 @@ zmq/test_gnmi_zmq.py:
     conditions:
       - "'arista' in platform"
       - "'isolated' in topo_name"
+  xfail:
+    reason: "Test is not aligned for smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20698"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20698 and is_smartswitch==True"
