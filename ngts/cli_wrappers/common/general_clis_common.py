@@ -34,11 +34,19 @@ class GeneralCliCommon(GeneralCliInterface):
         self.dut_alias = dut_alias
 
     def start_service(self, service):
-        output = self.engine.run_cmd('sudo service {} start'.format(service), validate=True)
+        # lldpad is managed by supervisorctl
+        if service == 'lldpad':
+            output = self.engine.run_cmd('supervisorctl start {}'.format(service), validate=True)
+        else:
+            output = self.engine.run_cmd('sudo service {} start'.format(service), validate=True)
         return output
 
     def stop_service(self, service):
-        output = self.engine.run_cmd('sudo service {} stop'.format(service), validate=True)
+        # lldpad is managed by supervisorctl
+        if service == 'lldpad':
+            output = self.engine.run_cmd('supervisorctl stop {}'.format(service), validate=True)
+        else:
+            output = self.engine.run_cmd('sudo service {} stop'.format(service), validate=True)
         return output
 
     def systemctl_start(self, service):
