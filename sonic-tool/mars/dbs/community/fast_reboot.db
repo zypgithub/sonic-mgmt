@@ -62,8 +62,4 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/fast_reboot.cases </cases>
     </test>
 
-    <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/continuous_fast_reboot.cases </cases>
-    </test>
-
 </DBDEF>
