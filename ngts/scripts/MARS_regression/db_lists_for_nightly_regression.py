@@ -49,7 +49,6 @@ COMMUNITY_SET2_TEST_GROUP_MAP = {
     'community/bgp.db': PLATFORM_AGNOSTIC_GROUP2,
     'community/pbh.db': PLATFORM_DEPENDENT,
     'community/generic_config_updater.db': PLATFORM_AGNOSTIC_GROUP2,
-    'community/cold_reboot.db': PLATFORM_DEPENDENT,
     'community/autorestart.db': PLATFORM_DEPENDENT,
     'community/dualtor.db': PLATFORM_DEPENDENT,
     'community/memory.db': PLATFORM_DEPENDENT,
