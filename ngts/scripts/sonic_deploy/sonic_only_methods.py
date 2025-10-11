@@ -614,9 +614,8 @@ class SonicInstallationSteps:
                             cli_obj.save_configuration()
                 logger.info("Applying NAT config to smartSwitch")
                 with allure.step('Apply NAT config to smartSwitch'):
-                    for player_alias, player in topology_obj.players.items():
-                        if player_alias.startswith('dpu'):
-                            enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(player['engine'])
+                    for dut in setup_info['duts']:
+                        enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut['engine'])
             logger.info("Validating Post InstallDUT configuration")
             for dut in setup_info['duts']:
                 SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
