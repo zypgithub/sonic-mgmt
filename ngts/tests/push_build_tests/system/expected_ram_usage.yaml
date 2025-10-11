@@ -132,7 +132,7 @@ master:
   SN5600: # Moose/Albatross
     <<: *platform_defaults
     sx_sdk: 1600
-    syncd: 350
+    syncd: 380
     orchagent: 90
     thermalctld: 107
     telemetry: 90
@@ -150,7 +150,7 @@ master:
   SN5640: # Bison
     <<: *platform_defaults
     sx_sdk: 1600
-    syncd: 350
+    syncd: 380
     orchagent: 90
     thermalctld: 107
     telemetry: 100
