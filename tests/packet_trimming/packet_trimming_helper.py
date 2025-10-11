@@ -2130,6 +2130,11 @@ def check_connected_route_ready(duthost, egress_port):
     Args:
         duthost: DUT host object
         egress_port (dict): Egress port info
+            - 'name' (str): Interface or PortChannel name (e.g., 'Ethernet96' or 'PortChannel102')
+            - 'ipv4' (str, optional): IPv4 address of the interface
+            - 'ipv6' (str, optional): IPv6 address of the interface
+            - 'ptf_id' (int or list): PTF port ID(s)
+            - 'dut_members' (list): List of DUT member interfaces
 
     Returns:
         bool: True if the route is ready, False otherwise
@@ -2486,7 +2491,11 @@ def get_switch_trim_counters_json(duthost):
               Example: {"trim_drop": 0, "trim_sent": 0}
     """
     result = duthost.shell("show switch counters all --json")
-    json_data = json.loads(result['stdout'])
+    stdout = result['stdout'].strip()
+    pytest_assert(stdout, "Command returned empty output.")
+
+    json_data = json.loads(stdout)
+    pytest_assert(json_data, "Parsed JSON data is empty for switch counters")
 
     # Convert all counter values, handle 'N/A' and comma-separated numbers
     convert_all_counter_values(json_data)
@@ -2520,8 +2529,9 @@ def get_port_trim_counters_json(duthost, port):
     result = duthost.shell(f"show interfaces counters trim {port} --json")
 
     # Extract JSON part from output (skip timestamp line if present)
-    stdout = result['stdout']
-    lines = stdout.strip().split('\n')
+    stdout = result['stdout'].strip()
+    pytest_assert(stdout, "Command returned empty output.")
+    lines = stdout.split('\n')
 
     # If first line starts with "Last cached time", skip it
     if lines and lines[0].startswith('Last cached time'):
@@ -2531,6 +2541,7 @@ def get_port_trim_counters_json(duthost, port):
 
     json_data = json.loads(json_str)
     port_data = json_data.get(port, {})
+    pytest_assert(port_data, f"No data found for port {port} in JSON output")
 
     # Remove the STATE field from the returned data
     if "STATE" in port_data:
@@ -2586,9 +2597,12 @@ def get_queue_trim_counters_json(duthost, port):
               }
     """
     result = duthost.shell(f"show queue counters {port} --all --json")
+    stdout = result['stdout'].strip()
+    pytest_assert(stdout, "Command returned empty output.")
 
-    json_data = json.loads(result['stdout'])
+    json_data = json.loads(stdout)
     port_data = json_data.get(port, {})
+    pytest_assert(port_data, f"No queue data found for port {port} in JSON output")
 
     # Remove the time field from the returned data
     if "time" in port_data:
@@ -2632,7 +2646,7 @@ def compare_counters(counter1, counter2, keys_to_compare):
         value1 = counter1[key]
         value2 = counter2[key]
 
-        logger.info(f"Comparing {key}: counter1={value1}, counter2={value2}")
+        logger.debug(f"Comparing {key}: counter1={value1}, counter2={value2}")
 
         pytest_assert(value1 == value2,
                       f"{key} counter is different between counter1 and counter2\n"
