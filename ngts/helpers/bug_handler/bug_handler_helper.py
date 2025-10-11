@@ -721,6 +721,43 @@ def error_to_regex(error_string):
     return error_string
 
 
+def deduplicate_log_errors(error_groups: List[List[str]]) -> List[List[str]]:
+    """
+    Deduplicate error messages by their regex pattern representation.
+    This helps handle error log flooding with similar or same error messages in periodic patterns.
+    :param error_groups: list of lists of log errors
+    :return: deduplicated error groups as a list of lists
+    e.g.,
+    input: [[error_a, error_b, error_c], [error_b, error_c, error_d], [error_a, error_b, error_c]]
+    output: [[error_a, error_b, error_c], [error_b, error_c, error_d]]
+    """
+    deduplicated_error_groups = []
+    seen_patterns = set()
+
+    for error_group in error_groups:
+        # Convert all errors in the group to regex patterns
+        patterns = [error_to_regex(error) for error in error_group]
+
+        # Check if all patterns in this group have been seen before
+        all_seen = all(pattern in seen_patterns for pattern in patterns)
+
+        if not all_seen:
+            # Add all new patterns to seen_patterns
+            seen_patterns.update(patterns)
+            deduplicated_error_groups.append(error_group)
+
+    return deduplicated_error_groups
+
+
+def test_deduplicate_log_errors():
+    """unit test for deduplicate_log_errors"""
+    error_groups = [["error_a", "error_b", "error_c"],
+                    ["error_b", "error_c", "error_d"],
+                    ["error_a", "error_b", "error_c"]]
+    deduplicated_error_groups = deduplicate_log_errors(error_groups)
+    assert deduplicated_error_groups == [["error_a", "error_b", "error_c"], ["error_b", "error_c", "error_d"]]
+
+
 def group_log_errors_by_timestamp(log_errors: str) -> List[List[str]]:
     """
     Group the log errors by timestamp: new group starts if it is bigger than 5 sec from the first line in the group.

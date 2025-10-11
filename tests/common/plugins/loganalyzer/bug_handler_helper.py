@@ -15,7 +15,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
-    create_log_analyzer_yaml_file, group_log_errors_by_timestamp, summarize_la_bug_handler
+    create_log_analyzer_yaml_file, deduplicate_log_errors, group_log_errors_by_timestamp, summarize_la_bug_handler
 from ngts.scripts.allure_reporter import predict_allure_report_link
 from tests.common.helpers.parallel import reset_ansible_local_tmp
 
@@ -115,6 +115,13 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                 log_errors = data.get(BugHandlerConst.LOG_ERRORS_FILE_ROOT_ITEM, "")
                 la_errors.extend([line for line in log_errors.splitlines() if line.strip()])
                 error_groups = group_log_errors_by_timestamp(log_errors)
+                if cli_type == "Sonic":
+                    # De-duplicate error messages to handle log flooding with similar/same errors in periodic patterns
+                    logger.info(f"[BEFORE] {len(error_groups)} error groups")
+                    logger.info(f"[BEFORE] Number of errors in each group: {[len(group) for group in error_groups]}")
+                    error_groups = deduplicate_log_errors(error_groups)
+                    logger.info(f"[AFTER] {len(error_groups)} error groups")
+                    logger.info(f"[AFTER] Number of errors in each group: {[len(group) for group in error_groups]}")
                 log_errors_file_path.unlink()
 
                 for error_group in error_groups:
