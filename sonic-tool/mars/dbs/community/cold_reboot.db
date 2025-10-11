@@ -50,4 +50,8 @@
         </Case>
     </global>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/continuous_reboot.cases </cases>
+    </test>
+
 </DBDEF>
