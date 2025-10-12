@@ -16,7 +16,9 @@ def get_breakout_mode_supported_speed_list(breakout_mode):
     """
     support_speed_list = []
     support_speed_list.append(re.search(r"\dx(\d+G|\d+)", breakout_mode).group(1))
-    support_speed_list.extend(re.search(r"\dx(\d+G|\d+)\[([\d+G,]+|[\d,]+)\]", breakout_mode).group(2).split(','))
+    bracket_match = re.search(r"\dx(\d+G|\d+)\[([\d+G,]+|[\d,]+)\]", breakout_mode)
+    if bracket_match:
+        support_speed_list.extend(bracket_match.group(2).split(','))
     return support_speed_list
 
 
