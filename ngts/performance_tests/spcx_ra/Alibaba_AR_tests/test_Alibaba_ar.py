@@ -13,6 +13,7 @@ from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import AlibabaScen
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic
 from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import get_conf_args
+from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 import re
 
 logger = logging.getLogger()
@@ -102,10 +103,12 @@ class Test_Alibaba_scenarios_with_reset:
             run_traffic(self.players, self.scenario, self.traffic_jsons)
 
         with allure.step(f"Verifying the traffic"):
-            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] if rebalancer_enabled else SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[4096]
+            bw_threshold = SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[PerfConsts.PACKET_SIZE_4K] if rebalancer_enabled else SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_4K]
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
+                                      packet_size=PerfConsts.PACKET_SIZE_4K,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
@@ -143,6 +146,8 @@ class Test_Alibaba_scenarios_with_reset:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_LIST[0]],
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=skip_first_counters_iteration)

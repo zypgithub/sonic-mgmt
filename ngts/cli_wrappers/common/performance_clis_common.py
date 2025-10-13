@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import json
 import pandas as pd
 from retry import retry
@@ -183,6 +184,17 @@ class PerformanceCommon:
             error_msg = f"Command: {cmd} failed on {self.dut_alias} with error:\n{e}\n"
             logging.error(error_msg)
             raise TestIssue(msg=error_msg)
+
+    def get_port_mapping_df(self):
+        sdk_port_to_local_port_mapping = {}
+        sdk_port_speed_mapping = {}
+        ports_dump_cmd = "sx_api_ports_dump.py"
+        output = self.execute_cmd(self.get_cmd_for_sdk(ports_dump_cmd))
+        ports_info = re.findall(r"(0x[\d|\w]{5})\|\s+\d+\|\s+\d+\|\s+(\d+)\|.*\|\s+(\d+)G", output)
+        for sdk_port, local_port, speed in ports_info:
+            sdk_port_to_local_port_mapping[sdk_port] = str(hex(int(local_port) - 1))
+            sdk_port_speed_mapping[sdk_port] = int(speed)
+        return sdk_port_to_local_port_mapping, sdk_port_speed_mapping
 
     @retry(exceptions=TestIssue, tries=2, delay=2)
     def configure_mloops(self, validate_mloops=True):

@@ -6,6 +6,7 @@ import pytest
 import random
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import validate_bw_per_ports, validate_counters_sample
+from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, apply_test_configuration, configure_mloops, restore_basic_configuration, run_traffic, run_validation, get_topology_obj,
                                                                 validate_traffic_results,
                                                                 set_ports_admin_state,
@@ -75,6 +76,8 @@ class TestSPCXRA_x2Split_400G:
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
 
@@ -100,6 +103,8 @@ class TestSPCXRA_x2Split_400G:
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
                                       tc_occ_threshold=None,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
+                                      packet_size=packet_size,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)
             run_validation(config)
@@ -127,6 +132,8 @@ class TestSPCXRA_x2Split_400G:
                          f"on all the ports"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)
             run_validation(config)
@@ -153,6 +160,8 @@ class TestSPCXRA_x2Split_400G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=PerfConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True)

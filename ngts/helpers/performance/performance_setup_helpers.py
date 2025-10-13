@@ -13,6 +13,7 @@ from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, par
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters, validate_no_drops_on_tg_ports
+from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters
 from ngts.helpers.performance.topology_helpers import get_dvs_topology_obj, get_nvue_sonic_topology_obj
 from ngts.helpers.performance.power_temp_helpers import validate_temperature, validate_power
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
@@ -68,6 +69,9 @@ class ValidationConfig:
     validate_bw_rx: bool = True
     samples_params_dict: Dict = field(default_factory=lambda: PerfConsts.SAMPLES_PARAMS)
     tc_occ_threshold: Dict = field(default_factory=lambda: PerfConsts.OCC_TH_DICT)
+    run_validate_performance_counters: bool = False
+    allowed_deviation: float = PerfConsts.PERF_COUNTERS_ALLOWED_DEVIATION
+    packet_size: Optional[int] = None
     temperature_threshold: float = PerfConsts.TEMPERATURE_TH
     bw_threshold: Optional[float] = None
     power_threshold: Optional[float] = None
@@ -130,6 +134,12 @@ class ValidationConfig:
                 validate_no_drops_on_tg_ports,
                 {'players': self.players}
             ) if self.run_validate_no_drops_on_tg_ports else None,
+            'performance_counters': Validation(
+                validate_performance_counters,
+                {'cli_object': self.players['dut']['cli'],
+                 'allowed_deviation': self.allowed_deviation,
+                 'packet_size': self.packet_size,
+                 'test_name': self.test_name}) if self.run_validate_performance_counters and self.packet_size else None
 
         }
         validations.update(self.additional_validations)

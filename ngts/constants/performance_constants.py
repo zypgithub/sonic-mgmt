@@ -4,6 +4,11 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class ValidationConsts:
+    DEVIATION = "deviation"
+    DEVIATION_ABOVE_THRESHOLD = "deviationAboveThreshold"
+    SPEED = "speed"
+    INSTANCE = "instance"
+    DUMP_GENERATION_TIME = "dumpGenerationTime"
     PORT_GROUPS = "port_groups"
     SHARED_BUFFER_SIZE = "shared_buffer_size"
     COLLECTORS_LIST = "collectors_list"
@@ -30,6 +35,7 @@ class ValidationConsts:
         PG_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK]
     }
     COUNTERS_SAMPLES = "Counters_samples"
+    PERF_COUNTERS_SAMPLES = "perf_counters_samples"
     SAMPLES_PARAMS = "sample_params"
     COUNTERS_DATAFRAME = "counters_dataframe"
     BW_SAMPLES = "Bandwidth_samples"
@@ -42,6 +48,13 @@ class ValidationConsts:
     TX = 'tx'
     RX = 'rx'
     PORT = "port"
+    PERFORMANCE_COUNTERS_DATAFRAME = "performanceCountersDataframe"
+    PERFORMANCE_COUNTER_NAME = "performanceCounterName"
+    PERFORMANCE_COUNTER_VALUE = "performanceCounterValue"
+    SDK_GENERATION_TIME_WITH_PERF_COUNTERS = "sdkGenerationTimeWithPerfCounters"
+    SDK_GENERATION_TIME_WITHOUT_PERF_COUNTERS = "sdkGenerationTimeWithoutPerfCounters"
+    PERFORMANCE_COUNTER_EXPECTED_VALUE = "performanceCounterExpectedValue"
+    PORT_BW = "portBandwidth"
     QUEUE = "queue"
     ACL = "acl"
     OS_PORT_NAME = "osPortName"
@@ -91,6 +104,8 @@ class PerfConsts:
     LOW_AR_THRESHOLD = 190
     MED_AR_THRESHOLD = 800
     HIGH_AR_THRESHOLD = 2000
+    SDK_GENERATION_SECONDS_THRESHOLD = 30
+    PERF_COUNTERS_ALLOWED_DEVIATION = 2.5
 
     # CLI Types
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
@@ -335,6 +350,7 @@ class SPCXRAConsts:
 
 
 class MongoDbConsts:
+    PERFORMANCE_COUNTERS_DATA = "performanceCountersData"
     PERF_MONGO_DB_FILENAME = "perf_res.db"
     PERF_MONGO_DB_RESULTS_PATH = os.path.join(PerfConsts.REQUIRMENTS_DIR, PERF_MONGO_DB_FILENAME)
     PORT_GROUP_NAME = "portGroupName"

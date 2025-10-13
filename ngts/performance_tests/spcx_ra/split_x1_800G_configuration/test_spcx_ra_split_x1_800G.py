@@ -2,6 +2,7 @@ import allure
 import logging
 import pytest
 from ngts.constants.constants import CliType, InfraConst
+from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 from ngts.helpers.performance.performance_setup_helpers import (restore_basic_configuration, apply_test_configuration,
                                                                 run_traffic, run_validation, get_topology_obj,
                                                                 skip_test_on_unsupported_os, ValidationConfig)
@@ -48,6 +49,8 @@ class TestSPCXRA_x1Split_800G:
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
@@ -75,6 +78,8 @@ class TestSPCXRA_x1Split_800G:
                                       chip_type=self.chip_type,
                                       samples_params_dict=PerfConsts.SAMPLES_PARAMS,
                                       bw_threshold=bw_threshold,
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=None,
                                       power_threshold=self.power_thresholds_by_chip_type)
             run_validation(config)
@@ -104,6 +109,8 @@ class TestSPCXRA_x1Split_800G:
                                       chip_type=self.chip_type,
                                       bw_threshold=SPCXRAConsts.DUT_TX_UTIL_AUTO_TH_DICT[packet_size],
                                       power_threshold=self.power_thresholds_by_chip_type,
+                                      packet_size=packet_size,
+                                      run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       tc_occ_threshold=None, skip_first_counters_iteration=skip_first_counters_iteration)
 
             run_validation(config)
