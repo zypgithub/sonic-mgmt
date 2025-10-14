@@ -4,7 +4,7 @@ import re
 import pytest
 import logging
 import functools
-from tests.common.platform.interface_utils import get_physical_index_to_interfaces_map, get_interfaces_physical_path, get_dpu_npu_ports_from_hwsku
+from tests.platform_tests.mellanox.interface_utils import get_physical_index_to_interfaces_map, get_interfaces_physical_path
 
 logger = logging.getLogger()
 

@@ -1,6 +1,6 @@
 import pytest
 import logging
-import tests.common.helpers.software_control as helpers
+import tests.platform_tests.mellanox.software_control_helper as helpers
 from tests.platform_tests.sfp.util import get_sfp_type_per_interface, get_dev_conn, write_eeprom_by_page_and_byte, \
     DICT_WRITABLE_BYTE_FOR_PAGE_0, read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure

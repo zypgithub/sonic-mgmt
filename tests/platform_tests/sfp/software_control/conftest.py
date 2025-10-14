@@ -1,7 +1,7 @@
 import pytest
 
 from tests.common.utilities import skip_release
-from tests.common.helpers.software_control import sc_supported, sc_ms_sku, PLATFORM_GENERATION
+from tests.platform_tests.mellanox.software_control_helper import sc_supported, sc_ms_sku, PLATFORM_GENERATION
 
 
 @pytest.fixture(autouse=True, scope="module")

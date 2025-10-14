@@ -5,7 +5,7 @@ import os
 import logging
 import re
 from tests.common.mellanox_data import is_mellanox_device
-from tests.common.helpers.software_control import sc_supported, sc_ms_sku, get_ports_supporting_sc, \
+from tests.platform_tests.mellanox.software_control_helper import sc_supported, sc_ms_sku, get_ports_supporting_sc, \
     check_sc_sai_attribute_value
 from .args.counterpoll_cpu_usage_args import add_counterpoll_cpu_usage_args
 from tests.common.helpers.mellanox_thermal_control_test_helper import suspend_hw_tc_service, resume_hw_tc_service
