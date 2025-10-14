@@ -2075,7 +2075,9 @@ sensors_checks:
       - mp2975-i2c-20-6a/PMIC-11 DPU3 VDD_CPU (out)/in2_lcrit_alarm
       - mp2975-i2c-20-6a/PMIC-11 DPU3 VDD_CPU Rail Curr (out)/curr2_alarm
 
-      - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR (in)/power1_alarm
+      # Workaround for https://redmine.mellanox.com/issues/4601092
+      # the hw-mgmt in master_rc did not include the fix
+      #- mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR (in)/power1_alarm
       - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR (in1)/in1_crit_alarm
       - mp2975-i2c-21-69/PMIC-12 12V DPU4 VDD VDDQ_DDR Rail Curr (in1)/curr1_alarm
       - mp2975-i2c-21-69/PMIC-12 DPU4 VDD (out1)/in2_crit_alarm
