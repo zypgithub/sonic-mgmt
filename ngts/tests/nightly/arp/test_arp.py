@@ -16,6 +16,16 @@ from infra.tools.validations.traffic_validations.ping.ping_runner import PingChe
 logger = logging.getLogger()
 
 
+@pytest.fixture
+def stop_arp_update_service(engines):
+    """
+    Fixture to stop arp_update service before test and restart it after test.
+    """
+    engines.dut.run_cmd("docker exec swss supervisorctl stop arp_update")
+    yield
+    engines.dut.run_cmd("docker exec swss supervisorctl start arp_update")
+
+
 @pytest.mark.parametrize("interface_type", INTERFACE_TYPE_LIST)
 @allure.title('Test corresponding arp is clean after dut shutdown the specified interface')
 def test_corresponding_dynamic_arp_is_cleaned_after_dut_interface_down(players, cli_objects,
@@ -65,7 +75,8 @@ def test_corresponding_dynamic_arp_is_cleaned_after_dut_interface_down(players, 
 
 @pytest.mark.parametrize("interface_type", INTERFACE_TYPE_LIST)
 @allure.title('Test arp entry update by changing mac and ip')
-def test_change_mac_ip_lead_arp_entry_update(players, cli_objects, pre_test_interface_data, interface_type):
+def test_change_mac_ip_lead_arp_entry_update(players, cli_objects, pre_test_interface_data, interface_type,
+                                             stop_arp_update_service):
     """
     Verify arp entry update by changing mac and ip
     1. Host sends ARP request for broadcast
@@ -78,6 +89,7 @@ def test_change_mac_ip_lead_arp_entry_update(players, cli_objects, pre_test_inte
     :param cli_objects: cli objects fixture
     :param pre_test_interface_data: pre_test_interface_data fixture
     :param interface_type: interface type
+    :param stop_arp_update_service: fixture to stop/start arp_update service
     """
     try:
         with allure.step('Get test interface data'):
