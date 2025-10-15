@@ -21,6 +21,24 @@ logger = logging.getLogger()
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+# Component version check constants
+COMPONENT_SCRIPT_NAME = "get_component_versions.py"
+README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'KERNEL']
+FW_DEFAULT_VERSIONS = ['ONIE', 'SSD', 'BIOS', 'CPLD']  # Expected columns of the table if the setup is SIMX
+COMMANDS_FOR_ACTUAL = {
+    "MFT": ["dpkg -l | grep -e 'mft '", "mft *([0-9.-]*)"],
+    "HW_MANAGEMENT": ["dpkg -l | grep hw", ".*1\\.mlnx\\.([0-9.]*)"],
+    "SDK": ["docker exec -it syncd bash -c 'dpkg -l | grep sdk'", ".*1\\.mlnx\\.([0-9.]*)"],
+    "SAI": ["docker exec -it syncd bash -c 'dpkg -l | grep mlnx-sai'", ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
+    "FW": ["sudo mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "FW * [0-9]{2}\\.([0-9.]*)"],
+    "KERNEL": ["uname -r", "([0-9][0-9.-]*)-.*"]
+}
+
+# non-existent versions are versions that aren't supposed to appear, like BIOS compilation versions while unexpected
+# missing versions are components that aren't available on the current setup, like fw versions on simx setups.
+NON_EXISTENT_VERSION = '-'
+UNEXPECTED_MISSING_VERSION = 'N/A'
+
 
 @pytest.fixture(scope='module')
 def sonic_topo():
@@ -431,3 +449,205 @@ def write_failed_case_name(is_test_failed, case_name, is_in_deploy_image_flow):
     if is_test_failed and is_in_deploy_image_flow:
         logger.info(f"write test name {case_name} to file")
         write_failed_sanity_checker_cases_to_file([f"{case_name} "])
+
+
+def parse_component_version_table(engines):
+    """
+    The function parses the component version table gotten as the output of get_components_version.py script
+
+    :param engines:  engines fixture
+    :return: A dictionary, stating for each component what is the compilation version and what is the actual version.
+    Example - {"SDK", ("4.6.2202", "4.6.2202")}
+    """
+    expected_component_version_table = engines.dut.run_cmd(f"sudo {COMPONENT_SCRIPT_NAME}")
+    parsed_table = generic_sonic_output_parser(expected_component_version_table)
+    version_dict = dict()
+    for component_info in parsed_table:
+        component = component_info.get('COMPONENT') or component_info.get('component', '')
+        # We cannot guarantee that SimX version will be aligned
+        if component.upper() == 'SIMX':
+            continue
+        compilation_version = component_info.get('COMPILATION') or component_info.get('compilation', '')
+        actual_version = component_info.get('ACTUAL') or component_info.get('actual', '')
+        version_dict[component] = (compilation_version, actual_version)
+    logger.info(f"Parsed components from {COMPONENT_SCRIPT_NAME} are (compilation, actual): {version_dict}")
+    return version_dict
+
+
+def parse_readme_versions(sonic_image):
+    """
+    The function parses the component version table gotten as the output of get_components_version.py script
+    :param sonic_image: the current sonic image deployed on the dut
+    :return: A dictionary, stating for each component what is the readme version of it, example - {"SDK", "4.6.2202"}
+    """
+    readme_path = os.path.realpath(f"/auto/sw_system_release/sonic/{sonic_image}/dev/README")
+    if not os.path.exists(readme_path):
+        raise Exception(f"Sonic image path: {readme_path} doesn't include a README file")
+    logger.info(f"Parsing versions according to readme file: {readme_path}")
+    with open(readme_path) as f:
+        image_readme_content = f.read()
+    readme_versions_dict = dict()
+
+    # First match the version with the suffix "_VERSION_SWITCH"
+    # Then match the version with the suffix "_VERSION"
+    patterns = [
+        re.compile(r"(?P<component>\w+)_VERSION_SWITCH:\s*(?P<version>[^\s]+)"),
+        re.compile(r"(?P<component>\w+)_VERSION:\s*(?P<version>[^\s]+)")
+    ]
+
+    for line in image_readme_content.strip().split('\n'):
+        for pattern in patterns:
+            match = pattern.match(line)
+            if match:
+                component = str(match.group('component').strip())
+                # Add only if the component is in the README_COVERED_COMPONENTS and not stored in readme_versions_dict
+                if component in README_COVERED_COMPONENTS and component not in readme_versions_dict:
+                    version = str(match.group('version').strip())
+                    readme_versions_dict[component] = version
+                break
+
+    logger.info(f"Parsed components from {readme_path} are:\n {readme_versions_dict}")
+    return readme_versions_dict
+
+
+def get_actual_version(dut_engine, component):
+    """
+    The function fetches the current version of the component from the dut engine and returns it.
+    :param dut_engine: the dut engine
+    :param component: the component to fetch version for
+    :return: The version of "component" as it appears on the dut
+    """
+    dut_command_ind = 0
+    command_regex_ind = 1
+    required_regex_group = 1
+    cmd = COMMANDS_FOR_ACTUAL[component][dut_command_ind]
+    version = dut_engine.run_cmd(cmd)
+    parsed_version = re.search(COMMANDS_FOR_ACTUAL[component][command_regex_ind], str(version))
+    return parsed_version.group(required_regex_group) if parsed_version else UNEXPECTED_MISSING_VERSION
+
+
+def fetch_versions_from_dut(dut_engine, is_simx):
+    """
+    The function fetches the versions installed on the dut in runtime
+    :param dut_engine: the dut engine
+    :param is_simx: is_simx fixture
+    :return: A dictionary, stating for each component what is the actual version of it, example - {"SDK", "4.6.2202"}
+    """
+    actual_versions_dict = dict()
+    for component in COMMANDS_FOR_ACTUAL:
+        actual_versions_dict[component] = get_actual_version(dut_engine, component)
+    if not is_simx:
+        actual_versions_dict.update(get_info_about_current_components_version_dict(dut_engine))
+    else:
+        for component in FW_DEFAULT_VERSIONS:
+            actual_versions_dict[component] = UNEXPECTED_MISSING_VERSION
+    logger.info(f"Components fetched from the dut are {actual_versions_dict}")
+
+    return actual_versions_dict
+
+
+@pytest.mark.sanity_checker_common
+def test_component_version_check(engines, cli_objects, request, is_in_deploy_image_flow, is_simx):
+    """
+    This test validates that component versions match the README file specifications.
+    It compares both the COMPILATION versions (from get_component_versions.py) against README values
+    and ACTUAL versions against directly fetched versions from the DUT.
+
+    If case fail, we will raise the failed case information in the allure report and disable bug handler tool
+
+    :param engines: engines fixture
+    :param cli_objects: cli_objects fixture
+    :param request: pytest request fixture
+    :param is_in_deploy_image_flow: flag indicating if running in deploy flow
+    :param is_simx: flag indicating if running on SIMX platform
+    """
+    is_test_failed = False
+
+    # Get sonic image version
+    with allure.step("Get sonic image version"):
+        _, sonic_image = cli_objects.dut.general.get_base_and_target_images()
+        sonic_image = sonic_image.replace("SONiC-OS-", "").replace("_ASAN", "")
+        logger.info(f"Sonic image: {sonic_image}")
+
+    # Parse README versions
+    with allure.step("Parse README versions"):
+        try:
+            readme_versions = parse_readme_versions(sonic_image)
+        except Exception as e:
+            err_msg = f"Failed to parse README versions: {e}"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+            write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
+            return
+
+    # Parse component version table from DUT
+    with allure.step("Parse component version table from DUT"):
+        try:
+            expected_component_versions = parse_component_version_table(engines)
+        except Exception as e:
+            err_msg = f"Failed to parse component version table: {e}"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+            write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
+            return
+
+    # Fetch actual versions from DUT
+    with allure.step("Fetch actual versions from DUT"):
+        try:
+            actual_versions = fetch_versions_from_dut(engines.dut, is_simx)
+        except Exception as e:
+            err_msg = f"Failed to fetch actual versions: {e}"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+            write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
+            return
+
+    # Verify component keys match
+    with allure.step("Verify component keys match"):
+        if set(actual_versions.keys()) != set(expected_component_versions.keys()):
+            err_msg = f"Component keys mismatch. Expected: {set(expected_component_versions.keys())}, Got: {set(actual_versions.keys())}"
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+
+    # Validate each component version
+    for component in actual_versions.keys():
+        compilation_version, actual_version = expected_component_versions[component]
+
+        # Check compilation version against README
+        with allure.step(f"Validate {component} compilation version against README"):
+            if component in readme_versions:
+                if compilation_version != readme_versions[component]:
+                    err_msg = (f"{component}: Compilation version mismatch. "
+                               f"README: {readme_versions[component]}, "
+                               f"COMPILATION: {compilation_version}")
+                    logger.error(err_msg)
+                    assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+                    is_test_failed = True
+            else:
+                if compilation_version != NON_EXISTENT_VERSION:
+                    err_msg = (f"{component}: Expected compilation version '{NON_EXISTENT_VERSION}' "
+                               f"(not in README), but got: {compilation_version}")
+                    logger.error(err_msg)
+                    assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+                    is_test_failed = True
+
+        # Check actual version matches fetched version
+        with allure.step(f"Validate {component} actual version matches fetched"):
+            if actual_version != actual_versions[component]:
+                err_msg = (f"{component}: Actual version mismatch. "
+                           f"Fetched: {actual_versions[component]}, "
+                           f"Table ACTUAL: {actual_version}")
+                logger.error(err_msg)
+                assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+                is_test_failed = True
+
+        # Check that actual version matches compilation version (for components in README)
+        # This ensures deployed components match what was compiled into the image
+        with allure.step(f"Validate {component} actual matches compilation"):
+            if component in readme_versions and actual_version != compilation_version:
+                err_msg = (f"{component}: Actual version doesn't match compilation version. "
+                           f"COMPILATION: {compilation_version}, "
+                           f"ACTUAL: {actual_version}")
+                logger.error(err_msg)
+                assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+                is_test_failed = True

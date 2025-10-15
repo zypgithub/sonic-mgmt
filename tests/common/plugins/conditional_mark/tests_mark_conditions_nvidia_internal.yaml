@@ -1038,12 +1038,6 @@ tests/push_build_tests/L2/arp/test_arp.py::test_dut_reply_arp_response:
     conditions:
     - "https://redmine.mellanox.com/issues/4499346 and 'sn6600' in platform"
 
-tests/nightly/component_versions/test_component_versions.py:
-  skip:
-    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4517284 for sn6600 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4517284 and 'sn6600' in platform"
-
 tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4525926 and sn6600 platform"

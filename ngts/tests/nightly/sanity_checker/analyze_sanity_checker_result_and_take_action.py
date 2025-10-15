@@ -19,7 +19,8 @@ SANITY_CHECKER_TEST_ACTION_MAP = {
     "test_more_then_2_fan_status_wrong_check": "stop",
     "test_fan_status_check": "raise warning msg in allure report and disable bug handler",
     "test_psu_status_check": "raise warning msg in allure report and disable bug handler",
-    "test_core_dump_file_in_var_core_check": "raise warning msg in allure report and disable bug handler"
+    "test_core_dump_file_in_var_core_check": "raise warning msg in allure report and disable bug handler",
+    "test_component_version_check": "stop"
 }
 RETURN_CODE = {"stop": 1,
                "continue": 0}

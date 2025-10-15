@@ -105,5 +105,5 @@ if 'base-version=/auto/sw_system_release/sonic' in ' '.join(sys.argv) and 'targe
         clear_file_inlcude_failed_sanity_check_case, test_device_asic_check,
         test_cable_connection_for_canonical_check, test_more_then_2_fan_status_wrong_check,
         test_psu_status_check, test_fan_status_check, test_cpld_version_check,
-        test_core_dump_file_in_var_core_check
+        test_core_dump_file_in_var_core_check, test_component_version_check
     )
