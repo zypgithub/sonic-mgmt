@@ -137,7 +137,7 @@ master:
     thermalctld: 107
     telemetry: 90
     dialout: 90
-    total: 6800
+    total: 7000
   SN5610N: # Gaur
     <<: *platform_defaults
     sx_sdk: 1600
@@ -158,4 +158,4 @@ master:
     telemetry: 100
     dialout: 90
     featured: 25
-    total: 6800
+    total: 7000
