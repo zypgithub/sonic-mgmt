@@ -104,6 +104,24 @@ def main():
                 is_mgmt_ipv6_only = True
         results["is_mgmt_ipv6_only"] = is_mgmt_ipv6_only
 
+        # Get PSU information
+        def get_psu_field(field_name):
+            try:
+                rc, out, _ = module.run_command(
+                    "cat /var/run/hw-management/eeprom/psu1_vpd | grep -e '{}'".format(field_name),
+                    executable='/bin/bash', use_unsafe_shell=True)
+                if rc == 0 and out.strip():
+                    parts = out.strip().split(':', 1)
+                    if len(parts) == 2:
+                        return parts[1].strip()
+            except Exception as e:
+                print(f"Failed to get PSU field {field_name}: {e}")
+                pass
+            return ""
+
+        results["psu_manufacture"] = get_psu_field('MFR_NAME')
+        results["psu_capacity"] = get_psu_field('CAPACITY')
+
         module.exit_json(ansible_facts={'dut_basic_facts': results})
     except Exception as e:
         module.fail_json(
