@@ -1293,6 +1293,7 @@ class RebootTestConstants:
     DATAPLANE_TRAFFIC_RESULTS_FILE = '/tmp/reboot_dataplane_result.json'
     CONTROLPLANE_TRAFFIC_RESULTS_FILE = '/tmp/reboot_controlplane_result.json'
     IFACES_STATUS_FILE = '/tmp/reboot_ifaces_status.json'
+    SIMX_PLATFORMS_SUPPORT_ISSU_CONFIGURATION_ONLY = [PlatformTypesConstants.PLATFORM_CHAMELEON_SINGLE_SIMX, PlatformTypesConstants.PLATFORM_SALAMANDRA_SIMX]
 
 
 class Sonic_Cache:
