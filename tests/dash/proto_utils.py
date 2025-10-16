@@ -6,30 +6,23 @@ import importlib
 from ipaddress import ip_address
 
 from dash_api.appliance_pb2 import Appliance
-from dash_api.eni_pb2 import Eni, State, EniMode  # noqa: F401
+from dash_api.eni_pb2 import Eni
 from dash_api.eni_route_pb2 import EniRoute
 from dash_api.route_group_pb2 import RouteGroup
 from dash_api.route_pb2 import Route
-from dash_api.route_type_pb2 import RoutingType, ActionType, RouteType, RouteTypeItem, EncapType  # noqa: F401
+from dash_api.route_type_pb2 import ActionType, RouteType, RouteTypeItem
 from dash_api.vnet_mapping_pb2 import VnetMapping
 from dash_api.vnet_pb2 import Vnet
-from dash_api.pa_validation_pb2 import PaValidation
 from dash_api.meter_policy_pb2 import MeterPolicy
 from dash_api.meter_rule_pb2 import MeterRule
 from dash_api.tunnel_pb2 import Tunnel
+from dash_api.route_rule_pb2 import RouteRule
 
 from google.protobuf.descriptor import FieldDescriptor
 from google.protobuf.json_format import ParseDict
-from dash_api.route_rule_pb2 import RouteRule
-from dash_api.types_pb2 import IpPrefix, IpVersion, ValueOrRange, IpAddress
-from dash_api.qos_pb2 import Qos
-from dash_api.acl_group_pb2 import AclGroup
-from dash_api.acl_in_pb2 import AclIn
-from dash_api.acl_out_pb2 import AclOut
-from dash_api.acl_rule_pb2 import AclRule, Action
-
 
 ENABLE_PROTO = True
+
 PB_INT_TYPES = set([
     FieldDescriptor.TYPE_INT32,
     FieldDescriptor.TYPE_INT64,
@@ -52,14 +45,10 @@ PB_CLASS_MAP = {
     "ROUTING_TYPE": RouteType,
     "ROUTE_GROUP": RouteGroup,
     "ENI_ROUTE": EniRoute,
-    "QOS": Qos,
-    "ROUTE_RULE": RouteRule,
-    "ACL_GROUP": AclGroup,
-    "ACL_RULE": AclRule,
-    "PA_VALIDATION": PaValidation,
     "METER_POLICY": MeterPolicy,
     "METER_RULE": MeterRule,
-    "TUNNEL": Tunnel
+    "TUNNEL": Tunnel,
+    "ROUTE_RULE": RouteRule
 }
 
 
@@ -80,11 +69,9 @@ def parse_byte_field(orig_val):
 def parse_guid(guid_str):
     return {"value": parse_byte_field(uuid.UUID(guid_str).hex)}
 
+
 def parse_value_or_range(orig):
-    if isinstance(orig, str):
-        val = int(orig)
-        return {"value": val}
-    elif isinstance(orig, list):
+    if isinstance(orig, list):
         if len(orig) == 1:
             val = int(orig[0])
             return {"value": val}
@@ -92,7 +79,9 @@ def parse_value_or_range(orig):
             min = int(orig[0])
             max = int(orig[1])
             return {"range": {"min": min, "max": max}}
-    pytest.fail(f"Invalid ValueOrRange: {orig}")
+    else:
+        val = int(orig)
+        return {"value": val}
 
 
 def parse_dash_proto(key: str, proto_dict: dict):
@@ -264,92 +253,3 @@ def json_to_proto(key: str, proto_dict: dict):
 
     pb = ParseDict(new_dict, message)
     return pb.SerializeToString()
-
-
-def acl_group_from_json(json_obj):
-    pb = AclGroup()
-    pb.guid.value = bytes.fromhex(uuid.UUID(json_obj["guid"]).hex)
-    pb.ip_version = IpVersion.IP_VERSION_IPV4
-    return pb
-
-
-def acl_out_from_json(json_obj):
-    pb = AclOut()
-    pb.v4_acl_group_id = json_obj["acl_group_id"]
-    return pb
-
-
-def acl_in_from_json(json_obj):
-    pb = AclIn()
-    pb.v4_acl_group_id = json_obj["acl_group_id"]
-    return pb
-
-
-def acl_rule_from_json(json_obj):
-    pb = AclRule()
-    pb.priority = int(json_obj["priority"])
-    pb.action = Action.ACTION_DENY if json_obj["action"] == "deny" else Action.ACTION_PERMIT
-    pb.terminating = json_obj["terminating"] == "true"
-    if "src_addr" in json_obj:
-        for addr in json_obj["src_addr"].split(','):
-            net = ipaddress.IPv4Network(addr, False)
-            ip = IpPrefix()
-            ip.ip.ipv4 = socket.htonl(int(net.network_address))
-            ip.mask.ipv4 = socket.htonl(int(net.netmask))
-            pb.src_addr.append(ip)
-    if "dst_addr" in json_obj:
-        for addr in json_obj["dst_addr"].split(','):
-            net = ipaddress.IPv4Network(addr, False)
-            ip = IpPrefix()
-            ip.ip.ipv4 = socket.htonl(int(net.network_address))
-            ip.mask.ipv4 = socket.htonl(int(net.netmask))
-            pb.dst_addr.append(ip)
-    if "src_port" in json_obj:
-        for port in json_obj["src_port"].split(','):
-            vr = ValueOrRange()
-            if "-" not in port:
-                vr.value = int(port)
-            else:
-                vr.range.min = int(port.split('-')[0])
-                vr.range.max = int(port.split('-')[1])
-            pb.src_port.append(vr)
-    if "dst_port" in json_obj:
-        for port in json_obj["dst_port"].split(','):
-            vr = ValueOrRange()
-            if "-" not in port:
-                vr.value = int(port)
-            else:
-                vr.range.min = int(port.split('-')[0])
-                vr.range.max = int(port.split('-')[1])
-            pb.dst_port.append(vr)
-    if "protocol" in json_obj:
-        for proto in json_obj["protocol"].split(','):
-            pb.protocol.append(int(proto))
-    if "src_tag" in json_obj:
-        for tag in json_obj["src_tag"].split(','):
-            pb.src_tag.append(tag)
-    if "dst_tag" in json_obj:
-        for tag in json_obj["dst_tag"].split(','):
-            pb.dst_tag.append(tag)
-    return pb
-
-
-def prefix_tag_from_json(json_obj):
-    pb = PrefixTag()
-    pb.ip_version = IpVersion.IP_VERSION_IPV4
-    for ip_prefix in json_obj["prefix_list"].split(','):
-        net = ipaddress.IPv4Network(ip_prefix, False)
-        ip = IpPrefix()
-        ip.ip.ipv4 = socket.htonl(int(net.network_address))
-        ip.mask.ipv4 = socket.htonl(int(net.netmask))
-        pb.prefix_list.append(ip)
-    return pb
-
-
-def pa_validation_from_json(json_obj):
-    pb = PaValidation()
-    for addr in json_obj["addresses"]:
-        ip = IpAddress()
-        ip.ipv4 = socket.htonl(int(ipaddress.ip_address(addr)))
-        pb.addresses.extend([ip])
-    return pb
