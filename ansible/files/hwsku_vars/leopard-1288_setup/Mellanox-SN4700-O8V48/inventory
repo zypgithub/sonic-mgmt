@@ -1,0 +1,31 @@
+[sonic_latest]
+# MEC01 testbed leopard-1288 topologies
+leopard-1288-t0-56-o8v48  ansible_host=10.220.12.88  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-O8V48 iface_speed=100000 serial_console="ssh -l rcon:7011 10.220.15.239" ptf_host=ptf-leopard-1288 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-193-230-193
+leopard-1288-ptf32   ansible_host=10.220.12.88 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-O8V48 iface_speed=100000 ptf_host=ptf-leopard-1288 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=leopard-1290 dut_mac="2C:5E:AB:57:F9:00" serial_console="ssh -l rcon:7011 10.220.15.239" pdu_host=pdu-10-193-230-193
+
+leopard-1290 ansible_host=leopard-1290 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MEC01 leopard-1288 topologies
+leopard-1288-t0-56-o8v48
+leopard-1288-ptf32
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MEC01 leopard-1288 topologies
+leopard-1288-t0-56-o8v48
+leopard-1288-ptf32
+
+[ptf]
+# MEC01 leopard-1288 PTF host
+ptf-leopard-1288 ansible_host=10.220.75.5 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.220.75.5 ansible_host=10.220.75.5 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-193-230-193 ansible_host=10.193.230.193 protocol=snmp
+

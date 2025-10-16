@@ -517,9 +517,6 @@ class SonicInstallationSteps:
         if "r-tigon-04" in setup_name:
             hwskus = ['Mellanox-SN4600C-D24C52']
             need_gen_mingraph = True
-        if "r-leopard-01" in setup_name or "r-leopard-58" in setup_name:
-            hwskus = ['Mellanox-SN4700-O32', 'Mellanox-SN4700-V64']
-            need_gen_mingraph = True
         if "mtvr-gaur-02" in setup_name or "mtvr-gaur-03" in setup_name:
             hwskus = ['Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
             need_gen_mingraph = True

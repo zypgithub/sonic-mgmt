@@ -170,6 +170,10 @@
         "default_hwsku": "Mellanox-SN4700-O8V48",
         "support_hwsku": ["Mellanox-SN4700-O8V48"]
     },
+    "leopard-1288_setup":{
+        "default_hwsku": "Mellanox-SN4700-O8C48",
+        "support_hwsku": ["Mellanox-SN4700-O32", "Mellanox-SN4700-O8V48", "Mellanox-SN4700-V64"]
+    },
     "mtvr-gaur-02_setup": {
         "default_hwsku": "Mellanox-SN5610N-C256S2",
         "support_hwsku": ["Mellanox-SN5610N-C256S2", "Mellanox-SN5610N-C224O8"]

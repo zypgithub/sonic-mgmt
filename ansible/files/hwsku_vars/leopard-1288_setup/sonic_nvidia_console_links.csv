@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
+mec01-sws-rcon-ff-p13,7012,leopard-1288,ssh,,root
+mec01-sws-rcon-ff-p13,7011,leopard-1290,ssh,,root

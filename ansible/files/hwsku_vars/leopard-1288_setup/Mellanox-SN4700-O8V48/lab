@@ -1,0 +1,19 @@
+[sonic_latest]
+leopard-1288      ansible_host=10.220.12.88 ansible_hostv6="fe80::92e3:17ff:fe4a:803c" sonic_version=v2 hwsku="Mellanox-SN4700-O8V48" iface_speed=100000  mgmt_subnet_mask_length=22 vm_base=VM0901
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-leopard-1288  ansible_host=10.220.75.5 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="24"
+
+[fanout]
+leopard-1290        ansible_host=10.220.12.90 os=sonic
+

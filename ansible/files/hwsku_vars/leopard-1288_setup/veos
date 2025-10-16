@@ -1,0 +1,102 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_9:
+    eos:
+      children:
+        vms_9:
+    servers:
+      vars:
+        topologies:
+          - t0
+          - t0-56-o8v48
+          - t1
+          - t1-lag
+          - t1-32-lag
+          - t1-56-lag
+          - t1-64-lag
+          - ptf-any
+      children:
+        server_9:
+
+
+vm_host_9:
+  hosts:
+    FIT-SONIC-VRT-10:
+      ansible_host: fit-sonic-vrt-10
+
+vms_9:
+  hosts:
+    VM0901:
+      ansible_host: 10.220.75.6
+    VM0902:
+      ansible_host: 10.220.75.7
+    VM0903:
+      ansible_host: 10.220.75.8
+    VM0904:
+      ansible_host: 10.220.75.9
+    VM0905:
+      ansible_host: 10.220.75.10
+    VM0906:
+      ansible_host: 10.220.75.11
+    VM0907:
+      ansible_host: 10.220.75.12
+    VM0908:
+      ansible_host: 10.220.75.13
+    VM0909:
+      ansible_host: 10.220.75.14
+    VM0910:
+      ansible_host: 10.220.75.15
+    VM0911:
+      ansible_host: 10.220.75.16
+    VM0912:
+      ansible_host: 10.220.75.17
+    VM0913:
+      ansible_host: 10.220.75.18
+    VM0914:
+      ansible_host: 10.220.75.19
+    VM0915:
+      ansible_host: 10.220.72.11
+    VM0916:
+      ansible_host: 10.220.72.12
+    VM0917:
+      ansible_host: 10.220.72.13
+    VM0918:
+      ansible_host: 10.220.72.14
+    VM0919:
+      ansible_host: 10.220.72.15
+    VM0920:
+      ansible_host: 10.220.72.16
+    VM0921:
+      ansible_host: 10.220.72.17
+    VM0922:
+      ansible_host: 10.220.72.18
+    VM0923:
+      ansible_host: 10.220.72.19
+    VM0924:
+      ansible_host: 10.220.72.20
+    VM0925:
+      ansible_host: 10.220.72.21
+    VM0926:
+      ansible_host: 10.220.72.22
+    VM0927:
+      ansible_host: 10.220.72.23
+    VM0928:
+      ansible_host: 10.220.72.24
+    VM0929:
+      ansible_host: 10.220.72.25
+    VM0930:
+      ansible_host: 10.220.72.26
+    VM0931:
+      ansible_host: 10.220.72.27
+    VM0932:
+      ansible_host: 10.220.72.28
+
+
+server_9:
+  children:
+    vm_host_9:
+    vms_9:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-10.yml

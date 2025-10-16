@@ -754,6 +754,62 @@
   inv_name: lab
   comment: Mellanox MTR testbed
 
+- conf-name: leopard-1288-t0-56-o8v48
+  group-name: vm-t1
+  topo: t0-56-o8v48
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-leopard-1288
+  ptf_ip: 10.220.75.5/22
+  ptf_ipv6:
+  server: server_9
+  vm_base: VM0901
+  dut:
+    - leopard-1288
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: leopard-1288-t1-32-lag
+  group-name: vm-t1
+  topo: t1-32-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-leopard-1288
+  ptf_ip: 10.220.75.5/22
+  ptf_ipv6:
+  server: server_9
+  vm_base: VM0901
+  dut:
+    - leopard-1288
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: leopard-1288-t1-64-lag
+  group-name: vm-t1
+  topo: t1-64-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-leopard-1288
+  ptf_ip: 10.220.75.5/22
+  ptf_ipv6:
+  server: server_9
+  vm_base: VM0901
+  dut:
+    - leopard-1288
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
+- conf-name: leopard-1288-ptf32
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-leopard-1288
+  ptf_ip: 10.220.75.5/22
+  ptf_ipv6:
+  server: server_9
+  vm_base: VM0901
+  dut:
+    - leopard-1288
+  inv_name: lab
+  comment: Mellanox MEC01 testbed
+
 - conf-name: r-leopard-70-t0
   group-name: vm-t1
   topo: t0
