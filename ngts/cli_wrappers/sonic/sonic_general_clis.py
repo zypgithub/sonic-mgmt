@@ -1238,7 +1238,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
     @staticmethod
     def is_platform_supports_split_without_unmap(hwsku):
-        platform_prefix_with_unmap = ["SN2700"]
+        platform_prefix_with_unmap = ["SN2700", "MSN4600C"]
         for platform_prefix in platform_prefix_with_unmap:
             if re.search(platform_prefix, hwsku):
                 return False
