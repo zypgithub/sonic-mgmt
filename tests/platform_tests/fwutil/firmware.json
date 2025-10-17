@@ -410,6 +410,38 @@
 					}
 				]
 			}
+		},
+		"bobcat-10": {
+			"component": {
+				"ONIE": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/prod/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2025.05-5.3.0017-9600",
+						"reboot": ["cold"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/9600/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2024.08-5.3.0015-9600",
+						"reboot": ["cold"]
+					}
+				],
+				"CPLD2": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000430/FUI000430.mpfa",
+						"version": "CPLD000387_REV0500",
+						"reboot": ["power off", "cold"]
+					}
+				],
+				"DPU1_FPGA": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4280/FUI000427/FUI000427.mpfa",
+						"version": "FPGA000375_REV0200",
+						"reboot": ["power off", "cold"]
+					}
+				]
+			}
 		}
 	},
 	"unsigned":{},
