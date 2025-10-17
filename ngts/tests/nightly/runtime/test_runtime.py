@@ -50,11 +50,18 @@ class TestRuntime:
         self.expected_results_data = expected_results_data
 
     @pytest.fixture(autouse=True)
-    def expected_results_data(self, platform):
+    def expected_results_data(self, platform_params):
         try:
             with open(EXPECTED_RESULTS_PATH) as expected_results_file:
                 expected_results_data = json.load(expected_results_file)
             expected_results_file.close()
+            platform_info = platform_params.hwsku.split('-')
+            platform = platform_info[1]
+            if 'SN2700' in platform_info or 'MSN2700' in platform_info:
+                platform = 'SN2700'
+                if 'A1' not in platform_info:
+                    platform = 'SN2700_A0'
+
             return expected_results_data[platform]
         except Exception as e:
             raise AssertionError(e)
@@ -103,5 +110,5 @@ class TestRuntime:
                 with allure.step(f'Validate results of method {method}'):
                     expected_result = self.expected_results_data[method]
                     logger.info(f"Compare the current result {current_result} of method {method} to the"
-                                f" threshold {expected_result} with allowed deviation of {ALLOWED_DEVIATION*100}%")
+                                f" threshold {expected_result} with allowed deviation of {ALLOWED_DEVIATION * 100}%")
                     verify_up_deviation(current_result, expected_result, ALLOWED_DEVIATION)

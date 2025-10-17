@@ -1,5 +1,23 @@
 {
-    "MSN2700": {
+    "SN2700_A0": {
+        "add_vlan": "0.912",
+        "del_vlan": "1.442",
+        "add_route": "0.899",
+        "del_route": "0.822",
+        "add_po": "0.811",
+        "del_po": "0.874",
+        "show_ifaces_status": "1.477",
+        "show_iface_tr_eeprom": "1.568",
+        "show_pl_fan": "1.157",
+        "show_pl_psustatus": "0.991",
+        "show_pl_firmware": "1.364",
+        "show_pl_pcieinfo": "1.796",
+        "show_pl_ssdhealth": "1.678",
+        "show_pl_syseeprom": "2.0",
+        "show_pl_temperature": "1.121",
+        "show_sys_health_summary": "9.9406"
+    },
+    "SN2700": {
         "add_vlan": "0.912",
         "del_vlan": "1.442",
         "add_route": "0.899",
