@@ -76,6 +76,7 @@ r-leopard-simx-21,10.215.4.21,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-25,10.215.4.25,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-29,10.215.4.29,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-33,10.215.4.33,ACS-MSN4700,DevSonic,,sonic
+r-leopard-simx-69,10.215.14.69,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-129,10.215.12.129,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-137,10.215.12.137,ACS-MSN4700,DevSonic,,sonic
 r-leopard-simx-173,10.215.12.173,ACS-MSN4700,DevSonic,,sonic
@@ -105,5 +106,6 @@ r-panther-simx-06,10.215.14.6,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-09,10.215.4.9,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-15,10.215.4.15,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-17,10.215.4.17,ACS-MSN2700,DevSonic,,sonic
+r-panther-simx-23,110.213.88.23,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-125,10.215.12.125,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-165,10.215.12.165,ACS-MSN2700,DevSonic,,sonic
