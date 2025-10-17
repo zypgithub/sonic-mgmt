@@ -625,13 +625,15 @@ class GenerateGoldenConfigDBModule(object):
 
         # To enable bmp feature when the image version is >= 202411 and the device is not supervisor
         # Note: the Chassis supervisor is not holding any BGP sessions so the BMP feature is not needed
-        if self.check_version_for_bmp() is True and device_info.is_supervisor() is False:
-            if multi_asic.is_multi_asic():
-                config = self.overwrite_feature_golden_config_db_multiasic(config, "frr_bmp", "disabled", "enabled")
-                config = self.overwrite_feature_golden_config_db_multiasic(config, "bmp")
-            else:
-                config = self.overwrite_feature_golden_config_db_singleasic(config, "frr_bmp", "disabled", "enabled")
-                config = self.overwrite_feature_golden_config_db_singleasic(config, "bmp")
+        # TODO: this caused test failure, pending fix from upstream
+        # see details in https://redmine.mellanox.com/issues/4667530
+        # if self.check_version_for_bmp() is True and device_info.is_supervisor() is False:
+        #     if multi_asic.is_multi_asic():
+        #         config = self.overwrite_feature_golden_config_db_multiasic(config, "frr_bmp", "disabled", "enabled")
+        #         config = self.overwrite_feature_golden_config_db_multiasic(config, "bmp")
+        #     else:
+        #         config = self.overwrite_feature_golden_config_db_singleasic(config, "frr_bmp", "disabled", "enabled")
+        #         config = self.overwrite_feature_golden_config_db_singleasic(config, "bmp")
 
         # Disable dash-ha feature for all multi-asic platforms
         if multi_asic.is_multi_asic():
