@@ -28,6 +28,43 @@ def deinit(handle):
     sx_api_close(handle)
 
 
+def is_port_mapped(handle, port_attributes, log_port):
+    return (
+        port_attributes.port_mapping.mapping_mode and
+        is_port_swid_bound(handle, log_port)
+    )
+
+
+def is_port_swid_bound(handle, log_port):
+    swid_p = new_sx_swid_t_p()
+    rc = sx_api_port_swid_bind_get(handle, log_port, swid_p)
+    return rc == SX_STATUS_SUCCESS
+
+
+def print_all_object_attributes(obj, obj_name="Object", indent=0, max_depth=5):
+    """Print all non-private, non-callable attributes of an object recursively"""
+    prefix = "  " * indent
+    if indent == 0:
+        print(f"\n{obj_name} Attributes:")
+        print("=" * 70)
+    for attr in dir(obj):
+        if not attr.startswith('_') and attr not in ['this', 'thisown']:  # Skip SWIG internals
+            try:
+                value = getattr(obj, attr)
+                if not callable(value):  # Skip methods
+                    value_str = str(value)
+                    is_swig_object = 'Swig Object' in value_str or 'proxy of' in value_str
+                    if is_swig_object and indent < max_depth:
+                        print(f"{prefix}{attr}:")
+                        print_all_object_attributes(value, attr, indent + 1, max_depth)
+                    else:
+                        print(f"{prefix}{attr}: {value}")
+            except Exception as e:
+                print(f"{prefix}{attr}: <error accessing: {e}>")
+    if indent == 0:
+        print("=" * 70)
+
+
 def get_lable_port_log_port_map(handle):
     lable_port_log_port_map = {}
     port_cnt_p = new_uint32_t_p()
@@ -43,15 +80,17 @@ def get_lable_port_log_port_map(handle):
     if (rc != SX_STATUS_SUCCESS):
         print("sx_api_port_device_get failed, rc = %d")
         sys.exit(rc)
+    port_attributes_dict = {}
     for i in range(0, port_cnt):
         port_attributes = sx_port_attributes_t_arr_getitem(port_attributes_list, i)
-        if port_attributes.port_mapping.mapping_mode:
+        port_attributes_dict[port_attributes.log_port] = port_attributes
+        if is_port_mapped(handle, port_attributes, port_attributes.log_port):
             module_port = port_attributes.port_mapping.module_port + 1
             lable_port_log_port_map[module_port] = port_attributes.log_port
-    return lable_port_log_port_map
+    return lable_port_log_port_map, port_attributes_dict
 
 
-def get_port_capability(handle, log_port):
+def get_port_capability(handle, log_port, port_attributes):
     admin_sx_port_rate_bitmask_t = new_sx_port_rate_bitmask_t_p()
     cap_sx_port_rate_bitmask_t = new_sx_port_rate_bitmask_t_p()
     sx_port_phy_module_type_bitmask_t = new_sx_port_phy_module_type_bitmask_t_p()
@@ -59,6 +98,7 @@ def get_port_capability(handle, log_port):
                                          sx_port_phy_module_type_bitmask_t)
     if rc != SX_STATUS_SUCCESS:
         print("sx_api_port_rate_capability_get failed, rc = %d" % (rc))
+        print_all_object_attributes(port_attributes, "port_attributes")
         sys.exit(rc)
     remote_capability = sx_port_rate_bitmask_t_p_value(cap_sx_port_rate_bitmask_t)
 
@@ -82,9 +122,10 @@ def get_port_capability(handle, log_port):
 def get_ports_cap_map():
     handle = init()
     port_cap_map = {}
-    lable_port_log_port_map = get_lable_port_log_port_map(handle)
+    lable_port_log_port_map, port_attributes_dict = get_lable_port_log_port_map(handle)
     for lable_port, log_port in lable_port_log_port_map.items():
-        port_cap_map[str(lable_port)] = get_port_capability(handle, int(log_port))
+        logger.info(f"Get port capability: lable_port: {lable_port}, log_port: {log_port}")
+        port_cap_map[str(lable_port)] = get_port_capability(handle, int(log_port), port_attributes_dict[log_port])
 
     deinit(handle)
     print(port_cap_map)
