@@ -3,6 +3,7 @@ import os
 import requests
 import json
 import allure
+import pytest
 import sys
 from pathlib import Path
 
@@ -21,6 +22,10 @@ logger = logging.getLogger()
 
 
 class SonicInstallationSteps:
+
+    @staticmethod
+    def is_multi_asic_platform(platform_params):
+        return "sn5800_ld" in platform_params.platform.lower()
 
     @staticmethod
     def pre_installation_steps_ha(sonic_topo, neighbor_type,
@@ -559,6 +564,14 @@ class SonicInstallationSteps:
         for dut in setup_info['duts']:
             cli = dut['cli_obj']
             cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
+        # TODO: Remove this once we can support full deploy for multi-asic platform, pls contact Yael Tzur before changing or for further details
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            logger.warning(f"Finished part of the deploy for multi-asic platform {platform_params['platform']}")
+            pytest.skip(
+                f"Performed partial deploy for multi-asic platform {platform_params['platform']}\n"
+                f"Skipping the rest of the deploy for multi-asic platform {platform_params['platform']}\n"
+                "Executed steps can be found in the log"
+            )
 
         if not is_community(sonic_topo) and not is_performance:
             # Enable Port Init Profile for Canonical setups

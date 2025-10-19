@@ -917,13 +917,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         with allure.step('Remove FRR configuration(which may contain default BGP config)'):
             self.cli_obj.frr.remove_frr_config_files()
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            logger.info(f"Finished applying basic config for multi-asic platform {platform_params['platform']} \
+                exiting apply_basic_config for multi-asic platform")
+            return
 
         if reload_before_qos:
             with allure.step("Reload the dut"):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
-        if "SN5800_LD" in platform_params['hwsku']:
-            return
 
         if not self.is_performance_setup(setup_name):
             with allure.step("Apply qos and dynamic buffer config"):
@@ -979,12 +981,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
         config_db = None
-
         if is_air:
             if custom_config_db_air_path:
-                if re.search(r'SN5800_LD', hwsku):
+                if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
                     self.apply_multi_asic_config_db(self.engine, topology_obj, custom_config_db_air_path)
-                    logger.info(f"Applied multi-asic config_db for {setup_name} - finished applying config files")
+                    logger.info(f"Applied multi-asic config_db for {setup_name} - finished applying config files and \
+                        exiting apply_config_files for multi-asic platform")
                     return
                 logger.info(f"Using custom config_db.json file for {setup_name} from {custom_config_db_air_path}")
                 with open(custom_config_db_air_path, 'r') as f:
