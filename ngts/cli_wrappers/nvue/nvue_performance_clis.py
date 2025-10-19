@@ -5,6 +5,7 @@ import pprint
 import tempfile
 import yaml
 import re
+import random
 from retry import retry
 import copy
 import allure
@@ -364,6 +365,18 @@ class NvuePerformanceCli(PerformanceCommon):
             if [*properties['lldp']['neighbor'].keys()][0] == 'left-tg':
                 right_left_port_dict["left_ports"].append(port)
         return right_left_port_dict
+
+    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num):
+        ports = self.get_right_left_ports_dict()
+        left_ports = copy.deepcopy(ports["left_ports"])
+        right_ports = copy.deepcopy(ports["right_ports"])
+        upstream_start_index = random.randint(0, len(left_ports) - upstream_ports_num)
+        upstream_end_index = upstream_start_index + upstream_ports_num
+        downstream_start_index = random.randint(0, len(right_ports) - downstream_ports_num)
+        downstream_end_index = downstream_start_index + downstream_ports_num
+        upstream = left_ports[upstream_start_index:upstream_end_index]
+        downstream = right_ports[downstream_start_index:downstream_end_index]
+        return upstream, downstream
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,

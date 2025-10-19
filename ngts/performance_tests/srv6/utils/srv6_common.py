@@ -23,6 +23,7 @@ from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic, get_many_to_few_traffic, get_many_to_one_traffic)
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -107,7 +108,7 @@ class TestSRv6Base:
             samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
             additional_validations = self.get_many_to_one_additional_validations(traffic_type)
             with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress/egress ports"):
-                bw_threshold = self.get_many_to_one_bw_threshold(traffic_type)
+                bw_threshold = self.get_trimming_bw_threshold(traffic_type)
                 config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                           chip_type=self.chip_type,
                                           run_validate_counters=False,
@@ -152,7 +153,7 @@ class TestSRv6Base:
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         samples_params_dict = PerfConsts.SAMPLES_PARAMS.copy()
         samples_params_dict[PerfConsts.CLEAR_COUNTERS_ENV_VAR] = "False"
-        bw_threshold = self.get_many_to_few_bw_threshold(traffic_type)
+        bw_threshold = self.get_trimming_bw_threshold(traffic_type)
         additional_validations = self.get_many_to_few_additional_validations(egress_ports, tc_threshold)
         with allure.step(f"Verifying the traffic on {len(ingress_ports)} ingress/egress ports"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
@@ -250,9 +251,10 @@ class TestSRv6Base:
         n = num_of_congested_ports * num_of_congested_tc
         pool_size_cells = MRCConsts.POOL_SIZE_CELLS_BY_CHIP_TYPE[self.chip_type]
         tc_max_occ_th = pool_size_cells * MRCConsts.TC_1_2_3_ALPHA / (1 + MRCConsts.TC_1_2_3_ALPHA * n)
-        return {ValidationConsts.MAX_WATERMARK: tc_max_occ_th}
+        return {MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.MAX_WATERMARK: tc_max_occ_th},
+                MRCConsts.INGRESS_PORT_GROUP_NAME: {}}
 
-    def get_additional_validations(self, traffic_type):
+    def get_additional_validations(self, traffic_type, tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION):
         additional_validations = {}
         if traffic_type == MRCConsts.TRAFFIC_TYPE_SRV6:
             ipv6_validation_json_path = os.getenv(PerfConsts.TRAFFIC_VALIDATION_JSON_PATH)
@@ -262,7 +264,7 @@ class TestSRv6Base:
                 additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                                  'tc_keys': [ValidationConsts.OCC_AVG],
                                                                                                                  'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
-                                                                                                                 'allowed_deviation': 1})
+                                                                                                                 'allowed_deviation': tc_occ_allowed_deviation})
                 additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                                    'latency_keys': [ValidationConsts.TC_AVG_LATENCY],
                                                                                                                    'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
@@ -274,31 +276,27 @@ class TestSRv6Base:
         return additional_validations
 
     def get_many_to_few_additional_validations(self, egress_ports, tc_threshold):
-        max_watermark_th = self.get_max_watermark_th(num_of_congested_ports=len(egress_ports), num_of_congested_tc=len(MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM))
-        additional_validations = {
-            'validate_max_watermark_on_trimming_queue': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th, 'tc_to_validate': MRCConsts.TRIMMING_QUEUE_NUM, 'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE}),
-            'validate_max_watermark_on_data_queues': Validation(validate_per_tc, {'tc_occ_threshold': tc_threshold, 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, 'tolerance': None})
-        }
+        additional_validations = {}
+        if not is_redmine_issue_active([4668758])[0]:
+            max_watermark_th = self.get_max_watermark_th(num_of_congested_ports=len(egress_ports), num_of_congested_tc=len(MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM))
+            additional_validations = {
+                'validate_max_watermark_on_trimming_queue': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th, 'tc_to_validate': MRCConsts.TRIMMING_QUEUE_NUM, 'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE}),
+                'validate_max_watermark_on_data_queues': Validation(validate_per_tc, {'tc_occ_threshold': tc_threshold, 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, 'tolerance': None})
+            }
         return additional_validations
 
     def get_many_to_one_additional_validations(self, traffic_type):
         additional_validations = self.get_additional_validations(traffic_type)
         return additional_validations
 
-    def get_many_to_one_bw_threshold(self, traffic_type):
+    def get_trimming_bw_threshold(self, traffic_type):
         bw_threshold = {
             MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
                                                ValidationConsts.RX: None},
             MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
                                                 ValidationConsts.RX: PerfConsts.SHAPER_VALUE}}
         if traffic_type == MRCConsts.TRAFFIC_TYPE_SRV6:
-            bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.MANY_TO_ONE_SRV6_DUT_TX_UTIL_TH
-        return bw_threshold
-
-    def get_many_to_few_bw_threshold(self, traffic_type):
-        bw_threshold = {
-            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
-                                               ValidationConsts.RX: None},
-            MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
-                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE}}
+            bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.TRIMMING_SRV6_DUT_TX_UTIL_TH
+        if is_redmine_issue_active([4667031])[0]:
+            bw_threshold[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
         return bw_threshold

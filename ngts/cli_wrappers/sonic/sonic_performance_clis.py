@@ -567,6 +567,18 @@ class SonicPerformanceCli(PerformanceCommon):
         right_left_ports_dict = {"left_ports": dut_ports[:middle], "right_ports": dut_ports[middle:]}
         return right_left_ports_dict
 
+    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num):
+        """
+        Returns:
+        A dict of ports in the dut connect to the upstream and downstream TG, i.e,
+        {'upstream_ports': ['Ethernet0', ...,], 'downstream_ports': ['Ethernet256',...]}
+        """
+        upstream_ports = copy.deepcopy(MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.UPLINKS])
+        downstream_ports = copy.deepcopy(MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.DOWNLINKS])
+        upstream = random.sample(upstream_ports, upstream_ports_num)
+        downstream = random.sample(downstream_ports, downstream_ports_num)
+        return upstream, downstream
+
     def get_mloops_tuples_list(self):
         mloops_tuples_list = []
         if len(self.connected_ports) == len(self.unconnected_ports):

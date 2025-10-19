@@ -9,6 +9,7 @@ class ValidationConsts:
     SPEED = "speed"
     INSTANCE = "instance"
     DUMP_GENERATION_TIME = "dumpGenerationTime"
+    VALIDATION_KEY = "validation_key"
     PORT_GROUPS = "port_groups"
     SHARED_BUFFER_SIZE = "shared_buffer_size"
     COLLECTORS_LIST = "collectors_list"
@@ -459,6 +460,9 @@ class MRCConsts:
     PORTS_NUM_LIST = [120, 240, 360, 448, 512]
     M_LIST = list(range(2, MAX_INGRESS_PORTS_NUM))
     OPTION_LIST = [PortMappingOptionsConsts.EGRESS_SAME_8X_OPTION]  # can also include 2, 3, 4, 5
+    T1_MANY_TO_FEW_MIN_INGRESS_PORTS_NUM = 6
+    T1_MANY_TO_FEW_MAX_INGRESS_PORTS_NUM = 7
+    T1_MANY_TO_FEW_INGRESS_PORT_NUMBER_LIST = list(range(T1_MANY_TO_FEW_MIN_INGRESS_PORTS_NUM, T1_MANY_TO_FEW_MAX_INGRESS_PORTS_NUM))
     HWSKU_BY_CHIP_TYPE = {
         "SPC4": {"leaf": "Mellanox-SN5600-C256S1",
                  "spine": "Mellanox-SN5600-C224O8"},
@@ -493,9 +497,9 @@ class MRCConsts:
     INGRESS_PORT_SEQUENCE_CONSECUTIVE = 'consecutive'
     INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE = 'non_consecutive'
     INGRESS_PORT_SEQUENCE = [INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE]
-    DUT_TX_UTIL_TH = 0.95
-    # Many to one SRv6 DUT TX Util threshold was lowered to 0.93 because of bug #4527474
-    MANY_TO_ONE_SRV6_DUT_TX_UTIL_TH = 0.93
+    DUT_TX_UTIL_TH = 0.95 if is_redmine_issue_active([4667031])[0] else 0.98
+    # Many to one SRv6 DUT TX Util threshold was lowered to 0.73 because of bug #4527474
+    TRIMMING_SRV6_DUT_TX_UTIL_TH = 0.73
     BUFFER_CELL_SIZE = 192
     SPC5_POOL_SIZE_MB = 105
     SPC5_POOL_SIZE_BYTES = SPC5_POOL_SIZE_MB * 1000 * 1000
@@ -567,6 +571,8 @@ class MRCConsts:
     SHAPER_VALUE = 0.975
     BEFORE_TEST_SHAPER_VALUE = 0.8
     SHAPER_VALUE_AFTER_TEST = 1.0
+    TC_OCC_ALLOWED_DEVIATION = 0.15
+    TC_OCC_ALLOWED_DEVIATION_BISECTION = 1
 
 
 class PowerConsts:

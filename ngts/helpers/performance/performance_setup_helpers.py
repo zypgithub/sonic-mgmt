@@ -174,11 +174,15 @@ def apply_test_configuration(players, scenario, conf_args,
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
 
 
-def configure_mloops(players, validate_mloops=True, step="basic_test_configuration - configure_mloops"):
-    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
-                                           action="configure mloops",
-                                           performance_clis_function_name="configure_mloops",
-                                           performance_clis_function_args=(validate_mloops,), step=step)
+def configure_mloops(players, validate_mloops=True, step="basic_test_configuration - configure_mloops", parallel_run=True):
+    if parallel_run:
+        call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                               action="configure mloops",
+                                               performance_clis_function_name="configure_mloops",
+                                               performance_clis_function_args=(validate_mloops,), step=step)
+    else:
+        for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
+            players[player_alias]['cli'].performance.configure_mloops(validate_mloops)
 
 
 def save_base_configuration(players, step="basic_test_configuration - save_base_configuration"):

@@ -61,6 +61,7 @@ class TestSRv6Spine(TestSRv6Base):
         In order to recreate this full mesh we just define all the spine downstream ports as both
         downstream and upstream this way get the traffic pattern as seen above.
         """
+        pytest.skip("This test is no longer supported on performance setup, due to infra limitation - Contact QA for test results using IXIA")
         test_name = get_perf_test_name(request)
         round_robin_dict = MRCConsts.SPINE_ROUND_ROBIN_PORTS_NUM_BY_CHIP_TYPE[self.chip_type]
         round_robin_ports_num, round_robin_groups_num = round_robin_dict['group_size'], round_robin_dict['group_num']
@@ -98,7 +99,7 @@ class TestSRv6Spine(TestSRv6Base):
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
-    @pytest.mark.parametrize("M", MRCConsts.INGRESS_PORT_NUMBER_LIST)
+    @pytest.mark.parametrize("M", MRCConsts.T1_MANY_TO_FEW_INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
         condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)

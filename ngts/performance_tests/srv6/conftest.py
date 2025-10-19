@@ -30,15 +30,7 @@ def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstrea
         port_group_df: list of dictionaries containing the port and the port group name
     """
     port_group_df = []
-    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
-    left_ports = copy.deepcopy(ports["left_ports"])
-    right_ports = copy.deepcopy(ports["right_ports"])
-    upstream_start_index = random.randint(0, len(left_ports) - upstream_ports_num)
-    upstream_end_index = upstream_start_index + upstream_ports_num
-    downstream_start_index = random.randint(0, len(right_ports) - downstream_ports_num)
-    downstream_end_index = downstream_start_index + downstream_ports_num
-    upstream = left_ports[upstream_start_index:upstream_end_index]
-    downstream = right_ports[downstream_start_index:downstream_end_index]
+    upstream, downstream = players['dut']['cli'].performance.get_upstream_downstream_ports_dict(upstream_ports_num, downstream_ports_num)
     sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream)
     sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream)
     for port in sdk_port_list_upstream:
@@ -111,14 +103,13 @@ def get_spine_many_to_few_port_group_df(players, M):
 def victim_flow_port_group_df(request, players):
     request.getfixturevalue('basic_setup_configuration')
     port_group_df = []
-    ports = players['dut']['cli'].performance.get_right_left_ports_dict()
     victim_ports_num = MRCConsts.VICTIM_PORTS_NUM
-    left_ports = copy.deepcopy(ports["left_ports"])
-    right_ports = copy.deepcopy(ports["right_ports"])
-    bisection_left, many_to_one_ingress_ports = left_ports[:victim_ports_num], left_ports[victim_ports_num:2 * victim_ports_num - 1]
-    bisection_right, many_to_one_egress_ports = right_ports[:victim_ports_num], right_ports[victim_ports_num:victim_ports_num + 1]
-    egress_port = many_to_one_egress_ports[0]
-    many_to_one_ingress_ports.append(egress_port)
+    upstream_ports_num = 2 * victim_ports_num - 1
+    downstream_ports_num = victim_ports_num + 1
+    upstream, downstream, upstream_downstream_port_group_df = get_upstream_downstream_port_group_df(players, upstream_ports_num, downstream_ports_num)
+    bisection_left, many_to_one_ingress_ports = upstream[:victim_ports_num], upstream[victim_ports_num:2 * victim_ports_num - 1]
+    bisection_right, many_to_one_egress_ports = downstream[:victim_ports_num], downstream[victim_ports_num:victim_ports_num + 1]
+    many_to_one_ingress_ports.extend(many_to_one_egress_ports)
     sdk_port_list_bisection_left = players['dut']['cli'].performance.get_sdk_ports(bisection_left)
     sdk_port_list_bisection_right = players['dut']['cli'].performance.get_sdk_ports(bisection_right)
     sdk_port_list_many_to_one_ingress_ports = players['dut']['cli'].performance.get_sdk_ports(many_to_one_ingress_ports)

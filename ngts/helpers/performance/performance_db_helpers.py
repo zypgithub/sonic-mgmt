@@ -116,7 +116,7 @@ def create_test_validation_entry_to_db(players, test_name):
                                                                                               power_total,
                                                                                               power_by_collectors_group,
                                                                                               trimmed_untrimmed_dropped_percentages,
-                                                                                              performance_counters_df, 
+                                                                                              performance_counters_df,
                                                                                               performance_counters_data)
 
     test_info_path = os.path.join(PerfConsts.REQUIRMENTS_DIR, f"{test_name}_info_dump.json")
@@ -305,7 +305,7 @@ def get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_
         merged_df = pd.merge(merged_df, os_ports_name_mapping_df, on=ValidationConsts.PORT)
     if trimmed_untrimmed_dropped_percentages:
         trimmed_untrimmed_dropped_percentages_df = pd.DataFrame(trimmed_untrimmed_dropped_percentages)
-        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=ValidationConsts.PORT, how='left')
+        merged_df = pd.merge(merged_df, trimmed_untrimmed_dropped_percentages_df, on=[ValidationConsts.PORT, ValidationConsts.OS_PORT_NAME], how='left')
     df_as_dict = merged_df.to_dict(orient='records')
     return filter_all_Nan_values(df_as_dict)
 

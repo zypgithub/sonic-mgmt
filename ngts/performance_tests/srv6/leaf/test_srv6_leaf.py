@@ -22,6 +22,7 @@ from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_per_tc
 from infra.tools.exceptions.test_issue import TestIssue
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 logger = logging.getLogger()
@@ -65,18 +66,20 @@ class TestSRv6Leaf(TestSRv6Base):
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                                 MongoDbConsts.PORT_GROUP_DF: port_group_df})
+
         with allure.step(f"Run bisection traffic pattern on {len(upstream)} upstream ports <-> {len(downstream)} downstream ports"):
             create_workload_stream = get_workload_method(workload)
             traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                   self.dut_interfaces_ipv6_configuration_dict,
-                                                  create_workload_stream, left_ports=upstream, right_ports=downstream)
+                                                  create_workload_stream, upstream_ports=upstream, downstream_ports=downstream)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SRV6_SHAPER_VALUE)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
+
         with allure.step(f"Verifying the traffic for all egress ports"):
-            additional_validations = self.get_additional_validations(traffic_type)
+            additional_validations = self.get_additional_validations(traffic_type, tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION_BISECTION)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
+                                      bw_threshold=self.get_bisection_bw_threshold(),
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       additional_validations=additional_validations)
@@ -85,6 +88,7 @@ class TestSRv6Leaf(TestSRv6Base):
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_leaf_round_robin_srv6(self, request, traffic_type):
+        pytest.skip("This test is no longer supported on performance setup, due to infra limitation - Contact QA for test results using IXIA")
         condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
@@ -112,11 +116,7 @@ class TestSRv6Leaf(TestSRv6Base):
         condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
-        egress_port, port_group_df = self.get_egress_port_group_df(port_number=1, get_ports_from_start=get_ports_from_start)
-        with allure.step(f"Many to one traffic with ingress ports num={ingress_ports_num}"):
-            ingress_ports = self.get_ingress_ports(egress_port, ingress_ports_num, ingress_port_sequence, get_ports_from_start=get_ports_from_start)
-        sdk_ingress_ports = self.cli_object.performance.get_sdk_ports(ingress_ports)
-        port_group_df = update_port_group_in_df(port_group_df, MRCConsts.INGRESS_PORT_GROUP_NAME, sdk_ingress_ports)
+        egress_port, ingress_ports, port_group_df = self.cli_object.performance.get_leaf_many_to_few_port_group_df(ingress_ports_num, ingress_ports_num)
         self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"{ingress_ports_num}_to_one_traffic",
@@ -167,8 +167,8 @@ class TestSRv6Leaf(TestSRv6Base):
             bisection_traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                             self.dut_interfaces_ipv6_configuration_dict,
                                                             create_workload_stream=get_workload_method(MRCConsts.MRC2_DATA_ONLY_WORKLOAD_NAME),
-                                                            left_ports=bisection_left,
-                                                            right_ports=bisection_right)
+                                                            upstream_ports=bisection_left,
+                                                            downstream_ports=bisection_right)
         with allure.step(f"get many to one traffic json for traffic generators"):
             many_to_one_traffic_jsons = get_many_to_few_traffic(self.players, self.conf_args, traffic_type,
                                                                 self.dut_interfaces_ipv6_configuration_dict,
@@ -211,15 +211,23 @@ class TestSRv6Leaf(TestSRv6Base):
         }
         return additional_validations
 
+    def get_bisection_bw_threshold(self):
+        bw_threshold = {
+            MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                                             ValidationConsts.RX: MRCConsts.DUT_TX_UTIL_TH},
+            MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+                                                           ValidationConsts.RX: MRCConsts.DUT_TX_UTIL_TH}
+        }
+        if is_redmine_issue_active([4667031])[0]:
+            bw_threshold[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+        return bw_threshold
+
     def get_victim_flow_bw_threshold(self):
         bw_threshold = {
             MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
             MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
                                                 ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
-            MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
-                                                             ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
-            MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
-                                                           ValidationConsts.RX: PerfConsts.SHAPER_VALUE}
         }
+        bw_threshold.update(self.get_bisection_bw_threshold())
         return bw_threshold

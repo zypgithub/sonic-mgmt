@@ -14,6 +14,8 @@ def conf_args(chip_type, players):
         "packet_size": 4096,
         "scenario": "srv6",
         "hwsku": sku,
+        "split_left": Cl_Consts.SRV6_SPLIT_LEFT_BY_CHIP_TYPE[chip_type],
+        "split_right": Cl_Consts.SRV6_SPLIT_RIGHT_BY_CHIP_TYPE[chip_type],
         "dut_mac": players['dut']['cli'].performance.mac,
         "dut": "spine",
         "chip_type": chip_type,

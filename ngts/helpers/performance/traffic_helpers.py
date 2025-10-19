@@ -279,14 +279,17 @@ def _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold):
     Returns:
         tuple: (tx_threshold, rx_threshold) for the given port group. Returns (None, None) if not specified.
     """
+    tx_validation_key, rx_validation_key = ValidationConsts.TX_RATE_MIN, ValidationConsts.RX_RATE_MIN
     if is_global_threshold:
-        return bw_threshold, bw_threshold
+        return bw_threshold, bw_threshold, tx_validation_key, rx_validation_key
     group_threshold = bw_threshold.get(port_group_name)
     if group_threshold is None:
-        return None, None
+        return None, None, tx_validation_key, rx_validation_key
     if isinstance(group_threshold, dict):
-        return group_threshold.get(ValidationConsts.TX), group_threshold.get(ValidationConsts.RX)
-    return group_threshold, group_threshold
+        tx_threshold, rx_threshold = group_threshold.get(ValidationConsts.TX), group_threshold.get(ValidationConsts.RX)
+        tx_validation_key, rx_validation_key = bw_threshold.get(ValidationConsts.VALIDATION_KEY, (ValidationConsts.TX_RATE_MIN, ValidationConsts.RX_RATE_MIN))
+        return tx_threshold, rx_threshold, tx_validation_key, rx_validation_key
+    return group_threshold, group_threshold, tx_validation_key, rx_validation_key
 
 
 def _get_tc_occ_threshold(tc_occ_threshold, port_group_name):
@@ -318,18 +321,19 @@ def validate_bw(traffic_json, bw_threshold, validate_bw_rx, violations_list):
         for sample_id, bw_sample in bw_samples.items():
             for port_group_name, group_data in bw_sample.items():
                 bw_stats = group_data[ValidationConsts.BW_STATS]
-                tx_threshold, rx_threshold = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
+                tx_threshold, rx_threshold, tx_validation_key, rx_validation_key = _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold)
+
                 if tx_threshold is None and rx_threshold is None:
                     violations_list.append(f"No threshold specified for port group {port_group_name}.")
                     continue
 
-                if tx_threshold is not None and bw_stats[ValidationConsts.TX_RATE_MIN] < tx_threshold:
+                if tx_threshold is not None and bw_stats[tx_validation_key] < tx_threshold:
                     violations_list.append(
-                        f"TX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {tx_threshold}."
+                        f"TX bandwidth for {sample_id} (group: {port_group_name}) bw_stats['{tx_validation_key}']={bw_stats[tx_validation_key]} was below threshold {tx_threshold}."
                     )
-                if validate_bw_rx and rx_threshold is not None and bw_stats[ValidationConsts.RX_RATE_MIN] < rx_threshold:
+                if validate_bw_rx and rx_threshold is not None and bw_stats[rx_validation_key] < rx_threshold:
                     violations_list.append(
-                        f"RX bandwidth for sample {sample_id} (group: {port_group_name}) was below threshold {rx_threshold}."
+                        f"RX bandwidth for {sample_id} (group: {port_group_name}) bw_stats['{rx_validation_key}']={bw_stats[rx_validation_key]} was below threshold {rx_threshold}."
                     )
 
 
@@ -457,7 +461,9 @@ def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_val
     :param reference_json: reference validation json, can be from a previous test run or from a reference file
     :param tc_keys: list of tc keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
     :param tc_to_validate: list of tc to validate, i.e [1, 2]
-    :param allowed_deviation: allowed deviation from the reference TC occupancy, i.e +-1
+    :param allowed_deviation: allowed deviation in percentages/actual value from the reference TC occupancy, i.e +-10%
+    if allowed_deviation is a float, it is interpreted as a percentage deviation from the reference TC occupancy
+    if allowed_deviation is an int, it is interpreted as an actual value deviation from the reference TC occupancy
     :param violations_list: list of violations
     """
     with allure.step(f"Compare TC occupancy to reference for {tc_to_validate}"):
@@ -472,7 +478,10 @@ def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_val
                         for key in tc_keys:
                             tc_occ = tc_dict[key]
                             reference_tc_occ = get_tc_occ_from_traffic_json(reference_json, port_group_name, key, tc_name)
-                            min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
+                            if isinstance(allowed_deviation, float) and 0 < allowed_deviation < 1:
+                                min_limit, max_limit = reference_tc_occ * (1 - allowed_deviation), reference_tc_occ * (1 + allowed_deviation)
+                            else:
+                                min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
                             if tc_occ < min_limit or tc_occ > max_limit:
                                 violations_list.append(f"In sample {sample_id} for port group {port_group_name} - TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
 
