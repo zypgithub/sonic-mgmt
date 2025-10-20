@@ -52,7 +52,9 @@ class BmcComponent(Component):
         print(
             f"Performing update for {self.name} to {self.required_version if self.required_version else self.install_path}")
 
-        respond = self.rf_api.post_data_query(RedfishCollection.UPDATE_SERVICE, self.install_path)
+        targets_list = [] if self.name in [Defaults.EROT_NAME, Defaults.SMA_NAME] else [f"/{RedfishCollection.FIRMWARE_INVENTORY}/{self.comp_mapping[self.name]}"]
+        respond = self.rf_api.post_multipart_update(RedfishCollection.UPDATE_SERVICE_MULTIPART, self.install_path,
+                                                    targets_list=targets_list)
         od_task = rf_progress.Task(**respond)
         od_task.monitor(self.rf_api)
         if od_task.success():

@@ -3,6 +3,7 @@ class RedfishCollection:
     SYSTEM = "redfish/v1/Systems"
     TASK_SERVICE = "redfish/v1/TaskService/Tasks"
     UPDATE_SERVICE = "redfish/v1/UpdateService"
+    UPDATE_SERVICE_MULTIPART = "redfish/v1/UpdateService/update-multipart"
     SESSION_SERVICE = "redfish/v1/SessionService"
     FIRMWARE_INVENTORY = "redfish/v1/UpdateService/FirmwareInventory"
     CPU_REDFISH_NAME = "MGX_FW_CPU_0"

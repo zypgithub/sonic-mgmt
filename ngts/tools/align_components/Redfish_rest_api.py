@@ -124,7 +124,41 @@ class RedFishRestApi:
             else:
                 raise Exception(
                     f"File upload failed with status code: {response.status_code}, Response text: {response.text}")
-        file.close()
+
+    def post_multipart_update(self, endpoint, file_path, targets_list=None, force_update=True):
+        """
+        Perform a multipart/form-data POST with Redfish update parameters
+        and an update file.
+
+        :param endpoint: Redfish endpoint (e.g., "/redfish/v1/UpdateService/update-multipart").
+        :param file_path: Path to the firmware package file (e.g., .fwpkg).
+        :param targets_list: Optional target string or list of target strings.
+        :param force_update: Whether to force the update (default True).
+        """
+        url = self._gen_url(endpoint)
+        update_params = {"ForceUpdate": bool(force_update)}
+        if targets_list is not None:
+            update_params["Targets"] = targets_list
+
+        with open(file_path, 'rb') as file:
+            files = {
+                'UpdateParameters': (None, json.dumps(update_params), 'application/json'),
+                'UpdateFile': (file_path, file, 'application/octet-stream')
+            }
+            try:
+                response = requests.post(url, auth=(self.username, self.password), files=files, verify=False)
+            except Exception:
+                file.close()
+                raise
+
+        if response.status_code <= RedFishHTTPStatusCode.Accepted:
+            return response.json() if response.content else None
+        else:
+            raise Exception(
+                "Multipart update failed with status code: "
+                f"{response.status_code}, "
+                f"Response text: {response.text}"
+            )
 
     def patch_query(self, endpoint, data, header=None):
         """
