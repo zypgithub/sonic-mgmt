@@ -231,6 +231,9 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_betwe
     - "'r-bison-06' in testbed"
     - "'r-bison-08' in testbed"
     - "'r-bison-16' in testbed"
+    - "'r-bison-18' in testbed"
+    - "'r-bison-20' in testbed"
+    - "'r-bison-22' in testbed"
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
@@ -349,32 +352,40 @@ tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggl
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
   skip:
-    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    reason: "Testcase ignored for bison community setups with 2 PSUs installed"
     conditions_logical_operator: or
     conditions:
     - "'r-bison-01' in testbed"
     - "'r-bison-04' in testbed"
     - "'r-bison-16' in testbed"
+    - "'r-bison-18' in testbed"
+    - "'r-bison-20' in testbed"
+    - "'r-bison-22' in testbed"
 
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status_wrong_check:
   skip:
-    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    reason: "Testcase ignored for bison community setups with 2 PSUs installed"
     conditions_logical_operator: or
     conditions:
     - "'r-bison-01' in testbed"
     - "'r-bison-04' in testbed"
     - "'r-bison-16' in testbed"
-
+    - "'r-bison-18' in testbed"
+    - "'r-bison-20' in testbed"
+    - "'r-bison-22' in testbed"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
   skip:
-    reason: "Testcase ignored for bison-01 and bison-04 community setup due to only 2 PSUs installed"
+    reason: "Testcase ignored for bison community setups with 2 PSUs installed"
     conditions_logical_operator: or
     conditions:
     - "'r-bison-01' in testbed"
     - "'r-bison-04' in testbed"
     - "'r-bison-16' in testbed"
+    - "'r-bison-18' in testbed"
+    - "'r-bison-20' in testbed"
+    - "'r-bison-22' in testbed"
 
 tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_policer:
   skip:

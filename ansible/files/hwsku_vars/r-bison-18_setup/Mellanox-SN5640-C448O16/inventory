@@ -1,0 +1,52 @@
+[sonic_latest]
+# MTVR community testbed r-bison-18_setup topologies
+r-bison-18 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-d56u2 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-d56u1-lag ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-v6-d56u1-lag ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-d448u16 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-d28u1 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200 base_mac=38:25:f3:47:2e:6c serial=MT2519600AYL model=MSN5640 syseeprom_info="{'0x28': u'x86_64-nvidia_sn5640-r0', '0x29': u'2025.05-5.3.0017-115200', '0x22': u'920-9N52F-09RB-MS1', '0x23': u'MT2519600AYL', '0x21': u'SN5640', '0x26': u'16', '0x24': u'38:25:F3:75:98:0A', '0x25': u'05/07/2025 15:16:13', '0xfe': u'0xF22C80EA', '0x2b': u'Nvidia', '0x2a': u'546'}"
+r-bison-18-t1-isolated-d510u2 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200
+r-bison-18-ptf32 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200
+r-bison-18-ptp-256 ansible_host=10.210.25.64 sonic_version=v2  sonic_hwsku=Mellanox-SN5640-C448O16 iface_speed=100000 serial_console="ssh -l rcon:7019 10.208.0.30" ptf_host=ptf-r-bison-18 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host="pdu-10-208-0-159" console_baudrate=115200
+
+r-bison-19 ansible_host=r-bison-19 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+r-moose-06 ansible_host=r-moose-06 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+r-leopard-90 ansible_host=r-leopard-90 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+r-bison-18
+r-bison-18-t1-isolated-d56u2
+r-bison-18-t1-isolated-d56u1-lag
+r-bison-18-t1-isolated-v6-d56u1-lag
+r-bison-18-t1-isolated-d448u16
+r-bison-18-t1-isolated-d28u1
+r-bison-18-t1-isolated-d510u2
+r-bison-18-ptf32
+r-bison-18-ptp-256
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+r-bison-18
+r-bison-18-t1-isolated-d56u2
+r-bison-18-t1-isolated-d56u1-lag
+r-bison-18-t1-isolated-v6-d56u1-lag
+r-bison-18-t1-isolated-d448u16
+r-bison-18-t1-isolated-d28u1
+r-bison-18-t1-isolated-d510u2
+r-bison-18-ptf32
+r-bison-18-ptp-256
+
+[ptf]
+# MTVR r-bison-18 PTF host
+ptf-r-bison-18 ansible_host=10.215.60.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.60.122 ansible_host=10.215.60.122 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-0-159 ansible_host=10.208.0.159 protocol=snmp
+

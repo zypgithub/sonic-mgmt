@@ -1,0 +1,1067 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_99:
+    eos:
+      children:
+        vms_99:
+
+    servers:
+      vars:
+        topologies:
+          - t0-isolated-d16u16s2
+          - t0-isolated-d32u32s2
+          - t0-isolated-v6-d32u32s2
+          - t0-isolated-d256u256s2
+          - t0-isolated-d2u510s2
+          - t1-isolated-d56u2
+          - t1-isolated-d56u1-lag
+          - t1-isolated-v6-d56u1-lag
+          - t1-isolated-d448u16
+          - t1-isolated-d28u1
+          - t1-isolated-d510u2
+          - ptf32
+          - ptp-256
+      children:
+        server_99:
+
+vm_host_99:
+  hosts:
+    R-SONIC-21:
+      ansible_host: r-sonic-21
+
+vms_99:
+  hosts:
+    VM9917:
+      ansible_host: 10.215.206.4
+    VM9918:
+      ansible_host: 10.215.206.5
+    VM9919:
+      ansible_host: 10.215.206.6
+    VM9920:
+      ansible_host: 10.215.206.7
+    VM9921:
+      ansible_host: 10.215.206.8
+    VM9922:
+      ansible_host: 10.215.206.9
+    VM9923:
+      ansible_host: 10.215.206.10
+    VM9924:
+      ansible_host: 10.215.206.11
+    VM9925:
+      ansible_host: 10.215.206.12
+    VM9926:
+      ansible_host: 10.215.206.13
+    VM9927:
+      ansible_host: 10.215.206.14
+    VM9928:
+      ansible_host: 10.215.206.15
+    VM9929:
+      ansible_host: 10.215.206.16
+    VM9930:
+      ansible_host: 10.215.206.17
+    VM9931:
+      ansible_host: 10.215.206.18
+    VM9932:
+      ansible_host: 10.215.206.19
+    VM9933:
+      ansible_host: 10.215.206.20
+    VM9934:
+      ansible_host: 10.215.206.21
+    VM9935:
+      ansible_host: 10.215.206.22
+    VM9936:
+      ansible_host: 10.215.206.23
+    VM9937:
+      ansible_host: 10.215.206.24
+    VM9938:
+      ansible_host: 10.215.206.25
+    VM9939:
+      ansible_host: 10.215.206.26
+    VM9940:
+      ansible_host: 10.215.206.27
+    VM9941:
+      ansible_host: 10.215.206.28
+    VM9942:
+      ansible_host: 10.215.206.29
+    VM9943:
+      ansible_host: 10.215.206.30
+    VM9944:
+      ansible_host: 10.215.206.31
+    VM9945:
+      ansible_host: 10.215.206.32
+    VM9946:
+      ansible_host: 10.215.206.33
+    VM9947:
+      ansible_host: 10.215.206.34
+    VM9948:
+      ansible_host: 10.215.206.35
+    VM9949:
+      ansible_host: 10.215.206.36
+    VM9950:
+      ansible_host: 10.215.206.37
+    VM9951:
+      ansible_host: 10.215.206.38
+    VM9952:
+      ansible_host: 10.215.206.39
+    VM9953:
+      ansible_host: 10.215.206.40
+    VM9954:
+      ansible_host: 10.215.206.41
+    VM9955:
+      ansible_host: 10.215.206.42
+    VM9956:
+      ansible_host: 10.215.206.43
+    VM9957:
+      ansible_host: 10.215.206.44
+    VM9958:
+      ansible_host: 10.215.206.45
+    VM9959:
+      ansible_host: 10.215.206.46
+    VM9960:
+      ansible_host: 10.215.206.47
+    VM9961:
+      ansible_host: 10.215.206.48
+    VM9962:
+      ansible_host: 10.215.206.49
+    VM9963:
+      ansible_host: 10.215.206.50
+    VM9964:
+      ansible_host: 10.215.206.51
+    VM9965:
+      ansible_host: 10.215.206.52
+    VM9966:
+      ansible_host: 10.215.206.53
+    VM9967:
+      ansible_host: 10.215.206.54
+    VM9968:
+      ansible_host: 10.215.206.55
+    VM9969:
+      ansible_host: 10.215.206.56
+    VM9970:
+      ansible_host: 10.215.206.57
+    VM9971:
+      ansible_host: 10.215.206.58
+    VM9972:
+      ansible_host: 10.215.206.59
+    VM9973:
+      ansible_host: 10.215.206.60
+    VM9974:
+      ansible_host: 10.215.206.61
+    VM9975:
+      ansible_host: 10.215.206.62
+    VM9976:
+      ansible_host: 10.215.206.63
+    VM9977:
+      ansible_host: 10.215.206.64
+    VM9978:
+      ansible_host: 10.215.206.65
+    VM9979:
+      ansible_host: 10.215.206.66
+    VM9980:
+      ansible_host: 10.215.206.67
+    VM9981:
+      ansible_host: 10.215.206.68
+    VM9982:
+      ansible_host: 10.215.206.69
+    VM9983:
+      ansible_host: 10.215.206.70
+    VM9984:
+      ansible_host: 10.215.206.71
+    VM9985:
+      ansible_host: 10.215.206.72
+    VM9986:
+      ansible_host: 10.215.206.73
+    VM9987:
+      ansible_host: 10.215.206.74
+    VM9988:
+      ansible_host: 10.215.206.75
+    VM9989:
+      ansible_host: 10.215.206.76
+    VM9990:
+      ansible_host: 10.215.206.77
+    VM9991:
+      ansible_host: 10.215.206.78
+    VM9992:
+      ansible_host: 10.215.206.79
+    VM9993:
+      ansible_host: 10.215.206.80
+    VM9994:
+      ansible_host: 10.215.206.81
+    VM9995:
+      ansible_host: 10.215.206.82
+    VM9996:
+      ansible_host: 10.215.206.83
+    VM9997:
+      ansible_host: 10.215.206.84
+    VM9998:
+      ansible_host: 10.215.206.85
+    VM9999:
+      ansible_host: 10.215.206.86
+    VM10000:
+      ansible_host: 10.215.206.87
+    VM10001:
+      ansible_host: 10.215.206.88
+    VM10002:
+      ansible_host: 10.215.206.89
+    VM10003:
+      ansible_host: 10.215.206.90
+    VM10004:
+      ansible_host: 10.215.206.91
+    VM10005:
+      ansible_host: 10.215.206.92
+    VM10006:
+      ansible_host: 10.215.206.93
+    VM10007:
+      ansible_host: 10.215.206.94
+    VM10008:
+      ansible_host: 10.215.206.95
+    VM10009:
+      ansible_host: 10.215.206.96
+    VM10010:
+      ansible_host: 10.215.206.97
+    VM10011:
+      ansible_host: 10.215.206.98
+    VM10012:
+      ansible_host: 10.215.206.99
+    VM10013:
+      ansible_host: 10.215.206.100
+    VM10014:
+      ansible_host: 10.215.206.101
+    VM10015:
+      ansible_host: 10.215.206.102
+    VM10016:
+      ansible_host: 10.215.206.103
+    VM10017:
+      ansible_host: 10.215.206.104
+    VM10018:
+      ansible_host: 10.215.206.105
+    VM10019:
+      ansible_host: 10.215.206.106
+    VM10020:
+      ansible_host: 10.215.206.107
+    VM10021:
+      ansible_host: 10.215.206.108
+    VM10022:
+      ansible_host: 10.215.206.109
+    VM10023:
+      ansible_host: 10.215.206.110
+    VM10024:
+      ansible_host: 10.215.206.111
+    VM10025:
+      ansible_host: 10.215.206.112
+    VM10026:
+      ansible_host: 10.215.206.113
+    VM10027:
+      ansible_host: 10.215.206.114
+    VM10028:
+      ansible_host: 10.215.206.115
+    VM10029:
+      ansible_host: 10.215.206.116
+    VM10030:
+      ansible_host: 10.215.206.117
+    VM10031:
+      ansible_host: 10.215.206.118
+    VM10032:
+      ansible_host: 10.215.206.119
+    VM10033:
+      ansible_host: 10.215.206.120
+    VM10034:
+      ansible_host: 10.215.206.121
+    VM10035:
+      ansible_host: 10.215.206.122
+    VM10036:
+      ansible_host: 10.215.206.123
+    VM10037:
+      ansible_host: 10.215.206.124
+    VM10038:
+      ansible_host: 10.215.206.125
+    VM10039:
+      ansible_host: 10.215.206.126
+    VM10040:
+      ansible_host: 10.215.206.127
+    VM10041:
+      ansible_host: 10.215.206.128
+    VM10042:
+      ansible_host: 10.215.206.129
+    VM10043:
+      ansible_host: 10.215.206.130
+    VM10044:
+      ansible_host: 10.215.206.131
+    VM10045:
+      ansible_host: 10.215.206.132
+    VM10046:
+      ansible_host: 10.215.206.133
+    VM10047:
+      ansible_host: 10.215.206.134
+    VM10048:
+      ansible_host: 10.215.206.135
+    VM10049:
+      ansible_host: 10.215.206.136
+    VM10050:
+      ansible_host: 10.215.206.137
+    VM10051:
+      ansible_host: 10.215.206.138
+    VM10052:
+      ansible_host: 10.215.206.139
+    VM10053:
+      ansible_host: 10.215.206.140
+    VM10054:
+      ansible_host: 10.215.206.141
+    VM10055:
+      ansible_host: 10.215.206.142
+    VM10056:
+      ansible_host: 10.215.206.143
+    VM10057:
+      ansible_host: 10.215.206.144
+    VM10058:
+      ansible_host: 10.215.206.145
+    VM10059:
+      ansible_host: 10.215.206.146
+    VM10060:
+      ansible_host: 10.215.206.147
+    VM10061:
+      ansible_host: 10.215.206.148
+    VM10062:
+      ansible_host: 10.215.206.149
+    VM10063:
+      ansible_host: 10.215.206.150
+    VM10064:
+      ansible_host: 10.215.206.151
+    VM10065:
+      ansible_host: 10.215.206.152
+    VM10066:
+      ansible_host: 10.215.206.153
+    VM10067:
+      ansible_host: 10.215.206.154
+    VM10068:
+      ansible_host: 10.215.206.155
+    VM10069:
+      ansible_host: 10.215.206.156
+    VM10070:
+      ansible_host: 10.215.206.157
+    VM10071:
+      ansible_host: 10.215.206.158
+    VM10072:
+      ansible_host: 10.215.206.159
+    VM10073:
+      ansible_host: 10.215.206.160
+    VM10074:
+      ansible_host: 10.215.206.161
+    VM10075:
+      ansible_host: 10.215.206.162
+    VM10076:
+      ansible_host: 10.215.206.163
+    VM10077:
+      ansible_host: 10.215.206.164
+    VM10078:
+      ansible_host: 10.215.206.165
+    VM10079:
+      ansible_host: 10.215.206.166
+    VM10080:
+      ansible_host: 10.215.206.167
+    VM10081:
+      ansible_host: 10.215.206.168
+    VM10082:
+      ansible_host: 10.215.206.169
+    VM10083:
+      ansible_host: 10.215.206.170
+    VM10084:
+      ansible_host: 10.215.206.171
+    VM10085:
+      ansible_host: 10.215.206.172
+    VM10086:
+      ansible_host: 10.215.206.173
+    VM10087:
+      ansible_host: 10.215.206.174
+    VM10088:
+      ansible_host: 10.215.206.175
+    VM10089:
+      ansible_host: 10.215.206.176
+    VM10090:
+      ansible_host: 10.215.206.177
+    VM10091:
+      ansible_host: 10.215.206.178
+    VM10092:
+      ansible_host: 10.215.206.179
+    VM10093:
+      ansible_host: 10.215.206.180
+    VM10094:
+      ansible_host: 10.215.206.181
+    VM10095:
+      ansible_host: 10.215.206.182
+    VM10096:
+      ansible_host: 10.215.206.183
+    VM10097:
+      ansible_host: 10.215.206.184
+    VM10098:
+      ansible_host: 10.215.206.185
+    VM10099:
+      ansible_host: 10.215.206.186
+    VM10100:
+      ansible_host: 10.215.206.187
+    VM10101:
+      ansible_host: 10.215.206.188
+    VM10102:
+      ansible_host: 10.215.206.189
+    VM10103:
+      ansible_host: 10.215.206.190
+    VM10104:
+      ansible_host: 10.215.206.191
+    VM10105:
+      ansible_host: 10.215.206.192
+    VM10106:
+      ansible_host: 10.215.206.193
+    VM10107:
+      ansible_host: 10.215.206.194
+    VM10108:
+      ansible_host: 10.215.206.195
+    VM10109:
+      ansible_host: 10.215.206.196
+    VM10110:
+      ansible_host: 10.215.206.197
+    VM10111:
+      ansible_host: 10.215.206.198
+    VM10112:
+      ansible_host: 10.215.206.199
+    VM10113:
+      ansible_host: 10.215.206.200
+    VM10114:
+      ansible_host: 10.215.206.201
+    VM10115:
+      ansible_host: 10.215.206.202
+    VM10116:
+      ansible_host: 10.215.206.203
+    VM10117:
+      ansible_host: 10.215.206.204
+    VM10118:
+      ansible_host: 10.215.206.205
+    VM10119:
+      ansible_host: 10.215.206.206
+    VM10120:
+      ansible_host: 10.215.206.207
+    VM10121:
+      ansible_host: 10.215.206.208
+    VM10122:
+      ansible_host: 10.215.206.209
+    VM10123:
+      ansible_host: 10.215.206.210
+    VM10124:
+      ansible_host: 10.215.206.211
+    VM10125:
+      ansible_host: 10.215.206.212
+    VM10126:
+      ansible_host: 10.215.206.213
+    VM10127:
+      ansible_host: 10.215.206.214
+    VM10128:
+      ansible_host: 10.215.206.215
+    VM10129:
+      ansible_host: 10.215.206.216
+    VM10130:
+      ansible_host: 10.215.206.217
+    VM10131:
+      ansible_host: 10.215.206.218
+    VM10132:
+      ansible_host: 10.215.206.219
+    VM10133:
+      ansible_host: 10.215.206.220
+    VM10134:
+      ansible_host: 10.215.206.221
+    VM10135:
+      ansible_host: 10.215.206.222
+    VM10136:
+      ansible_host: 10.215.206.223
+    VM10137:
+      ansible_host: 10.215.206.224
+    VM10138:
+      ansible_host: 10.215.206.225
+    VM10139:
+      ansible_host: 10.215.206.226
+    VM10140:
+      ansible_host: 10.215.206.227
+    VM10141:
+      ansible_host: 10.215.206.228
+    VM10142:
+      ansible_host: 10.215.206.229
+    VM10143:
+      ansible_host: 10.215.206.230
+    VM10144:
+      ansible_host: 10.215.206.231
+    VM10145:
+      ansible_host: 10.215.206.232
+    VM10146:
+      ansible_host: 10.215.206.233
+    VM10147:
+      ansible_host: 10.215.206.234
+    VM10148:
+      ansible_host: 10.215.206.235
+    VM10149:
+      ansible_host: 10.215.206.236
+    VM10150:
+      ansible_host: 10.215.206.237
+    VM10151:
+      ansible_host: 10.215.206.238
+    VM10152:
+      ansible_host: 10.215.206.239
+    VM10153:
+      ansible_host: 10.215.206.240
+    VM10154:
+      ansible_host: 10.215.206.241
+    VM10155:
+      ansible_host: 10.215.206.242
+    VM10156:
+      ansible_host: 10.215.206.243
+    VM10157:
+      ansible_host: 10.215.206.244
+    VM10158:
+      ansible_host: 10.215.206.245
+    VM10159:
+      ansible_host: 10.215.206.246
+    VM10160:
+      ansible_host: 10.215.206.247
+    VM10161:
+      ansible_host: 10.215.206.248
+    VM10162:
+      ansible_host: 10.215.206.249
+    VM10163:
+      ansible_host: 10.215.206.250
+    VM10164:
+      ansible_host: 10.215.206.251
+    VM10165:
+      ansible_host: 10.215.206.252
+    VM10166:
+      ansible_host: 10.215.206.253
+    VM10167:
+      ansible_host: 10.215.206.254
+    VM10168:
+      ansible_host: 10.215.208.1
+    VM10169:
+      ansible_host: 10.215.208.2
+    VM10170:
+      ansible_host: 10.215.208.3
+    VM10171:
+      ansible_host: 10.215.208.4
+    VM10172:
+      ansible_host: 10.215.208.5
+    VM10173:
+      ansible_host: 10.215.208.6
+    VM10174:
+      ansible_host: 10.215.208.7
+    VM10175:
+      ansible_host: 10.215.208.8
+    VM10176:
+      ansible_host: 10.215.208.9
+    VM10177:
+      ansible_host: 10.215.208.10
+    VM10178:
+      ansible_host: 10.215.208.11
+    VM10179:
+      ansible_host: 10.215.208.12
+    VM10180:
+      ansible_host: 10.215.208.13
+    VM10181:
+      ansible_host: 10.215.208.14
+    VM10182:
+      ansible_host: 10.215.208.15
+    VM10183:
+      ansible_host: 10.215.208.16
+    VM10184:
+      ansible_host: 10.215.208.17
+    VM10185:
+      ansible_host: 10.215.208.18
+    VM10186:
+      ansible_host: 10.215.208.19
+    VM10187:
+      ansible_host: 10.215.208.20
+    VM10188:
+      ansible_host: 10.215.208.21
+    VM10189:
+      ansible_host: 10.215.208.22
+    VM10190:
+      ansible_host: 10.215.208.23
+    VM10191:
+      ansible_host: 10.215.208.24
+    VM10192:
+      ansible_host: 10.215.208.25
+    VM10193:
+      ansible_host: 10.215.208.26
+    VM10194:
+      ansible_host: 10.215.208.27
+    VM10195:
+      ansible_host: 10.215.208.28
+    VM10196:
+      ansible_host: 10.215.208.29
+    VM10197:
+      ansible_host: 10.215.208.30
+    VM10198:
+      ansible_host: 10.215.208.31
+    VM10199:
+      ansible_host: 10.215.208.32
+    VM10200:
+      ansible_host: 10.215.208.33
+    VM10201:
+      ansible_host: 10.215.208.34
+    VM10202:
+      ansible_host: 10.215.208.35
+    VM10203:
+      ansible_host: 10.215.208.36
+    VM10204:
+      ansible_host: 10.215.208.37
+    VM10205:
+      ansible_host: 10.215.208.38
+    VM10206:
+      ansible_host: 10.215.208.39
+    VM10207:
+      ansible_host: 10.215.208.40
+    VM10208:
+      ansible_host: 10.215.208.41
+    VM10209:
+      ansible_host: 10.215.208.42
+    VM10210:
+      ansible_host: 10.215.208.43
+    VM10211:
+      ansible_host: 10.215.208.44
+    VM10212:
+      ansible_host: 10.215.208.45
+    VM10213:
+      ansible_host: 10.215.208.46
+    VM10214:
+      ansible_host: 10.215.208.47
+    VM10215:
+      ansible_host: 10.215.208.48
+    VM10216:
+      ansible_host: 10.215.208.49
+    VM10217:
+      ansible_host: 10.215.208.50
+    VM10218:
+      ansible_host: 10.215.208.51
+    VM10219:
+      ansible_host: 10.215.208.52
+    VM10220:
+      ansible_host: 10.215.208.53
+    VM10221:
+      ansible_host: 10.215.208.54
+    VM10222:
+      ansible_host: 10.215.208.55
+    VM10223:
+      ansible_host: 10.215.208.56
+    VM10224:
+      ansible_host: 10.215.208.57
+    VM10225:
+      ansible_host: 10.215.208.58
+    VM10226:
+      ansible_host: 10.215.208.59
+    VM10227:
+      ansible_host: 10.215.208.60
+    VM10228:
+      ansible_host: 10.215.208.61
+    VM10229:
+      ansible_host: 10.215.208.62
+    VM10230:
+      ansible_host: 10.215.208.63
+    VM10231:
+      ansible_host: 10.215.208.64
+    VM10232:
+      ansible_host: 10.215.208.65
+    VM10233:
+      ansible_host: 10.215.208.66
+    VM10234:
+      ansible_host: 10.215.208.67
+    VM10235:
+      ansible_host: 10.215.208.68
+    VM10236:
+      ansible_host: 10.215.208.69
+    VM10237:
+      ansible_host: 10.215.208.70
+    VM10238:
+      ansible_host: 10.215.208.71
+    VM10239:
+      ansible_host: 10.215.208.72
+    VM10240:
+      ansible_host: 10.215.208.73
+    VM10241:
+      ansible_host: 10.215.208.74
+    VM10242:
+      ansible_host: 10.215.208.75
+    VM10243:
+      ansible_host: 10.215.208.76
+    VM10244:
+      ansible_host: 10.215.208.77
+    VM10245:
+      ansible_host: 10.215.208.78
+    VM10246:
+      ansible_host: 10.215.208.79
+    VM10247:
+      ansible_host: 10.215.208.80
+    VM10248:
+      ansible_host: 10.215.208.81
+    VM10249:
+      ansible_host: 10.215.208.82
+    VM10250:
+      ansible_host: 10.215.208.83
+    VM10251:
+      ansible_host: 10.215.208.84
+    VM10252:
+      ansible_host: 10.215.208.85
+    VM10253:
+      ansible_host: 10.215.208.86
+    VM10254:
+      ansible_host: 10.215.208.87
+    VM10255:
+      ansible_host: 10.215.208.88
+    VM10256:
+      ansible_host: 10.215.208.89
+    VM10257:
+      ansible_host: 10.215.208.90
+    VM10258:
+      ansible_host: 10.215.208.91
+    VM10259:
+      ansible_host: 10.215.208.92
+    VM10260:
+      ansible_host: 10.215.208.93
+    VM10261:
+      ansible_host: 10.215.208.94
+    VM10262:
+      ansible_host: 10.215.208.95
+    VM10263:
+      ansible_host: 10.215.208.96
+    VM10264:
+      ansible_host: 10.215.208.97
+    VM10265:
+      ansible_host: 10.215.208.98
+    VM10266:
+      ansible_host: 10.215.208.99
+    VM10267:
+      ansible_host: 10.215.208.100
+    VM10268:
+      ansible_host: 10.215.208.101
+    VM10269:
+      ansible_host: 10.215.208.102
+    VM10270:
+      ansible_host: 10.215.208.103
+    VM10271:
+      ansible_host: 10.215.208.104
+    VM10272:
+      ansible_host: 10.215.208.105
+    VM10273:
+      ansible_host: 10.215.208.106
+    VM10274:
+      ansible_host: 10.215.208.107
+    VM10275:
+      ansible_host: 10.215.208.108
+    VM10276:
+      ansible_host: 10.215.208.109
+    VM10277:
+      ansible_host: 10.215.208.110
+    VM10278:
+      ansible_host: 10.215.208.111
+    VM10279:
+      ansible_host: 10.215.208.112
+    VM10280:
+      ansible_host: 10.215.208.113
+    VM10281:
+      ansible_host: 10.215.208.114
+    VM10282:
+      ansible_host: 10.215.208.115
+    VM10283:
+      ansible_host: 10.215.208.116
+    VM10284:
+      ansible_host: 10.215.208.117
+    VM10285:
+      ansible_host: 10.215.208.118
+    VM10286:
+      ansible_host: 10.215.208.119
+    VM10287:
+      ansible_host: 10.215.208.120
+    VM10288:
+      ansible_host: 10.215.208.121
+    VM10289:
+      ansible_host: 10.215.208.122
+    VM10290:
+      ansible_host: 10.215.208.123
+    VM10291:
+      ansible_host: 10.215.208.124
+    VM10292:
+      ansible_host: 10.215.208.125
+    VM10293:
+      ansible_host: 10.215.208.126
+    VM10294:
+      ansible_host: 10.215.208.127
+    VM10295:
+      ansible_host: 10.215.208.128
+    VM10296:
+      ansible_host: 10.215.208.129
+    VM10297:
+      ansible_host: 10.215.208.130
+    VM10298:
+      ansible_host: 10.215.208.131
+    VM10299:
+      ansible_host: 10.215.208.132
+    VM10300:
+      ansible_host: 10.215.208.133
+    VM10301:
+      ansible_host: 10.215.208.134
+    VM10302:
+      ansible_host: 10.215.208.135
+    VM10303:
+      ansible_host: 10.215.208.136
+    VM10304:
+      ansible_host: 10.215.208.137
+    VM10305:
+      ansible_host: 10.215.208.138
+    VM10306:
+      ansible_host: 10.215.208.139
+    VM10307:
+      ansible_host: 10.215.208.140
+    VM10308:
+      ansible_host: 10.215.208.141
+    VM10309:
+      ansible_host: 10.215.208.142
+    VM10310:
+      ansible_host: 10.215.208.143
+    VM10311:
+      ansible_host: 10.215.208.144
+    VM10312:
+      ansible_host: 10.215.208.145
+    VM10313:
+      ansible_host: 10.215.208.146
+    VM10314:
+      ansible_host: 10.215.208.147
+    VM10315:
+      ansible_host: 10.215.208.148
+    VM10316:
+      ansible_host: 10.215.208.149
+    VM10317:
+      ansible_host: 10.215.208.150
+    VM10318:
+      ansible_host: 10.215.208.151
+    VM10319:
+      ansible_host: 10.215.208.152
+    VM10320:
+      ansible_host: 10.215.208.153
+    VM10321:
+      ansible_host: 10.215.208.154
+    VM10322:
+      ansible_host: 10.215.208.155
+    VM10323:
+      ansible_host: 10.215.208.156
+    VM10324:
+      ansible_host: 10.215.208.157
+    VM10325:
+      ansible_host: 10.215.208.158
+    VM10326:
+      ansible_host: 10.215.208.159
+    VM10327:
+      ansible_host: 10.215.208.160
+    VM10328:
+      ansible_host: 10.215.208.161
+    VM10329:
+      ansible_host: 10.215.208.162
+    VM10330:
+      ansible_host: 10.215.208.163
+    VM10331:
+      ansible_host: 10.215.208.164
+    VM10332:
+      ansible_host: 10.215.208.165
+    VM10333:
+      ansible_host: 10.215.208.166
+    VM10334:
+      ansible_host: 10.215.208.167
+    VM10335:
+      ansible_host: 10.215.208.168
+    VM10336:
+      ansible_host: 10.215.208.169
+    VM10337:
+      ansible_host: 10.215.208.170
+    VM10338:
+      ansible_host: 10.215.208.171
+    VM10339:
+      ansible_host: 10.215.208.172
+    VM10340:
+      ansible_host: 10.215.208.173
+    VM10341:
+      ansible_host: 10.215.208.174
+    VM10342:
+      ansible_host: 10.215.208.175
+    VM10343:
+      ansible_host: 10.215.208.176
+    VM10344:
+      ansible_host: 10.215.208.177
+    VM10345:
+      ansible_host: 10.215.208.178
+    VM10346:
+      ansible_host: 10.215.208.179
+    VM10347:
+      ansible_host: 10.215.208.180
+    VM10348:
+      ansible_host: 10.215.208.181
+    VM10349:
+      ansible_host: 10.215.208.182
+    VM10350:
+      ansible_host: 10.215.208.183
+    VM10351:
+      ansible_host: 10.215.208.184
+    VM10352:
+      ansible_host: 10.215.208.185
+    VM10353:
+      ansible_host: 10.215.208.186
+    VM10354:
+      ansible_host: 10.215.208.187
+    VM10355:
+      ansible_host: 10.215.208.188
+    VM10356:
+      ansible_host: 10.215.208.189
+    VM10357:
+      ansible_host: 10.215.208.190
+    VM10358:
+      ansible_host: 10.215.208.191
+    VM10359:
+      ansible_host: 10.215.208.192
+    VM10360:
+      ansible_host: 10.215.208.193
+    VM10361:
+      ansible_host: 10.215.208.194
+    VM10362:
+      ansible_host: 10.215.208.195
+    VM10363:
+      ansible_host: 10.215.208.196
+    VM10364:
+      ansible_host: 10.215.208.197
+    VM10365:
+      ansible_host: 10.215.208.198
+    VM10366:
+      ansible_host: 10.215.208.199
+    VM10367:
+      ansible_host: 10.215.208.200
+    VM10368:
+      ansible_host: 10.215.208.201
+    VM10369:
+      ansible_host: 10.215.208.202
+    VM10370:
+      ansible_host: 10.215.208.203
+    VM10371:
+      ansible_host: 10.215.208.204
+    VM10372:
+      ansible_host: 10.215.208.205
+    VM10373:
+      ansible_host: 10.215.208.206
+    VM10374:
+      ansible_host: 10.215.208.207
+    VM10375:
+      ansible_host: 10.215.208.208
+    VM10376:
+      ansible_host: 10.215.208.209
+    VM10377:
+      ansible_host: 10.215.208.210
+    VM10378:
+      ansible_host: 10.215.208.211
+    VM10379:
+      ansible_host: 10.215.208.212
+    VM10380:
+      ansible_host: 10.215.208.213
+    VM10381:
+      ansible_host: 10.215.208.214
+    VM10382:
+      ansible_host: 10.215.208.215
+    VM10383:
+      ansible_host: 10.215.208.216
+    VM10384:
+      ansible_host: 10.215.208.217
+    VM10385:
+      ansible_host: 10.215.208.218
+    VM10386:
+      ansible_host: 10.215.208.219
+    VM10387:
+      ansible_host: 10.215.208.220
+    VM10388:
+      ansible_host: 10.215.208.221
+    VM10389:
+      ansible_host: 10.215.208.222
+    VM10390:
+      ansible_host: 10.215.208.223
+    VM10391:
+      ansible_host: 10.215.208.224
+    VM10392:
+      ansible_host: 10.215.208.225
+    VM10393:
+      ansible_host: 10.215.208.226
+    VM10394:
+      ansible_host: 10.215.208.227
+    VM10395:
+      ansible_host: 10.215.208.228
+    VM10396:
+      ansible_host: 10.215.208.229
+    VM10397:
+      ansible_host: 10.215.208.230
+    VM10398:
+      ansible_host: 10.215.208.231
+    VM10399:
+      ansible_host: 10.215.208.232
+    VM10400:
+      ansible_host: 10.215.208.233
+    VM10401:
+      ansible_host: 10.215.208.234
+    VM10402:
+      ansible_host: 10.215.208.235
+    VM10403:
+      ansible_host: 10.215.208.236
+    VM10404:
+      ansible_host: 10.215.208.237
+    VM10405:
+      ansible_host: 10.215.208.238
+    VM10406:
+      ansible_host: 10.215.208.239
+    VM10407:
+      ansible_host: 10.215.208.240
+    VM10408:
+      ansible_host: 10.215.208.241
+    VM10409:
+      ansible_host: 10.215.208.242
+    VM10410:
+      ansible_host: 10.215.208.243
+    VM10411:
+      ansible_host: 10.215.208.244
+    VM10412:
+      ansible_host: 10.215.208.245
+    VM10413:
+      ansible_host: 10.215.208.246
+    VM10414:
+      ansible_host: 10.215.208.247
+    VM10415:
+      ansible_host: 10.215.208.248
+    VM10416:
+      ansible_host: 10.215.208.249
+    VM10417:
+      ansible_host: 10.215.208.250
+    VM10418:
+      ansible_host: 10.215.208.251
+    VM10419:
+      ansible_host: 10.215.208.252
+    VM10420:
+      ansible_host: 10.215.208.253
+    VM10421:
+      ansible_host: 10.215.208.254
+    VM10422:
+      ansible_host: 10.215.210.211
+    VM10423:
+      ansible_host: 10.215.210.212
+    VM10424:
+      ansible_host: 10.215.210.213
+    VM10425:
+      ansible_host: 10.215.210.214
+    VM10426:
+      ansible_host: 10.215.210.215
+    VM10427:
+      ansible_host: 10.215.210.216
+    VM10428:
+      ansible_host: 10.215.210.217
+
+server_99:
+  children:
+    vm_host_99:
+    vms_99:
+  vars:
+    host_var_file: host_vars/R-SONIC-21.yml
+    mgmt_prefixlen: 16
