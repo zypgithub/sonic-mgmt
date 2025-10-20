@@ -565,10 +565,12 @@ class GenerateGoldenConfigDBModule(object):
         if "localhost" not in ori_config_db["DEVICE_METADATA"]:
             ori_config_db["DEVICE_METADATA"]["localhost"] = {}
 
+        # TODO: this caused test failure, pending fix from upstream
+        # see details in https://redmine.mellanox.com/issues/4667530
         # Older version image may not support ZMQ feature flag
-        rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
-        if "orch_northbond_route_zmq_enabled" in out:
-            ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
+        # rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
+        # if "orch_northbond_route_zmq_enabled" in out:
+        #     ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
 
         return json.dumps(ori_config_db, indent=4)
 
@@ -625,15 +627,13 @@ class GenerateGoldenConfigDBModule(object):
 
         # To enable bmp feature when the image version is >= 202411 and the device is not supervisor
         # Note: the Chassis supervisor is not holding any BGP sessions so the BMP feature is not needed
-        # TODO: this caused test failure, pending fix from upstream
-        # see details in https://redmine.mellanox.com/issues/4667530
-        # if self.check_version_for_bmp() is True and device_info.is_supervisor() is False:
-        #     if multi_asic.is_multi_asic():
-        #         config = self.overwrite_feature_golden_config_db_multiasic(config, "frr_bmp", "disabled", "enabled")
-        #         config = self.overwrite_feature_golden_config_db_multiasic(config, "bmp")
-        #     else:
-        #         config = self.overwrite_feature_golden_config_db_singleasic(config, "frr_bmp", "disabled", "enabled")
-        #         config = self.overwrite_feature_golden_config_db_singleasic(config, "bmp")
+        if self.check_version_for_bmp() is True and device_info.is_supervisor() is False:
+            if multi_asic.is_multi_asic():
+                config = self.overwrite_feature_golden_config_db_multiasic(config, "frr_bmp", "disabled", "enabled")
+                config = self.overwrite_feature_golden_config_db_multiasic(config, "bmp")
+            else:
+                config = self.overwrite_feature_golden_config_db_singleasic(config, "frr_bmp", "disabled", "enabled")
+                config = self.overwrite_feature_golden_config_db_singleasic(config, "bmp")
 
         # Disable dash-ha feature for all multi-asic platforms
         if multi_asic.is_multi_asic():
