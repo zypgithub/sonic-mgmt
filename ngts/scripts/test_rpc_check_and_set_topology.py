@@ -6,10 +6,7 @@ import allure
 import sys
 import re
 
-
-BRANCH_PTF_MAPPING = {'202012': '42007',
-                      '202106': '42007'
-                      }
+from ngts.constants.constants import MarsConstants
 
 logger = logging.getLogger("PreTestCheck")
 
@@ -144,7 +141,7 @@ def test_rpc_check_and_set_topology(topology_obj, engines, cli_objects, current_
 
     sonic_branch = topology_obj.players['dut']['branch']
     logger.info('SONiC branch is: {}'.format(sonic_branch))
-    ptf_tag = BRANCH_PTF_MAPPING.get(sonic_branch, '877728')
+    ptf_tag = MarsConstants.BRANCH_PTF_MAPPING.get(sonic_branch, MarsConstants.DEFAULT_PTF_TAG)
 
     with allure.step("Remove topo {}".format(current_topo)):
         cmd = "./testbed-cli.sh -k ceos remove-topo {SWITCH}-{TOPO} vault".format(SWITCH=dut_name, TOPO=current_topo)

@@ -57,8 +57,3 @@ REBOOT_TYPES = {
 DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
 
 DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
-
-BRANCH_PTF_MAPPING = {'master': 'latest',
-                      '202012': '42007',
-                      '202106': '42007'
-                      }
