@@ -221,7 +221,7 @@ class EverflowIPv4Tests(BaseEverflowTest):
         return links
 
     def test_everflow_multi_binding_acl(self, setup_info, setup_mirror_session,              # noqa F811
-                                        dest_port_type, ptfadapter, tbinfo,
+                                        dest_port_type, ptfadapter, tbinfo, mux_config,      # noqa F811
                                         toggle_all_simulator_ports_to_rand_selected_tor,     # noqa F811
                                         erspan_ip_ver, upstream_links_for_unselected_dut,    # noqa F811
                                         is_multi_binding_acl_enabled, restore_setup_info, duthosts, request):
