@@ -50,7 +50,15 @@ def get_test_app_ext_info(cli_obj):
     return is_support_app_ext, app_name, version, app_repository_name
 
 
+def is_vxlan_evpn_configuration_supported():
+    if is_redmine_issue_active([4435626])[0]:
+        return False
+    return True
+
+
 def is_evpn_support(image_branch):
+    if not is_vxlan_evpn_configuration_supported():
+        return False
     logger.info(f"SONiC image version: {image_branch}")
     unsupport_version_list = ['202012', '202205']
     for version in unsupport_version_list:

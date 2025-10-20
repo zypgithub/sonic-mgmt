@@ -4,6 +4,7 @@ import logging
 
 from retry.api import retry_call
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from ngts.tests.push_build_tests.conftest import is_vxlan_evpn_configuration_supported
 
 logger = logging.getLogger()
 
@@ -42,6 +43,8 @@ def test_vxlan_decap(engines, players, cli_objects, upgrade_params):
     """
     if upgrade_params.is_upgrade_required:
         pytest.skip('PushGate with upgrade executed. Test not supported on branch 201911 which used as base version')
+    if not is_vxlan_evpn_configuration_supported():
+        pytest.skip('VXLAN EVPN configuration is not supported')
 
     vlan = '69'
     vni = '76543'
