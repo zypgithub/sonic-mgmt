@@ -24,7 +24,7 @@ kernel_panic_cmd = "sudo nohup bash -c 'sleep 5 && echo c > /proc/sysrq-trigger'
 memory_exhaustion_cmd = "sudo nohup bash -c 'sleep 5 && tail /dev/zero' &"
 DUT_ABSENT_TIMEOUT_FOR_KERNEL_PANIC = 100
 DUT_ABSENT_TIMEOUT_FOR_MEMORY_EXHAUSTION = 100
-
+EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG = 40
 
 @pytest.fixture(scope="function", autouse=True)
 def arm_watchdog_on_dpus(dpuhosts):
@@ -194,7 +194,9 @@ def test_dpu_status_post_dpu_kernel_panic(duthosts, dpuhosts,
     check_dpus_are_not_pingable(duthost, ip_address_list)
 
     logging.info("Executing post test dpu check")
-    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list, num_dpu_modules, "Non-Hardware")
+    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list,
+                         num_dpu_modules, "Non-Hardware",
+                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
 
 
 @pytest.mark.disable_loganalyzer
@@ -226,7 +228,8 @@ def test_dpu_check_post_dpu_mem_exhaustion(duthosts, dpuhosts,
 
     logging.info("Executing post test dpu check")
     post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list,
-                         num_dpu_modules, "Non-Hardware")
+                         num_dpu_modules, "Non-Hardware",
+                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
 
 
 def test_cold_reboot_dpus(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
