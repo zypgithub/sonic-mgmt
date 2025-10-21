@@ -382,7 +382,7 @@ class MongoDbConsts:
     MONGO_DB_ERRORS = os.path.join(MONGO_DB_DICT_PATH, "errors/")
     MONGO_DB_SANDBOX_TESTS = os.path.join(MONGO_DB_DICT_PATH, "Sandbox_testing/")
     MONGO_DB_SANDBOX_TESTING_COMMAND = f"{MONGO_DB_DICT_PATH}./initiate_sandbox"
-    MONGO_DB_SANDBOX_TESTING_TIMEOUT = 30
+    MONGO_DB_SANDBOX_TESTING_TIMEOUT = 300
 
 
 class PortMappingOptionsConsts:

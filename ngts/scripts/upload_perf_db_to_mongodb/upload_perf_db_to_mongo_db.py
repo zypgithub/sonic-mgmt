@@ -16,7 +16,7 @@ logger = logging.getLogger()
 @allure.title('Upload Performance Database into MongoDB')
 def test_upload_perf_db(topology_obj, setup_name):
     try:
-        clear_sandbox_testing_files()
+        clear_sandbox_testing_files(setup_name)
         with open(MongoDbConsts.PERF_MONGO_DB_RESULTS_PATH, "r+") as f:
             dut_system_information_template_json = json.load(f)
         lines = [MongoDbConsts.COLLECTION, MongoDbConsts.CRITERIA]
@@ -52,6 +52,7 @@ def do_sandbox_testing(tests_path_specific_values_dict, topology_obj, setup_name
     logger.info("Starting sandbox testing")
     passing_sandbox_validation_tests = []
     failing_sandbox_validation_tests = []
+    tests_updated_names = {}
     for test_path, test_specific_values_str in tests_path_specific_values_dict.items():
         test_name = os.path.basename(test_path)
         updated_test_name = test_name.replace("-", "_").replace(" ", "_").replace("[", "_").replace("]", "_")
@@ -61,10 +62,12 @@ def do_sandbox_testing(tests_path_specific_values_dict, topology_obj, setup_name
         logger.info(f"Writing test {test_name} to sandbox testing file")
         with open(test_db_sandbox_testing_path, 'w') as file:
             file.writelines(lines)
-        logger.info("Running sandbox testing")
-        hyper_engine.run_cmd(MongoDbConsts.MONGO_DB_SANDBOX_TESTING_COMMAND)
-        time.sleep(MongoDbConsts.MONGO_DB_SANDBOX_TESTING_TIMEOUT)
-        logger.info("Sandbox testing finished")
+        tests_updated_names[test_path] = updated_test_name
+    logger.info("Running sandbox testing")
+    hyper_engine.run_cmd(MongoDbConsts.MONGO_DB_SANDBOX_TESTING_COMMAND)
+    time.sleep(MongoDbConsts.MONGO_DB_SANDBOX_TESTING_TIMEOUT)
+    logger.info("Sandbox testing finished")
+    for test_path, updated_test_name in tests_updated_names.items():
         logger.info("Checking if the test failed sandbox validation")
         test_db_sandbox_testing_err_path = os.path.join(MongoDbConsts.MONGO_DB_SANDBOX_TESTS, f"{updated_test_name}.err")
         err_file_exists = os.path.exists(test_db_sandbox_testing_err_path)
@@ -74,14 +77,11 @@ def do_sandbox_testing(tests_path_specific_values_dict, topology_obj, setup_name
         else:
             passing_sandbox_validation_tests.append(test_path)
             logger.info(f"Test {test_path} passed sandbox validation")
-            os.remove(test_db_sandbox_testing_path)
     return passing_sandbox_validation_tests, failing_sandbox_validation_tests
 
 
-def clear_sandbox_testing_files():
+def clear_sandbox_testing_files(setup_name):
     for root, dirs, files in os.walk(MongoDbConsts.MONGO_DB_SANDBOX_TESTS):
         for file in files:
-            if file.endswith('_info_dump.json.db'):
-                os.remove(os.path.join(root, file))
-            if file.endswith('_info_dump.json.err'):
+            if file.startswith(f"{setup_name}_"):
                 os.remove(os.path.join(root, file))
