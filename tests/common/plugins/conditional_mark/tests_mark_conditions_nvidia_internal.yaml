@@ -648,6 +648,12 @@ generic_config_updater/test_dynamic_acl.py::test_gcu_acl_forward_rule_removal:
     conditions:
       - "'-v6-' in topo_name"
 
+platform_tests/sfp/software_control/test_software_control.py:
+  skip:
+    reason: "Simx doesn't support Software Control feature"
+    conditions:
+    - "'simx' in platform"
+
 platform_tests/mellanox/test_check_sfp_using_ethtool.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
