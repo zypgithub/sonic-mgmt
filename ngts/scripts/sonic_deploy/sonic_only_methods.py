@@ -198,7 +198,7 @@ class SonicInstallationSteps:
             run_containers_cmd = SonicInstallationSteps.generate_run_containers_command(python_bin_path, setup_name)
             run_background_process_on_host(threads_dict, 'containers_bringup', run_containers_cmd, timeout=600)
 
-        update_repo_cmd = SonicInstallationSteps.generate_update_sonic_mgmt_cmd(python_bin_path, dut_name)
+        update_repo_cmd = SonicInstallationSteps.generate_update_sonic_mgmt_cmd(python_bin_path, dut_name, setup_name)
         run_background_process_on_host(threads_dict, 'update_sonic_mgmt', update_repo_cmd)
 
     @staticmethod
@@ -215,7 +215,7 @@ class SonicInstallationSteps:
         return cmd
 
     @staticmethod
-    def generate_update_sonic_mgmt_cmd(python_bin_path, dut_name):
+    def generate_update_sonic_mgmt_cmd(python_bin_path, dut_name, setup_name=None):
         """
         Generate command which can run update_sonic_mgmt.py script
         :param python_bin_path: path to python interpreter
@@ -225,6 +225,8 @@ class SonicInstallationSteps:
         sonic_mgmt_path = os.path.abspath(__file__).split('/ngts/')[0]
         cmd = f'{python_bin_path} {sonic_mgmt_path}/sonic-tool/sonic_ngts/scripts/update_sonic_mgmt.py ' \
             f'--dut={dut_name} --mgmt_repo={sonic_mgmt_path}'
+        if setup_name:
+            cmd += f' --setup_name={setup_name}'
         return cmd
 
     @staticmethod
