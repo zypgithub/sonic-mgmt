@@ -1947,6 +1947,14 @@
     - Affected_test_cases:
       - tests_nvos/infra/init_flow
 
+
+# NVOS - NMX Simulator
+- Errors_list:
+    - '.*WARNING clusterd: Requested the partitions \[\d+\] but only got \[\].*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/cluster/nmx_simulator_tests/test_simulated_cluster_partition.py
+
 # NVOS
 - Errors_list:
     - '.*WARNING pmon#xcvrd: Failed to read from file \/sys\/module\/sx_core\/asic\d\/module\d\/.*'
