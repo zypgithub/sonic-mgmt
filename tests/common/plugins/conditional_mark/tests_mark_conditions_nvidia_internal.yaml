@@ -477,6 +477,12 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
     - "https://redmine.mellanox.com/issues/4531681"
 
+dash/canonical/test_dash_privatelink.py::test_privatelink_basic_transform:
+  skip:
+    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4657824"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4657824"
+
 drop_packets/test_wjh.py:
   skip:
     reason: "WJH test doesn't support dualtor topology"
