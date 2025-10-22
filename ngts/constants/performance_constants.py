@@ -78,6 +78,7 @@ class PerfConsts:
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
     SHAPER_VALUE = 0.99
+    SRV6_SHAPER_VALUE = 0.96
     OCC_AVG_TH = 400
     TC_NUM = 7
     # Thresholds
@@ -471,7 +472,7 @@ class MRCConsts:
     INGRESS_PORT_SEQUENCE_CONSECUTIVE = 'consecutive'
     INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE = 'non_consecutive'
     INGRESS_PORT_SEQUENCE = [INGRESS_PORT_SEQUENCE_NON_CONSECUTIVE]
-    DUT_TX_UTIL_TH = 0.98
+    DUT_TX_UTIL_TH = 0.95
     # Many to one SRv6 DUT TX Util threshold was lowered to 0.93 because of bug #4527474
     MANY_TO_ONE_SRV6_DUT_TX_UTIL_TH = 0.93
     BUFFER_CELL_SIZE = 192

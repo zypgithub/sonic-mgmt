@@ -4,6 +4,10 @@
 {% set split_right = parameter_dict.split_right %}
 {% set total_ports = parameter_dict.total_ports %}
 {% set address_list = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::2", mode="v6", step_v6="0x100000000000000000000",number_of_address=(total_ports * split_left)) %}
+{% set neigbor_list_left = generate_ip_address_list(address_start_v6="fcbb:aaaa:2::1", mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_left)) %}
+{% set neigbor_list_right_start = address_calculator(address = "fcbb:aaaa:2::1", operation = "add" , step = "0x100000000000000000000", operand = ((total_ports//2) * split_left)) %}
+{% set neigbor_list_right = generate_ip_address_list(address_start_v6=neigbor_list_right_start, mode="v6", step_v6="0x100000000000000000000",number_of_address=((total_ports//2) * split_right)) %}
+
 - header:
     model: sn5600
     nvue-api-version: nvue_v1
@@ -76,6 +80,10 @@
         state: enabled
         mode: lossy-multi-tc
     router:
+      bgp:
+        autonomous-system: spine
+        router-id: 3.3.3.3
+        state: enabled
       segment-routing:
         srv6:
           locator:
@@ -127,12 +135,44 @@
     vrf:
       default:
         router:
-          static:
-            {% for dest_ip in address_list %}
-            {{ dest_ip | replace("aaaa", "bbbb") | replace("::2", "::/48") }}:
-              address-family: ipv6-unicast
-              via:
-                {{ dest_ip | replace("::2", "::1") }}:
-                  type: ipv6-address
-            {% endfor %}
+          bgp:
+            address-family:
+              ipv6-unicast:
+                redistribute:
+                  connected:
+                    state: enabled
+                state: enabled
+            neighbor:
+              {% for neighbor in neigbor_list_left %}
+              {{ neighbor }}:
+                address-family:
+                  ipv6-unicast:
+                    state: enabled
+                peer-group: left_bgp
+                type: numbered
+              {% endfor %}
+            {% for neighbor in neigbor_list_right %}
+              {{ neighbor }}:
+                address-family:
+                  ipv6-unicast:
+                    state: enabled
+                peer-group: right_bgp
+                type: numbered
+              {% endfor %}
+            peer-group:
+              left_bgp:
+                address-family:
+                  ipv4-unicast:
+                    state: disabled
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+              right_bgp:
+                address-family:
+                  ipv4-unicast:
+                    state: disabled
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+            state: enabled
 

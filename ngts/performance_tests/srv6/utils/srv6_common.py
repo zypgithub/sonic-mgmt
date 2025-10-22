@@ -65,7 +65,7 @@ class TestSRv6Base:
             round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
                                        ValidationConsts.OCC_99: 22 * half_ports_num}
             additional_validations = self.get_additional_validations(traffic_type)
-            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SHAPER_VALUE)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SRV6_SHAPER_VALUE)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,

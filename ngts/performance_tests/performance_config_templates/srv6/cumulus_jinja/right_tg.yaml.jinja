@@ -3,7 +3,9 @@
 {% set split_right = parameter_dict.split_right %}
 {% set split_left = parameter_dict.split_left %}
 {% set address_start = address_calculator(address = "fcbb:aaaa:2::1", operation = "add" , step = "0x100000000000000000000", operand = (total_ports//2)*split_left) %}
-{% set address_list = generate_ip_address_list(address_start_v6 = address_start, mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_left) %}
+{% set address_list = generate_ip_address_list(address_start_v6 = address_start, mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_right) %}
+{% set neighbor_start = address_calculator(address = "fcbb:aaaa:2::2", operation = "add" , step = "0x100000000000000000000", operand = (total_ports//2)*split_left) %}
+{% set neighbor_list = generate_ip_address_list(address_start_v6 = neighbor_start, mode="v6", step_v6="0x100000000000000000000", number_of_address=(total_ports//2)*split_right) %}
 {% set mloop_ports = down_ports() %}
 {% set speed = parameter_dict.speed | int %}
 - header:
@@ -13,7 +15,7 @@
     version: Cumulus Linux 5.15.0
 - set:
     acl:
-      acl-drop-arp:
+      acl-drop-arp-bgp:
         rule:
           '1':
             action:
@@ -39,6 +41,22 @@
                 protocol: ipv6
           '4':
             action:
+              deny: {}
+            match:
+              ip:
+                protocol: 6
+              mac:
+                protocol: ipv4
+          '5':
+            action:
+              deny: {}
+            match:
+              ip:
+                protocol: 6
+              mac:
+                protocol: ipv6
+          '6':
+            action:
               permit: {}
         type: mac
     bridge:
@@ -57,6 +75,13 @@
             set-hostname: disabled
         vrf: mgmt
         type: eth
+      lo:
+        ipv6:
+          address:
+          {% for address in address_list%}
+            {{ address | replace("aaaa", "bbbb") }}/48: {}
+          {% endfor %}
+        type: loopback
     {% if split_right!=1 %}
     {% for port in port_list['dut']  %}
       {{ port }}:
@@ -107,7 +132,7 @@
             up: {}
         {% endif %}
         acl:
-          acl-drop-arp:
+          acl-drop-arp-bgp:
             inbound: {}
         bridge:
           domain:
@@ -159,3 +184,67 @@
               l3: {}
               tunnel: {}
         state: enabled
+    router:
+      bgp:
+        autonomous-system: leaf
+        router-id: 2.2.2.2
+        state: enabled
+      policy:
+        prefix-list:
+          {% for address in address_list %}
+          neighbor_{{ loop.index }}:
+            rule:
+              '1':
+                action: permit
+                match:
+                  {{ address | replace("aaaa", "bbbb") | replace("::1", "::/48") }}: {}
+            type: ipv6
+          {% endfor %}
+        route-map:
+          {% for address in address_list %}
+          map_{{ loop.index }}:
+            rule:
+              '1':
+                action:
+                  permit: {}
+                match:
+                  ip-prefix-list: neighbor_{{ loop.index }}
+                  type: ipv6
+              '2':
+                action:
+                  deny: {}
+                match:
+                  source-protocol: connected
+                  type: ipv6
+          {% endfor %}
+    vrf:
+      default:
+        router:
+          bgp:
+            address-family:
+              ipv6-unicast:
+                redistribute:
+                  connected:
+                    state: enabled
+                state: enabled
+            neighbor:
+              {% for neighbor in neighbor_list %}
+              {{ neighbor }}:
+                address-family:
+                  ipv6-unicast:
+                    policy:
+                      outbound:
+                        route-map: map_{{ loop.index }}
+                    state: enabled
+                peer-group: dut
+                type: numbered
+              {% endfor %}
+            peer-group:
+              dut:
+                address-family:
+                  ipv4-unicast:
+                    state: disabled
+                  ipv6-unicast:
+                    state: enabled
+                remote-as: external
+            state: enabled

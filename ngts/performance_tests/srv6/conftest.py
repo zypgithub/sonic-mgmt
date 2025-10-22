@@ -164,10 +164,9 @@ def cleanup_ports_shaper(cli_objects):
 
 
 def get_srv6_tests_skip_condition(cli_obj, actual_chip_type):
+    unsupported_chip_type = "None"
     if isinstance(cli_obj, SonicCli):
         unsupported_chip_type = "SPC4"
-    elif isinstance(cli_obj, NvueCli):
-        unsupported_chip_type = "SPC5"
     condition = actual_chip_type == unsupported_chip_type
     skip_message = f"This test is not supported on {unsupported_chip_type} on cli type {cli_obj.__class__.__name__}"
     return condition, skip_message
