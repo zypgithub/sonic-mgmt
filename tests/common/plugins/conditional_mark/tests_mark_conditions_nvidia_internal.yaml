@@ -1033,6 +1033,31 @@ vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case6:
     reason: "Skipped due to github issue https://redmine.mellanox.com/issues/4438716"
     conditions:
     - "https://redmine.mellanox.com/issues/4438716 and 'sn2' in platform"
+
+snmp/test_snmp_queue_counters.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
+pfcwd/test_pfcwd_function.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
+pfcwd/test_pfcwd_cli.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
+qos/test_qos_dscp_mapping.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
