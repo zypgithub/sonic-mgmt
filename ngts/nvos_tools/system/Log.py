@@ -159,10 +159,12 @@ class FileId(BaseComponent):
     def action_delete(self, expected_str="", dut_engine=None, should_succeed=True) -> bool:
         engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
+        # Use system-specific action_delete so the file path (e.g. /var/log/audit/audit.log) is
+        # passed as one token; the generic action_deprecated would replace '/' with ' ' and break it.
         with allure.step(f"Delete file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
-                self._cli_wrapper.action_deprecated, expected_str,
-                engine, action_type='delete', resource_path=resource_path).get_returned_value(should_succeed)
+                self.api_obj[TestToolkit.tested_api].action_delete, expected_str,
+                engine, resource_path, self.filename).get_returned_value(should_succeed)
 
 
 class Component(BaseComponent):

@@ -2514,53 +2514,16 @@ class LogsSources:
     NVUED = "nvued.log"
     USER = "user.log"
     AUTH = "auth.log"
-
-    @classmethod
-    def all(cls):
-        return [v for k, v in vars(cls).items() if k.isupper()]
-
-
-class SecureConfig:
-    """Secure configuration management for sensitive environment variables"""
-    _instance = None
-    _config = {}
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(SecureConfig, cls).__new__(cls)
-            cls._load_config()
-        return cls._instance
-
-    @classmethod
-    def _load_config(cls):
-        """Load configuration from secure source"""
-        # Load from secure configuration file or environment
-        # This is a placeholder - implement your preferred secure storage method
-        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                cls._config = json.load(f)
-
-    @classmethod
-    def get(cls, key, default=None):
-        """Get a configuration value securely"""
-        return cls._config.get(key, default)
-
-    @classmethod
-    def set(cls, key, value):
-        """Set a configuration value securely"""
-        cls._config[key] = value
-        # Implement secure storage of the updated configuration
-        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
-        with open(config_path, 'w') as f:
-            json.dump(cls._config, f, indent=4)
-
-
-class LogsSources:
-    SYSLOG = "syslog"
-    NVUED = "nvued.log"
-    USER = "user.log"
-    AUTH = "auth.log"
+    AUDIT = "audit.log"
+    INSTALLER = "installer"
+    PLATFORM_THERMAL = "platform-thermal"
+    IFUPDOWN2 = "ifupdown2"
+    NGINX = "nginx"
+    DATAPATH = "datapath"
+    ROUTING = "routing"
+    FRR = "frr"
+    LINKSTATE = "linkstate"
+    SWITCHD = "switchd.log"
 
     @classmethod
     def all(cls):

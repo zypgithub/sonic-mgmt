@@ -3,6 +3,7 @@ import math
 import random
 import re
 import time
+import json
 import pytest
 from typing import List
 from datetime import datetime
@@ -23,6 +24,7 @@ from ngts.nvos_tools.infra.FilesTool import FilesTool
 from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.infra.SudoScope import sudo_scope_if
 
 logger = logging.getLogger()
 
@@ -31,7 +33,8 @@ logger = logging.getLogger()
 @pytest.mark.log
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
-def test_show_log(engines):
+@pytest.mark.cumulus
+def test_show_log(engines, devices):
     """
     Write to log file on switch, run nv show system log command and verify system/image are exist
     command: nv show system log
@@ -52,14 +55,17 @@ def test_show_log(engines):
     with allure.step(f"Verify {LogsSources.SYSLOG} and {LogsSources.NVUED} includes the expected logs"):
         with allure.independent_step(f"Run show platform command to view platform firmware info {LogsSources.SYSLOG}"):
             platform.firmware.show()
-            show_output = system.log.file.show_log(exit_cmd='q')
-            ValidationTool.verify_expected_output(show_output, 'part-number').verify_result()
+            with sudo_scope_if(devices.dut.is_eth()):
+                show_output = system.log.file.show_log(exit_cmd='q')
+                ValidationTool.verify_expected_output(show_output, devices.dut.system_log_value).verify_result()
 
         with allure.independent_step(
-                f'Run show system image and verify “system/image” in the {LogsSources.NVUED} logs'):
+                f'Run show system image and verify "system/image" in the {LogsSources.NVUED} logs'):
             system.image.show()
-            system.log.verify_expected_logs(logs_to_find=["system/image"], logs_source=LogsSources.NVUED,
-                                            engine=engines.dut, only_latest_log=True)
+            with sudo_scope_if(devices.dut.is_eth()):
+                system.log.verify_expected_logs(
+                    logs_to_find=["system/image"], logs_source=LogsSources.NVUED,
+                    engine=engines.dut, only_latest_log=True)
 
 
 @pytest.mark.system
@@ -97,7 +103,8 @@ def test_show_log_continues(engines):
 @pytest.mark.log
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
-def test_show_log_files(engines):
+@pytest.mark.cumulus
+def test_show_log_files(engines, devices):
     """
     Check all fields in files commands, write to log check it exist in show files command
 
@@ -127,7 +134,8 @@ def test_show_log_files(engines):
         platform.firmware.show()
 
     with allure.step("Run system log file follow to view platform firmware logs"):
-        system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
+        with sudo_scope_if(devices.dut.is_eth()):
+            system.log.file.show_log(param='follow', expected_str=devices.dut.system_log_value, exit_cmd='\x03')
 
 
 @pytest.mark.system
@@ -554,6 +562,7 @@ def _upload_log_files(topology_obj, system_log_obj):
 @pytest.mark.log
 @pytest.mark.simx
 @pytest.mark.disable_loganalyzer
+@pytest.mark.cumulus
 def test_delete_log_files(engines, topology_obj):
     """
     Check uploading log files to shared location and validate
@@ -578,10 +587,6 @@ def test_delete_log_files(engines, topology_obj):
             _delete_log_files(engines, component, file_name=LogComponentsConsts.NVUE_LOG)
 
 
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-@pytest.mark.disable_loganalyzer
 def _delete_log_files(engines, system_log_obj, file_name):
     """
     Check user can delete debug-log files
@@ -638,17 +643,22 @@ def _delete_log_files(engines, system_log_obj, file_name):
         if file_name == LogComponentsConsts.SYSLOG:
             with allure.step("Verify syslog file was deleted and a new one was created"):
                 with allure.step("Save log analyzer marker before deleting the log file"):
-                    marker = TestToolkit.get_loganalyzer_marker(engines.dut)
+                    marker = TestToolkit.get_loganalyzer_marker(engines.dut, use_sudo=TestToolkit.is_eth_dut())
 
                 with allure.step(f"Delete {file_name} log file"):
                     system_log_obj.file.file_id[file_name].action_delete()
+                    if TestToolkit.is_eth_dut():
+                        engines.dut.run_cmd("sudo systemctl restart rsyslog", validate=False)
+                    with allure.step("Add log analyzer marker for the new log file"):
+                        TestToolkit.add_loganalyzer_marker(engines.dut, marker)
                     output = engines.dut.run_cmd("stat /var/log/{} | grep Size".format(file_name))
                     assert output, f"Can't find {file_name} file"
-                    curr_log_size = output.split()[1]
-                    assert int(curr_log_size) < int(prev_log_size), f"{file_name} file probably was not deleted"
-
-                with allure.step("Add log analyzer marker for the new log file"):
-                    TestToolkit.add_loganalyzer_marker(engines.dut, marker)
+                    curr_log_size = int(output.split()[1])
+                    # Only require new file smaller when old file was large; if old was tiny, new file
+                    # can be larger after restart/markers/logging.
+                    assert curr_log_size < int(prev_log_size) or int(prev_log_size) < 500, (
+                        f"{file_name} file probably was not deleted (curr={curr_log_size}, prev={prev_log_size})"
+                    )
 
             with allure.step("Rotate logs"):
                 system_log_obj.rotate_logs()
@@ -657,7 +667,8 @@ def _delete_log_files(engines, system_log_obj, file_name):
                 platform.firmware.show()
 
             with allure.step("Run system log file follow to view platform firmware logs"):
-                system.log.file.show_log(param='follow', expected_str='part-number', exit_cmd='\x03')
+                with sudo_scope_if(TestToolkit.is_eth_dut()):
+                    system.log.file.show_log(param='follow', expected_str=TestToolkit.devices.dut.system_log_value, exit_cmd='\x03')
 
             with allure.step("Run show command to view system image"):
                 start_time = datetime.strptime(ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show()),
@@ -665,10 +676,12 @@ def _delete_log_files(engines, system_log_obj, file_name):
                 system.image.show()
 
             with allure.step("Run nv show system log command follow to view system logs"):
-                output = system_log_obj.file.show_log(exit_cmd='q')
+                with sudo_scope_if(TestToolkit.is_eth_dut()):
+                    output = system_log_obj.file.show_log(exit_cmd='q')
                 last_line = output.splitlines()[-4]
-                date_match = re.search(fr'{NvosConst.DATE_TIME_REGEX[0]}', last_line)
-                parsed_time = datetime.strptime(date_match.group(), BugHandlerConst.TIMESTAMP_FORMATS[3])
+                date_match = re.search(fr'{TestToolkit.devices.dut.system_log_timestamp_regex}', last_line)
+                date_str = TestToolkit.devices.dut.get_system_log_date_str_for_parsing(date_match.group())
+                parsed_time = datetime.strptime(date_str, BugHandlerConst.TIMESTAMP_FORMATS[3])
                 parsed_time = parsed_time.replace(year=datetime.now().year)
                 assert start_time <= parsed_time, "Syslog file does not contain new data, system might be"
 

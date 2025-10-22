@@ -209,14 +209,18 @@ class TestToolkit:
         return pytest.is_mars_run and not TestToolkit.is_special_run()
 
     @staticmethod
-    def get_loganalyzer_marker(engine, get_full_line=False) -> str:
+    def get_loganalyzer_marker(engine, get_full_line=False, use_sudo=False) -> str:
         """
         Returns the most recent log-analyzer test-start marker from the logs. If get_full_line is false, returns only
         the line contents; otherwise returns the full line from the log, including timestamp, hostname, etc. .
+        Use use_sudo=True for cumulus or eth device when reading /var/log/syslog requires elevated privileges.
         """
         try:
             with allure.step("Get log analyzer marker"):
-                markers = engine.run_cmd('zgrep -h -a " start-LogAnalyzer-" /var/log/syslog.* /var/log/syslog | tail -n 1')
+                cmd = 'zgrep -h -a " start-LogAnalyzer-" /var/log/syslog.* /var/log/syslog | tail -n 1'
+                if use_sudo:
+                    cmd = 'sudo ' + cmd
+                markers = engine.run_cmd(cmd)
                 last_marker = markers.split("\n")[-1]
                 return last_marker if get_full_line else re.findall(r'\bstart-LogAnalyzer-\S+', last_marker)[0]
         except Exception as e:
@@ -229,7 +233,9 @@ class TestToolkit:
         try:
             with allure.step("Add log analyzer marker"):
                 if marker:
-                    engine.run_cmd(f"logger -p info '{marker}'")
+                    # Escape single quotes for shell: ' -> '\'' so the command does not hang waiting for closing quote
+                    safe_marker = marker.replace("'", "'\\''")
+                    engine.run_cmd(f"logger -p info '{safe_marker}'")
         except Exception as e:
             logging.warning("Failed to add log analyzer marker: " + ExceptionTool.format_exception(e))
 

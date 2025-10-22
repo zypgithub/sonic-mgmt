@@ -375,6 +375,13 @@ class BaseDevice(ABC):
     def is_nvl(self):
         return self.switch_type == NvosConst.NVL_SWITCH_TYPE
 
+    def get_system_log_date_str_for_parsing(self, timestamp_match_str):
+        """
+        Return the timestamp string as needed for strptime with TIMESTAMP_FORMATS[3].
+        Override in EthDevice to convert ISO 8601 to '%b %d %H:%M:%S.%f' format.
+        """
+        return timestamp_match_str
+
 # -------------------------- Base Appliance ----------------------------
 
 

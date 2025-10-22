@@ -571,6 +571,8 @@ class IbSwitch(BaseSwitch):
         }
 
         # Initialize link error counters for traffic validation
+        self.system_log_value = "part-number"
+        self.system_log_timestamp_regex = NvosConst.DATE_TIME_REGEX[0]
 
     def _init_link_error_counters(self):
         """

@@ -31,8 +31,29 @@ class NvueSystemCli(NvueBaseCli):
     @staticmethod
     @check_output
     def action_delete(engine, path, file_name, op_param=""):
-        path = path.replace('/', ' ')
-        cmd = "nv action delete {path} {filename}".format(path=path, filename=file_name)
+        # For "delete" on system log component file, the segment after /file/ may be a filesystem path
+        # and must not have slashes replaced with spaces (e.g. /var/log/ifupdown2/.../file.log).
+        # Only add leading '/' when file_part contains '/' (multi-segment path); simple filenames stay as-is.
+        if '/file/' in path:
+            path_part = path[:path.index('/file/') + len('/file')]
+            file_part = path[path.index('/file/') + len('/file/'):].lstrip('/')
+            if file_part and '/' in file_part and not file_part.startswith('/'):
+                file_part = '/' + file_part
+            if not file_part:
+                if file_name:
+                    file_part = '/' + file_name.lstrip('/') if '/' in file_name and not file_name.startswith('/') else file_name
+                else:
+                    raise ValueError(
+                        "path contains '/file/' but no file segment after it; "
+                        "provide file_name or use a path that includes the file (e.g. .../file//var/log/audit.log)"
+                    )
+            path_for_cmd = path_part.replace('/', ' ').strip()
+            resource_path_for_cmd = f"{path_for_cmd} {file_part}"
+            cmd = "nv action delete {path}".format(path=resource_path_for_cmd)
+        else:
+            resource_path_for_cmd = path.replace('/', ' ').strip()
+            cmd = f"nv action delete {resource_path_for_cmd} {file_name}" if file_name else f"nv action delete {resource_path_for_cmd}"
+
         cmd = " ".join(cmd.split())
         logging.info("Running action cmd: '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
@@ -235,7 +256,7 @@ class NvueSystemCli(NvueBaseCli):
     @check_output
     def show_log(engine, resource_path, param='', exit_cmd=''):
         path = resource_path.replace('/', ' ')
-        cmd = f"nv show {path} {param}"
+        cmd = f"nv show {path} {param}".strip()
         logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd_after_cmd([cmd, exit_cmd])
 

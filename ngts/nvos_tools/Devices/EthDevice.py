@@ -1,6 +1,7 @@
 import allure
 import logging
 import os
+from datetime import datetime
 from typing import List
 
 from packaging.version import Version
@@ -139,6 +140,12 @@ class EthSwitch(BaseSwitch):
             SystemConsts.CONTACT: "",
             SystemConsts.LOCATION: ""
         }
+        self.system_log_value = "system log"
+        self.system_log_timestamp_regex = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[+-]\d{2}:\d{2}|Z)?'
+
+    def get_system_log_date_str_for_parsing(self, timestamp_match_str):
+        """Convert ISO 8601 syslog timestamp to '%b %d %H:%M:%S.%f' for common strptime parsing."""
+        return datetime.fromisoformat(timestamp_match_str).strftime("%b %d %H:%M:%S.%f")
 
     def _init_expected_operation_durations(self):
         """Initialize expected operation durations for Ethernet devices."""
