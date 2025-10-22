@@ -296,9 +296,9 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                     ip_address_full = IpTool.select_random_ipv6_address().verify_result()  # 40c9:7735:e23d:dd2a:ca43:c5e9:682e:decb/114
                     ip_address, prefix = ip_address_full.split("/")
                     with allure.step(f"Set random ipv6 address {ip_address} for {interface_name}"):
-                    mgmt_interface.interface.ipv6.address.set(op_param_name=ip_address_full, apply=True,
-                                                              ask_for_confirmation=True,
-                                                              dut_engine=serial_engine).verify_result()
+                        mgmt_interface.interface.ipv6.address.set(op_param_name=ip_address_full, apply=True,
+                                                                  ask_for_confirmation=True,
+                                                                  dut_engine=serial_engine).verify_result()
 
                     LLDPTool.verify_ip_address_is_set(engine=serial_engine, mgmt_interface=mgmt_interface, ip_address=ip_address_full)
 
