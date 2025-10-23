@@ -1722,6 +1722,22 @@ class HealthConsts:
     ASIC_HEALTH_ISSUE_FATAL = "Switch ASIC in fatal mode."
     # more constants found at test_fatal_mode.py
 
+    class Component:
+        FAN = "Fan"
+        ASIC = "ASIC"
+        CPU = "CPU"
+        PSU = "PSU"
+        Transceiver = "Transceiver"
+        Switch = "Switch"
+        Leakage_Sensor = "Leakage-sensor"
+        Software = "Software"
+        COMPONENTS = [FAN, ASIC, CPU, PSU, Transceiver, Switch, Leakage_Sensor, Software]
+        LAST_HEALTHY = 'last-unhealthy'
+        UNHEALTHY_COUNT = 'unhealthy-count'
+        STATE = 'state'
+        HEALTHY = 'HEALTHY'
+        UNHEALTHY = 'UNHEALTHY'
+
 
 class OperationTimeConsts:
     OPERATION_COL = 'operation'

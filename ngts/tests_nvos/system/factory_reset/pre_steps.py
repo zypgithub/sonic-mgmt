@@ -1,14 +1,15 @@
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_constants.constants_nvos import OutputFormat, ActionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 
 @disabled_access_ports
@@ -70,9 +71,16 @@ def factory_reset_no_params_pre_steps(engines, platform_params, system, devices,
         ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info").\
             verify_result()
 
-    with allure.step('Verify system location is set'):
-        ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
-            verify_result()
+    with allure.step("Update the health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        HWSimulator.create_health_component_error_fan(devices, engines)
+
+    with allure.step("Validate health component unhealthy counters and timestamps are updated"):
+        health = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+        fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
+        fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
+        assert fan_unhealthy_count == 1, "Fan unhealthy counter is not updated"
+        assert fan_last_unhealthy != "", "Fan last-unhealthy time is not updated"
 
     with allure.step("Add data before reset factory"):
         username = add_verification_data(engines.dut, system)

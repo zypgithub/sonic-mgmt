@@ -29,6 +29,13 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
         assert system_output[SystemConsts.LOCATION] is None, "System {} in system show is {} instead of Null".\
             format(SystemConsts.LOCATION, system_output[SystemConsts.LOCATION])
 
+    with allure.step("Validate health component unhealthy counters and timestamps are cleared"):
+        health = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+        fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
+        fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
+        assert fan_unhealthy_count == 0, "Fan unhealthy counter is not cleared"
+        assert fan_last_unhealthy == "", "Fan last-unhealthy time is not cleared"
+
     if TestToolkit.devices.dut.has_nmx:
         with allure.step('Juliet Device Check'):
             with allure.step("Make sure cluster initial state restored"):

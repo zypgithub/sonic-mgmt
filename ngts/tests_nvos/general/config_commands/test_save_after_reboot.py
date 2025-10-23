@@ -3,13 +3,14 @@ import time
 
 import pytest
 from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_constants.constants_nvos import FastRecoveryConsts
+from ngts.nvos_constants.constants_nvos import FastRecoveryConsts, ActionConsts, HealthConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts, EventConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -135,6 +136,10 @@ def test_save_reboot(engines, devices):
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
 
+        with allure.step("Update the health component unhealthy counters"):
+            system.health.component.action(ActionConsts.CLEAR)
+            HWSimulator.create_health_component_error_fan(devices, engines)
+
         with allure.step('Save config'):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
@@ -244,6 +249,14 @@ def test_save_reboot(engines, devices):
                 assert dscp_output['set']['dscp'] == 1, \
                     "The configured dscp is not present after reboot"
 
+            with allure.step("Validate health component unhealthy counters and timestamps are retained post reboot"):
+                health = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.health.component.show()).get_returned_value()
+                fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
+                fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
+                assert fan_unhealthy_count == 1, "Fan unhealthy counter is not retained"
+                assert fan_last_unhealthy != "", "Fan last-unhealthy time is not retained"
+
             if nmx_log_stream_test:
                 with allure.step("Verify cluster is enabled"):
                     output = OutputParsingTool.parse_show_output_to_dict(cluster.show()).get_returned_value()
@@ -258,6 +271,9 @@ def test_save_reboot(engines, devices):
                         "Remote-url is {} instead of {}".format(output_dict["remote-url"], url_show)
 
         finally:
+            with allure.step('Cleanup - Clear system health component unhealthy information'):
+                system.health.component.action(ActionConsts.CLEAR)
+
             with allure.step('Cleanup - Run unset system DNS server and apply config'):
                 system.dns.unset(SystemConsts.DNS_SERVER, apply=True, dut_engine=engines.dut).verify_result()
 

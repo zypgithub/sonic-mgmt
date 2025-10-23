@@ -19,6 +19,7 @@ class Health(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/health')
         self.history = History(self)
+        self.component = Component(self)
 
     @retry(Exception, tries=12, delay=30)
     def wait_until_health_status_change_after_reboot(self, expected_status):
@@ -69,3 +70,8 @@ class History(BaseComponent):
     @retry(Exception, tries=12, delay=30)
     def retry_get_health_history_file_summary_line(self, summary_regex=HealthConsts.SUMMARY_REGEX_OK):
         return self.search_line(summary_regex)[-1]
+
+
+class Component(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/component')

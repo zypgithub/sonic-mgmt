@@ -1,5 +1,10 @@
 import logging
 import allure
+import random
+import time
+import re
+
+from ngts.nvos_constants.constants_nvos import SystemConsts, FansConsts
 
 logger = logging.getLogger()
 
@@ -86,3 +91,47 @@ class HWSimulator:
             temp1_value = engine.run_cmd(cmd_to_run)
             HWSimulator.simulate_health_issue_change_fw_file(engine, new_val, file, thermal_directory)
             return temp1_value
+
+    @staticmethod
+    def simulate_and_fix_psu_component_error(devices, engines, show_output):
+        thermal_directory = devices.dut.fan_direction_dir
+        psu_id_list = []
+        for key in show_output:
+            psu_id = re.search(r"PSU(\d+).*", key)
+            if psu_id:
+                if show_output[key][SystemConsts.STATE] == FansConsts.STATE_OK:
+                    psu_id_list.append(psu_id.group(1))
+        psu_id = random.choice(psu_id_list)
+
+        with allure.step("Simulate PSU temperature fault for chosen PSU:{}".format(psu_id)):
+            real_temp = HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id)
+            time.sleep(10)
+        with allure.step("Simulate PSU temperature fix for chosen PSU:{}".format(psu_id)):
+            HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id, real_temp)
+            time.sleep(10)
+
+    @staticmethod
+    def simulate_and_fix_fan_component_error(devices, engines):
+        thermal_directory = devices.dut.fan_direction_dir
+        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+
+        with allure.step("Simulate fan error"):
+            real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
+            time.sleep(20)
+
+        with allure.step("Fix fan error"):
+            HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
+            time.sleep(10)
+
+    @staticmethod
+    def create_health_component_error_fan(devices, engines):
+        thermal_directory = devices.dut.fan_direction_dir
+        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+
+        with allure.step("Simulate fan error"):
+            real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
+            time.sleep(10)
+
+        with allure.step("Fix fan error"):
+            HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
+            time.sleep(10)

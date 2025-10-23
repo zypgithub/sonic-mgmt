@@ -22,9 +22,11 @@ from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_constants.constants_nvos import DatabaseConst
+from ngts.tests_nvos.platform.test_platform_environment_leakage import rewrite_files
 
 logger = logging.getLogger()
 
@@ -150,6 +152,125 @@ def test_show_system_health(devices):
         health_history_file_output = system.health.history.show_health_report_file(HealthConsts.HEALTH_FIRST_FILE)
         # first line in the health report output is the cmd itself, so we will compared just the file itself.
         assert health_history_file_output.split("\n", 2)[2] == health_history_output.split("\n", 2)[2], "The first health file does not show the same info as the default cmd"
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_show_system_health_component(devices):
+    """
+    Validate all the show system health commands
+        Test flow:
+            1. Validate nv show system health component command
+            2. Validate nv show system health component <component ID> command
+    """
+
+    system = System()
+    with allure.step("Validate show system health component command"):
+        health_comp_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).\
+            get_returned_value()
+        ValidationTool.validate_all_values_exists_in_list(HealthConsts.Component.COMPONENTS,
+                                                          health_comp_output.keys()).verify_result()
+        ValidationTool.verify_field_exist_in_json_output(health_comp_output, HealthConsts.Component.COMPONENTS). \
+            verify_result()
+
+    with allure.step("Validate show system health component command for each component"):
+        for component in HealthConsts.Component.COMPONENTS:
+            with allure.step(f"Validate show system health component {component}"):
+                health_comp_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.health.component.show(component)).get_returned_value()
+                ValidationTool.verify_field_exist_in_json_output(
+                    health_comp_output, [HealthConsts.Component.LAST_HEALTHY, HealthConsts.Component.STATE,
+                                         HealthConsts.Component.UNHEALTHY_COUNT]).verify_result()
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_system_health_component_counters(engines, devices):
+    """
+    Validate system health component counters
+        Test flow:
+            1. Get system health component counters information
+            2. Simulate fan error
+            3. Fix fan error
+            4. Simulate PSU error
+            5. Fix PSU error
+            6. Get updated system health component counters information
+            7. Validate counters and timestamps are updated
+    """
+
+    system = System()
+    platform = Platform()
+    component_list = HealthConsts.Component.COMPONENTS
+
+    with allure.step("Create available system health components list"):
+        if (not hasattr(devices.dut, 'fan_list')) or len(devices.dut.fan_list) == 0:
+            logger.info("Fan is not present")
+            component_list.remove(HealthConsts.Component.FAN)
+        if (not hasattr(devices.dut, 'psu_list')) or len(devices.dut.psu_list) == 0:
+            logger.info("PSU is not present")
+            component_list.remove(HealthConsts.Component.PSU)
+        if (not hasattr(devices.dut, 'leakage_sensors_count')) or devices.dut.leakage_sensors_count == 0:
+            logger.info("Leakage sensor is not present")
+            component_list.remove(HealthConsts.Component.Leakage_Sensor)
+
+    for component_name in component_list:
+        with allure.step(f"Get system health component counters details of {component_name}"):
+            health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).\
+                get_returned_value()
+            ValidationTool.verify_field_value_in_output(health_out[component_name], HealthConsts.Component.STATE,
+                                                        HealthConsts.Component.HEALTHY).verify_result()
+            unhealthy_count = int(health_out[component_name][HealthConsts.Component.UNHEALTHY_COUNT])
+            last_unhealthy = health_out[component_name][HealthConsts.Component.LAST_HEALTHY]
+
+        if component_name == "Fan":
+            with allure.step("Simulate and fix Fan error"):
+                HWSimulator.simulate_and_fix_fan_component_error(devices, engines)
+
+        elif component_name == "PSU":
+            show_out = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).verify_result()
+            with allure.step("Simulate and fix random PSU temperature error"):
+                HWSimulator.simulate_and_fix_psu_component_error(devices, engines, show_out)
+
+        elif component_name == "Leakage-sensor":
+            with allure.step("Simulate leakage on a random sensor and fix it"):
+                simulate_and_fix_leakage_sensor_error(engines, devices)
+
+        else:
+            # To Do: Add more components
+            continue
+
+        with allure.step(f"Validate updated state of system health component - {component_name}"):
+            retry_call(validate_component_health_data, [system, component_name, HealthConsts.Component.STATE,
+                                                        HealthConsts.Component.HEALTHY], exceptions=AssertionError,
+                       tries=5, delay=5)
+
+        with allure.step(f"Validate that {component_name} counters are updated"):
+            unhealthy_count_upd = unhealthy_count + 1
+            retry_call(validate_component_health_data, [system, component_name,
+                                                        HealthConsts.Component.UNHEALTHY_COUNT, str(unhealthy_count_upd)],
+                       exceptions=AssertionError, tries=5, delay=5)
+
+        with allure.step(f"Validate that {component_name} last unhealthy timestamps are updated"):
+            retry_call(validate_health_component_last_unhealthy, [system, component_name, last_unhealthy],
+                       exceptions=AssertionError, tries=5, delay=5)
+
+    with allure.step('Clear system health component unhealthy counter'):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
+    with allure.step("Validate system all health components unhealthy data are cleared"):
+        error_msgs = []
+        health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+        for component in health_out:
+            with allure.step("Validate system all health component unhealthy counters are cleared"):
+                count = int(health_out[component][HealthConsts.Component.UNHEALTHY_COUNT])
+                if count != 0:
+                    error_msgs.append(f"Unhealthy counter for {component} is {count} instead of 0")
+            with allure.step("Validate system all health component unhealthy counters are cleared"):
+                last_unhealthy = health_out[component][HealthConsts.Component.LAST_HEALTHY]
+                if last_unhealthy != "":
+                    error_msgs.append(f"Last-unhealthy timestamp for {component} is {last_unhealthy} instead of empty")
+        assert len(error_msgs) == 0, f"Health components unhealthy data are not cleared: {error_msgs}"
 
 
 @pytest.mark.system
@@ -1082,3 +1203,32 @@ def simulate_health_issue_using_config_file(engine):
                 config_file.json_overwrite(config_dict)
 
             yield
+
+
+def simulate_and_fix_leakage_sensor_error(engines, devices):
+    leakage_file = (random.choice(devices.dut.list_of_leakages)).replace("-", "").lower()
+    engines.dut.run_cmd("sudo sh -c 'unlink {0}{1} && echo {2} > {0}{1}'".format(
+        PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file, PlatformConsts.LEAK_STATUS_LEAK))
+    time.sleep(10)
+    ls_output = engines.dut.run_cmd("ls -la {}".format(PlatformConsts.LEAKAGE_FILES_FOLDER))
+    leakage_folder_name = re.search(r'hwmon/([^/]+)/leakage', ls_output).group(1)
+    engines.dut.run_cmd("sudo sh -c 'rm {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
+    engines.dut.run_cmd("sudo sh -c 'ln -s {0}{1}/{2} {3}{2}'".format(
+        PlatformConsts.LEAKAGE_FILES_SYSFS_FOLDER, leakage_folder_name, leakage_file,
+        PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
+
+
+def validate_component_health_data(system, component_name, field_name, field_value):
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    ValidationTool.verify_field_value_in_output(health_out[component_name], field_name, field_value).verify_result()
+
+
+def validate_health_component_last_unhealthy(system, component_name, last_unhealthy):
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    last_unhealthy_updated = health_out[component_name][HealthConsts.Component.LAST_HEALTHY]
+    if last_unhealthy != "":
+        assert (last_unhealthy_updated != "" and last_unhealthy_updated >= last_unhealthy), \
+            f"Last unhealthy timestamp of {component_name} is not updated"
+    else:
+        assert last_unhealthy_updated != "", f"Last unhealthy timestamp of {component_name} is not updated"
+    return last_unhealthy_updated
