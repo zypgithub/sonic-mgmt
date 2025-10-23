@@ -239,3 +239,25 @@ def get_topology_from_noga(session, slow_cli=False, override_type=False, force_u
     except BaseException as ex:
         logger.error("Failed to get topology from noga")
         raise ex
+
+
+def patch_ansible_shell_action_module():
+    """
+    Patch ansible.plugins.action.shell, if in here missing ActionModule class.
+    """
+    try:
+        import ansible.plugins.action.shell as shell    # noqa: E402
+        if not hasattr(shell, "ActionModule"):
+            from ansible.plugins.action import ActionBase   # noqa: E402
+
+            class ActionModule(ActionBase):
+                """Fallback-version ActionModule for ansible.plugins.action.shell."""
+                pass
+            shell.ActionModule = ActionModule
+            logger.info("Added missing ActionModule to ansible.plugins.action.shell")
+        else:
+            logger.debug("ActionModule already exists, patch skipped.")
+    except Exception as e:
+        error_msg = f"Failed to patch ansible shell plugin: {e}"
+        logger.warning(error_msg)
+        raise Exception(error_msg)

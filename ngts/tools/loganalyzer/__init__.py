@@ -4,7 +4,7 @@ import logging
 
 from pytest_ansible.errors import AnsibleConnectionFailure
 from tests.common.errors import RunAnsibleModuleFail
-from ngts.tools.infra import update_sys_path_by_community_plugins_path
+from ngts.tools.infra import update_sys_path_by_community_plugins_path, patch_ansible_shell_action_module
 from ngts.constants.constants import NvosCliTypes, PlayersAliases, CliType
 from ngts.constants.performance_constants import PerfConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -59,6 +59,8 @@ def duthosts(ansible_adhoc, topology_obj, request):
             dut_hostname = dut_info['attributes'].noga_query_data['attributes']['Common']['Name']
             if is_loganalyzer_enabled(request):
                 try:
+                    # WA for ansible 2.13.13 with pytest-ansible 4.0.0, where the plugin ActionModule can be not loaded yet.
+                    patch_ansible_shell_action_module()
                     password = dut_info['engine'].password
                     username = dut_info['engine'].username
                     dut_ansible_engine = SonicHost(ansible_adhoc, dut_hostname, ssh_user=username, ssh_passwd=password)
