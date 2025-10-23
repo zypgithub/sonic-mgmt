@@ -3,6 +3,9 @@ import errno
 import os
 from python_sdk_api.sx_api import *
 from python_sdk_api.sxd_api import *
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def redirect_stdout():
