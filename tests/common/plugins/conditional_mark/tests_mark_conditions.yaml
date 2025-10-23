@@ -3270,6 +3270,12 @@ pfcwd/test_pfcwd_all_port_storm.py:
       - "topo_type in ['m0', 'mx', 'm1']"
       - *lossyTopos
 
+pfcwd/test_pfcwd_all_port_storm.py::TestPfcwdAllPortStorm::test_all_port_storm_restore[IPv6.*:
+   xfail:
+     reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21067"
+     conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21067"
+
 pfcwd/test_pfcwd_cli.py:
    skip:
      reason: "Skip at dualtor aa testbed due to https://github.com/sonic-net/sonic-mgmt/issues/17218"
