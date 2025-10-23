@@ -2357,6 +2357,7 @@ class CpoConsts:
 
     # Default values
     DEFAULT_STATE = State.ENABLED.value
+    TIMEOUT_AFTER_ELS_INITIALIZATION = 400  # [sec]
 
     # Valid states lists
     VALID_STATES = [State.ENABLED.value, State.DISABLED.value]
@@ -2372,16 +2373,16 @@ class CpoConsts:
     ]
 
     ELS_INIT_DEFAULT_DICT = {
-        FIBER_CHECK: InitState.NOT_REACHED.value,
-        FIBER_TUNING: InitState.NOT_REACHED.value,
-        LASER_UP: InitState.NOT_REACHED.value,
+        FIBER_CHECK: InitState.COMPLETED.value,
+        FIBER_TUNING: InitState.COMPLETED.value,
+        LASER_UP: InitState.COMPLETED.value,
     }
 
     ELS_INIT_PER_LASER_DEFAULT_DICT = {
-        ERROR: "Operation failed - No specified reason",
-        FIBER_CHECK: InitState.NOT_REACHED.value,
-        FIBER_TUNING: InitState.NOT_REACHED.value,
-        LASER_UP: InitState.NOT_REACHED.value
+        ERROR: "",
+        FIBER_CHECK: InitState.COMPLETED.value,
+        FIBER_TUNING: InitState.COMPLETED.value,
+        LASER_UP: InitState.COMPLETED.value
     }
 
     # Number of lasers per ELS transceiver

@@ -102,7 +102,15 @@ class ConnectionTool:
         with allure.step("create serial engine"):
             att = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
             # add connection options to pass connection problems
-            extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
+            # Try serial_conn_command first, fallback to serial_conn_cmd if empty
+            serial_conn_cmd = att['Specific'].get('serial_conn_command', '').strip()
+            if not serial_conn_cmd:
+                serial_conn_cmd = att['Specific'].get('serial_conn_cmd', '').strip()
+
+            if not serial_conn_cmd:
+                raise ValueError("Serial connection command not configured in topology")
+
+            extended_rcon_command = serial_conn_cmd.split(' ')
             extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
             extended_rcon_command = ' '.join(extended_rcon_command)
 
