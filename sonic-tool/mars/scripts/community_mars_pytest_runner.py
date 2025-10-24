@@ -347,6 +347,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         # Need to add t0 for dualtor topology as some community dualtor tests only mark topology as t0
         if 'dualtor' in self.sonic_topo:
             topos.append('t0')
+        if 'bobcat' in self.dut_name and 't1' in self.sonic_topo:
+            topos.append('smartswitch')
         self.topology = ",".join(topos)
 
     def collect_allure_report_data(self):
