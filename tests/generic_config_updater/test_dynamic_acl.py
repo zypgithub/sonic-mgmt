@@ -1289,7 +1289,7 @@ def test_gcu_acl_forward_rule_same_priority(rand_selected_dut,
                                             ptfadapter,
                                             setup,
                                             dynamic_acl_create_table,
-                                            toggle_all_simulator_ports_to_rand_selected_tor):  # noqa: F811
+                                            toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that forward rules can have the exact same priority and still all be applied correctly
     Then, perform a traffic test to confirm that packets that match both the forward
     and drop rules are correctly forwarded, as the forwarding rules have higher priority"""
@@ -1297,18 +1297,18 @@ def test_gcu_acl_forward_rule_same_priority(rand_selected_dut,
     dynamic_acl_create_forward_rules_same_priority(rand_selected_dut, setup)
     dynamic_acl_create_secondary_drop_rule(rand_selected_dut, setup)
 
-    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup),
+    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup, tbinfo),
                                packets_dropped=False)
-    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup,
+    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup, tbinfo,
                                increment_ipv4_addr(DST_IP_FORWARDED_ORIGINAL, 1),
                                increment_ipv6_addr(DST_IPV6_FORWARDED_ORIGINAL, 1)),
                                packets_dropped=False)
-    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup,
+    dynamic_acl_verify_packets(setup, ptfadapter, packets=generate_packets(setup, tbinfo,
                                increment_ipv4_addr(DST_IP_FORWARDED_ORIGINAL, 2),
                                increment_ipv6_addr(DST_IPV6_FORWARDED_ORIGINAL, 2)),
                                packets_dropped=False)
     dynamic_acl_verify_packets(setup, ptfadapter,
-                               packets=generate_packets(setup, DST_IP_BLOCKED, DST_IPV6_BLOCKED),
+                               packets=generate_packets(setup, tbinfo, DST_IP_BLOCKED, DST_IPV6_BLOCKED),
                                packets_dropped=True)
 
 
