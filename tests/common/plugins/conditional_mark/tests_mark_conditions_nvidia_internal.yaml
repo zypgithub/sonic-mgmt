@@ -1005,6 +1005,12 @@ pfcwd/test_pfcwd_cli.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4680178"
 
+pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy[IPv4.*:
+  xfail:
+    reason: "Xfail due to https://redmine.mellanox.com/issues/4687373"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4687373 and ('arc-switch1004' in testbed or 'r-tigon-04' in testbed)"
+
 qos/test_qos_dscp_mapping.py:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
