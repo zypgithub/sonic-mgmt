@@ -101,27 +101,25 @@ def apply_switch_basic_config(duthost, dpuhost, ptfhost, dpuhosts, dpu_index):
     ptfhost.shell(cmd_del_host_ip_on_host_a_0)
 
 
-@pytest.fixture(scope="module")
-def apply_dpu_basic_config(dpuhost, apply_switch_basic_config, dpuhosts, dpu_index):
+@pytest.fixture(scope="function", autouse=True)
+def apply_dpu_basic_config(duthost, dpuhost, dpuhosts, dpu_index):
     dpuhost = dpuhosts[dpu_index]
     dpu_ip = dpuhost.dpu_data_port_ip
     npu_interface_ip = dpuhost.npu_data_port_ip
-    logger.info("Add ip to Ethernet0")
-    cmd_add_data_port_ip = f"sudo config interface ip  add Ethernet0 {dpu_ip}/31"
-    dpuhost.shell(cmd_add_data_port_ip)
-
-    logger.info("Add ip to Loopback0")
-    cmd_add_l0_ip = f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255"
-    dpuhost.shell(cmd_add_l0_ip)
+    intfs = dpuhost.shell("show ip int")["stdout"]
+    if "Loopback0" not in intfs:
+        logger.info("Add ip to Ethernet0")
+        dpuhost.shell(f"sudo config interface ip  add Ethernet0 {dpu_ip}/31")
+        logger.info("Add ip to Loopback0")
+        dpuhost.shell(f"sudo config interface ip  add Loopback0 {pl.APPLIANCE_VIP}/255.255.255.255")
 
     logger.info("Add ip default route via Ethernet0")
-    cmd_add_npu_neig_route = f"sudo ip route add {pl.PE_PA}/32 via {npu_interface_ip} dev Ethernet0"
-    dpuhost.shell(cmd_add_npu_neig_route)
-
+    dpuhost.shell(f'ip route replace {duthost.mgmt_ip}/32 via 169.254.200.254')
+    dpuhost.shell(f"ip route replace default via {dpuhost.npu_data_port_ip}")
 
 
 @pytest.fixture(scope="module", autouse=True)
-def add_npu_static_routes(duthost, dpu_index, apply_switch_basic_config, apply_dpu_basic_config, dpuhosts):
+def add_npu_static_routes(duthost, dpu_index, apply_switch_basic_config, dpuhosts):
     dpuhost = dpuhosts[dpu_index]
     cmds = []
     vm_nexthop_ip = HOST_IP_ON_HOST_DUT_A_0
@@ -143,7 +141,7 @@ def add_npu_static_routes(duthost, dpu_index, apply_switch_basic_config, apply_d
     duthost.shell_cmds(cmds=cmds)
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(autouse=True, scope="function")
 def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip_config, set_vxlan_udp_sport_range):
     if skip_config:
         return
@@ -161,7 +159,7 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index)
 
     route_and_mapping_messages = {
-        **pl.PE1_VNET_MAPPING_CONFIG,
+        **pl.PE_VNET_MAPPING_CONFIG,
         **pl.PE_SUBNET_ROUTE_CONFIG,
         **pl.VM_SUBNET_ROUTE_CONFIG
     }
@@ -182,12 +180,12 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
-    config_reload(dpuhost, safe_reload=True)
+    #apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpu_index, False)
+    #apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpu_index, False)
+    #apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpu_index, False)
+    #apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpu_index, False)
+    #apply_messages(localhost, duthost, ptfhost, base_config_messages, dpu_index, False)
+    config_reload(dpuhost, safe_reload=True, yang_validate=False)
 
 
 @pytest.mark.parametrize("encap_proto", ["vxlan", "gre"])

@@ -471,12 +471,6 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
     - "https://redmine.mellanox.com/issues/4531681"
 
-dash/canonical/test_dash_privatelink.py::test_privatelink_basic_transform:
-  skip:
-    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4657824"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4657824"
-
 dash/test_fnic.py:
   skip:
     reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4687261"
