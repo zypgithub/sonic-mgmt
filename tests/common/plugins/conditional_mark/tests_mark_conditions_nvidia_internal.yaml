@@ -483,6 +483,12 @@ dash/canonical/test_dash_privatelink.py::test_privatelink_basic_transform:
     conditions:
     - "https://redmine.mellanox.com/issues/4657824"
 
+dash/test_fnic.py:
+  skip:
+    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4687261"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4687261"
+
 drop_packets/test_wjh.py:
   skip:
     reason: "WJH test doesn't support dualtor topology"
