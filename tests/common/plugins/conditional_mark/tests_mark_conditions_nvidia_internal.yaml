@@ -402,6 +402,12 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
     conditions:
     - "https://redmine.mellanox.com/issues/3587377"
 
+bfd/test_bfd.py::test_bfd_multihop:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
 bgp/test_bgp_suppress_fib.py:
   xfail:
     reason: "Testcase skipped due to https://github.com/sonic-net/sonic-mgmt/issues/18998"
