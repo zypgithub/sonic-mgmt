@@ -1064,6 +1064,12 @@ qos/test_qos_dscp_mapping.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4680178"
 
+bgp/test_bgp_queue.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
