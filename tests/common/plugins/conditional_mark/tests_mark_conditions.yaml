@@ -3368,9 +3368,10 @@ pfcwd/test_pfcwd_all_port_storm.py:
 
 pfcwd/test_pfcwd_all_port_storm.py::TestPfcwdAllPortStorm::test_all_port_storm_restore[IPv6.*:
    xfail:
-     reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21067"
+     reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21067 or https://github.com/sonic-net/sonic-mgmt/issues/21082"
      conditions:
-      - "https://github.com/sonic-net/sonic-mgmt/issues/21067"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21067 and 't0-56' in topo_type and asic_type in ['mellanox']"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21082 and topo_type in ['t0-88-o8c80', 't1-48-lag', 't1-lag', 't1-32-lag', 't1-64-lag'] and asic_type in ['mellanox']"
 
 pfcwd/test_pfcwd_cli.py:
    skip:
@@ -3398,6 +3399,12 @@ pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy
     reason: "ipv6 mgmt ip is not supported, see check_timer_accuracy_test.yml#43"
     conditions:
     - "is_mgmt_ipv6_only==True"
+
+pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy[IPv6.*:
+  xfail:
+    reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21083"
+    conditions:
+    - "https://github.com/sonic-net/sonic-mgmt/issues/21083 and asic_type in ['mellanox']"
 
 pfcwd/test_pfcwd_warm_reboot.py:
    skip:
@@ -3480,7 +3487,7 @@ qos:
       - "topo_type in ['m0', 'mx', 'm1']"
       - "macsec_en==True"
       # ipv6 mgmt ip is not supported, see fixture dut_disable_ipv6 in qos_sai_base.py
-      - "is_mgmt_ipv6_only==True" 
+      - "is_mgmt_ipv6_only==True"
 
 qos/test_buffer.py:
   skip:
