@@ -3932,6 +3932,12 @@ route/test_route_bgp_ecmp.py:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20730 and '-v6-' in topo_name"
 
+route/test_route_bgp_ecmp.py:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20730"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20730 and '-v6-' in topo_name"
+
 route/test_route_flap.py:
   skip:
     reason: "Test case has issue on the t0-56-povlan and dualtor-64 topo. Does not apply to standalone or t1-isolated-d128 topos."
@@ -4820,6 +4826,36 @@ vxlan/test_vxlan_route_advertisement.py:
     reason: "VxLAN route advertisement can only run on cisco and mnlx platforms."
     conditions:
       - "asic_type not in ['cisco-8000', 'mellanox', 'vs']"
+
+vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_basic_route_advertisement[v4_in_v4]:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20725"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20725 and '-v6-' in topo_name"
+
+vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_basic_route_advertisement_with_community[v4_in_v4]:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20725"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20725 and '-v6-' in topo_name"
+
+vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_basic_route_advertisement_with_community_change[v4_in_v4]:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20725"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20725 and '-v6-' in topo_name"
+
+vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_route_advertisement_without_and_with_community[v4_in_v4]:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20725"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20725 and '-v6-' in topo_name"
+
+vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_scale_route_advertisement_with_community[v4_in_v4]:
+  xfail:
+    reason: "xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20725"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20725 and '-v6-' in topo_name"
 
 vxlan/test_vxlan_route_advertisement.py::Test_VxLAN_route_Advertisement::test_basic_route_advertisement[v4_in_v4]:
   xfail:
