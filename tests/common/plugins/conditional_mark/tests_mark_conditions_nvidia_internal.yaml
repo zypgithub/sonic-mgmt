@@ -402,12 +402,6 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
     conditions:
     - "https://redmine.mellanox.com/issues/3587377"
 
-arp/test_wr_arp.py:
-  skip:
-    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
-
 bgp/test_bgp_suppress_fib.py:
   xfail:
     reason: "Testcase skipped due to https://github.com/sonic-net/sonic-mgmt/issues/18998"
@@ -559,12 +553,6 @@ everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_e
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/16087
 
-hash/test_generic_hash.py::test_reboot:
-  skip:
-    reason: "The WR/FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
-
 hash/test_generic_hash.py::test_lag_hash[CRC-DST_MAC:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
@@ -639,19 +627,6 @@ passw_hardening/test_passw_hardening.py:
     conditions:
     - "'simx' in platform"
 
-platform_tests/test_advanced_reboot.py::test_warm_reboot:
-  skip:
-    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions_logical_operator: or
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
-
-platform_tests/test_advanced_reboot.py::test_fast_reboot:
-  skip:
-    reason: "The FR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
-
 platform_tests/test_service_warm_restart.py:
   skip:
     reason: "The warm service restart is not supported on 202411 and greater releases"
@@ -659,12 +634,6 @@ platform_tests/test_service_warm_restart.py:
 platform_tests/test_auto_negotiation.py:
   skip:
     reason: "The auto negotiation is not supported on 202411 and greater releases"
-
-pfcwd/test_pfcwd_warm_reboot.py:
-  skip:
-    reason: "The WR not supported on SN5600-C224O8, SN5600-C256S1 hwsku"
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8']"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
@@ -926,34 +895,6 @@ sub_port_interfaces/:
 sflow/test_sflow.py:
   skip:
     reason: "Sflow is not supported on 202411 and greater releases"
-
-sflow/test_sflow.py::TestReboot::testFastreboot:
-  skip:
-    reason: "The fast reboot test is not supported on SN5600-C224O8, SN5600-C256S1, SN5610N-C256S2, SN5610N-C224O8, SN5640-C512S2, SN5640-C448O16 hwsku; or RM issue: https://redmine.mellanox.com/issues/4492386"
-    conditions_logical_operator: or
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8', 'Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8', 'Mellanox-SN5640-C512S2', 'Mellanox-SN5640-C448O16']"
-    - "https://redmine.mellanox.com/issues/4492386"
-
-sflow/test_sflow.py::TestReboot::testWarmreboot:
-  skip:
-    reason: "The WR test is not supported on SN5600-C224O8, SN5600-C256S1, SN5610N-C256S2, SN5610N-C224O8, SN5640-C512S2, SN5640-C448O16 hwsku; or RM issue: https://redmine.mellanox.com/issues/4492386"
-    conditions_logical_operator: or
-    conditions:
-    - "hwsku in ['Mellanox-SN5600-C256S1', 'Mellanox-SN5600-C224O8', 'Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8', 'Mellanox-SN5640-C512S2', 'Mellanox-SN5640-C448O16']"
-    - "https://redmine.mellanox.com/issues/4492386"
-
-sflow/test_sflow.py::TestReboot::testRebootSflowEnable:
-  skip:
-    reason: "Test failure due to RM issue: https://redmine.mellanox.com/issues/4492386"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4492386"
-
-sflow/test_sflow.py::TestSflowCollector::test_sflow_config:
-  skip:
-    reason: "Test failure due to RM issue: https://redmine.mellanox.com/issues/4492386"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4492386"
 
 smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_switch:
   skip:
