@@ -22,13 +22,17 @@ def get_switch_info(setup_name: str) -> List[str]:
     return switches[0]
 
 
+def get_provisioning(switch_info: dict) -> str:
+    is_opn = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.OPN].lower()
+    return Defaults.PRODUCTION if is_opn == NogaConstants.YES else Defaults.DEVELOPMENT
+
+
 def start_components_update(_args):
     switch_info = get_switch_info(_args.setup_name)
     bmc_ip = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.BMC_IP]
-    provisioning = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][NogaConstants.BIOS_VERSION]
+    provisioning = get_provisioning(switch_info)
     switch_name = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name'].strip()
     assert bmc_ip, "No bmc ip found in noga"
-    provisioning = 'prod' if provisioning == 'OPN' else 'dev'
     update_via_parameter = bool(_args.bmc_path or _args.bios_path or _args.erot_path or _args.fpga_path)
     rf_api = RedFishRestApi(bmc_ip, _args.bmc_user, _args.bmc_pass)
     json_dict = create_json_dict(_args.fw_versions_json_file)

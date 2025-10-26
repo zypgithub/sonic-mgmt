@@ -24,6 +24,8 @@ class Defaults:
     FPGA_ENCRYPTED_NAME = 'fpga_encrypted'
     EROT_NAME = 'erot'
     PLDM_NAME = 'pldm'
+    PRODUCTION = 'prod'
+    DEVELOPMENT = 'dev'
 
 
 class NogaConstants:
@@ -42,3 +44,5 @@ class NogaConstants:
     HARDWARE_COMPONENTS = 'Hardware Components'
     COMMON = 'Common'
     SWITCH = 'Switch'
+    OPN = 'opn'
+    YES = 'yes'
