@@ -2081,9 +2081,11 @@ fib/test_fib.py::test_ecmp_group_member_flap:
 
 fib/test_fib.py:
   skip:
-    reason: 'Skip on t1-isolated-d32/128 topos'
+    reason: 'Skip on t1-isolated-d32/128 topos or due to the issue https://github.com/sonic-net/sonic-mgmt/issues/17930'
+    conditions_logical_operator: or
     conditions:
       - "topo_name in ['t1-isolated-d128', 't1-isolated-d32']"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/17930 and topo_name in ['t1-isolated-d28u1']"
 
 fib/test_fib.py::test_basic_fib[True-True-1514]:
   skip:
