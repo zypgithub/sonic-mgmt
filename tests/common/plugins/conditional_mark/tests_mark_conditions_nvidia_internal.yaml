@@ -1036,6 +1036,18 @@ bgp/test_bgp_queue.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4680178"
 
+telemetry/test_events.py::test_events:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
+telemetry/test_telemetry.py::test_telemetry_queue_buffer_cnt:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4680178"
+
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
