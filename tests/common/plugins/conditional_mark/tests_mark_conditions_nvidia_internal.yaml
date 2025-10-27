@@ -1017,7 +1017,8 @@ pfcwd/test_pfcwd_cli.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4680178"
 
-pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy[IPv4.*:
+pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy\[IPv4.*:
+  regex: true
   xfail:
     reason: "Xfail due to https://redmine.mellanox.com/issues/4687373"
     conditions:
