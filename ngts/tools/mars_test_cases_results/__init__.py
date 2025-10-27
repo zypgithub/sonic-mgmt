@@ -8,6 +8,7 @@ import subprocess
 
 from datetime import datetime
 from ngts.constants.constants import CliType, DbConstants, BugHandlerConst
+from ngts.constants.constants import MarsConstants, SonicConst
 from ngts.helpers.performance.performance_db_helpers import add_allure_url_into_perf_test
 
 logger = logging.getLogger()
@@ -19,8 +20,8 @@ IS_IPV6 = "is_ipv6"
 ALLURE_URL = "allure_url"
 DUMP_INFO = "dump_info"
 TEST_INSERTED_TIME = "test_inserted_time"
-NAME = "name"
-RESULT = "result"
+MARS_NAME = "mars_name"
+MARS_RESULT = "mars_result"
 SKIP_REASON = "skip_reason"
 EXCEPTION = "exception"
 EXCEPTION_REGEX = "exception_regex"
@@ -102,24 +103,6 @@ def create_metadata_dir(session_id, cli_type):
     return folder_path
 
 
-def create_test_record(session_id, setup_name, mars_key_id, test_name, result, skipreason, exception, exception_regex,
-                       la_redmine_issues, allure_url, dump_info, test_inserted_time):
-    test_record = {}
-    test_record.update({SESSION_ID: session_id})
-    test_record.update({SETUP_NAME: setup_name})
-    test_record.update({MARS_KEY_ID: mars_key_id})
-    test_record.update({NAME: test_name})
-    test_record.update({RESULT: result})
-    test_record.update({SKIP_REASON: skipreason})
-    test_record.update({EXCEPTION: exception})
-    test_record.update({EXCEPTION_REGEX: exception_regex})
-    test_record.update({LA_REDMINE_ISSUES: la_redmine_issues})
-    test_record.update({ALLURE_URL: allure_url})
-    test_record.update({DUMP_INFO: dump_info})
-    test_record.update({TEST_INSERTED_TIME: test_inserted_time})
-    return test_record
-
-
 def pytest_sessionfinish(session, exitstatus):
     """
     Pytest hook which are executed after all tests before exist from program
@@ -144,7 +127,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         logger.info("Export MARS cases result to SQL database is disabled")
         return
 
-    json_obj = []
+    results_list_json = []
     report_url = config.cache.get(ALLURE_REPORT_URL, '')
     if report_url is None:
         report_url = ''
@@ -156,9 +139,19 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     la_redmine_issues = config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     logger.info(f"la_issues = {la_redmine_issues}")
     cli_type = SKYNET if skynet else config.cache.get('CLI_TYPE', CliType.SONIC)
+
+    # Add basic session info to the json object
+    basic_session_info = {}
+    basic_session_info_path = os.path.join(MarsConstants.SONIC_MGMT_DIR, SonicConst.BASIC_SESSION_INFO_FILE_NAME)
+    if os.path.exists(basic_session_info_path):
+        with open(basic_session_info_path, "r") as f:
+            basic_session_info = json.load(f)
+
     if valid_tests_data(session_id, mars_key_id):
         tests_results, tests_skipreason, tests_exceptions = parse_tests_results(terminalreporter)
         for test_case_name, test_result in tests_results.items():
+            result_json = {}
+            result_json.update(basic_session_info)
             add_allure_url_into_perf_test(report_url, test_case_name, is_ipv6)
             test_exception, test_exception_regex, test_case_la_issues = update_exception_from_la_error(tests_exceptions,
                                                                                                        test_case_name,
@@ -168,20 +161,21 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
             now = datetime.now()
             test_inserted_time = now.strftime("%m/%d/%Y %H:%M:%S")
             dump_info = prepare_dump_dest_path(test_case_name, session_id)
-            json_obj.append(create_test_record(session_id,
-                                               setup_name,
-                                               mars_key_id,
-                                               test_case_name,
-                                               test_result,
-                                               tests_skipreason[test_case_name],
-                                               test_exception,
-                                               test_exception_regex,
-                                               test_case_la_issues,
-                                               report_url,
-                                               dump_info,
-                                               test_inserted_time))
-        logger.debug("Tests results to be exported to SQL DB: {}".format(json_obj))
-        dump_json_to_file(json_obj, session_id, mars_key_id, cli_type)
+            result_json[SESSION_ID] = session_id
+            result_json[SETUP_NAME] = setup_name
+            result_json[MARS_KEY_ID] = mars_key_id
+            result_json[MARS_NAME] = test_case_name
+            result_json[MARS_RESULT] = test_result
+            result_json[SKIP_REASON] = tests_skipreason[test_case_name]
+            result_json[EXCEPTION] = test_exception
+            result_json[EXCEPTION_REGEX] = test_exception_regex
+            result_json[LA_REDMINE_ISSUES] = test_case_la_issues
+            result_json[ALLURE_URL] = report_url
+            result_json[DUMP_INFO] = dump_info
+            result_json[TEST_INSERTED_TIME] = test_inserted_time
+            results_list_json.append(result_json)
+        logger.info(f"Tests results to be exported to SQL DB: {results_list_json}")
+        dump_json_to_file(results_list_json, session_id, mars_key_id, cli_type)
         export_data(session_id, mars_key_id, cli_type)
     # In skynet, we should reset the LA dict between runs as sonic-mgmt container isn't removed and cache stays the same
     if skynet:
@@ -199,7 +193,7 @@ def dump_json_to_file(json_obj, session_id, mars_key_id, cli_type):
 
 def export_data(session_id, mars_key_id, cli_type):
     job_name = os.environ.get("REGRESSION_TYPE")
-    if job_name and job_name != "regression":
+    if job_name != "regression":
         logger.info("Skipping export data to mars db for non-regression jobs")
         return
     export_data_cmd = "/ngts_venv/bin/python /root/mars/workspace/sonic-mgmt/ngts/scripts/export_test_json_to_mars_db.py" \
@@ -234,7 +228,7 @@ def parse_tests_results(terminalreporter):
     tests_results = {}
     tests_skipreason = {}
     tests_exceptions = {}
-    stats_keys = ['skipped', 'passed', 'failed', 'error']
+    stats_keys = ['skipped', 'passed', 'failed', 'error', 'xpassed', 'xfailed']
     for key in stats_keys:
         for test_obj in terminalreporter.stats.get(key, []):
             exception = ""

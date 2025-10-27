@@ -10,10 +10,12 @@ import allure
 import pytest
 import copy
 import socket
+import json
 from retry import retry
 from requests.packages import urllib3
 from tests.common.helpers.constants import RANDOM_SEED
 from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
+from ngts.constants.constants import MarsConstants, SonicConst
 
 urllib3.disable_warnings()
 
@@ -94,7 +96,10 @@ def get_dut_info(ansible_dir, dut_host):
     os.chdir(ansible_dir)
 
     cmd = "ansible -m command -i inventory {} -a 'show version'".format(dut_host)
-    output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+    version_output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+    cmd = "ansible -m command -i inventory {} -a 'sonic-cfggen -y \
+        /etc/sonic/sonic_version.yml -v branch'".format(dut_host)
+    branch = subprocess.check_output(cmd, shell=True).splitlines()[-1].decode('utf-8')
     os.chdir(original_dir)
 
     version_reg = re.compile(r"sonic software version: +([^\s]+)\s", re.IGNORECASE)
@@ -102,12 +107,12 @@ def get_dut_info(ansible_dir, dut_host):
     hwsku_reg = re.compile(r"hwsku: +([^\s]+)\s", re.IGNORECASE)
     asic_reg = re.compile(r"asic: +([^\s]+)\s", re.IGNORECASE)
 
-    version = version_reg.findall(output)[0] if version_reg.search(output) else ""
-    platform = platform_reg.findall(output)[0] if platform_reg.search(output) else ""
-    hwsku = hwsku_reg.findall(output)[0] if hwsku_reg.search(output) else ""
-    asic = asic_reg.findall(output)[0] if asic_reg.search(output) else ""
+    version = version_reg.findall(version_output)[0] if version_reg.search(version_output) else ""
+    platform = platform_reg.findall(version_output)[0] if platform_reg.search(version_output) else ""
+    hwsku = hwsku_reg.findall(version_output)[0] if hwsku_reg.search(version_output) else ""
+    asic = asic_reg.findall(version_output)[0] if asic_reg.search(version_output) else ""
 
-    return version, platform, hwsku, asic
+    return version, platform, hwsku, asic, branch
 
 
 def get_setup_session_info(session):
@@ -119,13 +124,30 @@ def get_setup_session_info(session):
     platform_list = []
     hwsku_list = []
     asic_list = []
+    branch_list = []
     mars_session_id = session.config.option.session_id
     for dut_host in dut_hosts:
-        version, platform, hwsku, asic = get_dut_info(ansible_dir, dut_host)
+        version, platform, hwsku, asic, branch = get_dut_info(ansible_dir, dut_host)
         version_list.append(version)
         platform_list.append(platform)
         hwsku_list.append(hwsku)
         asic_list.append(asic)
+        branch_list.append(branch)
+
+    # Save basic session info in a cache which can be used to update the Mars respond DB
+    # Assuming the version/platform/hwsku/asic are the same for all DUTs
+    data_to_cache = {
+        "dut_names": ",".join(dut_hosts),
+        "os_version": version_list[0],
+        "branch": branch_list[0],
+        "platform": platform_list[0],
+        "hwsku": hwsku_list[0],
+        "asic": asic_list[0]
+    }
+    cache_path = os.path.join(MarsConstants.SONIC_MGMT_DIR, SonicConst.BASIC_SESSION_INFO_FILE_NAME)
+    if not os.path.exists(cache_path):
+        with open(cache_path, "w") as f:
+            json.dump(data_to_cache, f)
 
     random_seed = session.config.cache.get(RANDOM_SEED, None)
     pytest_run_cmd_args = session.config.cache.get(PYTEST_RUN_CMD, None)

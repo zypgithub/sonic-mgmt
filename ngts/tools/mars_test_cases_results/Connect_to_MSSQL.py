@@ -75,6 +75,17 @@ class ConnectMSSQL:
         except Exception as e:
             raise Exception("SQL insert query: " + insert_query + " failed. error: " + str(e))
 
+    def get_table_column_names(self, table_name):
+        if not self.is_connected:
+            self.connect_db()
+            cmd = f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}';"
+            self.cursor.execute(cmd)
+            columns_query = self.cursor.fetchall()
+            column_names = []
+            for column in columns_query:
+                column_names.append(column[0])
+            return column_names
+
     def query_scalar(self, scalar_query):
         self.cursor.execute(scalar_query)
         result_id = self.cursor.fetchone()[0]

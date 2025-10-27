@@ -12,8 +12,7 @@ path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 
-from ngts.tools.mars_test_cases_results.Write_to_db import MarsConnectDB  # noqa: E402
-from ngts.tools.mars_test_cases_results.mars_json_handler import JsonHandler  # noqa: E402
+from ngts.tools.mars_test_cases_results.Write_to_db import MarsRespondDB  # noqa: E402
 from ngts.constants.constants import InfraConst, CliType, DbConstants  # noqa: E402
 
 sys.path.append(sonic_mgmt_path + "/sonic-tool")
@@ -51,16 +50,15 @@ def init_parser():
 def write_json_into_mars_db(json_file_path, cli_type):
     connections_params = DbConstants.CREDENTIALS.get(cli_type, DbConstants.CREDENTIALS[CliType.SONIC])
     logger.info("Connecting to MARS DB")
-    write_db = MarsConnectDB(connections_params['server'], connections_params['database'],
+    write_db = MarsRespondDB(connections_params['server'], connections_params['database'],
                              connections_params['username'],
                              connections_params['password'])
     logger.info("Connected to MARS DB")
     with open(json_file_path, 'r') as f:
         json_data = json.load(f)
         logger.info("JSON data loaded")
-        json_handler = JsonHandler(json_data)
         logger.info("Writing data to MARS DB")
-        write_db.write_json_to_db(json_handler.all_data)
+        write_db.write_json_to_db(json_data)
 
 
 def export_json_to_mars_db(session_id, mars_key_id, cli_type):
