@@ -483,6 +483,12 @@ dash/test_fnic.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4687261"
 
+dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_monitor_checksum_validation:
+  xfail:
+    reason: "xfail due to RM ticket https://redmine.mellanox.com/issues/4690202"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4690202"
+
 drop_packets/test_wjh.py:
   skip:
     reason: "WJH test doesn't support dualtor topology"
