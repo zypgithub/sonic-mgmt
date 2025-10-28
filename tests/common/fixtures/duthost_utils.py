@@ -563,6 +563,26 @@ def is_support_psu(duthosts, rand_one_dut_hostname):
     return platform_data['psus']['number'] > 0
 
 
+@pytest.fixture(scope='module')
+def is_support_fan(duthosts, rand_one_dut_hostname):
+    """
+    Check if dut has fan
+    """
+    duthost = duthosts[rand_one_dut_hostname]
+    platform_data = get_platform_data(duthost)
+    return platform_data['fans']['number'] > 0
+
+
+@pytest.fixture(scope='module')
+def is_support_psu(duthosts, rand_one_dut_hostname):
+    """
+    Check if dut has psu
+    """
+    duthost = duthosts[rand_one_dut_hostname]
+    platform_data = get_platform_data(duthost)
+    return platform_data['psus']['number'] > 0
+
+
 def separated_dscp_to_tc_map_on_uplink(dut_qos_maps_module):
     """
     A helper function to check if separated DSCP_TO_TC_MAP is applied to
