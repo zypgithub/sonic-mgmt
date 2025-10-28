@@ -225,8 +225,10 @@ class TrafficValidator(MultiNosTest):
 
         self.logger.debug("Starting HFT session")
         bulk_counter_lib.bulk_counters_transaction_set(self.handle, hft_counter_buffer)
-
-        self._wait_for_hft_event(trap_fd_hft)
+        try:
+            self._wait_for_hft_event(trap_fd_hft)
+        except common_lib.TimeOutException:
+            raise SdkException("HFT event not Received")
 
     @common_lib.retry_on_failure_till_timeout(timeout=10)
     def _wait_for_hft_event(self, trap_fd_hft):
@@ -234,7 +236,7 @@ class TrafficValidator(MultiNosTest):
         trap_list = list(trap_queue.queue)
         trap_id_list = [trap.recv_info.trap_id for trap in trap_list]
         if SX_TRAP_ID_BULK_COUNTER_DONE_EVENT not in trap_id_list:
-            raise SdkException("HFT event not received")
+            raise common_lib.NotifyFailure()
 
     def start_hft_session(self, ports: list, counters: list, prio_list: list = None, tc_list: list = None,
                           pg_list: list = None,
@@ -633,7 +635,6 @@ class TrafficValidator(MultiNosTest):
             th.start()
         for th in threads:
             th.join()
-
         create_new_json_file(json_obj=self.validator_json_obj, file_path=self.validator_json_path)
 
 

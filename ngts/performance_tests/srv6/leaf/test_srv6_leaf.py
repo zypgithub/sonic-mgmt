@@ -9,7 +9,8 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata,
                                                                 update_port_group_in_df,
-                                                                skip_performance_test_conditionally, skip_test_on_unsupported_chip_type)
+                                                                skip_performance_test_conditionally, skip_test_on_unsupported_chip_type,
+                                                                set_shaper_on_traffic_gen)
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
@@ -69,6 +70,7 @@ class TestSRv6Leaf(TestSRv6Base):
             traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                   self.dut_interfaces_ipv6_configuration_dict,
                                                   create_workload_stream, left_ports=upstream, right_ports=downstream)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SRV6_SHAPER_VALUE)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
         with allure.step(f"Verifying the traffic for all egress ports"):
             additional_validations = self.get_additional_validations(traffic_type)
@@ -79,6 +81,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       additional_validations=additional_validations)
             run_validation(config)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_leaf_round_robin_srv6(self, request, traffic_type):
