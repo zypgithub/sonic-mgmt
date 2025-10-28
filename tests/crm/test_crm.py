@@ -664,7 +664,7 @@ def _get_interface_neighbor_and_port(duthost, tbinfo, dut_interface, nbrhosts):
     neighbor_name, neighbor_interface = neighbor_name['name'], neighbor_name['port']
     neighbor = nbrhosts[neighbor_name]
     lacp_num = neighbor['conf']['interfaces'][neighbor_interface].get('lacp')
-    neighbor_interface = f'po{lacp_num}' if lacp_num else neighbor_interface
+    neighbor_interface = f'po{lacp_num}' if lacp_num else neighbor_interface.replace('Ethernet', 'eth')
     return neighbor['host'], neighbor_interface
 
 
