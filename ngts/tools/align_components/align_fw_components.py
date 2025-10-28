@@ -78,6 +78,8 @@ def start_components_update(_args):
                 required_version = json_dict[provisioning][component_name]['latest']['version_name']
                 install_path = json_dict[provisioning][component_name]['latest']['path']
 
+        install_path = install_path.strip()  # Make sure there are no extra spaces in the path
+
         if not verify_install_path(install_path):
             print(f"{component_name} path does not exist {install_path}")
             raise FileNotFoundError(install_path)
