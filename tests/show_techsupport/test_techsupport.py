@@ -12,7 +12,7 @@ from tests.common.helpers.assertions import pytest_assert, pytest_require
 from tests.common.helpers.platform_api import bmc
 from tests.common.platform.device_utils import platform_api_conn, start_platform_api_service    # noqa: F401
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError, get_bughandler_instance
-from tests.common.utilities import wait_until, check_msg_in_syslog, is_ipv6_only_topology
+from tests.common.utilities import is_ipv6_only_topology, wait_until, check_msg_in_syslog
 from tests.everflow.everflow_test_utilities import BaseEverflowTest, CONFIG_MODE_CLI
 from log_messages import LOG_EXPECT_ACL_RULE_CREATE_RE, LOG_EXPECT_ACL_RULE_REMOVE_RE, LOG_EXCEPT_MIRROR_SESSION_REMOVE
 from pkg_resources import parse_version
@@ -58,7 +58,6 @@ IPV6_IPS = {'src_ip': "2001::1", 'dst_ip': "2001::2"}
 
 DPU_PLATFORM_DUMP_FILES = ["sysfs_tree", "sys_version", "dmesg",
                            "dmidecode", "lsmod", "lspci", "top", "bin/platform-dump.sh"]
-
 # ACL PART #
 
 
@@ -218,7 +217,8 @@ def gre_version(duthosts, enum_rand_one_per_hwsku_hostname):
 
 
 @pytest.fixture(scope='function')
-def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip, mirror_setup, gre_version, request):
+def mirroring(duthosts, enum_rand_one_per_hwsku_frontend_hostname, neighbor_ip,
+              mirror_setup, gre_version, request, tbinfo):
     """
     fixture gathers all configuration fixtures
     :param duthost: DUT host
@@ -233,18 +233,23 @@ def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip, mirror_se
     }
     logger.info('Extra variables for MIRROR table:\n{}'.format(pprint.pformat(extra_vars)))
     duthost.host.options['variable_manager'].extra_vars.update(extra_vars)
-    test_session_info = {f"session_{key}": value for key, value in SESSION_INFO.items()}
-    test_session_info['session_dst_ip'] = neighbor_ip
+    cmd = "config mirror_session add {} {} {} {} {} {} {}"
     if is_ipv6_only_topology(tbinfo):
-        erspan_ip_ver = 6
-        test_session_info['session_dst_ipv6'] = neighbor_ip
-        test_session_info['session_src_ipv6'] = IPV6_IPS['src_ip']
-    else:
-        erspan_ip_ver = 4
-    logger.info('Test session info:\n{}'.format(pprint.pformat(test_session_info)))
-    BaseEverflowTest.apply_mirror_config(duthost, test_session_info, config_method=CONFIG_MODE_CLI, erspan_ip_ver=erspan_ip_ver)
+        SESSION_INFO['src_ip'] = IPV6_IPS['src_ip']
+        SESSION_INFO['dst_ip'] = IPV6_IPS['dst_ip']
+        cmd = "redis-cli -n 4 hset \"MIRROR_SESSION|{}\" src_ip {} dst_ip {} dscp {} ttl {} type {} queue {}"
 
+    cmd = cmd.format(
+        SESSION_INFO['name'],
+        SESSION_INFO['src_ip'],
+        neighbor_ip,
+        SESSION_INFO['dscp'],
+        SESSION_INFO['ttl'],
+        SESSION_INFO['gre'],
+        SESSION_INFO['queue']
+    )
     duthost.template(src=os.path.join(TEMPLATE_DIR, ACL_RULE_PERSISTENT_TEMPLATE), dest=acl_rule_file)
+    duthost.command(cmd)
 
     logger.info('Loading acl mirror rules ...')
     load_rule_cmd = "acl-loader update full {} --session_name={}".format(acl_rule_file, SESSION_INFO['name'])
