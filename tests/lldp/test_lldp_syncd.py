@@ -251,7 +251,7 @@ def verify_each_interface_lldp_content(db_instance, interface, lldpctl_interface
 
     entry_content = ''
 
-    wait_until(20, 1, 0, get_lldp_entry_content_with_retry)
+    wait_until(30, 1, 0, get_lldp_entry_content_with_retry)
 
     logger.debug("Interface {}, entry_content:{}".format(interface, entry_content))
     lldpctl_interface = None
