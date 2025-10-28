@@ -1,9 +1,12 @@
 import os
+from typing import List
+from dataclasses import dataclass
 from ngts.constants.constants import NvosCliTypes, DVSCliTypes, BugHandlerConst
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class ValidationConsts:
+    IGNORE_COUNTER_LIST = "ignore_counter_list"
     DEVIATION = "deviation"
     DEVIATION_ABOVE_THRESHOLD = "deviationAboveThreshold"
     SPEED = "speed"
@@ -165,7 +168,14 @@ class PerfConsts:
     DVS_LOSSLESS_TC = 26
     DVS_LOSSY_TC = 34
     DVS_CONTROL_TC = 48
+
+    # Configuration Parameters
     PORT_GROUPS = "port_groups"
+    ECMP_CONFIGURATIONS = "ecmp_configurations"
+    TRAFFIC_PATTERN = "traffic_pattern"
+    BW_THRESHOLD = "bw_threshold"
+    ECMP_TYPE_AR = "ar"
+    ECMP_TYPE_STATIC = "static"
 
     # Configuration Files
     AR_PERF_CONFIG_FOLDER = 'config_files'
@@ -319,6 +329,19 @@ class MultiNosSharedData:
     DEFAULT_SHARED_JSON = "shared_communication.json"
     ALIBABA_ACL_DUMP_PATH = 'alibaba_acl_path'
     ALIBABA_ACL_DUMP_NAME = 'alibaba_acl_name'
+
+
+@dataclass
+class LossyLosslessTrafficHandler:
+    """
+    Data class to encapsulate configuration details for traffic setup.
+    """
+    neigh_ip: str
+    neigh_mask: str
+    neigh_mac: str
+    nexthop_ip: str
+    ports_list: List[int]
+    ecmp_type: str
 
 
 class Cl_Consts:

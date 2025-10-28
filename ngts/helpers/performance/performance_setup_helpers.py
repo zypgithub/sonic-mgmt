@@ -97,7 +97,7 @@ class ValidationConfig:
             # Counter validation - checks for drops and other counters (such as POC)
             'counters': Validation(
                 validate_counters,
-                {'skip_first_counters_iteration': self.skip_first_counters_iteration, 'ignore_counter_list': self.ignore_counter_list}
+                {'skip_first_counters_iteration': self.skip_first_counters_iteration, ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list}
             ) if self.run_validate_counters else None,
 
             # Bandwidth validation - ensures bandwidth meets threshold

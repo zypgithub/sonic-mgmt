@@ -57,6 +57,13 @@ class DvsPerformance(PerformanceCommon):
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
                                       template_suite, scenario, "dvs")
+        json_dict = self.render_configuration_file(conf_args, templates_path)
+        conf_path = os.path.join(templates_path, f"{self.dut_alias}_conf.json")
+        self.save_configuration_file(conf_path, json_dict, dst_dut_dir="/tmp")
+        self.port_groups = json_dict[PerfConsts.SDK_TEST_CONF][PerfConsts.PORT_GROUPS]
+        return json_dict["sdk_test_info"]["sdk_test_name"]
+
+    def render_configuration_file(self, conf_args, templates_path):
         env = Environment(loader=FileSystemLoader(templates_path))
         jinja_template = env.get_template(f"{self.dut_alias}.jinja")
         func_dict = {"get_split_ports": self.get_split_ports,
@@ -67,10 +74,7 @@ class DvsPerformance(PerformanceCommon):
         template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias, right_left_ports_dict=self.right_left_ports_dict)
         logging.info(f"Template string: {template_string}")
         json_dict = json.loads(template_string)
-        conf_path = os.path.join(templates_path, f"{self.dut_alias}_conf.json")
-        self.save_configuration_file(conf_path, json_dict, dst_dut_dir="/tmp")
-        self.port_groups = json_dict[PerfConsts.SDK_TEST_CONF][PerfConsts.PORT_GROUPS]
-        return json_dict["sdk_test_info"]["sdk_test_name"]
+        return json_dict
 
     def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         conf_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
