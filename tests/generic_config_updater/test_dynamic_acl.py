@@ -653,9 +653,9 @@ def generate_packets(setup, tbinfo, dst_ip=DST_IP_FORWARDED_ORIGINAL, dst_ipv6=D
     packets = {}
     if not is_ipv6_only_topology(tbinfo):
         packets["IPV4"] = testutils.simple_tcp_packet(eth_dst=setup["router_mac"],
-                                                        ip_src=IP_SOURCE,
-                                                        ip_dst=dst_ip,
-                                                        ip_ttl=64)
+                                                      ip_src=IP_SOURCE,
+                                                      ip_dst=dst_ip,
+                                                      ip_ttl=64)
 
     packets["IPV6"] = testutils.simple_tcpv6_packet(eth_dst=setup["router_mac"],
                                                     ipv6_src=IPV6_SOURCE,
@@ -1153,7 +1153,7 @@ def test_gcu_acl_arp_rule_creation(rand_selected_dut,
                                    setup,
                                    dynamic_acl_create_table,
                                    prepare_ptf_intf_and_ip,
-                                   toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                   toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that we can create a blanket ARP/NDP packet forwarding rule with GCU, and that ARP/NDP packets
     are correctly forwarded while all others are dropped."""
 
@@ -1205,8 +1205,8 @@ def test_gcu_acl_dhcp_rule_creation(rand_selected_dut,
                                     ptfadapter,
                                     setup,
                                     dynamic_acl_create_table,
-                                    toggle_all_simulator_ports_to_rand_selected_tor,    # noqa F811
-                                    setup_standby_ports_on_rand_unselected_tor, tbinfo):        # noqa F811
+                                    toggle_all_simulator_ports_to_rand_selected_tor,    # noqa: F811
+                                    setup_standby_ports_on_rand_unselected_tor, tbinfo):        # noqa: F811
     """Verify that DHCP and DHCPv6 forwarding rules can be created, and that dhcp packets are properly forwarded
     whereas others are dropped"""
 
@@ -1229,7 +1229,7 @@ def test_gcu_acl_drop_rule_creation(rand_selected_dut,
                                     ptfadapter,
                                     setup,
                                     dynamic_acl_create_table,
-                                    toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                    toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that we can create a drop rule via GCU, and that once this drop rule is in place packets
     that match the drop rule are dropped and packets that do not match the drop rule are forwarded"""
 
@@ -1251,7 +1251,7 @@ def test_gcu_acl_drop_rule_removal(rand_selected_dut,
                                    ptfadapter,
                                    setup,
                                    dynamic_acl_create_table,
-                                   toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                   toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that once a drop rule is removed, packets that were previously being dropped are now forwarded"""
 
     dynamic_acl_create_three_drop_rules(rand_selected_dut, setup)
@@ -1269,7 +1269,7 @@ def test_gcu_acl_forward_rule_priority_respected(rand_selected_dut,
                                                  ptfadapter,
                                                  setup,
                                                  dynamic_acl_create_table,
-                                                 toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                                 toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that forward rules and drop rules can be created at the same time, with the forward rules having
     higher priority than drop.  Then, perform a traffic test to confirm that packets that match both the forward
     and drop rules are correctly forwarded, as the forwarding rules have higher priority"""
@@ -1317,7 +1317,7 @@ def test_gcu_acl_forward_rule_replacement(rand_selected_dut,
                                           ptfadapter,
                                           setup,
                                           dynamic_acl_create_table,
-                                          toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                          toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that forward rules can be created, and then afterwards can have their match pattern updated to a new value.
     Confirm that packets sent that match this new value are correctly forwarded, and that packets that are sent that
     match the old, replaced value are correctly dropped."""
@@ -1342,7 +1342,7 @@ def test_gcu_acl_forward_rule_removal(rand_selected_dut,
                                       setup,
                                       ip_type,
                                       dynamic_acl_create_table,
-                                      toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                                      toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa: F811
     """Test that if a forward rule is created, and then removed, that packets associated with that rule are properly
     no longer forwarded, and packets associated with the remaining rule are forwarded"""
 
@@ -1364,7 +1364,7 @@ def test_gcu_acl_forward_rule_removal(rand_selected_dut,
 
 
 def test_gcu_acl_scale_rules(rand_selected_dut, rand_unselected_dut, ptfadapter, setup, dynamic_acl_create_table,
-                             toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa F811
+                             toggle_all_simulator_ports_to_rand_selected_tor, tbinfo):  # noqa:F811
     """Perform a scale test, creating 150 forward rules with top priority,
     and then creating a drop rule for every single VLAN port on our device.
     Select any one of our blocked ports, as well as the ips for two of our forward rules,
