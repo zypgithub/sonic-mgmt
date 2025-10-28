@@ -456,6 +456,12 @@ bgp/test_bgp_update_timer.py::test_bgp_update_timer_single_route:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/19918 and '-v6-' in topo_name"
 
+bgp/test_bgp_update_replication.py:
+  xfail:
+    reason: "Testcase is not stable on dualtor-aa setup due to GH issue: https://github.com/sonic-net/sonic-mgmt/issues/21110"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21110 and 'dualtor-aa' in topo_name"
+
 bgp/test_bgpmon.py:
   skip:
     reason: "Not supported on T2 topology or topology backend
