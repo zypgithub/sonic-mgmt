@@ -131,8 +131,8 @@ def test_techsupport_health_event_sdk_dump(topology_obj, loganalyzer, engines, c
             health_check_counter_after_dump_generated = int(get_health_check_running_counter(duthost))
 
         with allure.step('Get health_check_running_counter after dump generated'):
-            assert (health_check_counter_after_dump_generated < health_check_counter_after_event_triggered,
-                    "Health check counter was not restarted")
+            assert health_check_counter_after_dump_generated < health_check_counter_after_event_triggered, \
+                "Health check counter was not restarted"
 
         with allure.step('Validate that the health check dump contain all of the SDK extended dump files'):
             check_all_dumps_file_exsits(topology_obj, duthost, chip_type)
