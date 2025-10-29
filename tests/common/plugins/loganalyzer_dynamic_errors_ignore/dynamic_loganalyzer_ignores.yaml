@@ -1399,6 +1399,7 @@
 # following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
 - Errors_list:
   - '.*ERR pmon#.*\/var\/run\/hw-management\/thermal\/.*'
+  - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/cpu_pack does not exis.*'
   Conditions:
   - Affected_test_cases:
     - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
