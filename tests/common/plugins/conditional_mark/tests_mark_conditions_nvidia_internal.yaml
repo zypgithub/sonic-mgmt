@@ -894,6 +894,12 @@ platform_tests/test_cpu_memory_usage.py::test_cpu_memory_usage:
     conditions:
     - "https://redmine.mellanox.com/issues/3754090 and 'nvda_bf-9009' in platform"
 
+platform_tests/link_flap/test_cont_link_flap.py::TestContLinkFlap::test_cont_link_flap:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4702703"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4702703"
+
 process_monitoring/test_critical_process_monitoring.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3464488 and standalone dpu platform"
