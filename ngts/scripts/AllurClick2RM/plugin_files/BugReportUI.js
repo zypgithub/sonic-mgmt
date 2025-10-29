@@ -14,14 +14,14 @@ class BugReportUI {
         return modal;
     }
 
-    createBugInputForm(testName, setupName, hasOverviewData) {
+    createBugInputForm(testName, setupName, hasVersion) {
         const content = document.createElement('div');
         content.style.cssText = `
             background: white; padding: 20px; border-radius: 8px;
             width: 600px; max-width: 90vw; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             pointer-events: auto;   /* ✅ re-enable events for popup */
         `;
-        const versionFieldHtml = !hasOverviewData ? `
+        const versionFieldHtml = !hasVersion ? `
             <div style="margin: 15px 0; border-top: 1px solid #eee; padding-top: 15px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #d32f2f;">
                     Version: <span style="color: #d32f2f;">*</span>
@@ -80,7 +80,7 @@ class BugReportUI {
         return content;
     }
 
-    setupModalEventHandlers(modal, content, resolve, hasOverviewData) {
+    setupModalEventHandlers(modal, content, resolve, hasVersion) {
         // ✅prevent keys from affecting Allure page while typing
         // Only stop propagation to parent page, but allow normal input behavior
         content.querySelectorAll('input, textarea').forEach(el => {
@@ -90,8 +90,8 @@ class BugReportUI {
         });
         // Handle OK button
         content.querySelector('#okBtn').addEventListener('click', () => {
-            // Validate version field if overview data is not available
-            if (!hasOverviewData) {
+            // Validate version field if version is not available in Allure
+            if (!hasVersion) {
                 const versionInput = content.querySelector('#versionInput');
                 const versionValue = versionInput ? versionInput.value.trim() : "";
                 if (!versionValue) {
@@ -127,13 +127,13 @@ class BugReportUI {
         });
     }
 
-    getUserBugInputs(testName, setupName, hasOverviewData) {
+    getUserBugInputs(testName, setupName, hasVersion) {
         return new Promise((resolve) => {
             const modal = this.createModal();
-            const content = this.createBugInputForm(testName, setupName, hasOverviewData);
+            const content = this.createBugInputForm(testName, setupName, hasVersion);
             modal.appendChild(content);
             document.body.appendChild(modal);
-            this.setupModalEventHandlers(modal, content, resolve, hasOverviewData);
+            this.setupModalEventHandlers(modal, content, resolve, hasVersion);
         });
     }
 

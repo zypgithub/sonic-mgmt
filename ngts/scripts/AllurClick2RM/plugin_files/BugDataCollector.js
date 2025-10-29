@@ -93,7 +93,9 @@ class BugDataCollector {
                             flatData.system_type = val;
                             break;
                         case "Version":
-                            flatData.detected_in_version = val;
+                            if (val && val.trim() !== "") {
+                                flatData.detected_in_version = val;
+                            }
                             break;
                         case "Dut_host":
                             flatData.setup_name = val;
@@ -108,9 +110,9 @@ class BugDataCollector {
                 }
             });
         }
-        // If manual version was provided and detected_in_version is not set, use manual version
-        if (manualVersion && !flatData.detected_in_version) {
-            flatData.detected_in_version = manualVersion;
+        // If manual version was provided and detected_in_version is not set or empty, use manual version
+        if (manualVersion && manualVersion.trim() !== "" && !flatData.detected_in_version) {
+            flatData.detected_in_version = manualVersion.trim();
         }
         return flatData;
     }
@@ -128,9 +130,15 @@ class BugDataCollector {
             const is_session_report = baseUrl.includes("session-reports");
             const testData = await this.fetchTestData(baseUrl, testCaseId);
             const { overviewData, setupName } = await this.fetchEnvironmentData(baseUrl);
-            // Show popup
-            const hasOverviewData = overviewData && overviewData.length > 0;
-            const selectionResult = await ui.getUserBugInputs(testData.name, setupName, hasOverviewData);
+            // Show popup - check if Version specifically exists in overview data with non-empty value
+            const hasVersion = overviewData && overviewData.some(item =>
+                item.name === "Version" &&
+                item.values &&
+                item.values.length > 0 &&
+                item.values[0] &&
+                item.values[0].trim() !== ""
+            );
+            const selectionResult = await ui.getUserBugInputs(testData.name, setupName, hasVersion);
             if (!selectionResult) {
                 console.log("User cancelled bug creation");
                 return;
