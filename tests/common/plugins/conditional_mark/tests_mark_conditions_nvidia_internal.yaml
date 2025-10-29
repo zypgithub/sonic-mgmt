@@ -404,9 +404,9 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
 
 bfd/test_bfd.py::test_bfd_multihop:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 bgp/test_bgp_suppress_fib.py:
   xfail:
@@ -995,27 +995,27 @@ vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case6:
 
 snmp/test_snmp_queue.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 snmp/test_snmp_queue_counters.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 pfcwd/test_pfcwd_function.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 pfcwd/test_pfcwd_cli.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy\[IPv4.*:
   regex: true
@@ -1026,27 +1026,27 @@ pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy
 
 qos/test_qos_dscp_mapping.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 bgp/test_bgp_queue.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 telemetry/test_events.py::test_events:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 telemetry/test_telemetry.py::test_telemetry_queue_buffer_cnt:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
     conditions:
-    - "https://redmine.mellanox.com/issues/4680178"
+    - "https://redmine.mellanox.com/issues/4697884"
 
 ########################## Community IGNORE END ##########################
 
