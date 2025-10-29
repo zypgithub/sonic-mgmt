@@ -14,6 +14,13 @@
   </global>
 
   <case>
+  <ignore>
+              <condition>
+                  <key> skip_reboot_into_onie </key>
+                  <op> == </op>
+              <value> yes </value>
+          </condition>
+          </ignore>
     <name> Reboot DUT into ONIE </name>
     <info> </info>
     <cmd>
