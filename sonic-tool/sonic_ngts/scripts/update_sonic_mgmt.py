@@ -5,6 +5,8 @@ import logging
 import shutil
 import sys
 import json
+import pandas as pd
+import numpy as np
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 
 logging.basicConfig(level=logging.DEBUG)
@@ -22,6 +24,7 @@ class ConfFiles:
         self.lab = "{sonic_mgmt}/ansible/lab".format(sonic_mgmt=sonic_mgmt)
         self.inventory = "{sonic_mgmt}/ansible/inventory".format(sonic_mgmt=sonic_mgmt)
         self.minigraph_facts = "{sonic_mgmt}/ansible/library/minigraph_facts.py".format(sonic_mgmt=sonic_mgmt)
+        self.sonic_nvidia_common_devices = "{sonic_mgmt}/ansible/files/sonic_nvidia_common_devices.csv".format(sonic_mgmt=sonic_mgmt)
 
     def __getattribute__(self, name):
         return object.__getattribute__(self, name)
@@ -162,6 +165,32 @@ class Lab:
             return dut_name in lab_file.read()
 
 
+class SonicNvidiaCommonDevices:
+    def __init__(self, sonic_nvidia_common_devices_path):
+        self.sonic_nvidia_common_devices_path = sonic_nvidia_common_devices_path
+
+    def read(self):
+        with open(self.sonic_nvidia_common_devices_path) as f:
+            buff = pd.read_csv(f)
+        return buff
+
+    def entry_exists(self, dut_name):
+        devices_content = self.read()
+        return dut_name in devices_content['Hostname'].values
+
+    def add_entry(self, host_name, management_ip, hwsku):
+        line = {
+            "Hostname": host_name,
+            "ManagementIp": management_ip,
+            "HwSku": hwsku,
+            "Type": "DevSonic",
+            "Protocol": np.nan,
+            "Os": "sonic"
+        }
+        df = self.read()
+        df = pd.concat([df, pd.DataFrame([line])], ignore_index=True)
+        df.to_csv(self.sonic_nvidia_common_devices_path, index=False)
+
 class MinigraphFacts:
     def __init__(self, mgmt_minigraph_path):
         self.mgmt_minigraph_path = mgmt_minigraph_path
@@ -218,6 +247,7 @@ if __name__ == "__main__":
     lab = Lab(lab_path=conf_files.lab)
     inv = Inventory(conf_files.inventory)
     mg_facts = MinigraphFacts(conf_files.minigraph_facts)
+    sonic_nvidia_common_devices = SonicNvidiaCommonDevices(conf_files.sonic_nvidia_common_devices)
 
     # Update minigraph_facts.py
     mg_facts.write_minigraph_facts()
@@ -236,12 +266,16 @@ if __name__ == "__main__":
     ansible_port = topology.players['dut']['engine'].ssh_port
     hwsku = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
 
-    files = [inv, lab, testbed_yaml]
-
+    files = [inv, lab, testbed_yaml, sonic_nvidia_common_devices]
+    if 'air' in setup_name:
+        os.system(f"echo '{ansible_host} {setup_name}' >> /etc/hosts")
     for f in files:
         if not f.entry_exists(dut_name=dut_name):
             if isinstance(f, TestbedYAML):
                 f.add_entry(dut_name=dut_name)
+            elif isinstance(f, SonicNvidiaCommonDevices):
+                f.add_entry(host_name=ansible_host, management_ip=ansible_host, hwsku=hwsku)
+                f.add_entry(host_name=dut_name, management_ip=ansible_host, hwsku=hwsku)
             else:
                 f.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku)
             logger.info(f"Entry for '{dut_name}' DUT entry added to {f.__class__.__name__} file.")

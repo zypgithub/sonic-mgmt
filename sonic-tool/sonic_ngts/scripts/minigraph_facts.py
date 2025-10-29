@@ -58,7 +58,7 @@ Example of data which returned by this module:
 
 '''
 
-
+SONIC_SSH_PORT = 22
 http_topo_base_path = "http://nbu-mtr-nfs.nvidia.com/auto/sw_regression/system/SONIC/MARS/conf/topo/"
 
 
@@ -74,7 +74,7 @@ def read_config_db_json(json_file_path):
     return config_db_json
 
 
-def get_config_db_json_from_hostname(hostname, logs):
+def get_config_db_json_from_hostname(hostname, logs, port=SONIC_SSH_PORT):
     """
     Method returns config_db.json data as dictionary for specific host
     We looking for setup name in shared folder and then read config_db.json for specific host.
@@ -82,20 +82,20 @@ def get_config_db_json_from_hostname(hostname, logs):
     """
     if 'ptf-any' in hostname:
         hostname = hostname.strip('ptf-any')
-
-    if socket.gethostname() == hostname:
+    if socket.gethostname() == "dut" or socket.gethostname() == hostname:
         tmp_config_db = "/etc/sonic/config_db.json"
     else:
         tmp_config_db = '/tmp/config_db.json'
         logs.append('{} Copy config_db.json file from {}'.format(time.ctime(), hostname))
         sw_user = os.getenv("SONIC_SWITCH_USER")
         sw_password = os.getenv("SONIC_SWITCH_PASSWORD")
-        scp_cmd = "sshpass -p '{sw_password}' scp -o 'StrictHostKeyChecking no' -o 'UserKnownHostsFile=/dev/null'" \
+        scp_cmd = "sshpass -p '{sw_password}' scp -P {port} -o 'StrictHostKeyChecking no' -o 'UserKnownHostsFile=/dev/null'" \
                   " -r {sw_user}@{hostname}:" \
                   "/etc/sonic/config_db.json {tmp_config_db}".format(sw_password=sw_password,
                                                                      sw_user=sw_user,
                                                                      hostname=hostname,
-                                                                     tmp_config_db=tmp_config_db)
+                                                                     tmp_config_db=tmp_config_db,
+                                                                     port=port)
         os.system(scp_cmd)
 
     logs.append('Read config_db.json file')
@@ -115,10 +115,10 @@ def get_dut_ports(config_db_json, logs):
     return ports
 
 
-def generate_minigraph_facts(hostname):
+def generate_minigraph_facts(hostname, port):
     minigraph_facts = dict()
     logs = []
-    config_db_json = get_config_db_json_from_hostname(hostname, logs)
+    config_db_json = get_config_db_json_from_hostname(hostname, logs, port)
 
     minigraph_facts["inventory_hostname"] = config_db_json["DEVICE_METADATA"]["localhost"]["hostname"]
     minigraph_facts["minigraph_hwsku"] = config_db_json["DEVICE_METADATA"]["localhost"]["hwsku"]
@@ -140,6 +140,7 @@ def main():
             host=dict(required=True),
             filename=dict(),
             namespace=dict(required=False, default=None),
+            port=dict(required=False, default=SONIC_SSH_PORT)
         ),
         supports_check_mode=True
     )
@@ -147,7 +148,7 @@ def main():
     m_args = module.params
 
     try:
-        results = generate_minigraph_facts(m_args['host'])
+        results = generate_minigraph_facts(m_args['host'], m_args['port'])
         module.exit_json(ansible_facts=results)
     except Exception as e:
         tb = traceback.format_exc()

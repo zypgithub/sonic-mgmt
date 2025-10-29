@@ -39,6 +39,7 @@ NUMBER_OF_LANES = None
 PORTS_WITH_8LANES = None
 ASIC_TYPE = None
 
+PLATFORM_SUPPORTED_SPEEDS_TO_TEST = None
 TESTPARAM_HEADROOM_OVERRIDE = None
 TESTPARAM_LOSSLESS_PG = None
 TESTPARAM_SHARED_HEADROOM_POOL = None
@@ -227,6 +228,7 @@ def load_test_parameters(duthost):
     global TESTPARAM_ADMIN_DOWN
     global ASIC_TYPE
     global MAX_SPEED_8LANE_PORT
+    global PLATFORM_SUPPORTED_SPEEDS_TO_TEST
 
     param_file_name = "qos/files/dynamic_buffer_param.json"
     with open(param_file_name) as file:
@@ -234,6 +236,7 @@ def load_test_parameters(duthost):
         logging.info("Loaded test parameters {} from {}".format(
             params, param_file_name))
         ASIC_TYPE = duthost.facts['asic_type']
+        platform = duthost.facts['platform']
         vendor_specific_param = params[ASIC_TYPE]
         DEFAULT_CABLE_LENGTH_LIST = vendor_specific_param['default_cable_length']
         TESTPARAM_HEADROOM_OVERRIDE = vendor_specific_param['headroom-override']
@@ -241,9 +244,17 @@ def load_test_parameters(duthost):
         TESTPARAM_SHARED_HEADROOM_POOL = vendor_specific_param['shared-headroom-pool']
         TESTPARAM_EXTRA_OVERHEAD = vendor_specific_param['extra_overhead']
         TESTPARAM_ADMIN_DOWN = vendor_specific_param['admin-down']
-        MAX_SPEED_8LANE_PORT = vendor_specific_param['max_speed_8lane_platform'].get(
-            duthost.facts['platform'])
-
+        MAX_SPEED_8LANE_PORT = vendor_specific_param['max_speed_8lane_platform'].get(platform)
+        if buffer_queue_table := TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'].get(platform):
+            TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'] = buffer_queue_table
+        else:
+            TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'] = TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'].get('default')
+        if platform_extra_overhead := TESTPARAM_EXTRA_OVERHEAD.get(platform):
+            TESTPARAM_EXTRA_OVERHEAD['default'] = platform_extra_overhead
+        if platform_supported_speeds_to_test := vendor_specific_param['supported_speeds_to_test'].get(platform):
+            PLATFORM_SUPPORTED_SPEEDS_TO_TEST = platform_supported_speeds_to_test
+        else:
+            PLATFORM_SUPPORTED_SPEEDS_TO_TEST = vendor_specific_param['supported_speeds_to_test'].get('default')
         # For ingress profile list, we need to check whether the ingress lossy profile exists
         ingress_lossy_pool = duthost.shell(
             'redis-cli -n 4 keys "BUFFER_POOL|ingress_lossy_pool"')['stdout']
@@ -850,7 +861,7 @@ def make_expected_profile_name(speed, cable_length, **kwargs):
     return expected_profile
 
 
-@pytest.fixture(params=['50000', '10000'])
+@pytest.fixture(params=['50000', '10000', '100000'])
 def speed_to_test(request):
     """Used to parametrized test cases for speeds
 
@@ -860,6 +871,9 @@ def speed_to_test(request):
     Return:
         speed_to_test
     """
+    global PLATFORM_SUPPORTED_SPEEDS_TO_TEST
+    if request.param not in PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
+        pytest.skip(f"Skipping case for speed {request.param} because it is not tested by the platform")
     return request.param
 
 
@@ -903,9 +917,10 @@ def port_to_test(request, duthost):
     global NUMBER_OF_LANES
     if PORT_TO_TEST:
         return PORT_TO_TEST
-
+    dut_vars = duthost.host.options["inventory_manager"].get_host(duthost.hostname).vars
+    external_dut_port = dut_vars.get("ansible_port", 22)
     dutLagInterfaces = []
-    mgFacts = duthost.minigraph_facts(host=duthost.hostname)['ansible_facts']
+    mgFacts = duthost.minigraph_facts(host=duthost.hostname, port=external_dut_port)['ansible_facts']
 
     for _, lag in list(mgFacts["minigraph_portchannels"].items()):
         dutLagInterfaces += lag["members"]
@@ -997,7 +1012,7 @@ def test_change_speed_cable(duthosts, rand_one_dut_hostname, conn_graph_facts,  
     """
     duthost = duthosts[rand_one_dut_hostname]
     supported_speeds = duthost.shell(
-        'redis-cli -n 6 hget "PORT_TABLE|{}" supported_speeds'.format(port_to_test))['stdout']
+        'redis-cli -n 6 hget "PORT_TABLE|{}" supported_speeds'.format(port_to_test))['stdout'].split(',')
     if supported_speeds and speed_to_test not in supported_speeds:
         pytest.skip('Speed is not supported by the port, skip')
     original_speed = duthost.shell(
