@@ -217,7 +217,7 @@ def gre_version(duthosts, enum_rand_one_per_hwsku_hostname):
 
 
 @pytest.fixture(scope='function')
-def mirroring(duthosts, enum_rand_one_per_hwsku_frontend_hostname, neighbor_ip,
+def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip,
               mirror_setup, gre_version, request, tbinfo):
     """
     fixture gathers all configuration fixtures
@@ -603,7 +603,7 @@ def check_cmds(cmd_group_name, cmd_group_to_check, cmdlist, strbash_in_cmdlist, 
 
 
 def test_techsupport_commands(
-        duthosts, enum_rand_one_per_hwsku_frontend_hostname, commands_to_check, skip_on_dpu, tbinfo):  # noqa F811
+        duthosts, enum_rand_one_per_hwsku_hostname, commands_to_check, skip_on_dpu, tbinfo):  # noqa F811
     """
     This test checks list of commands that will be run when executing
     'show techsupport' CLI against a standard expected list of commands
