@@ -11,7 +11,7 @@ import time
 import pytest
 
 from tests.common.utilities import wait, wait_until
-from tests.common.mellanox_data import get_platform_data
+from tests.common.mellanox_data import get_platform_data, get_chip_type
 from tests.common.errors import RunAnsibleModuleFail
 
 pytestmark = [pytest.mark.disable_loganalyzer]
@@ -207,24 +207,58 @@ def test_typical_table_size(duthost, localhost, request, common_setup_teardown):
     """
     @summary: Test setting typical table size values and check the result.
     """
-    table_size = {
-        "SAI_FDB_TABLE_SIZE": 32768,
-        "SAI_IPV4_ROUTE_TABLE_SIZE": 102400,
-        "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
-        "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 16384,
-        "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
-    }
-
+    chip_type = get_chip_type(duthost)
     # If warm-reboot is supported (issu enabled), only half HW resources would be available
     # Need to use a different set of values for testing
-    table_size_issu = {
-        "SAI_FDB_TABLE_SIZE": 16384,
-        "SAI_IPV4_ROUTE_TABLE_SIZE": 51200,
-        "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
-        "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
-        "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
-    }
+    if chip_type == "spectrum1":
+        logging.info("Test typical table size configuration for spectrum1")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 32768,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 102400,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 16384,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
+        }
 
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 16384,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 51200,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
+        }
+    elif chip_type in ["spectrum2", "spectrum3", "spectrum4", "spectrum5"]:
+        logging.info("Test typical table size configuration for spectrum2 to spectrum5")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 55296,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 167936,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 28672,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 28672,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 14336
+        }
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 27648,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 83968,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 14336,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 14336,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 7168
+        }
+    elif chip_type == "spectrum6":
+        logging.info("Test typical table size configuration for spectrum6")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 86016,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 258048,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 43008,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 43008,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 21504
+        }
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 43008,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 129024,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 21504,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 21504,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 10752
+        }
     logging.info("Test typical table size configuration with warm-reboot disabled")
     configure_table_size_issu_and_check(table_size, duthost, localhost, request, issu_enabled=False)
 
@@ -241,21 +275,55 @@ def test_more_resources_for_ipv6(duthost, localhost, request, common_setup_teard
     """
     @summary: Configure more resources for IPv6 and check the result.
     """
-    table_size = {
-        "SAI_FDB_TABLE_SIZE": 32768,
-        "SAI_IPV4_ROUTE_TABLE_SIZE": 32768,
-        "SAI_IPV6_ROUTE_TABLE_SIZE": 25600,
-        "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
-        "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 16384
-    }
-
-    table_size_issu = {
-        "SAI_FDB_TABLE_SIZE": 32768,
-        "SAI_IPV4_ROUTE_TABLE_SIZE": 24576,
-        "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
-        "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
-        "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
-    }
+    chip_type = get_chip_type(duthost)
+    if chip_type == "spectrum1":
+        logging.info("Test more resources for ipv6 table size configuration for spectrum1")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 32768,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 32768,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 25600,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 16384
+        }
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 32768,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 24576,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 16384,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 8192,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 8192
+        }
+    elif chip_type in ["spectrum2", "spectrum3", "spectrum4", "spectrum5"]:
+        logging.info("Test more resources for ipv6 table size configuration for spectrum2 to spectrum5")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 55296,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 55296,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 89600,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 14336,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 28672
+        }
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 27648,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 27648,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 44800,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 7168,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 14336
+        }
+    elif chip_type == "spectrum6":
+        logging.info("Test more resources for ipv6 table size configuration for spectrum6")
+        table_size = {
+            "SAI_FDB_TABLE_SIZE": 86016,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 86016,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 118784,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 21504,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 43008
+        }
+        table_size_issu = {
+            "SAI_FDB_TABLE_SIZE": 47104,
+            "SAI_IPV4_ROUTE_TABLE_SIZE": 47104,
+            "SAI_IPV6_ROUTE_TABLE_SIZE": 59392,
+            "SAI_IPV4_NEIGHBOR_TABLE_SIZE": 16384,
+            "SAI_IPV6_NEIGHBOR_TABLE_SIZE": 31744
+        }
 
     logging.info("Test more resources for ipv6 table size configuration with warm-reboot disabled")
     configure_table_size_issu_and_check(table_size, duthost, localhost, request, issu_enabled=False)
