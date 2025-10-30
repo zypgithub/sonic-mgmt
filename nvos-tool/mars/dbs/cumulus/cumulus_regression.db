@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<DBDEF>
+	<global>
+		<default_params_type> extended_setup_step_params </default_params_type>
+		<DB>
+			<info> Cumulus Regression - All Cumulus Tests </info>
+			<owner> Cumulus Team </owner>
+			<group> Cumulus </group>
+			<dimension> VER </dimension>
+
+            <pre>
+            </pre>
+
+		</DB>
+		<Test>
+			<post> </post>
+		</Test>
+		<Case>
+            <pre>
+			</pre>
+			<post>
+			</post>
+		</Case>
+	</global>
+	
+	<!-- General Config Commands -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_general_config_commands.cases </cases>
+	</test>
+	
+	<!-- System Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_system.cases </cases>
+	</test>
+	
+	<!-- ZTP Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_ztp.cases </cases>
+	</test>
+	
+	<!-- Platform Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_platform.cases </cases>
+	</test>
+	
+	<!-- Interface Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_interfaces.cases </cases>
+	</test>
+	
+	<!-- Infrastructure Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_infra.cases </cases>
+	</test>
+	
+	<!-- Security - AAA LDAP -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_test_aaa_ldap.cases </cases>
+	</test>
+	
+	<!-- Security - Password Hardening -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_password_hardening.cases </cases>
+	</test>
+	
+	<!-- Security - SSH Hardening -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_ssh_hardening.cases </cases>
+	</test>
+	
+	<!-- Security - Login SSH Notification -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_login_ssh_notification.cases </cases>
+	</test>
+	
+	<!-- Additional Cumulus Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_additional_tests.cases </cases>
+	</test>
+	
+</DBDEF>
+
