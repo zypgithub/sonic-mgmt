@@ -993,6 +993,24 @@ vxlan/test_vxlan_bfd_tsa.py::Test_VxLAN_BFD_TSA::test_tsa_case6:
     conditions:
     - "https://redmine.mellanox.com/issues/4438716 and 'sn2' in platform"
 
+vxlan/test_vxlan_bfd_tsa.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4691530"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4691530"
+
+vxlan/test_vnet_decap.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4691530"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4691530"
+
+vxlan/test_vxlan_ecmp.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4691530"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4691530"
+
 snmp/test_snmp_queue.py:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
