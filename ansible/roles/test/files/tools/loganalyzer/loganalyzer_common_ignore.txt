@@ -227,7 +227,7 @@ r, ".* ERR syncd#SDK: \[CORE_ASYNC.ERR\] Failed to to call handler func of API.*
 r, ".* ERR syncd#SDK: \[SX_WORK_QUEUEP.ERR\] Error at job handler cb module_id .*-\[sxCoreAsync\] queue ID .*"
 r, ".* ERR syncd#SDK: \[CORE_ASYNC.ERR\] Error got in completion data.*"
 r, ".* WARNING syncd#.*(SAI|Sai|sai).*(NOT|Not|not) implemented.*"
-r, ".* kernel: \[\s+\d+.\d+\] pstore: Using crash dump compression: deflate"
+r, ".* kernel: (\[\s+\d+.\d+\] )?pstore: Using crash dump compression: deflate"
 r, ".* sonic kernel: \[\s+\d+.\d+\] core: PMU erratum BJ122, BV98, HSD29 workaround disabled, HT off.*"
 r, ".* systemd\[\d+\]: Starting Kernel crash dump capture service.*"
 r, ".* sonic kdump-tools\[\d+\]: no crashkernel= parameter in the kernel cmdline.*"
