@@ -94,6 +94,15 @@
         state: enabled
         autonomous-system: spine
         router-id: 3.3.3.3
+      policy:
+        route-map:
+          prefer_v6_global:
+            rule:
+              '10':
+                action:
+                  permit: {}
+                set:
+                  ipv6-nexthop-prefer-global: enabled
     system:
       aaa:
         user:
@@ -173,8 +182,13 @@
                 remote-as: external
               v6_group_left:
                 address-family:
+                  ipv4-unicast:
+                    state: disabled
                   ipv6-unicast:
                     state: enabled
+                    policy:
+                      inbound:
+                        route-map: prefer_v6_global
                 remote-as: external
               v4_group_right:
                 address-family:
@@ -183,7 +197,12 @@
                 remote-as: external
               v6_group_right:
                 address-family:
+                  ipv4-unicast:
+                    state: disabled
                   ipv6-unicast:
                     state: enabled
+                    policy:
+                      inbound:
+                        route-map: prefer_v6_global
                 remote-as: external
             state: enabled  

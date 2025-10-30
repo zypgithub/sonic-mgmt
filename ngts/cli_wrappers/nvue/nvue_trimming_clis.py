@@ -38,7 +38,7 @@ class NvueTrimmingCli(TrimmingCommon):
         self.engine.run_cmd("nv action clear system forwarding packet-trim counters")
         time.sleep(1)
 
-    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue=[], drop_queues=[], violations_list=[], initial_trimming_counters=0, return_dict=False, duration=None):
+    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue=[], drop_queues=[], violations_list=[], return_dict=False, duration=None, pairing_df=None):
         with allure.step("Get trimming counters for all egress interfaces"):
             queue_counters = self.cli_obj.interface.get_interface_queue_counters(interface_list, counters_type="egress-queue-stats", sub_type=["tx-frames"])
             trimmed_packets = sum(queue_counters[interface][trimming_queue]["tx-frames"] for interface in interface_list)

@@ -76,6 +76,9 @@
         ipv4:
           address:
             130.130.130.1/24: {}
+        ipv6:
+          address:
+            130::1/120: {}
         type: loopback
     {% if split_right!=1 %}
     {% for port in port_list['dut']  %}
@@ -181,6 +184,8 @@
                   ebgp: 256
                 state: enabled
               ipv6-unicast:
+                network:
+                  130::0/120: {}
                 multipaths:
                   ebgp: 256
                 state: enabled
@@ -204,6 +209,8 @@
                 remote-as: external
               v6_group:
                 address-family:
+                  ipv4-unicast:
+                    state: disabled
                   ipv6-unicast:
                     state: enabled
                 remote-as: external

@@ -80,3 +80,9 @@ class TrimmingCommon(PerformanceCommon):
         Enable trimming on the lossy queue on the selected ports.
         """
         pass
+
+    def validate_trimming_counters(self, interface_list, violations_list):
+        """
+        Validate trimming counters on the selected ports.
+        """
+        pass

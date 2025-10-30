@@ -62,11 +62,27 @@ class NvuePerformanceCli(PerformanceCommon):
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)
         self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         logging.info(f"The configuration file on {self.dut_alias} was applied successfully")
-        self.ports = self.get_player_ports()
+        self.ports = self.retry_get_player_ports()
         self.connected_ports = self.ports["connected_ports"]
         self.unconnected_ports = self.ports["unconnected_ports"]
         self.port_groups = self.get_right_left_ports_dict()
         self.get_os_ports_name_mapping()
+
+    @retry(exceptions=Exception, tries=3, delay=5)
+    def retry_get_player_ports(self):
+        self.ports = None
+        self.ports = self.get_player_ports()
+        connected_ports = self.ports["connected_ports"]
+        unconnected_ports = self.ports["unconnected_ports"]
+        if (not unconnected_ports) and (self.dut_alias == PerfConsts.DUT_ALIAS):
+            return self.ports
+        elif len(connected_ports) != len(unconnected_ports):
+            logging.warning(f"The number of connected ports {len(connected_ports)} is not equal to the number of unconnected ports {len(unconnected_ports)}")
+            logging.warning(f"The connected ports are {connected_ports}")
+            logging.warning(f"The unconnected ports are {unconnected_ports}")
+            logging.warning(f"Retrying to get the player ports")
+            raise Exception("The number of connected ports is not equal to the number of unconnected ports, Retrying once again ..")
+        return self.ports
 
     def save_basic_configuration(self, players, dst_dir=Cl_Consts.CL_HOME_DIR):
         logging.info(f"Saving the basic configuration on {self.dut_alias}")
