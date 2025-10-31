@@ -664,7 +664,7 @@ generic_config_updater/test_cacl.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4692207"
     conditions:
-    - "https://redmine.mellanox.com/issues/4692207"
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
 generic_config_updater/test_pfcwd_status.py:
   skip:
@@ -1099,19 +1099,19 @@ decap/test_subnet_decap.py::test_vlan_subnet_decap:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4692207"
     conditions:
-    - "https://redmine.mellanox.com/issues/4692207"
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
 golden_config_infra/test_config_reload_with_rendered_golden_config.py::test_rendered_golden_config_override:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4692207"
     conditions:
-    - "https://redmine.mellanox.com/issues/4692207"
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
 restapi/test_restapi.py::test_create_interface_sad:
   xfail:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4692207"
     conditions:
-    - "https://redmine.mellanox.com/issues/4692207"
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
 ########################## Community IGNORE END ##########################
 
