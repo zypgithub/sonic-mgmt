@@ -708,6 +708,48 @@ minigraph/test_masked_services.py::test_masked_services:
     conditions:
     - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
+platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
+  skip:
+    reason: "SN5810_LD doesn't support test_psus"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/api/test_chassis_fans.py:
+  skip:
+    reason: "SN5810_LD doesn't support Chassis Fans"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/api/test_fan_drawer.py:
+  skip:
+    reason: "SN5810_LD doesn't support Fan Drawer"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/api/test_fan_drawer_fans.py:
+  skip:
+    reason: "SN5810_LD doesn't support Fan Drawer"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/api/test_psu.py:
+  skip:
+    reason: "SN5810_LD doesn't support PSU"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/api/test_psu_fans.py:
+  skip:
+    reason: "SN5810_LD doesn't support PSU"
+    conditions:
+    - "'sn5810_ld' in platform"
+
+platform_tests/daemon/test_psud.py:
+  skip:
+    reason: "SN5810_LD doesn't support PSU"
+    conditions:
+    - "'sn5810_ld' in platform"
+
 platform_tests/sfp/software_control/test_software_control.py:
   skip:
     reason: "Simx doesn't support Software Control feature"
@@ -725,6 +767,12 @@ platform_tests/mellanox/test_check_sfp_plug_in_out_sim.py:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions:
     - "'simx' in platform"
+
+platform_tests/mellanox/test_psu_power_threshold.py:
+  skip:
+    reason: "SN5810_LD doesn't support PSU Power Threshold"
+    conditions:
+    - "'sn5810_ld' in platform"
 
 platform_tests/sfp/test_sfputil.py:
   skip:
@@ -955,10 +1003,11 @@ dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
-    reason: "Simx doesn't support PSU"
+    reason: "Simx and SN5810_LD don't support PSU"
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "'sn5810_ld' in platform"
 
 platform_tests/api/test_watchdog.py:
   skip:
