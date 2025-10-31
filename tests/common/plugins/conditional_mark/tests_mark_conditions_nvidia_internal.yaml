@@ -666,6 +666,12 @@ generic_config_updater/test_cacl.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4692207"
 
+generic_config_updater/test_pfcwd_status.py:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4707416"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4707416"
+
 platform_tests/sfp/software_control/test_software_control.py:
   skip:
     reason: "Simx doesn't support Software Control feature"
