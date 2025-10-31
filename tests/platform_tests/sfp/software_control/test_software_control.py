@@ -9,6 +9,7 @@ from tests.common.platform.interface_utils import get_lport_to_first_subport_map
 from tests.common.utilities import wait_until
 from tests.common.helpers.assertions import pytest_assert
 from tests.platform_tests.conftest import check_pmon_uptime_minutes
+import re
 
 
 pytestmark = [
@@ -97,7 +98,8 @@ class TestSoftwareControlFunctional:
 
 
     def test_read_write_eeprom_by_page_and_byte(self, enum_rand_one_per_hwsku_frontend_hostname,
-                                                enum_frontend_asic_index, xcvr_skip_list):
+                                                enum_frontend_asic_index, xcvr_skip_list,
+                                                ignore_loganalyzer_exceptions):
         """
         This test is verifying read and write eeprom by page and byte.
         1. Get all sfp type of all sfp types by reading the first byte of 0 page
@@ -144,10 +146,11 @@ class TestSoftwareControlFunctional:
                 read_only_byte = 20
                 output_write_eeprom_all_interfaces_verify = read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type(
                     self.duthost,"WRITE_EEPROM", sfp_type_per_interface, self.sc_port_list, page, read_only_byte, data=data, is_verify=True)
+                regex_error_write_eeprom = r".*Error: (?:Failed to write EEPROM!.*|Write data failed! Write.*)"
                 for intf in self.sc_port_list:
                   with allure.step(f"Verify writing read-only byte {read_only_byte} for port {intf} with data {data}"):
                       output_write_eeprom = output_write_eeprom_all_interfaces_verify[intf]
-                      assert "Error: Write data failed! " in output_write_eeprom, \
+                      assert re.search(regex_error_write_eeprom, output_write_eeprom), \
                         f"Data should not be written to non-writable byte for {intf} " \
                         f"for offset {read_only_byte}. output is {output_write_eeprom}"
         except Exception as err:
@@ -172,3 +175,16 @@ class TestSoftwareControlFunctional:
             if intf in passive_cable_port_list and sfp_type in sfp_type_not_support_write_on_passive_cable:
                 interfaces_not_support_write.append(intf)
         return interfaces_not_support_write
+
+    @pytest.fixture(scope="function")
+    def ignore_loganalyzer_exceptions(self, loganalyzer):
+        if loganalyzer:
+            ignoreRegex = [
+                r".*ERR sfputil: Failed to write EEPROM data sfp.* EEPROM page=\/sys\/module\/sx_core.*eeprom\/pages\
+                    .*page_offset=\d+, size=\d+, offset=\d+, .*Errno 5.* Input\/output error.*",
+                    r".*ERR kernel.*sxd_kernel:.*Fails to access.* module eeprom, status.*",
+                    r".*ERR kernel.*sxd_kernel.*Fails to write eeprom, status:.*\d+.*"]
+
+            loganalyzer[self.duthost.hostname].ignore_regex.extend(ignoreRegex)
+
+        yield
