@@ -720,6 +720,11 @@ platform_tests/cli/test_show_platform.py::test_show_platform_syseeprom:
     conditions:
     - "'simx' in platform"
 
+platform_tests/counterpoll/test_counterpoll_watermark.py::test_counterpoll_queue_watermark_pg_drop:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4697884"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4697884"
 
 platform_tests/test_memory_exhaustion.py::TestMemoryExhaustion::test_memory_exhaustion:
   skip:
