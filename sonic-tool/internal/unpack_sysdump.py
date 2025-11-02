@@ -44,7 +44,7 @@ def get_redmine_connection():
     """
     if not REDMINE_AVAILABLE:
         print("ERROR: python-redmine package is not installed.")
-        print("Please install it using: pip3 install python-redmine")
+        print("Please install it using: sudo pip3 install python-redmine")
         sys.exit(1)
 
     return Redmine(REDMINE_URL, key=REDMINE_KEY, requests={'verify': False})
