@@ -401,7 +401,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.2.480'}
+    default_list = {'docker-ngts': '1.2.481'}
     return default_list.get(docker_name, latest)
 
 
