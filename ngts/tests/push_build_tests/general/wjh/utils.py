@@ -56,17 +56,14 @@ def get_drop_src_ip_from_ingress_acl_table(cli_obj):
 
 
 def wjh_is_channel_enabled(engines, channel_name):
-    engine = engines.dut
-    wjh_cli = SonicWjhCli(engine)
+    """Check if a WJH channel is enabled."""
+    wjh_cli = SonicWjhCli(engines.dut)
     channels_config = wjh_cli.show_wjh_configuration_channels()
     pytest.CHANNEL_CONF = generic_sonic_output_parser(channels_config, output_key="Channel")
-    logger.info(f"pytest.CHANNEL_CONF: {pytest.CHANNEL_CONF}")
-    if channel_name in pytest.CHANNEL_CONF:
-        logger.info(f"Channel '{channel_name}' is enabled")
-        return True
-    else:
-        logger.info(f"Channel '{channel_name}' is disabled")
-        return False
+
+    is_enabled = channel_name in pytest.CHANNEL_CONF
+    logger.info(f"WJH channel '{channel_name}' is enabled: {is_enabled}")
+    return is_enabled
 
 
 def wjh_config_channel_state(engines, channel_name, state):

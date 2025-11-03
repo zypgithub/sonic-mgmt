@@ -1431,6 +1431,22 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # if sn3 in platform, it's spc1. e.g. x86_64-mlnx_msn3800-r0
         return self.check_is_platform(['sn3'])
 
+    def is_spc3(self):
+        """
+        Function to check if the current DUT is SPC3
+        """
+        # if sn4 in platform, it's spc3. e.g. x86_64-mlnx_msn4700-r0
+        return self.check_is_platform(['sn4'])
+
+    def is_spc4_or_above(self):
+        """
+        Check if the current platform is SPC4 or above.
+        Returns True if the platform is NOT SPC1, SPC2, or SPC3.
+
+        :return: True if platform is SPC4 or above (not SPC1-SPC3), False otherwise
+        """
+        return not (self.is_spc1() or self.is_spc2() or self.is_spc3())
+
     def is_simx_moose(self):
         if self._is_simx_moose is None:
             self._is_simx_moose = self.check_is_platform(['sn5600', 'simx'])

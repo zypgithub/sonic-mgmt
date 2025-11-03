@@ -1,4 +1,3 @@
-from ast import Yield
 import time
 import pytest
 import allure
@@ -16,12 +15,6 @@ from ngts.tests.push_build_tests.general.wjh.utils import (wjh_is_channel_enable
                                                            get_buffer_profile_trimming_status, configure_trimming_action,
                                                            discover_trimming_enabled_profiles)
 # Import from tests/common directory
-import sys
-import os
-tests_common_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../tests/common'))
-if tests_common_path not in sys.path:
-    sys.path.insert(0, tests_common_path)
-from mellanox_data import is_spc4_or_above_hwsku
 from scapy.all import Ether, Dot1Q, IP, IPv6, Raw, TCP
 from ngts.tests.push_build_tests.general.conftest import check_qos_counter_status
 pytest.CHANNEL_CONF = None
@@ -162,29 +155,6 @@ def get_parsed_table(dut, cmd, table_type):
     return table
 
 
-def is_spc4_or_above(engine):
-    """
-    Check if the current platform is SPC4 or above.
-    Trimming actions should only be allowed on SPC4 and above platforms.
-    Returns True if the platform is NOT SPC1, SPC2, or SPC3.
-
-    :param engine: The DUT engine object
-    :return: True if platform is SPC4 or above (not SPC1-SPC3), False otherwise
-    """
-    try:
-        hwsku = engine.run_cmd("show platform summary | grep HwSKU | awk '{print $2}'").strip()
-        logger.info(f"[WJH] Detected platform HWSKU: {hwsku}")
-
-        # Use the centralized function from mellanox_data.py
-        is_spc4_plus = is_spc4_or_above_hwsku(hwsku)
-        logger.info(f"[WJH] Platform {hwsku} is SPC4+: {is_spc4_plus}")
-        return is_spc4_plus
-    except Exception as e:
-        logger.error(f"[WJH] Failed to determine platform generation: {e}")
-        # Default to False for safety - don't allow trimming if we can't determine platform
-        return False
-
-
 @pytest.fixture(scope='class', autouse=True)
 def disable_trimming(topology_obj, cli_objects, interfaces, engines):
     """
@@ -194,7 +164,7 @@ def disable_trimming(topology_obj, cli_objects, interfaces, engines):
     trimming_enabled_profiles = []
 
     # Check if platform is SPC4 or above - trimming is only supported on SPC4+
-    if is_spc4_or_above(engines.dut):
+    if cli_objects.dut.general.is_spc4_or_above():
         logger.info('WJH trimming pre test')
         trimming_enabled_profiles = discover_trimming_enabled_profiles(engines.dut)
         logger.info(f"Found trimming enabled profiles: {trimming_enabled_profiles}")
@@ -205,7 +175,7 @@ def disable_trimming(topology_obj, cli_objects, interfaces, engines):
             configure_trimming_action(engines.dut, profile_name, "off")
     yield
 
-    if is_spc4_or_above(engines.dut) and trimming_enabled_profiles:
+    if cli_objects.dut.general.is_spc4_or_above() and trimming_enabled_profiles:
         logger.info('WJH trimming post test')
         for profile_name in trimming_enabled_profiles:
             current_status = get_buffer_profile_trimming_status(engines.dut, profile_name)
@@ -219,31 +189,36 @@ def enable_channel_buffer(topology_obj, cli_objects, interfaces, engines):
     """
     This fixture is used to enable the buffer channel before the test and disable it after the test.
     """
-    try:
-        with allure.step('WJH buffer channel pre test'):
-            initial_state_buffer_enabled = wjh_is_channel_enabled(engines, "buffer")
-            logger.info(f"Initial state enabled: {initial_state_buffer_enabled}")
-            if not initial_state_buffer_enabled:
-                logger.info("Enabling buffer channel")
-                wjh_config_channel_state(engines, "buffer", "enabled")
-                if not wjh_is_channel_enabled(engines, "buffer"):
-                    raise AssertionError("wjh_buffer_channel_management_fixture: Buffer channel is not enabled")
-            else:
-                logger.info("Buffer channel already enabled")
-        logger.info("Setup complete, yielding to tests")
-    except Exception as e:
-        logger.error(f"Setup failed with exception: {e}")
-        raise
-    yield
-    try:
-        with allure.step('WJH buffer channel post test'):
-            if not initial_state_buffer_enabled:
-                logger.info("Restoring to disabled state")
-                wjh_config_channel_state(engines, "buffer", "disabled")
-                if wjh_is_channel_enabled(engines, "buffer"):
-                    raise AssertionError("Buffer channel is still enabled")
-    except Exception as e:
-        logger.error(f"Cleanup failed with exception: {e}")
+    logger.info(f"checking if platform is SPC1 since buffer channel is not supported in SPC1")
+    if cli_objects.dut.general.is_spc1():
+        yield
+    else:
+        try:
+            with allure.step('WJH buffer channel pre test'):
+                initial_state_buffer_enabled = wjh_is_channel_enabled(engines, "buffer")
+                logger.info(f"Initial state enabled: {initial_state_buffer_enabled}")
+                if not initial_state_buffer_enabled:
+                    logger.info("Enabling buffer channel")
+                    wjh_config_channel_state(engines, "buffer", "enabled")
+                    if not wjh_is_channel_enabled(engines, "buffer"):
+                        raise AssertionError("wjh_buffer_channel_management_fixture: Buffer channel is not enabled")
+                else:
+                    logger.info("Buffer channel already enabled")
+            logger.info("Setup complete, yielding to tests")
+        except Exception as e:
+            logger.error(f"Setup failed with exception: {e}")
+            raise
+        yield
+
+        try:
+            with allure.step('WJH buffer channel post test'):
+                if not initial_state_buffer_enabled:
+                    logger.info("Restoring to disabled state")
+                    wjh_config_channel_state(engines, "buffer", "disabled")
+                    if wjh_is_channel_enabled(engines, "buffer"):
+                        raise AssertionError("Buffer channel is still enabled")
+        except Exception as e:
+            logger.error(f"Cleanup failed with exception: {e}")
 
 
 @pytest.fixture(scope='class')
@@ -1048,7 +1023,7 @@ def test_l2_dst_mac_is_reserved(engines, cli_objects, topology_obj, interfaces):
 
 
 @pytest.mark.wjh
-@pytest.mark.buildW
+@pytest.mark.build
 @allure.title('WJH L3 test case')
 def test_l3_non_ip_packet(engines, cli_objects, topology_obj, interfaces):
     src_mac = WJHConsts.TESTED_SRC_MAC
