@@ -21,11 +21,11 @@ def drop_tcp_packets(duthost):
     # Check if DUT management is IPv6-only and select appropriate BGP neighbor
     dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
     is_mgmt_ipv6_only = dut_facts.get('is_mgmt_ipv6_only', False)
-    
+
     # Get all BGP neighbors and filter by IP version based on management interface
     all_bgp_neighbors = duthost.get_bgp_neighbors()
     bgp_neighbor = None
-    
+
     if is_mgmt_ipv6_only:
         # Find an IPv6 BGP neighbor
         for neighbor_ip in all_bgp_neighbors.keys():

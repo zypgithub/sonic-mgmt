@@ -31,6 +31,14 @@ class writer(object):
 class IPv6HTTPServer(HTTPServer):
     address_family = socket.AF_INET6
 
+    def flush(self):
+        # No-op for file logging, but required for stdout/stderr compatibility
+        pass
+
+
+class IPv6HTTPServer(HTTPServer):
+    address_family = socket.AF_INET6
+
 
 class TempHttpServer(BaseHTTPRequestHandler):
 
@@ -51,7 +59,7 @@ if __name__ == "__main__":
     parser.add_argument('--bind', default='0.0.0.0', help='IP address to bind to')
     parser.add_argument('--port', type=int, default=1234, help='Port to bind to (default: 1234)')
     args = parser.parse_args()
-    
+
     # nohup will break stderr and cause broken pipe error
     sys.stdout = writer()
     sys.stderr = writer()

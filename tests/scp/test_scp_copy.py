@@ -60,7 +60,7 @@ def test_scp_copy(duthosts, enum_rand_one_per_hwsku_hostname, ptfhost, setup_tea
     # Check if DUT management is IPv6-only
     dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
     is_mgmt_ipv6_only = dut_facts.get('is_mgmt_ipv6_only', False)
-    
+
     if is_mgmt_ipv6_only:
         logger.info("DUT management is IPv6-only, using PTF IPv6 address")
         if not ptfhost.mgmt_ipv6:

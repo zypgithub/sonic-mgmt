@@ -153,6 +153,7 @@ arp/test_wr_arp.py:
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/16502 and 'dualtor' in topo_name"
       - "'standalone' in topo_name"
+<<<<<<< HEAD
       - "release in ['202412']"
       - "is_mgmt_ipv6_only==True" # Does not support ipv6 mgmt ip on dut, specially the ferret server
 
@@ -165,6 +166,9 @@ autorestart/test_container_autorestart.py::test_containers_autorestart.*teamd.*:
     reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336"
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/10336"
+=======
+      - "is_mgmt_ipv6_only==True" # Does not support ipv6 mgmt ip on dut, specially the ferret server
+>>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
       - "'isolated' in topo_name"
       - "topo_type not in ['t0']"
 
@@ -2591,6 +2595,90 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_full_01:
       - "https://github.com/sonic-net/sonic-mgmt/issues/17436"
       - "release in ['202412']"
 
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_full_replace_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_get_authenticate:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_02:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_onchange_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_onchange_02:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_sample_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_subscribe_authenticate:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_streaming_sample_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_counterdb_streaming_sample_02:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_output:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+gnmi/test_gnmi_countersdb.py::test_gnmi_queue_buffer_cnt:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
 gnmi/test_gnoi_killprocess.py:
   skip:
     reason: "Test noisy due to restart issue not relevant to GNOI. Disabling them to rewrite."
@@ -3445,13 +3533,6 @@ pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy
     reason: "ipv6 mgmt ip is not supported, see check_timer_accuracy_test.yml#43"
     conditions:
     - "is_mgmt_ipv6_only==True"
-
-pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy\[IPv6.*:
-  regex: true
-  xfail:
-    reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21083"
-    conditions:
-    - "https://github.com/sonic-net/sonic-mgmt/issues/21083 and asic_type in ['mellanox']"
 
 pfcwd/test_pfcwd_warm_reboot.py:
    skip:
@@ -4441,6 +4522,14 @@ telemetry/test_events.py::test_events:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20758 and '-v6-' in topo_name"
 
+telemetry/test_events.py::test_events:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions_logical_operator: and
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
 telemetry/test_telemetry.py:
   skip:
     reason: "Skip telemetry test for 201911 and older branches"
@@ -4492,14 +4581,22 @@ telemetry/test_telemetry_cert_rotation.py::test_telemetry_cert_rotate:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
+<<<<<<< HEAD
 telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_del:
+=======
+telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_add:
+>>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
   skip:
     reason: "dut ipv6 mgmt ip not supported"
     conditions:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
+<<<<<<< HEAD
 telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_add:
+=======
+telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_del:
+>>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
   skip:
     reason: "dut ipv6 mgmt ip not supported"
     conditions:
@@ -4967,10 +5064,13 @@ zmq/test_gnmi_zmq.py:
     conditions:
       - "'arista' in platform"
       - "'isolated' in topo_name"
+<<<<<<< HEAD
   xfail:
     reason: "Test is not aligned for smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20698"
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20698 and is_smartswitch==True"
+=======
+>>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
 
 zmq/test_gnmi_zmq.py::test_gnmi_zmq:
   skip:

@@ -114,7 +114,7 @@ def construct_url(duthosts, rand_one_dut_hostname):
     def get_endpoint(path):
         duthost = duthosts[rand_one_dut_hostname]
         RESTAPI_PORT = "8081"
-        
+
         # Handle IPv6 addresses by wrapping them in square brackets
         try:
             ip_obj = ipaddress.ip_address(duthost.mgmt_ip)
@@ -125,7 +125,7 @@ def construct_url(duthosts, rand_one_dut_hostname):
         except ValueError:
             # If it's not a valid IP address, treat it as hostname and use as-is
             netloc = "{}:{}".format(duthost.mgmt_ip, RESTAPI_PORT)
-        
+
         try:
             tup = ('https', netloc, path, '', '', '')
             endpoint = urlunparse(tup)
