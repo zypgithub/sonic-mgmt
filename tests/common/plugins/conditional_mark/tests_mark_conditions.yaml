@@ -2212,9 +2212,11 @@ fib/test_fib.py::test_vxlan_hash:
       - "asic_type in ['vs'] or topo_type in ['m0', 'mx', 'm1']"
       - "topo_name in ['t1-isolated-d128', 't1-isolated-d32']"
   xfail:
-    reason: "Xfail due to test is not aligned with Smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20599"
+    reason: "Xfail due to test is not aligned with Smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20599 or https://github.com/sonic-net/sonic-mgmt/issues/21086"
+    conditions_logical_operator: or
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20599 and is_smartswitch==True and 't1' in topo_name"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21086"
 
 fib/test_fib.py::test_vxlan_hash[ipv4-ipv4]:
   skip:
@@ -2236,15 +2238,13 @@ fib/test_fib.py::test_vxlan_hash[ipv6-ipv4]:
       - "topo_name in ['t1-isolated-d128', 't1-isolated-d32']"
       - "'-v6-' in topo_name"
   xfail:
-    reason: "Testcase ignored due to sonic-mgmt issue https://github.com/sonic-net/sonic-mgmt/issues/18304 or https://github.com/sonic-net/sonic-mgmt/issues/21086"
-    conditions_logical_operator: or
+    reason: "Testcase ignored due to sonic-mgmt issue https://github.com/sonic-net/sonic-mgmt/issues/18304"
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/18304 and 't0-isolated-d32u32s2' in topo_name and hwsku in ['Mellanox-SN5640-C512S2']"
-      - "https://github.com/sonic-net/sonic-mgmt/issues/21086"
 
 fib/test_fib.py::test_vxlan_hash[ipv6-ipv6]:
   skip:
-    reason: 'Skip on t1-isolated-d32/128 topos or https://github.com/sonic-net/sonic-mgmt/issues/21086'
+    reason: 'Skip on t1-isolated-d32/128 topos'
     conditions:
       - "topo_name in ['t1-isolated-d128', 't1-isolated-d32']"
   xfail:
@@ -2253,7 +2253,6 @@ fib/test_fib.py::test_vxlan_hash[ipv6-ipv6]:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/18304 and 't0-isolated-d32u32s2' in topo_name and hwsku in ['Mellanox-SN5640-C512S2']"
       - "https://github.com/sonic-net/sonic-mgmt/issues/19923 and '-v6-' in topo_name"
-      - "https://github.com/sonic-net/sonic-mgmt/issues/21086"
 
 #######################################
 #####   generic_config_updater    #####
