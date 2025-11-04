@@ -667,6 +667,15 @@ generic_config_updater/test_cacl.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
+generic_config_updater/test_ecn_config_update.py::test_ecn_config_updates[None-replace-green_drop_probability]:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4715855"
+    conditions_logical_operator: and
+    conditions:
+    - "https://redmine.mellanox.com/issues/4715855"
+    - "'sn5640' in platform"
+    - "'t1' in topo_name"
+
 generic_config_updater/test_pfcwd_status.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4707416"
