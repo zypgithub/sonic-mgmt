@@ -153,9 +153,9 @@ arp/test_wr_arp.py:
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/16502 and 'dualtor' in topo_name"
       - "'standalone' in topo_name"
-<<<<<<< HEAD
-      - "release in ['202412']"
       - "is_mgmt_ipv6_only==True" # Does not support ipv6 mgmt ip on dut, specially the ferret server
+      - "'isolated' in topo_name"
+      - "topo_type not in ['t0']"
 
 #######################################
 ######        autorestart          #####
@@ -166,9 +166,6 @@ autorestart/test_container_autorestart.py::test_containers_autorestart.*teamd.*:
     reason: "Testcase ignored due to issue: https://github.com/sonic-net/sonic-buildimage/issues/10336"
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/10336"
-=======
-      - "is_mgmt_ipv6_only==True" # Does not support ipv6 mgmt ip on dut, specially the ferret server
->>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
       - "'isolated' in topo_name"
       - "topo_type not in ['t0']"
 
@@ -4588,22 +4585,14 @@ telemetry/test_telemetry_cert_rotation.py::test_telemetry_cert_rotate:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
-<<<<<<< HEAD
-telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_del:
-=======
 telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_add:
->>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
   skip:
     reason: "dut ipv6 mgmt ip not supported"
     conditions:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
-<<<<<<< HEAD
-telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_add:
-=======
 telemetry/test_telemetry_cert_rotation.py::test_telemetry_post_cert_del:
->>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
   skip:
     reason: "dut ipv6 mgmt ip not supported"
     conditions:
@@ -5071,13 +5060,10 @@ zmq/test_gnmi_zmq.py:
     conditions:
       - "'arista' in platform"
       - "'isolated' in topo_name"
-<<<<<<< HEAD
   xfail:
     reason: "Test is not aligned for smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20698"
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20698 and is_smartswitch==True"
-=======
->>>>>>> ef8e5d6539 (support for dut single stack ipv6 mgmt ip (#20292))
 
 zmq/test_gnmi_zmq.py::test_gnmi_zmq:
   skip:
