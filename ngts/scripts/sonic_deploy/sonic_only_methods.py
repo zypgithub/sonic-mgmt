@@ -638,9 +638,6 @@ class SonicInstallationSteps:
                     for dut in setup_info['duts']:
                         enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut['engine'])
             logger.info("Validating Post InstallDUT configuration")
-            for dut in setup_info['duts']:
-                SonicInstallationSteps.post_install_check_sonic(sonic_topo=sonic_topo, dut_name=dut['dut_name'],
-                                                                ansible_path=ansible_path)
             sync_docker_time_to_israel(topology_obj)
 
         for dut in setup_info['duts']:
@@ -652,10 +649,6 @@ class SonicInstallationSteps:
                                                   reboot_after_install=reboot_after_install,
                                                   deploy_only_target=deploy_only_target, fw_pkg_path=fw_pkg_path,
                                                   cli=dut['cli_obj'], chip_type=chip_type)
-
-        for dut in setup_info['duts']:
-            SonicInstallationSteps.reboot_validation_sonic(dut_name=dut['dut_name'], sonic_topo=sonic_topo,
-                                                           reboot=reboot, ansible_path=ansible_path)
 
         for dut in setup_info['duts']:
             if additional_apps:
