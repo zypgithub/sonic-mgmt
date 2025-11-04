@@ -7,6 +7,7 @@ This script contains re-usable functions for checking status of interfaces on SO
 import re
 import logging
 import json
+import functools
 from collections import defaultdict
 from natsort import natsorted
 from .transceiver_utils import all_transceivers_detected
@@ -130,8 +131,9 @@ def check_interface_status(dut, asic_index, interfaces, xcvr_skip_list):
         # Cross check the interface SFP presence status
         if intf not in xcvr_skip_list[dut.hostname]:
             assert intf in check_inerfaces_presence_output, "Wrong interface name in the output for: %s" % str(intf)
-            interface_presence = check_inerfaces_presence_output.get(intf,'')
-            assert 'Present' in interface_presence, "Status is not expected, presence status: %s" % str({intf:interface_presence})
+            interface_presence = check_inerfaces_presence_output.get(intf, '')
+            assert 'Present' in interface_presence, \
+                "Status is not expected, presence status: %s" % str({intf: interface_presence})
 
     logging.info("Check interface status using the interface_facts module")
     intf_facts = dut.interface_facts(up_ports=mg_ports, namespace=namespace)["ansible_facts"]
@@ -169,6 +171,7 @@ def check_interface_information(dut, asic_index, interfaces, xcvr_skip_list):
         return False
 
     return True
+
 
 @functools.lru_cache(maxsize=1)
 def get_port_map(dut, asic_index=None):
@@ -255,7 +258,7 @@ def get_physical_port_indices(duthost, logical_intfs=None):
         asic_subcommand = f'-n asic{asic_index}' if asic_index is not None else ''
         cmd_keys = f'sonic-db-cli {asic_subcommand} CONFIG_DB KEYS "PORT|Ethernet*"'
         cmd_hget = f'sonic-db-cli {asic_subcommand} CONFIG_DB HGET $key index'
-        cmd = f'for key in $({cmd_keys}); do echo "$key : $({cmd_hget})" ; done'
+        cmd = f'for key in $({cmd_keys}); do echo "$key : $({cmd_hget})" ; done'  # noqa: E702,E203
         cmd_out = duthost.command(cmd, _uses_shell=True)["stdout_lines"]
         cmd_out_dict = {}
         for line in cmd_out:
@@ -321,7 +324,7 @@ def get_fec_eligible_interfaces(duthost, supported_speeds):
         if oper == "up" and speed in supported_speeds:
             interfaces.append(intf_name)
         else:
-            logging.info(f"Skip for {intf_name}: oper_state:{oper} speed:{speed}")
+            logging.info(f"Skip for {intf_name}: oper_state: {oper} speed: {speed}")
 
     return interfaces
 
