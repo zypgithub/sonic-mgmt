@@ -26,6 +26,7 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
+PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master", "master_rc", "master_RC_CPO_spc5_single_asic_fw_control", "master_SPC6"]
 
 class BugHandler(ABC):
     @abstractmethod
@@ -493,7 +494,7 @@ def get_sonic_branch(duthost, cli_type):
     # master branch always has release "none"
     if branch == "none":
         branch_output = duthost.shell("sonic-cfggen -y /etc/sonic/sonic_version.yml -v branch")['stdout']
-        if branch_output.lower() in ["smart-switch-master", "master_rc"]:
+        if branch_output.lower() in PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST:
             branch = "000000"
         else:
             branch = "master"
