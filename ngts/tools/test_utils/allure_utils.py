@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra import ExceptionTool
 logger = logging.getLogger()
 
 orig_allure = allure
+dynamic = orig_allure.dynamic
 
 
 _allure_step_stack = []  # push/pop items when enter/exit allure step. each item is a dict of failed sub-steps.

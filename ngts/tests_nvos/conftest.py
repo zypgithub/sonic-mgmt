@@ -1174,3 +1174,43 @@ def disable_els_init_state_for_taipan(engines, devices, nv_command):
     with allure.step("Re-enable ELS init state"):
         nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.ENABLED.value, apply=True).verify_result()
         NvueGeneralCli.save_config(engines.dut)
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    """
+    - After the test *call* phase: store the real test outcome on the item.
+    - After the *teardown* phase: if the test body passed but teardown failed
+      due to loganalyzer, add a marker and (optionally) an Allure tag.
+
+    All the logic is done *after* `yield` so we always work with TestReport.
+    """
+
+    # Let inner hooks (including Allure & others) run first
+    outcome = yield
+    result: pytest.TestReport = outcome.get_result()
+
+    # ----- CALL PHASE: remember the real test outcome -----
+    if call.when == "call":
+        # result contains the real test outcome such as passed, failed, skipped, etc.
+        item._test_call_result = result
+
+    # ----- TEARDOWN PHASE: detect LA failure after a passed test -----
+    elif call.when == "teardown":
+        call_result: pytest.TestReport | None
+        if not (call_result := getattr(item, "_test_call_result", None)):
+            return
+
+        # Only care about: test body passed && teardown failed
+        if call_result.passed and result.failed:
+            # Robustly get longrepr text
+            longrepr_text = getattr(result, "longreprtext", str(result.longrepr))
+
+            # if loganalyzer failed, we would have the string "/loganalyzer/" in the longrepr text
+            if "/loganalyzer/" in longrepr_text:
+                la_failed_marker = f"la_failed(outcome={call_result.outcome})"
+
+                # 1) Add pytest marker so other plugins (e.g. ReportPortal) can see it
+                item.add_marker(la_failed_marker)
+                # 2) Tell Allure directly – this does NOT depend on marker collection
+                allure.dynamic.tag(la_failed_marker)
