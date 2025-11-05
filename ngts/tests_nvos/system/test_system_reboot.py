@@ -24,7 +24,7 @@ logger = logging.getLogger()
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.nvos_build
-def test_reboot_command(engines, devices, test_name):
+def test_reboot_command(engines, devices, test_name, disable_els_init_state_for_taipan):
     """
     Test flow:
         1. run nv action reboot system

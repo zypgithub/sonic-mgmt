@@ -29,7 +29,7 @@ from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts, \
-    SyslogConsts, SystemConsts
+    SyslogConsts, SystemConsts, CpoConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
@@ -1153,3 +1153,21 @@ def _validate_matrix_arg(matrix_arg: str) -> Optional[Dict]:
 def provisioning(engines: EnginesT) -> str:
     """ returns whether the system is dev or prod """
     return DEVELOPMENT if SecureBootTool.is_dev_system(engines.dut) else PRODUCTION
+
+
+@pytest.fixture(scope='module')
+def disable_els_init_state_for_taipan(engines, devices, nv_command):
+    """
+    Fixture to disable ELS init state before test and re-enable it after test.
+    This fixture is used for Taipan devices only.
+    """
+    if devices.dut.switch_class != NvosConst.TAIPAN_SWITCH:
+        return
+
+    with allure.step("Disable ELS init state"):
+        nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.DISABLED.value, apply=True).verify_result()
+
+    yield
+
+    with allure.step("Re-enable ELS init state"):
+        nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.ENABLED.value, apply=True).verify_result()

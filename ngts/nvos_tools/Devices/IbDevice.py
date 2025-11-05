@@ -1034,8 +1034,13 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             "PMIC-8-Temp", "PMIC-9-Temp", "PMIC-10-Temp", "PMIC-11-Temp", "PMIC-12-Temp", "PMIC-13-Temp",
             "SODIMM-1-Temp", "SODIMM-2-Temp"]
 
+    def _init_boot_time_timeouts(self):
+        super()._init_boot_time_timeouts()
+        self.timeout_system_is_ready = 8 * MINUTE
 
 # -------------------------- Taipan Single Asic Switch ----------------------------
+
+
 class TaipanSingleAsicSwitch(TaipanSwitch):  # All values will be updated on Taipan BU
 
     def __init__(self):
