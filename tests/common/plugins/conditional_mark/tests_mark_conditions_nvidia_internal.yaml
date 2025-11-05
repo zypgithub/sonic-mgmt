@@ -676,6 +676,12 @@ generic_config_updater/test_ecn_config_update.py::test_ecn_config_updates[None-r
     - "'sn5640' in platform"
     - "'t1' in topo_name"
 
+generic_config_updater/test_pfcwd_interval.py::test_pfcwd_interval_config_updates[None-False-existing-replace]:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4718842 on sn4280 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4718842 and 'sn4280' in platform"
+
 generic_config_updater/test_pfcwd_status.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4707416"
