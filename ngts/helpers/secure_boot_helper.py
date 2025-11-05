@@ -101,7 +101,7 @@ class SonicSecureBootHelper(SecureBootHelper):
                                                            DefaultConnectionValues.LOGIN_REGEX,
                                                            DefaultConnectionValues.DEFAULT_PROMPTS[0],
                                                            "Malformed binary after Attribute Certificate Table"],
-                                                    timeout=10)
+                                                    timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
             if respond == 0:
                 logger.info("SONIC mode")
                 return True
