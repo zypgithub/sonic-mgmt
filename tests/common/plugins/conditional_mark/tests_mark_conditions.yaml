@@ -3588,6 +3588,12 @@ platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
     conditions:
     - "https://github.com/sonic-net/sonic-buildimage/issues/23426 and ('sn4700' in platform or 'sn4280' in platform)"
 
+platform_tests/sfp/test_sfputil.py::test_check_sfputil_reset:
+  xfail:
+    reason: "Testcase ignored due to github issue https://github.com/sonic-net/sonic-buildimage/issues/24004"
+    conditions:
+    - "https://github.com/sonic-net/sonic-buildimage/issues/24004 and hwsku in ['Mellanox-SN4280-O8C80']"
+
 platform_tests/test_reload_config.py::test_reload_configuration_checks:
   skip:
     reason: "Skip test_reload_configuration_checks on Cisco platform due to unstable results"
