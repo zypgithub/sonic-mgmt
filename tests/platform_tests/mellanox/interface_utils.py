@@ -84,4 +84,3 @@ def get_physical_index_to_interfaces_map(duthost, only_ports_index_up=False):
             continue
         physical_index_to_interfaces_map.setdefault(physical_index, []).append(interface)
     return physical_index_to_interfaces_map
-
