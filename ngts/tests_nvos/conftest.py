@@ -61,6 +61,7 @@ from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.ngts_types import EnginesT
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 logger = logging.getLogger()
 
@@ -1166,8 +1167,10 @@ def disable_els_init_state_for_taipan(engines, devices, nv_command):
 
     with allure.step("Disable ELS init state"):
         nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.DISABLED.value, apply=True).verify_result()
+        NvueGeneralCli.save_config(engines.dut)
 
     yield
 
     with allure.step("Re-enable ELS init state"):
         nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.ENABLED.value, apply=True).verify_result()
+        NvueGeneralCli.save_config(engines.dut)
