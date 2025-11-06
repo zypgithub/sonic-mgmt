@@ -550,8 +550,11 @@ def is_support_fan(duthosts, rand_one_dut_hostname):
     Check if dut has fan
     """
     duthost = duthosts[rand_one_dut_hostname]
-    platform_data = get_platform_data(duthost)
-    return platform_data['fans']['number'] > 0
+    if is_mellanox_device(duthost):
+        platform_data = get_platform_data(duthost)
+        return platform_data['fans']['number'] > 0
+    else:
+        return True
 
 @pytest.fixture(scope='module')
 def is_support_psu(duthosts, rand_one_dut_hostname):
@@ -559,8 +562,11 @@ def is_support_psu(duthosts, rand_one_dut_hostname):
     Check if dut has psu
     """
     duthost = duthosts[rand_one_dut_hostname]
-    platform_data = get_platform_data(duthost)
-    return platform_data['psus']['number'] > 0
+    if is_mellanox_device(duthost):
+        platform_data = get_platform_data(duthost)
+        return platform_data['psus']['number'] > 0
+    else:
+        return True
 
 
 @pytest.fixture(scope='module')
