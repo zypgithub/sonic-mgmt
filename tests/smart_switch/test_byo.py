@@ -71,7 +71,7 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
                               f"{ip_interface['addr']}/{ip_interface['mask']}")
         duthost.shell('config vlan add 1000')
         duthost.shell(f'config vlan member add 1000 {switch_data_port} --untagged')
-        dpu_data_port = dpuhost.data_port_on_npu
+        dpu_data_port = dpuhost.npu_dataplane_port
         ip_intfs = duthost.show_and_parse("show ip int")
         for ip_intf in ip_intfs:
             if ip_intf['interface'] == dpu_data_port:

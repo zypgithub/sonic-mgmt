@@ -52,9 +52,9 @@ def correlate_dpu_info_with_dpuhost(dpuhosts, duthost):
 
         dpuhost.dataplane_mask_length = 31
         dpuhost.name = f"dpu{dpuhost.dpu_index}"
-        logger.info(f"dpuhost.data_port_on_npu: {dpuhost.npu_dataplane_port}, "
+        logger.info(f"dpuhost.npu_dataplane_port: {dpuhost.npu_dataplane_port}, "
                     f"dpuhost.npu_data_port_ip: {dpuhost.npu_data_port_ip}, "
                     f"dpuhost.npu_dataplane_mac: {dpuhost.npu_dataplane_mac}, "
-                    f"dpuhost.data_port_on_dpu: {dpuhost.dpu_dataplane_port}, "
+                    f"dpuhost.dpu_dataplane_port: {dpuhost.dpu_dataplane_port}, "
                     f"dpuhost.dpu_data_port_ip: {dpuhost.dpu_data_port_ip}, "
                     f"dpuhost.dpu_dataplane_mac: {dpuhost.dpu_dataplane_mac}")
