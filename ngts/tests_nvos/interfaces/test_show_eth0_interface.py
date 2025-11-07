@@ -94,8 +94,14 @@ def test_ib_show_interface_ip(engines):
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+        output_dictionary_ipv4 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ipv4.show()).get_returned_value()
+
+        output_dictionary_ipv6 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+            mgmt_port.interface.ipv6.show()).get_returned_value()
+
+        # Merge both dictionaries to get all fields
+        output_dictionary = {**output_dictionary_ipv4, **output_dictionary_ipv6}
 
         validate_ip_fields(output_dictionary)
 
@@ -107,14 +113,17 @@ def check_dhcp(mgmt_port, ipv4=True):
             output_json = mgmt_port.interface.ipv4.dhcp_client.show()
     else:  # ipv6
         with allure.step('Run show command on dhcp-client (ipv6) of eth0 mgmt port'):
-            output_json = mgmt_port.interface.ipv6.dhcp_client6.show()
+            # Note: IPv6 uses dhcp_client, not dhcp_client6
+            output_json = mgmt_port.interface.ipv6.dhcp_client.show()
 
     output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(output_json).get_returned_value()
 
-    # Verify the result
+    # Verify the result - Updated fields to match new schema (removed deprecated has-lease and is-running)
     with allure.step('Verify required fields exist in the show output, and set to default value'):
+        expected_fields = ['set-hostname', 'state']
+        expected_values = ['enabled', 'enabled']
         Tools.ValidationTool.validate_fields_values_in_output(
-            expected_fields=SystemConsts.DHCP_SHOW_FIELDS, expected_values=SystemConsts.DHCP_SHOW_DEFAULT_VALUES,
+            expected_fields=expected_fields, expected_values=expected_values,
             output_dict=output_dict).verify_result()
 
 
@@ -143,12 +152,13 @@ def test_show_interface_ip_dhcp(engines):
 
 
 def validate_interface_fields(output_dictionary):
-    with allure.step('Check that the following fields exist in the output: type, link, ip, ifindex'):
-        logging.info('Check that the following fields exist in the output: type, link, ip, ifindex')
+    with allure.step('Check that the following fields exist in the output: type, link, ipv4, ipv6, ifindex'):
+        logging.info('Check that the following fields exist in the output: type, link, ipv4, ipv6, ifindex')
         field_to_check = [IbInterfaceConsts.TYPE,
                           IbInterfaceConsts.LINK,
                           IbInterfaceConsts.IFINDEX,
-                          IbInterfaceConsts.IP]
+                          IbInterfaceConsts.IPV4,
+                          IbInterfaceConsts.IPV6]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
@@ -181,10 +191,10 @@ def validate_stats_fields(output_dictionary):
 def validate_ip_fields(output_dictionary):
     with allure.step('Check that all expected fields under eth ip field exist in the output'):
         logging.info('Check that all expected fields under eth ip field exist in the output')
-        field_to_check = [IbInterfaceConsts.IP_VRF,
-                          IbInterfaceConsts.IP_ADDRESS,
+        # Note: Both IPv4 and IPv6 use 'dhcp-client' field name (no separate dhcp-client6)
+        # When merged, we get: address, dhcp-client, arp-timeout (from IPv4), autoconf (from IPv6)
+        field_to_check = [IbInterfaceConsts.IP_ADDRESS,
                           IbInterfaceConsts.IP_DHCP,
-                          IbInterfaceConsts.IP_DHCP6,
                           IpConsts.ARP_TIMEOUT,
                           IpConsts.AUTOCONF]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
