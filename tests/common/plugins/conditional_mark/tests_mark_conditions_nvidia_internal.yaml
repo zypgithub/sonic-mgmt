@@ -1129,6 +1129,12 @@ restapi/test_restapi.py::test_create_interface_sad:
     conditions:
     - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
 
+stress/test_stress_routes.py:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4722414"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4722414 and 'sn4280' in platform"
+
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
