@@ -836,6 +836,12 @@ platform_tests/test_reboot.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_reboot.py::test_cold_reboot:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4722484"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4722484"
+
 platform_tests/test_reboot.py::test_warm_reboot:
   skip:
     reason: "Testcase ignored due to ticket of https://redmine.mellanox.com/issues/4517702"
