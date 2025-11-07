@@ -1076,9 +1076,9 @@ pfcwd/test_pfcwd_function.py:
 
 pfcwd/test_pfcwd_cli.py:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4680178"
     conditions:
-    - "https://redmine.mellanox.com/issues/4697884"
+    - "https://redmine.mellanox.com/issues/4680178"
 
 pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy\[IPv4.*:
   regex: true
