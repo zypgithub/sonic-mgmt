@@ -1912,3 +1912,12 @@
     - https://github.com/sonic-net/sonic-mgmt/issues/20563
     Platform:
     - sn4700
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] .*mlnx_sai_port.c\[.*\]- mlnx_port_samplepacket_session_get: Egress mirroring is not supported on SPC6.*'
+  - '.*ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- get_dispatch_attribs_handler: Failed Get #\d+, EGRESS_SAMPLEPACKET_ENABLE, key:PORT \[OID:.*\] \[log_port:.*\].*'
+  Conditions:
+  - Platform:
+    - sn6600
+    Redmine:
+    - 4634736
