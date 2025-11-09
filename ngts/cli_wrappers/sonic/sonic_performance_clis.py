@@ -427,7 +427,8 @@ class SonicPerformanceCli(PerformanceCommon):
         return f"/{file_name}"
 
     def restore_basic_configuration(self, dst_dut_dir="/tmp"):
-        pass
+        self.cleanup_shared_json_file()
+        return
 
     def get_tg_unconnected_ports(self):
         return self.unconnected_ports

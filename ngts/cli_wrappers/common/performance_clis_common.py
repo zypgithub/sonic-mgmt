@@ -4,8 +4,9 @@ import re
 import json
 import pandas as pd
 import allure
+import fcntl
 from retry import retry
-from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
+from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
 from infra.tools.exceptions.test_issue import TestIssue
 
 
@@ -388,6 +389,77 @@ class PerformanceCommon:
         with open(sonic_mgmt_path) as f:
             sdk_dump_str = f.read()
         return sdk_dump_str
+
+    def write_shared_json(self, key=None, json_path='/tmp', data=None):
+        """
+        Write a value for a specific key to the shared JSON file.
+        Args:
+            key (str): Key to write/update
+            json_path (str): Path to the shared JSON file
+            data (any): Data to store under the key
+        Raises:
+            FileNotFoundError: If the JSON file does not exist
+        """
+        file_name = MultiNosSharedData.DEFAULT_SHARED_JSON
+        full_path = os.path.join(json_path, file_name)
+
+        mode = 'r' if os.path.exists(full_path) else 'w'
+        with open(full_path, mode, encoding='utf-8') as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            try:
+                if os.path.exists(full_path) and os.stat(full_path).st_size > 0:
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        content = json.load(f)
+                else:
+                    content = {}
+
+                if key in content:
+                    raise KeyError(f"Key '{key}' already exists in the shared JSON file.")
+                content[key] = data
+
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    json.dump(content, f, indent=2)
+            finally:
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path, direction='put')
+
+    def read_shared_json(self, key, json_path='/tmp'):
+        """
+        Read the value for a specific key from the shared JSON file.
+        Args:
+            key (str): Key to read
+            json_path (str): Path to the shared JSON file
+        Returns:
+            The value stored under the key, or None if not found
+        Raises:
+            FileNotFoundError: If the JSON file does not exist
+        """
+
+        file_name = MultiNosSharedData.DEFAULT_SHARED_JSON
+        full_path = os.path.join(json_path, file_name)
+        self.engine.copy_file(source_file=file_name, dest_file=json_path, file_system=json_path, overwrite_file=True, verify_file=True, direction='get')
+
+        with open(full_path, 'r') as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            try:
+                content = json.load(f)
+            finally:
+                fcntl.flock(f, fcntl.LOCK_UN)
+        return content.get(key, None)
+
+    def cleanup_shared_json_file(self, json_path='/tmp'):
+        """
+        Create an empty (zero-byte) shared JSON file at the given path. If no path is provided, use the default from PerfConsts.
+        Args:
+            json_path (str): Path to the shared JSON file. If None, use default.
+        """
+        file_name = MultiNosSharedData.DEFAULT_SHARED_JSON
+        full_path = os.path.join(json_path, file_name)
+
+        open(full_path, 'w').close()
+
+        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path, direction='put')
 
     def dynamic_configuration_helper(self, scenario, performance_parameters):
         """

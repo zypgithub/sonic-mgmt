@@ -113,6 +113,11 @@ def create_mongo_db_template_file(players, session_id, setup_name):
     create_performance_db_template(players, session_id, setup_name)
 
 
+@pytest.fixture(scope='session', autouse=True)
+def cleanup_shared_json_file(players):
+    players[PerfConsts.DUT_ALIAS]['cli'].performance.cleanup_shared_json_file()
+
+
 @pytest.fixture(scope='function', autouse=True)
 def update_test_data_in_mongo_db(request, players):
     try:

@@ -91,6 +91,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.engine.run_cmd(f"sudo cat /etc/nvue.d/startup.yaml >> {dst_dir}/startup.yaml")
 
     def restore_basic_configuration(self, file_name="startup.yaml", config_directory=Cl_Consts.CL_HOME_DIR):
+        self.cleanup_shared_json_file()
         logging.info("Replacing the basic configuration on the device")
         full_path = config_directory + "/" + file_name
         self.cli_obj.general.replace_config(self.engine, full_path, output_type="json", verify_execution=True)

@@ -92,6 +92,7 @@ class DvsPerformance(PerformanceCommon):
         pass
 
     def restore_basic_configuration(self):
+        self.cleanup_shared_json_file()
         restart_cmd = "dvs_stop.sh && dvs_start.sh --sdk_bridge_mode=HYBRID"
         self.execute_cmd(restart_cmd)
         self.connected_ports = self.original_connected_ports

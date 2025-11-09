@@ -315,6 +315,12 @@ class PerfConsts:
     MAX_CELLS_RANGE_FOR_BINARY_SEARCH = 100
 
 
+class MultiNosSharedData:
+    DEFAULT_SHARED_JSON = "shared_communication.json"
+    ALIBABA_ACL_DUMP_PATH = 'alibaba_acl_path'
+    ALIBABA_ACL_DUMP_NAME = 'alibaba_acl_name'
+
+
 class Cl_Consts:
     CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
     CL_LOG_PORT_FILE = 'log_port_cumulus.py'
