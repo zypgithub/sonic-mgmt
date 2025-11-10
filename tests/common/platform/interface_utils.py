@@ -383,8 +383,10 @@ import sonic_platform.platform as P
 num_sfps = P.Platform().get_chassis().get_num_sfps()
 port_indexes_with_flat_memory = []
 for i in range(1, num_sfps + 1):
-    is_flat_memory = P.Platform().get_chassis().get_sfp(i).get_xcvr_api().is_flat_memory()
-    if is_flat_memory:
+    xcvr_api = P.Platform().get_chassis().get_sfp(i).get_xcvr_api()
+    if xcvr_api is None:
+        continue
+    if xcvr_api.is_flat_memory():
         port_indexes_with_flat_memory.append(i)
 print(port_indexes_with_flat_memory)
 EOF
