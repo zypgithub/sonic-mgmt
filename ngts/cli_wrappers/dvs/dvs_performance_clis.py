@@ -71,9 +71,14 @@ class DvsPerformance(PerformanceCommon):
                      "get_player_unconnected_connected_after_split": self.get_player_unconnected_connected_after_split,
                      "PerfConsts": PerfConsts}
         jinja_template.globals.update(func_dict)
-        template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias, right_left_ports_dict=self.right_left_ports_dict)
-        logging.info(f"Template string: {template_string}")
-        json_dict = json.loads(template_string)
+
+        try:
+            template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias, right_left_ports_dict=self.right_left_ports_dict)
+            logging.info(f"Template string: {template_string}")
+            json_dict = json.loads(template_string)
+        except Exception as e:
+            logging.error(f"Error {e}. \n\nTemplate string: {template_string}")
+            raise e
         return json_dict
 
     def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
@@ -457,3 +462,11 @@ class DvsPerformance(PerformanceCommon):
 
         get_dynamic_conf_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_DYNAMIC_CONF_PREFIX}{scenario}"
         self.execute_cmd(get_dynamic_conf_cmd)
+
+    def configure_incremental_dips_on_tg(self):
+        """
+        This method is used to create the incremental dips on the traffic generator
+        """
+        logging.info(f"Create incremental dips on {self.dut_alias}")
+        cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_CREATE_INCREMENTAL_DIPS}"
+        self.execute_cmd(cmd)

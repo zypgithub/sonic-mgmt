@@ -159,6 +159,7 @@ class PerfConsts:
     DVS_GET_PORTS = "GetPorts"
     DVS_UNSPLIT_ALL_PORTS = "UnsplitAllPorts"
     DVS_DYNAMIC_CONF_PREFIX = "DynamicConfiguration"
+    DVS_CREATE_INCREMENTAL_DIPS = "MultiDipsTG"
 
     # Traffic Generator Aliases
     LEFT_TG_ALIAS = "left_tg"
@@ -176,6 +177,11 @@ class PerfConsts:
     BW_THRESHOLD = "bw_threshold"
     ECMP_TYPE_AR = "ar"
     ECMP_TYPE_STATIC = "static"
+
+    LEAF_PORTS_GROUP = "leaf_ports_group"
+    SUPER_SPINE_PORTS_GROUP = "super_spine_ports_group"
+    LEFT_SPLIT_PORTS = "left_split_ports"
+    RIGHT_SPLIT_PORTS = "right_split_ports"
 
     # Configuration Files
     AR_PERF_CONFIG_FOLDER = 'config_files'
@@ -396,6 +402,7 @@ class SPCXRAConsts:
 
     PACKET_NUM_400G_x2 = 8
     PACKET_NUM_800G_x1 = 20
+    PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS = 72
 
 
 class MongoDbConsts:

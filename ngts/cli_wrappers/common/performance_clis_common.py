@@ -432,7 +432,7 @@ class PerformanceCommon:
             finally:
                 fcntl.flock(lock_file, fcntl.LOCK_UN)
 
-        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path, direction='put')
+        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path, overwrite_file=True, verify_file=True, direction='put')
 
     def read_shared_json(self, key, json_path='/tmp'):
         """
@@ -509,3 +509,9 @@ class PerformanceCommon:
         This method is used to validate the ETS on the dut
         """
         pass
+
+    def configure_incremental_dips_on_tg(self):
+        """
+        This method is used to create the incremental dips on the traffic generator
+        """
+        raise NotImplementedError

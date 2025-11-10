@@ -422,6 +422,13 @@ def create_sdk_dump(players, full_path):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
 
 
+def configure_incremental_dips_on_tg(players, step="basic_test_configuration - configure_incremental_dips_on_tg"):
+    call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                           action="create incremental dips",
+                                           performance_clis_function_name="configure_incremental_dips_on_tg",
+                                           performance_clis_function_args=(), step=step)
+
+
 def update_port_group_in_df(port_group_df, port_group_name, port_list):
     """
     Update the port group dataframe with the port list

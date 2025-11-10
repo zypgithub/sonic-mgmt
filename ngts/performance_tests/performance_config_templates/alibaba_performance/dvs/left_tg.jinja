@@ -2,7 +2,7 @@
     "sdk_test_info":
         {
             "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
-            "sdk_test_name": "MultiDipsTG"
+            "sdk_test_name": "SpcxTG"
         },
     "{{ PerfConsts.SDK_TEST_CONF }}": {
             {% set ports = right_left_ports_dict %}
@@ -26,14 +26,14 @@
             {# Support for multi-destination IPs #}
             "is_ipv4": "{{conf_args.is_ipv4}}",
             "is_ipv6": "{{conf_args.is_ipv6}}",
-            "start_dip_ipv4": "{{conf_args.dip_left_to_right_start_ipv4}}",
-            "start_dip_ipv6": "{{conf_args.dip_left_to_right_start_ipv6}}",
+            "start_dip_ipv4_list": {{conf_args.dip_left_to_right_start_ipv4_list | tojson}},
+            "start_dip_ipv6_list": {{conf_args.dip_left_to_right_start_ipv6_list | tojson}},
             "num_dip_ipv4_to_send": "{{conf_args.left_num_dip_to_send}}",
             "num_dip_ipv6_to_send": "{{conf_args.left_num_dip_to_send}}",
 
             {# Configure port groups - either from provided config or default mapping #}
             {% if conf_args.port_groups is defined %}
-            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.PORT_GROUPS] | tojson }}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args[PerfConsts.PORT_GROUPS][PerfConsts.LEFT_TG_ALIAS] | tojson }}
             {% else %}
             "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_left) | tojson }}
             {% endif %}
