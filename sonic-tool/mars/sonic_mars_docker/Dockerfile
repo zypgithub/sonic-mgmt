@@ -13,3 +13,17 @@ RUN virtualenv /root/pyenv/sonic
 ENV PYTHONPATH=""
 RUN /root/pyenv/sonic/bin/pip install fabric==2.5.0 pathlib retry pyyaml
 ENV PYTHONPATH="/opt/ver_sdk"
+
+RUN yum install centos-release-scl-rh -y
+ENV LD_LIBRARY_PATH="/lib64/:${LD_LIBRARY_PATH}"
+
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/CentOS-*.repo
+RUN sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/CentOS-*.repo
+
+RUN yum clean all
+RUN yum update -y
+
+RUN yum install rh-python38-python -y
+RUN yum install git -y
+RUN yum install gcc gcc-c++ make expat-devel rh-python38-python-devel unixODBC-devel -y

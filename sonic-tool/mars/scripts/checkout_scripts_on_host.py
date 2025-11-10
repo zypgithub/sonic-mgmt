@@ -50,7 +50,8 @@ def main():
     topo = parse_topology(args.topo)
     host_device = topo.get_device_by_topology_id(host_name)
     host_device_username, host_device_password = topo.get_user_access(host_device.USERS[0])
-    host = Connection(host_device.BASE_IP, user=host_device_username,
+    host_ssh_port = getattr(host_device, "PORT", 22)
+    host = Connection(host_device.BASE_IP, port=host_ssh_port, user=host_device_username,
                       config=Config(overrides={"run": {"echo": True}}),
                       connect_kwargs={"password": host_device_password})
 

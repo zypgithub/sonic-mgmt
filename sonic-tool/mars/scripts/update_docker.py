@@ -11,7 +11,6 @@ run commands on it. Purpose is to prepare the SONiC testing topology using the t
 import argparse
 import json
 import os
-import re
 import sys
 import time
 import traceback
@@ -26,12 +25,16 @@ from retry.api import retry_call
 # Home-brew libs
 from lib import constants
 from lib.utils import parse_topology, get_logger
+from parse_escape_docker_env_secrets import parse_escape_docker_env_secrets
 
 logger = get_logger("UpdateDocker")
 
 CONTAINER_IFACE = "eth0"
 NETWORK_NAME = "containers_network"
 GET_NETWORK_CMD = "docker network ls | grep '{}'".format(NETWORK_NAME)
+SONIC_MGMT_SSH_PORT = 2222
+SONIC_MGMT_RPYC_PORT = 18812
+SETUPS_LOCATION = "/.autodirect/sw_regression/system/SONIC/MARS/conf/setups"
 
 
 def _parse_args():
@@ -54,7 +57,15 @@ def _parse_args():
                         dest="send_takeover_notification", default='no', choices=["yes", "no"])
     parser.add_argument("--skip_weekend_cases", help="If set to yes, the script will set the env variable SKIP_WEEKEND_CASES to yes",
                         dest="skip_weekend_cases", default='yes', choices=["yes", "no"])
-    return parser.parse_args()
+    parser.add_argument("--air_setup", dest="air_setup", action="store_true",
+                        help="If passed, the script will run the update_docker script for Air setup")
+    parser.add_argument("--setup_name", dest="setup_name", required=False, help="The setup name. Required for Air setup.")
+
+    args = parser.parse_args()
+
+    if args.air_setup and not args.setup_name:
+        parser.error("The setup name is required for Air setup")
+    return args
 
 
 @retry(ThreadException, tries=3, delay=10)
@@ -144,37 +155,6 @@ def create_mgmt_network(conn):
         logger.info('macvlan network \"%s\" - already exist', NETWORK_NAME)
 
 
-def parse_escape_docker_env_secrets(mars_docker_env_secrets):
-    """"
-    Input: String of env vars in the format: "--env VAR1=value1 --env VAR2=value2 ...."
-    Parse the docker env secrets and escape the single quotes.
-    returns the shell friendly array of env vars:
-    [
-        "VAR1=value1",
-        "VAR2=value2",
-        ...
-    ]
-    """
-    regex = r"[\w|_]+=[|\'\w\d$!-\.\/\-:~\(\)@=\{\}]*(?:$|\s)"
-    env_vars = re.findall(regex, mars_docker_env_secrets)
-    # cleanup the env var
-    env_vars_clean = []
-    for env_var in env_vars:
-        env_var = env_var.strip()
-        par, val = env_var.split("=", 1)
-        par = par.strip()
-        val = val.strip()
-        if val[0] == "'" and val[-1] == "'" and len(val) > 1:
-            # remove single quotes from the beginning and end of the value
-            val = val[1:-1]
-        # Revert if any single quotes are already escaped
-        val =  val.replace(r"'\''", r"'")
-        # Escape any single quotes in the value
-        val =  val.replace(r"'", r"'\''")
-        env_vars_clean.append("{}='{}'".format(par, val))
-    return env_vars_clean
-
-
 def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_name, skip_weekend_cases):
     export_env_var_script_path = "/tmp/{CONTAINER_NAME}_export_env_var.sh".format(CONTAINER_NAME=container_name)
     if os.path.exists(export_env_var_script_path):
@@ -189,7 +169,7 @@ def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_n
 # we got intermittent threaded socket errors randomly occurs in CI
 # there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
 @retry(ThreadException, tries=3, delay=10)
-def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases):
+def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases, air_setup):
     """
     @summary: Create and start specified container from specified image
     @param conn: Fabric connection to the host server
@@ -197,6 +177,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     @param image_tag: Docker image tag
     @param container_name: Docker container name to be started
     @param mac_address: MAC address of the container's management interface
+    @param skip_weekend_cases: Skip weekend cases
+    @param air_setup: Air setup
     """
     container_iface_mac = mac_address
     create_mgmt_network(conn)
@@ -216,19 +198,22 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     parsed_mars_docker_env_secrets = parse_escape_docker_env_secrets(os.getenv("MARS_DOCKER_ENV_SECRETS"))
     secrets_vars_script_path = create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_name, skip_weekend_cases)
     cmd_tmplt = "docker run --init -d -t --cap-add=NET_ADMIN {CONTAINER_MOUNTPOINTS} " \
-                "--privileged --network=containers_network --mac-address={MAC_ADDRESS} " \
+                "--privileged --mac-address={MAC_ADDRESS} " \
                 "--env ANSIBLE_CONFIG=/root/mars/workspace/sonic-mgmt/ansible/ansible.cfg --env {MARS_DOCKER_ENV_SECRETS} " \
                 "--env SKIP_WEEKEND_CASES={SKIP_WEEKEND_CASES} " \
-                "--name {CONTAINER_NAME} {IMAGE_NAME}:{IMAGE_TAG} /bin/bash"
+                "--name {CONTAINER_NAME}"
     cmd = cmd_tmplt.format(
         CONTAINER_MOUNTPOINTS=container_mountpoints,
         MAC_ADDRESS=container_iface_mac,
         CONTAINER_NAME=container_name,
-        IMAGE_NAME=image_name,
-        IMAGE_TAG=image_tag,
         MARS_DOCKER_ENV_SECRETS=" --env ".join(parsed_mars_docker_env_secrets),
         SKIP_WEEKEND_CASES=skip_weekend_cases
     )
+    if air_setup:
+        cmd += " -p {}:{} -p {}:{}".format(SONIC_MGMT_SSH_PORT, 22, SONIC_MGMT_RPYC_PORT, 18812)
+    else:
+        cmd += " --network=containers_network"
+    cmd += " {}:{} /bin/bash".format(image_name, image_tag)
     logger.info("Try to remove existing docker container anyway")
     conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
 
@@ -259,7 +244,10 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
                                                                 CONTAINER_NAME=container_name)
     conn.run(copy_script_cmd, warn=True)
     conn.run("rm -f {SCRIPT_PATH}".format(SCRIPT_PATH=secrets_vars_script_path), warn=True)
-    if not configure_docker_route(conn, container_name):
+    if air_setup:
+        conn.run('docker exec {CONTAINER_NAME} bash -c "sudo /etc/init.d/ssh restart"'
+            .format(CONTAINER_NAME=container_name))
+    elif not configure_docker_route(conn, container_name):
         logger.error("Configure docker container failed.")
         sys.exit(1)
 
@@ -332,6 +320,31 @@ def cleanup_dangling_docker_images(test_server):
     """
     test_server.run("docker system prune --all -f", warn=True)
 
+def get_test_server_device(args, topo):
+    """
+    Get test server device
+    """
+    test_server_device_username = os.getenv("TEST_SERVER_USER")
+    test_server_device_password = os.getenv("TEST_SERVER_PASSWORD")
+    if args.air_setup:
+        simulation_details_path = '{}/{}/simulation_details.json'.format(SETUPS_LOCATION, args.setup_name)
+        with open(simulation_details_path, 'r') as file:
+            simulation_details = json.load(file)
+        server_ssh_service = next(
+            (service for service in simulation_details['services'] if service['name'] == 'hypervisor-22'), None)
+        if not server_ssh_service:
+            raise Exception("Server SSH service not found for setup {}".format(args.setup_name))
+        server_ip = server_ssh_service['external_host']
+        server_port = server_ssh_service['external_port']
+    else:
+        test_server_device = topo.get_device_by_topology_id(constants.TEST_SERVER_DEVICE_ID)
+        server_ip = test_server_device.BASE_IP
+        server_port = 22
+    test_server = Connection(server_ip, port=server_port, user=test_server_device_username,
+                            config=Config(overrides={"run": {"echo": True}}),
+                            connect_kwargs={"password": test_server_device_password})
+    return test_server
+
 def main():
     args = _parse_args()
     registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
@@ -349,13 +362,9 @@ def main():
     else:
         container_name = args.docker_name
     topo = parse_topology(args.topo)
-    test_server_device = topo.get_device_by_topology_id(constants.TEST_SERVER_DEVICE_ID)
-    test_server_device_username, test_server_device_password = topo.get_user_access(test_server_device.USERS[0])
     docker_host = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
     mac = docker_host.MAC_ADDRESS
-    test_server = Connection(test_server_device.BASE_IP, user=test_server_device_username,
-                             config=Config(overrides={"run": {"echo": True}}),
-                             connect_kwargs={"password": test_server_device_password})
+    test_server = get_test_server_device(args, topo)
     if args.send_takeover_notification == 'yes':
         send_takeover_notification(topo)
     logger.info("Set hypervisor timezone to IST")
@@ -393,7 +402,7 @@ def main():
                     delete_container_required = True
     logger.info("Need to create and start sonic-mgmt container")
     create_and_start_container(test_server, "{}/{}".format(registry_url, docker_image_name),
-                               docker_tag, container_name, mac, args.skip_weekend_cases)
+                               docker_tag, container_name, mac, args.skip_weekend_cases, args.air_setup)
 
     logger.info("Try to delete dangling docker images to save space")
     cleanup_dangling_docker_images(test_server)
@@ -402,7 +411,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.2.487'}
+    default_list = {'docker-ngts': '1.2.490'}
     return default_list.get(docker_name, latest)
 
 
@@ -428,7 +437,8 @@ def send_takeover_notification(topo):
 def notify_player_users(player_info, wait_between_notf_to_regression_start, player_info_username, player_info_password):
     takeover_message = "Mars regression is taking over in {} minutes. Please save your work and logout".\
         format(wait_between_notf_to_regression_start)
-    player_engine = Connection(player_info.BASE_IP, user=player_info_username,
+    player_ssh_port = getattr(player_info, "PORT", 22)
+    player_engine = Connection(player_info.BASE_IP, port=player_ssh_port, user=player_info_username,
                                config=Config(overrides={"run": {"echo": True}}),
                                connect_kwargs={"password": player_info_password},
                                connect_timeout=5)
