@@ -261,7 +261,6 @@ def compare_data_from_cli_and_redis(cli_data, redis_data, port, key_mapping):
     for cli_eeprom_key, redis_key in key_mapping.items():
         # For SFF cables some fields having multi line output, taking first and check if present in redis db output
         cli_value = cli_data[cli_eeprom_key.replace("\\", "")]
-        cleanup_placeholder(redis_data[port], redis_key)
         redis_value = redis_data[port][redis_key].strip()
         assert cli_value == redis_value if ":" not in cli_value else cli_value.split(":")[-1].strip() in redis_value, \
             f"Data from cli param {cli_eeprom_key} does not match data from redis"
