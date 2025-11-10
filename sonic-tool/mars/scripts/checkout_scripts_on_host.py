@@ -14,6 +14,8 @@ import re
 # Third-party libs
 from fabric import Config
 from fabric import Connection
+from invoke.exceptions import ThreadException
+from retry import retry
 
 # Home-brew libs
 from lib import constants
@@ -36,6 +38,7 @@ def _parse_args():
     return parser.parse_args()
 
 
+@retry(ThreadException, tries=3, delay=10)
 def main():
 
     args = _parse_args()
