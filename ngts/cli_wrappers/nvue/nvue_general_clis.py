@@ -11,6 +11,7 @@ from ngts.constants.constants import MarsConstants
 from ngts.nvos_constants.constants_nvos import NvosConst, ActionConsts, SystemConsts, ConfState, TopologyConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.GrubMenuTool import GrubMenuTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -312,6 +313,73 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         logging.info("Running 'nv config patch' on dut")
         output = engine.run_cmd('nv config patch {file}'.format(file=file))
         return output
+
+    @staticmethod
+    def config_patch(engine, filepath, apply=True, detach_first=True):
+        """
+        Patch configuration from file with optional apply.
+
+        Args:
+            engine: SSH engine
+            filepath: Path to config file
+            apply: If True, applies config and validates. If False, only creates revision
+            detach_first: If True, detaches any pending config before patching (default: True)
+
+        Returns:
+            ResultObj with success/failure status
+        """
+        # Step 1: Detach pending config if requested (default behavior)
+        if detach_first:
+            NvueGeneralCli.detach_config(engine)
+
+        # Step 2: Patch (creates revision)
+        cmd = f'nv config patch {filepath}'
+        output = engine.run_cmd(cmd)
+
+        # Check if patch failed
+        if 'error' in output.lower() and 'issue(s) found' in output.lower():
+            return ResultObj(False, info=output, returned_value=output)
+
+        # Step 3: Apply if requested
+        if apply:
+            try:
+                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
+                return ResultObj(True, info="Patch and apply successful", returned_value=output)
+            except Exception as e:
+                return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
+        else:
+            return ResultObj(True, info="Patch successful (revision created)", returned_value=output)
+
+    @staticmethod
+    def config_replace(engine, filepath, apply=True):
+        """
+        Replace configuration from file with optional apply.
+
+        Args:
+            engine: SSH engine
+            filepath: Path to config file
+            apply: If True, applies config and validates. If False, only creates revision
+
+        Returns:
+            ResultObj with success/failure status
+        """
+        # Step 1: Replace (creates revision)
+        cmd = f'nv config replace {filepath}'
+        output = engine.run_cmd(cmd)
+
+        # Check if replace failed
+        if 'error' in output.lower() and 'issue(s) found' in output.lower():
+            return ResultObj(False, info=output, returned_value=output)
+
+        # Step 2: Apply if requested
+        if apply:
+            try:
+                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
+                return ResultObj(True, info="Replace and apply successful", returned_value=output)
+            except Exception as e:
+                return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
+        else:
+            return ResultObj(True, info="Replace successful (revision created)", returned_value=output)
 
     @staticmethod
     def save_config(engine):

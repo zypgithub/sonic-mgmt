@@ -1,7 +1,8 @@
 import json
 import logging
 
-from .openapi_command_builder import OpenApiCommandHelper
+from .openapi_command_builder import OpenApiCommandHelper, OpenApiRequest, RequestData
+from ...nvos_tools.infra.ResultObj import ResultObj
 from ...tests_nvos.general.security.certificate.CertInfo import CertInfo
 
 logger = logging.getLogger()
@@ -88,3 +89,121 @@ class OpenApiGeneralCli:
             return json.dumps(res)
         else:
             return res
+
+    @staticmethod
+    def config_patch(engine, filepath, apply=True, detach_first=True):
+        """
+        Patch configuration from file with optional apply.
+
+        Args:
+            engine: SSH engine
+            filepath: Path to config file
+            apply: If True, applies config and validates. If False, only creates revision
+            detach_first: If True, detaches any pending config before patching (default: True)
+                         Note: OpenAPI detach may not be fully supported yet
+
+        Returns:
+            ResultObj with success/failure status
+        """
+        # Step 1: Detach pending config if requested (default behavior)
+        if detach_first:
+            OpenApiGeneralCli.detach_config(engine)
+
+        # Step 2: Read file content
+        file_content = engine.run_cmd(f'cat {filepath}')
+        logger.info(f"File content preview:\n{file_content[:500]}...")
+
+        request_data = RequestData(
+            user_name=engine.engine.username,
+            password=engine.engine.password,
+            endpoint_ip=engine.ip,
+            resource_path='/',
+            param_name='',
+            param_value=''
+        )
+
+        # Step 3: Send PATCH request (creates revision)
+        response = OpenApiRequest.send_patch_request(
+            request_data,
+            text_content=file_content,
+            replace=False
+        )
+
+        # Check if operation failed
+        if response and ('error' in response.lower() or 'failed' in response.lower()):
+            return ResultObj(False, info=response, returned_value=response)
+
+        result = ResultObj(True, info="Config patch successful (revision created)", returned_value=response)
+
+        # Step 4: Apply if requested
+        if not apply:
+            return result
+
+        try:
+            apply_result = OpenApiGeneralCli.apply_config(engine, ask_for_confirmation=True)
+            logger.info(f"Apply result: {apply_result}")
+
+            # Check if apply failed
+            if apply_result and any(err in str(apply_result).lower() for err in ['error', 'failed', 'fail']):
+                if 'no config diff' not in str(apply_result).lower():
+                    return ResultObj(False, info=f"Apply failed: {apply_result}", returned_value=apply_result)
+
+            return ResultObj(True, info="Patch and apply successful", returned_value=response)
+        except Exception as e:
+            return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
+
+    @staticmethod
+    def config_replace(engine, filepath, apply=True):
+        """
+        Replace configuration from file with optional apply.
+
+        Args:
+            engine: SSH engine
+            filepath: Path to config file
+            apply: If True, applies config and validates. If False, only creates revision
+
+        Returns:
+            ResultObj with success/failure status
+        """
+        # Step 1: Read file content
+        file_content = engine.run_cmd(f'cat {filepath}')
+        logger.info(f"File content preview:\n{file_content[:500]}...")
+
+        request_data = RequestData(
+            user_name=engine.engine.username,
+            password=engine.engine.password,
+            endpoint_ip=engine.ip,
+            resource_path='/',
+            param_name='',
+            param_value=''
+        )
+
+        # Step 2: Send REPLACE request (creates revision)
+        response = OpenApiRequest.send_patch_request(
+            request_data,
+            text_content=file_content,
+            replace=True
+        )
+
+        # Check if operation failed
+        if response and ('error' in response.lower() or 'failed' in response.lower()):
+            return ResultObj(False, info=response, returned_value=response)
+
+        result = ResultObj(True, info="Config replace successful (revision created)", returned_value=response)
+
+        # Step 3: Apply if requested
+        if not apply:
+            return result
+
+        try:
+            apply_result = OpenApiGeneralCli.apply_config(engine, ask_for_confirmation=True)
+            logger.info(f"Apply result: {apply_result}")
+
+            # Check if apply failed
+            if apply_result and any(err in str(apply_result).lower() for err in ['error', 'failed', 'fail']):
+                if 'no config diff' not in str(apply_result).lower():
+                    return ResultObj(False, info=f"Apply failed: {apply_result}", returned_value=apply_result)
+
+            return ResultObj(True, info="Replace and apply successful", returned_value=response)
+        except Exception as e:
+            return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))

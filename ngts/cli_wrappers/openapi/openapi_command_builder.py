@@ -123,10 +123,10 @@ class OpenApiRequest:
     def apply_nvue_changeset(request_data, op_param_name, add_approve=True, client_certs_after_apply: CertInfo = None):
         res = OpenApiRequest._config_diff(request_data)
         if not res.result:
+            OpenApiRequest.clear_changeset_and_payload()
             return res.info
         res = OpenApiRequest._apply_config(request_data, add_approve, client_certs_after_apply)
         OpenApiRequest.clear_changeset_and_payload()
-        res.ignore_result()
         return res.info
 
     @staticmethod
@@ -163,8 +163,9 @@ class OpenApiRequest:
                 result = OpenApiRequest._check_apply_status(request_data, OpenApiRequest.changeset, client_certs_after_apply)
                 if result.result:
                     result.info = "Configuration applied successfully"
-            except Exception:
-                result = ResultObj(False, "Error: Failed to apply configuration")
+            except Exception as e:
+                logging.error(f"Exception during apply status check: {str(e)}")
+                result = ResultObj(False, f"Error: Failed to apply configuration. Exception: {str(e)}")
             finally:
                 OpenApiRequest.changeset = None
                 OpenApiRequest.payload = {}
@@ -301,30 +302,68 @@ class OpenApiRequest:
         return result, err
 
     @staticmethod
-    def send_patch_request(request_data, op_params=''):
+    def send_patch_request(request_data, op_params='', text_content=None, replace=False):
+        """
+        Send PATCH request - supports both JSON and text/plain formats
+
+        :param request_data: RequestData object with connection info
+        :param op_params: Operation parameters (for JSON mode)
+        :param text_content: If provided, send as text/plain instead of JSON (for CLI command workflow)
+        :param replace: If True, add replace=true parameter (only used with text_content)
+        :return: Response info string
+        """
         with allure.step("Send PATCH request"):
-            with allure.step("Add data to patch request"):
-                OpenApiRequest.payload = {request_data.param_name: request_data.param_value} \
-                    if request_data.param_value == 'null' else request_data.param_value
-                if request_data.param_value == 'save':
-                    OpenApiRequest.payload = {request_data.param_name: request_data.param_value}
+            # Branch 1: Text/plain mode (customer CLI workflow)
+            if text_content:
+                res, err = OpenApiRequest.update_nvue_changeset(request_data)
+                if not res:
+                    return err
+
+                # Build URL with optional replace parameter
                 url = OpenApiRequest._get_endpoint_url(request_data) + request_data.resource_path
+                if replace:
+                    url += f"?rev={OpenApiRequest.changeset}&replace=true"
+                else:
+                    url += f"?rev={OpenApiRequest.changeset}"
 
-            res, err = OpenApiRequest.update_nvue_changeset(request_data)
-            if not res:
-                return err
+                logging.info(f"Send PATCH request (text/plain, replace={replace})")
+                r = requests.patch(
+                    url=url,
+                    auth=OpenApiRequest._get_http_auth(request_data),
+                    headers={"Content-Type": "text/plain", "X-Requested-By": request_data.user_name},
+                    data=text_content,
+                    **OpenApiRequest._get_client_security_config()
+                )
+                OpenApiRequest.print_request(r.request, request_data)
+                OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
+                res = OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
+                res.ignore_result()
+                return res.info
 
-            logging.info("Send PATCH request")
-            r = requests.patch(url=url,
-                               auth=OpenApiRequest._get_http_auth(request_data),
-                               data=json.dumps(OpenApiRequest.payload).replace('"null"', "null"),
-                               params={"rev": OpenApiRequest.changeset},
-                               headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
-            OpenApiRequest.print_request(r.request, request_data)
-            OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
-            res = OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
-            res.ignore_result()  # todo: maybe this function should return ResultObj instead of str?
-            return res.info
+            # Branch 2: JSON mode (existing framework workflow - UNCHANGED)
+            else:
+                with allure.step("Add data to patch request"):
+                    OpenApiRequest.payload = {request_data.param_name: request_data.param_value} \
+                        if request_data.param_value == 'null' else request_data.param_value
+                    if request_data.param_value == 'save':
+                        OpenApiRequest.payload = {request_data.param_name: request_data.param_value}
+                    url = OpenApiRequest._get_endpoint_url(request_data) + request_data.resource_path
+
+                res, err = OpenApiRequest.update_nvue_changeset(request_data)
+                if not res:
+                    return err
+
+                logging.info("Send PATCH request")
+                r = requests.patch(url=url,
+                                   auth=OpenApiRequest._get_http_auth(request_data),
+                                   data=json.dumps(OpenApiRequest.payload).replace('"null"', "null"),
+                                   params={"rev": OpenApiRequest.changeset},
+                                   headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
+                OpenApiRequest.print_request(r.request, request_data)
+                OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
+                res = OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
+                res.ignore_result()  # todo: maybe this function should return ResultObj instead of str?
+                return res.info
 
     @staticmethod
     def send_delete_request(request_data, op_params=''):
