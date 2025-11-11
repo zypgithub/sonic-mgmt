@@ -156,7 +156,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
         return summarize_la_bug_handler(bug_handler_dumps_results, bug_handler_action), la_errors
 
 
-def skip_bug_handler(duthost, request):
+def skip_bug_handler(duthost, request, logger=logger):
     """
     return True if the bug handler will be skipped.
     """
@@ -195,7 +195,7 @@ def skip_bug_handler(duthost, request):
 
 def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
                              only_check=False, is_serial_log=False,
-                             is_test_function_failed=False):
+                             is_test_function_failed=False, logger=logger):
     """
     If the run_log_analyzer_bug_handler is True, run this function to handle the err msg detected in the loganalyzer
     """
@@ -636,19 +636,25 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
     formatter.datefmt = '%Y-%m-%d %H:%M:%S'
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
-    logging.getLogger().addHandler(file_handler)
+
+    # Remove all existing handlers to prevent logging to stdout/stderr
+    # which can cause pipe deadlock when subprocess output buffer fills
+    # and parent process does not read from the pipe.
+    bh_logger = logging.getLogger("bh_logger")
+    bh_logger.handlers = []
+    bh_logger.addHandler(file_handler)
     try:
         analyzer = analyzers[node.hostname]
         analyzer_summary = la_results[node.hostname]
         duthost, request = analyzer.ansible_host, analyzer.request
-        if skip_bug_handler(duthost, request):
-            logging.info("Bug handler is skipped for %s, will verify log analyzer summary", node.hostname)
+        if skip_bug_handler(duthost, request, logger=bh_logger):
+            bh_logger.info("Bug handler is skipped for %s, will verify log analyzer summary", node.hostname)
             analyzer._verify_log(analyzer_summary)
         else:
-            log_analyzer_bug_handler(duthost, request, is_test_function_failed=_is_test_function_failed(request))
+            log_analyzer_bug_handler(duthost, request, is_test_function_failed=_is_test_function_failed(request), logger=bh_logger)
     finally:
         if file_handler:
-            logging.getLogger().removeHandler(file_handler)
+            bh_logger.removeHandler(file_handler)
             file_handler.close()
 
 def _is_test_function_failed(request: pytest.FixtureRequest) -> bool:
