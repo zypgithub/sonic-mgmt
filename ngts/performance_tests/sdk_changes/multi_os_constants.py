@@ -1,3 +1,14 @@
+import os
+import sys
+
+LIB_ROOT = os.path.join(os.path.abspath(__file__)[:os.path.abspath(__file__)
+                        .find('sx_sdk_py_tests')]) + 'sx_sdk_py_tests'
+if LIB_ROOT not in sys.path:
+    sys.path.append(LIB_ROOT)
+
+from libs.base_classes.multi_nos.power_temp_constants import PowerTempConsts
+
+
 class MultiNosConstants:
     TC_NUM = 7
     PG_NUM = 8
@@ -37,6 +48,7 @@ class MultiNosConstants:
     TC_LATENCY_SAMPLE_COUNT = 1
     COUNTERS_SAMPLE_COUNT = 1
     BW_SAMPLES = "Bandwidth_samples"
+    PERF_COUNTERS_SAMPLES = "perf_counters_samples"
     TC_PG_SAMPLES = "TC_PG_samples"
     TC_LATENCY_SAMPLES = "TC_latency_samples"
     COUNTERS_SAMPLES = "Counters_samples"
@@ -50,8 +62,6 @@ class MultiNosConstants:
     TC_99_LATENCY = "tc99Latency"
     COUNTERS_DATAFRAME = "counters_dataframe"
     DISCARDS_COUNTER = 'if_out_discards'
-    VALIDATOR_COUNTERS_LIST = ['a_mac_control_frames_transmitted', 'a_mac_control_frames_received',
-                               'a_pause_mac_ctrl_frames_transmitted', 'a_pause_mac_ctrl_frames_received']
     SAMPLE_DURATION_PARAM = "duration"
     DELAY_BETWEEN_SAMPLES_PARAM = "delay_between_samples"
     SAMPLE_COUNT = "sample_count"
@@ -64,3 +74,19 @@ class MultiNosConstants:
     SHAPER_VALUE_DEFAULT = 0.975
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     CLEAR_COUNTERS_DEFAULT = "True"
+    LATENCY_BIN_SIZE_RESOLUTION = 2
+    LATENCY_MIN_BOUNDARY = 1
+    LATENCY_SAMPLE_TIME = 11
+    PERFORMANCE_COUNTERS_DATAFRAME = "performanceCountersDataframe"
+    SDK_GENERATION_TIME_WITH_PERF_COUNTERS = "sdkGenerationTimeWithPerfCounters"
+    SDK_GENERATION_TIME_WITHOUT_PERF_COUNTERS = "sdkGenerationTimeWithoutPerfCounters"
+    PERFORMANCE_COUNTER_NAME = "performanceCounterName"
+    PERFORMANCE_COUNTER_VALUE = "performanceCounterValue"
+    COLLECTORS_LIST = [BW_SAMPLES, COUNTERS_SAMPLES, TC_PG_SAMPLES, TC_LATENCY_SAMPLES, PERF_COUNTERS_SAMPLES,
+                       PowerTempConsts.POWER_SAMPLES, PowerTempConsts.TEMPERATURE_SAMPLES]
+
+
+class MultiNosSharedData:
+    DEFAULT_SHARED_JSON = "shared_communication.json"
+    ALIBABA_ACL_DUMP_PATH = 'alibaba_acl_path'
+    ALIBABA_ACL_DUMP_NAME = 'alibaba_acl_name'
