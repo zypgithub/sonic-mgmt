@@ -125,21 +125,6 @@ def get_ptf_crl_server_ip(duthost, ptfhost):
         # Use IPv4 address
         return ptfhost.mgmt_ip
 
-def get_ptf_crl_server_ip(duthost, ptfhost):
-    """
-    Get the appropriate PTF IP address for CRL server based on DUT management IP type.
-    If DUT is IPv6-only, use PTF IPv6 address; otherwise use IPv4.
-    """
-    # Check if DUT management is IPv6-only
-    dut_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
-    is_mgmt_ipv6_only = dut_facts.get('is_mgmt_ipv6_only', False)
-    if is_mgmt_ipv6_only and ptfhost.mgmt_ipv6:
-        # Use IPv6 address with brackets for URL
-        return "[{}]".format(ptfhost.mgmt_ipv6)
-    else:
-        # Use IPv4 address
-        return ptfhost.mgmt_ip
-
 
 def create_revoked_cert_and_crl(localhost, ptfhost, duthost=None):
 
