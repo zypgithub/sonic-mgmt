@@ -69,5 +69,14 @@
              </params>
         </cmd>
     </case>
+    <case>
+        <info> ECN Mode Case</info>
+        <name> test_ecn_mode </name>
+        <cmd>
+             <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts decap/mellanox/test_ecn_mode.py </static_args>
+             </params>
+        </cmd>
+    </case>
 
 </CASEDEF>
