@@ -308,7 +308,7 @@ class DvsPerformance(PerformanceCommon):
         }
         return traffic_parameters
 
-    def set_ibm(self, scenario, conf_args):
+    def set_ibm(self, scenario, conf_args, chip_type):
         self.restore_basic_configuration()
         self.apply_configuration_file(scenario, conf_args)
 

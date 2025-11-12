@@ -325,6 +325,9 @@ class Cl_Consts:
     CL_LOG_PORT_FILE_PATH = os.path.join(BugHandlerConst.NGTS_PATH, 'scripts/')
     CL_LOG_PORT_FILE = 'log_port_cumulus.py'
     CL_LOG_BW_FILE = 'collect_bw_cumulus.py'
+    AR_PROFILES = {
+        "SPC4": "profile-2",
+    }
     BONUS_PORTS = {
         'Spectrum-3': [],
         'Spectrum-4': ['swp65'],

@@ -56,7 +56,7 @@ def basic_setup_configuration(request, players):
     except Exception as e:
         raise e
     finally:
-        with allure.step('Restore Base Configuration on all Players'):
+        with allure.step('Restore Basic Configuration on all Players'):
             restore_basic_configuration(players)
 
 
@@ -68,15 +68,15 @@ def set_ibm(players, basic_setup_configuration):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def ibm_fixture(players, basic_setup_configuration):
+def ibm_fixture(players, basic_setup_configuration, chip_type):
     conf_args = get_conf_args(basic_setup_configuration)
     copied_conf_args = copy.deepcopy(conf_args)
     copied_conf_args["auto_buffer_mode"] = "True"
     with allure.step("Set auto buffer mode to True"):
-        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, copied_conf_args)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, copied_conf_args, chip_type)
     yield
     with allure.step("Set auto buffer mode to False"):
-        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args)
+        players['dut']['cli'].performance.set_ibm(TESTS_SCENARIO, conf_args, chip_type)
 
 
 @pytest.fixture(scope='function', autouse=True)

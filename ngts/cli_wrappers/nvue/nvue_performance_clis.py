@@ -103,7 +103,7 @@ class NvuePerformanceCli(PerformanceCommon):
         logging.info("Full Path returned is {}".format(full_path))
         return full_path
 
-    def set_ibm(self, scenario, conf_args):
+    def set_ibm(self, scenario, conf_args, chip_type):
         ibm_mode = True if conf_args["auto_buffer_mode"] == "False" else False
         if conf_args['params']:
             ctl = conf_args.get('params', {}).get("low_ar_thresh", PerfConsts.LOW_AR_THRESHOLD)
@@ -140,7 +140,11 @@ class NvuePerformanceCli(PerformanceCommon):
             self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         else:
             logging.info("Enabling the default ar profile")
-            self.execute_cmd("nv set router adaptive-routing profile profile-2")
+            ar_profile = Cl_Consts.AR_PROFILES.get(chip_type, "")
+            if ar_profile:
+                self.execute_cmd(f"nv set router adaptive-routing profile {ar_profile}")
+            else:
+                self.execute_cmd("nv unset router adaptive-routing profile")
             self.cli_obj.general.apply_config(self.engine, option="-y", verify_execution=True)
         return True
 
