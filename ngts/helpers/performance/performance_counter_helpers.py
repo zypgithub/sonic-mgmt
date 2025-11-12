@@ -46,6 +46,10 @@ def validate_performance_counters(traffic_json, cli_object, allowed_deviation, p
     """
     Validates the performance counters from the performance counters json.
     """
+    if is_redmine_issue_active([4731421])[0]:
+        with allure.step(f"Skipping performance counters validation due to performance bug #4731421"):
+            original_violations_list = violations_list
+
     with allure.step(f"Validate performance counters"):
         interval, dump_generation_time_margin = get_performance_counters_params()
         performance_counters_df, sdk_generation_time_with_perf_counters, sdk_generation_time_without_perf_counters = restructure_performance_counters(traffic_json)
@@ -69,6 +73,8 @@ def validate_performance_counters(traffic_json, cli_object, allowed_deviation, p
             MongoDbConsts.PERFORMANCE_COUNTERS_DATA: {ValidationConsts.SDK_GENERATION_TIME_WITH_PERF_COUNTERS: sdk_generation_time_with_perf_counters,
                                                       ValidationConsts.SDK_GENERATION_TIME_WITHOUT_PERF_COUNTERS: sdk_generation_time_without_perf_counters},
             ValidationConsts.PERFORMANCE_COUNTERS_DATAFRAME: performance_counters_mongo_db_df})
+    if is_redmine_issue_active([4731421])[0]:
+        return original_violations_list
     return violations_list
 
 

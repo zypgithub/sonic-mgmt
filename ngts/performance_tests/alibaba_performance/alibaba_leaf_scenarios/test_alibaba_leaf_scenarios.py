@@ -52,57 +52,62 @@ class TestAlibabaLeafScenario:
 
     @allure.title('alibaba_performance_leaf_scenario. Added dynamically in test body')
     @allure.description('Added dynamically in test body')
-    def test_alibaba_performance_leaf_scenario(self, request, conf_args, ip_combinations):
+    def test_alibaba_performance_leaf_scenario(self, request, conf_args, ip_combinations, test_params):
         logging.info(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}")
         test_name = get_perf_test_name(request)
 
-        with allure.step(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}"):
-            with allure.step("Adding dynamic description to allure report"):
-                scenario_name = (f"Alibaba Performance real life leaf Scenario. "
-                                 f"{32 * conf_args['split_left']} X {32 * conf_args['split_right']} ports. "
-                                 f"shaper value: {conf_args['shaper_value']}. "
-                                 f"packet size: {conf_args['packet_size']}. "
-                                 f"{'with' if conf_args['is_ipv6'] else 'without'} IPv6. "
-                                 f"{'with' if conf_args['is_ipv4'] else 'without'} IPv4. "
-                                 f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
-                                 f"{conf_args['left_num_dip_to_send']} dips to host. "
-                                 f"{conf_args['right_num_dip_to_send']} dips to spine. "
-                                 )
+        with allure.step("Adding dynamic description to allure report"):
+            scenario_name = (f"Alibaba Performance real life leaf Scenario. "
+                             f"{32 * conf_args['split_left']} X {32 * conf_args['split_right']} ports. "
+                             f"shaper value: {conf_args['shaper_value']}. "
+                             f"packet size: {conf_args['packet_size']}. "
+                             f"{'with' if conf_args['is_ipv6'] else 'without'} IPv6. "
+                             f"{'with' if conf_args['is_ipv4'] else 'without'} IPv4. "
+                             f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
+                             f"{conf_args['left_num_dip_to_send']} dips to host. "
+                             f"{conf_args['right_num_dip_to_send']} dips to spine. "
+                             )
 
-                scenario_description = f"{scenario_name} "
-                f"{'with' if conf_args['set_lpm_root'] else 'without'} LPM root. "
-                f"{'with' if conf_args['disable_locality'] else 'without'} locality. "
+            scenario_description = f"{scenario_name} "
+            f"{'with' if conf_args['set_lpm_root'] else 'without'} LPM root. "
+            f"{'with' if conf_args['disable_locality'] else 'without'} locality. "
 
-                allure.dynamic.title(scenario_name)
-                allure.dynamic.description(scenario_description)
+            allure.dynamic.title(scenario_name)
+            allure.dynamic.description(scenario_description)
 
-            with allure.step(f"Get Alibaba traffic"):
-                leaf_traffic_jsons = get_alibaba_leaf_traffic(self.players, conf_args)
+        if is_redmine_issue_active([4662378])[0] and test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
+            pytest.skip("Skipping test for 99.9 percent shaper value")
 
-            with allure.step(f"Run Traffic on all the ports"):
-                run_traffic(self.players, self.scenario, leaf_traffic_jsons)
+        if is_redmine_issue_active([4662379])[0] and not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
+            pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
 
-            with allure.step(f"Creating ACL dump"):
-                acl_dump = create_acl_dump(self.players)
-                logging.info(f"Creating ACL dump {acl_dump}")
+        with allure.step(f"Get Alibaba traffic"):
+            leaf_traffic_jsons = get_alibaba_leaf_traffic(self.players, conf_args)
 
-            with allure.step(f"Publishing ACL dump"):
-                if acl_dump:
-                    allure.attach(acl_dump, name="ACL_Dump", attachment_type=allure.attachment_type.TEXT)
+        with allure.step(f"Run Traffic on all the ports"):
+            run_traffic(self.players, self.scenario, leaf_traffic_jsons)
 
-            with allure.step(f"Verifying the traffic"):
-                expected_bw = {
-                    "left_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096], "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096]},
-                    "right_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2}
-                }
-                ignore_counter_list = ['tx_ecn_marked_tc_3']
-                config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
-                                          chip_type=self.chip_type,
-                                          bw_threshold=expected_bw,
-                                          power_threshold=self.power_thresholds_by_chip_type,
-                                          skip_first_counters_iteration=True,
-                                          ignore_counter_list=ignore_counter_list)
-                run_validation(config)
+        with allure.step(f"Creating ACL dump"):
+            acl_dump = create_acl_dump(self.players)
+            logging.info(f"Creating ACL dump {acl_dump}")
+
+        with allure.step(f"Publishing ACL dump"):
+            if acl_dump:
+                allure.attach(acl_dump, name="ACL_Dump", attachment_type=allure.attachment_type.TEXT)
+
+        with allure.step(f"Verifying the traffic"):
+            expected_bw = {
+                "left_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096], "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096]},
+                "right_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[4096] / 2}
+            }
+            ignore_counter_list = ['tx_ecn_marked_tc_3']
+            config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
+                                      chip_type=self.chip_type,
+                                      bw_threshold=expected_bw,
+                                      power_threshold=self.power_thresholds_by_chip_type,
+                                      skip_first_counters_iteration=True,
+                                      ignore_counter_list=ignore_counter_list)
+            run_validation(config)
 
     def _run_single_test_with_packet_size(self, packet_size, conf_args, test_name, create_acl_dump_flag=True):
         """
