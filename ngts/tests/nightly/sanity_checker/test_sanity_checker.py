@@ -32,7 +32,7 @@ COMMANDS_FOR_ACTUAL = {
     "SDK": ["docker exec -it syncd bash -c 'dpkg -l | grep sdk'", ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": ["docker exec -it syncd bash -c 'dpkg -l | grep mlnx-sai'", ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
     "FW": ["sudo mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "FW * [0-9]{2}\\.([0-9.]*)"],
-    "KERNEL": ["uname -r", "([0-9][0-9.-]*)-.*"]
+    "KERNEL": ["uname -r", "(.*)-[a-z0-9]+$"]
 }
 
 # non-existent versions are versions that aren't supposed to appear, like BIOS compilation versions while unexpected
