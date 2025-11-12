@@ -1,3 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor, Future
+from typing import IO, List
+import dataclasses
 import os
 import re
 import subprocess
@@ -10,7 +13,6 @@ import pathlib
 
 from retry.api import retry
 from pathlib import Path
-from typing import List
 from jinja2 import Environment, FileSystemLoader
 from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
@@ -21,7 +23,58 @@ from ngts.scripts.collect_simx_logs_on_not_success import dump_simx_data
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 from ngts.helpers.redmine_cache_helper import access_redmine_cache
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class BugHandlerResult:
+    message: str
+    stderr: str
+    returncode: int
+
+    def __str__(self):
+        return self.message.rstrip()
+
+    def __bool__(self):
+        return self.returncode == 0
+
+
+def _run_bug_handler_command(command: str) -> BugHandlerResult:
+    """
+    Runs a shell command, streams stdout/stderr live to this process,
+    and returns (rc, stdout_text, stderr_text).
+    """
+    _inner_logger = logger.getChild("proc")
+    p = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,  # decode to str
+        bufsize=1,  # line-buffered
+        errors="replace",
+    )
+
+    out_buf, err_buf = [], []
+    futures: List[Future[None]] = []
+
+    def _pump(src: IO[str], level, sink: List[str]):
+        for line in iter(src.readline, ''):
+            _inner_logger.log(level, line.rstrip())
+            sink.append(line)
+        src.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures.append(executor.submit(_pump, p.stdout, logging.INFO, out_buf))
+        futures.append(executor.submit(_pump, p.stderr, logging.ERROR, err_buf))
+        rc = p.wait()
+
+    for future in futures:
+        try:
+            future.result()
+        except Exception as e:
+            logger.error(f"Error while pumping stream: {e}")
+    return BugHandlerResult(returncode=rc, message=''.join(out_buf), stderr=''.join(err_buf))
 
 
 def handle_sanitizer_dumps(dump_paths, cli_type, branch, version, setup_name, topology_obj):
@@ -210,10 +263,9 @@ def run_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed_file, u
     bug_handler_cmd = f"env LOG_FORMAT_JSON=1 {bug_handler_path} --cfg {conf_path} --project {redmine_project} " \
         f"--user {user} --branch {branch} --debug_level 2 --parsed_data '{yaml_parsed_file}'"
 
-    logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
-    bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
-    logger.info(bug_handler_output)
-    bug_handler_file_result = json.loads(bug_handler_output)
+    bug_handler_output = _run_bug_handler_command(bug_handler_cmd)
+    logger.info(f"Bug Handler Output: {bug_handler_output}")
+    bug_handler_file_result = json.loads(bug_handler_output.message)
 
     return bug_handler_file_result
 
@@ -285,10 +337,9 @@ def run_err_msg_bug_handler_tool(conf_path, redmine_project, branch, yaml_parsed
             f"--user {user} --branch {branch} --debug_level 2 " \
             f"--parsed_data '{yaml_parsed_file}' {no_action} {update_only_mode}"
 
-        logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
-        bug_handler_output = subprocess.run(bug_handler_cmd, shell=True, capture_output=True).stdout
+        bug_handler_output = _run_bug_handler_command(bug_handler_cmd)
         logger.info(f"Bug Handler Output: {bug_handler_output}")
-        bug_handler_file_result = json.loads(bug_handler_output)
+        bug_handler_file_result = json.loads(bug_handler_output.message)
 
     if is_attachment_needed(bug_handler_file_result, update_only, bug_handler_no_action, yaml_parsed_file):
         ticket_id = get_ticket_id(bug_handler_file_result)
@@ -353,14 +404,11 @@ def run_bug_handler_with_no_action(conf_path, redmine_project, branch, yaml_pars
         f"--user {user} --branch {branch} --debug_level 2 " \
         f"--parsed_data '{yaml_parsed_file}' --no_action "
 
-    logger.info(f"Running Bug Handler CMD: {bug_handler_cmd}")
-    bug_handler_result = subprocess.run(bug_handler_cmd, shell=True, capture_output=True)
-    bug_handler_output = bug_handler_result.stdout
-    if bug_handler_result.returncode != 0:
+    if not (bug_handler_result := _run_bug_handler_command(bug_handler_cmd)):  # rc != 0
         logger.error(f"Bug Handler Failed: {bug_handler_result.stderr}")
         raise Exception(f"Bug Handler Failed: {bug_handler_result.stderr}")
-    logger.info(f"Bug Handler Output: {bug_handler_output}")
-    bug_handler_file_result = json.loads(bug_handler_output)
+    logger.info(f"Bug Handler Output: {bug_handler_result}")
+    bug_handler_file_result = json.loads(bug_handler_result.message)
 
     logger.info(f"No action bug_handler_file_result:{bug_handler_file_result}")
     return bug_handler_file_result
