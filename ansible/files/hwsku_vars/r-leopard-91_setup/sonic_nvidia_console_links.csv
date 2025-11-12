@@ -1,0 +1,5 @@
+StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
+rcon-sws-3-5,7031,r-leopard-91,ssh,,root
+rcon-sws-3-5,7032,r-leopard-92,ssh,,root
+rcon-sws-3-5,7033,r-leopard-93,ssh,,root
+rcon-sws-3-5,7034,r-leopard-94,ssh,,root

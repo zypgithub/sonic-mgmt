@@ -1,0 +1,45 @@
+[sonic_latest]
+# MTR testbed r-leopard-91 topologies
+r-leopard-91  ansible_host=10.210.26.91  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-V64 iface_speed=200000 serial_console="ssh -l rcon:7016 10.208.0.44" ptf_host=ptf-r-leopard-91 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-leopard-91-ptf32   ansible_host=10.210.26.91 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-V64 iface_speed=200000 ptf_host=ptf-r-leopard-91 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-92 dut_mac="90:e3:17:17:3e:2c" serial_console="ssh -l rcon:7016 10.208.0.44" pdu_host=pdu-10-208-2-11
+
+# MTR testbed r-leopard-93 topologies
+r-leopard-93  ansible_host=10.210.26.93  sonic_version=v2  sonic_hwsku=Mellanox-SN4700-V64 iface_speed=200000 serial_console="ssh -l rcon:7004 10.208.0.44" ptf_host=ptf-r-leopard-93 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-2-11
+r-leopard-93-ptf32   ansible_host=10.210.26.93 sonic_version=v2 sonic_hwsku=Mellanox-SN4700-V64 iface_speed=200000 ptf_host=ptf-r-leopard-93 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" fanout_switch=r-leopard-94 dut_mac="c4:70:bd:91:37:f2" serial_console="ssh -l rcon:7004 10.208.0.44" pdu_host=pdu-10-208-2-11
+
+r-leopard-92 ansible_host=r-leopard-92 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+r-leopard-94 ansible_host=r-leopard-94 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
+
+[sonic:children]
+sonic_latest
+
+[leaf_topo_1]
+# MTR r-leopard-91 topologies
+r-leopard-91
+r-leopard-91-ptf32
+
+# MTR r-leopard-93 topologies
+r-leopard-93
+r-leopard-93-ptf32
+
+[leaf_topo_1:vars]
+podset_number=200
+
+[lab]
+# MTR r-leopard-91 topologies
+r-leopard-91
+r-leopard-91-ptf32
+
+# MTR r-leopard-93 topologies
+r-leopard-93
+r-leopard-93-ptf32
+
+[ptf]
+# MTR r-leopard-91 PTF host
+ptf-r-leopard-91 ansible_host=10.215.216.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.216.3 ansible_host=10.215.216.3 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
+[pdu]
+pdu-10-208-2-11 ansible_host=10.208.2.11 protocol=snmp
+pdu-10-208-2-11 ansible_host=10.208.2.11 protocol=snmp
+

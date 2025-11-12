@@ -13198,3 +13198,20 @@
     - mlx-2201m-01
   inv_name: lab
   comment: Mellanox MTR testbed
+
+- conf-name: sonic-dual-tor-leopard-02-dualtor-aa-64-breakout
+  group-name: vm-t1
+  topo: dualtor-aa-64-breakout
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-r-leopard-91
+  ptf_ip: 10.215.216.3/16
+  ptf_ipv6:
+  ptf_extra_mgmt_ip:
+  netns_mgmt_ip: 10.215.26.215/16
+  server: server_97
+  vm_base: VM7801
+  dut:
+    - r-leopard-91
+    - r-leopard-93
+  inv_name: lab
+  comment: 4700 Active-Active Dual-TOR testbed

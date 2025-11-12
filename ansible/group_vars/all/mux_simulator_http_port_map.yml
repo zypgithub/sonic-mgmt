@@ -51,4 +51,5 @@ mux_simulator_http_port:
     sonic-dual-tor-leopard-dualtor-aa: 8083
     sonic-dual-tor-leopard-dualtor-64-breakout: 8083
     sonic-dual-tor-leopard-dualtor-aa-64-breakout: 8083
+    sonic-dual-tor-leopard-02-dualtor-aa-64-breakout: 8083
     #### Add your own port assignment after here ###

@@ -1,0 +1,40 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_97:
+    eos:
+      children:
+        vms_97:
+    servers:
+      vars:
+        topologies:
+          - dualtor-aa-64-breakout
+      children:
+        server_97:
+
+
+vm_host_97:
+  hosts:
+    R-SONIC-22:
+      ansible_host: R-SONIC-22
+
+
+vms_97:
+  hosts:
+    VM7801:
+      ansible_host: 10.215.216.4
+    VM7802:
+      ansible_host: 10.215.216.5
+    VM7803:
+      ansible_host: 10.215.216.6
+    VM7804:
+      ansible_host: 10.215.216.7
+
+
+server_97:
+  children:
+    vm_host_97:
+    vms_97:
+  vars:
+    host_var_file: host_vars/R-SONIC-22.yml
