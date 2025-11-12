@@ -382,11 +382,25 @@ tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_polic
     conditions:
     - "'5640' in platform"
 
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_between_dut_and_fanout_check:
+  skip:
+    reason: "skip trixie image due to https://redmine.mellanox.com/issues/4727366"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4727366 and 'trixie' in build_version"
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_component_version_check:
+  skip:
+    reason: "skip trixie image due to the KERNEL_VERSION not in the README file"
+    conditions:
+    - "'trixie' in build_version"
+
 tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_core_check:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4486371 or trixie image due to https://redmine.mellanox.com/issues/4727346"
+    conditions_logical_operator: or
     conditions:
-      - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
+    - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
+    - "https://redmine.mellanox.com/issues/4727346 and 'trixie' in build_version"
 
 ########################## NGTS IGNORE END ##########################
 
