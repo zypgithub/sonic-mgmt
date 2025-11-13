@@ -988,8 +988,16 @@ span/test_port_mirroring.py:
 system_health/test_system_health.py::test_service_checker:
   skip:
     reason: "Skip the test by ticket: https://redmine.mellanox.com/issues/4492386"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4492386"
+    - "https://redmine.mellanox.com/issues/4733094 and 'trixie' in build_version"
+
+show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4733094"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4733094 and 'trixie' in build_version"
 
 pc/test_lag_2.py::test_lag:
   skip:
