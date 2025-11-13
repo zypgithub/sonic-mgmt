@@ -19,7 +19,11 @@ def prepare_and_recover_issu(engines, devices, target_version, request):
     logger.info(f"start running ISSU session")
 
     with allure.step("Update ISSU base path"):
-        update_issu_base_path(request)
+        # TBD [L.A] update to get_prev_fw_image_path(request) after adding
+        # deploy key to nbu-sws/nos/nvos.git for the build server
+        # request.config.issu_last_fw_path = get_last_fw_image_path(request)
+        request.config.issu_last_fw_path = ('/auto/sw_system_release/nos/nvos/25.02.5938-038/'
+                                            'amd64/dev/nvos-amd64-25.02.5938-038.bin')
 
     yield
 
@@ -49,33 +53,6 @@ def pytest_addoption(parser):
         default="nvos-25-02-6000",
         help="Branch name to check FW tag from (default: nvos-25-02-6000)"
     )
-    parser.addoption(
-        "--issu_base",
-        action="store",
-        default="last_GA",
-        help="ISSU base version (last_GA/prev_FW)"
-    )
-
-
-def update_issu_base_path(request):
-    """
-    Update ISSU base path according to issu_base flag. In case of:
-    - 'last_GA': Take the default issu_version path (should be the last GA image)
-    - 'last_FW': Call 'get_last_fw_image_path' to get the last image in branch containing the previous FW version.
-    """
-    issu_base = request.config.getoption("--issu_base")
-    issu_version = request.config.getoption("--issu_version")
-
-    if issu_base == 'last_FW':
-        # TBD [L.A] update to get_last_fw_image_path(request) after adding
-        # deploy key to nbu-sws/nos/nvos.git for the build server
-        request.config.issu_base_path = ('/auto/sw_system_release/nos/nvos/25.02.5938-038/'
-                                         'amd64/dev/nvos-amd64-25.02.5938-038.bin')
-        if request.config.issu_base_path == issu_version:
-            request.config.issu_base_path = None
-    else:
-        # issu_base == 'last_GA'
-        request.config.issu_base_path = issu_version
 
 
 def get_last_fw_image_path(request):

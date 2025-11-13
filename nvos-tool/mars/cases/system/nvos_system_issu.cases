@@ -27,23 +27,12 @@
   </case>
 
   <case>
-    <name> System ISSU positive flow with traffic from last GA </name>
+    <name> System ISSU positive flow with traffic from last GA/last FW </name>
     <info> </info>
-    <tout> 3000 </tout>
+    <tout> 5400 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/issu/test_system_issu.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_system_issu_positive_flow_with_traffic --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --release_name=[[conf:extra_info.release_name]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --downgrade_version=[[conf:extra_info.downgrade_version]] --issu_version=[[conf:extra_info.issu_version]] --target_version=[[conf:extra_info.target_version]] --issu_base='last_GA' --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
-      </params>
-    </cmd>
-  </case>
-
-  <case>
-    <name> System ISSU positive flow with traffic from prev FW </name>
-    <info> </info>
-    <tout> 3000 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/issu/test_system_issu.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_system_issu_positive_flow_with_traffic --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --release_name=[[conf:extra_info.release_name]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --downgrade_version=[[conf:extra_info.downgrade_version]] --issu_version=[[conf:extra_info.issu_version]] --target_version=[[conf:extra_info.target_version]] --issu_base='last_FW' --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/issu/test_system_issu.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_system_issu_positive_flow_with_traffic --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --release_name=[[conf:extra_info.release_name]] --clean-alluredir  --disable_loganalyzer --alluredir=/tmp/allure-results --downgrade_version=[[conf:extra_info.downgrade_version]] --issu_version=[[conf:extra_info.issu_version]] --target_version=[[conf:extra_info.target_version]] --showlocals  [[conf:extra_info.additional_options]]  --timeout 5400   \'"</static_args>
       </params>
     </cmd>
   </case>

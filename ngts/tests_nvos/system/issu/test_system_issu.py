@@ -114,7 +114,9 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
 @pytest.mark.system
 @pytest.mark.issu
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, target_version, test_api, test_name):
+@pytest.mark.parametrize('issu_base', IssuConsts.IssuBase.ALL_TYPES)
+def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, issu_version,
+                                                target_version, issu_base, test_api, test_name):
     """
     Validates basic image install with issu
 
@@ -132,13 +134,16 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
     system = System()
 
     # In case of manual run add the following lines with the relevant paths
-    # issu_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/dev/nvos-amd64-25.02.4014.bin'
+    # issu_base_version = '/auto/sw_system_release/nos/nvos/25.02.4014/amd64/dev/nvos-amd64-25.02.4014.bin'
     # target_version = '/auto/sw_system_release/nos/nvos/25.02.5014/amd64/dev/nvos-amd64-25.02.5014.bin'
 
-    if pytestconfig.issu_base_path is None:
-        pytest.skip("ISSU last FW image is also the last GA image, therefor test is skipped")
-    else:
-        issu_version = pytestconfig.issu_base_path
+    with allure.step(f'Start test ISSU with traffic for {issu_base} image'):
+        if issu_base == IssuConsts.IssuBase.LAST_GA:
+            issu_base_version = issu_version
+        else:  # issu_base == IssuConsts.IssuBase.LAST_FW
+            if pytestconfig.issu_last_fw_path == issu_version:
+                pytest.skip("ISSU last FW image is also the last GA image, therefor test is skipped")
+            issu_base_version = pytestconfig.issu_last_fw_path
 
     target_version = player.run_cmd(f'ls {target_version}')
     target_version_num = target_version.split('/')[-1].replace('amd64-', '').replace('.bin', '')
@@ -154,8 +159,8 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
         else:
             fw_version = ''
 
-    with allure.step("Downgrade system image to the issu_version"):
-        install_system_image_and_start_opensm(engines, dut_device, system, issu_version)
+    with allure.step("Downgrade system image to the issu_base_version"):
+        install_system_image_and_start_opensm(engines, dut_device, system, issu_base_version)
 
     with allure.step("Prepare system target image for install"):
         target_filename, recovery_engine, scp_host_creds = prepare_image_for_install(

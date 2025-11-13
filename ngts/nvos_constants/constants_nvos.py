@@ -2276,6 +2276,12 @@ class IssuConsts:
         FAILED = 'failed'
         DONE = 'done'
 
+    class IssuBase:
+        LAST_GA = "Last_GA"
+        LAST_FW = "Last_FW"
+        # list of all ISSU base types
+        ALL_TYPES = [LAST_GA, LAST_FW]
+
     ISSU_STATUS = 'issu-status'
     ISSU = 'issu'
     ISSU_SKIP_SM = 'issu skip-sm'
