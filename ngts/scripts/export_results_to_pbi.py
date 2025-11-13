@@ -19,12 +19,12 @@ from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyCons
 from ngts.constants.constants import InfraConst, CliType, DbConstants  # noqa: E402
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL  # noqa: E402
 
-logger = logging.getLogger('UploadToPBI')
+logger = logging.getLogger(Path(__file__).stem if __name__ == "__main__" else __name__)
 
 _ALLURE_DOCKER_SERVICE: str = 'allure-docker-service'
 _PATH_TO_UPLOAD_URL: Path = Path('/auto/sw_system_project/NVOS_INFRA/verification_files/')
 _ALLURE_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
-_LA_TEST_REAL_OUTCONE = re.compile(r"la_failed\(.*outcome=.(%s).+" % "|".join(_ALLURE_STATUSES))
+_LA_TEST_REAL_OUTCOME = re.compile(r"la_failed\(.*outcome=(%s).+" % "|".join(_ALLURE_STATUSES))
 _TEST_ANALYTICS_COLUMNS_QUERY = f"""\
     INSERT test_analytics (
         {OperationTimeConsts.SETUP_COL},
@@ -115,7 +115,7 @@ class Args(Namespace):
 def _setup_logger(level: int = logging.DEBUG):
     logging.basicConfig(
         level=level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format='[%(asctime)s.%(msecs)03d][%(levelname)-7s][%(name)-22s %(lineno)4d] %(message)s'
     )
 
 
@@ -192,8 +192,9 @@ def insert_data_to_pbi_db(args: Args, parsed_results: list[TestResult], summary:
 
 
 def _extract_la_actual_status(tags: list[str]) -> str | None:
-    for tag in tags or []:
-        if match := _LA_TEST_REAL_OUTCONE.match(tag):
+    for tag in tags:
+        if match := _LA_TEST_REAL_OUTCOME.match(tag):
+            logger.info(f"LA actual status: {match.group(1).lower()}")
             return match.group(1).lower()
     return None
 
@@ -211,6 +212,8 @@ def parse_suites(node: dict[str, str | list[dict]], base_url: str, suite_chain: 
             test_url = f"{base_url}/index.html#testresult/{test_uid}" if test_uid else None
 
             status = child["status"]
+            logger.debug(f"{child['name']:<70} - {status}")
+            logger.debug(f"Tags: {child.get('tags', [])}")
             la_actual_status = _extract_la_actual_status(child.get("tags", []))
             if la_actual_status == "passed":
                 status = "LA_failed"
@@ -283,6 +286,7 @@ def summarize_results_and_upload(report_url: str, args: Args) -> None:
 
     try:
         base_url = os.path.dirname(report_url.rstrip('/'))
+        logger.debug(f"Base URL: {base_url}")
         suites_resp = requests.get(f"{base_url}/data/suites.json")
         suites_resp.raise_for_status()
         suites_data = suites_resp.json()
@@ -295,7 +299,8 @@ def summarize_results_and_upload(report_url: str, args: Args) -> None:
 
         insert_data_to_pbi_db(args, parsed_results, summary)
     except Exception as e:
-        logger.info(f"Failed with the following issue: {e}")
+        logger.error(f"Failed with the following issue: {e}")
+        logger.exception(e)
 
 
 def main():

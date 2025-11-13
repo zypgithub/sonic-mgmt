@@ -1193,6 +1193,7 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
     # ----- CALL PHASE: remember the real test outcome -----
     if call.when == "call":
         # result contains the real test outcome such as passed, failed, skipped, etc.
+        logger.info(f"[###] Call phase: remember the real test outcome {result=}")
         item._test_call_result = result
 
     # ----- TEARDOWN PHASE: detect LA failure after a passed test -----
@@ -1201,10 +1202,14 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
         if not (call_result := getattr(item, "_test_call_result", None)):
             return
 
+        logger.info(f"[###] Teardown phase: the test outcome {call_result=}")
+        logger.info(f"[###] Teardown phase: the test NEW outcome {result=}")
+
         # Only care about: test body passed && teardown failed
         if call_result.passed and result.failed:
             # Robustly get longrepr text
             longrepr_text = getattr(result, "longreprtext", str(result.longrepr))
+            logger.info(f"[###] Teardown phase: the longrepr text {longrepr_text=!r}")
 
             # if loganalyzer failed, we would have the string "/loganalyzer/" in the longrepr text
             if "/loganalyzer/" in longrepr_text:
