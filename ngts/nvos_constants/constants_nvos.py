@@ -2,6 +2,8 @@ import os
 import json
 from enum import Enum
 from pathlib import Path
+from tokenize import Double
+from typing import Literal, TypedDict
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -821,6 +823,8 @@ class SystemConsts:
 
     SYSTEMCTL_STATUS_CMD = "sudo systemctl is-system-running"
 
+    DISK: str = 'disk'
+
 
 class EventConsts:
     TABLE_SIZE = 'table-size'
@@ -1057,6 +1061,8 @@ class PlatformConsts:
     INV_FAILED = 'failed'
     TIMEOUT_AFTER_BIOS_INSTALL = 720
     TIMEOUT_AFTER_FW_INSTALL = 1200
+    DISK_SIZE = 'disk-size'
+    MEMORY = 'memory'
 
 
 class ChassisLocationConsts:
@@ -2417,3 +2423,29 @@ class CpoConsts:
     # Error messages
     INVALID_ELS_INDEX_ERROR = "Invalid ELS index, expected range: 1-18"
     CANNOT_TUNE_NON_ELS_ERROR = "Can not tune non-ELS transceiver"
+
+
+class SSDConsts:
+    class DiskType(Enum):
+        SDA = 'sda'
+        NVME = 'nvme'
+
+    SIZE_GB: str = 'size_gb'
+    ADVERTISED_SIZE_GB: str = 'advertised_size_gb'
+    SSD_PART_NUMBER: str = 'part-number'
+
+    class SSDType(TypedDict):
+        SIZE_GB: float
+        ADVERTISED_SIZE_GB: float
+        SSD_PART_NUMBER: str
+
+    VIRTIUM_VTPM24CEXI08_BM110006: SSDType = {
+        SIZE_GB: 74.5,
+        ADVERTISED_SIZE_GB: 80.0,
+        SSD_PART_NUMBER: 'Virtium VTPM24CEXI080-BM110006'
+    }
+    SFSA160GM2AK2TO_I_8C_22K_NVI: SSDType = {
+        SIZE_GB: 149.1,
+        ADVERTISED_SIZE_GB: 160.0,
+        SSD_PART_NUMBER: 'SFSA160GM2AK2TO-I-8C-22K-NVI'
+    }

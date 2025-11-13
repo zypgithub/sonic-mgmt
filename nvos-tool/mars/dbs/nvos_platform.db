@@ -59,4 +59,7 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_platform_power_capping.cases </cases>
 		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_platform_memory_and_ram.cases </cases>
+	</test>
 </DBDEF>

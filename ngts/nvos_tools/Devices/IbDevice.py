@@ -7,7 +7,7 @@ from typing import List, Dict
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
-    ActionConsts, ChassisLocationConsts, CableCartridgeConsts
+    ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts, RebootConsts, SystemConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
@@ -442,6 +442,9 @@ class IbSwitch(BaseSwitch):
                                           "nv show sdn",
                                           "nv show fae interface {port} link link-training"]
 
+        self.memory_size: float = 15.0
+        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI]
+
     def sleep_after_system_reboot(self):
         pass
 
@@ -774,6 +777,9 @@ class BlackMambaSwitch(IbSwitch):
             'ISSU CPU max downtime': 135,
         })
         self.memory_speed = 2667  # in MT/s
+
+        self.memory_size: float = 15.0
+        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -1263,6 +1269,9 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show system profile",
                                           "nv show ib ibdiagnet"]
         self.mgmt_ports = ['eth0', 'eth1']
+
+        self.memory_size: float = 15.0
+        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
