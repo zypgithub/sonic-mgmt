@@ -118,9 +118,20 @@ class LoadExtraDpuConfigModule(object):
             required_success_count = 1
 
         # Wait for the DPU control plane to be up for at least required_success_count DPUs
-        time.sleep(150)
-        self.reboot_dpus()
-        time.sleep(200)
+        if not self.wait_for_dpu_count_control_plane_up(required_success_count):
+            self.module.warn(
+                "DPU control planes are not ready on switch (required {}) after {} retries. Trying to reboot the DPUs".format(required_success_count,
+                    MAX_RETRIES,
+                )
+            )
+            # WA for RM#4629210
+            self.reboot_dpus()
+            if not self.wait_for_dpu_count_control_plane_up(required_success_count):
+                self.module.fail_json(msg="DPU control planes are not ready on switch after rebooting the DPUs(required {}) after {} retries.".format(
+                    required_success_count,
+                MAX_RETRIES
+                )
+            )
 
         self.module.log("Configuring {} DPUs, requiring at least {} successful configurations".format(
             self.dpu_num, required_success_count))
