@@ -4,11 +4,11 @@
     <reporter_group_name> SONiC </reporter_group_name>
 
     <!-- Add a players entry for each player that is going to run steps in your topology -->
-    <players> {{hypervisor.ip}} </players>
+    <players> SONIC_MGMT </players>
     <steps>
-        <default> steps/nvidia_air_regression_deploy.steps </default>
+        <default> steps/nvidia_airspin_regression.steps </default>
     </steps>
-     
+
      {% for block in execution_block %}
      <execution_block>
      <block_id> B_ID{{ loop.index }} </block_id>
@@ -16,7 +16,7 @@
      <tests_dbs_tarball> {{ block.tests_dbs_tarball }} </tests_dbs_tarball>
      </execution_block>
      {% endfor %}
-     
+
     <topology_file> topo/{{dut.setup_name}}/topology.xml </topology_file>
 
     <extra_info>

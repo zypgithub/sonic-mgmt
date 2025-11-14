@@ -1,4 +1,5 @@
 import os
+STM = "mtr-stm-113"
 SETUPS_FOLDER_PATH = "/auto/sw_regression/system/SONIC/MARS/conf/setups"
 TOPO_FOLDER_PATH = "/auto/sw_regression/system/SONIC/MARS/conf/topo"
 SETUP_TEMPLATE_FILE = "setup_template.setup"
@@ -10,10 +11,11 @@ NOGA_LABELS_SCRIPT = "/.autodirect/sw_tools/Internal/Noga/RELEASE/latest/import/
 RESULTS_FOLDER_PATH = "/auto/sw_regression/system/SONIC/MARS/results"
 SPIN_AIR_RESULTS_FOLDER_PATH = "/auto/mtrsysgwork/svc-nbu-sws-sonic/results_spin_air/"
 GLOBAL_CONF_FILE = "/auto/sw_regression/system/SONIC/MARS/conf/global/MARS_SONiC_setups_mgr_docker.conf"
-LOCAL_CONF_FILE = "/auto/sw_regression/system/SONIC/MARS/conf/global/setups_mgr_local_mtr-stm-095.conf"
+LOCAL_CONF_FILE = f"/auto/sw_regression/system/SONIC/MARS/conf/global/setups_mgr_local_{STM}.conf"
 MINI_MARS_RUNNER_FILE = "/auto/sw_tools/Internal/MARS/mars_apps/RELEASE/last_release/bin/mini_mars_runner.py"
 START_SONIC_MGMT_DOCKER = "/.autodirect/sw_tools/Internal/MARS/mars_apps/RELEASE/last_release/bin/start_sonic_mgmt_docker.py"
+AIR_WEBSITE_URL = "https://air-inside.nvidia.com"
+AIR_WEBSITE_SIMULATIONS_URL = f"{AIR_WEBSITE_URL}/simulations"
 
-STM = "mtr-stm-095"
 STM_USER = "root"
 STM_PASSWORD = "3tango"

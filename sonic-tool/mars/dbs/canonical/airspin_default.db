@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<DBDEF>
+	<global>
+		<default_params_type> extended_setup_step_params </default_params_type>
+		<DB>
+			<info> </info>
+			<owner> SONiC Verification </owner>
+			<group> SONiC </group>
+			<dimension> VER </dimension>
+            <pre>
+            </pre>
+		</DB>
+		<Test>
+			<post> </post>
+		</Test>
+		<Case>
+            <pre>
+			</pre>
+			<post>
+			</post>
+		</Case>
+	</global>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/canonical/airspin_default.cases </cases>
+    </test>
+</DBDEF>

@@ -197,8 +197,25 @@ def test_cpld_version_check(topology_obj, engines, platform_params, cli_objects,
     write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)
 
 
+@pytest.mark.sanity_checker_airspin
+def test_export_sonic_mgmt_location_env_var():
+    """
+    This test is to verify that the SONIC_MGMT_LOCATION environment variable is set correctly.
+    And export it to the sonic-mgmt docker bashrc.
+    """
+    assert os.getenv('SONIC_MGMT_LOCATION', '').lower() == 'air', \
+        "SONIC_MGMT_LOCATION environment variable is not set correctly"
+    env_exists_in_bashrc = os.system("sudo grep 'export SONIC_MGMT_LOCATION=air' /root/.bashrc") == 0
+    if not env_exists_in_bashrc:
+        logger.info("SONIC_MGMT_LOCATION environment variable is not set in bashrc, adding it.")
+        os.system("echo 'export SONIC_MGMT_LOCATION=air' >> /root/.bashrc")
+    else:
+        logger.info("SONIC_MGMT_LOCATION environment variable is already set in bashrc.")
+
+
 @pytest.mark.sanity_checker_ci
 @pytest.mark.sanity_checker_common
+@pytest.mark.sanity_checker_airspin
 def test_device_asic_check(engines, platform_params):
     """
     This test is verify that device asic status is ok.
@@ -366,6 +383,7 @@ def test_psu_status_check(platform_params, topology_obj, platform_json_data, req
 
 
 @pytest.mark.sanity_checker_common
+@pytest.mark.sanity_checker_airspin
 def test_core_dump_file_in_var_core_check(engines, request, is_in_deploy_image_flow):
     """
     This test is verify if the folder of /var/core has the core dump file, if yes fail case
