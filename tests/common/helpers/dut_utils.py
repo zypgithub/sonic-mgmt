@@ -713,7 +713,7 @@ def check_nat_is_enabled_and_set_cache(duthost, request):
 def enable_nat_for_dpus(duthost, dpu_name_ssh_port_dict, request):
     enable_nat_cmds = [
         "sudo su",
-        "sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf",
+        "sudo echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf",
         "sudo echo net.ipv4.conf.eth0.forwarding=1 >> /etc/sysctl.conf",
         "sudo sysctl -p",
         f"sudo sonic-dpu-mgmt-traffic.sh inbound -e --dpus "

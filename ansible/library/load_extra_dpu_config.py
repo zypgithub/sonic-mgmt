@@ -118,8 +118,9 @@ class LoadExtraDpuConfigModule(object):
             required_success_count = 1
 
         # Wait for the DPU control plane to be up for at least required_success_count DPUs
+        time.sleep(150)
         self.reboot_dpus()
-        time.sleep(360) 
+        time.sleep(150)
 
         self.module.log("Configuring {} DPUs, requiring at least {} successful configurations".format(
             self.dpu_num, required_success_count))

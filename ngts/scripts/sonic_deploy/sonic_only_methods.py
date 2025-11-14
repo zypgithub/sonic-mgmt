@@ -919,7 +919,7 @@ def get_cached_hwsku(dut_name):
 def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
     enable_nat_cmds = [
         "sudo su",
-        "sudo sed -i 's/#net.ipv4.ip_forward=1/net.ipv4.ip_forward=1/g' /etc/sysctl.conf",
+        "sudo echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf",
         "sudo echo net.ipv4.conf.eth0.forwarding=1 >> /etc/sysctl.conf",
         "sudo sysctl -p",
         "sudo iptables -t nat -A POSTROUTING -s 169.254.200.0/24 -o eth0 -j MASQUERADE",
