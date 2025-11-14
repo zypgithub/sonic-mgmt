@@ -562,7 +562,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.engine.run_cmd(f'sudo rm -f {tmp_target_path}')
 
         with allure.step('Rebooting the dut'):
-            self.engine.reload(['sudo reboot'])
+            self.engine.run_cmd('sudo reboot')
+            logger.info("Waiting for switch shutdown after reload command")
+            check_port_status_till_alive(False, self.engine.ip, self.engine.ssh_port)
+            self.engine.disconnect()
+            logger.info("Waiting for switch to be ready")
+            check_port_status_till_alive(True, self.engine.ip, self.engine.ssh_port)
 
         with allure.step('Verifying installation'):
             with allure.step('Verifying dut booted with correct image'):

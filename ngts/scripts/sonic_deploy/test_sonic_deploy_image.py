@@ -52,12 +52,15 @@ def test_deploy_sonic_image(topology_obj, setup_name, sonic_topo, platform_param
             if is_shutdown_bgp:
                 dut['engine'].run_cmd('sudo config bgp startup all', validate=True)
     if sonic_topo and is_community(sonic_topo) and post_installation_validation:
-        SonicInstallationSteps.post_installation_steps(
-            topology_obj=topology_obj, sonic_topo=sonic_topo, recover_by_reboot=True, setup_name=setup_name,
-            platform_params=platform_params, apply_base_config=apply_base_config, target_version="",
-            is_shutdown_bgp=False, reboot_after_install=False, deploy_only_target=False, fw_pkg_path="",
-            reboot="reboot", additional_apps="", setup_info=setup_info, dut_alias=dut['dut_alias'],
-            is_performance=is_performance, chip_type=chip_type, is_air=is_air)
+        for dut in setup_info['duts']:
+            cli = dut['cli_obj']
+            dut_alias = dut['dut_alias']
+            cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=False,
+                                                              setup_name=setup_name,
+                                                              platform_params=platform_params,
+                                                              configure_dns=True,
+                                                              setup_info=setup_info,
+                                                              dut_alias=dut_alias)
 
 
 def check_bgp_is_shutdown(dut_engine):
