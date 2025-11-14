@@ -60,15 +60,16 @@ def get_asic_db_values(duthost, fields, cli_namespace_prefix):
     asic_db_values = {}
     for wred_object in wred_objects:
         oid = wred_object[wred_object.rfind(':') + 1:]
-        asic_db_values[oid] = {}
         wred_data = duthost.shell('sonic-db-cli {} ASIC_DB hgetall {}'
                                   .format(cli_namespace_prefix, wred_object))["stdout"]
         if "NULL" in wred_data:
             continue
         wred_data = ast.literal_eval(wred_data)
+        values = {}
         for field in fields:
-            value = int(wred_data[WRED_MAPPING[field]])
-            asic_db_values[oid][field] = value
+            values[field] = int(wred_data[WRED_MAPPING[field]])
+        if values:
+            asic_db_values[oid] = values
     return asic_db_values
 
 
@@ -137,8 +138,7 @@ def ensure_application_of_updated_config(duthost, fields, new_values, cli_namesp
 def get_wred_profiles(duthost, cli_namespace_prefix):
     wred_profiles = duthost.shell(f"sonic-db-cli {cli_namespace_prefix} CONFIG_DB keys \
                                   'WRED_PROFILE|*' | cut -d '|' -f 2")["stdout"]
-    wred_profiles = wred_profiles.split('\n')
-    return wred_profiles
+    return [w for w in wred_profiles.split('\n') if w]
 
 
 # Determines how the value of each field should change to satisfy different constraints (explained below).
