@@ -62,7 +62,7 @@ def test_parallel_cli_commands(engines, devices):
     with allure.step('Create 5 lists of commands'):
         cmds_list1 = ['nv show system -o json']
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
-        cmds_list3 = ['nv show interface -o json']
+        cmds_list3 = ['nv show ib device -o json']
         cmds_list4 = ['nv show platform firmware -o json']
         cmds_list5 = ['nv show interface -o json']
         command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
