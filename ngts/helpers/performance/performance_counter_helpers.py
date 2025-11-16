@@ -48,7 +48,7 @@ def validate_performance_counters(traffic_json, cli_object, allowed_deviation, p
     """
     if is_redmine_issue_active([4731421])[0]:
         with allure.step(f"Skipping performance counters validation due to performance bug #4731421"):
-            original_violations_list = violations_list
+            original_violations_list = violations_list.copy()
 
     with allure.step(f"Validate performance counters"):
         interval, dump_generation_time_margin = get_performance_counters_params()
