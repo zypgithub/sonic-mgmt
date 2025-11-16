@@ -205,10 +205,17 @@ class RegressionConfigurations:
 
 
 class RegressionLinksConsts:
-    SYSTEM_LINKS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/links_by_system/"
+    # New connectivity JSON location and keys
+    CONNECTIVITY_FILES_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/connectivity_files/"
+    PORTS_ROOT = "ports"
+    KEY_LOOPBACK = "loopback"
+    KEY_CONNECTED_TO = "connected_to"               # neighbor port label
+    KEY_NEIGHBOR_DESCRIPTION = "neighbor_description"  # neighbor device/setup name
+    KEY_LOGICAL_STATE = "state"
+    KEY_PHYSICAL_STATE = "physical_state"
+    # Backward-compat constants retained (not used with new format)
     TRANSCEIVER_TYPE = "transceiver_type"
     PORTS_LIST = "ports_list"
-    IS_LOOPBACK = "is_loopback"
     CONNECTED_TO = "connected_to"
     CONNECTED_TO_SYSTEM_TYPE = "type"
     CONNECTED_TO_SYSTEM_NAME = "system"
@@ -222,38 +229,49 @@ class RegressionLinksConsts:
 class RegressionLinks:
     @staticmethod
     def _get_setup_links(setup_name):
-        links_path = RegressionLinksConsts.SYSTEM_LINKS_PATH + setup_name + ".json"
-        with allure.step(f'Read {setup_name} links info from json {links_path}'):
+        links_path = RegressionLinksConsts.CONNECTIVITY_FILES_PATH + setup_name + ".json"
+        with allure.step(f'Read {setup_name} connectivity info from json {links_path}'):
             with open(links_path, 'r') as file:
-                connections_dict = json.load(file)
-            return connections_dict
+                connectivity = json.load(file)
+            # Return the 'ports' section for easier access
+            return connectivity.get(RegressionLinksConsts.PORTS_ROOT, {})
 
     @staticmethod
-    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to="") -> List[str]:
+    def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to="",
+                                  logical_states: List[str] = None, physical_states: List[str] = None) -> List[str]:
         """
-        Get filtered transceivers based on the given parameters.
+        Get filtered transceivers (aggregated ports) based on the given parameters, using the new connectivity json.
 
         :param setup_name: The setup name to filter connections by
-        :param transceiver_type: Filter by the transceiver type (optional)
+        :param transceiver_type: Ignored for the new connectivity format (kept for backward compatibility)
         :param is_loopback: Filter by loopback status (optional)
-        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
+        :param connected_to: Filter by neighbor device/setup name (matches neighbor_description)
+        :param logical_states: Optional list of allowed logical states (matches 'state')
+        :param physical_states: Optional list of allowed physical states (matches 'physical_state')
         :return: A list of filtered transceivers
         """
         with allure.step(f'Get filtered transceivers for {setup_name}'):
             connections = RegressionLinks._get_setup_links(setup_name)
             filtered = []
+            logical_set = set(logical_states) if logical_states else None
+            physical_set = set(physical_states) if physical_states else None
 
             for transceiver, transceiver_data in connections.items():
-                if transceiver_type and transceiver_data[RegressionLinksConsts.TRANSCEIVER_TYPE] != transceiver_type:
+                # loopback filter
+                if is_loopback is not None and transceiver_data.get(RegressionLinksConsts.KEY_LOOPBACK) != is_loopback:
                     continue
-                if is_loopback is not None and transceiver_data[RegressionLinksConsts.IS_LOOPBACK] != is_loopback:
-                    continue
+                # connected_to (neighbor device/setup name)
                 if connected_to:
-                    system_type = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
-                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_TYPE]
-                    system_name = transceiver_data[RegressionLinksConsts.CONNECTED_TO][
-                        RegressionLinksConsts.CONNECTED_TO_SYSTEM_NAME]
-                    if connected_to not in [system_type, system_name]:
+                    neighbor_device = transceiver_data.get(RegressionLinksConsts.KEY_NEIGHBOR_DESCRIPTION, "")
+                    if connected_to != neighbor_device:
+                        continue
+                # logical state filter
+                if logical_set is not None:
+                    if transceiver_data.get(RegressionLinksConsts.KEY_LOGICAL_STATE) not in logical_set:
+                        continue
+                # physical state filter
+                if physical_set is not None:
+                    if transceiver_data.get(RegressionLinksConsts.KEY_PHYSICAL_STATE) not in physical_set:
                         continue
 
                 with allure.step(f"add {transceiver_data} to the filtered list"):
@@ -263,63 +281,61 @@ class RegressionLinks:
             return filtered
 
     @staticmethod
-    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback=None, connected_to=""
+    def get_filtered_transceivers_and_ports(setup_name, transceiver_type="", is_loopback=None, connected_to="",
+                                            logical_states: List[str] = None, physical_states: List[str] = None
                                             ) -> Dict[str, List[str]]:
         """
-        Get filtered transceivers and the ports connected to them based on the given parameters.
+        Get filtered transceivers and the connected port label based on the given parameters.
 
-        :param engine: LinuxSshEngine instance
         :param setup_name: The setup name to filter connections by
-        :param transceiver_type: Filter by the transceiver type (optional)
+        :param transceiver_type: Ignored for the new connectivity format (kept for backward compatibility)
         :param is_loopback: Filter by loopback status (optional)
-        :param connected_to: Filter by connected entity (server/setup) and its name (optional)
-        :return: {transceiver_name: [port_name, ...], ...}
+        :param connected_to: Filter by neighbor device/setup name (matches neighbor_description)
+        :param logical_states: Optional list of allowed logical states (matches 'state')
+        :param physical_states: Optional list of allowed physical states (matches 'physical_state')
+        :return: {transceiver_name: [connected_port_label], ...}
         """
         with allure.step(f'Get filtered transceivers and ports for {setup_name}'):
             filtered_with_ports = {}
             connections = RegressionLinks._get_setup_links(setup_name)
-            filtered_transceivers = RegressionLinks.get_filtered_transceivers(setup_name, transceiver_type, is_loopback,
-                                                                              connected_to)
+            filtered_transceivers = RegressionLinks.get_filtered_transceivers(
+                setup_name, transceiver_type, is_loopback, connected_to, logical_states, physical_states
+            )
             for transceiver in filtered_transceivers:
-                if transceiver in connections:
-                    filtered_with_ports[transceiver] = connections[transceiver][RegressionLinksConsts.PORTS_LIST]
+                data = connections.get(transceiver, {})
+                connected_label = data.get(RegressionLinksConsts.KEY_CONNECTED_TO)
+                if connected_label:
+                    filtered_with_ports[transceiver] = [connected_label]
 
             return filtered_with_ports
 
     @staticmethod
     def get_transceiver_data_and_port_index(setup_name: str, transceiver_name: str, port_name='') -> Tuple[Dict, int]:
         """
-        Returns the dict describing the transceiver from the setup's json file.
-        If port_name is given, returns also the position (index) of this port in the transceiver's list of ports;
-        otherwise the second returned value is None.
+        Returns the dict describing the transceiver from the setup's connectivity json file.
+        The connectivity format holds a single connected port label; port index is not applicable and will be None.
         """
         data = RegressionLinks._get_setup_links(setup_name)[transceiver_name]
-        port_index = data[RegressionLinksConsts.CONNECTED_TO_PORTS].index(port_name) if port_name else None
-        return data, port_index
+        return data, None
 
     @staticmethod
     def get_loopback_end(setup_name: str, transceiver_name: str, port_name: str) -> str:
         """ Given a port in loopback connection, returns the name of the port at the other end of the cable. """
-        transceiver, port_index = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name,
-                                                                                      port_name)
-        if not transceiver[RegressionLinksConsts.IS_LOOPBACK]:
+        transceiver, _ = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name, port_name)
+        if not transceiver.get(RegressionLinksConsts.KEY_LOOPBACK):
             raise ValueError(f"{transceiver_name} is not a loopback connection: {transceiver}")
-
-        result = transceiver[RegressionLinksConsts.CONNECTED_TO][RegressionLinksConsts.CONNECTED_TO_PORTS][port_index]
+        result = transceiver.get(RegressionLinksConsts.KEY_CONNECTED_TO, "")
         logger.info(f"Port {port_name} is connected to {result}")
         return result
 
     @staticmethod
     def get_connected_host_and_port(setup_name: str, transceiver_name: str, port_name: str) -> Tuple[str, str]:
-        """Returns the name of the host connected to the given port, and the name of the connected port on the host."""
-        transceiver, port_index = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name, port_name)
-        connected_to = transceiver[RegressionLinksConsts.CONNECTED_TO]
-        connected_to_type = connected_to[RegressionLinksConsts.CONNECTED_TO_SYSTEM_TYPE]
-        if connected_to_type != RegressionLinksConsts.SYSTEM_TYPE_SERVER:
-            raise ValueError(f"{transceiver_name} is connected to {connected_to_type}, expected {RegressionLinksConsts.SYSTEM_TYPE_SERVER}")
-
-        host = connected_to[RegressionLinksConsts.CONNECTED_TO_SYSTEM_NAME]
-        # todo: the current json format doesn't support a dual port going to two different devices
-        host_port = connected_to[RegressionLinksConsts.CONNECTED_TO_PORTS][port_index]
+        """
+        Returns the name of the neighbor device connected to the given port,
+        and the name of the connected port label on the neighbor (as reported).
+        """
+        transceiver, _ = RegressionLinks.get_transceiver_data_and_port_index(setup_name, transceiver_name, port_name)
+        host = transceiver.get(RegressionLinksConsts.KEY_NEIGHBOR_DESCRIPTION, "")
+        host_port = transceiver.get(RegressionLinksConsts.KEY_CONNECTED_TO, "")
         logger.info(f"Port {port_name} is connected to {host} port {host_port}")
         return host, host_port
