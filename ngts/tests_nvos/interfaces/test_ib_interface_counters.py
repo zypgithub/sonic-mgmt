@@ -21,9 +21,8 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
-def test_ib_clear_counters(engines, players, interfaces, start_sm, setup_name, fae_param=""):
+def test_ib_clear_counters(engines, players, interfaces, start_sm, setup_name, random_api, fae_param=""):
     """
     Clear counters test
     Commands:
@@ -40,9 +39,8 @@ def test_ib_clear_counters(engines, players, interfaces, start_sm, setup_name, f
     _clear_counters_test_flow(engines, players, interfaces, setup_name, False, fae_param)
 
 
-# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 @pytest.mark.ib_interfaces
-def test_clear_all_counters(engines, players, interfaces, start_sm, setup_name, fae_param=""):
+def test_clear_all_counters(engines, players, interfaces, start_sm, setup_name, random_api, fae_param=""):
     """
     Clear counters for all interfaces
     Commands:
@@ -52,8 +50,7 @@ def test_clear_all_counters(engines, players, interfaces, start_sm, setup_name, 
 
 
 @pytest.mark.ib_interfaces
-# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
-def test_range_clear_counters_negative(engines, players, interfaces, start_sm, fae_param=""):
+def test_range_clear_counters_negative(engines, players, interfaces, start_sm, random_api, fae_param=""):
     """
     verify all these commands fail with the right error message.
         1. nv action clear interface sw5-7p1-2 counters - out of range

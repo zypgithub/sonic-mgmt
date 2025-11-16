@@ -208,35 +208,6 @@ def find_missing_ports(connected_transceivers, ports):
     assert not missing, f"Missing per device: {missing}"
 
 
-def find_missing_ports(connected_transceivers, ports):
-    """
-    Behavior:
-        - A transceiver is included in the result ONLY if BOTH "swp1" and "swp2" are down.
-        - transceivers with at least one of the ports (p1 or p2) is up.
-        - We do not validate FNM ports (transceivers whose ID starts with "fnm" are ignored).
-
-    :param connected_transceivers:
-    :param ports:
-    :return:
-    """
-    missing = {}
-    for dev in connected_transceivers:
-        if "fnm" in dev:
-            continue
-
-        expected_p1 = f"{dev}p1"
-        expected_p2 = f"{dev}p2"
-
-        has_p1 = expected_p1 in ports
-        has_p2 = expected_p2 in ports
-
-        # report only if both are missing
-        if not has_p1 and not has_p2:
-            missing[dev] = ["p1", "p2"]
-
-    assert not missing, f"Missing per device: {missing}"
-
-
 def _verify_transceiver_status(platform, transceiver_id, expected_module_status='Inserted',
                                expected_error_status='N/A'):
     with allure.step("Check status and error-status exists in nv show platform transceiver"):

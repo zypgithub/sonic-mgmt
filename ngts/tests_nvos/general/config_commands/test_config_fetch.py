@@ -80,7 +80,7 @@ def test_export_applied_configurations(engines):
     """
     system = System(None)
     files_path = '/host/config_files/'
-    action_expected_str = "Action succeeded"
+    action_expected_str = "Exporting completed"
     with allure.step('export {}'.format('current_conf.yaml')):
         system.config.action_export('current_conf.yaml', action_expected_str)
 

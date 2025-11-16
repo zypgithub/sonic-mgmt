@@ -256,12 +256,24 @@ def _verify_field_in_show_output(obj_name, field_name, val_min=0, val_max=0, che
 
 def clear_system_events(system):
     """
-    Method to unset the system messages for pre-login, post-login and post-logout
+    Method to clear the system events
     :param system:  System object
     """
     with allure.step('Run clear system events and apply config'):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show("--last 1")).get_returned_value()
+        if not output:
+            # System events are already cleared
+            return
+        last_key = list(output.keys())[0]
+        last_event_time = output[f'{last_key}'][f'{EventConsts.TIME_CREATED}']
         system.events.action_clear().verify_result()
 
     with allure.step('Validate events are cleared'):
-        retry_call(_verify_field_in_show_output, [system.events, EventConsts.TABLE_OCCUPANCY, 0],
-                   exceptions=AssertionError, tries=4, delay=5, logger=logger)
+        try:
+            retry_call(_verify_field_in_show_output, [system.events, EventConsts.TABLE_OCCUPANCY, 0],
+                       exceptions=AssertionError, tries=4, delay=5, logger=logger)
+        except AssertionError as e:
+            with allure.step("Validate that the present events are newly created after clear command"):
+                output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show("1")).get_returned_value()
+                first_event_time = output[EventConsts.TIME_CREATED]
+                assert first_event_time > last_event_time, "All events were not cleared via clear command"

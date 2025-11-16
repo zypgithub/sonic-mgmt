@@ -1,0 +1,275 @@
+"""
+Switch Capability System - SOLID Implementation
+
+Clean, maintainable switch capability system using SOLID principles.
+"""
+
+from typing import Dict, List, Set, Protocol
+from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
+import logging
+
+logger = logging.getLogger()
+
+
+@dataclass
+class CapabilityConfig:
+    """Metadata for switch capability configuration."""
+    name: str
+    excluded_categories: Set[str] = field(default_factory=set)
+    cleared_lists: Set[str] = field(default_factory=set)
+    unsupported_commands: Set[str] = field(default_factory=set)
+    excluded_inventory_keys: Set[str] = field(default_factory=set)
+    excluded_health_components: Set[str] = field(default_factory=set)
+
+
+class Capability(Protocol):
+    """Protocol for switch capabilities."""
+
+    def get_config(self) -> CapabilityConfig:
+        ...
+
+
+class BaseCapability(ABC):
+    """Base class for capabilities."""
+
+    @abstractmethod
+    def get_config(self) -> CapabilityConfig:
+        pass
+
+
+class NoPSUCapability(BaseCapability):
+    """Capability for switches without PSUs."""
+
+    def get_config(self) -> CapabilityConfig:
+        # Generate PSU health components to exclude (PSU1-PSU8 and PSU1/FAN-PSU8/FAN)
+        excluded_health = set()
+        for i in range(1, 9):  # PSU1 through PSU8
+            excluded_health.add(f"PSU{i}")
+            excluded_health.add(f"PSU{i}/FAN")
+
+        return CapabilityConfig(
+            name="NoPSU",
+            excluded_categories={"power"},
+            cleared_lists={"psu_list", "psu_fan_list", "platform_env_psu_prop"},
+            unsupported_commands={
+                "nv show platform ps-redundancy",
+                "nv set platform ps-redundancy policy no-redundancy",
+                "nv show platform environment psu"
+            },
+            excluded_inventory_keys={"psu"},
+            excluded_health_components=excluded_health
+        )
+
+
+class NoFanCapability(BaseCapability):
+    """Capability for switches without fans."""
+
+    def get_config(self) -> CapabilityConfig:
+        # Generate Fan health components to exclude (FAN1/1, FAN1/2, ... FAN10/1, FAN10/2)
+        excluded_health = set()
+        for i in range(1, 11):  # FAN1 through FAN10
+            excluded_health.add(f"FAN{i}/1")
+            excluded_health.add(f"FAN{i}/2")
+
+        return CapabilityConfig(
+            name="NoFan",
+            excluded_categories={"fan"},
+            cleared_lists={"fan_list", "fan_led_list"},
+            unsupported_commands={"nv show platform environment fan"},
+            excluded_inventory_keys={"fan"},
+            excluded_health_components=excluded_health
+        )
+
+
+class SwitchConfigurator(ABC):
+    """Abstract configurator interface."""
+
+    @abstractmethod
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        pass
+
+
+class CategoryConfigurator(SwitchConfigurator):
+    """Handles category configuration."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        if not config.excluded_categories:
+            return
+
+        original_categories = getattr(switch_instance, 'category_list', [])
+        new_categories = [cat for cat in original_categories
+                          if cat not in config.excluded_categories]
+
+        switch_instance.category_list = new_categories
+        self._update_category_dicts(switch_instance, new_categories)
+        self._update_stats_files(switch_instance, new_categories)
+
+        logger.info(f"Excluded categories: {config.excluded_categories}")
+
+    def _update_category_dicts(self, switch_instance, category_list: List[str]) -> None:
+        """Update category dictionaries."""
+        if not hasattr(switch_instance, 'category_disabled_dict'):
+            return
+
+        new_disabled_dict = {}
+        new_default_dict = {}
+
+        for category in category_list:
+            if category == 'disk':
+                disabled_value = getattr(switch_instance, 'category_disk_default_disable_dict', {})
+                default_value = getattr(switch_instance, 'category_disk_default_dict', {})
+            else:
+                disabled_value = getattr(switch_instance, 'category_default_disabled_dict', {})
+                default_value = getattr(switch_instance, 'category_default_dict', {})
+
+            new_disabled_dict[category] = disabled_value
+            new_default_dict[category] = default_value
+
+        switch_instance.category_disabled_dict = new_disabled_dict
+        switch_instance.category_list_default_dict = new_default_dict
+
+    def _update_stats_files(self, switch_instance, category_list: List[str]) -> None:
+        """Update stats dump files."""
+        if not hasattr(switch_instance, 'constants'):
+            return
+
+        stats_files_map = {
+            'cpu': 'cpu.csv.gz',
+            'disk': 'disk.csv.gz',
+            'fan': 'fan.csv.gz',
+            'power': 'power.csv.gz',
+            'mgmt-interface': 'mgmt-interface.csv.gz',
+            'temperature': 'temperature.csv.gz',
+            'voltage': 'voltage.csv.gz',
+            'asic-power': 'asic-power.csv.gz'
+        }
+
+        new_stats_files = [stats_files_map[cat] for cat in category_list if cat in stats_files_map]
+        switch_instance.constants = switch_instance.constants._replace(stats_dump_files=new_stats_files)
+
+
+class ListConfigurator(SwitchConfigurator):
+    """Handles list clearing."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        for list_name in config.cleared_lists:
+            if hasattr(switch_instance, list_name):
+                setattr(switch_instance, list_name, [])
+                logger.info(f"Cleared list: {list_name}")
+
+
+class CommandConfigurator(SwitchConfigurator):
+    """Handles unsupported commands."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        if not hasattr(switch_instance, 'unsupported_commands_list'):
+            switch_instance.unsupported_commands_list = []
+
+        for cmd in config.unsupported_commands:
+            if cmd not in switch_instance.unsupported_commands_list:
+                switch_instance.unsupported_commands_list.append(cmd)
+                logger.info(f"Added unsupported command: {cmd}")
+
+
+class InventoryConfigurator(SwitchConfigurator):
+    """Handles inventory configuration."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        if not hasattr(switch_instance, 'platform_inventory_items_dict'):
+            return
+
+        for key in config.excluded_inventory_keys:
+            switch_instance.platform_inventory_items_dict.pop(key, None)
+            logger.info(f"Excluded inventory key: {key}")
+
+        self._update_inventory_list(switch_instance)
+
+    def _update_inventory_list(self, switch_instance) -> None:
+        """Update platform_inventory_items list."""
+        if not hasattr(switch_instance, 'platform_inventory_items'):
+            return
+
+        new_items = []
+        for category, items in switch_instance.platform_inventory_items_dict.items():
+            if isinstance(items, list):
+                new_items.extend(items)
+            else:
+                new_items.append(items)
+        switch_instance.platform_inventory_items = new_items
+
+
+class HealthComponentsConfigurator(SwitchConfigurator):
+    """Handles health components configuration."""
+
+    def configure(self, switch_instance, config: CapabilityConfig) -> None:
+        if not hasattr(switch_instance, 'health_components'):
+            return
+
+        if not config.excluded_health_components:
+            return
+
+        # Filter out excluded health components
+        original_components = getattr(switch_instance, 'health_components', [])
+        new_components = [comp for comp in original_components
+                          if comp not in config.excluded_health_components]
+
+        switch_instance.health_components = new_components
+        logger.info(f"Excluded health components: {config.excluded_health_components}")
+
+
+class SwitchCapabilityHandler:
+    """Main handler for switch capabilities."""
+
+    def __init__(self):
+        self.configurators: List[SwitchConfigurator] = [
+            CategoryConfigurator(),
+            ListConfigurator(),
+            CommandConfigurator(),
+            InventoryConfigurator(),
+            HealthComponentsConfigurator()
+        ]
+
+    def configure_switch_capabilities(self, switch_instance, capabilities: List[Capability]) -> None:
+        """
+        Configure switch based on its capabilities.
+
+        Args:
+            switch_instance: The switch instance to configure
+            capabilities: List of specific capabilities to apply
+        """
+        if not capabilities:
+            logger.info("No capabilities provided")
+            return
+
+        # Convert capabilities to configs
+        configs = [cap.get_config() for cap in capabilities]
+        logger.info(f"Configuring switch with capabilities: {[c.name for c in configs]}")
+
+        for config in configs:
+            for configurator in self.configurators:
+                configurator.configure(switch_instance, config)
+
+    @classmethod
+    def apply_capability(cls, switch_instance, capability: Capability) -> None:
+        """
+        Apply a single capability to a switch instance.
+
+        Args:
+            switch_instance: The switch instance to configure
+            capability: The capability to apply
+        """
+        handler = cls()
+        handler.configure_switch_capabilities(switch_instance, [capability])
+
+    @classmethod
+    def apply_capabilities(cls, switch_instance, capabilities: List[Capability]) -> None:
+        """
+        Apply multiple capabilities to a switch instance.
+
+        Args:
+            switch_instance: The switch instance to configure
+            capabilities: List of capabilities to apply
+        """
+        handler = cls()
+        handler.configure_switch_capabilities(switch_instance, capabilities)

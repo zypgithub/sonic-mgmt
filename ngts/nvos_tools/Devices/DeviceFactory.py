@@ -9,7 +9,7 @@ from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4
 from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, CrocodileSwitch, BlackMambaSwitch, BlackMambaDGXSwitch,
                                               CrocodileSimxSwitch, JulietScaleoutSwitch, JulietTTMSwitch,
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
-                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600, TaipanSingleAsicSwitch,
+                                              JulietArielPS, JulietNonScaleoutSwitchNoNCI5600,
                                               JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
                                               RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
                                               JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch)
@@ -59,7 +59,6 @@ class DeviceFactory:
             'N5112_LD - JulietArielPS': JulietArielPS,
             'N5600_LD - JulietNonScaleoutSwitchNoNCI': JulietNonScaleoutSwitchNoNCI5600,
             'Q3450_LD - Taipan': TaipanSwitch,
-            'Q3451_LD - TaipanSingleAsic': TaipanSingleAsicSwitch,
             'N5500_LD - JulietNonScaleoutSwitchGB300': JulietNonScaleoutSwitchGB300,
             'N5500_LD - JulietNonScaleoutSwitchGB300QS': JulietNonScaleoutSwitchGB300QS,
             'N5500_LD - JulietNonScaleoutSwitchGB300PS': JulietNonScaleoutSwitchGB300PS,

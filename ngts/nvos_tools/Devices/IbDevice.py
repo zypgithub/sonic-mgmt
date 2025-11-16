@@ -23,12 +23,14 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA, FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
 from ngts.nvos_tools.infra.FilesTool import FilesTool
+from ngts.nvos_tools.Devices.SwitchCapabilities import SwitchCapabilityHandler, NoPSUCapability
+
 logger = logging.getLogger()
 
 
@@ -284,7 +286,7 @@ class IbSwitch(BaseSwitch):
 
     def _init_dockers(self):
         super()._init_dockers()
-        self.available_dockers.extend(('database', 'nv-gnmi', 'nv-umf'))  # TODO: Add lldp container check
+        self.available_dockers.extend(('database', 'gnmi-server'))  # TODO: Add lldp container check
         for deamon in NvosConst.DOCKER_PER_ASIC_LIST:
             for asic_num in range(0, self.asic_amount):
                 self.available_dockers.append("{deamon}{asic_num}".format(deamon=deamon, asic_num=asic_num))
@@ -436,7 +438,6 @@ class IbSwitch(BaseSwitch):
                                           "nv show platform boot-policy",
                                           "nv show platform cable-cartridge",
                                           "nv show platform chassis-location",
-                                          "nv show system cli",
                                           "nv show cluster",
                                           "nv show sdn",
                                           "nv show fae interface {port} link link-training"]
@@ -521,14 +522,16 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_OUT_ERRORS: GnmiConstants.OUT_ERRORS,
             IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS: GnmiConstants.SYMBOL_ERROR_COUNTER,
             IbInterfaceConsts.LINK_STATS_OUT_WAIT: GnmiConstants.XMIT_WAIT,
-            # QTM3 top-level fields
-            IbInterfaceConsts.LINK_STATS_QNT3_TOP_LEVEL[0]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
-            # QTM3 fields under 'link' dictionary
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[0]: GnmiConstants.LINK_ERROR_RECOVERY,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[1]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[2]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[3]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[4]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[0]: GnmiConstants.LINK_ERROR_RECOVERY,
+            IbInterfaceConsts.LINK_STATS_QNT3[1]: GnmiConstants.LINK_DOWNED,
+            IbInterfaceConsts.LINK_STATS_QNT3[2]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[3]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[4]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[5]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3[6]: GnmiConstants.QP1_DROPPED,
+            IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
+            # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
             IbInterfaceConsts.LINK_PLR_RCV_CODES_ERRORS: GnmiConstants.LINK_PLR_RCV_CODE_ERRORS,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
@@ -765,9 +768,10 @@ class BlackMambaSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 550,
             'install cpld': 1000,
-            self.generate_tech_support: 130,
+            self.generate_tech_support: 105,
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 14.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
+            'ISSU CPU max downtime': 135,
         })
         self.memory_speed = 2667  # in MT/s
 
@@ -853,12 +857,45 @@ class BlackMambaSwitch(IbSwitch):
     def _get_lane_bmap(cls, port):
         return 0x10 ** (port.local_port - 1) * 2 ** (port.plane_number - 1)
 
+    def convert_port_to_infiniband(self, port_name: str) -> str:
+        """
+        Converts a port name to Infiniband port name for Black Mamba switches.
+
+        For Black Mamba (BM): Infiniband number = port_number - 1
+        Example: sw1p1 -> Infiniband0, sw72p2 -> Infiniband71
+
+        Args:
+            port_name: Port name (e.g., "sw1p1", "sw72p2", "fnm1")
+
+        Returns:
+            str: Infiniband port name (e.g., "Infiniband0", "Infiniband71")
+        """
+        from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+
+        # Handle FNM ports (if needed, can be extended based on requirements)
+        if port_name.startswith('fnm'):
+            logger.warning(f"FNM port {port_name} conversion not implemented for BM, returning as-is")
+            return port_name
+
+        try:
+            # Use Port.parse_port_name to extract port components
+            asic_letter, port_number, local_port, split_number, plane_number = Port.parse_port_name(port_name)
+
+            # For BM: Infiniband number = port_number - 1
+            ib_num = port_number - 1
+
+            return f"Infiniband{ib_num}"
+        except ValueError as e:
+            logger.error(f"Failed to parse port name {port_name} for BM switch: {e}")
+            return port_name
+
 
 # -------------------------- BlackMambaDGX Switch ----------------------------
 class BlackMambaDGXSwitch(BlackMambaSwitch):
 
     def __init__(self, switch_class=NvosConst.BLACK_MAMBA_DGX_SWITCH):
         super().__init__(switch_class=switch_class)
+        SwitchCapabilityHandler.apply_capability(self, NoPSUCapability())
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -867,10 +904,6 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
     def _init_led_list(self):
         super()._init_led_list()
         self.led_list = ['FAN1', 'FAN2', 'FAN3', 'FAN4', 'FAN5', 'FAN6', "FAN7", "FAN8", "STATUS", "UID"]
-
-    def _init_psu_list(self):
-        self.psu_list = []
-        self.psu_fan_list = []
 
     def _init_temperature(self):
         super()._init_temperature()
@@ -887,23 +920,6 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             PlatformConsts.SYSTEM_TYPE: "Q3401_RD",
             "asic-model": self.asic_type,
         })
-        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
-        self.category_disabled_dict = {
-            self.category_list[0]: self.category_default_disabled_dict,
-            self.category_list[1]: self.category_default_disabled_dict,
-            self.category_list[2]: self.category_disk_default_disable_dict,
-            self.category_list[3]: self.category_default_disabled_dict,
-            self.category_list[4]: self.category_default_disabled_dict,
-            self.category_list[5]: self.category_default_disabled_dict
-        }
-        self.category_list_default_dict = {
-            self.category_list[0]: self.category_default_dict,
-            self.category_list[1]: self.category_default_dict,
-            self.category_list[2]: self.category_disk_default_dict,
-            self.category_list[3]: self.category_default_dict,
-            self.category_list[4]: self.category_default_dict,
-            self.category_list[5]: self.category_default_dict
-        }
         self.stats_temperature_header_num_of_lines = 35
         self.voltage_sensors = [
             # PMIC sensors for ASIC1
@@ -934,6 +950,7 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             'HSC2-VinDC-In', 'HSC2-VinDC-Out',
             'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1'
         ]
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_dgx_versions.json"
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -943,15 +960,16 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             "current-speed": ExpectedString(range_min=2741, range_max=15525),
             "min-speed": ExpectedString(regex="(2741|2842)"),
             "max-speed": ExpectedString(regex="(15525|14493)")}
-        self.platform_inventory_switch_values.update({"hardware-version": 'A9',
-                                                      "model": '920-9B36M-00MX-8NS'})
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": None})
 # -------------------------- Taipan Switch ----------------------------
 
 
-class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
+class TaipanSwitch(BlackMambaSwitch):
 
     def __init__(self, switch_class=NvosConst.TAIPAN_SWITCH):
         super().__init__(switch_class=switch_class)
+        SwitchCapabilityHandler.apply_capability(self, NoPSUCapability())
 
     def _init_constants(self):
         super()._init_constants()
@@ -964,23 +982,6 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             PlatformConsts.SYSTEM_TYPE: "Q3450_LD",
             "asic-model": self.asic_type,
         })
-        self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
-        self.category_disabled_dict = {
-            self.category_list[0]: self.category_default_disabled_dict,
-            self.category_list[1]: self.category_default_disabled_dict,
-            self.category_list[2]: self.category_disk_default_disable_dict,
-            self.category_list[3]: self.category_default_disabled_dict,
-            self.category_list[4]: self.category_default_disabled_dict,
-            self.category_list[5]: self.category_default_disabled_dict
-        }
-        self.category_list_default_dict = {
-            self.category_list[0]: self.category_default_dict,
-            self.category_list[1]: self.category_default_dict,
-            self.category_list[2]: self.category_disk_default_dict,
-            self.category_list[3]: self.category_default_dict,
-            self.category_list[4]: self.category_default_dict,
-            self.category_list[5]: self.category_default_dict
-        }
         self.voltage_sensors = [
             "HSC-1-VinDC-In", "HSC-1-VinDC-Out", "HSC-2-VinDC-In", "HSC-2-VinDC-Out", "HSCC-1-Conv-In-1",
             "HSCC-1-Conv-Out-1", "HSCC-2-Conv-In-1", "HSCC-2-Conv-Out-1", "PMIC-1-12V-VDD-ASIC1-In-1",
@@ -996,10 +997,8 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             "PMIC-11-ASIC4-HVDD-PL0-Out-1", "PMIC-12-12V-HVDD-DVDD-ASIC4-In-1", "PMIC-12-ASIC4-DVDD-PL1-Out-2",
             "PMIC-12-ASIC4-HVDD-PL1-Out-1", "PMIC-13-12V-MAIN-In-1", "PMIC-13-CEX-VDD-Out-1",
         ]
-        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
-                            "temperature.csv.gz", "voltage.csv.gz", "fan.csv.gz"]
-        self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/taipan_versions.json"
+        self.unsupported_commands_list.remove("nv show platform environment leakage")
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -1009,12 +1008,8 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             "current-speed": ExpectedString(range_min=4140, range_max=15870),
             "min-speed": '4140',
             "max-speed": '15870'}
-        self.platform_inventory_switch_values.update({"hardware-version": 'A9',
-                                                      "model": '920-9B36M-00MX-8NS'})
-
-    def _init_psu_list(self):
-        self.psu_list = []
-        self.psu_fan_list = []
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": None})
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1033,27 +1028,6 @@ class TaipanSwitch(BlackMambaSwitch):  # All values will be updated on Taipan BU
             "PMIC-1-Temp", "PMIC-2-Temp", "PMIC-3-Temp", "PMIC-4-Temp", "PMIC-5-Temp", "PMIC-6-Temp", "PMIC-7-Temp",
             "PMIC-8-Temp", "PMIC-9-Temp", "PMIC-10-Temp", "PMIC-11-Temp", "PMIC-12-Temp", "PMIC-13-Temp",
             "SODIMM-1-Temp", "SODIMM-2-Temp"]
-
-    def _init_boot_time_timeouts(self):
-        super()._init_boot_time_timeouts()
-        self.timeout_system_is_ready = 8 * MINUTE
-
-# -------------------------- Taipan Single Asic Switch ----------------------------
-
-
-class TaipanSingleAsicSwitch(TaipanSwitch):  # All values will be updated on Taipan BU
-
-    def __init__(self):
-        super().__init__(switch_class=NvosConst.TAIPAN_SINGLE_ASIC_SWITCH)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.number_of_transceivers = 4
-        self.transceivers_tables_name = "TRANSCEIVER_INFO"
-        self.transceiver_list = [f'els{a + 1}' for a in range(4)] + ['fnm1'] + [f'oe{b + 18}' for b in range(18)]
-
-    def _init_psu_list(self):
-        self.psu_list = []
 
 
 # -------------------------- Crocodile Switch ----------------------------
@@ -1108,9 +1082,10 @@ class CrocodileSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 500,
             'install cpld': 720,
-            self.generate_tech_support: 100,
+            self.generate_tech_support: 75,
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 13.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 9 * MINUTE,
+            'ISSU CPU max downtime': 120,
         })
         self.unsupported_commands_list.extend(["nv show ib device ASIC3",
                                                "nv show ib device ASIC4"])
@@ -1196,6 +1171,57 @@ class CrocodileSwitch(IbSwitch):
             digit = 0xF
         return 0x10 ** (port.local_port - 1) * digit
 
+    def convert_port_to_infiniband(self, port_name: str) -> str:
+        """
+        Converts a port name to Infiniband port name for Crocodile switches.
+
+        For Crocodile: Complex formula based on ASIC (A/B), cage number, and port number
+        - If there's B: add 144
+        - Cage number adds (cage_number - 1) * 8
+        - If port number is 2: add 4
+
+        Example: swB14p1 -> 144 + (14-1)*8 + 0 = 248
+        Example: swA13p1 -> 0 + (13-1)*8 + 0 = 96
+        Example: swB14p2 -> 144 + (14-1)*8 + 4 = 252
+
+        Args:
+            port_name: Port name (e.g., "swA1p1", "swB14p1", "fnm1")
+
+        Returns:
+            str: Infiniband port name (e.g., "Infiniband0", "Infiniband248")
+        """
+        from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+
+        # Handle FNM ports (if needed)
+        if port_name.startswith('fnm'):
+            logger.warning(f"FNM port {port_name} conversion not implemented for Crocodile, returning as-is")
+            return port_name
+
+        try:
+            # Use Port.parse_port_name to extract port components
+            asic_letter, port_number, local_port, split_number, plane_number = Port.parse_port_name(port_name)
+
+            # Calculate Infiniband number based on formula
+            ib_num = 0
+
+            # If there's B, add 144
+            if asic_letter == 'B':
+                ib_num += 144
+
+            # Cage number (port_number) adds (cage_number - 1) * 8
+            ib_num += (port_number - 1) * 8
+
+            # If local port (p1/p2) is 2, add 4
+            if local_port == 2:
+                ib_num += 4
+
+            logger.debug(f"Converted {port_name} -> Infiniband{ib_num} (asic={asic_letter}, cage={port_number}, port={local_port})")
+
+            return f"Infiniband{ib_num}"
+        except ValueError as e:
+            logger.error(f"Failed to parse port name {port_name} for Crocodile switch: {e}")
+            return port_name
+
 
 # -------------------------- Crocodile Simx Switch ----------------------------
 class CrocodileSimxSwitch(IbSwitch):
@@ -1257,11 +1283,7 @@ class JulietSwitch(NvLinkSwitch):
         super()._init_constants()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.mgmt_ports = ['eth0', 'eth1']
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BMC,
-                                FW_COMPONENT_FPGA,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_EROT]
+
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -1346,7 +1368,6 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
-        self.nmx_simulation_gpu_count = 72
         self.number_of_transceivers = 72
         self.cpld_amount = 4
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
@@ -1357,6 +1378,7 @@ class JulietSwitch(NvLinkSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 600,
             'install cpld': 720,
+            self.generate_tech_support: 120,
         })
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
@@ -1437,7 +1459,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.asic_type = NvosConst.NVL5
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
-        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl, gnmi, syslog, bmc', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation, redfish_aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
             'nmx-controller': {
                 **{  # Unpack
@@ -1468,7 +1490,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                     "certificate": "",
                     "crl": "",
                     "encryption": "disabled",
-                    "state": "enabled"
+                    "state": "disabled"
                 },
                 "rbac": {
                     "rbac-file": "",
@@ -1488,7 +1510,6 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.core_count = 8
         self.reboot_type = 'julietscaleout_reboot'
         self.reset_factory = 'julietscaleout reset factory'
-        self.generate_tech_support = 'julietscaleout generate_tech_support'
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
         self.voltage_sensors = [
@@ -1834,7 +1855,7 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
-        log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
         self.constants = self.constants._replace(log_dump_files=log_dump_files)
@@ -1926,7 +1947,7 @@ class JulietNonScaleoutSwitchGB300QS(JulietNonScaleoutSwitchGB300):
                                                       "model": ExpectedString(regex="692-9K33R-00MV-JQS")})
 
 
-# -------------------------- JulietNonScaleoutSwitchGB300QS Switch ----------------------------
+# -------------------------- JulietNonScaleoutSwitchGB300PS Switch ----------------------------
 
 
 class JulietNonScaleoutSwitchGB300PS(JulietNonScaleoutSwitchGB300):
@@ -2067,10 +2088,6 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
         self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BMC,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_EROT]
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
             self.category_list[1]: self.category_default_disabled_dict,
@@ -2086,12 +2103,12 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.category_list[4]: self.category_default_dict
         }
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/surrogate_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6150_ld-r0")
         self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N6150_LD",
+            "product-name": "N6150_LD",
             "asic-model": self.asic_type,
         })
         self.cpld_amount = 2
@@ -2099,290 +2116,198 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
-        self.constants.erots.clear()
-        self.constants.erots.extend([PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME])
-        self.constants.firmware.remove(PlatformConsts.FW_FPGA)
-        log_dump_files = ["audit", "audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
         self.constants = self.constants._replace(log_dump_files=log_dump_files)
         self.voltage_sensors = [
-            "PDB-1-Conv-In-1",
-            "PDB-1-Conv-Out-1",
-            "PDB-2-Conv-In-1",
-            "PDB-2-Conv-Out-1",
-            "HSC-VinDC-In",
-            "HSC-VinDC-Out",
-            "PMIC-1-ASIC1-VDD-Out-1",
-            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
-            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
-            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
-            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
-            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
-            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
-            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
-            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
-            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
-            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
-            "PMIC-5-ASIC2-VDD-Out-1",
-            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
-            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
-            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
-            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
-            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
-            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
-            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
-            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
-            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
-            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
-            "PMIC-9-ASIC3-VDD-Out-1",
-            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
-            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
-            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
-            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
-            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
-            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
-            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
-            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
-            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
-            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
-            "PMIC-13-ASIC4-VDD-Out-1",
-            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
-            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
-            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
-            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
-            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
-            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
-            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
-            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
-            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
-            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
-            "PMIC-17-12V-MAIN-In-1",
-            "PMIC-17-CPU-Out-1",
-            "PMIC-17-SOC-Out-2",
-            "PMIC-18-COMEX-VDD-MEM-In-1",
-            "PMIC-18-COMEX-VDD-MEM-Out-1"
+            "PDB+PwrConv1+Vol+In+1",
+            "PDB+PwrConv1+Vol+Out+1",
+            "PDB+PwrConv1+Curr+In+1",
+            "PDB-PwrConv1+Curr+Out+1",
+            "PDB+PwrConv2+Vol+In+1",
+            "PDB+PwrConv2+Vol+Out+1",
+            "PDB+PwrConv2+Curr+In+1",
+            "PDB-PwrConv2+Curr+Out+1",
+            "PDB+HSC+VinDC+Volt+In",
+            "PDB+HSC+VinDC+Volt+Out",
+            "PDB+HSC+VinDC+Curr+In",
+            "PDB+HSC+VinDC+Pwr+In",
+            "PMIC-1+PVIN1_VDD_ASIC1+Vol+In+1",
+            "PMIC-1+ASIC1_VDD+Vol+Out+1",
+            "PMIC-1+PVIN1_VDD_ASIC1+Pwr+In+1",
+            "PMIC-1+ASIC1_VDD+Pwr+Out+1",
+            "PMIC-1+PVIN1_VDD_ASIC1+Curr+In+1",
+            "PMIC-1+ASIC1_VDD+Curr+Out+1",
+            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Vol+Out+1",
+            "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
+            "PMIC-2+PVIN1_AVDD_ASIC1+Pwr+In+1",
+            "PMIC-2+PVIN1_DVDD_ASIC1+Pwr+In+2",
+            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+2",
+            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Curr+In+1",
+            "PMIC-2+PVIN1_DVDD_ASIC1+Curr+In+2",
+            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+1",
+            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+2",
+            "PMIC-3+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
+            "PMIC-3+ASIC1_AVDD_PL1+Vol+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Vol+Out+2",
+            "PMIC-3+PVIN1_AVDD_ASIC1+Pwr+In+1",
+            "PMIC-3+PVIN1_DVDD_ASIC1+Pwr+In+2",
+            "PMIC-3+ASIC1_AVDD_PL1+Pwr+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Pwr+Out+2",
+            "PMIC-3+PVIN1_AVDD_ASIC1+Curr+In+1",
+            "PMIC-3+PVIN1_DVDD_ASIC1+Curr+In+2",
+            "PMIC-3+ASIC1_AVDD_PL1+Curr+Out+1",
+            "PMIC-3+ASIC1_DVDD_PL1+Curr+Out+2",
+            "PMIC-4+PVIN1_AVCC_HVDD_ASIC1+Vol+In+1",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-4+PVIN1_AVCC_ASIC1+Pwr+In+1",
+            "PMIC-4+PVIN1_HVDD_ASIC1+Pwr+In+2",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-4+PVIN1_AVCC_ASIC1+Curr+In+1",
+            "PMIC-4+PVIN1_HVDD_ASIC1+Curr+In+2",
+            "PMIC-4+ASIC1_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-4+ASIC1_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-5+PVIN1_VDD_ASIC2+Vol+In+1",
+            "PMIC-5+ASIC2_VDD+Vol+Out+1",
+            "PMIC-5+PVIN1_VDD_ASIC2+Pwr+In+1",
+            "PMIC-5+ASIC2_VDD+Pwr+Out+1",
+            "PMIC-5+PVIN1_VDD_ASIC2+Curr+In+1",
+            "PMIC-5+ASIC2_VDD+Curr+Out+1",
+            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Vol+Out+1",
+            "PMIC-6+ASIC2_DVDD_PL0+Vol+Out+2",
+            "PMIC-6+PVIN1_AVDD_ASIC2+Pwr+In+1",
+            "PMIC-6+PVIN1_DVDD_ASIC2+Pwr+In+2",
+            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+2",
+            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Curr+In+1",
+            "PMIC-6+PVIN1_DVDD_ASIC2+Curr+In+2",
+            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+1",
+            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+2",
+            "PMIC-7+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
+            "PMIC-7+ASIC2_AVDD_PL1+Vol+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Vol+Out+2",
+            "PMIC-7+PVIN1_AVDD_ASIC2+Pwr+In+1",
+            "PMIC-7+PVIN1_DVDD_ASIC2+Pwr+In+2",
+            "PMIC-7+ASIC2_AVDD_PL1+Pwr+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Pwr+Out+2",
+            "PMIC-7+PVIN1_AVDD_ASIC2+Curr+In+1",
+            "PMIC-7+PVIN1_DVDD_ASIC2+Curr+In+2",
+            "PMIC-7+ASIC2_AVDD_PL1+Curr+Out+1",
+            "PMIC-7+ASIC2_DVDD_PL1+Curr+Out+2",
+            "PMIC-8+PVIN1_AVCC_HVDD_ASIC2+Vol+In+1",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-8+PVIN1_AVCC_ASIC2+Pwr+In+1",
+            "PMIC-8+PVIN1_HVDD_ASIC2+Pwr+In+2",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-8+PVIN1_AVCC_ASIC2+Curr+In+1",
+            "PMIC-8+PVIN1_HVDD_ASIC2+Curr+In+2",
+            "PMIC-8+ASIC2_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-8+ASIC2_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-9+PVIN1_VDD_ASIC3+Vol+In+1",
+            "PMIC-9+ASIC3_VDD+Vol+Out+1",
+            "PMIC-9+PVIN1_VDD_ASIC3+Pwr+In+1",
+            "PMIC-9+ASIC3_VDD+Pwr+Out+1",
+            "PMIC-9+PVIN1_VDD_ASIC3+Curr+In+1",
+            "PMIC-9+ASIC3_VDD+Curr+Out+1",
+            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Vol+Out+1",
+            "PMIC-10+ASIC3_DVDD_PL0+Vol+Out+2",
+            "PMIC-10+PVIN1_AVDD_ASIC3+Pwr+In+1",
+            "PMIC-10+PVIN1_DVDD_ASIC3+Pwr+In+2",
+            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+2",
+            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Curr+In+1",
+            "PMIC-10+PVIN1_DVDD_ASIC3+Curr+In+2",
+            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+1",
+            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+2",
+            "PMIC-11+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
+            "PMIC-11+ASIC3_AVDD_PL1+Vol+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Vol+Out+2",
+            "PMIC-11+PVIN1_AVDD_ASIC3+Pwr+In+1",
+            "PMIC-11+PVIN1_DVDD_ASIC3+Pwr+In+2",
+            "PMIC-11+ASIC3_AVDD_PL1+Pwr+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Pwr+Out+2",
+            "PMIC-11+PVIN1_AVDD_ASIC3+Curr+In+1",
+            "PMIC-11+PVIN1_DVDD_ASIC3+Curr+In+2",
+            "PMIC-11+ASIC3_AVDD_PL1+Curr+Out+1",
+            "PMIC-11+ASIC3_DVDD_PL1+Curr+Out+2",
+            "PMIC-12+PVIN1_AVCC_HVDD_ASIC3+Vol+In+1",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-12+PVIN1_AVCC_ASIC3+Pwr+In+1",
+            "PMIC-12+PVIN1_HVDD_ASIC3+Pwr+In+2",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-12+PVIN1_AVCC_ASIC3+Curr+In+1",
+            "PMIC-12+PVIN1_HVDD_ASIC3+Curr+In+2",
+            "PMIC-12+ASIC3_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-12+ASIC3_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-13+PVIN1_VDD_ASIC4+Vol+In+1",
+            "PMIC-13+ASIC4_VDD+Vol+Out+1",
+            "PMIC-13+PVIN1_VDD_ASIC4+Pwr+In+1",
+            "PMIC-13+ASIC4_VDD+Pwr+Out+1",
+            "PMIC-13+PVIN1_VDD_ASIC4+Curr+In+1",
+            "PMIC-13+ASIC4_VDD+Curr+Out+1",
+            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Vol+Out+1",
+            "PMIC-14+ASIC4_DVDD_PL0+Vol+Out+2",
+            "PMIC-14+PVIN1_AVDD_ASIC4+Pwr+In+1",
+            "PMIC-14+PVIN1_DVDD_ASIC4+Pwr+In+2",
+            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+2",
+            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Curr+In+1",
+            "PMIC-14+PVIN1_DVDD_ASIC4+Curr+In+2",
+            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+1",
+            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+2",
+            "PMIC-15+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
+            "PMIC-15+ASIC4_AVDD_PL1+Vol+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Vol+Out+2",
+            "PMIC-15+PVIN1_AVDD_ASIC4+Pwr+In+1",
+            "PMIC-15+PVIN1_DVDD_ASIC4+Pwr+In+2",
+            "PMIC-15+ASIC4_AVDD_PL1+Pwr+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Pwr+Out+2",
+            "PMIC-15+PVIN1_AVDD_ASIC4+Curr+In+1",
+            "PMIC-15+PVIN1_DVDD_ASIC4+Curr+In+2",
+            "PMIC-15+ASIC4_AVDD_PL1+Curr+Out+1",
+            "PMIC-15+ASIC4_DVDD_PL1+Curr+Out+2",
+            "PMIC-16+PVIN1_AVCC_HVDD_ASIC4+Vol+In+1",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Vol+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Vol+Out+2",
+            "PMIC-16+PVIN1_AVCC_ASIC4+Pwr+In+1",
+            "PMIC-16+PVIN1_HVDD_ASIC4+Pwr+In+2",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Pwr+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Pwr+Out+2",
+            "PMIC-16+PVIN1_AVCC_ASIC4+Curr+In+1",
+            "PMIC-16+PVIN1_HVDD_ASIC4+Curr+In+2",
+            "PMIC-16+ASIC4_AVCC_PL0_PL1+Curr+Out+1",
+            "PMIC-16+ASIC4_HVDD_PL0_PL1+Curr+Out+2",
+            "PMIC-17+12V_MAIN+Vol+In+1",
+            "PMIC-17+CPU+Vol+Out+1",
+            "PMIC-17+SOC+Vol+Out+2",
+            "PMIC-17+12V_MAIN+Pwr+In+1",
+            "PMIC-17+CEX_VDD+Pwr+Out+1",
+            "PMIC-17+12V_MAIN+Curr+In+1",
+            "PMIC-17+CPU+Curr+Out+1",
+            "PMIC-17+SOC+Curr+Out+2",
+            "PMIC-18+COMEX_VDD_MEM+Vol+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Vol+Out+1",
+            "PMIC-18+COMEX_VDD_MEM+Pwr+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Pwr+Out+1",
+            "PMIC-18+COMEX_VDD_MEM+Curr+In+1",
+            "PMIC-18+COMEX_VDD_MEM+Curr+Out+1"
         ]
 
         self.leakage_sensors_count = 2
         self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
-        self.nvl_access_ports_list = [
-            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
-            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
-            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
-            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
-            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
-            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
-            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
-            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
-            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
-            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
-            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
-            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
-            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
-            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
-            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
-            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
-            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
-            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
-            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
-            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
-            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
-            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
-            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
-        ]
-        self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
-        self.nvl_fnm_ports = []
-        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
-        self.nvl_port = ['sw1p1s1']
-
-        self.nvl_trunk_port_speed = '400G'
-        self.access_port_speed = '375G'
-        self.fnm_link_speed = '100G'
-        self.fnm_fae_link_speed = '100G'
-        self.nvl_port_type = 'nvl'
-        self.num_of_cartridges = 4
-        self.requires_tpm_pass = True
-
-    def _init_fan_list(self):
-        # GB300 is 100% liquid cooled
-        self.fan_list = []
-        self.fan_led_list = []
-
-    def _init_platform_lists(self):
-        super()._init_platform_lists()
-        self.platform_environment_fan_values = {}
-        self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="920-9K42W-00L6-SR0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
-
-    def _init_led_list(self):
-        super()._init_led_list()
-        self.led_list = ["STATUS", "UID"]
-
-    def _init_temperature(self):
-        super()._init_temperature()
-        self.temperature_sensors = [
-            "ASIC1",
-            "ASIC2",
-            "ASIC3",
-            "ASIC4",
-            "CPU-Pack-Temp",
-            "Drive-Temp",
-            "HSC-VinDC-Temp",
-            "PDB-Conv-1-Temp",
-            "PDB-Conv-2-Temp",
-            "PMIC-1-Temp",
-            "PMIC-2-Temp",
-            "PMIC-3-Temp",
-            "PMIC-4-Temp",
-            "PMIC-5-Temp",
-            "PMIC-6-Temp",
-            "PMIC-7-Temp",
-            "PMIC-8-Temp",
-            "PMIC-9-Temp",
-            "PMIC-10-Temp",
-            "PMIC-11-Temp",
-            "PMIC-12-Temp",
-            "PMIC-13-Temp",
-            "PMIC-14-Temp",
-            "PMIC-15-Temp",
-            "PMIC-16-Temp",
-            "PMIC-17-Temp",
-            "PMIC-18-Temp",
-            "SODIMM-1-Temp",
-            "SODIMM-2-Temp"
-        ]
-
-    def _relevant_config_filename_by_version(self, version: str) -> str:
-        return 'nvos_config_nvl6.yml'
-
-
-# -------------------------- Rosalind Switch ----------------------------
-
-
-class RosalindChipless(RosalindSurrogateSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=0)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.asic_type = NvosConst.NVL6
-
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
-        # will be updated
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n6100_ld-r0")
-        self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N6100_LD",
-            "asic-model": self.asic_type,
-        })
-
-        self.nvl_access_ports_list = [
-            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
-            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
-            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
-            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
-            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
-            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
-            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
-            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
-            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
-            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
-            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
-            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
-            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
-            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
-            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
-            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
-            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
-            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
-            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
-            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
-            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
-            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
-            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
-            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
-        ]
-        self.network_ports = ['eth0', 'eth1', 'lo']
-        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
-        self.nvl_fnm_ports = []
-        self.nvl_internal_fnm_ports = []
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
-        self.sma_amount = 2
-        self.sma_components = list(f"{PlatformConsts.FW_SMA}{i if i else ''}" for i in range(0, self.sma_amount + 1))
-        self._extend_firmware_by_sma_amount()
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BMC,
-                                FW_COMPONENT_SMA,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_EROT]
-
-    def _init_platform_lists(self):
-        super()._init_platform_lists()
-        self.platform_environment_fan_values = {}
-        self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="920-9K42W-00L6-SR2")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
-
-    def _init_temperature(self):
-        super()._init_temperature()
-        self.temperature_sensors = [
-            "CPU-Pack-Temp",
-            "Drive-Temp",
-            "HSC-VinDC-Temp",
-            "PDB-Conv-1-Temp",
-            "PDB-Conv-2-Temp",
-            "PMIC-1-Temp",
-            "PMIC-2-Temp",
-            "PMIC-3-Temp",
-            "PMIC-4-Temp",
-            "PMIC-5-Temp",
-            "PMIC-6-Temp",
-            "PMIC-7-Temp",
-            "PMIC-8-Temp",
-            "PMIC-9-Temp",
-            "PMIC-10-Temp",
-            "PMIC-11-Temp",
-            "PMIC-12-Temp",
-            "PMIC-13-Temp",
-            "PMIC-14-Temp",
-            "PMIC-15-Temp",
-            "PMIC-16-Temp",
-            "PMIC-17-Temp",
-            "PMIC-18-Temp",
-            "SODIMM-1-Temp",
-            "SODIMM-2-Temp"
-        ]
-
-# -------------------------- Rosalind Switch ----------------------------
-
-
-class RosalindSwitch(RosalindSurrogateSwitch):
-
-    def __init__(self, asic_amount=4):
-        super().__init__(asic_amount=4)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.asic_type = NvosConst.NVL6
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BMC,
-                                FW_COMPONENT_SMA,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_EROT]
-        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
-        # will be updated
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n6100_ld-r0")
-        self.show_platform_output.update({
-            PlatformConsts.SYSTEM_TYPE: "N6100_LD",
-            "asic-model": self.asic_type,
-        })
-
         self.nvl_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
@@ -2436,25 +2361,48 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = []
-        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1",
-                                       "fnma3p2"]
+        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
-        self.sma_amount = 2
-        self.sma_components = list(f"{PlatformConsts.FW_SMA}{i if i else ''}" for i in range(0, self.sma_amount + 1))
-        self._extend_firmware_by_sma_amount()
-        self.requires_tpm_pass = True
+        self.nvl_port = ['sw1p1s1']
+
+        self.nvl_trunk_port_speed = '400G'
+        self.access_port_speed = '375G'
+        self.fnm_link_speed = '100G'
+        self.fnm_fae_link_speed = '100G'
+        self.nvl_port_type = 'nvl'
+        self.num_of_cartridges = 4
+
+    def _init_fan_list(self):
+        # GB300 is 100% liquid cooled
+        self.fan_list = []
+        self.fan_led_list = []
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_environment_fan_values = {}
         self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="920-9K42W-00L6-GS0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+                                                      "model": ExpectedString(regex="920-9K42W-00L6-SR0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+    def _init_led_list(self):
+        super()._init_led_list()
+        self.led_list = ["STATUS", "UID"]
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "PDB+PwrConv1+Temp",
+            "PDB+PwrConv2+Temp",
+            "PDB+HSC+VinDC+Temp",
+            "PMIC-17+Temp+1",
+            "PMIC-18+Temp+1",
+            "SSD+Temp"
+        ]
 
 
-# -------------------------- RosalindSimx Switch ----------------------------
+# -------------------------- RosalindSims Switch ----------------------------
 
 
-class RosalindSimx(RosalindSwitch):
+class RosalindSimx(RosalindSurrogateSwitch):
 
     def __init__(self):
         super().__init__(asic_amount=1)
@@ -2469,10 +2417,66 @@ class RosalindSimx(RosalindSwitch):
             "asic-model": self.asic_type,
         })
 
+# -------------------------- RosalindChipless Switch ----------------------------
+
+
+class RosalindChipless(RosalindSurrogateSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=0)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+
+        self.nvl_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
+        ]
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = []
+        self.nvl_internal_fnm_ports = []
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="920-9K42W-00L6-SR2")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
     def _init_temperature(self):
         super()._init_temperature()
         self.temperature_sensors = [
-            "ASIC1",
             "CPU-Pack-Temp",
             "Drive-Temp",
             "HSC-VinDC-Temp",
@@ -2495,66 +2499,41 @@ class RosalindSimx(RosalindSwitch):
             "PMIC-15-Temp",
             "PMIC-16-Temp",
             "PMIC-17-Temp",
-            "PMIC-18-Temp"
+            "PMIC-18-Temp",
+            "SODIMM-1-Temp",
+            "SODIMM-2-Temp"
         ]
 
-        self.voltage_sensors = [
-            "PDB-HSC-Volt-In",
-            "PDB-HSC-Volt-Out",
-            "PDB-PwrConv1-In-1",
-            "PDB-PwrConv1-Out-1",
-            "PDB-PwrConv2-In-1",
-            "PDB-PwrConv2-Out-1",
-            "PMIC-1-ASIC1-VDD-Out-1",
-            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
-            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
-            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
-            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
-            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
-            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
-            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
-            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
-            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
-            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
-            "PMIC-5-ASIC2-VDD-Out-1",
-            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
-            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
-            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
-            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
-            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
-            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
-            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
-            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
-            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
-            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
-            "PMIC-9-ASIC3-VDD-Out-1",
-            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
-            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
-            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
-            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
-            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
-            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
-            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
-            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
-            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
-            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
-            "PMIC-13-ASIC4-VDD-Out-1",
-            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
-            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
-            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
-            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
-            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
-            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
-            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
-            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
-            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
-            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
-            "PMIC-17-12V-MAIN-In-1",
-            "PMIC-17-CPU-Out-1",
-            "PMIC-17-SOC-Out-2",
-            "PMIC-18-COMEX-VDD-MEM-In-1",
-            "PMIC-18-COMEX-VDD-MEM-Out-1"
-        ]
+# -------------------------- Rosalind Switch ----------------------------
+
+
+class RosalindSwitch(RosalindSurrogateSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=4)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+
+        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            "product-name": "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+        self.cpld_amount = 2
+        self._extend_firmware_by_cpld_amount()
+        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="920-9K42W-00L6-GS0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
 
 
 # -------------------------- Caiman Switch ----------------------------

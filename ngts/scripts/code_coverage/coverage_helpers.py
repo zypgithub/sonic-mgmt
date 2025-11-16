@@ -22,7 +22,7 @@ def get_dest_path(engine, coverage_path):
     """
     with allure.step("Get nvos version"):
         output = json.loads(engine.run_cmd("nv show system version -o json"))
-        nvos_version = output["version"]
+        nvos_version = output.get("version", output.get("product-release"))
         release = TestToolkit.version_to_release(nvos_version)
         nvos_version = nvos_version.replace("nvos-", "")
 

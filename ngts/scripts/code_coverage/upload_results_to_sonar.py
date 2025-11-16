@@ -1,26 +1,18 @@
-from ast import Return
 import logging
 import os
 import shutil
 import allure
 import pytest
-import requests
-import time
 
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts, SharedConsts
 from ngts.scripts.code_coverage.coverage_helpers import _get_coverage_path_from_target_version, get_dest_path
+from ngts.nvos_tools.infra.JenkinsTool import JenkinsQueryBuilder, JenkinsTool
 
 
-jenkins_url = "https://nbuprod.blsm.nvidia.com/nbu-sws-nos/job/Verification/job/sonar/job"
 python_job_name = "NVOS_Python_upload_results_to_sonar"
 cpp_job_name = "NVOS_C_upload_results_to_sonar"
-user = "yport@nvidia.com"  # NOTE: WILL BE CHANGED TO AUTOMATION USER
-api_token = "114df29f3ccb232c6ddbdf12fdd74945b1"  # NOTE: WILL BE CHANGED TO AUTOMATION USER
-python_job_params = "PROJECT=NVOS-Python&COVERAGE_FOLDER={coverage_folder}&BRANCH={branch}&COMMIT_ID={commit_id}&VERSION=1&MAILING_LIST=yport"
-cpp_job_params = "PROJECT=NVOS_CPP&COVERAGE_FOLDER={coverage_folder}&BRANCH={branch}&COMMIT_ID={commit_id}&VERSION=1&MAILING_LIST=yport"
-status_code_success = 201
 
 
 @pytest.fixture(scope='module')
@@ -51,21 +43,32 @@ def test_upload_results_to_sonar(target_version, results_path):
             commit_id = _get_commit_id(python_results_path)
             logging.info(f"commit id: {commit_id}")
 
+        client = JenkinsTool(project_job_path=SharedConsts.JENKINS_SONAR_PROJECT_PATH)
+        general_job_params = (
+            JenkinsQueryBuilder()
+            .branch(branch_name)
+            .commit_id(commit_id)
+            .version(1)
+            .mailing_list(["yport"])
+        )
+
         with allure.step('Upload python coverage results to sonar'):
-            job_params = python_job_params.format(
-                coverage_folder=python_results_path,
-                branch=branch_name,
-                commit_id=commit_id
+            python_job_params = (
+                general_job_params
+                .project("NVOS-Python")
+                .coverage_folder(python_results_path)
+                .build()
             )
-            trigger_jenkins_job(jenkins_url, python_job_name, job_params)
+            client.trigger_with_query(python_job_name, python_job_params)
 
         with allure.step('Upload cpp coverage results to sonar'):
-            job_params = cpp_job_params.format(
-                coverage_folder=cpp_results_path,
-                branch=branch_name,
-                commit_id=commit_id
+            cpp_job_params = (
+                general_job_params
+                .project("NVOS_CPP")
+                .coverage_folder(cpp_results_path)
+                .build()
             )
-            trigger_jenkins_job(jenkins_url, cpp_job_name, job_params)
+            client.trigger_with_query(cpp_job_name, cpp_job_params)
 
     except Exception as err:
         raise AssertionError(err)
@@ -170,44 +173,3 @@ def _get_commit_id(target_version):
     version_name = _get_version_name(target_version)
     branch_name = _get_branch_name(target_version)
     return branch_name + "_" + version_name
-
-
-def trigger_jenkins_job(jenkins_url, job_name, job_params):
-    """
-    Trigger a Jenkins job with the specified parameters.
-
-    Args:
-        jenkins_url: Base Jenkins URL
-        job_name: Name of the Jenkins job
-        job_params: Formatted job parameters string
-    """
-    from urllib.parse import urlencode, parse_qs
-
-    logging.info(f"Original Jenkins parameters: {job_params}")
-
-    # Parse the parameters and fix any issues
-    params_dict = parse_qs(job_params)
-
-    # Clean up the parameters (remove lists, fix paths)
-    clean_params = {}
-    for key, value_list in params_dict.items():
-        value = value_list[0] if value_list else ""
-        # Fix double slashes in paths
-        if 'COVERAGE_FOLDER' in key:
-            value = value.replace('//', '/')
-        clean_params[key] = value
-
-    logging.info(f"Cleaned parameters: {clean_params}")
-
-    # Trigger the Jenkins job with proper URL encoding
-    response = requests.post(
-        f"{jenkins_url}/{job_name}/buildWithParameters",
-        params=clean_params,  # Use params instead of data for Jenkins
-        auth=(user, api_token),
-        headers={'Content-Type': 'application/x-www-form-urlencoded'}
-    )
-    logging.info(f"Jenkins job triggered successfully: {response.status_code}")
-
-    if response.status_code != status_code_success:
-        logging.error(f"Jenkins response: {response.text}")
-        raise Exception(f"Failed to trigger Jenkins job. Status code: {response.status_code}")

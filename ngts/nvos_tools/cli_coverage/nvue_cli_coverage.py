@@ -191,6 +191,21 @@ class NVUECliCoverage:
             if re_cli.match(cmd):
                 cls.last_matched_command_index = i
                 return cli
+        # choose the closest command by similarity scoring
+        try:
+            cmd_tokens = cls._tokenize(cmd)
+            best_score = None
+            best_cli = ''
+            for cli, _, _, _ in full_list:
+                score_tuple = cls._score_cli_similarity(cmd_tokens, cli)
+                if best_score is None or score_tuple > best_score:
+                    best_score = score_tuple
+                    best_cli = cli
+            if not best_score or best_score[1] == 0:
+                return ''
+            return best_cli
+        except Exception as exc:
+            logging.debug(f"normalize_nvue_command similarity failed: {exc}")
         return ''
 
     @classmethod
@@ -207,6 +222,114 @@ class NVUECliCoverage:
             logging.error('got exception during build_regex to the command {}\n'
                           'The regex we got:{} \n The error msg: {}'.format(command, command_regex, e))
             return ''
+
+    @classmethod
+    def _tokenize(cls, text):
+        return [t for t in cls.re_nvue_space.split(text.strip()) if t]
+
+    @classmethod
+    def _is_placeholder(cls, token):
+        # <value>, (on|off) or 0-65535 patterns
+        return bool(re.match(r'^<[^>]+>$', token) or re.match(r'^\([^\)]+\)$', token) or re.match(r'^\d+-\d+$', token))
+
+    @classmethod
+    def _extract_optional_groups(cls, command):
+        """
+        Return (required_part_str, [list of optional group strings]) while allowing spaces inside [ ... ]
+        """
+        groups = []
+        required_chars = []
+        i = 0
+        n = len(command)
+        while i < n:
+            ch = command[i]
+            if ch == '[':
+                j = i + 1
+                depth = 1
+                while j < n and depth > 0:
+                    if command[j] == '[':
+                        depth += 1
+                    elif command[j] == ']':
+                        depth -= 1
+                    j += 1
+                # content is between i+1 and j-1
+                if depth == 0:
+                    content = command[i + 1:j - 1].strip()
+                    if content:
+                        groups.append(content)
+                i = j
+                # add a single space to keep spacing reasonable
+                if required_chars and required_chars[-1] != ' ':
+                    required_chars.append(' ')
+            else:
+                required_chars.append(ch)
+                i += 1
+        required_str = ''.join(required_chars)
+        # collapse excessive spaces
+        required_str = cls.re_nvue_space.sub(' ', required_str).strip()
+        return required_str, groups
+
+    @classmethod
+    def _score_cli_similarity(cls, cmd_tokens, cli):
+        """
+        Score similarity between the user command tokens and a CLI template string.
+        Returns a tuple suitable for max() comparison.
+        Tuple ordering: (all_required_matched:int, matched_required:int, optional_matched:int, -required_len:int)
+        """
+        required_str, opt_groups = cls._extract_optional_groups(cli)
+        required_tokens = cls._tokenize(required_str)
+        optional_group_tokens = [cls._tokenize(g) for g in opt_groups]
+
+        # Enforce fixed prefix match: all non-placeholder tokens at the start must match the input start
+        fixed_prefix = []
+        for tok in required_tokens:
+            if cls._is_placeholder(tok):
+                break
+            fixed_prefix.append(tok)
+        if len(cmd_tokens) < len(fixed_prefix) or any(cmd_tokens[i] != fixed_prefix[i] for i in range(len(fixed_prefix))):
+            return (0, 0, 0, -len(required_tokens))
+
+        # Match required tokens contiguously from start
+        i = 0
+        j = 0
+        matched_required = 0
+        while i < len(required_tokens) and j < len(cmd_tokens):
+            rt = required_tokens[i]
+            ct = cmd_tokens[j]
+            if cls._is_placeholder(rt) or rt == ct:
+                matched_required += 1
+                i += 1
+                j += 1
+            else:
+                break
+        all_required_matched = 1 if i == len(required_tokens) else 0
+
+        # Count optional groups matched anywhere in the command tokens
+        optional_matched = 0
+        for group in optional_group_tokens:
+            if not group:
+                continue
+            if cls._sequence_exists(cmd_tokens, group):
+                optional_matched += len(group)
+
+        return (all_required_matched, matched_required, optional_matched, -len(required_tokens))
+
+    @classmethod
+    def _sequence_exists(cls, tokens, pattern_tokens):
+        """
+        Check if pattern_tokens appear contiguously in tokens, supporting placeholders in the pattern.
+        """
+        if len(pattern_tokens) == 0:
+            return True
+        for start in range(0, len(tokens) - len(pattern_tokens) + 1):
+            ok = True
+            for k, pt in enumerate(pattern_tokens):
+                if not (cls._is_placeholder(pt) or tokens[start + k] == pt):
+                    ok = False
+                    break
+            if ok:
+                return True
+        return False
 
     @classmethod
     def get_module_and_classification(cls, command):

@@ -309,6 +309,7 @@ def test_general_auto_save(engines, devices, test_api):
             eth0_port.interface.set(NvosConst.DESCRIPTION, new_eth0_description, apply=True).verify_result()
 
         with allure.step("Verify description is set"):
+            time.sleep(1)
             output = TestToolkit.GeneralApi[test_api].show_config(engine=engines.dut, revision='startup')
             assert new_eth0_description in output, "Expected to have new description field after set command, but we do not have it."
 

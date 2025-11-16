@@ -123,34 +123,44 @@ class TrafficGeneratorTool:
             logger.info(f'Could not bring-up traffic containers, {NvosConst.HOST_HA} and {NvosConst.HOST_HB} '
                         f'were not found in engines')
 
-    @staticmethod
-    def start_ping_multiple_ips(host, ip_list):
+    def start_ping_multiple_ips(self, host, ip_list):
+        with allure.step("Stop any ping if it is already running on host"):
+            self.stop_command_run_on_host(host, 'ping')
+
         with allure.step('Start pinging multiple ip addresses'):
             for ip in ip_list:
-                host.run_cmd(f'ping {ip} &')
+                host.run_cmd(f"nohup ping {ip} > {ip}_ping_output.txt 2>&1 & echo $!")
 
-    @staticmethod
-    def stop_ping_multiple_ips(host):
+    def stop_ping_multiple_ips(self, host, ip_list):
         with allure.step('Stop pinging jobs and verify no packet loss'):
-            running_jobs = host.run_cmd('jobs -l').split('[')
+            self.stop_command_run_on_host(host, 'ping')
+
+        with allure.step('Get pings info'):
             ping_outputs = []
-
-            for job in running_jobs:
-                if "Running" in job:
-                    job_id = job.split(' ')[1]
-                    output = host.run_cmd(f'kill -SIGINT {job_id}')
-                    time.sleep(5)
-                    ping_outputs.append(output)
-
-            assert len(ping_outputs) > 0, 'No running jobs found'
+            for ip in ip_list:
+                ping_outputs.append(host.run_cmd(f'grep "% packet loss" {ip}_ping_output.txt'))
+                host.run_cmd(f'rm -f {ip}_ping_output.txt')
 
         return ping_outputs
 
     @staticmethod
     def start_traffic_between_2_hosts(host_a, host_b, traffic_duration, server_output, client_output):
         with allure.step('start send traffic from Host A to Host B'):
-            ha_device = host_a.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()[0]
-            hb_device = host_b.run_cmd(IbConsts.IB_DEV_2_NET_DEV).split()[0]
+            # Get device info from host_a and verify interface is Up
+            ha_output = host_a.run_cmd(IbConsts.IB_DEV_2_NET_DEV)
+            ha_device = ha_output.split()[0]
+            assert '(Up)' in ha_output, (f"Host A interface is not Up. "
+                                         f"ibdev2netdev output: {ha_output}")
+
+            # Get device info from host_b and verify interface is Up
+            hb_output = host_b.run_cmd(IbConsts.IB_DEV_2_NET_DEV)
+            hb_device = hb_output.split()[0]
+            assert '(Up)' in hb_output, (f"Host B interface is not Up. "
+                                         f"ibdev2netdev output: {hb_output}")
+
+            logger.info(f"Host A device: {ha_device} is Up")
+            logger.info(f"Host B device: {hb_device} is Up")
+
             host_a.run_cmd(IbConsts.IB_SEND_LAT_SERVER.format(traffic_duration=traffic_duration, ib_device=ha_device,
                                                               server_output=server_output))
             host_b.run_cmd(IbConsts.IB_SEND_LAT_CLIENT.format(traffic_duration=traffic_duration, server_ip=host_a.ip,
@@ -160,17 +170,18 @@ class TrafficGeneratorTool:
         logger.info(f"start traffic time: {start_time}")
         return start_time
 
-    @staticmethod
-    def stop_traffic_between_2_hosts(host_a, host_b, traffic_start_time, traffic_timeout, server_file, client_file):
+    def stop_traffic_between_2_hosts(self, host_a, host_b, traffic_start_time, traffic_timeout, server_file, client_file):
         with allure.step('Verify traffic results from Host A to Host B'):
-            job_server = host_a.run_cmd(IbConsts.GET_JOB_IB)
-            job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
-            assert job_server and job_client, (f"Traffic client and/or traffic server not exist. "
-                                               f"job client: {job_client}, job server: {job_server}")
+            job_server = self.check_command_id_on_host(host_a, 'ib_send_lat')
+            job_client = self.check_command_id_on_host(host_b, 'ib_send_lat')
+            assert job_server and job_client, (f"Traffic client and/or traffic server do not exist. "
+                                               f"job client: {job_client}, job server: {job_server}\n,"
+                                               f"traffic time: {time.time() - traffic_start_time}, "
+                                               f"traffic timeout: {traffic_timeout}")
             with allure.step('Wait for traffic send completion'):
                 while True:
-                    job_server = host_a.run_cmd(IbConsts.GET_JOB_IB)
-                    job_client = host_b.run_cmd(IbConsts.GET_JOB_IB)
+                    job_server = self.check_command_id_on_host(host_a, 'ib_send_lat')
+                    job_client = self.check_command_id_on_host(host_b, 'ib_send_lat')
                     time_diff = time.time() - traffic_start_time
                     if not (job_server or job_client):
                         logger.info(f"Traffic is done, diff time: {time_diff}")
@@ -202,36 +213,63 @@ class TrafficGeneratorTool:
                                                                 f"Number of iterations received: {server_iterations}")
         return server_iterations
 
-    @staticmethod
-    def start_ibping_between_2_hosts(host_a, host_b):
+    def start_ibping_between_2_hosts(self, host_a, host_b, server_file, client_file):
         with allure.step("Stop ibping if it is already running - on both hosts"):
             hosts = [host_a, host_b]
             for host in hosts:
-                with allure.step(f"Check if ibping is already running on {host}"):
-                    output = host.run_cmd(f"ps aux | grep ibping")
-                    lines = [line for line in output.split('\n') if 'grep' not in line]
-                    if lines:
-                        with allure.step(f"Stop ibping on {host}"):
-                            process_ids = [line.split()[1] for line in lines]
-                            cmd = "sudo kill -9"
-                            for process_id in process_ids:
-                                cmd += f" {process_id}"
-                            host.run_cmd(cmd)
+                self.stop_command_run_on_host(host, 'ibping')
 
         with allure.step('start ibping from Host A to Host B'):
             host_a_lid = host_a.run_cmd(IbConsts.BASE_LID).split()[-1]
-            host_a.run_cmd('ibping -S &')
-            host_b.run_cmd(f'ibping -L {host_a_lid} &')
+            host_a.run_cmd(f"nohup ibping -S > {server_file} 2>&1 & echo $!")
+            host_b.run_cmd(f"nohup ibping -L {host_a_lid} > {client_file} 2>&1 & echo $!")
+
+    def stop_ibping_between_2_hosts(self, host_a, host_b, server_file, client_file):
+        with allure.step('Stop pinging from Host A to Host B and verify results'):
+            with allure.step(f"Stop ibping running on client"):
+                self.stop_command_run_on_host(host_b, 'ibping', True)
+
+            with allure.step(f"Stop ibping running on server"):
+                self.stop_command_run_on_host(host_a, 'ibping', True)
+
+            with allure.step(f"Verify the traffic has no packet loss"):
+                cmd = f'grep "% packet loss" {client_file}'
+                ping_output = host_b.run_cmd(cmd)
+
+                # clear log files
+                host_a.run_cmd(f'rm -f {server_file}')
+                host_b.run_cmd(f'rm -f {client_file}')
+
+                if ping_output:
+                    assert "0% packet loss" in ping_output, f'{ping_output}'
+                    num_of_packets = ping_output.split(" ")[0]
+                else:
+                    assert False, "Traffic information is missing"
+
+            return num_of_packets
 
     @staticmethod
-    def stop_ibping_between_2_hosts(host_a, host_b):
-        with allure.step('Stop pinging from Host A to Host B and verify results'):
-            job_server = host_a.run_cmd('jobs -l').split(' ')[1]
-            job_sender = host_b.run_cmd('jobs -l').split(' ')[1]
+    def stop_command_run_on_host(host, command, check_one=False):
+        with allure.step(f"Check if {command} is already running on host"):
+            output = host.run_cmd(f"ps aux | grep {command}")
+            lines = [line for line in output.split('\n') if 'grep' not in line]
+            if check_one:
+                assert len(lines) == 1, f"There is more than 1 {command} job on client side {len(lines)}"
+            if lines:
+                with allure.step(f"Stop ibping on {host}"):
+                    process_ids = [line.split()[1] for line in lines]
+                    cmd = "sudo kill -SIGINT"
+                    for process_id in process_ids:
+                        cmd += f" {process_id}"
+                    host.run_cmd(cmd)
 
-            ping_output = host_b.run_cmd(f'kill -SIGINT {job_sender}')
-            num_of_packets = ping_output.split(" ")[0]
-            host_a.run_cmd(f'kill -SIGINT {job_server}')
-            assert "0% packet loss" in ping_output, f'{ping_output}'
-
-        return num_of_packets
+    @staticmethod
+    def check_command_id_on_host(host, command):
+        with allure.step(f"Check if {command} is already running on host"):
+            output = host.run_cmd(f"ps aux | grep {command}")
+            lines = [line for line in output.split('\n') if 'grep' not in line]
+            assert len(lines) <= 1, f"It should be up to 1 {command} job on client side, but found {len(lines)} jobs"
+            if lines:
+                return lines[0].split()[1]
+            else:
+                return ''

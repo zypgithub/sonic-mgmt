@@ -4,7 +4,7 @@ import pytest
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, ImageConsts
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
@@ -39,13 +39,9 @@ def test_set_system_dns_server(engines, test_api):
     TestToolkit.tested_api = test_api
     dns_server_id = SystemConsts.DNS_SERVER_IDS["ipv4"]
     system = System()
-    if test_api == ApiType.OPENAPI:
-        dns_server_id_param_value = {dns_server_id: {}}
-    else:
-        dns_server_id_param_value = dns_server_id
     try:
         with allure.step('Run set system dns server <server-id>command and apply config'):
-            system.dns.set(SystemConsts.DNS_SERVER, dns_server_id_param_value, apply=True, dut_engine=engines.dut)
+            system.dns.set(SystemConsts.DNS_SERVER, dns_server_id, apply=True, dut_engine=engines.dut)
 
         with allure.step('Verify DNS server in show system dns server output'):
             dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
@@ -61,7 +57,7 @@ def test_set_system_dns_server(engines, test_api):
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.parametrize('dns_server_id', SystemConsts.DNS_SERVER_LIST)
-def test_set_system_dns_functionality(engines, test_api, release_name, dns_server_id):
+def test_set_system_dns_functionality(engines, test_api, base_version, dns_server_id):
     """
     Run set system dns server command and verify in show command
         1. Attempt a file fetch from a build server and verify it is successful
@@ -72,42 +68,21 @@ def test_set_system_dns_functionality(engines, test_api, release_name, dns_serve
 
     """
     TestToolkit.tested_api = test_api
-    release_name = "25.01.4000"
     system = System()
-    if test_api == ApiType.OPENAPI:
-        dns_server_id_param_value = {dns_server_id: {}}
-    else:
-        dns_server_id_param_value = dns_server_id
     try:
         verify_dns_in_resolv_file(engines, [dns_server_id], is_present=False)
 
-        with allure.step(f"Update path with provided release name: {release_name}"):
-            global BASE_IMAGE_VERSION_TO_INSTALL
-            BASE_IMAGE_VERSION_TO_INSTALL = BASE_IMAGE_VERSION_TO_INSTALL.format(pre_release_name=release_name)
-            logger.info(f"base image name: {BASE_IMAGE_VERSION_TO_INSTALL}")
-
-            global BASE_IMAGE_VERSION_TO_INSTALL_PATH
-            BASE_IMAGE_VERSION_TO_INSTALL_PATH = BASE_IMAGE_VERSION_TO_INSTALL_PATH.format(
-                pre_release_name=release_name,
-                base_image=BASE_IMAGE_VERSION_TO_INSTALL)
-
-        with allure.step("Fetch the image"):
-            scp_path = 'scp://{}:{}@{}'.format("root", "3tango", "fit-build-240")
-
-            with allure.step("Fetch an image {}".format(scp_path + BASE_IMAGE_VERSION_TO_INSTALL_PATH)):
-                system.image.action_fetch(BASE_IMAGE_VERSION_TO_INSTALL_PATH, base_url=scp_path)
+        with allure.step("Fetch an image {}".format(base_version)):
+            system.image.action_fetch(path=base_version)
 
         with allure.step('Run set system dns server <server-id>command and apply config'):
-            system.dns.set(SystemConsts.DNS_SERVER, dns_server_id_param_value,
+            system.dns.set(SystemConsts.DNS_SERVER, dns_server_id,
                            apply=True, dut_engine=engines.dut).verify_result()
 
         verify_dns_in_resolv_file(engines, [dns_server_id])
 
         with allure.step("Attempt fetching the image which should fail"):
-            scp_path = 'scp://{}:{}@{}'.format("root", "3tango", "fit-build-240")
-            with allure.step("Fetch an image {}".format(scp_path + BASE_IMAGE_VERSION_TO_INSTALL_PATH)):
-                result = system.image.action_fetch(BASE_IMAGE_VERSION_TO_INSTALL_PATH, base_url=scp_path)
-                result.verify_result(should_succeed=False, expected_value="Failed to create file")
+            system.image.action_fetch(path=base_version, expected_output='Failed to create file').verify_result(False)
 
     finally:
         clear_system_dns(system, engines)
@@ -528,6 +503,85 @@ def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
 
         with allure.step("Verify operation time"):
             OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory).verify_result()
+
+
+@pytest.mark.dns
+@pytest.mark.system
+def test_set_system_dns_server_max_limit(engines, random_api):
+    """
+    Run set system dns server command and verify maximum DNS servers limit
+        1. Configure MAX_DNS_SERVERS (3) DNS servers without applying
+        2. Apply config and verify all servers are configured successfully
+        3. Check 'nv show system dns server' and validate all MAX_DNS_SERVERS are present
+        4. Verify contents of resolv.conf file that it has all DNS servers listed
+        5. Attempt to set one more DNS server beyond the limit
+        6. Verify error is returned indicating max DNS server limit is exceeded
+        7. Check 'nv show system dns server' and validate only MAX_DNS_SERVERS are configured
+        8. Verify resolv.conf file still contains only the original MAX_DNS_SERVERS
+
+    """
+    system = System()
+    max_dns_servers = SystemConsts.MAX_DNS_SERVERS
+    base_ip = "10.64.5"
+
+    # Generate DNS server IPs based on MAX_DNS_SERVERS constant
+    dns_servers = [f"{base_ip}.{5 + i}" for i in range(max_dns_servers)]
+    dns_server_beyond_limit = f"{base_ip}.{5 + max_dns_servers}"
+
+    try:
+        # Configure MAX_DNS_SERVERS DNS servers
+        for idx, dns_server in enumerate(dns_servers):
+            # Apply config only on the last server
+            apply_config = (idx == max_dns_servers - 1)
+            step_suffix = " and apply config" if apply_config else ""
+
+            with allure.step(f'Run set system dns server {dns_server} command{step_suffix}'):
+                system.dns.set(op_param_name=SystemConsts.DNS_SERVER,
+                               op_param_value=dns_server,
+                               apply=apply_config,
+                               dut_engine=engines.dut).verify_result()
+
+        with allure.step(f'Verify all {max_dns_servers} configured DNS servers in show system dns server output'):
+            dns_output = OutputParsingTool.parse_json_str_to_dictionary(
+                system.dns.show(SystemConsts.DNS_SERVER)).get_returned_value()
+
+            assert len(dns_output) == max_dns_servers, \
+                f"Expected {max_dns_servers} DNS servers, but found {len(dns_output)}"
+
+            for dns_server in dns_servers:
+                assert dns_server in dns_output, \
+                    f"The configured DNS server {dns_server} is not present in show system dns"
+
+        with allure.step(f'Verify all {max_dns_servers} DNS servers are present in resolv.conf'):
+            verify_dns_in_resolv_file(engines, dns_servers)
+
+        with allure.step(f'Run set system dns server {dns_server_beyond_limit} and verify max limit error'):
+            system.dns.set(op_param_name=SystemConsts.DNS_SERVER,
+                           op_param_value=dns_server_beyond_limit,
+                           apply=True,
+                           dut_engine=engines.dut).verify_result(should_succeed=False,
+                                                                 expected_value=f"The maximum number {max_dns_servers} of DNS servers exceeded")
+
+        with allure.step(f'Verify only {max_dns_servers} DNS servers remain in show system dns server output'):
+            dns_output = OutputParsingTool.parse_json_str_to_dictionary(
+                system.dns.show(SystemConsts.DNS_SERVER)).get_returned_value()
+
+            assert len(dns_output) == max_dns_servers, \
+                f"Expected {max_dns_servers} DNS servers, but found {len(dns_output)}"
+
+            for dns_server in dns_servers:
+                assert dns_server in dns_output, \
+                    f"The configured DNS server {dns_server} is not present in show system dns"
+
+            assert dns_server_beyond_limit not in dns_output, \
+                f"The DNS server {dns_server_beyond_limit} should not be present in show system dns"
+
+        with allure.step(f'Verify resolv.conf still contains only {max_dns_servers} DNS servers'):
+            verify_dns_in_resolv_file(engines, dns_servers)
+            verify_dns_in_resolv_file(engines, [dns_server_beyond_limit], is_present=False)
+
+    finally:
+        clear_system_dns(system, engines)
 
 
 def verify_dns_in_resolv_file(engines, dns_server_id_list, is_present=True):

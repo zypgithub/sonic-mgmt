@@ -36,32 +36,20 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
         component_name = 'bios'
 
     platform_firmware_bios_helpers.verify_current_version(original_version, system)
-    try:
+    platform_firmware_bios_helpers.verify_bios_auto_update_value(platform, NvosConst.DISABLED)
+    path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
+    res_obj = platform_firmware_bios_helpers.fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
+                                                                    topology_obj=topology_obj, test_name=test_name)
+    with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
+        OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
 
-        platform_firmware_bios_helpers.verify_bios_auto_update_value(platform, NvosConst.ENABLED)
-        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
-                                   op_param_value=NvosConst.DISABLED, apply=True).verify_result()
-        platform_firmware_bios_helpers.verify_bios_auto_update_value(platform, NvosConst.DISABLED)
-        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
-        path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
-        res_obj = platform_firmware_bios_helpers.fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
-                                                                        topology_obj=topology_obj, test_name=test_name)
-        with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
+    platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
 
-        platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
+    with allure.step(f'reboot with BIOS version {version_name=}'):
+        res, duration = OperationTime.save_duration(f'reboot with BIOS {version_name}', '',
+                                                    test_name, system.reboot.action_reboot, topology_obj=topology_obj)
 
-        with allure.step(f'reboot with BIOS version {version_name=}'):
-            res, duration = OperationTime.save_duration(f'reboot with BIOS {version_name}', '',
-                                                        test_name, system.reboot.action_reboot, topology_obj=topology_obj)
-
-        platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
-
-    finally:
-        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
-                                   op_param_value=NvosConst.ENABLED, apply=True).verify_result()
-        platform_firmware_bios_helpers.verify_bios_auto_update_value(platform, NvosConst.ENABLED)
-        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
+    platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
 
 
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
@@ -83,8 +71,10 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
         path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component_name)
 
     try:
-        platform_firmware_bios_helpers.verify_current_version(original_version, system)
+        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
+                                   op_param_value=NvosConst.ENABLED, apply=True).verify_result()
         platform_firmware_bios_helpers.verify_bios_auto_update_value(platform, NvosConst.ENABLED)
+        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
 
         if platform_firmware_bios_helpers.get_bios_version(platform) != version_name:
             platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE,
@@ -97,9 +87,6 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
                 OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
             platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
     finally:
-        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.ENABLED,
-                                   apply=True).verify_result()
-        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)
         with allure.step(f'Installation and reboot with latest BIOS version '):
             res, _ = OperationTime.save_duration(f'install BIOS 006', '',
                                                  test_name, system.reboot.action_reboot, topology_obj=topology_obj, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_BIOS_INSTALL)
@@ -109,3 +96,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
 
         with allure.step('Verify operation time'):
             OperationTime.verify_operation_time(res.duration, 'install bios').verify_result()
+
+        platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.DISABLED,
+                                   apply=True).verify_result()
+        TestToolkit.GeneralApi[test_api].save_config(engine=engines.dut)

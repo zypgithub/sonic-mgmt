@@ -40,6 +40,7 @@ from ngts.nvos_tools.system.Syslog import Syslog
 from ngts.nvos_tools.system.Techsupport import TechSupport
 from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
+from ngts.nvos_tools.system.Dns import Dns
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -69,7 +70,7 @@ class System(BaseComponent):
         self.message = BaseComponent(self, path='/message')
         self.version = Version(self)
         self.events = Events(self)
-        self.dns = BaseComponent(self, path='/dns')
+        self.dns = Dns(self)
         self.reboot = Reboot(self)
         self.factory_default = FactoryDefault(self)
         self.profile = Profile(self)
@@ -125,8 +126,7 @@ class System(BaseComponent):
             end_time = time.time()
             duration = end_time - start_time
 
-            with allure.step(f"Reboot and system is ready takes {duration} seconds"):
-                pass
+            logger.info(f"Reboot and system is ready takes {duration} seconds")
 
             if pytest.is_sanitizer:
                 dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)

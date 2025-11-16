@@ -314,11 +314,9 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             assert not res.result or "is not a" in res.returned_value, \
                 "The operation succeeded while it is expected to fail"
 
-        with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-            res = mgmt_port.interface.ipv4.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
-            res.ignore_result()
-            assert not res.result or "is not a" in res.returned_value, \
-                "The operation succeeded while it is expected to fail"
+        with allure.step(f'Delete ipv4 address for {mgmt_port_name} using 0.0.0.0/0 and expect failure'):
+            mgmt_port.interface.ipv4.address.set(op_param_name='0.0.0.0/0', apply=True).verify_result(False, "is not a valid interface IP address")
+            NvueGeneralCli.detach_config(engines.dut)
 
         with allure.step('Disable dhcp, check mgmt port unreachable'):
             serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))

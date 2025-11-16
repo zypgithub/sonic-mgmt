@@ -160,10 +160,10 @@ def test_install_transceiver_firmware_positive(engines, devices, random_api, tes
         try:
             with allure.independent_step("fetch and downgrade transceiver firmware"):
                 platform.firmware.transceiver.action_fetch(downgrade_version_path, base_url=scp_path).verify_result()
-                result_obj, duration = OperationTime.save_duration("transceiver firmware installation",
-                                                                   random_transceiver, test_name, platform.transceiver.action_install,
+                result_obj, duration = OperationTime.save_duration(f"transceiver firmware downgrade to {transceiver_obj.downgrade_version_number}",
+                                                                   '', test_name, platform.transceiver.action_install,
                                                                    random_transceiver, transceiver_obj.downgrade_version_name)
-                OperationTime.verify_operation_time(duration, "transceiver firmware installation", transceiver_obj.installation_time).verify_result()
+                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", transceiver_obj.installation_time).verify_result()
 
             with allure.step("run {} show link command".format(random_port)):
                 show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(
@@ -180,7 +180,10 @@ def test_install_transceiver_firmware_positive(engines, devices, random_api, tes
         finally:
             with allure.independent_step("fetch and upgrade transceiver firmware"):
                 platform.firmware.transceiver.action_fetch(upgrade_version_path, base_url=scp_path).verify_result()
-                platform.transceiver.action_install(random_transceiver, transceiver_obj.upgrade_version_name).verify_result()
+                result_obj, duration = OperationTime.save_duration(f"transceiver firmware upgrade to {transceiver_obj.upgrade_version_number}",
+                                                                   '', test_name, platform.transceiver.action_install,
+                                                                   random_transceiver, transceiver_obj.upgrade_version_name)
+                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", transceiver_obj.installation_time).verify_result()
 
 
 @pytest.mark.platform
@@ -343,7 +346,7 @@ def _get_random_optical_module_transceiver():
                 random_transceiver = random_transceiver.verify_result()[0]
 
             if IbInterfaceConsts.FNM_PORT_TYPE in random_transceiver:
-                return platform, random_transceiver, random_transceiver + random_transceiver
+                return platform, random_transceiver, random_transceiver
 
             temp = _get_ports_for_module(random_transceiver)
             random_port_name = random.choice(temp)

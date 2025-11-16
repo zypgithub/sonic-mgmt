@@ -1699,6 +1699,7 @@
     - Affected_test_cases:
       - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors[fan_err_direction]
       - tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_direction_mismatch
+      - tests_nvos/platform/test_platform_environment.py::test_platform_environment_events_performance
 
 # NVOS
 - Errors_list:
@@ -2188,4 +2189,12 @@
     - Affected_test_cases:
         - tests_nvos/cluster/test_start_stop_cluster.py
 
+- Errors_list:
+    - '.*ERR pmon#thermalctld: Failed to read from file \/var\/run\/hw-management\/thermal\/fan.*'
+    - '.*WARNING pmon#thermalctld: Fan fault warning: fan(\d+) is not working.*'
+    - '.*WARNING pmon#thermalctld: Insufficient number of working fans.*'
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led
 # --------------------------------------------------

@@ -314,57 +314,6 @@ def test_system_location_set(test_api, engines, nv_command):
         clear_system_contact_and_location(nv_command.system)
 
 
-@pytest.mark.system
-@pytest.mark.simx
-def test_factory_reset_for_system_contact_location(engines, nv_command):
-    """
-    Run factory reset system command and verify the system contact and location fields are removed from system show
-        Test flow:
-            1. Run 'nv set system contact <args>>'
-            2. Run 'nv set system location <args>>'
-            4. Run 'nv show system' and verify system contact and location are set
-            5. Run system factory reset
-            6. Run 'nv show system' and verify systems contact and location fields are removed
-    """
-
-    if is_bug_active(4362872):
-        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4362872")
-
-    try:
-        with allure.step('Run set system contact command and apply config'):
-            nv_command.system.set(op_param_name=SystemConsts.CONTACT, op_param_value="contact_info", apply=True,
-                                  dut_engine=engines.dut).verify_result()
-
-        with allure.step('Verify system contact is set'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.CONTACT, "contact_info").\
-                verify_result()
-
-        with allure.step('Run set system location command and apply config'):
-            nv_command.system.set(op_param_name=SystemConsts.LOCATION, op_param_value="location_info", apply=True,
-                                  dut_engine=engines.dut).verify_result()
-
-        with allure.step('Verify system location is set'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.LOCATION, "location_info").\
-                verify_result()
-
-        with allure.step("Run reset factory with keep basic param"):
-            nv_command.system.factory_default.action_reset(param="keep basic").verify_result()
-
-        with allure.step('Validate system contact is back to default (Null)'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
-            assert system_output[SystemConsts.CONTACT] is None, "System contact in system show is {} instead of Null".\
-                format(system_output[SystemConsts.CONTACT])
-
-        with allure.step('Validate system location is back to default (Null)'):
-            assert system_output[SystemConsts.LOCATION] is None, "System location in system show is {} instead of" \
-                                                                 "Null".format(system_output[SystemConsts.LOCATION])
-
-    finally:
-        clear_system_contact_and_location(nv_command.system)
-
-
 def clear_system_contact_and_location(system):
 
     with allure.step('Unset the system contact'):

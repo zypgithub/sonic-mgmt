@@ -9,6 +9,15 @@ class SharedConsts:
     SONIC_SOURCES_PATH = ['/src/sonic_src_cov.tar.gz']
     C_DIR = "/c_coverage/"
     PYTHON_DIR = "/python_coverage/"
+    JENKINS_SONAR_PROJECT_PATH = "/nbu-sws-nos/job/Verification/job/sonar/job"
+    JENKINS_CLI_COVERAGE_HIT_LIST_PATH = "/nbu-sw-da/job"
+    JENKINS_BASE_URL = "https://nbuprod.blsm.nvidia.com/"
+    JENKINS_USER = 'yport@nvidia.com'  # NOTE: WILL BE CHANGED TO AUTOMATION USER
+    JENKINS_API_TOKEN = '114df29f3ccb232c6ddbdf12fdd74945b1'  # NOTE: WILL BE CHANGED TO AUTOMATION USER
+    JENKINS_USER_CLI_COVERAGE = 'aromashin@nvidia.com'  # NOTE: WILL BE CHANGED TO AUTOMATION USER
+    JENKINS_TOKEN_CLI_COVERAGE = '1172ca0025d28aba2ec27834abd39c0ef1'  # NOTE: WILL BE CHANGED TO AUTOMATION USER
+    HIT_LIST_JOB_NAME = "nvos_load_hits_list"
+    HIT_LIST_SPECIAL_TOKEN = 'SASHA_HIT_LIST'
 
 
 class NvosConsts:
@@ -97,6 +106,10 @@ class NvosConsts:
     DEST_PATH = "/auto/sw_system_project/NVOS_INFRA/coverage/"
     JSON_PATH_DOCKER = "/sonic/full-report.json"
     GCOV_JSON_FILE_PATTERN = "/sonic/{gcov_filename_prefix}-{container}.json"
+    COVERAGE_SCRIPT_PATH = "/usr/local/bin/nvos_coverage.sh"
+    COVERAGE_SCRIPT_STAGE1 = "stage1"
+    COVERAGE_SCRIPT_STAGE2 = "stage2"
+    COVERAGE_OUTPUT_ON_SWITCH = "/sonic/coverage"
 
 
 class SonicConsts:

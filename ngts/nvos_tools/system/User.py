@@ -25,6 +25,11 @@ class User(BaseComponent):
         return OutputParsingTool.parse_lslogins_cmd(
             engine.run_cmd('lslogins {username}'.format(username=username))).get_returned_value()
 
+    @staticmethod
+    def get_ssh_session_count(engine, username) -> int:
+        output = engine.run_cmd(f'who | grep {username} | wc -l')
+        return int(output.strip())
+
     def set_new_user(self, username=None, password=None, role=None, engine=None, apply=False):
         username = username if username else User.generate_username()
         password = password if password else generate_strong_password()

@@ -510,7 +510,7 @@ class SystemConsts:
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
                                              'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock']
 
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json']
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -608,6 +608,7 @@ class SystemConsts:
     SERIAL_CONSOLE_OUTPUT_BMC = 'bmc'
     SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_FIELD = [SERIAL_CONSOLE_CONNECTED_TO]
     SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_VALUE = [SERIAL_CONSOLE_OUTPUT_CPU]
+    SERIAL_CONSOLE_BAUD_RATE = "115200"
 
     HOSTNAME_DEFAULT_VALUE = 'nvos'
     POST_LOGOUT_MESSAGE_DEFAULT_VALUE = ""
@@ -813,6 +814,7 @@ class SystemConsts:
     DNS_SERVER_LIST = [DNS_SERVER_IPV4, DNS_SERVER_IPV6]
     # list of all api types
     DNS_SERVER_IDS = {"ipv4": DNS_SERVER_IPV4, "ipv6": DNS_SERVER_IPV6}
+    MAX_DNS_SERVERS = 3
 
     DUMMY_IMAGE_PATH = '/tmp/'
     DUMMY_IMAGE = 'dummy.bin'
@@ -1228,10 +1230,11 @@ class IbConsts:
     IBSWITCHES = 'ibswitches'
     BASE_LID = 'ibstat | grep "Base lid"'
     MAX_NUM_OF_BYTES = '8388608'
-    IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
-                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' &')
-    IB_SEND_LAT_CLIENT = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
-                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' + '{client_output}' + ' &')
+    IB_SEND_LAT_SERVER = ('nohup ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' 2>&1 & echo $!')
+    IB_SEND_LAT_CLIENT = ('nohup ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' +
+                          '{client_output}' + ' 2>&1 & echo $!')
     GET_JOB_IB = 'jobs -l'
 
 
@@ -1781,6 +1784,7 @@ class OperationTimeConsts:
                   ActionConsts.POWER_CYCLE: 360,
                   'juliet-power-cycle': 330,
                   'users disconnection by inactivity timeout': 65,
+                  'enable snmp': 22,
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
@@ -2239,9 +2243,9 @@ class IssuConsts:
     CONTAINER_BU_TEMPLATE = '{python_path} {ping_server_script}'
     SERVER_SCRIPT = PYTHON_PATH + PING_SERVER_SCRIPT
     OPENSM_RESPONSE_TIMEOUT = '60'  # [sec]
-    TRAFFIC_DURATION = '330'  # [sec]
+    TRAFFIC_DURATION = '720'  # [sec]
     TRAFFIC_TIMEOUT = int(TRAFFIC_DURATION) + 10  # [sec]
-    CPU_MAX_DOWNTIME = 100  # [sec]
+    CPU_MAX_DOWNTIME = 120  # [sec]
     SERVER_OUTPUT = 'server_output.txt'
     CLIENT_OUTPUT = 'client_output.txt'
     ERROR_CONFIG_MUST_BE_SAVED = ('Error: Action failed with the following issue:\n'

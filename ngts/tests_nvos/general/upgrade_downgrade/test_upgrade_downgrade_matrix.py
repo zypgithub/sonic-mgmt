@@ -132,9 +132,9 @@ def _upgrade_downgrade(*, base: helpers.SystemPackage, target: helpers.SystemPac
     if is_upgrade and feature_checkers_it:
         with allure.step("Run feature pre-checkers"):
             if feature_checkers_errors := next(feature_checkers_it):
-                errors = "Pre-checkers failed:\n\t%s" % "\n\t".join(map(str, feature_checkers_errors))
-                logger.error(errors)
-                result_metadata[helpers.ResultMetadata.FEATURE_CHECKER_ERROR] = errors
+                errors_str = "Pre-checkers failed:\n\t%s" % "\n\t".join(map(str, feature_checkers_errors))
+                logger.error(errors_str)
+                result_metadata[helpers.ResultMetadata.FEATURE_CHECKER_ERROR] = errors_str
 
     with allure.step("uninstall previous version"):
         System().image.action_uninstall(params="force", verify_res=False)
@@ -256,9 +256,10 @@ def test_change_nvos_version(case: helpers.SystemVersionTransition, engines: Eng
             ))
             str_errors.append(err)
         if result_metadata.get(helpers.ResultMetadata.FEATURE_CHECKER_ERROR):
-            logger.error(err := "* Feature checkers errors:\n\t%s" % "\n\t".join(
-                ("%s: %s" % item for item in result_metadata[helpers.ResultMetadata.FEATURE_CHECKER_ERROR].items())
-            ))
+            logger.error(
+                err := "* Feature checkers errors:\n\t%s" %
+                f'{helpers.ResultMetadata.FEATURE_CHECKER_ERROR} : {result_metadata[helpers.ResultMetadata.FEATURE_CHECKER_ERROR]}'
+            )
             str_errors.append(err)
         if errors:
             logger.error(err := "* Checkers failed:\n\t%s" % "\n\t".join(map(str, errors)))

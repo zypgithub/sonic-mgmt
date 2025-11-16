@@ -24,7 +24,7 @@ logger = logging.getLogger()
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.nvos_build
-def test_reboot_command(engines, devices, test_name, disable_els_init_state_for_taipan):
+def test_reboot_command(engines, devices, test_name):
     """
     Test flow:
         1. run nv action reboot system
@@ -35,8 +35,11 @@ def test_reboot_command(engines, devices, test_name, disable_els_init_state_for_
     with allure.step('Clear system events to remove older reboot system events'):
         system.events.action(ActionConsts.CLEAR)
 
-    with allure.step('Run nv action reboot system'):
-        result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
+    with allure.step('Run nv action reboot system and wait for system to be ready in serial'):
+        result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot, check_system_is_functional=False)
+
+    with allure.step(f"wait for system to become functional"):
+        DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
 
     with allure.step("Check system reboot output"):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()

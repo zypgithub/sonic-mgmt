@@ -1,16 +1,23 @@
 import time
 
-import allure
 import pytest
+import logging
 
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier, SshAuthVerifier
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
-from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path, public_key_length
 from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
+from ngts.tools.test_utils import allure_utils as allure
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.security
@@ -24,8 +31,8 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
         - Create new non-default“monitor” user..	Save as <new_user>
         - Generate key id	Save as <random_key_id>
         - Generate two new keys(first random, second rsa)	Save as: <key_id>, <key_type>, <private_key_path>, <key_id_2>, <key_type_2> = default, <private_key_path_2>
-        - Run lslogins admin save sessions count as <admin_sessions_before_testing>
-        - Run lslogins <new_user>	save sessions count as <new_user_sessions_before_testing>
+        - Run who save sessions count as <admin_sessions_before_testing>
+        - Run who save sessions count as <new_user_sessions_before_testing>
         - Run nv show system aaa 	Verify ssh field is empty for all users
         - Run nv show system aaa user admin	Verify no ssh-keys
         - Run nv set system aaa user admin ssh authorized-key <random_key_id>
@@ -40,8 +47,8 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
         - Login using: ssh -i ~/.<private_key_path>  admin@hostname - Verify result - Should succeed
         - Login using: ssh -i ~/.<private_key_path_2>  <new_user>@hostname - Verify result - Should succeed
         - Login using: ssh -i ~/.<private_key_path_2>  admin@hostname - Verify result - Should fail
-        - Run lslogins admin	- verify that session - <admin_sessions_before_testing> = 2
-        - Run lslogins <new_user>	- verify that session - <new_user_sessions_before_testing> = 2 save connection as <new_user_session>
+        - Run who admin	- verify that session - <admin_sessions_before_testing> = 2
+        - Run who <new_user>	- verify that session - <new_user_sessions_before_testing> = 2 save connection as <new_user_session>
         - run user ability test using <new_user_session> .. we need to try set, actions and verify we can't do so, and we can run show commands
         - Run nv unset system aaa user admin ssh authorized-key <random_key_id>  + apply
         - Login using: ssh -i ~/.<private_key_path>  admin@hostname - Verify result - Should fail
@@ -68,11 +75,8 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
                                                                                         'ssh-rsa')
 
         with allure.step(f"get open sessions count for both admin and {monitor_user}"):
-            admin_sessions_before_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[
-                SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
-            monitor_sessions_before_testing = int(
-                system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[
-                    SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
+            admin_sessions_before_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username='admin')
+            monitor_sessions_before_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username=monitor_user)
 
         with allure.step("test PKA functionality"):
             with allure.independent_step("verify the default output of the show commands"):
@@ -133,17 +137,14 @@ def test_ssh_pka_positive_flow(engines, addressing_type, generate_new_admin_keys
                 monitor_session_obj.verify_authentication(True)
 
             with allure.independent_step(f"verify sessions count for both admin and {monitor_user}"):
-                admin_sessions_after_testing = int(system.aaa.user.get_lslogins(engine=engines.dut, username='admin')[
-                    SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
-                monitor_sessions_after_testing = int(
-                    system.aaa.user.get_lslogins(engine=engines.dut, username=monitor_user)[
-                        SystemConsts.PASSWORD_HARDENING_RUNNING_PROCESSES])
+                admin_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username='admin')
+                monitor_sessions_after_testing = system.aaa.user.get_ssh_session_count(engine=engines.dut, username=monitor_user)
 
                 with allure.independent_step(f"verify sessions count for admin"):
-                    assert admin_sessions_after_testing - admin_sessions_before_testing == 2, f"after connection using key we expect more sessions for admin, the sessions count before testing was {admin_sessions_before_testing} and after connecting with the key it's {admin_sessions_after_testing}"
+                    assert admin_sessions_after_testing - admin_sessions_before_testing == 1, f"after connection using key we expect more sessions for admin, the sessions count before testing was {admin_sessions_before_testing} and after connecting with the key it's {admin_sessions_after_testing}"
 
                 with allure.independent_step(f"verify sessions count for {monitor_user}"):
-                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 4, f"after connection using key we expect more sessions for admin, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
+                    assert monitor_sessions_after_testing - monitor_sessions_before_testing == 1, f"after connection using key we expect more sessions for {monitor_user}, the sessions count before testing was {monitor_sessions_before_testing} and after connecting with the key it's {monitor_sessions_after_testing}"
 
             with allure.independent_step("verify users ability using the new connection session"):
                 with allure.independent_step("verify admin ability"):
@@ -367,19 +368,22 @@ def test_ssh_pka_connections_stress(engines):
                 NvueGeneralCli.apply_config(engines.dut)
 
         with allure.step("connect using every single key and check connection time"):
-            for private in private_keys_paths_list:
+            admin_session_obj = PKAAuthVerifier(
+                username="admin", private_key_path=None, hostname=engines.dut.ip, engines=engines
+            )
+            for idx, private in enumerate(private_keys_paths_list):
                 start_time = time.time()
-                PKAAuthVerifier(username='admin', private_key_path=private, hostname=engines.dut.ip,
-                                engines=engines).verify_authentication(True)
+                admin_session_obj.private_key_path = private
+                admin_session_obj.verify_authentication(True)
                 end_time = time.time()
                 duration = end_time - start_time
                 if duration > threshold:
                     bad_connection_timing.append({
-                        'iteration': i,
+                        'iteration': idx,
                         'duration': duration
                     })
                 with allure.independent_step(f'logged in after {duration} seconds'):
-                    logging.info(f'it took {duration} seconds to log in during iteration {i}')
+                    logging.info(f'it took {duration} seconds to log in during iteration {idx}')
 
         if bad_connection_timing:
             err_msg = ""

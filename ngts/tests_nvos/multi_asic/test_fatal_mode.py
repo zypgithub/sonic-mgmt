@@ -39,10 +39,10 @@ FATAL_LOG_FILE = '/var/log/fatal.log'
 FATAL_LOG_FILE_IN_DUMP = '/log/fatal.log.gz'
 FATAL_EVENT_STRING = 'System fatal state detected'
 FATAL_HEALTH_EVENT_SIMULATION = {
-    4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/sx_core",
-    5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/sx_core",
+    4: "echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/asic{asic_folder}/sx_core",
+    5: "echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/asic{asic_folder}/sx_core",
     # todo: more events and warnings
-    "warning": "echo health_check_trigger sysfs {asic} > /proc/mlx_sx/sx_core",
+    "warning": "echo health_check_trigger sysfs {asic} > /proc/mlx_sx/asic{asic_folder}/sx_core",
 
 }
 FATAL_EVENT_IDS = (4, 5)
@@ -381,7 +381,7 @@ def _simulate_events(number_of_events: Union[int, list], asic: int, verify_non_f
 def _simulate_event(event_id, asic):
     """Runs the command that simulates a health events and asserts that it worked (returned no output)."""
     with allure.step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
-        cmd = FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic)
+        cmd = FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic, asic_folder=asic - 1)
         fatal_event_timestamps.append(datetime.now().isoformat(' '))
         _send_command_timing(TestToolkit.engines.dut, cmd)
 

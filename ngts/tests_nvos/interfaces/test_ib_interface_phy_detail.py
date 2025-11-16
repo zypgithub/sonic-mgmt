@@ -63,6 +63,110 @@ def test_show_phy_diag(engines, test_api, output_format):
 
 
 @pytest.mark.ib_interfaces
+def test_no_logging_flood_on_port_state_change(engines, devices, nv_command):
+    """
+    Regression test to verify that port state changes don't cause excessive logging (flooding).
+
+    Test flow:
+    1. Select a random IB port
+    2. Rotate syslog to start with a clean log
+    3. Set port down and verify write message count is within acceptable threshold
+    4. Set port up and verify write message count is within acceptable threshold
+
+    Expected behavior after fix (per operation):
+    - 9 writes for initialization: '0/0/0/0' state
+    - 4 writes for plane transitions: '22/0/0/0' → '22/22/0/0' → '22/22/22/0' → '22/22/22/22'
+    - Total: ~13 writes per DOWN or UP operation
+
+    Before fix (regression indicator):
+    - Port down operation: 60-70+ messages (severe flood)
+    - Port up operation: 60-70+ messages (severe flood)
+    """
+    MAX_WRITE_MESSAGES_PER_OPERATION = 15  # 13 expected + buffer for timing variations
+
+    skip_if_no_trunk_links(devices)
+
+    with allure.step("Select random port"):
+        selected_port: Port = RandomizationTool.select_random_port().get_returned_value()
+        port_name = selected_port.name
+        logger.info(f"Testing port {port_name} for logging flood")
+
+    try:
+        with allure.step("Rotate syslog to start with clean logs"):
+            nv_command.system.log.rotate_logs()
+
+        with allure.step("Set port DOWN and check for logging flood"):
+            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True).verify_result()
+            time.sleep(3)  # Allow state change to propagate and logs to be written
+
+            down_write_count = _count_port_write_messages(engines.dut, port_name, devices.dut)
+            logger.info(f"Port {port_name} DOWN operation generated {down_write_count} write messages")
+
+            with allure.step(f"Assert write count ({down_write_count}) is within acceptable threshold"):
+                assert down_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
+                    f"Port DOWN operation generated {down_write_count} write messages, "
+                    f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
+                    f"This indicates a logging flood issue!"
+                )
+
+        with allure.step("Rotate syslog again before UP operation"):
+            nv_command.system.log.rotate_logs()
+
+        with allure.step("Set port UP and check for logging flood"):
+            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True).verify_result()
+            time.sleep(10)  # Allow state change to propagate and logs to be written
+
+            up_write_count = _count_port_write_messages(engines.dut, port_name, devices.dut)
+            logger.info(f"Port {port_name} UP operation generated {up_write_count} write messages")
+
+            with allure.step(f"Assert write count ({up_write_count}) is within acceptable threshold"):
+                assert up_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
+                    f"Port UP operation generated {up_write_count} write messages, "
+                    f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
+                    f"This indicates a logging flood issue!"
+                )
+    finally:
+        with allure.step("Cleanup: Ensure port is set back to UP"):
+            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True).verify_result()
+
+
+def _count_port_write_messages(engine, port_name: str, device) -> int:
+    """
+    Counts the number of "write <port> to system db" messages in syslog for the specified port.
+
+    Uses grep to search syslog for the specific pattern that indicates a write operation to system db.
+    Uses the device-specific port-to-Infiniband conversion method.
+
+    Args:
+        engine: The device engine to execute commands on
+        port_name: Port name (e.g., "swA5p1", "sw72p2", "swB14p1")
+        device: The device object with convert_port_to_infiniband method
+
+    Returns:
+        int: Number of write messages found in syslog
+    """
+    # Use device-specific conversion method
+    if hasattr(device, 'convert_port_to_infiniband'):
+        ib_port_name = device.convert_port_to_infiniband(port_name)
+    else:
+        logger.warning(f"Device does not have convert_port_to_infiniband method, using port name as-is")
+        ib_port_name = port_name
+
+    # Search pattern: "portsyncmgrd: write <port_name> to system db"
+    # Using '|| echo "0"' ensures we always get a numeric result even if grep finds nothing
+    grep_command = f'grep -c "write {ib_port_name} to system db" /var/log/syslog || echo "0"'
+
+    try:
+        result = engine.run_cmd(grep_command)
+        count = int(result.strip())
+        logger.info(f"Found {count} write messages for port {ib_port_name} (original: {port_name})")
+        return count
+    except (ValueError, AttributeError) as e:
+        logger.error(f"Failed to parse write message count: {e}, result: {result}")
+        return 0
+
+
+@pytest.mark.ib_interfaces
 def test_intentional_link_down_counter(engines, devices):
     """
     Test for `nv show interface <port> link phy detail` intentional-link-down-events field. Flow:
@@ -183,8 +287,8 @@ def _get_test_ports(engine, device) -> Tuple[Port, Port, Port, Port, Port]:
         '10.7.148.95': ('swB1p1', 'swB2p1', 'swA10p1'),
         '10.7.148.138': ('swA1p1', 'swA2p1', 'swA15p1'),
         '10.7.148.139': ('swA1p1', 'swA2p1', 'swA15p1'),
-        '10.7.148.248': ('sw9p1', 'sw10p1', 'sw67p1'),
-        '10.7.148.249': ('sw9p1', 'sw10p1', 'sw67p1'),
+        '10.7.148.248': ('sw7p1', 'sw8p2', 'sw61p1'),
+        '10.7.148.249': ('sw7p1', 'sw8p2', 'sw61p1'),
 
         # juliet:
         '10.7.145.52': ('sw2p1s1', 'sw3p1s1', 'sw17p1s1'),

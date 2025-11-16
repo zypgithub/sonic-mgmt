@@ -9,6 +9,7 @@ import shutil
 from ngts.helpers import system_helpers
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.constants.constants import NvosCliTypes
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosConsts, SonicConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -17,6 +18,7 @@ from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.system.System import System
 from ngts.scripts.code_coverage.coverage_helpers import get_dest_path, _get_coverage_path_from_target_version
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 logger = logging.getLogger()
 
@@ -87,55 +89,30 @@ def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
     with allure.step("Create coverage report path"):
         c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
 
-    with allure.step('Restart system services to get coverage for running services'):
-        engines.dut.run_cmd(f'sudo docker ps')
+    with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE1}'):
+        logging.info("Waiting till the system reboot completed")
+        engines.dut.reload(reload_cmd_set=[f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE1}'],
+                           find_prompt_tries=60, find_prompt_delay=5, wait_after_ping=20, ssh_after_reload=False)
 
-        """# Stop all services
-        for service in NvosConsts.SERVICES_LIST:
-            engines.dut.run_cmd(f'sudo systemctl stop {service}')
-            time.sleep(2)
+        with allure.step("Wait till system is functional"):
+            DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+            engines.dut.run_cmd(f'sudo docker ps')
 
-        # Reset-failed all services
-        for service in NvosConsts.SERVICES_LIST:
-            engines.dut.run_cmd(f'sudo systemctl reset-failed {service}')
-            time.sleep(2)
+    with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}'):
+        engines.dut.run_cmd(f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
+        time.sleep(2)
 
-        # Start all services
-        for service in NvosConsts.SERVICES_LIST:
-            engines.dut.run_cmd(f'sudo systemctl start {service}')
-            time.sleep(2)
+    with allure.step(f"Copy coverage files from {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH} to {c_dest}"):
+        logger.info(f'Coverage files: {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH}')
+        engine.run_cmd(f"ls {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH}")
 
-        time.sleep(30)
-        for service in NvosConsts.SERVICES_LIST:
-            engines.dut.run_cmd(f'sudo systemctl status {service}')"""
+        logger.info(f'Destination directory: {c_dest}')
 
-        system = System(None)
-        system.reboot.action_reboot(engines.dut)
+        os.makedirs(c_dest, exist_ok=True)
+        engine.run_cmd(f"cp {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH}/* {c_dest}")
 
-        engines.dut.run_cmd(f'sudo docker ps')
-
-    with allure.step("Get sudo cli object"):
-        sudo_cli_general = get_sudo_cli_obj(engine)
-
-    with allure.step("Get coverage file names"):
-        gcov_filename_prefix, lcov_filename_prefix = get_coverage_file_names(sudo_cli_general,
-                                                                             NvosConsts.GCOV_CONTAINERS_SOURCES_PATH.keys())
-
-    with allure.step(f'Collect GCOV coverage from docker containers: {NvosConsts.GCOV_CONTAINERS_SOURCES_PATH.keys()}'):
-        for container in NvosConsts.GCOV_CONTAINERS_SOURCES_PATH.keys():
-            collect_gcov_for_container_nvos(engine, cli_obj, container, gcov_filename_prefix)
-
-    with allure.step("install gcov"):
-        install_gcov(sudo_cli_general)
-
-    with allure.step(""):
-        timestamp = int(time.time())
-        gcov_report_file = os.path.join(SharedConsts.GCOV_DIR, f'{gcov_filename_prefix}-{timestamp}.xml')
-        with allure.step(f'Combine GCOV JSON reports into a single report for SonarQube'):
-            create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file, c_dest, gcov_filename_prefix)
-        with allure.step("Delete JSON and LCOV files"):
-            sudo_cli_general.rm(gcov_report_file, flags='-f')
-            sudo_cli_general.rm(SharedConsts.GCOV_DIR + "/*.json", flags='-f')
+        logger.info(f"Coverage files under {c_dest}:")
+        engines.dut.run_cmd(f"ls {c_dest}")
 
 
 def extract_c_coverage_for_sonic(dest, engines, engine, cli_obj):
@@ -311,9 +288,17 @@ def create_and_copy_lcov_files(engine, sudo_cli_general, c_dest, lcov_filename_p
 def create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file, c_dest, gcov_filename_prefix):
     gcov_json_files = system_helpers.list_files(engine, SharedConsts.GCOV_DIR, pattern=gcov_filename_prefix)
     logger.info(f'GCOV JSON files on the system: {gcov_json_files}')
+
+    logger.info("Combine all jsons")
     gcovr_flags = ' '.join(f'-a {gcov_json_file}' for gcov_json_file in gcov_json_files)
+    gcovr_flags += ' -o /sonic/combined.json --json-pretty'
+    sudo_cli_general.gcovr(flags=gcovr_flags)
+
+    logger.info("Convert json to xml")
+    gcovr_flags = ' -a /sonic/combined.json'
     gcovr_flags += f' --sonarqube -r {SharedConsts.GCOV_DIR} -o {gcov_report_file}'
     sudo_cli_general.gcovr(flags=gcovr_flags)
+
     logger.info(f'Destination directory: {c_dest}')
     os.makedirs(c_dest, exist_ok=True)
     gcov_report_filename = os.path.basename(gcov_report_file)

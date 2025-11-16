@@ -328,6 +328,7 @@ def get_available_temperature_sensor_list(device: BaseDevice):
 
 @pytest.mark.platform
 @pytest.mark.simx
+@pytest.mark.disable_loganalyzer
 def test_platform_environment_events_performance(engines, devices, skip_for_fanless_setup):
     """
      Simulate an event and verify that show event is not flooded with multiple entries
@@ -411,6 +412,7 @@ def test_platform_environment_events_performance(engines, devices, skip_for_fanl
 @pytest.mark.cumulus
 @pytest.mark.platform
 @pytest.mark.simx
+@pytest.mark.disable_loganalyzer
 def test_platform_environment_fan_direction_mismatch(engines, devices, skip_for_fanless_setup):
     """
     Set FAN direction test
@@ -599,6 +601,7 @@ def simulate_fan_direction(engines, devices, fan_name, direction):
 
 
 @pytest.mark.platform
+@pytest.mark.disable_loganalyzer
 def test_platform_environment_fan_shared_led(engines, devices):
     """
     Only for systems with shared fan LED. Tests the LED turns red when any fan has an error. Flow:

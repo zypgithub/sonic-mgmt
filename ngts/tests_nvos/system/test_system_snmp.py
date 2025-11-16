@@ -20,10 +20,12 @@ from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 
 @pytest.mark.system
-def test_snmp_default_values_fields(engines):
+def test_snmp_default_values_fields(engines, test_name):
     """
     Test flow:
         1. Check snmp output default values
@@ -44,9 +46,26 @@ def test_snmp_default_values_fields(engines):
             logging.info("All expected values were found")
 
     with allure.step("Enable snmp"):
-        HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
-                                      listening_address='all')
-        HostMethods.wait_for_snmp_is_running(system)
+        def enable_snmp():
+            HostMethods.start_snmp_server(
+                engine=engines.dut,
+                state=NvosConst.ENABLED,
+                readonly_community='qwerty12',
+                listening_address='all',
+            )
+            HostMethods.wait_for_snmp_is_running(system)
+            return ResultObj(True)
+
+        result_obj, duration = OperationTime.save_duration(
+            "enable snmp",
+            '',
+            test_name,
+            enable_snmp,
+        )
+        OperationTime.verify_operation_time(
+            duration,
+            "enable snmp",
+        ).verify_result()
 
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(

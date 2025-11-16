@@ -7,6 +7,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_constants.constants_nvos import DatabaseConst, PlatformConsts
 
 logger = logging.getLogger()
@@ -17,6 +18,7 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.nvos_chipsim_ci
+@pytest.mark.timeout(2 * MINUTE, func_only=True)
 def test_show_platform_environment_voltage(engines, devices):
     """
     Show platform environment test
@@ -94,6 +96,7 @@ def test_show_platform_environment_voltage(engines, devices):
 @pytest.mark.platform
 @pytest.mark.skynet
 @pytest.mark.simx
+@pytest.mark.timeout(1 * MINUTE, func_only=True)
 def test_show_voltage_bad_flow(engines, devices):
     """
     For Each Sensor we have DB (should be part of init flow)
@@ -110,6 +113,7 @@ def test_show_voltage_bad_flow(engines, devices):
 @pytest.mark.platform
 @pytest.mark.simx
 @pytest.mark.skynet
+@pytest.mark.timeout(1 * MINUTE, func_only=True)
 def test_database_platform_environment_voltage(engines, devices):
     """
     For Each Sensor we have DB (should be part of init flow)

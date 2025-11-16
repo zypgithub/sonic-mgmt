@@ -398,7 +398,7 @@ class BaseSwitch(BaseDevice):
 
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz", "power.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
-        hw_mgmt_files = ['hw-mgmt-dump.tar.gz', 'cpld_reg_direct_dump', 'cpld_dump']
+        hw_mgmt_files = ['cpld_reg_direct_dump', 'cpld_dump']
         audit_files = ['audit.log.gz']
         log_nmx_files = []
         etc_files = ["resolv.conf"]

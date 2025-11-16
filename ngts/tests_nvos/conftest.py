@@ -1,3 +1,4 @@
+from argparse import ArgumentTypeError
 from typing import Dict, Optional
 import concurrent.futures
 from pathlib import Path
@@ -9,6 +10,7 @@ import smtplib
 import time
 import json
 from email.mime.text import MIMEText
+
 import requests_cache
 import re
 
@@ -43,7 +45,6 @@ from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
-from ngts.nvos_tools.infra.RandomizationTool import random_api as get_random_api
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -93,11 +94,11 @@ def pytest_addoption(parser: pytest.Parser):
                      help="Whether to run security post checker or not")
     parser.addoption("--check_output", action="store_true", default=False, help="Provide to check ib output")
     parser.addoption("--substrings_to_check", action="store", default=False, help="Provide which substrings to check")
+    parser.addoption("--remote_test_path", action="store", default=None, help="Remote test path from MARS")
     parser.addoption("--skip_clear_config", action="store_true", default=False, help="skip the clear_config fixture at the end of the test")
     parser.addoption('--upgrade-matrix-json', type=_validate_matrix_arg, help='Path to matrix json file or json string')
     parser.addoption("--override-target-version", action="store_true", default=None,
                      help="Override the target version with the target from the upgrade downgrade matrix")
-    parser.addoption("--remote_test_path", action="store", default=None, help="Remote test path from MARS")
 
 
 @pytest.hookimpl(tryfirst=True)
@@ -148,6 +149,31 @@ def check_disk_usage(request, engines):
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
                     assert delta_kb <= expected_threshold, f"Wrote {delta_kb}KB (max {expected_threshold}KB allowed)"
+
+
+@pytest.fixture(autouse=True)
+def check_log_size(request, engines):
+    def __get_syslog_file_size_kb(filename='syslog') -> int:
+        return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
+    marker_name = 'check_log_size'
+    should_check = is_cur_test_has_marker(request, marker_name)
+    if should_check:
+        with allure.step('get syslog size before (in KB)'):
+            size_before = __get_syslog_file_size_kb()
+    yield
+    if should_check:
+        with allure.step('get syslog size after (in KB)'):
+            size_after = __get_syslog_file_size_kb()
+            if size_after <= size_before:
+                logging.info('log was rotated')
+                size_after += __get_syslog_file_size_kb('syslog.1')
+            test_addition_to_syslog = size_after - size_before
+        allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
+        if is_cur_test_passed(request):
+            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+            if expected_threshold and isinstance(expected_threshold, int):
+                with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
+                    assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
 
 
 @pytest.fixture(autouse=True)
@@ -1146,8 +1172,8 @@ def _validate_matrix_arg(matrix_arg: str) -> Optional[Dict]:
 
     try:
         return json.loads(matrix_arg)
-    except json.JSONDecodeError:
-        raise ValueError(f"Invalid JSON string: {matrix_arg}")
+    except json.JSONDecodeError as e:
+        raise ArgumentTypeError(f"Invalid JSON string for '{path}': {e}\n{matrix_arg}")
 
 
 @pytest.fixture(scope='session')

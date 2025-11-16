@@ -7,6 +7,14 @@ from ngts.tools.test_utils import allure_utils as allure
 
 keys_path = "/auto/sw_system_project/NVOS_INFRA/security/verification/ssh_pka/"
 
+public_key_length = {
+    'ecdsa-sha2-nistp521': '521',
+    'ecdsa-sha2-nistp384': '384',
+    'ecdsa-sha2-nistp256': '256',
+    'ssh-ed25519': '1024',
+    'ssh-rsa': '4096'
+}
+
 
 def _generate_new_key(engine, user_name, key_type=''):
     """

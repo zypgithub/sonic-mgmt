@@ -206,7 +206,18 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
 
     # Split the table into rows
     rows = table.splitlines()
-    header = rows[1]  # Header row with column names
+
+    # Find the header row by looking for a row that contains "log_port"
+    header_index = None
+    for i, row in enumerate(rows):
+        if "log_port" in row and "|" in row:
+            header_index = i
+            break
+
+    if header_index is None:
+        raise ValueError("Could not find header row with 'log_port' in table output")
+
+    header = rows[header_index]
 
     # Identify column indexes based on the header
     columns = header.split("|")
@@ -217,7 +228,12 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
     }
 
     # Parse rows and find the matching row based on label_port and lane_bmap
-    for row in rows[3:-1]:  # these are all the data rows
+    # Start from 2 rows after the header (to skip the separator line)
+    for row in rows[header_index + 2:]:
+        # Skip empty rows and separator lines
+        if not row.strip() or row.strip().startswith('='):
+            continue
+
         cols = row.split("|")
         try:
             row_label_port = int(cols[col_indexes["label_port"]].strip())
@@ -228,7 +244,7 @@ def get_log_port(table: str, label_port: int, lane_bmap: str):
                 # Extract the last two digits of log_port, remove the "0x100" prefix
                 log_port_value = cols[col_indexes["log_port"]].strip()
                 return log_port_value[-2:]  # Return the last two characters
-        except ValueError:
-            continue  # Skip rows with non-numeric values in relevant columns
+        except (ValueError, IndexError):
+            continue  # Skip rows with non-numeric values or insufficient columns
 
     raise ValueError(f"Entry not found for label_port={label_port}, lane_bmap={lane_bmap}")

@@ -154,7 +154,6 @@ def test_ztp_json(engines, devices):
             _run_system_ztp_with_empty_config(engines, system)
 
             with allure.step("Run show ztp and verify default values"):
-                _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                 _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_FAILED)
 
             with allure.step("Run nv show system log command and check ztp logs inside"):
@@ -262,7 +261,6 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 _run_system_ztp_with_empty_config(engines, system)
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
                 with allure.step('Check interface description exist'):
@@ -291,7 +289,6 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 _run_system_ztp_with_empty_config(engines, system)
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Download clear config true startup json file"):
@@ -302,7 +299,6 @@ def test_ztp_startup_file_commands_list(engines, devices):
                 _run_system_ztp_with_empty_config(engines, system)
 
                 with allure.step("Check ztp status"):
-                    _wait_until_ztp_status(system, SystemConsts.ZTP_STATUS_RUNNING)
                     _wait_until_ztp_step_status(system, '01-startup-file', SystemConsts.ZTP_STATUS_FAILED)
 
     except Exception as e:

@@ -1,8 +1,8 @@
 import pytest
-import logging
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Union, Iterable, Dict
+import time
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import EventConsts
@@ -51,16 +51,21 @@ def test_physical_monitor(devices, engines):
                                 f"starts, but it's current value for {asic_dev} is {event_counter}")
 
     with enable_backdoor(asic_devices):
+        time_before_first = datetime.now(timezone.utc)
         prepare_and_inject_error(asic_devices[0])
         event = nv.system.events.get_last()
-        assert_event(event, asics[0])
+        assert_event(event, asics[0], time_before_first)
+
+        time_before_second = datetime.now(timezone.utc)
         prepare_and_inject_error(asic_devices[1])
         event = nv.system.events.get_last()
-        assert_event(event, asics[1])
+        assert_event(event, asics[1], time_before_second)
+
+        time_before_third = datetime.now(timezone.utc)
         for _ in range(4):
             inject_error(asic_devices[0])
         event = nv.system.events.get_last()
-        assert_event(event, asics[0])
+        assert_event(event, asics[0], time_before_third)
 
 
 def run_mcra_commands(mst_device: str, commands: Union[str, Iterable[str]], validate=True) -> str:
@@ -128,18 +133,47 @@ def get_physical_counter(mst_device: str) -> int:
     return int(run_mcra_commands(mst_device, "0x318ffc.4"), base=16)
 
 
-def assert_event(event: Dict[str, str], asic: int):
-    """Asserts that the last system event has the proper message, severity and component (ASIC)"""
+def assert_event(event: Dict[str, str], asic: int, time_before_injection: datetime):
+    """
+    Asserts that the last system event has the proper message, severity and component (ASIC).
+    Also validates that the event was created after the specified time (ensuring it's a fresh event).
+    """
     with allure.step(f"Asserting system-event was raised for asic {asic} and validating its content"):
         ValidationTool.validate_fields_values_in_output(*zip(
             (EventConsts.SEVERITY, EventConsts.MAJOR),
             (EventConsts.RESOURCE, f'asic {asic}'),
             (EventConsts.TEXT, "PSC detected failure")
         ), event).verify_result()
-        if not is_bug_active(4506815):  # bug in system events: timestamps are UTC instead of local
-            event_time = ClockTools.parse_datetime(event[EventConsts.TIME_CREATED])
-            now = datetime.now(tz=event_time.tzinfo)
-            logging.debug(f"Event time: {event_time}, current time: {now}")
-            assert (now - event_time).total_seconds() < 5, (
-                f"Current datetime is {now.isoformat()}, event timestamp doesn't match: {event}"
-            )
+
+        timestamp_str = event[EventConsts.TIME_CREATED]
+        parts = timestamp_str.rsplit(' ', 1)
+        time_str = parts[0]
+        tz_str = parts[1] if len(parts) > 1 else None
+
+        # Parse the datetime
+        event_time = ClockTools.parse_datetime(time_str)
+
+        # If timezone is provided and indicates UTC, make it timezone-aware
+        if tz_str and ('UTC' in tz_str or 'utc' in tz_str.lower()):
+            event_time = event_time.replace(tzinfo=timezone.utc)
+            current_time = datetime.now(timezone.utc)
+        else:
+            # If no timezone or non-UTC, assume local time
+            current_time = datetime.now()
+            # Make time_before_injection timezone-naive for comparison
+            time_before_injection = time_before_injection.replace(tzinfo=None)
+
+        # Ensure the event was created AFTER the injection (i.e., it's a fresh event)
+        time_since_injection = (event_time - time_before_injection).total_seconds()
+        assert time_since_injection >= 0, (
+            f"Event timestamp {event_time.isoformat()} is OLDER than injection time "
+            f"{time_before_injection.isoformat()}. This suggests the event is from a previous test run. "
+            f"Event details: {event}"
+        )
+
+        time_since_event = (current_time - event_time).total_seconds()
+        assert time_since_event < 5, (
+            f"Event is too old. Current time: {current_time.isoformat()}, "
+            f"event timestamp: {event_time.isoformat()} (from '{timestamp_str}'), "
+            f"time since event: {time_since_event:.2f} seconds"
+        )

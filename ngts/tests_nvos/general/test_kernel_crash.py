@@ -66,14 +66,8 @@ def test_kernel_crash(engines, devices, topology_obj, test_api):
                                                 start_time=start_time)
 
     with allure.step("Sleep until tech-support file in generated"):
-        if is_bug_active(4412948):
-            time.sleep(180)
-        else:
-            tech_support_generation_time = getattr(devices.dut, "generate_tech_support", False)
-            if tech_support_generation_time:
-                time.sleep(OperationTimeConsts.THRESHOLDS[tech_support_generation_time] + 0.25 * MINUTE)
-            else:
-                time.sleep(OperationTimeConsts.THRESHOLDS['generate tech-support'] + 0.25 * MINUTE)
+        duration = devices.dut.expected_operation_durations.get(devices.dut.generate_tech_support)
+        time.sleep(duration + 0.25 * MINUTE)
 
     with allure.step("Verify in logs that tech-support file generation is done"):
         log_message_list = [r"Generated tech-support"]

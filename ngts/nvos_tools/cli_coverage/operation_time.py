@@ -38,6 +38,12 @@ class OperationTime:
         return result_obj, duration
 
     @staticmethod
+    def save_manual_operation_duration_to_db(operation, duration, test_name):
+        duration_time_dict = OperationTime.create_duration_time_dict(operation, '', duration, test_name)
+        pytest.operation_list.append(duration_time_dict)
+        logger.info(f"current state of pytest.operation_list: {pytest.operation_list}")
+
+    @staticmethod
     def create_duration_time_dict(operation='', params='', duration='', test_name=''):
         duration_time_dict = {OperationTimeConsts.OPERATION_COL: operation, OperationTimeConsts.PARAMS_COL: params,
                               OperationTimeConsts.DURATION_COL: duration, OperationTimeConsts.TEST_NAME_COL: test_name}

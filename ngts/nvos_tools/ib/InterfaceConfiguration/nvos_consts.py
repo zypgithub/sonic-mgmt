@@ -109,17 +109,16 @@ class IbInterfaceConsts:
     LINK_STATS_RCV_ICRC_ERRORS = 'rcv-icrc-errors'
     LINK_STATS_TX_PARITY_ERRORS = 'tx-parity-errors'
     LINK_PLR_RCV_CODES_ERRORS = 'plr-rcv-codes-err'
-    # QTM3 fields split by location in the counters JSON structure:
-    # Fields at top level of counters output
-    LINK_STATS_QNT3_TOP_LEVEL = ['buffer-overrun-errors']
-    # Fields under 'link' dictionary (note: no 'link-' prefix in actual JSON)
-    LINK_STATS_QNT3_UNDER_LINK = ['error-recovery',
-                                  'port-rcv-remote-physical-errors',
-                                  'port-rcv-switch-relay-errors',
-                                  'port-rcv-constraint-errors',
-                                  'local-integrity-errors']
-    # Legacy: keeping for backward compatibility, but prefer using the split lists above
-    LINK_STATS_QNT3 = LINK_STATS_QNT3_TOP_LEVEL + LINK_STATS_QNT3_UNDER_LINK
+    LINK_STATS_QNT3 = ['link-error-recovery',
+                       'link-downed',
+                       'port-rcv-remote-physical-errors',
+                       'port-rcv-switch-relay-errors',
+                       'port-rcv-constraint-errors',
+                       'local-link-integrity-errors',
+                       'qp1-drops',
+                       'buffer-overrun-errors',
+                       LINK_STATS_RCV_ICRC_ERRORS,
+                       LINK_STATS_TX_PARITY_ERRORS]
     LINK_PHY_RAW_ERRORS = ["phy-raw-errors-lane0",
                            "phy-raw-errors-lane1",
                            "phy-raw-errors-lane2",

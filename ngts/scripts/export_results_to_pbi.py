@@ -1,23 +1,21 @@
-from __future__ import annotations
-
-from argparse import ArgumentParser, Namespace
-from pathlib import Path
-import dataclasses
-import requests
-import datetime
 import logging
-import retry
-import sys
 import os
 import re
+import sys
+import requests
+import argparse
+import datetime
+from retry import retry
+from pathlib import Path
+from argparse import ArgumentParser, Namespace
 
-FILE_PATH = Path(__file__).resolve()
-sonic_mgmt_path = FILE_PATH.parents[len(FILE_PATH.parts) - FILE_PATH.parts.index('ngts') - 1]
-sys.path.append(str(sonic_mgmt_path))
+path = os.path.abspath(__file__)
+sonic_mgmt_path = path.split('/ngts/')[0]
+sys.path.append(sonic_mgmt_path)
 
-from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyConsts  # noqa: E402
 from ngts.constants.constants import InfraConst, CliType, DbConstants  # noqa: E402
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL  # noqa: E402
+from infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyConsts
 
 logger = logging.getLogger(Path(__file__).stem if __name__ == "__main__" else __name__)
 
@@ -57,42 +55,36 @@ _REGRESSION_MATRIX_COLUMNS_QUERY = f"""\
     VALUES {{values}};
 """
 
-
-@dataclasses.dataclass
-class TestResult:
-    suite_path: str
-    test_name: str
-    status: str
-    duration: float
-    test_url: str
-
-    def to_db_values(self, setup_name: str, session_id: str, dut_hwsku: str, branch: str, target_version: str) -> str:
-        # escape single quotes in the URL for MSSQL
-        escaped_url = self.test_url.replace("'", "''") if self.test_url is not None else ""
-        return (
-            f"('{setup_name}', '{self.suite_path}', '{self.test_name}', '{self.status}', '{session_id}', "
-            f"'{datetime.date.today()!s}', '{dut_hwsku}', '{escaped_url}', '{branch}', '{target_version}', "
-            f"'{self.duration}')"
-        )
+# Legacy constants for backwards compatibility
+ALLURE_DOCKER_SERVICE = 'allure-docker-service'
+SUITE_PATH = 'suite_path'
+TEST_NAME = 'test_name'
+STATUS = 'status'
+DURATION = 'duration'
+TEST_URL = 'test_url'
+PASS_RATE = 'pass_rate'
+VERSION = 'version'
+EXECUTED = 'executed'
+REPORT_URL = 'report_url'
+DUT_HWSKU = 'dut_hwsku'
+SESSION_ID = 'session_id'
+PATH_TO_UPLOAD_URL = '/auto/sw_system_project/NVOS_INFRA/verification_files/'
+BRANCH = 'branch'
 
 
-@dataclasses.dataclass
-class Summary:
-    report_url: str
-    pass_rate: str = "N/A"
-    executed: str = "N/A"
-    passed: int = 0
-    failed: int = 0
-    la_failed: int = 0
-    broken: int = 0
-    unknown: int = 0
-    skipped: int = 0
+def get_logger():
+    log = logging.getLogger('UploadToPBI')
+    log.setLevel(logging.DEBUG)
 
-    def to_db_values(self, setup_name: str, target_version: str, session_id: str, dut_hwsku: str, branch: str) -> str:
-        return (
-            f"('{setup_name}', '{self.pass_rate}', '{target_version}', '{self.executed}', '{session_id}', "
-            f"'{self.report_url}', '{datetime.date.today()!s}', '{dut_hwsku}', '{branch}')"
-        )
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    log.addHandler(handler)
+    return log
+
+
+logger = get_logger()
 
 
 class Args(Namespace):
@@ -126,22 +118,35 @@ def _parse_args() -> Args:
     )
     parser.add_argument('--setup_name', dest='setup_name', help='Setup name')
     parser.add_argument('--session_id', default="", dest='session_id', help='Session id')
-    parser.add_argument('--target-version', type=parse_version, default="", dest='target_version', help='Target version')
-    parser.add_argument('--tarball', type=parse_branch_name, default="", dest='branch', help='Tarball')
+    parser.add_argument('--target-version', default="", dest='target_version', help='Target version')
+    parser.add_argument('--tarball', default="", dest='tarball', help='Tarball')
     parser.add_argument('--dut_hwsku', default="", dest='dut_hwsku', help='Switch Type')
 
-    return parser.parse_args(namespace=Args())
+    return parser.parse_args()
 
 
-def parse_branch_name(tarball_name: str) -> str:
-    if not (match := re.search(r'nvos_ver-\d{2}-\d{2}-\d{4}', tarball_name)):
+def parse_args():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--setup_name', dest='setup_name', help='Setup name')
+    parser.add_argument('--session_id', default="", dest='session_id', help='Session id')
+    parser.add_argument('--target-version', default="", dest='target_version', help='Target version')
+    parser.add_argument('--tarball', default="", dest='tarball', help='Tarball')
+    parser.add_argument('--dut_hwsku', default="", dest='dut_hwsku', help='Switch Type')
+
+    return parser.parse_args()
+
+
+def parse_branch_name(tarball_name):
+    res = ""
+    match = re.search(r'nvos_ver-\d{2}-\d{2}-\d{4}', tarball_name)
+    if not match:
         match = re.search(r'develop', tarball_name)
     if match:
-        return match.group(0)
-    return ""
+        res = match.group(0)
+    return res
 
 
-def parse_version(version_file_path: str) -> str:
+def parse_version(version_file_path):
     version = version_file_path.split("/")[-1].split(".bin")[0]
     marker = "nvos-amd64-"
     if marker in version:
@@ -149,46 +154,45 @@ def parse_version(version_file_path: str) -> str:
     return version
 
 
-@retry.retry(Exception, tries=3, delay=3)
-def insert_data_to_pbi_db(args: Args, parsed_results: list[TestResult], summary: Summary) -> None:
-    if not args.target_version:
+@retry(Exception, tries=3, delay=3)
+def insert_data_to_pbi_db(setup_name, version, session_id, parsed_results, summary, dut_hwsku, branch):
+    if not version:
         return
-
-    mssql_connection_obj = None
     try:
         connections_params = DbConstants.CREDENTIALS[CliType.NVUE]
-        mssql_connection_obj = ConnectMSSQL(**connections_params)
+        mssql_connection_obj = ConnectMSSQL(connections_params['server'], connections_params['database'],
+                                            connections_params['username'], connections_params['password'])
         mssql_connection_obj.connect_db()
         logger.info("Connection to DB was completed successfully")
         logger.info("Insert results to test_analytics DB")
         values = ""
         for result in parsed_results:
-            value = result.to_db_values(args.setup_name, args.session_id, args.dut_hwsku, args.branch, args.target_version)
+            value = f"('{setup_name}', '{result[SUITE_PATH]}', '{result[TEST_NAME]}', '{result[STATUS]}', '{session_id}', '{datetime.date.today()}', '{dut_hwsku}', '{result['test_url']}', '{branch}', '{version}', '{result[DURATION]}')"
             values = f"{values}, {value}" if values else value
 
         if values:
+            columns = f"({OperationTimeConsts.SETUP_COL}, {SUITE_PATH}, {TEST_NAME}, {STATUS}, {SESSION_ID}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {REPORT_URL}, {BRANCH}, {VERSION}, {DURATION})"
+            query = "INSERT test_analytics {columns} values {values};".format(columns=columns, values=values)
             logger.info("Inserting data to test_analytics table")
             try:
-                mssql_connection_obj.query_insert(q := _TEST_ANALYTICS_COLUMNS_QUERY.format(values=values))
-                logger.info(f"Query: {q}")
+                mssql_connection_obj.query_insert(query)
                 logger.info("--------- insert to test_analytics DB table successfully ---------\n")
             except Exception as e:
                 print(f"FAILED TO INSERT DATA TO TEST_ANALYTICS, ERROR: {e}")
 
         logger.info("Insert results to regression_matrix DB")
-        values = summary.to_db_values(args.setup_name, args.target_version, args.session_id, args.dut_hwsku, args.branch)
+        values = f"('{setup_name}', '{summary['pass_rate']}', '{version}', '{summary['executed']}', '{session_id}', '{summary['report_url']}', '{datetime.date.today()}', '{dut_hwsku}', '{branch}')"
+        columns = f"({OperationTimeConsts.SETUP_COL}, {PASS_RATE}, {VERSION}, {EXECUTED}, {SESSION_ID}, {REPORT_URL}, {OperationTimeConsts.DATE_COL}, {DUT_HWSKU}, {BRANCH})"
+        query = "INSERT regression_matrix {columns} values {values};".format(columns=columns, values=values)
         logger.info("Inserting data to regression_matrix table")
-
         try:
-            mssql_connection_obj.query_insert(q := _REGRESSION_MATRIX_COLUMNS_QUERY.format(values=values))
-            logger.info(f"Query: {q}")
+            mssql_connection_obj.query_insert(query)
             logger.info("--------- insert to regression_matrix DB table successfully ---------\n")
         except Exception as e:
             print(f"FAILED TO INSERT DATA TO REGRESSION_MATRIX, ERROR: {e}")
 
     finally:
-        if mssql_connection_obj:
-            mssql_connection_obj.disconnect_db()
+        mssql_connection_obj.disconnect_db()
 
 
 def _extract_la_actual_status(tags: list[str]) -> str | None:
@@ -199,40 +203,94 @@ def _extract_la_actual_status(tags: list[str]) -> str | None:
     return None
 
 
-def parse_suites(node: dict[str, str | list[dict]], base_url: str, suite_chain: list[str], results: list[TestResult]) -> list[TestResult]:
+def _fetch_test_case_data(base_url: str, uid: str) -> dict:
+    """Fetch a single test-case JSON by uid. Returns {} on failure."""
+    if not uid:
+        return {}
+    test_case_url = f"{base_url}/data/test-cases/{uid}.json"
+    try:
+        resp = requests.get(test_case_url, timeout=10)
+        resp.raise_for_status()
+        return resp.json() or {}
+    except Exception:
+        return {}
+
+
+def _append_test_result(results: list, suite_chain: list, base_url: str, node: dict):
+    """Append a normalized test result, fetching per-test JSON if needed."""
+    uid = node.get("uid", "")
+    name = node.get("name", "Unknown")
+    status = node.get("status")
+    duration_ms = None
+    time_block = node.get("time") or {}
+    if isinstance(time_block, dict):
+        duration_ms = time_block.get("duration")
+
+    # Fallback: read from test-case JSON when status/duration are missing in suites
+    if status is None or duration_ms is None:
+        tc = _fetch_test_case_data(base_url, uid)
+        if status is None:
+            status = tc.get("status")
+        if duration_ms is None:
+            time_block = tc.get("time") or {}
+            if isinstance(time_block, dict):
+                duration_ms = time_block.get("duration")
+
+    # Check for LA actual status from tags
+    tags = node.get('tags', [])
+    logger.debug(f"Tags: {tags}")
+    la_actual_status = _extract_la_actual_status(tags)
+    if la_actual_status == "passed":
+        status = "LA_failed"
+
+    duration_min = (duration_ms / 60000.0) if isinstance(duration_ms, (int, float)) else 0.0
+    test_url = f"{base_url}/index.html#testresult/{uid}" if uid else None
+
+    results.append({
+        SUITE_PATH: " > ".join(suite_chain),
+        TEST_NAME: name,
+        STATUS: status or "unknown",
+        DURATION: duration_min,
+        TEST_URL: test_url,
+    })
+
+
+def parse_suites(node, base_url, suite_chain=None, results=None):
+    """Recursively parse an Allure suites tree, robust to different layouts."""
+    if results is None:
+        results = []
+    if suite_chain is None:
+        suite_chain = []
+
+    # Handle top-level list of nodes
+    if isinstance(node, list):
+        for child in node:
+            parse_suites(child, base_url, suite_chain, results)
+        return results
+
+    if not isinstance(node, dict):
+        return results
 
     current_name = node.get("name", "Unknown")
     new_chain = suite_chain + [current_name]
 
-    for child in node.get("children", []):
-        # If child has a "status", it's a test node
-        if "status" in child:
-            test_uid = child.get("uid", "")
-            # Build a direct URL for the test
-            test_url = f"{base_url}/index.html#testresult/{test_uid}" if test_uid else None
-
-            status = child["status"]
-            logger.debug(f"{child['name']:<70} - {status}")
-            logger.debug(f"Tags: {child.get('tags', [])}")
-            la_actual_status = _extract_la_actual_status(child.get("tags", []))
-            if la_actual_status == "passed":
-                status = "LA_failed"
-
-            results.append(TestResult(
-                suite_path=" > ".join(new_chain),
-                test_name=child["name"],
-                status=status,
-                duration=child["time"]["duration"] / 60000,
-                test_url=test_url  # new field
-            ))
-        else:
-            # Otherwise, it’s another suite node—recurse
-            parse_suites(child, base_url, new_chain, results)
+    children = node.get("children")
+    if isinstance(children, list) and children:
+        for child in children:
+            grand_children = child.get("children") if isinstance(child, dict) else None
+            is_leaf = not grand_children or (isinstance(child, dict) and child.get("type") == "test")
+            if is_leaf and isinstance(child, dict):
+                _append_test_result(results, new_chain, base_url, child)
+            else:
+                parse_suites(child, base_url, new_chain, results)
+    else:
+        if isinstance(node, dict) and "uid" in node:
+            _append_test_result(results, suite_chain, base_url, node)
 
     return results
 
 
-def summarize_test_run(tests: list[TestResult], report_url: str) -> Summary:
+def summarize_test_run(tests, report_url):
     """
     Summarize pass/fail/skip/etc. based on your rules:
       - pass_rate = passed / (passed + failed + broken + unknown)
@@ -241,83 +299,97 @@ def summarize_test_run(tests: list[TestResult], report_url: str) -> Summary:
     Returns a dict with the stats.
     """
     # Counters
-    summary = Summary(report_url=report_url)
+    passed = skipped = failed = broken = unknown = 0
 
     for t in tests:
-        status = t.status
+        status = t["status"]
         if status == "passed":
-            summary.passed += 1
-        elif status == "LA_failed":
-            summary.la_failed += 1
+            passed += 1
         elif status == "skipped":
-            summary.skipped += 1
+            skipped += 1
         elif status == "failed":
-            summary.failed += 1
+            failed += 1
         elif status == "broken":
-            summary.broken += 1
+            broken += 1
         else:
             # Treat 'unknown' or anything else as failed
-            summary.unknown += 1
+            unknown += 1
 
     # Combine failed + broken + unknown for the "fail" category
-    total_fail = summary.failed + summary.la_failed + summary.broken + summary.unknown
+    total_fail = failed + broken + unknown
     # The pass-rate denominator excludes skipped, so it's the total of passed + fail
-    total_count_for_pass_rate = summary.passed + total_fail
+    total_count_for_pass_rate = passed + total_fail
 
-    summary.pass_rate = (summary.passed / total_count_for_pass_rate) * 100.0 if total_count_for_pass_rate > 0 else 0.0
-    summary.executed = f"{summary.passed}/{summary.passed + summary.failed + summary.la_failed} ({summary.broken + summary.unknown + summary.skipped})"
+    pass_rate = (passed / total_count_for_pass_rate) * 100.0 if total_count_for_pass_rate > 0 else 0.0
 
-    logger.info(f"Passed = {summary.passed}")
-    logger.info(f"Failed = {summary.failed}")
-    logger.info(f"LA Failed = {summary.la_failed}")
-    logger.info(f"Broken = {summary.broken}")
-    logger.info(f"Unknown = {summary.unknown}")
-    logger.info(f"Skipped = {summary.skipped}")
-    logger.info(f"Pass Rate = {summary.pass_rate}%")
-    logger.info(f"Executed = {summary.executed}")
+    logger.info(f"Passed = {passed}")
+    logger.info(f"Failed = {failed}")
+    logger.info(f"Broken = {broken}")
+    logger.info(f"Unknown = {unknown}")
+    logger.info(f"Skipped = {skipped}")
+    logger.info(f"Pass Rate = {pass_rate}%")
+    logger.info(f"Executed = {passed}/{passed + failed} ({broken + unknown + skipped})")
 
-    return summary
-
-
-def summarize_results_and_upload(report_url: str, args: Args) -> None:
-    if TopologyConsts.NVOS.lower() not in args.allure_project_id.lower():
-        logger.info(f"Skipping upload for {args.allure_project_id} because it is not a NVOS project")
-        return
-
-    try:
-        base_url = os.path.dirname(report_url.rstrip('/'))
-        logger.debug(f"Base URL: {base_url}")
-        suites_resp = requests.get(f"{base_url}/data/suites.json")
-        suites_resp.raise_for_status()
-        suites_data = suites_resp.json()
-
-        logger.info("Parse run results:")
-        parsed_results = parse_suites(suites_data, base_url, [], [])
-
-        logger.info("Summarize run's results:")
-        summary = summarize_test_run(parsed_results, report_url)
-
-        insert_data_to_pbi_db(args, parsed_results, summary)
-    except Exception as e:
-        logger.error(f"Failed with the following issue: {e}")
-        logger.exception(e)
+    return {
+        "passed": passed,
+        "failed": failed,
+        "broken": broken,
+        "unknown": unknown,
+        "skipped": skipped,
+        "pass_rate": str(pass_rate) + '%',
+        "report_url": report_url,
+        "executed": f"{passed}/{passed + failed} ({broken + unknown + skipped})"
+    }
 
 
-def main():
-    args = _parse_args()
-    _setup_logger()
+def summarize_results_and_upload(report_url, allure_project, session_id, target_version, setup_name, dut_hwsku, branch):
+    if TopologyConsts.NVOS.lower() in allure_project.lower():
+        try:
+            base_url = os.path.dirname(report_url.rstrip('/'))
+            logger.debug(f"Base URL: {base_url}")
 
-    file_path = _PATH_TO_UPLOAD_URL / f"{args.allure_project_id}.txt"
-    logger.info(f"File Path: {file_path}")
-    if not (report_url := file_path.read_text().strip()):
-        file_path.unlink()
-        raise ValueError(f"Failed to retrieve report URL from {file_path}")
+            # Try common paths for suites data
+            suites_data = None
+            for suites_path in ("data/suites.json", "widgets/suites.json"):
+                try:
+                    suites_resp = requests.get(f"{base_url}/{suites_path}", timeout=10)
+                    suites_resp.raise_for_status()
+                    suites_data = suites_resp.json()
+                    break
+                except Exception:
+                    continue
+            if suites_data is None:
+                raise Exception("Could not retrieve suites data from Allure report")
 
-    logger.info(f"Retrieved URL: {report_url}")
-    file_path.unlink()
+            logger.info("Parse run results:")
+            parsed_results = parse_suites(suites_data, base_url)
 
-    summarize_results_and_upload(report_url, args)
+            logger.info("Summarize run's results:")
+            summary = summarize_test_run(parsed_results, report_url)
+
+            insert_data_to_pbi_db(setup_name, target_version, session_id, parsed_results, summary, dut_hwsku, branch)
+        except Exception as e:
+            logger.info(f"Failed with the following issue: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    args = parse_args()
+    allure_server_addr = InfraConst.ALLURE_SERVER_URL
+    setup_name = args.setup_name
+    session_id = args.session_id
+    target_version = parse_version(args.target_version)
+    dut_hwsku = args.dut_hwsku
+    branch = parse_branch_name(args.tarball)
+    allure_project_id = setup_name.replace('_', '-').lower() + "-session-reports"
+    allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
+
+    report_url = ''
+    file_path = os.path.join(PATH_TO_UPLOAD_URL, f"{allure_project_id}.txt")
+    logger.info(f"File Path: {file_path}")
+    with open(file_path, "r") as f:
+        report_url = f.read().strip()
+    logger.info(f"Retrieved URL: {report_url}")
+    os.remove(file_path)
+
+    if report_url:
+        summarize_results_and_upload(report_url, allure_project_id, session_id, target_version, setup_name, dut_hwsku, branch)

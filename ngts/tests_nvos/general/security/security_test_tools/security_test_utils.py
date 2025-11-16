@@ -125,12 +125,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                 verify_auth_with_medium(medium, user, expect_login_success, verify_authorization, engines, topology_obj)
 
                 if should_check_accounting:
-                    if medium == AuthMedium.OPENAPI:
-                        check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
-                                         [False for _ in expect_accounting_logs])
-                    else:
-                        check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
-                                         expect_accounting_logs)
+                    check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs, expect_accounting_logs)
 
             logging.info('\n')
 
