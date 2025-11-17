@@ -968,6 +968,7 @@ def update_protocol_trap_ids_copp_json_file(protocol, action):
     with open(CONFIG_DB_COPP_CONFIG_NAME) as copp_json_file:
         copp_json_file_dic = json.load(copp_json_file)
     removed_trap_ids = update_trap_id_values(copp_json_file_dic, protocol, action)
+    logger.info(f"Removed trap ids for {protocol} are: {removed_trap_ids}")
     os.remove(CONFIG_DB_COPP_CONFIG_NAME)
     with open(CONFIG_DB_COPP_CONFIG_NAME, 'w') as copp_json_file:
         json.dump(copp_json_file_dic, copp_json_file, indent=4)
@@ -1071,6 +1072,7 @@ def update_trap_id_values(copp_dict, protocol, action):
     """
     removed_trap_ids = []
     default_trap_ids = copp_dict[COPP_TRAP][protocol]['trap_ids']
+    logger.info(f"Default trap ids for {protocol} are: {default_trap_ids}")
 
     if action == 'add':
         new_trap_ids = default_trap_ids + ',' + LEGAL_TRAP_ID_TO_ADD
@@ -1078,11 +1080,12 @@ def update_trap_id_values(copp_dict, protocol, action):
         current_trap_ids_list = default_trap_ids.split(',')
         new_trap_ids = current_trap_ids_list.pop(random.randrange(len(current_trap_ids_list)))
         removed_trap_ids = current_trap_ids_list  # after pop
+        logger.info(f"Removed trap ids for {protocol} are: {removed_trap_ids}")
     else:
         new_trap_ids = default_trap_ids  # restore to default
 
     copp_dict[COPP_TRAP][protocol]['trap_ids'] = new_trap_ids
-
+    logger.info(f"Updated trap ids for {protocol} are: {new_trap_ids}")
     return removed_trap_ids
 
 # -------------------------------------------------------------------------------
