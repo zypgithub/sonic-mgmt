@@ -462,10 +462,10 @@ def get_tested_sensor_list(sensors_counter, dut, cli_object_dut):
 
 
 def get_module_index_supporting_sensor(dut):
-    cmds_get_module_temp_crit_res = ''
+    cmds_get_module_temp_crit_res = '('
     for module_index in range(SENSOR_DATA["module"]["start_index"], SENSOR_DATA["module"]["total_number"] + 1):
         cmds_get_module_temp_crit_res += f"sudo cat {TC_CONST.HW_THERMAL_FOLDER}/module{module_index}_temp_crit && echo && "
-    cmds_get_module_temp_crit_res = cmds_get_module_temp_crit_res.strip(" ").strip('&&')
+    cmds_get_module_temp_crit_res = cmds_get_module_temp_crit_res.strip(" ").strip('&&') + ") | grep -v '^\\s*$'"
     logging.info(f"get all module temp crits cmds :{cmds_get_module_temp_crit_res}")
 
     module_index_supporting_sensor_list = []
