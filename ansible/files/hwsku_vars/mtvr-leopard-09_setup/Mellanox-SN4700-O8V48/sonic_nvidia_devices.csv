@@ -3,5 +3,5 @@ mtvr-leopard-09,10.245.20.250/22,Mellanox-SN4700-O8V48,DevSonic,,sonic
 mtvr-leopard-10,10.245.21.131/22,Mellanox-SN4700-O8V48,FanoutLeaf,,sonic
 mtvr-dl380-13,10.245.46.1,TestServ,Server,,
 pdu-10-245-2-49,10.245.2.49,Vertiv,Pdu,snmp,
-pdu-10-245-2-49,10.245.2.49,Vertiv,Pdu,snmp,
+pdu-10-245-2-25,10.245.2.25,Vertiv,Pdu,snmp,
 rcon-mtvr-rack-2-6,10.245.2.8,,ConsoleServer,ssh,sonic
