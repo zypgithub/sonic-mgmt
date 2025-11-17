@@ -192,7 +192,7 @@ class BaseComponent:
 
     def action_fetch(self, path, base_url=None, engine=None, device=None, expected_output='File fetched successfully') -> ResultObj:
         """
-        nv action fetch <resource-path> <remote-url>
+        nv action fetch <resource-path> remote-url <url>
         :param path: Absolute file-path in the network drive, e.g. '/auto/path/to/file.img'.
         :param base_url: e.g. 'scp://user:password@host'. If None, the default credentials are used. If empty string
             then the `path` parameter needs to contain the full URL.
@@ -200,7 +200,7 @@ class BaseComponent:
         url = (ImageConsts.SCP_PATH if base_url is None else base_url) + path
         with allure.step(f"Fetching: {url}"):
             return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine, device=device,
-                               expected_output=expected_output)
+                               expected_output=expected_output, nvue_include_param_name=True)
 
     def action(self,
                action_str: str,  # e.g. 'install'
@@ -211,6 +211,7 @@ class BaseComponent:
                reboot_params: Union[bool, RebootParams, None] = None,  # set True if reboot is expected
                send_user_confirmation: str = None,  # e.g. 'y' or 'n' if NVUE asks for confirmation
                expected_output: Union[str, Iterable[str]] = '',  # string or list of possible strings
+               nvue_include_param_name: bool = False,  # For NVUE: include parameter name in command (e.g., 'remote-url')
                # todo: timeout parameter
                device=None) -> ResultObj:
         """
@@ -229,6 +230,10 @@ class BaseComponent:
             argument to 'y' or 'n' (or any other string). If no confirmation-message is expected, set to None.
             Note: For OpenAPI actions this should always be set to None.
         :param expected_output: Sub-string we expect to see when the action is finished and before reboot (if expected).
+        :param nvue_include_param_name: For NVUE only. If True, includes parameter name in command.
+            Example: True → "nv action fetch system image remote-url <url>"
+                     False → "nv action upload system image files <filename> <url>"
+            OpenAPI always uses parameter names regardless of this setting.
         :param device: BaseDevice. If None, the DUT is used.
         """
         additional_params = additional_params or {}
@@ -243,9 +248,10 @@ class BaseComponent:
 
         resource_path = self.get_resource_path()
         with allure.step("Execute " + BaseCli.get_nv_action_string(action_str, resource_path, main_param, flags,
-                                                                   additional_params)):
+                                                                   additional_params, nvue_include_param_name)):
             result = self._cli_wrapper.action(action_str, resource_path, main_param, flags, additional_params, engine,
-                                              reboot_params, send_user_confirmation, expected_output, device)
+                                              reboot_params, send_user_confirmation, expected_output, device,
+                                              nvue_include_param_name)
             logger.info(result)
 
         if reboot_params and result:  # if reboot is expected and the action returned a success message: wait on reboot

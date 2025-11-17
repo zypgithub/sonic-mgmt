@@ -31,12 +31,22 @@ class BaseCli(metaclass=ABCMeta):
                           track_boot_intervals, deny_reboot, press_y, expected_output: str): pass
 
     @classmethod
-    def get_nv_action_string(cls, action_str, resource_path, main_param, flags, params):
-        """Returns the full NVUE command, e.g. 'nv action uninstall system image force' """
+    def get_nv_action_string(cls, action_str, resource_path, main_param, flags, params, include_param_name=False):
+        """
+        Returns the full NVUE command, e.g. 'nv action uninstall system image force'
+
+        :param include_param_name: If True, includes parameter name in NVUE command.
+            Example: True  → "nv action fetch system image remote-url <url>"
+                     False → "nv action upload system image files <filename> <url>"
+        """
         if main_param:
             if len(main_param) != 2:
                 raise ValueError(f'"main_param" argument should be a 2-tuple (name, value) but it is {repr(main_param)}')
-            main_param_value = main_param[1]
+            # Include parameter name if explicitly requested (e.g., for 'fetch' action)
+            if include_param_name:
+                main_param_value = f'{main_param[0]} {main_param[1]}'
+            else:
+                main_param_value = str(main_param[1])
         else:
             main_param_value = ''
         if not isinstance(flags, str):
@@ -50,4 +60,5 @@ class BaseCli(metaclass=ABCMeta):
     @abstractmethod
     def action(cls, action_str: str, resource_path: str, main_param: Tuple[str, Union[str, int]],
                flags: Union[str, Iterable[str]], params: dict, engine, reboot_params: Optional[RebootParams],
-               send_user_confirmation: Optional[str], expected_output: str, device) -> ResultObj: pass
+               send_user_confirmation: Optional[str], expected_output: str, device,
+               nvue_include_param_name: bool = False) -> ResultObj: pass

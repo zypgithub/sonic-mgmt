@@ -71,7 +71,18 @@ class LLDPTool:
 
     @staticmethod
     @retry(AssertionError, 10, 5)
-    def verify_ip_address_is_set(engine: PexpectSerialEngine, mgmt_interface: Port, ip_address: str):
-        with allure.step(f"Verify ip address {ip_address} is set"):
-            ip_address_output = mgmt_interface.interface.ip.address.show(dut_engine=engine)
+    def verify_ip_address_is_set(engine: PexpectSerialEngine, mgmt_interface: Port, ip_address: str, is_ipv6: bool = False):
+        """
+        Verify IP address is set on the interface.
+
+        :param engine: Serial engine to use for verification
+        :param mgmt_interface: Management interface Port object
+        :param ip_address: IP address to verify (with or without prefix)
+        :param is_ipv6: If True, verify IPv6 address; if False, verify IPv4 address
+        """
+        with allure.step(f"Verify {'IPv6' if is_ipv6 else 'IPv4'} address {ip_address} is set"):
+            if is_ipv6:
+                ip_address_output = mgmt_interface.interface.ipv6.address.show(dut_engine=engine)
+            else:
+                ip_address_output = mgmt_interface.interface.ipv4.address.show(dut_engine=engine)
             ValidationTool.verify_expected_output(ip_address_output, ip_address).verify_result()

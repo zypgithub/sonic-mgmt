@@ -41,41 +41,43 @@ def test_show_transceiver_els(engines, devices, nv_command, test_api):
 
     with allure.step("Verify all fields are as expected for ELS transceiver"):
         els_rand = random.choice(els_list)
-        els_output = all_transceivers_data[els_rand]
+        with allure.independent_step(f"Verify all fields are as expected for ELS transceiver {els_rand}"):
+            els_output = all_transceivers_data[els_rand]
 
-        expected_fields = TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS]
-        actual_fields = set(els_output.keys())
-        expected_fields_set = set(expected_fields)
+            expected_fields = TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_ELS]
+            actual_fields = set(els_output.keys())
+            expected_fields_set = set(expected_fields)
 
-        ValidationTool.validate_set_equal(
-            actual_fields, expected_fields_set, should_be_equal=True
-        ).verify_result()
+            ValidationTool.validate_set_equal(
+                actual_fields, expected_fields_set, should_be_equal=True
+            ).verify_result()
 
     with allure.step("Verify transceiver fault-condition, port-mapping and oe-mapping values for each ELS transceiver"):
         for els in els_list:
-            els_output = all_transceivers_data[els]
+            with allure.independent_step(f"Verify transceiver fault-condition, port-mapping and oe-mapping values for {els}"):
+                els_output = all_transceivers_data[els]
 
-            with allure.independent_step(f"Verify port mapping for {els}"):
-                actual_port_mapping = els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys()
-                expected_port_mapping = transceivers_els_to_port_mapping[els]
-                ValidationTool.validate_set_equal(
-                    actual_port_mapping, expected_port_mapping, should_be_equal=True
-                ).verify_result()
-
-            with allure.independent_step(f"Verify OE mapping for {els}"):
-                actual_oe_mapping = els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].keys()
-                expected_oe_mapping = transceivers_els_to_oe_mapping[els]
-                ValidationTool.validate_set_equal(
-                    actual_oe_mapping, expected_oe_mapping, should_be_equal=True
-                ).verify_result()
-
-            if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
-                with allure.independent_step(f"Verify fault condition for {els}"):
-                    ValidationTool.verify_field_value_in_output(
-                        output_dictionary=els_output,
-                        field_name=PlatformConsts.TRANSCEIVER_FAULT_CONDITION,
-                        expected_value='false'
+                with allure.independent_step(f"Verify port mapping for {els}"):
+                    actual_port_mapping = els_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys()
+                    expected_port_mapping = transceivers_els_to_port_mapping[els]
+                    ValidationTool.validate_set_equal(
+                        actual_port_mapping, expected_port_mapping, should_be_equal=True
                     ).verify_result()
+
+                with allure.independent_step(f"Verify OE mapping for {els}"):
+                    actual_oe_mapping = els_output[PlatformConsts.TRANSCEIVER_OE_MAPPING].keys()
+                    expected_oe_mapping = transceivers_els_to_oe_mapping[els]
+                    ValidationTool.validate_set_equal(
+                        actual_oe_mapping, expected_oe_mapping, should_be_equal=True
+                    ).verify_result()
+
+                if els_output[PlatformConsts.TRANSCEIVER_STATUS] == PlatformConsts.INSERTED:
+                    with allure.independent_step(f"Verify fault condition for {els}"):
+                        ValidationTool.verify_field_value_in_output(
+                            output_dictionary=els_output,
+                            field_name=PlatformConsts.TRANSCEIVER_FAULT_CONDITION,
+                            expected_value='false'
+                        ).verify_result()
 
 
 @pytest.mark.platform

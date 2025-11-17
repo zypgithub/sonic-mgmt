@@ -33,8 +33,8 @@ class TransceiversConsts:
     TRANSCEIVERS_OE = 'oe'
     TRANSCEIVERS_SW = 'sw'
     TRANSCEIVERS_FIELDS = {
-        TRANSCEIVERS_ELS: ['channel', 'diagnostics-status', 'dp-fw-fault', 'error-status', 'fault-condition',
-                           'fw-version', 'identifier', 'mod-fw-fault', 'oe-mapping', 'port-mapping', 'status',
+        TRANSCEIVERS_ELS: ['channel', 'diagnostics-status', 'els-initialization', 'error-status', 'fault-condition',
+                           'fw-version', 'identifier', 'oe-mapping', 'port-mapping', 'status',
                            'temperature', 'vendor-date-code', 'vendor-name', 'vendor-pn', 'vendor-rev', 'vendor-sn',
                            'voltage'],
         TRANSCEIVERS_OE: ['channel', 'diagnostics-status', 'dp-fw-fault', 'els-mapping', 'error-status', 'fw-version',

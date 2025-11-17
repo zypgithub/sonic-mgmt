@@ -300,7 +300,8 @@ def test_lldp_additional_ipv6(engines, devices, serial_engine):
                                                                   ask_for_confirmation=True,
                                                                   dut_engine=serial_engine).verify_result()
 
-                    LLDPTool.verify_ip_address_is_set(engine=serial_engine, mgmt_interface=mgmt_interface, ip_address=ip_address_full)
+                    LLDPTool.verify_ip_address_is_set(engine=serial_engine, mgmt_interface=mgmt_interface,
+                                                      ip_address=ip_address_full, is_ipv6=True)
 
                     with allure.step("Verify ipv6 address is in the lldp frame"):
                         default_interval = 30

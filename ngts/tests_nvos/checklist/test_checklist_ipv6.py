@@ -3,6 +3,9 @@ import pytest
 
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.tools.test_utils import allure_utils as allure
 import subprocess
 
@@ -10,7 +13,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.platform
-def test_checklist_ipv6(engines):
+def test_checklist_ipv6(engines, topology_obj):
     """
     ipv6
 
@@ -21,19 +24,27 @@ def test_checklist_ipv6(engines):
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
         pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = Port(mgmt_port_name)
+    ipv6_add = None
+
     try:
-        with allure.step("Get ipv6 address for switch " + engines.dut.ip):
-            logging.info("Running 'nv show interface eth0 ip address'")
-            output = engines.dut.run_cmd("nv show interface eth0 ip address")
-            assert output, "The output is empty"
-            addresses = output.split()
-            assert len(addresses) >= 4, "The output is invalid"
-            for add in addresses:
-                if "::" in add:
-                    ipv6_add = add.split("/")[0]
+        with allure.step(f"Get ipv6 address for switch {engines.dut.ip} on interface {mgmt_port_name}"):
+            output_dictionary = OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ipv6.show()).get_returned_value()
+
+            assert 'address' in output_dictionary, "No address field found in IPv6 output"
+            ipv6_addresses = list(output_dictionary['address'].keys())
+            assert ipv6_addresses, "No IPv6 addresses found"
+
+            # Find the first global IPv6 address (containing ::)
+            for addr in ipv6_addresses:
+                if "::" in addr:
+                    ipv6_add = addr.split("/")[0]
                     break
-            assert ipv6_add, "failed to get the ipv6 address"
-            logging.info("ipv6 address: " + ipv6_add)
+
+            assert ipv6_add, f"Failed to get the IPv6 address from addresses: {ipv6_addresses}"
+            logging.info(f"Found IPv6 address: {ipv6_add}")
 
         with allure.step("Verify ping to ipv6 address " + ipv6_add):
             logging.info("Verify ping to ipv6 address " + ipv6_add)
