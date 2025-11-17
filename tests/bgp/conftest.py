@@ -11,11 +11,12 @@ import six
 import socket
 
 from jinja2 import Template
+from tests.bgp.constants import SHOW_IP_INTERFACE_CMD
 from tests.common.helpers.assertions import pytest_assert as pt_assert
 from tests.common.helpers.generators import generate_ips
 from tests.common.helpers.parallel import parallel_run
 from tests.common.helpers.parallel import reset_ansible_local_tmp
-from tests.common.utilities import wait_until, get_plt_reboot_ctrl
+from tests.common.utilities import wait_until, get_plt_reboot_ctrl, is_ipv6_only_topology
 from tests.common.utilities import wait_tcp_connection
 from tests.common import config_reload
 from bgp_helpers import define_config, apply_default_bgp_config, DUT_TMP_DIR, TEMPLATE_DIR, BGP_PLAIN_TEMPLATE,\
@@ -798,3 +799,13 @@ def traffic_shift_community(duthost):
 @pytest.fixture(scope='module')
 def get_function_completeness_level(pytestconfig):
     return pytestconfig.getoption("--completeness_level")
+
+
+@pytest.fixture(scope='module')
+def ip_version(tbinfo):
+    return 'v6' if is_ipv6_only_topology(tbinfo) else 'v4'
+
+
+@pytest.fixture(scope='module')
+def show_ip_interface_cmd(ip_version):
+    return SHOW_IP_INTERFACE_CMD[ip_version]
