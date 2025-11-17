@@ -547,9 +547,9 @@ drop_packets/test_wjh.py::test_ip_pkt_with_expired_ttl:
 
 drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
   skip:
-    reason: "https://redmine.mellanox.com/issues/4048046"
+    reason: "https://redmine.mellanox.com/issues/4079619"
     conditions:
-    - "https://redmine.mellanox.com/issues/4048046"
+    - "https://redmine.mellanox.com/issues/4079619"
     - "'leopard' in testbed or 'moose' in testbed or 'bobcat' in testbed or 'bison' in testbed"
 
 dut_console/test_console_baud_rate.py::test_baud_rate_boot_connect:
