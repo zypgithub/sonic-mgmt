@@ -19,6 +19,7 @@ from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyCons
 
 logger = logging.getLogger(Path(__file__).stem if __name__ == "__main__" else __name__)
 
+_ALLURE_PROJECT_ID_SUFFIX: str = "-session-reports"
 _ALLURE_DOCKER_SERVICE: str = 'allure-docker-service'
 _PATH_TO_UPLOAD_URL: Path = Path('/auto/sw_system_project/NVOS_INFRA/verification_files/')
 _ALLURE_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
@@ -97,7 +98,7 @@ class Args(Namespace):
 
     @property
     def allure_project_id(self) -> str:
-        return self.setup_name.replace('_', '-').lower() + "-session-reports"
+        return self.setup_name.replace('_', '-').lower() + _ALLURE_PROJECT_ID_SUFFIX
 
     @property
     def allure_server_base_url(self) -> str:
