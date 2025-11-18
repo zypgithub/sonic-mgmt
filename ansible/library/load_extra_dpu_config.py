@@ -118,7 +118,7 @@ class LoadExtraDpuConfigModule(object):
             required_success_count = 1
 
         # Wait for the DPU control plane to be up for at least required_success_count DPUs
-        if not self.wait_for_dpu_count_control_plane_up(required_success_count):
+        if not self.wait_for_dpu_count_mid_plane_up(required_success_count):
             self.module.warn(
                 "DPU control planes are not ready on switch (required {}) after {} retries. Trying to reboot the DPUs".format(required_success_count,
                     MAX_RETRIES,
@@ -126,7 +126,7 @@ class LoadExtraDpuConfigModule(object):
             )
             # WA for RM#4629210
             self.reboot_dpus()
-            if not self.wait_for_dpu_count_control_plane_up(required_success_count):
+            if not self.wait_for_dpu_count_mid_plane_up(required_success_count):
                 self.module.fail_json(msg="DPU control planes are not ready on switch after rebooting the DPUs(required {}) after {} retries.".format(
                     required_success_count,
                 MAX_RETRIES
@@ -183,23 +183,61 @@ class LoadExtraDpuConfigModule(object):
                     "Failures: {}".format(
                         required_success_count, success_count, self.dpu_num, failure_count))
 
+        self.module.log("Checking the number of DPUs fully online")
+        if not self.wait_for_dpu_count_fully_online(required_success_count):
+            self.module.fail_json(
+                msg="DPUs are not fully online (required {}) after {} retries.".format(
+                    required_success_count,
+                    MAX_RETRIES,
+                )
+            )
+
         return success_count, failure_count
 
-    def get_dpu_count_control_plane_up(self):
-        # check the output for the number of DPU with control plane up
-        rc, out, err = self.module.run_command("show system-health dpu all")
+    def get_dpu_online_mid_plane_up_counts(self):
+        # returns the number of DPUs fully online and midplane up count
+        # root@mtvr-bobcat-03:~# show system-health dpu all
+        # Name    Oper-Status     State-Detail             State-Value    Time                             Reason
+        # ------  --------------  -----------------------  -------------  -------------------------------  --------
+        # DPU0    Partial Online  dpu_midplane_link_state  up             Wed Nov 19 03:00:35 AM UTC 2025
+        #                         dpu_control_plane_state  down           Wed Nov 19 03:15:58 AM UTC 2025
+        #                         dpu_data_plane_state     down           Wed Nov 19 03:15:58 AM UTC 2025
+        # DPU1    Online          dpu_midplane_link_state  up             Wed Nov 19 03:00:55 AM UTC 2025
+        #                         dpu_control_plane_state  up             Wed Nov 19 03:02:12 AM UTC 2025
+        #                         dpu_data_plane_state     up             Wed Nov 19 03:02:12 AM UTC 2025
+        # DPU2    Online          dpu_midplane_link_state  up             Wed Nov 19 03:00:55 AM UTC 2025
+        #                         dpu_control_plane_state  up             Wed Nov 19 03:02:20 AM UTC 2025
+        #                         dpu_data_plane_state     up             Wed Nov 19 03:02:20 AM UTC 2025
+        # DPU3    Online          dpu_midplane_link_state  up             Wed Nov 19 03:00:25 AM UTC 2025
+        #                         dpu_control_plane_state  up             Wed Nov 19 03:01:46 AM UTC 2025
+        #                         dpu_data_plane_state     up             Wed Nov 19 03:01:46 AM UTC 2025
+        cmd = "show system-health dpu all"
+        rc, out, err = self.module.run_command(cmd)
         if rc != 0:
-            return 0
-        dpu_count = 0
+            self.module.warn(f"Failed to execute DPU system health command: cmd: {cmd}, rc: {rc}, Err: {err}, Out: {out}")
+            return 0, 0
+        dpu_online_count = 0
+        dpu_midplane_up_count = 0
         for line in out.split("\n"):
-            if "dpu_control_plane_state" in line and "up" in line:
-                dpu_count += 1
-        return dpu_count
+            if "up" in line and "dpu_midplane_link_state" in line:
+                dpu_midplane_up_count += 1
+            if line.startswith("DPU") and "Online" in line and "Partial" not in line:
+                dpu_online_count += 1
+        return dpu_online_count, dpu_midplane_up_count
 
-    def wait_for_dpu_count_control_plane_up(self, required_count):
+    def wait_for_dpu_count_mid_plane_up(self, required_count):
         retry_count = 0
         while retry_count < MAX_RETRIES:
-            if self.get_dpu_count_control_plane_up() >= required_count:
+            if self.get_dpu_online_mid_plane_up_counts()[1] >= required_count:
+                return True
+            time.sleep(RETRY_DELAY)
+            retry_count += 1
+        return False
+
+    def wait_for_dpu_count_fully_online(self, required_count):
+        retry_count = 0
+        while retry_count < MAX_RETRIES:
+            if self.get_dpu_online_mid_plane_up_counts()[0]  >= required_count:
                 return True
             time.sleep(RETRY_DELAY)
             retry_count += 1
