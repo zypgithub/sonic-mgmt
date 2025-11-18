@@ -118,4 +118,7 @@ def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params,
             SonicSecureBootConsts.INVALID_SIGNATURE_EXPECTED_MESSAGE[SonicSecureBootConsts.BIOS_COMPONENT],
             timeout_factor * SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
     with allure.step("Wait for the switch auto boot to SONiC"):
-        retry_call(secure_boot_helper.is_sonic_mode, tries=3, delay=15, logger=logger)
+        def assert_sonic_mode():
+            assert secure_boot_helper.is_sonic_mode(), "Switch is not in SONiC mode"
+
+        retry_call(assert_sonic_mode, tries=20, delay=15, logger=logger)

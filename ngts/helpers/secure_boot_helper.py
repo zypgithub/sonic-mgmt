@@ -97,12 +97,14 @@ class SonicSecureBootHelper(SecureBootHelper):
     def is_sonic_mode(self):
         try:
             _, respond = self.serial_engine.run_cmd('\r', ["/home/admin#",
+                                                           "Debian GNU/Linux.*",
                                                            "Please press Enter to activate this console",
                                                            DefaultConnectionValues.LOGIN_REGEX,
                                                            DefaultConnectionValues.DEFAULT_PROMPTS[0],
-                                                           "Malformed binary after Attribute Certificate Table"],
+                                                           "Malformed binary after Attribute Certificate Table",
+                                                           "GNU GRUB  version"],
                                                     timeout=SonicSecureBootConsts.ONIE_TIMEOUT)
-            if respond == 0:
+            if respond <= 1:
                 logger.info("SONIC mode")
                 return True
             else:
@@ -200,7 +202,25 @@ class SonicSecureBootHelper(SecureBootHelper):
     def login_into_onie_mode(self):
         """
         This function will login into onie mode
+        After secure boot violation, the switch may be stuck in GRUB menu, so we need to handle that first
         """
+        # First check if we're stuck in GRUB menu and need to select ONIE: Rescue
+        try:
+            _, respond = self.serial_engine.run_cmd('\r',
+                                                    [
+                                                        "\\*ONIE",
+                                                        "\\*SONiC",
+                                                    ], timeout=10)
+
+            if respond == 0:
+                logger.info("Already selected ONIE")
+            else:
+                # Press down arrow to navigate to ONIE
+                logger.info("Pressing down arrow to navigate to ONIE")
+                self.serial_engine.run_cmd('\x1b[B')
+        except Exception as e:
+            logger.info(f"No GRUB menu detected or already past it: {str(e)}")
+
         def press_enter_until_onie_login():
             _, respond = self.serial_engine.run_cmd('\r', [DefaultConnectionValues.LOGIN_REGEX] +
                                                     DefaultConnectionValues.DEFAULT_PROMPTS, timeout=5)
