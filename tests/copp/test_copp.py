@@ -420,6 +420,7 @@ def _copp_runner(dut, ptf, protocol, test_params, dut_type, has_trap=True,
               "has_trap": has_trap,
               "hw_sku": dut.facts["hwsku"],
               "asic_type": dut.facts["asic_type"],
+              "is_smartswitch": dut.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch"),
               "platform": dut.facts["platform"],
               "topo_type": test_params.topo_type,
               "ip_version": ip_version,
@@ -429,7 +430,7 @@ def _copp_runner(dut, ptf, protocol, test_params, dut_type, has_trap=True,
     device_sockets = ["0-{}@tcp://127.0.0.1:10900".format(test_params.nn_target_port),
                       "1-{}@tcp://{}:10900".format(test_params.nn_target_port, dut_ip)]
 
-    # Check the dut reachability from ptf host, this is to make sure the socket for ptf_nn_agent 
+    # Check the dut reachability from ptf host, this is to make sure the socket for ptf_nn_agent
     # can be established successfully. If the socket cannot be established, the ptf test command
     # could hang there forever.
     ptf.shell(f"ping {dut_ip} -c 5 -i 0.2")
