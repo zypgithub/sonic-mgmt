@@ -48,3 +48,6 @@ file.log
 log.txt
 .devcontainer/
 .cache/
+
+# CLAUDE local setup
+CLAUDE.local.md
