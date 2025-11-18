@@ -413,7 +413,7 @@ def test_continious_application(engines, validator_with_cleanup):
 
     admin = _generate_random_admin_with_apply(engines.dut, crl_validator.app.system)
     gnmic_cmd = (
-        GnmicCmdBuilder(crl_validator.app.host)
+        GnmicCmdBuilder(engines.dut.ip)
         .user_creds(admin.username, admin.password)
         .ca(server_cert.cacert)
         .cert(client_cert.private, client_cert.public)
