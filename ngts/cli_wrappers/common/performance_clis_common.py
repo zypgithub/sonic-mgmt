@@ -241,8 +241,18 @@ class PerformanceCommon:
         except Exception as e:
             logging.error(f"Error running traffic validator: {e}")
             raise TestIssue(msg=f"Error running traffic validator: {e}")
-        self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
-                              overwrite_file=True, verify_file=False, direction='get')
+
+        source_path = os.path.join(dst_dut_dir, "TrafficValidator.json")
+        try:
+            self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
+                                  overwrite_file=True, verify_file=False, direction='get')
+        except Exception as e:
+            logging.error(f"Error copying validation file from {source_path} on DUT to {json_path}: {e}")
+            raise TestIssue(msg=f"Error copying validation file from DUT: {e}")
+
+        if not os.path.exists(json_path):
+            raise TestIssue(f"Traffic validation file was not created at {json_path} after copy from DUT. "
+                            f"The file may not exist on the DUT at {source_path}.")
 
     @retry(exceptions=TestIssue, tries=2, delay=2)
     def stop_traffic(self):

@@ -19,7 +19,7 @@ logger = logging.getLogger()
 class TestSRv6Spine(TestSRv6Base):
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type):
+    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type, shaper_value):
         self.players = players
         self.engines = engines
         self.cli_objects = cli_objects
@@ -38,6 +38,7 @@ class TestSRv6Spine(TestSRv6Base):
         self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
         self.cli_object.trimming.configure_custom_dwrr_weights()
+        self.shaper_value = shaper_value
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_spine_round_robin_srv6(self, request, traffic_type):

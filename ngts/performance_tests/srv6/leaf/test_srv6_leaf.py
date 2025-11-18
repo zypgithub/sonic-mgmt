@@ -9,9 +9,10 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata,
                                                                 update_port_group_in_df,
+                                                                skip_test_on_unsupported_os,
                                                                 skip_performance_test_conditionally, skip_test_on_unsupported_chip_type,
                                                                 set_shaper_on_traffic_gen)
-from ngts.constants.constants import InfraConst
+from ngts.constants.constants import InfraConst, CliType
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
@@ -23,6 +24,7 @@ from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_per_tc
 from infra.tools.exceptions.test_issue import TestIssue
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 
 logger = logging.getLogger()
@@ -31,7 +33,7 @@ logger = logging.getLogger()
 class TestSRv6Leaf(TestSRv6Base):
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type):
+    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type, shaper_value):
         self.players = players
         self.engines = engines
         self.cli_objects = cli_objects
@@ -50,6 +52,7 @@ class TestSRv6Leaf(TestSRv6Base):
         self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
         self.cli_object.trimming.configure_custom_dwrr_weights()
+        self.shaper_value = shaper_value
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -72,7 +75,7 @@ class TestSRv6Leaf(TestSRv6Base):
             traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                   self.dut_interfaces_ipv6_configuration_dict,
                                                   create_workload_stream, upstream_ports=upstream, downstream_ports=downstream)
-            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SRV6_SHAPER_VALUE)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
 
         with allure.step(f"Verifying the traffic for all egress ports"):
@@ -151,6 +154,7 @@ class TestSRv6Leaf(TestSRv6Base):
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
     def test_victim_flow_srv6(self, request, victim_flow_port_group_df, traffic_type, packet_size=4096):
         skip_test_on_unsupported_chip_type(self.chip_type, "SPC4")
+        skip_performance_test_conditionally(isinstance(self.cli_object, NvueCli), "This test is to verify a FW bug, it's not OS related, so it can run on 1 OS and not all")
         test_name = get_perf_test_name(request)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,
@@ -201,7 +205,12 @@ class TestSRv6Leaf(TestSRv6Base):
         with allure.step(f"stop traffic"):
             stop_traffic(self.players)
         with allure.step(f"validate no dropped packets on queues"):
-            self.cli_object.trimming.validate_no_dropped_packets_on_queue(egress_ports, MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, violations_list)
+            self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports,
+                                                                                    trimming_queue=MRCConsts.TRIMMING_TC,
+                                                                                    drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
+                                                                                    violations_list=violations_list,
+                                                                                    duration=None)
+
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 
@@ -213,10 +222,10 @@ class TestSRv6Leaf(TestSRv6Base):
 
     def get_bisection_bw_threshold(self):
         bw_threshold = {
-            MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
-                                                             ValidationConsts.RX: MRCConsts.DUT_TX_UTIL_TH},
-            MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
-                                                           ValidationConsts.RX: MRCConsts.DUT_TX_UTIL_TH}
+            MRCConsts.BISECTION_DOWNSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: min(self.shaper_value, MRCConsts.DUT_TX_UTIL_TH),
+                                                             ValidationConsts.RX: min(self.shaper_value, MRCConsts.DUT_TX_UTIL_TH)},
+            MRCConsts.BISECTION_UPSTREAM_PORT_GROUP_NAME: {ValidationConsts.TX: min(self.shaper_value, MRCConsts.DUT_TX_UTIL_TH),
+                                                           ValidationConsts.RX: min(self.shaper_value, MRCConsts.DUT_TX_UTIL_TH)}
         }
         if is_redmine_issue_active([4667031])[0]:
             bw_threshold[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
@@ -225,9 +234,9 @@ class TestSRv6Leaf(TestSRv6Base):
     def get_victim_flow_bw_threshold(self):
         bw_threshold = {
             MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
-                                               ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
+                                               ValidationConsts.RX: self.shaper_value},
             MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
-                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE},
+                                                ValidationConsts.RX: self.shaper_value},
         }
         bw_threshold.update(self.get_bisection_bw_threshold())
         return bw_threshold

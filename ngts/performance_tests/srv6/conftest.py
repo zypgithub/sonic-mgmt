@@ -161,3 +161,15 @@ def get_srv6_tests_skip_condition(cli_obj, actual_chip_type):
     condition = actual_chip_type == unsupported_chip_type
     skip_message = f"This test is not supported on {unsupported_chip_type} on cli type {cli_obj.__class__.__name__}"
     return condition, skip_message
+
+
+@pytest.fixture(scope="class", autouse=True)
+def shaper_value(request, players):
+    request.getfixturevalue('basic_setup_configuration')
+    cli_obj = players['dut']['cli']
+    if isinstance(cli_obj, SonicCli):
+        return PerfConsts.SRV6_SONIC_OS_SHAPER_VALUE
+    elif isinstance(cli_obj, NvueCli):
+        return PerfConsts.SRV6_NVUE_OS_SHAPER_VALUE
+    else:
+        raise ValueError(f"Unsupported cli type: {cli_obj.__class__.__name__}")

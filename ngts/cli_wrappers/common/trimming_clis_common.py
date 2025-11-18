@@ -26,7 +26,7 @@ class TrimmingCommon(PerformanceCommon):
         """
         pass
 
-    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False):
+    def validate_trimmed_untrimmed_dropped_percentages(self, interface_list, trimming_queue, drop_queues, violations_list, return_dict=False, duration=None, pairing_df=None):
         """
         This method is used to validate the trimmed and untrimmed dropped percentages on the dut
         :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
@@ -34,7 +34,18 @@ class TrimmingCommon(PerformanceCommon):
         :param drop_queues: drop queue, i.e 'TC1'
         :param violations_list: list of violations
         :param return_dict: return a dict of the queue packet percentages
+        :param duration: traffic duration in seconds for calculating packets per second
+        :param pairing_df: optional pairing dataframe to merge with results
         Implemented for Sonic and Cumulus only
+        """
+        pass
+
+    def validate_trimming_counters(self, interface_list, violations_list):
+        """
+        This method is used to validate that trimming counters for all interfaces
+        :param interface_list: list of interfaces, i.e ['Ethernet111', 'Ethernet112']
+        :param violations_list: list of violations to append errors to
+        Implemented for Sonic trimming counter feature only
         """
         pass
 

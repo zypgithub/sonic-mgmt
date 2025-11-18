@@ -94,8 +94,8 @@ class PerfConsts:
     }
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
-    SHAPER_VALUE = 0.99
-    SRV6_SHAPER_VALUE = 0.96
+    SRV6_SONIC_OS_SHAPER_VALUE = 0.99
+    SRV6_NVUE_OS_SHAPER_VALUE = 0.96
     DVS_SHAPER_VALUE = 0.975
     OCC_AVG_TH = 400
     TC_NUM = 7
@@ -351,8 +351,23 @@ class Cl_Consts:
 
 
 class SPCXRAConsts:
-    DUT_TX_UTIL_AUTO_TH_DICT = {4096: 0.92}
-    DUT_TX_UTIL_IBM_TH_DICT = {4096: 0.96}
+
+    DUT_TX_UTIL_AUTO_TH_DICT = {
+        PerfConsts.PACKET_SIZE_4K: {
+            "left_ports": 0.92,
+            "right_ports": 0.92
+        }
+    }
+    DUT_TX_UTIL_IBM_TH_DICT = {
+        PerfConsts.PACKET_SIZE_4K: {
+            "left_ports": 0.96,
+            "right_ports": 0.96
+        }
+    }
+    if is_redmine_issue_active([4667031])[0]:
+        DUT_TX_UTIL_AUTO_TH_DICT[PerfConsts.PACKET_SIZE_4K][ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+        DUT_TX_UTIL_IBM_TH_DICT[PerfConsts.PACKET_SIZE_4K][ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+
     PACKET_NUM_400G_x2 = 8
     PACKET_NUM_800G_x1 = 20
 
@@ -460,8 +475,8 @@ class MRCConsts:
     MAX_INCAST_WITHOUT_TRIMMING_DROP = 10
     INCAST_VALUE_WITH_TRIMMING_DROP = MAX_INCAST_WITHOUT_TRIMMING_DROP + 1
     TC_1_2_3_ALPHA = 1 / 64
-    MIN_INGRESS_PORTS_NUM = 9
-    MAX_INGRESS_PORTS_NUM = 10
+    MIN_INGRESS_PORTS_NUM = 4
+    MAX_INGRESS_PORTS_NUM = 5
     INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM))
     ACL_MODES = [False, True]
     PORTS_NUM_LIST = [120, 240, 360, 448, 512]

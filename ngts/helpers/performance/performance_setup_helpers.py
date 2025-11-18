@@ -269,6 +269,10 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
 
 
 def attach_json_to_allure(json_path, attachment_name, attach_to_allure=True):
+    if not os.path.exists(json_path):
+        raise TestIssue(f"Traffic validation JSON file was not created at expected path: {json_path}. "
+                        f"This may indicate that the traffic validator failed to run or the file copy from DUT failed. "
+                        f"Check the DUT logs for more details.")
     with open(json_path) as f:
         json_str = f.read()
         if attach_to_allure:

@@ -197,16 +197,6 @@ class SonicTrimmingCli(TrimmingCommon):
         queue_dropped_bytes_counter += queue_drop_bytes
         return queue_pkts_counter, queue_drop_pkts_counter, queue_pkts_bytes_counter, queue_dropped_bytes_counter
 
-    def validate_no_dropped_packets_on_queue(self, interface_list, queue_list, violations_list):
-        for interface in interface_list:
-            with allure.step(f"Validate no dropped packets on queues {queue_list} for {interface}"):
-                show_queue_counters_dict = self.cli_obj.interface.parse_show_queue_counters(interface)
-                logging.info(f"show queue counters for {interface}:\n{show_queue_counters_dict}")
-                for queue in queue_list:
-                    queue_counter_pkts, queue_drop_pkts = self.cli_obj.interface.get_counters_for_queue(show_queue_counters_dict, queue)
-                    if queue_drop_pkts > 0:
-                        violations_list.append(f"Dropped packets on {interface} queue {queue}")
-
     def get_queue_packet_percentages(self, interface_list, queues_list):
         queue_packet_percentages = {}
         for interface in interface_list:

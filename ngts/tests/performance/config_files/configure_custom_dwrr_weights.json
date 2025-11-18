@@ -2,35 +2,35 @@
     "SCHEDULER": {
         "scheduler_q1_downlink": {
             "type": "DWRR",
-            "weight": "5"
+            "weight": "8"
         },
         "scheduler_q1_uplink": {
             "type": "DWRR",
-            "weight": "5"
+            "weight": "8"
         },
         "scheduler_q2_downlink": {
             "type": "DWRR",
-            "weight": "10"
+            "weight": "18"
         },
         "scheduler_q2_uplink": {
             "type": "DWRR",
-            "weight": "10"
+            "weight": "18"
         },
         "scheduler_q3_downlink": {
             "type": "DWRR",
-            "weight": "12"
+            "weight": "22"
         },
         "scheduler_q3_uplink": {
             "type": "DWRR",
-            "weight": "12"
+            "weight": "22"
         },
         "scheduler_q4_downlink": {
             "type": "DWRR",
-            "weight": "100"
+            "weight": "22"
         },
         "scheduler_q4_uplink": {
             "type": "DWRR",
-            "weight": "100"
+            "weight": "22"
         }
     }
 }

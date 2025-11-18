@@ -718,7 +718,7 @@ class TrafficValidator(MultiNosTest):
                                 for port_group_name, port_group in self.port_groups.items()}
         else:
             self.port_groups = {"left_ports": self.connected_ports[:len(self.connected_ports) // 2],
-                                "right_Ports": self.connected_ports[len(self.connected_ports) // 2:]
+                                "right_ports": self.connected_ports[len(self.connected_ports) // 2:]
                                 }
 
     def collect_non_hft_tc_pg_occupancy(self):

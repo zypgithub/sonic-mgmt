@@ -367,8 +367,8 @@ class NvuePerformanceCli(PerformanceCommon):
         {'left_ports': ['swp1s0', 'swp1s1', ...,], 'right_ports': ['swp33s0', 'swp33s1',...]}
         """
         right_left_port_dict = {
-            'right_ports': [],
-            'left_ports': []
+            "right_ports": [],
+            "left_ports": []
         }
         if bring_up_ports:
             for dut in PerfConsts.PERF_SETUP_PLAYERS_ALIASES:
@@ -603,7 +603,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.engine.copy_file(source_file=full_path, file_system="/tmp",
                               dest_file=ports_file, overwrite_file=True, verify_file=False)
 
-    @retry(exceptions=TestIssue, tries=10, delay=5)
+    @retry(exceptions=TestIssue, tries=7, delay=10)
     def check_mloops_up(self):
         """
         This method is used to check if the mloops are up on the traffic generator

@@ -31,7 +31,7 @@ logger = logging.getLogger()
 class TestSRv6Base:
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type):
+    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type, shaper_value):
         self.players = players
         self.engines = engines
         self.cli_objects = cli_objects
@@ -47,6 +47,7 @@ class TestSRv6Base:
         self.power_thresholds_by_chip_type = power_thresholds_by_chip_type
         self.dut_interfaces_ipv6_configuration_dict = {}
         self.vlan_interface_configuration_dict = {}
+        self.shaper_value = shaper_value
 
     def round_robin_traffic_test_runner(self, test_name, traffic_type,
                                         upstream_group, downstream_group, bisection_traffic=True):
@@ -66,7 +67,7 @@ class TestSRv6Base:
             round_robin_occ_th_dict = {ValidationConsts.OCC_AVG: 11 * half_ports_num,
                                        ValidationConsts.OCC_99: 22 * half_ports_num}
             additional_validations = self.get_additional_validations(traffic_type)
-            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=PerfConsts.SRV6_SHAPER_VALUE)
+            set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=MRCConsts.DUT_TX_UTIL_TH,
@@ -114,7 +115,7 @@ class TestSRv6Base:
                                           run_validate_counters=False,
                                           bw_threshold=bw_threshold,
                                           validate_bw_rx=False,
-                                          tc_occ_threshold=MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH,
+                                          tc_occ_threshold=self.get_many_to_one_tc_occ_threshold(),
                                           power_threshold=self.power_thresholds_by_chip_type,
                                           samples_params_dict=samples_params_dict,
                                           additional_validations=additional_validations)
@@ -126,12 +127,7 @@ class TestSRv6Base:
             with allure.step(f"validate trimmed untrimmed dropped percentages"):
                 if len(ingress_ports) == MRCConsts.INCAST_VALUE_WITH_TRIMMING_DROP:
                     self.cli_object.performance.validate_ets(egress_port, MRCConsts.ETS_TC_LIST, violations_list)
-                trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_port, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                                                                drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                                                violations_list=violations_list,
-                                                                                                                                duration=duration)
-                self.cli_object.trimming.validate_trimming_counters(egress_port, violations_list)
-                add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
+                trimmed_untrimmed_dropped_percentages = self.validate_trimmed_untrimmed_dropped_percentages(test_name, egress_port, MRCConsts.TRIMMING_TC, [MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC], violations_list, duration=duration)
         if violations_list:
             raise TestIssue("\n".join(violations_list))
 
@@ -176,12 +172,7 @@ class TestSRv6Base:
             pairing_df = None
             if pairing:
                 pairing_df = self.convert_pairing_into_df(pairing)
-            trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=MRCConsts.TRIMMING_TC,
-                                                                                                                            drop_queues=[MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC],
-                                                                                                                            violations_list=violations_list,
-                                                                                                                            duration=duration, pairing_df=pairing_df)
-            self.cli_object.trimming.validate_trimming_counters(egress_ports, violations_list)
-            add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
+            trimmed_untrimmed_dropped_percentages = self.validate_trimmed_untrimmed_dropped_percentages(test_name, egress_ports, MRCConsts.TRIMMING_TC, [MRCConsts.MRC1_DATA_TC, MRCConsts.MRC2_DATA_TC, MRCConsts.MRC_RETRANSMISSION_TC], violations_list, pairing_df, duration)
         return traffic_validation_jsons_list, violations_list, trimmed_untrimmed_dropped_percentages
 
     def convert_pairing_into_df(self, pairing):
@@ -291,12 +282,28 @@ class TestSRv6Base:
 
     def get_trimming_bw_threshold(self, traffic_type):
         bw_threshold = {
-            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: MRCConsts.DUT_TX_UTIL_TH,
+            MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: min(self.shaper_value, MRCConsts.DUT_TX_UTIL_TH),
                                                ValidationConsts.RX: None},
             MRCConsts.INGRESS_PORT_GROUP_NAME: {ValidationConsts.TX: None,
-                                                ValidationConsts.RX: PerfConsts.SHAPER_VALUE}}
+                                                ValidationConsts.RX: self.shaper_value}
+        }
         if traffic_type == MRCConsts.TRAFFIC_TYPE_SRV6:
             bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.TRIMMING_SRV6_DUT_TX_UTIL_TH
         if is_redmine_issue_active([4667031])[0]:
             bw_threshold[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
         return bw_threshold
+
+    def validate_trimmed_untrimmed_dropped_percentages(self, test_name, egress_ports, trimming_queue, drop_queues, violations_list, pairing_df=None, duration=None):
+        trimmed_untrimmed_dropped_percentages = self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports, trimming_queue=trimming_queue,
+                                                                                                                        drop_queues=drop_queues,
+                                                                                                                        violations_list=violations_list,
+                                                                                                                        duration=duration, pairing_df=pairing_df)
+        self.cli_object.trimming.validate_trimming_counters(egress_ports, violations_list)
+        add_test_mongo_metadata(test_name, {MongoDbConsts.TRIMMED_UNTRIMMED_DROPPED_PERCENTAGES: trimmed_untrimmed_dropped_percentages})
+        return trimmed_untrimmed_dropped_percentages
+
+    def get_many_to_one_tc_occ_threshold(self):
+        tc_occ_threshold = None
+        if not is_redmine_issue_active([4668758])[0] and isinstance(self.cli_object, NvueCli):
+            tc_occ_threshold = MRCConsts.MANY_TO_ONE_TRAFFIC_TC_OCC_TH
+        return tc_occ_threshold
