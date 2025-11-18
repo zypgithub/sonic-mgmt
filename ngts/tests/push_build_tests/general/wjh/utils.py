@@ -2,8 +2,6 @@ import re
 import logging
 import pytest
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
-from ngts.cli_wrappers.sonic.sonic_wjh_clis import SonicWjhCli
-from ngts.cli_wrappers.sonic.sonic_trimming_clis import SonicTrimmingCli
 logger = logging.getLogger()
 ACL_INGRESS_TABLE_NAME = "DATA_INGRESS_L3TEST"
 
@@ -55,10 +53,10 @@ def get_drop_src_ip_from_ingress_acl_table(cli_obj):
     return 'N/A'
 
 
-def wjh_is_channel_enabled(engines, channel_name):
+def wjh_is_channel_enabled(cli_obj, channel_name):
     """Check if a WJH channel is enabled."""
-    wjh_cli = SonicWjhCli(engines.dut)
-    channels_config = wjh_cli.show_wjh_configuration_channels()
+    wjh_obj = cli_obj.wjh
+    channels_config = wjh_obj.show_wjh_configuration_channels()
     pytest.CHANNEL_CONF = generic_sonic_output_parser(channels_config, output_key="Channel")
 
     is_enabled = channel_name in pytest.CHANNEL_CONF
@@ -66,46 +64,45 @@ def wjh_is_channel_enabled(engines, channel_name):
     return is_enabled
 
 
-def wjh_config_channel_state(engines, channel_name, state):
+def wjh_config_channel_state(cli_obj, channel_name, state):
     logger.info(f"Setting channel '{channel_name}' state to '{state}'")
-    engine = engines.dut
-    wjh_cli = SonicWjhCli(engine)
-    result = wjh_cli.config_wjh_channel_state(channel_name, state)
+    wjh_obj = cli_obj.wjh
+    result = wjh_obj.config_wjh_channel_state(channel_name, state)
     logger.info(f"Configuration command return code: {result}")
 
 
-def get_buffer_profile_trimming_status(duthost, buffer_profile_name):
+def get_buffer_profile_trimming_status(cli_obj, buffer_profile_name):
     logger.info(f"Starting status check for buffer profile: {buffer_profile_name}")
-    trimming_cli = SonicTrimmingCli(topology_obj=None, engine=duthost, dut_alias='dut', cli_obj=None)
+    trimming_cli = cli_obj.trimming
     if not trimming_cli.check_buffer_profile_exists(buffer_profile_name):
         logger.error(f"Buffer profile {buffer_profile_name} does not exist")
         raise ValueError(f"Buffer profile {buffer_profile_name} does not exist")
     return trimming_cli.get_buffer_profile_packet_discard_action(buffer_profile_name)
 
 
-def configure_trimming_action(duthost, buffer_profile_name, action):
+def configure_trimming_action(cli_obj, buffer_profile_name, action):
     logger.info(f"Starting configuration for profile: {buffer_profile_name}, action: {action}")
     if action not in ["on", "off"]:
         raise ValueError(f"Invalid action: {action}. Must be either 'on' or 'off'")
 
-    trimming_cli = SonicTrimmingCli(topology_obj=None, engine=duthost, dut_alias='dut', cli_obj=None)
+    trimming_cli = cli_obj.trimming
     trimming_cli.config_mmu_trimming(buffer_profile_name, action)
     trimming_cli.show_mmu()
     logger.info(f"Successfully set packet trimming action to '{action}' for buffer profile {buffer_profile_name}")
     return True
 
 
-def discover_trimming_enabled_profiles(duthost):
+def discover_trimming_enabled_profiles(cli_obj):
     logger.info("Discovering buffer profiles with trimming enabled")
     trimming_profiles = []
     try:
-        trimming_cli = SonicTrimmingCli(topology_obj=None, engine=duthost, dut_alias='dut', cli_obj=None)
+        trimming_cli = cli_obj.trimming
         buffer_profile_names = trimming_cli.get_all_buffer_profile_keys()
         logger.info(f"Found {len(buffer_profile_names)} total buffer profiles")
 
         for buffer_profile_name in buffer_profile_names:
             logger.info(f"Checking profile: {buffer_profile_name}")
-            trimming_status = get_buffer_profile_trimming_status(duthost, buffer_profile_name)
+            trimming_status = get_buffer_profile_trimming_status(cli_obj, buffer_profile_name)
             if trimming_status == "trim":
                 trimming_profiles.append(buffer_profile_name)
                 logger.info(f"Added profile: {buffer_profile_name}")

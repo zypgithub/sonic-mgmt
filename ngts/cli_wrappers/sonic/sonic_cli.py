@@ -36,6 +36,7 @@ from ngts.cli_wrappers.sonic.sonic_hw_mgmt_cli import SonicHwMgmtCli
 from ngts.cli_wrappers.sonic.sonic_wcmp_clis import SonicWcmpCli
 from ngts.cli_wrappers.sonic.sonic_performance_clis import SonicPerformanceCli
 from ngts.cli_wrappers.sonic.sonic_trimming_clis import SonicTrimmingCli
+from ngts.cli_wrappers.sonic.sonic_wjh_clis import SonicWjhCli
 from ngts.cli_util.stub_engine import StubEngine
 from dotted_dict import DottedDict
 logger = logging.getLogger()
@@ -85,6 +86,7 @@ class SonicCli:
         self._im = None
         self._performance = None
         self._trimming = None
+        self._wjh = None
 
     @property
     def ip(self):
@@ -316,6 +318,12 @@ class SonicCli:
             self._trimming = SonicTrimmingCli(topology_obj=self.topology, engine=self.engine,
                                               dut_alias=self.dut_alias, cli_obj=self)
         return self._trimming
+
+    @property
+    def wjh(self):
+        if self._wjh is None:
+            self._wjh = SonicWjhCli(engine=self.engine)
+        return self._wjh
 
 
 class SonicCliStub(SonicCli):

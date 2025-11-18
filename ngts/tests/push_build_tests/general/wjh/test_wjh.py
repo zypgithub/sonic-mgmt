@@ -136,7 +136,7 @@ def check_feature_enabled(cli_objects):
 def check_if_channel_enabled(cli_object, engines, channel, channel_type):
     if channel == "buffer" and cli_object.general.is_spc1():
         pytest.skip("buffer channel is not supported in SPC1.")
-    if not wjh_is_channel_enabled(engines, channel):
+    if not wjh_is_channel_enabled(cli_object, channel):
         pytest.fail("{} channel is not confiugred on WJH.".format(channel))
     if channel_type not in pytest.CHANNEL_CONF[channel]['Type']:
         logger.info(f"pytest.CHANNEL_CONF: {pytest.CHANNEL_CONF}")
@@ -166,26 +166,26 @@ def disable_trimming(topology_obj, cli_objects, interfaces, engines):
     # Check if platform is SPC4 or above - trimming is only supported on SPC4+
     if cli_objects.dut.general.is_spc4_or_above():
         logger.info('WJH trimming pre test')
-        trimming_enabled_profiles = discover_trimming_enabled_profiles(engines.dut)
+        trimming_enabled_profiles = discover_trimming_enabled_profiles(cli_objects.dut)
         logger.info(f"Found trimming enabled profiles: {trimming_enabled_profiles}")
         for profile_name in trimming_enabled_profiles:
-            current_status = get_buffer_profile_trimming_status(engines.dut, profile_name)
+            current_status = get_buffer_profile_trimming_status(cli_objects.dut, profile_name)
             logger.info(f"Profile {profile_name} current status: {current_status}")
             logger.info(f"Disabling trimming for profile: {profile_name}")
-            configure_trimming_action(engines.dut, profile_name, "off")
+            configure_trimming_action(cli_objects.dut, profile_name, "off")
     yield
 
     if cli_objects.dut.general.is_spc4_or_above() and trimming_enabled_profiles:
         logger.info('WJH trimming post test')
         for profile_name in trimming_enabled_profiles:
-            current_status = get_buffer_profile_trimming_status(engines.dut, profile_name)
+            current_status = get_buffer_profile_trimming_status(cli_objects.dut, profile_name)
             logger.info(f"Profile {profile_name} current status: {current_status}")
             logger.info(f"Enable trimming for profile: {profile_name}")
-            configure_trimming_action(engines.dut, profile_name, "on")
+            configure_trimming_action(cli_objects.dut, profile_name, "on")
 
 
 @pytest.fixture(scope='class', autouse=True)
-def enable_channel_buffer(topology_obj, cli_objects, interfaces, engines):
+def enable_channel_buffer(cli_objects, interfaces, engines):
     """
     This fixture is used to enable the buffer channel before the test and disable it after the test.
     """
@@ -195,12 +195,12 @@ def enable_channel_buffer(topology_obj, cli_objects, interfaces, engines):
     else:
         try:
             with allure.step('WJH buffer channel pre test'):
-                initial_state_buffer_enabled = wjh_is_channel_enabled(engines, "buffer")
+                initial_state_buffer_enabled = wjh_is_channel_enabled(cli_objects.dut, "buffer")
                 logger.info(f"Initial state enabled: {initial_state_buffer_enabled}")
                 if not initial_state_buffer_enabled:
                     logger.info("Enabling buffer channel")
-                    wjh_config_channel_state(engines, "buffer", "enabled")
-                    if not wjh_is_channel_enabled(engines, "buffer"):
+                    wjh_config_channel_state(cli_objects.dut, "buffer", "enabled")
+                    if not wjh_is_channel_enabled(cli_objects.dut, "buffer"):
                         raise AssertionError("wjh_buffer_channel_management_fixture: Buffer channel is not enabled")
                 else:
                     logger.info("Buffer channel already enabled")
@@ -214,8 +214,8 @@ def enable_channel_buffer(topology_obj, cli_objects, interfaces, engines):
             with allure.step('WJH buffer channel post test'):
                 if not initial_state_buffer_enabled:
                     logger.info("Restoring to disabled state")
-                    wjh_config_channel_state(engines, "buffer", "disabled")
-                    if wjh_is_channel_enabled(engines, "buffer"):
+                    wjh_config_channel_state(cli_objects.dut, "buffer", "disabled")
+                    if wjh_is_channel_enabled(cli_objects.dut, "buffer"):
                         raise AssertionError("Buffer channel is still enabled")
         except Exception as e:
             logger.error(f"Cleanup failed with exception: {e}")
