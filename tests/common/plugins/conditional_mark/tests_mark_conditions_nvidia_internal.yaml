@@ -1089,6 +1089,12 @@ vxlan/test_vxlan_ecmp.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4691530"
 
+vxlan/test_vxlan_route_advertisement.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4691530"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4691530"
+
 snmp/test_snmp_queue.py:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4697884"

@@ -1921,3 +1921,9 @@
     - sn6600
     Redmine:
     - 4634736
+
+- Errors_list:
+  - '.*ERR syncd#SDK: :- guard: RedisReply catches system_error.*'
+  Conditions:
+  - Redmine:
+    - 4670329
