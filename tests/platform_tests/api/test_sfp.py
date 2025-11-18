@@ -973,7 +973,7 @@ class TestSfpApi(PlatformApiTestBase):
         self.assert_expectations()
 
     def test_power_override(self, duthosts, enum_rand_one_per_hwsku_hostname, localhost,
-                            platform_api_conn):    # noqa: F811
+                            platform_api_conn, is_sw_control_feature_enabled):    # noqa: F811
         """This function tests both the get_power_override() and set_power_override() APIs"""
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
         skip_release_for_platform(duthost, ["202012"], ["arista", "mlnx", "nokia"])
@@ -993,6 +993,11 @@ class TestSfpApi(PlatformApiTestBase):
                 platform_api_conn, i)
             self.expect(power_override_bit_value_pretest is not None,
                         "Unable to retrieve transceiver {} power override data".format(i))
+
+            if is_mellanox_device(duthost) and not is_sw_control_feature_enabled:
+                logger.warning(
+                    "Skipping set_power_override for transceiver {} (not supported on this platform)".format(i))
+                continue
 
             # Enable power override in both low-power and high-power modes
             for state in [True, False]:
