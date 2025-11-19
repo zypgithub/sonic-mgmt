@@ -332,6 +332,11 @@ def setup_cumulus_sudoers(topology_obj, engines):
             # Don't fail the session if this fails, let individual tests handle it
 
 
+@pytest.fixture(scope='session')
+def dut_engines(engines):
+    return filter_objects(engines, host_type='dut', engine_type='ssh')
+
+
 @pytest.fixture(scope='function', autouse=True)
 def auto_command_tracking_for_cli_coverage(request):
     """
