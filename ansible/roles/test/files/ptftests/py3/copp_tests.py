@@ -355,7 +355,7 @@ class DHCPTest(PolicyTest):
     def __init__(self):
         PolicyTest.__init__(self)
         # Marvell based platforms have cir/cbs in steps of 125
-        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215", "Nokia-7215-A1"}:
+        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215"} or self.hw_sku.startswith("Nokia-7215-A1"):
             self.PPS_LIMIT = 250
         # Cisco G100 based platform has CIR 600
         elif self.asic_type == "cisco-8000" and "8111" in self.platform:
@@ -404,7 +404,7 @@ class DHCP6Test(PolicyTest):
     def __init__(self):
         PolicyTest.__init__(self)
         # Marvell based platforms have cir/cbs in steps of 125
-        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215", "Nokia-7215-A1"}:
+        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215"} or self.hw_sku.startswith("Nokia-7215-A1"):
             self.PPS_LIMIT = 250
         # Cisco G100 based platform has CIR 600
         elif self.asic_type == "cisco-8000" and "8111" in self.platform:
@@ -472,7 +472,7 @@ class LLDPTest(PolicyTest):
     def __init__(self):
         PolicyTest.__init__(self)
         # Marvell based platforms have cir/cbs in steps of 125
-        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215", "Nokia-7215-A1"}:
+        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215"} or self.hw_sku.startswith("Nokia-7215-A1"):
             self.PPS_LIMIT = 250
         # Cisco G100 based platform has CIR 600
         elif self.asic_type == "cisco-8000" and "8111" in self.platform:
@@ -508,7 +508,7 @@ class UDLDTest(PolicyTest):
     def __init__(self):
         PolicyTest.__init__(self)
         # Marvell based platforms have cir/cbs in steps of 125
-        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215", "Nokia-7215-A1"}:
+        if self.hw_sku in {"Nokia-M0-7215", "Nokia-7215"} or self.hw_sku.startswith("Nokia-7215-A1"):
             self.PPS_LIMIT = 250
         # Cisco G100 based platform has CIR 600
         elif self.asic_type == "cisco-8000" and "8111" in self.platform:
