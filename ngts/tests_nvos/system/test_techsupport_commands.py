@@ -240,7 +240,7 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
     files_names = []
     with allure.step('Run show/action system tech-support 4 times in a row'):
         output_dictionary_before = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
+            system.techsupport.files.show()).get_returned_value().values())
         for i in range(0, 4):
             with allure.step("Generate Tech-Support for the {} time".format(i + 1)):
                 with serial_analyzer.stage(f"Generate tech-support {i + 1}"):
@@ -250,11 +250,11 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
 
             with allure.step("Validate output"):
                 output_dictionary_after = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-                    system.techsupport.show()).get_returned_value().values())
+                    system.techsupport.files.show()).get_returned_value().values())
                 validate_techsupport_output(output_dictionary_before, output_dictionary_after, i + 1)
 
             with allure.step('Validate show tech-support command format'):
-                show_output = system.techsupport.show()
+                show_output = system.techsupport.files.show()
                 output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
                 assert SystemConsts.LATEST_KEY in output_dict, \
                     f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {output_dict.keys()}"
