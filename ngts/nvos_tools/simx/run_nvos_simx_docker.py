@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.conftest import devices
+from ngts.helpers.object_filters import filter_objects
 
 logger = logging.getLogger()
 
@@ -23,7 +24,6 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
     with allure.step("Get server and dut details"):
         dut_engine = topology_obj.players['dut']['engine']
         server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
-        server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"), os.getenv("TEST_SERVER_PASSWORD")).returned_value
         dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         logger.info(f"DUT ip: {dut_engine.ip}({dut_name}) on server: {server_name}")
 
@@ -38,9 +38,13 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
                 logger.info(f"Path to image: {target_version}")
         else:
             logging.info("'--use_bin_image' flag was provided, force using .bin image")
-        start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script)
 
-    _wait_till_switch_is_ready(dut_engine)
+        for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
+            dut_engine = player["engine"]
+            server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"),
+                                                           os.getenv("TEST_SERVER_PASSWORD")).returned_value
+            start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script)
+            _wait_till_switch_is_ready(dut_engine)
 
 
 def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script):

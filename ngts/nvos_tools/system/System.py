@@ -94,12 +94,14 @@ class System(BaseComponent):
     def get_expected_fields(device, resource):
         return device.constants.system[resource]
 
-    def validate_health_status(self, expected_status, throw_exception=True):
+    def validate_health_status(self, expected_status, throw_exception=True, dut_engine=None):
+        if not dut_engine:
+            dut_engine = TestToolkit.get_engine()
         with allure.step("Validate health status with \"nv show system\" cmd"):
             logger.info("Validate health status with \"nv show system\" cmd")
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show()).get_returned_value()
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=dut_engine)).get_returned_value()
             if expected_status != system_output[SystemConsts.HEALTH][HealthConsts.STATUS]:
-                health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show()).get_returned_value()
+                health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
                 health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
                 exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
                     " with the following health issues:\n{}".\
