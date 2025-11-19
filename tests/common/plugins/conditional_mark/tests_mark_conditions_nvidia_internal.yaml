@@ -1226,4 +1226,65 @@ tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
     conditions:
     - "https://redmine.mellanox.com/issues/4525926 and 'sn6600' in platform"
 
+platform_tests/api/test_fan_drawer.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_fan_drawer_fans.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_psu.py:
+  skip:
+    reason: "Test is skipped - no psu emulation on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_psu_fans.py:
+  skip:
+    reason: "Test is skipped - no fan/psu emulation on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_chassis_fans.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_thermal.py:
+  skip:
+    reason: "Test is skipped - no thermal emulation on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
+platform_tests/mellanox/test_psu_power_threshold.py:
+  skip:
+    reason: "Test is skipped - no psu emulation on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
+  skip:
+    reason: "Test is skipped - no psu emulation on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_psustatus_json:
+  skip:
+    reason: "Test is skipped - no psu emulation on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
+platform_tests/cli/test_show_platform.py::test_show_platform_fan:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
