@@ -16,6 +16,7 @@ from .plugins.loganalyzer.utils import support_ignore_loganalyzer
 from .utilities import wait_until, get_plt_reboot_ctrl
 from tests.common.helpers.dut_utils import ignore_t2_syslog_msgs, create_duthost_console, creds_on_dut
 from tests.common.fixtures.conn_graph_facts import get_graph_facts
+from pytest_ansible.errors import AnsibleConnectionFailure
 
 logger = logging.getLogger(__name__)
 
@@ -265,8 +266,11 @@ def reboot_smartswitch(duthost, reboot_type=REBOOT_TYPE_COLD):
     dut_datetime = duthost.get_now_time(utc_timezone=True)
 
     logging.info("Rebooting the DUT {} with type {}".format(hostname, reboot_type))
-
-    reboot_res = duthost.command(reboot_ss_ctrl_dict[reboot_type]["command"])
+    reboot_res = None
+    try:
+        reboot_res = duthost.command(reboot_ss_ctrl_dict[reboot_type]["command"])
+    except AnsibleConnectionFailure as e:
+        logger.error("Failed to reboot the DUT {} with type {}: {}".format(hostname, reboot_type, e))
 
     return [reboot_res, dut_datetime]
 
@@ -378,6 +382,10 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
         logger.error('collecting console log thread result: {} on {}'.format(console_thread_res.get(), hostname))
         pool.terminate()
         raise Exception(f"dut not start: {err}")
+
+    # Workaround
+    logger.info('Waiting for ansible connection timeout')
+    time.sleep(61)
 
     if return_after_reconnect:
         return
