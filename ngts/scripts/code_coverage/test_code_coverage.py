@@ -6,6 +6,7 @@ import time
 import pytest
 import json
 import shutil
+import re
 from ngts.helpers import system_helpers
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.constants.constants import NvosCliTypes
@@ -21,6 +22,11 @@ from ngts.scripts.code_coverage.coverage_helpers import get_dest_path, _get_cove
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 logger = logging.getLogger()
+
+
+def list_files(engine, path, pattern=''):
+    files = GeneralCliCommon(engine).ls(path, flags='-1').splitlines()
+    return [os.path.join(path, file) for file in files if re.search(pattern, file)]
 
 
 @pytest.mark.disable_loganalyzer
@@ -230,8 +236,8 @@ def collect_python_coverage(cli_obj, engine, dest, coverage_file):
                 container_coverage_xml_file = os.path.join(coverage_dir,
                                                            f'{coverage_xml_filename_prefix}-{timestamp}-{container}.xml')
                 create_coverage_xml(GeneralCliCommon(docker_exec_engine), coverage_file, container_coverage_xml_file)
-                coverage_xml_files = system_helpers.list_files(docker_exec_engine, coverage_dir,
-                                                               pattern=coverage_xml_filename_prefix)
+                coverage_xml_files = list_files(docker_exec_engine, coverage_dir,
+                                                pattern=coverage_xml_filename_prefix)
                 logger.info(f'Coverage xml files in {container} container: {coverage_xml_files}')
                 for file in coverage_xml_files:
                     cli_obj.general.copy_from_docker(container, file, file)
@@ -240,7 +246,7 @@ def collect_python_coverage(cli_obj, engine, dest, coverage_file):
             logger.info(f"Coverage collection for {container} has failed: " + str(ex))
 
     with allure.step(f'Copy coverage xml reports from the system to destination directory'):
-        coverage_xml_files = system_helpers.list_files(engine, coverage_dir, pattern=coverage_xml_filename_prefix)
+        coverage_xml_files = list_files(engine, coverage_dir, pattern=coverage_xml_filename_prefix)
         logger.info(f'Coverage xml files on the system: {coverage_xml_files}')
         logger.info(f'Destination directory: {dest}')
         os.makedirs(dest, exist_ok=True)
@@ -255,7 +261,7 @@ def collect_python_coverage(cli_obj, engine, dest, coverage_file):
 
 def create_and_copy_lcov_files(engine, sudo_cli_general, c_dest, lcov_filename_prefix):
     combined_coverage_file = '/sonic/combined_coverage.info'
-    lcov_files = system_helpers.list_files(engine, SharedConsts.GCOV_DIR, pattern=lcov_filename_prefix)
+    lcov_files = list_files(engine, SharedConsts.GCOV_DIR, pattern=lcov_filename_prefix)
     lcov_file_to_combine = []
 
     for lcov_file in lcov_files:
@@ -286,7 +292,7 @@ def create_and_copy_lcov_files(engine, sudo_cli_general, c_dest, lcov_filename_p
 
 
 def create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file, c_dest, gcov_filename_prefix):
-    gcov_json_files = system_helpers.list_files(engine, SharedConsts.GCOV_DIR, pattern=gcov_filename_prefix)
+    gcov_json_files = list_files(engine, SharedConsts.GCOV_DIR, pattern=gcov_filename_prefix)
     logger.info(f'GCOV JSON files on the system: {gcov_json_files}')
 
     logger.info("Combine all jsons")
@@ -329,7 +335,7 @@ def create_coverage_xml(cli_general, coverage_file, coverage_xml_file):
     """
     coverage_dir = os.path.dirname(coverage_file)
     coverage_basename = os.path.basename(coverage_file)
-    coverage_files = system_helpers.list_files(cli_general.engine, coverage_dir, pattern=rf'{coverage_basename}\.')
+    coverage_files = list_files(cli_general.engine, coverage_dir, pattern=rf'{coverage_basename}\.')
     logger.info(f'Coverage files: {coverage_files}')
     if not coverage_files:
         logger.info('Coverage files not found, skipping...')

@@ -248,6 +248,8 @@ class PerfConsts:
     }
     SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.{SDK_VERSION}_amd64.deb"
     LATEST_SDK_DEB_FILE_TEMPLATE = "sys-sdk-git_1.mlnx.*_amd64.deb"
+    PERF_SYS_SDK_TAR_FILE_TEMPLATE = "perf_sys_sdk_{SDK_BRANCH}.db.1.tgz"
+    PERF_SYS_SDK_TAR_FILE_PATH = "/.autodirect/sw_regression/system/SDK_SWITCH/MARS/tarball_files/"
 
     # Miscellaneous
     USED_SITE = "MTL"

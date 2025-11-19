@@ -1,8 +1,5 @@
 import logging
-import re
 import os
-
-from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from retry.api import retry_call
 
 logger = logging.getLogger()
@@ -19,11 +16,6 @@ class PrefixEngine():
 
     def run_cmd(self, cmd, validate=False):
         return self.engine.run_cmd(f'{self.prefix} {cmd}', validate=validate)
-
-
-def list_files(engine, path, pattern=''):
-    files = GeneralCliCommon(engine).ls(path, flags='-1').splitlines()
-    return [os.path.join(path, file) for file in files if re.search(pattern, file)]
 
 
 def verify_empty_job_queue(engine):

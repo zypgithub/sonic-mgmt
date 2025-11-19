@@ -6,32 +6,32 @@ import time
 import allure
 import netmiko
 import glob
+import subprocess
 from ngts.cli_wrappers.interfaces.interface_general_clis import GeneralCliInterface
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
-from ngts.constants.constants import InfraConst, SSHConsts
+from ngts.constants.constants import InfraConst, SSHConsts, Sonic_Cache
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
-
+from ngts.helpers.system_helpers import copy_files_to_syncd
 from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-
+from infra.tools.exceptions.test_issue import TestIssue
+from ngts.cli_wrappers.common.sdk_clis_common import SdkCliCommon
 
 logger = logging.getLogger()
 
 DUMMY_COMMAND = 'echo dummy_command'
 
 
-class GeneralCliCommon(GeneralCliInterface):
+class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
     """
     This class hosts methods which are implemented identically for Linux and SONiC
     """
 
     def __init__(self, engine, cli_obj=None, dut_alias=None):
-        self.engine = engine
-        self.cli_obj = cli_obj
-        self.dut_alias = dut_alias
+        SdkCliCommon.__init__(self, engine, cli_obj, dut_alias)
 
     def start_service(self, service):
         # lldpad is managed by supervisorctl
@@ -553,31 +553,3 @@ class GeneralCliCommon(GeneralCliInterface):
             else:
                 logger.info(f"Wiping the entire system for {target_cli_type} install")
                 self.reboot_by_onie_reboot_script(onie_reboot_script_path, 'uninstall', chip_type)
-
-    def get_kernel_version(self):
-        kernel_version_output = self.engine.run_cmd('uname -r', validate=True)
-        kernel_version = re.search(r"(\d+\.\d+\.\d+)", kernel_version_output).group(1)
-        return kernel_version
-
-    def get_latest_sdk_version(self, cur_sdk_version, sdk_branch):
-        dut_kernel_version = self.get_kernel_version()
-        deb_file_path = os.path.join(PerfConsts.LATEST_SDK_DEB_DIR_TEMPLATE.format(SDK_BRANCH=sdk_branch))
-        available_kernel_versions = os.listdir(deb_file_path)
-
-        deb_kernel_version = None
-        for kernel_version in available_kernel_versions:
-            if kernel_version.startswith(dut_kernel_version):
-                deb_file_path = os.path.join(deb_file_path, kernel_version)
-                deb_kernel_version = kernel_version
-                break
-        if not deb_kernel_version:
-            logger.warning(f"No matching kernel version found for {dut_kernel_version}")
-            return cur_sdk_version
-        files_available_in_deb_dir = glob.glob(os.path.join(deb_file_path, PerfConsts.LATEST_SDK_DEB_FILE_TEMPLATE))
-        sdk_version = re.search(r"sys-sdk-git_1.mlnx.(\d+.\d+.\d+.*\d*)_", files_available_in_deb_dir[0]).group(1)
-
-        if sdk_version.count('.') == 3:
-            last_dot_index = sdk_version.rfind('.')
-            sdk_version = sdk_version[:last_dot_index] + '-' + sdk_version[last_dot_index + 1:]
-
-        return sdk_version

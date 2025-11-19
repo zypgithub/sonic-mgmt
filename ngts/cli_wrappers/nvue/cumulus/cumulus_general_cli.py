@@ -57,6 +57,7 @@ class CumulusGeneralCli(NvueGeneralCli):
             self.install_apt_get_pkg()
 
         with allure.step('Prepare SDK_VER git to run tests'):
+            self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch)
             self.engine.run_cmd(f"sudo {Cl_Consts.CL_PYTHON_PATH} {PerfConsts.DVS_RUN_TEST_PATH} -si")
 
     def install_pip_dependencies(self):

@@ -1868,6 +1868,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install pciutils'")
 
         with allure.step('Prepare SDK_VER git to run tests'):
+            self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch, is_in_syncd=True)
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} '{PerfConsts.EXPORT_PYTHONPATH} "
                                 f"&& {PerfConsts.DVS_RUN_TEST_PATH} -si'")
 
@@ -1876,13 +1877,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                                  validate=True)
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
         return sdk_version
-
-    def get_sdk_branch(self, sdk_version):
-        command = f"cat /auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{sdk_version}/SDK_BRANCH.txt"
-        sdk_branch = os.popen(command).read().strip()
-        if sdk_branch.startswith("sx_sdk_"):
-            sdk_branch = re.search(r"(sx_sdk_\d+_\d+_\d{4})", sdk_branch).group(1)
-        return sdk_branch
 
     def startup_dpu(self, dpu_index_list):
         for dpu_index in dpu_index_list:

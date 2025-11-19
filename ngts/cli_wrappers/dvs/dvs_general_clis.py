@@ -68,9 +68,10 @@ class DvsGeneralCli(GeneralCliCommon):
         Function verifies the traffic generator is functional post deploy on DVS OS
         :return: None
         """
+        sdk_version = self.get_sdk_version()
+        sdk_branch = self.get_sdk_branch(sdk_version)
+        self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch)
         self.engine.run_cmd(f"{PerfConsts.DVS_RUN_TEST_PATH} -si")
-        # TODO: uncomment once sdk_ver has shahaf changes
-        # self.engine.run_cmd(f"{PerfConsts.DVS_RUN_TEST} --names {PerfConsts.DVS_TG_NAME}")
 
     def get_fw_version_from_sdk(self, sdk_version):
         fw_version_path = os.path.join(PerfConsts.SDK_VERSION_PATH, sdk_version, PerfConsts.FW_VERSION_FILE)
