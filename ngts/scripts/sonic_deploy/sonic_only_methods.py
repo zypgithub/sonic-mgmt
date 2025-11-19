@@ -917,12 +917,20 @@ def get_cached_hwsku(dut_name):
 
 
 def enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(engine):
+    is_bookworm = "bookworm" in engine.run_cmd("cat /etc/os-release")
+    sysctl_file = "/etc/sysctl.conf" if is_bookworm else "/usr/lib/sysctl.d/90-sonic.conf"
     enable_nat_cmds = [
         "sudo su",
-        "sudo echo net.ipv4.ip_forward=1 >> /etc/sysctl.conf",
-        "sudo echo net.ipv4.conf.eth0.forwarding=1 >> /etc/sysctl.conf",
-        "sudo sysctl -p",
+        f"sudo echo net.ipv4.ip_forward=1 >> {sysctl_file}",
+        f"sudo echo net.ipv4.conf.eth0.forwarding=1 >> {sysctl_file}",
+        f"sudo sysctl -p {sysctl_file}",
+        "sudo sysctl net.ipv4.ip_forward",
+        "sudo sysctl net.ipv4.conf.eth0.forwarding",
         "sudo iptables -t nat -A POSTROUTING -s 169.254.200.0/24 -o eth0 -j MASQUERADE",
+        "sudo iptables -t nat -A POSTROUTING -p tcp -d 169.254.200.1 --dport 22 -j MASQUERADE",
+        "sudo iptables -t nat -A POSTROUTING -p tcp -d 169.254.200.2 --dport 22 -j MASQUERADE",
+        "sudo iptables -t nat -A POSTROUTING -p tcp -d 169.254.200.3 --dport 22 -j MASQUERADE",
+        "sudo iptables -t nat -A POSTROUTING -p tcp -d 169.254.200.4 --dport 22 -j MASQUERADE",
         "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5021 -j DNAT --to-destination 169.254.200.1:22",
         "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5022 -j DNAT --to-destination 169.254.200.2:22",
         "sudo iptables -t nat -A PREROUTING -i eth0 -p tcp --dport 5023 -j DNAT --to-destination 169.254.200.3:22",
