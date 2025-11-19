@@ -669,10 +669,29 @@ platform_tests/test_auto_negotiation.py:
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
   skip:
-    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4258556"
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4258556 or https://redmine.mellanox.com/issues/4741120"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4258556 and 'sn5640_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4741120"
+
+platform_tests/api/test_thermal.py::TestThermalApi::test_get_name:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4741120"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4741120"
+
+platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_threshold:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4741120"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4741120"
+
+platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_critical_threshold:
+  skip:
+    reason: "Skipped due to RM issue https://redmine.mellanox.com/issues/4741120"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4741120"
 
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
