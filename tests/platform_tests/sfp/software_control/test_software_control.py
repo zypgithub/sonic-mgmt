@@ -180,8 +180,8 @@ class TestSoftwareControlFunctional:
     def ignore_loganalyzer_exceptions(self, loganalyzer):
         if loganalyzer:
             ignoreRegex = [
-                r".*ERR sfputil: Failed to write EEPROM data sfp.* EEPROM page=\/sys\/module\/sx_core.*eeprom\/pages\
-                    .*page_offset=\d+, size=\d+, offset=\d+, .*Errno 5.* Input\/output error.*",
+                (r".*ERR sfputil:.*Failed to write EEPROM data sfp.* EEPROM page=\/sys\/module\/sx_core.*"
+                 r"eeprom\/pages.*page_offset=\d+, size=\d+, offset=\d+, .*Errno.* Input\/output error.*"),
                     r".*ERR kernel.*sxd_kernel:.*Fails to access.* module eeprom, status.*",
                     r".*ERR kernel.*sxd_kernel.*Fails to write eeprom, status:.*\d+.*"]
 
