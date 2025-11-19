@@ -607,7 +607,7 @@ class NvuePerformanceCli(PerformanceCommon):
         self.engine.copy_file(source_file=full_path, file_system="/tmp",
                               dest_file=ports_file, overwrite_file=True, verify_file=False)
 
-    @retry(exceptions=TestIssue, tries=7, delay=10)
+    @retry(exceptions=TestIssue, tries=6, delay=15)
     def check_mloops_up(self):
         """
         This method is used to check if the mloops are up on the traffic generator

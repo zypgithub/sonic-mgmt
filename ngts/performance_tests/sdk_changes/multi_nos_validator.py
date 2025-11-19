@@ -602,8 +602,6 @@ class TrafficValidator(MultiNosTest):
             4) MAX watermark
 
         """
-        self.logger.debug('Clean buffer statistics for clean occupency and watermark')
-        sb_lib.clear_all_ports_sb_statistics(self.handle, self.connected_ports)
 
         hft_occ_watermark_counters = [
             SX_BULK_CNTR_HFT_SAMPLE_COUNTER_EGRESS_PORT_TRAFFIC_CLASS_BUFFER_CURRENT_OCCUPANCY_E,
@@ -614,6 +612,8 @@ class TrafficValidator(MultiNosTest):
         self.logger.debug('Starting HFT measurement')
         tc_pg_dict = {}
         for port_group_name, port_group in self.port_groups.items():
+            self.logger.debug('Clean buffer statistics for clean occupency and watermark')
+            sb_lib.clear_all_ports_sb_statistics(self.handle, port_group)
             sample_list = self.start_hft_session(port_group, counters=hft_occ_watermark_counters,
                                                  sample_count=1000, tc_list=list(range(MultiNosConstants.TC_NUM)),
                                                  pg_list=list(range(MultiNosConstants.PG_NUM)))
