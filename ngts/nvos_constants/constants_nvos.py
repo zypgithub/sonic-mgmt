@@ -113,6 +113,7 @@ class CumulusConsts:
     PLATFORM_ASIC_RESOURCE_GLOBAL_REQUIRED_FIELDS = ['used']
     PLATFORM_ASIC_RESOURCE_GLOBAL_OPTIONAL_FIELDS = ['max', 'percentage']
     MIN_PSU_VPD_PATTERN = re.compile(r"MIN_PSU\s*[=:]\s*\d+")
+    VRF_MGMT = "mgmt"
 
 
 class TestConsts:
@@ -372,6 +373,14 @@ class NvosConst:
     FETCH_ERROR_MESSAGE = "Failed to create file"
 
     STATE = "state"
+    EXPECTED_SELECTOR_DICTIONARY = {
+        "filter": {
+            "1": {
+                "action": "exclude",
+                "match": "a+"
+            }
+        }
+    }
 
 
 class TopologyConsts:

@@ -156,6 +156,9 @@ class EthSwitch(BaseSwitch):
         self.fetch_success_message = CumulusConsts.FETCH_SUCCESS_MESSAGE
         self.fetch_error_message = CumulusConsts.FETCH_ERROR_MESSAGE
         self.ask_for_confirmation = True
+        self.expected_selector_dictionary = NvosConst.EXPECTED_SELECTOR_DICTIONARY
+        self.welf_format_regex = r'id=firewall time="[^"]+" fw="{}" severity="[^"]+"(?: [^=]+="[^"]+")* msg=".*"'
+        self.vrf_mgmt = CumulusConsts.VRF_MGMT
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         with allure.step('Wait for OS to become functional'):

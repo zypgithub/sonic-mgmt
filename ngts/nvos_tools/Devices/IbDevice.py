@@ -10,7 +10,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts, SyslogConsts)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -596,6 +596,9 @@ class IbSwitch(BaseSwitch):
             SystemConsts.CONTACT: None,
             SystemConsts.LOCATION: None
         }
+        self.expected_selector_dictionary = NvosConst.EXPECTED_SELECTOR_DICTIONARY
+        self.welf_format_regex = "id=firewall time=\".*\" fw=\"{}\" pri=\\d msg=\".*\""
+        self.vrf_mgmt = SyslogConsts.DEFAULT_VRF
 
         # Initialize link error counters for traffic validation
         self.system_log_value = "part-number"

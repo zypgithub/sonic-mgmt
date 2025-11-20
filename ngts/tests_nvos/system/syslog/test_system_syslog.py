@@ -25,6 +25,7 @@ from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.SudoScope import sudo_scope_if
 
 logger = logging.getLogger()
 INCOMPLETE_COMMAND = "Incomplete Command"
@@ -41,6 +42,7 @@ INVALID_CONFIG = "Config invalid"
 @pytest.mark.syslog
 @pytest.mark.simx
 @pytest.mark.air
+@pytest.mark.cumulus
 def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, random_api):
     """
     Will validate the minimal positive flow:
@@ -59,6 +61,7 @@ def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, random_api):
 
 @pytest.mark.system
 @pytest.mark.syslog
+@pytest.mark.cumulus
 def test_rsyslog_positive_minimal_flow_by_ipv4(engines, random_api):
     """
     Will validate the minimal positive flow:
@@ -77,6 +80,7 @@ def test_rsyslog_positive_minimal_flow_by_ipv4(engines, random_api):
 
 @pytest.mark.system
 @pytest.mark.syslog
+@pytest.mark.cumulus
 def test_rsyslog_positive_minimal_flow_by_ipv6(engines, random_api, sonic_mgmt_ipv6_addr):
     """
     Will validate the minimal positive flow:
@@ -97,6 +101,7 @@ def test_rsyslog_positive_minimal_flow_by_ipv6(engines, random_api, sonic_mgmt_i
 
 @pytest.mark.system
 @pytest.mark.syslog
+@pytest.mark.cumulus
 def test_rsyslog_multiple_servers_configuration(engines):
     """
     Validates the following:
@@ -181,6 +186,7 @@ def test_rsyslog_multiple_servers_configuration(engines):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_rsyslog_configurations(random_api):
     """
     will check rsyslog configurations
@@ -244,6 +250,9 @@ def test_rsyslog_configurations(random_api):
         with allure.step("Unset server and Validate"):
             system.syslog.servers.unset_server(server_b, apply=True)
             expected_syslog_dictionary[SyslogConsts.SERVER].pop(server_b)
+            # FOR ETH DEVICES IF ALL SERVERS ARE REMOVED , 'SERVER' KEY ALSO WILL BE REMOVED FROM THE DICTIONARY
+            if TestToolkit.devices.dut.is_eth():
+                expected_syslog_dictionary.pop(SyslogConsts.SERVER)
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
             server_list = OutputParsingTool.parse_json_str_to_dictionary(
                 system.syslog.servers.show()).get_returned_value()
@@ -260,6 +269,8 @@ def test_rsyslog_configurations(random_api):
             system.syslog.servers.verify_show_servers_list([server_a])
             system.syslog.unset(apply=True)
             expected_syslog_dictionary[SyslogConsts.SERVER].pop(server_a)
+            if TestToolkit.devices.dut.is_eth():
+                expected_syslog_dictionary.pop(SyslogConsts.SERVER)
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
             server_list = OutputParsingTool.parse_json_str_to_dictionary(
                 system.syslog.servers.show()).get_returned_value()
@@ -274,6 +285,7 @@ def test_rsyslog_configurations(random_api):
 @pytest.mark.syslog
 @pytest.mark.simx
 @pytest.mark.air
+@pytest.mark.cumulus
 def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api):
     """
     Will validate all the severity options:  debug, info, notice, warning, error, critical, alert, emerg, none.
@@ -296,6 +308,8 @@ def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api
 
     with allure.step("Configure remote syslog server {}".format(remote_server_ip)):
         server = system.syslog.servers.set_server(remote_server_ip, apply=True)
+        if TestToolkit.devices.dut.is_eth():
+            system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
 
     try:
         with allure.step("Configure selectors"):
@@ -304,7 +318,7 @@ def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api
                                                                                        apply=True)
         with allure.step("Validate show commands"):
             expected_server_dictionary = create_remote_server_dictionary_with_selector(remote_server_ip, 1,
-                                                                                       selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
+                                                                                       selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME, vrf=TestToolkit.devices.dut.vrf_mgmt)
             expected_syslog_dictionary = create_syslog_output_dictionary(
                 server_dict={SyslogConsts.SERVER: expected_server_dictionary})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
@@ -422,11 +436,13 @@ def test_rsyslog_port(engines, random_api):
     tmp_port = 500  # in the system ports range
 
     with allure.step("Configure remote syslog server {}".format(remote_server_ip)):
-        system.syslog.servers.set_server(remote_server_ip, apply=True)
+        system.syslog.servers.set_server(remote_server_ip)
+        if TestToolkit.devices.dut.is_eth():
+            system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
 
     try:
         with allure.step("Validate show commands and send msg"):
-            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip)
+            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip, vrf=TestToolkit.devices.dut.vrf_mgmt)
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(
                 expected_server_dictionary[remote_server_ip])
             random_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
@@ -591,7 +607,8 @@ def test_rsyslog_protocol(engines, random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-def test_rsyslog_filter(engines, random_api):
+@pytest.mark.cumulus
+def test_rsyslog_filter(engines, random_api, devices):
     """
     Will check the rsyslog filter options: exclude and include.
     Validate that the server will get only the relevant messages.
@@ -612,7 +629,9 @@ def test_rsyslog_filter(engines, random_api):
             create_selector_configuration(selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
 
         with allure.step("Configure remote syslog server {} with exclude filter and validate".format(remote_server_ip)):
-            system.syslog.servers.set_server(remote_server_ip, apply=True)
+            system.syslog.servers.set_server(remote_server_ip)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, SyslogConsts.DEFAULT_SELECTOR_NAME,
                                                                                        apply=True)
 
@@ -626,19 +645,12 @@ def test_rsyslog_filter(engines, random_api):
             selector.filter_dict["1"].set_match_filter(exclude_regex, apply=True)
 
             expected_server_dictionary = create_remote_server_dictionary_with_selector(remote_server_ip, 1,
-                                                                                       selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
+                                                                                       selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME, vrf=TestToolkit.devices.dut.vrf_mgmt)
 
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(
                 expected_server_dictionary[remote_server_ip])
         with allure.step("Validate show commands"):
-            expected_selector_dictionary = {
-                'filter': {
-                    '1': {
-                        'action': 'exclude',
-                        'match': 'a+'
-                    }
-                }
-            }
+            expected_selector_dictionary = devices.dut.expected_selector_dictionary
             system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
                 expected_selector_dictionary)
             with allure.step("Send message with the exclude filter regex,\n"
@@ -666,7 +678,7 @@ def test_rsyslog_filter(engines, random_api):
                 selector = system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME]
                 selector.filter_dict["1"].set_match_filter(long_exclude_regex, apply=True)
                 expected_server_dictionary = create_remote_server_dictionary_with_selector(remote_server_ip, 1,
-                                                                                           selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
+                                                                                           selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME, vrf=TestToolkit.devices.dut.vrf_mgmt)
                 system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(
                     expected_server_dictionary[remote_server_ip])
                 with allure.step("Validate show commands"):
@@ -729,9 +741,12 @@ def test_rsyslog_filter(engines, random_api):
         with allure.step("Unset filter and validate"):
             system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].unset_filter("1", apply=True).verify_result()
             with allure.step("Validate show commands"):
-                expected_selector_dictionary.update({SyslogConsts.FILTER: {}})
-                system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
-                    expected_selector_dictionary)
+                if devices.dut.is_eth():
+                    system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].show(should_succeed=False)
+                if devices.dut.is_ib():
+                    expected_selector_dictionary.update({SyslogConsts.FILTER: {}})
+                    system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
+                        expected_selector_dictionary)
             random_msg = RandomizationTool.get_random_string(20, ascii_letters=string.digits)
             send_msg_to_server(exclude_regex + random_msg, remote_server_ip, remote_server_engine,
                                verify_msg_received=True)
@@ -744,6 +759,7 @@ def test_rsyslog_filter(engines, random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_rsyslog_format(engines, random_api):
     """
     Will validate all the format options:  standard, welf.
@@ -765,8 +781,10 @@ def test_rsyslog_format(engines, random_api):
 
     try:
         with allure.step("Configure remote syslog server {} and validate".format(remote_server_ip)):
-            system.syslog.servers.set_server(remote_server_ip, apply=True)
-            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip)
+            system.syslog.servers.set_server(remote_server_ip)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
+            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip, vrf=TestToolkit.devices.dut.vrf_mgmt)
             expected_syslog_dictionary = create_syslog_output_dictionary(
                 server_dict={SyslogConsts.SERVER: expected_server_dictionary})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
@@ -803,6 +821,7 @@ def test_rsyslog_format(engines, random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_rsyslog_bad_params(random_api):
     """
     Will check all the commands that get params, with bad params- empty or random
@@ -845,8 +864,12 @@ def test_rsyslog_bad_params(random_api):
                 system.syslog.servers.servers_dict[server_name].set_protocol(rand_str, apply=True).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         with allure.independent_step("Configure and validate vrf, should fail"):
-            system.syslog.servers.servers_dict[server_name].set_vrf("", apply=False).verify_result(False)
-            system.syslog.servers.servers_dict[server_name].set_vrf(rand_str, apply=False).verify_result(False)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[server_name].set_vrf("", apply=True, ask_for_confirmation=True).verify_result(False)
+                system.syslog.servers.servers_dict[server_name].set_vrf(rand_str, apply=True, ask_for_confirmation=True).verify_result(False)
+            if TestToolkit.devices.dut.is_ib():
+                system.syslog.servers.servers_dict[server_name].set_vrf("", apply=False).verify_result(False)
+                system.syslog.servers.servers_dict[server_name].set_vrf(rand_str, apply=False).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
         with allure.independent_step("Configure and validate filter, should fail"):
             # First set up a valid filter configuration
@@ -877,6 +900,7 @@ def test_rsyslog_bad_params(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_selector_priorities(random_api):
     """
     Test selector priorities configuration and validation:
@@ -939,6 +963,7 @@ def test_syslog_selector_priorities(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_selector_attachment_validation_negative(random_api):
     """
     Test system behavior when attempting to configure server priority without a selector-id
@@ -1009,6 +1034,7 @@ def test_syslog_selector_attachment_validation_negative(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_selector_priority_with_all_options(random_api):
     """
     Test Objective:
@@ -1036,6 +1062,8 @@ def test_syslog_selector_priority_with_all_options(random_api):
     with allure.step(f"Create server with {protocol} protocol and port {port}"):
         logging.info(f"Create server with {protocol} protocol and port {port}")
         system.syslog.servers.set_server(remote_server_ip, apply=True)
+        if TestToolkit.devices.dut.is_eth():
+            system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
         system.syslog.servers.servers_dict[remote_server_ip].set_protocol(protocol, apply=True)
         system.syslog.servers.servers_dict[remote_server_ip].set_port(port, apply=True)
         # Create selector configuration using the helper function
@@ -1050,7 +1078,7 @@ def test_syslog_selector_priority_with_all_options(random_api):
 
     try:
         with allure.step("Validate show commands"):
-            expected_server_dictionary = create_remote_server_dictionary_with_selector(remote_server_ip, priority, selector_id=selector)
+            expected_server_dictionary = create_remote_server_dictionary_with_selector(remote_server_ip, priority, selector_id=selector, vrf=TestToolkit.devices.dut.vrf_mgmt)
             expected_syslog_dictionary = create_syslog_output_dictionary(
                 server_dict={SyslogConsts.SERVER: expected_server_dictionary})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
@@ -1131,7 +1159,10 @@ def test_syslog_selector_priority_with_all_options(random_api):
 
         with allure.step("Unset selector priority and Validate"):
             system.syslog.servers.servers_dict[remote_server_ip].unset_selector_priority(priority, apply=True)
-            expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
+            if TestToolkit.devices.dut.is_ib():
+                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
+            if TestToolkit.devices.dut.is_eth():
+                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].pop(SyslogConsts.SELECTOR)
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
 
@@ -1195,6 +1226,7 @@ def test_syslog_selector_priority_with_all_options(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_multiple_filters_same_selector(random_api):
     """
     Test multiple filters configured on the same selector and verify their combinations work correctly.
@@ -1224,7 +1256,9 @@ def test_syslog_multiple_filters_same_selector(random_api):
         with allure.step("Create server with UDP protocol and port 514"):
             logging.info("Create server with UDP protocol and port 514")
             system.syslog.servers.set_server(remote_server_ip, apply=True)
-            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
+            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip, vrf=TestToolkit.devices.dut.vrf_mgmt)
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
 
         with allure.step("Create selector with multiple filters"):
@@ -1279,6 +1313,7 @@ def test_syslog_multiple_filters_same_selector(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_multiple_selectors_same_server(random_api):
     """
     Test Objective:
@@ -1308,6 +1343,8 @@ def test_syslog_multiple_selectors_same_server(random_api):
     try:
         with allure.step("Create server with UDP protocol and port 514"):
             system.syslog.servers.set_server(server_id, apply=True)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[server_id].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             system.syslog.servers.servers_dict[server_id].set_protocol(SyslogConsts.UDP, apply=True)
             system.syslog.servers.servers_dict[server_id].set_port(SyslogConsts.DEFAULT_PORT, apply=True)
 
@@ -1422,6 +1459,7 @@ def test_syslog_multiple_selectors_same_server(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_rate_limit_burst(random_api):
     """
     Test Objective:
@@ -1438,6 +1476,7 @@ def test_syslog_rate_limit_burst(random_api):
     8. Send new message again
     9. Clean up configuration
     """
+    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1448,13 +1487,23 @@ def test_syslog_rate_limit_burst(random_api):
     try:
         with allure.step("Create server and selector"):
             system.syslog.servers.set_server(remote_server_ip, apply=True)
+            if TestToolkit.devices.dut.is_eth():
+                system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             system.syslog.selectors.set_selector(selector_id, apply=True)
             system.syslog.selectors.selectors_dict[selector_id].set_severity(SyslogSeverityLevels.CRITICAL, apply=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, selector_id, apply=True)
 
+            if TestToolkit.devices.dut.is_eth():
+                # we need to include filter to get the expected result for eth devices
+                # since device is sending other service message also to remote server, that also counts in burst limit
+                include_regex = "burst_test_message.*"
+                system.syslog.selectors.selectors_dict[selector_id].set_filter("1", apply=False)
+                system.syslog.selectors.selectors_dict[selector_id].filter_dict["1"].set_action_filter(SyslogConsts.INCLUDE, apply=False)
+                system.syslog.selectors.selectors_dict[selector_id].filter_dict["1"].set_match_filter(include_regex, apply=True)
         with allure.step(f"Configure rate limit with interval={interval} and burst={burst}"):
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_interval(interval, apply=True)
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_burst(burst, apply=True)
+
             expected_selector = {
                 'rate-limit': {
                     'burst': burst,
@@ -1477,7 +1526,8 @@ def test_syslog_rate_limit_burst(random_api):
                 time.sleep(1)
 
                 # Check if rate limiting message appears in switch logs
-                syslog_output = TestToolkit.engines.dut.run_cmd('tail -20 /var/log/syslog | grep "rate-limiting"')
+                with sudo_scope_if(TestToolkit.devices.dut.is_eth()):
+                    syslog_output = TestToolkit.engines.dut.run_cmd('tail -20 /var/log/syslog | grep "rate-limiting"')
                 if "begin to drop messages due to rate-limiting" in syslog_output:
                     rate_limit_triggered = True
                     logger.info(f"✓ Rate limiting detected after sending {messages_sent} messages")
@@ -1493,6 +1543,23 @@ def test_syslog_rate_limit_burst(random_api):
                                        priority=SyslogSeverityLevels.CRITICAL, verify_msg_didnt_received=True)
                     logger.info(f"✓ Confirmed message {j} was dropped as expected")
 
+        with allure.step("Send 10 messages in quick succession"):
+            # Send first 3 messages (within burst limit)
+            for i in range(3):
+                test_message = f"burst_test_message_{i}"
+                send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
+                                   priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
+            # Send 10 messages without checking message received to expire burst limit
+            for i in range(3, 10):
+                test_message = f"burst_test_message_{i}"
+                send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
+                                   priority=SyslogSeverityLevels.INFO)
+            time.sleep(10)
+            # Send next 5 messages and verify they are not received (past burst limit)
+            for i in range(11, 15):
+                test_message = f"burst_test_message_{i}"
+                send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
+                                   priority=SyslogSeverityLevels.INFO, verify_msg_didnt_received=True)
         with allure.step("Wait for interval reset and send new message"):
             time.sleep(80)  # Wait for interval reset with buffer time
             test_message = "burst_test_message_after_interval"
@@ -1529,6 +1596,7 @@ def test_syslog_rate_limit_burst(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
+@pytest.mark.cumulus
 def test_syslog_welf_format_without_firewall_name(random_api):
     """
     Test Objective:
@@ -1567,7 +1635,7 @@ def test_syslog_welf_format_without_firewall_name(random_api):
 
 
 def verify_welf_format(line_to_check, firewall_name=".*", expect_welf_format=True):
-    welf_format_regex = "id=firewall time=\".*\" fw=\"{}\" pri=\\d msg=\".*\"".format(firewall_name)
+    welf_format_regex = TestToolkit.devices.dut.welf_format_regex.format(firewall_name)
     result = re.findall(welf_format_regex, line_to_check)
     with allure.step("Verify msg format"):
         if expect_welf_format:
@@ -1653,7 +1721,8 @@ def send_msg_to_server(msg, server_name, server_engine, protocol=None, priority=
         extra_flags = protocol_flag + priority_flag + port_flag + program_flag
         logger_cmd = f'logger {extra_flags} "{msg}"'
         TestToolkit.engines.dut.run_cmd(logger_cmd)
-        TestToolkit.engines.dut.run_cmd('tail -10 /var/log/syslog')
+        with sudo_scope_if(TestToolkit.devices.dut.is_eth()):
+            TestToolkit.engines.dut.run_cmd('tail -10 /var/log/syslog')
         output = ''
 
         time.sleep(2)
@@ -1681,24 +1750,26 @@ def verify_msg_in_syslog_file(engine, msg_to_find, syslog_file='/var/log/syslog'
 
 def create_syslog_output_dictionary(format=SyslogConsts.STANDARD, format_dict={}, trap=SyslogSeverityLevels.NOTICE,
                                     server_dict=None):
+
     dictionary = {
         SyslogConsts.FORMAT: {format: format_dict},
         # SyslogConsts.TRAP: trap
     }
     if server_dict:
         dictionary.update(server_dict)
+
     return dictionary
 
 
 def create_remote_server_dictionary(server_name, port=SyslogConsts.DEFAULT_PORT, protocol=SyslogConsts.UDP, vrf=SyslogConsts.DEFAULT_VRF):
-    dictionary = {
-        server_name: {
-            SyslogConsts.PORT: str(port),
-            SyslogConsts.PROTOCOL: protocol,
-            SyslogConsts.VRF: vrf,
-            SyslogConsts.SELECTOR: {},
-        }
+    server_config = {
+        SyslogConsts.PORT: str(port),
+        SyslogConsts.PROTOCOL: protocol,
+        SyslogConsts.VRF: vrf,
     }
+    if not TestToolkit.devices.dut.is_eth():
+        server_config[SyslogConsts.SELECTOR] = {}
+    dictionary = {server_name: server_config}
     return dictionary
 
 
@@ -1814,12 +1885,13 @@ def positive_minimal_flow(remote_server_engine, remote_server):
     system = System()
 
     with allure.step("Configure remote syslog server: {}".format(remote_server)):
-        system.syslog.servers.set_server(remote_server, apply=True)
-
+        system.syslog.servers.set_server(remote_server)
+        if TestToolkit.devices.dut.is_eth():
+            system.syslog.servers.servers_dict[remote_server].set_vrf(TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
     try:
         random_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
         with allure.step("Validate show commands"):
-            expected_server_dictionary = create_remote_server_dictionary(remote_server)
+            expected_server_dictionary = create_remote_server_dictionary(remote_server, vrf=TestToolkit.devices.dut.vrf_mgmt)
             expected_syslog_dictionary = create_syslog_output_dictionary(
                 server_dict={SyslogConsts.SERVER: expected_server_dictionary})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
