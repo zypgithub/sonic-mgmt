@@ -6,9 +6,11 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 class SshServer(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ssh-server')
+        self.active_sessions = ActiveSessions(self)
         self.trusted_ca_keys = TrustedCaKeys(self)
         self.deny_user = DenyUser(self)
         self.allow_user = AllowUser(self)
+        self.port = Port(self)
 
 
 class AllowUser(BaseComponent):
@@ -55,3 +57,18 @@ class TrustedCaKey(BaseComponent):
         - ssh-ed25519
         """
         self.set(op_param_name='type', op_param_value=key_type, apply=apply)
+
+
+class Port(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/port')
+
+    def set(self, port: int, apply: bool = False):
+        # For NVUE CLI: nv set system ssh-server port <port>
+        # For OpenAPI: PATCH /system/ssh-server/port with body {"<port>": {}}
+        return BaseComponent.set(self, op_param_name=str(port), op_param_value={}, apply=apply)
+
+
+class ActiveSessions(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/active-sessions')

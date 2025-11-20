@@ -6,21 +6,531 @@ import random
 import re
 import time
 
+import paramiko
 import pytest
-
+from retry import retry
 from infra.tools.connection_tools.utils import generate_strong_password
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
+from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, CumulusConsts
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.system.UserManager import delete_user
 from ngts.tests_nvos.general.security.conftest import ssh_to_device_and_retrieve_raw_login_ssh_notification
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
 from ngts.tests_nvos.general.security.test_login_ssh_notification.constants import LoginSSHNotificationConsts as Consts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notifications_default_fields_admin(engines, login_source_ip_addresses):
+    """
+    Validate admin user SSH login notification default fields.
+        Test flow:
+            1. Connect to switch before validation to clear failed messages
+            2. Validate SSH login notification (default fields, IP, failed attempts, etc.)
+    """
+    system = System(None)
+
+    with allure.step("Connect to switch before validation to clear all failed messages"):
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip)
+
+    with allure.step("Validate ssh login notification"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=engines.dut.username,
+                                                        password=engines.dut.password,
+                                                        capability=Consts.ADMIN_CAPABITILY,
+                                                        last_successful_login=successful_login_time)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notification_password_change_admin(engines, login_source_ip_addresses):
+    """
+    Validate admin user SSH login notification when password is changed.
+        Test flow:
+            1. Create new user
+            2. Connect to switch and collect successful login time
+            3. Change user password
+            4. Validate SSH login notification with password-change message
+    """
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Create new user"):
+        username, password = system.aaa.user.set_new_user(apply=True)
+        new_password = generate_strong_password()
+
+    with allure.step("Connect to switch and collect successful login time"):
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+        SshAuthenticator(username, password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Change user password"):
+        change_username_password(engines, username=username,
+                                 curr_password=password,
+                                 new_password=new_password)
+
+    with allure.step("Validate ssh login notification with password change"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=username,
+                                                        password=new_password,
+                                                        capability=Consts.ADMIN_CAPABITILY,
+                                                        check_password_change_msg=True,
+                                                        last_successful_login=successful_login_time)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses):
+    """
+    Validate new user role change is reflected in SSH login notification.
+        Test flow:
+            1. Create new user with system-admin role
+            2. Connect to switch and collect successful login time
+            3. Change user role to nvue-monitor
+            4. Validate SSH login notification with role-change message
+    """
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Create new user"):
+        user_name, password = system.aaa.user.set_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)
+
+    with allure.step("Connect to switch and collect successful login time"):
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
+
+    with allure.step(f"Change user role to {CumulusConsts.ROLE_NVUE_MONITOR}"):
+        system.aaa.user.user_id[user_name].set(SystemConsts.USER_ROLE, CumulusConsts.ROLE_NVUE_MONITOR, apply=True).verify_result()
+
+    with allure.step("Validate ssh login notification with role change"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=user_name,
+                                                        password=password,
+                                                        capability=CumulusConsts.ROLE_NVUE_MONITOR,
+                                                        check_password_change_msg=False,
+                                                        check_role_change_msg=True,
+                                                        last_successful_login=successful_login_time)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notification_cli_commands_good_flow(engines, login_source_ip_addresses):
+    """
+    Test CLI commands for login SSH notification (login-record-period set/show).
+        Test flow:
+            1. Connect to switch and collect successful login time
+            2. Set login-record-period to random value (min-max range)
+            3. Validate SSH login notification with new record period
+            4. Run nv show system ssh-server and verify login-record-period value
+    """
+    system = System(None)
+
+    with allure.step("Connect to switch and collect successful login time"):
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Set new value for login record period"):
+        record_days = random.randint(Consts.MIN_RECORD_PERIOD_VAL, Consts.MAX_RECORD_PERIOD_VAL)
+        system.ssh_server.set(Consts.RECORD_PERIOD, record_days, apply=True, ask_for_confirmation=True)
+
+    with allure.step("Validate ssh login notification with new record period"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=engines.dut.username,
+                                                        password=engines.dut.password,
+                                                        capability=SystemConsts.ROLE_CONFIGURATOR,
+                                                        check_password_change_msg=False,
+                                                        check_role_change_msg=False,
+                                                        expected_login_record_period=record_days,
+                                                        last_successful_login=successful_login_time)
+
+    with allure.step("Validate login record period value in show system ssh-server command"):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        ValidationTool.validate_fields_values_in_output([Consts.RECORD_PERIOD], [record_days], output).verify_result()
+
+
+@pytest.mark.cumulus
+def test_login_ssh_notification_performance(engines, login_source_ip_addresses):
+    """
+    Validate login notification performance with large auth.log.
+        Test flow:
+            1. Set login record period to max value
+            2. Populate auth.log by uploading from shared location
+            3. Measure SSH login time and assert within max threshold
+    """
+    system = System(None)
+
+    with allure.step("Set max value for login record period"):
+        system.ssh_server.set(Consts.RECORD_PERIOD, Consts.MAX_RECORD_PERIOD_VAL, apply=True, ask_for_confirmation=False).verify_result()
+
+    with allure.step("Populate auth. logs by uploading from previously created files"):
+        engines.dut.run_cmd(f'mkdir {Consts.TMP_TEST_DIR_SWITCH_PATH}')
+        scp_file(engines.dut, Consts.AUTH_LOGS_SHARED_LOCATION, Consts.TMP_TEST_DIR_SWITCH_PATH)
+        engines.dut.run_cmd(f'sudo mv {Consts.TMP_TEST_DIR_SWITCH_PATH}/auth.log* {Consts.AUTH_LOG_DIR_SWITCH_PATH}')
+        engines.dut.run_cmd(f'rmdir {Consts.TMP_TEST_DIR_SWITCH_PATH}')
+
+    with allure.step("Measure login time"):
+        start_time = datetime.datetime.now()
+        ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip)
+        end_time = datetime.datetime.now()
+        login_time_sec = end_time.second - start_time.second
+        logger.info("Login time is: {} secs".format(login_time_sec))
+        assert login_time_sec <= Consts.MAX_LOGIN_TIME, \
+            "Login time is too long, max threshold: {}," \
+            "actual login time: {}".format(Consts.MAX_LOGIN_TIME, login_time_sec)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_addresses):
+    """
+    Validate that one user's login failures are not shown in another user's SSH login notification.
+        Test flow:
+            1. Create new user with system-admin role
+            2. Connect with cumulus user (clear failed messages)
+            3. Connect with newly created user and collect successful login time
+            4. Fail N times connecting with newly created user
+            5. Connect with cumulus user and parse login notification
+            6. Verify cumulus user notification has no failed-attempt count
+            7. Connect with newly created user and validate failed-attempt count in notification
+    """
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Create new user"):
+        user_name, password = system.aaa.user.set_new_user(
+            role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True
+        )
+
+    with allure.step("Connect to switch with cumulus user"):
+        connect_with_cumulus_user_before_validation(engines)
+
+    with allure.step("Connect to switch with newly created user and collect successful login time"):
+        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
+
+    random_number_of_connection_fails = random.randint(5, 7)
+    with allure.step(f"Fail {random_number_of_connection_fails} times connecting to device with newly created user"):
+        authenticator = SshAuthenticator(user_name, password, engines.dut.ip)
+        for index in range(random_number_of_connection_fails):
+            logger.info(f"Attempt number {index + 1}")
+            authenticator.attempt_login_failure()
+
+    with allure.step("Connect to switch with cumulus user and parse login notification"):
+        second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, engines.dut.username, engines.dut.password)
+
+    with allure.step("Validate failed attempts are not in the cumulus user login notification"):
+        actual_failed = second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN]
+        assert actual_failed is None, (f"Expected no failed-attempt count for cumulus user; got: {actual_failed}")
+
+    with allure.step("Validate failed attempts in notification with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines,
+                                                        login_source_ip_addresses,
+                                                        username=user_name,
+                                                        password=password,
+                                                        already_login_failed=random_number_of_connection_fails,
+                                                        capability=CumulusConsts.ROLE_SYSTEM_ADMIN,
+                                                        last_successful_login=successful_login_time)
+
+
+@pytest.mark.cumulus
+def test_ssh_login_notifications_allowed_user(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
+    """
+    Validate SSH connection is allowed only for user configured in allow-users.
+        Test flow:
+            1. Set ssh-server allow-users to monitor user
+            2. Connect with cumulus user (clear failed messages)
+            3. Connect with monitor user and collect login timestamp
+            4. Validate SSH login notification for monitor user
+            5. Verify nv show system ssh-server shows allow-users same as login user
+            6. Verify non-allowed user (cumulus) is rejected when allow-users is set
+    """
+    user_name, password = monitor_user_for_ssh_allowed
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Setting ssh server with allow users"):
+        system.ssh_server.set(Consts.ALLOW_USERS, user_name, apply=True, ask_for_confirmation=True).verify_result()
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        successful_login_time = connect_with_user_and_collect_login_time(system, user_name, password, engines.dut.ip)
+
+    with allure.step("Validating successful login attempt with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=user_name,
+                                                        password=password,
+                                                        capability=Consts.NVUE_MONITOR_ROLE,
+                                                        last_successful_login=successful_login_time)
+
+    with allure.step("verifying allowed user and login user are the same"):
+        fields_to_verify = [Consts.ALLOW_USERS]
+        values_to_verify = [{user_name: {}}]
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, output).verify_result()
+
+    with allure.step("Validating that non-allowed user is rejected"):
+        login_succeeded, _ = SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+        assert not login_succeeded, (
+            "Non-allowed user ({}) should be rejected when allow-users is set to {} only."
+        ).format(engines.dut.username, user_name)
+
+
+@pytest.mark.cumulus
+def test_verify_switchd_restart(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
+    """
+    Verify SSH server config persists after switchd restart.
+        Test flow:
+            1. Configure SSH server options (port, auth-retries, login-timeout, allow-users)
+            2. Connect with cumulus user then with monitor user; validate login notification
+            3. Restart switchd and verify service is active
+            4. Verify SSH server config in nv show after restart
+            5. Connect again with both users and validate login notification
+            6. Cleanup SSH server configuration
+    """
+    username, password = monitor_user_for_ssh_allowed
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Configure SSH server options (port, auth-retries=6, login-timeout=120)"):
+        for param, value in Consts.SSH_SERVER_OPTIONS_FOR_SET.items():
+            system.ssh_server.set(param, value).verify_result()
+        system.ssh_server.set(Consts.ALLOW_USERS, username, apply=True, ask_for_confirmation=True).verify_result()
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        successful_login_time = connect_with_user_and_collect_login_time(system, username, password, engines.dut.ip)
+
+    with allure.step("Validating successful login attempt with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=username,
+                                                        password=password,
+                                                        capability=Consts.NVUE_MONITOR_ROLE,
+                                                        last_successful_login=successful_login_time)
+    with allure.step("Restart switchd and verify it is active"):
+        GeneralCliCommon(engines.dut).systemctl_restart('switchd')
+        assert GeneralCliCommon(engines.dut).systemctl_is_service_active('switchd'), 'switchd did not become active after restart'
+
+    with allure.step("Verify SSH server configuration persisted after switchd restart"):
+        fields_to_verify = [p[0] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY] + [Consts.ALLOW_USERS]
+        values_to_verify = [p[1] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY] + [{username: {}}]
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, output).verify_result()
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        successful_login_time = connect_with_user_and_collect_login_time(system, username, password, engines.dut.ip)
+
+    with allure.step("Validating successful login attempt with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=username,
+                                                        password=password,
+                                                        capability=Consts.NVUE_MONITOR_ROLE,
+                                                        last_successful_login=successful_login_time)
+    with allure.step("Cleanup SSH server configuration"):
+        system.ssh_server.unset(apply=True, ask_for_confirmation=True).verify_result()
+
+
+@pytest.mark.cumulus
+def test_verify_reboot(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
+    """
+    Verify SSH server config persists after node reboot.
+        Test flow:
+            1. Configure SSH server options (auth-retries, login-timeout, port, allow-users)
+            2. Connect with cumulus user then with monitor user; validate login notification
+            3. Reboot the system
+            4. Verify SSH server config in nv show after reboot
+            5. Connect again with both users and validate login notification
+            6. Cleanup SSH server configuration
+    """
+    username, password = monitor_user_for_ssh_allowed
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Configure SSH server options (port, auth-retries=6, login-timeout=120)"):
+        for param, value in (
+            (Consts.SSH_AUTHENTICATION_RETRIES, Consts.SSH_AUTH_RETRIES_VAL),
+            (Consts.SSH_LOGIN_TIMEOUT, Consts.SSH_LOGIN_TIMEOUT_VAL),
+            (Consts.SSH_PORT, Consts.SSH_PORT_VAL),
+            (Consts.ALLOW_USERS, username)
+        ):
+            system.ssh_server.set(param, value).verify_result()
+        system.ssh_server.set(Consts.ALLOW_USERS, engines.dut.username, apply=True, ask_for_confirmation=True).verify_result()
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        successful_login_time = connect_with_user_and_collect_login_time(system, username, password, engines.dut.ip, port=Consts.SSH_PORT_VAL)
+
+    with allure.step("Validating successful login attempt with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=username,
+                                                        password=password,
+                                                        capability=Consts.NVUE_MONITOR_ROLE,
+                                                        last_successful_login=successful_login_time)
+
+    with allure.step('Reboot the system'):
+        system.action_reboot(send_user_confirmation='y').verify_result()
+
+    with allure.step("Verify SSH server configuration persisted after reboot"):
+        fields_to_verify = [p[0] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY_REBOOT] + [Consts.ALLOW_USERS, Consts.ALLOW_USERS]
+        values_to_verify = [p[1] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY_REBOOT] + [{username: {}}, {engines.dut.username: {}}]
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, output).verify_result()
+
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
+
+    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
+        successful_login_time = connect_with_user_and_collect_login_time(system, username, password, engines.dut.ip, port=Consts.SSH_PORT_VAL)
+
+    with allure.step("Validating successful login attempt with newly created user"):
+        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                        username=username,
+                                                        password=password,
+                                                        capability=Consts.NVUE_MONITOR_ROLE,
+                                                        last_successful_login=successful_login_time)
+
+    with allure.step("Cleanup SSH server configuration"):
+        system.ssh_server.unset(apply=True, ask_for_confirmation=True).verify_result()
+
+
+@pytest.mark.cumulus
+def test_verify_nv_show(engines):
+    """
+    Verify nv show system ssh-server active-sessions displays correct output.
+        Test flow:
+            1. Configure SSH server (max-sessions-per-connection=30, max-unauthenticated, permit-root-login)
+            2. Verify SSH server options in nv show system ssh-server
+            3. Get ESTAB session count from active-sessions show
+            4. Perform successful login with cumulus user (keep session)
+            5. Verify ESTAB session count increased in active-sessions show
+    """
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step("Configure SSH server options (max-sessions-per-connection=30)"):
+        system.ssh_server.set(Consts.SSH_MAX_SESSIONS_PER_CONNECTION, Consts.SSH_MAX_SESSIONS_PER_CONNECTION_VAL).verify_result()
+        system.ssh_server.set(Consts.SSH_MAX_UNAUTHENTICATED, Consts.SSH_MAX_UNAUTHENTICATED_THROTTLE_START_30).verify_result()
+        system.ssh_server.set(Consts.SSH_PERMIT_ROOT_LOGIN, Consts.SSH_PERMIT_ROOT_LOGIN_ENABLED, apply=True, ask_for_confirmation=True).verify_result()
+
+    with allure.step("Verify SSH server options are set correctly"):
+        output = json.loads(system.ssh_server.show())
+        fields_to_verify = [p[0] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY_NV_SHOW]
+        values_to_verify = [p[1] for p in Consts.SSH_SERVER_OPTIONS_FOR_SHOW_VERIFY_NV_SHOW]
+        ValidationTool.validate_fields_values_in_output(fields_to_verify, values_to_verify, output).verify_result()
+
+    active_sessions_pre = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.active_sessions.show()).get_returned_value()
+    count_pre = sum(1 for s in (active_sessions_pre or {}).values() if isinstance(s, dict) and s.get('state') == 'ESTAB')
+
+    with allure.step("Validating successful login attempt with cumulus user"):
+        authenticator = SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip)
+        authenticator.attempt_login_success(restart_session_process=False, logout_if_succeeded=False)
+
+    with allure.step("Verify that the number of ESTAB sessions in active-sessions show has increased"):
+        verify_active_sessions_estab_count_increased(system, count_pre)
+        authenticator.close_ssh_login_session()
+
+
+@pytest.mark.cumulus
+def test_verify_max_session_per_connection(engines):
+    """
+    Verify max-sessions-per-connection limit is enforced per TCP connection.
+        Test flow:
+            1. Set max-sessions-per-connection to limit (e.g. 12)
+            2. Verify value in nv show system ssh-server
+            3. Open sessions on single connection up to limit; verify (limit+1)th rejected
+            4. Close channels and connection
+            5. Set max-sessions-per-connection to 102 and verify it fails
+            6. Unset max-sessions-per-connection
+    """
+    system = System(force_api=ApiType.NVUE)
+    limit = Consts.SSH_MAX_SESSIONS_PER_CONNECTION_LIMIT
+
+    with allure.step(f"Set max sessions per connection to {limit}"):
+        system.ssh_server.set(Consts.SSH_MAX_SESSIONS_PER_CONNECTION, limit, apply=True, ask_for_confirmation=True).verify_result()
+
+    with allure.step(f"Verify max sessions per connection is set to {limit}"):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        ValidationTool.validate_fields_values_in_output([Consts.SSH_MAX_SESSIONS_PER_CONNECTION], [limit], output).verify_result()
+
+    with allure.step(f"Open sessions on a single connection up to limit {limit} (then try one more)"):
+        client, channels, num_opened = _open_sessions_on_single_connection(
+            engines.dut.ip,
+            engines.dut.username,
+            engines.dut.password,
+            Consts.SSH_PORT_VAL,
+            limit + 2,
+        )
+        # Server may reject at limit or limit+1 (e.g. off-by-one or connection counted as first session)
+        assert limit <= num_opened <= limit + 1, (
+            f"Expected between {limit} and {limit + 1} sessions (limit enforced), but opened {num_opened}"
+        )
+
+    with allure.step(f"Verify one more session is rejected (limit enforced)"):
+        if num_opened <= limit:
+            # Limit was already enforced in the loop
+            pass
+        else:
+            # num_opened == limit+1: verify (limit+2)th is rejected
+            try:
+                extra_chan = client.get_transport().open_session()
+                extra_chan.exec_command("echo test")
+                extra_chan.close()
+                assert False, (
+                    f"Session {num_opened + 1} should be rejected when max-sessions-per-connection is {limit}"
+                )
+            except Exception as e:
+                logger.info("Session %s correctly rejected: %s", num_opened + 1, e)
+
+    # Close all channels and the single connection
+    for ch in channels:
+        try:
+            ch.close()
+        except Exception:
+            pass
+    client.close()
+
+    with allure.step("Set max sessions per connection to 102 and verify it fails"):
+        system.ssh_server.set(Consts.SSH_MAX_SESSIONS_PER_CONNECTION, Consts.SSH_MAX_SESSIONS_PER_CONNECTION_VAL_102, apply=True, ask_for_confirmation=True).verify_result(should_succeed=False)
+
+    with allure.step("Unset max sessions per connection"):
+        system.ssh_server.unset(Consts.SSH_MAX_SESSIONS_PER_CONNECTION, apply=True, ask_for_confirmation=True).verify_result()
+
+
+@pytest.mark.cumulus
+def test_verify_permit_root_login():
+    """
+    Verify permit-root-login SSH server option set/show/unset for each value.
+        Test flow:
+            1. For each value (prohibit-password, forced-commands-only, disabled, enabled):
+                 a. Set permit-root-login to value and apply
+                 b. Verify value in nv show system ssh-server
+                 c. Unset permit-root-login
+    """
+    system = System(force_api=ApiType.NVUE)
+    permit_values = [
+        Consts.SSH_PERMIT_ROOT_LOGIN_PROHIBIT_PASSWORD,
+        Consts.SSH_PERMIT_ROOT_LOGIN_FORCED_COMMANDS_ONLY,
+        Consts.SSH_PERMIT_ROOT_LOGIN_DISABLED,
+        Consts.SSH_PERMIT_ROOT_LOGIN_ENABLED,
+    ]
+    for value in permit_values:
+        with allure.step(f"Set permit-root-login to {value}"):
+            system.ssh_server.set(
+                Consts.SSH_PERMIT_ROOT_LOGIN, value, apply=True, ask_for_confirmation=True
+            ).verify_result()
+        with allure.step(f"Verify permit-root-login is set to {value}"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+            ValidationTool.validate_fields_values_in_output(
+                [Consts.SSH_PERMIT_ROOT_LOGIN], [value], output
+            ).verify_result()
+        with allure.step("Unset permit-root-login"):
+            system.ssh_server.unset(
+                Consts.SSH_PERMIT_ROOT_LOGIN, apply=True, ask_for_confirmation=True
+            ).verify_result()
 
 
 def convert_linux_date_output_to_datetime_object(linux_date_string):
@@ -34,6 +544,74 @@ def convert_linux_date_output_to_datetime_object(linux_date_string):
     date_format = "%a %b %d %H:%M:%S %Z %Y"
     date = datetime.datetime.strptime(linux_date_string, date_format)
     return date
+
+
+def connect_with_user_and_collect_login_time(system, username, password, dut_ip, port=Consts.SSH_PORT_VAL):
+    """
+    Connect to switch with the given user, perform successful login, and return the login
+    timestamp for validation. Use when a test needs last_successful_login for notification checks.
+    """
+    successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+    authenticator = SshAuthenticator(username, password, dut_ip, port)
+    authenticator.attempt_login_success()
+    return successful_login_time
+
+
+def connect_with_cumulus_user_before_validation(engines):
+    """
+    Connect to switch with cumulus user before validation to clear all failed messages.
+    Use before validating login notifications so prior failed-attempt messages do not affect checks.
+    """
+    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
+        return SshAuthenticator(
+            engines.dut.username, engines.dut.password, engines.dut.ip
+        ).attempt_login_success()
+
+
+def _open_sessions_on_single_connection(hostname, username, password, port, max_sessions_to_try):
+    """
+    Open a single SSH connection and open multiple sessions (channels) on that same connection.
+    Used to verify max-sessions-per-connection is enforced (sessions per TCP connection, not total connections).
+
+    Returns:
+        tuple: (client, list of channels, num_opened).
+        client is the paramiko SSHClient (one connection). channels are the open session channels.
+        num_opened is how many sessions were successfully opened before failure or limit.
+    """
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    client.connect(
+        hostname=hostname,
+        username=username,
+        password=password,
+        port=port,
+        timeout=15,
+        look_for_keys=False,
+        allow_agent=False,
+    )
+    transport = client.get_transport()
+    channels = []
+    try:
+        for i in range(max_sessions_to_try):
+            chan = transport.open_session()
+            chan.exec_command("echo test")
+            channels.append(chan)
+            time.sleep(0.2)
+    except Exception as e:
+        logger.info("Opening session %s failed (expected when limit enforced): %s", len(channels) + 1, e)
+    logger.info(f"Opened {len(channels)} sessions on single connection")
+    return client, channels, len(channels)
+
+
+@retry(AssertionError, tries=6, delay=2)
+def verify_active_sessions_estab_count_increased(system, count_pre):
+    active_sessions = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.active_sessions.show()).get_returned_value()
+    count_post = sum(1 for s in (active_sessions or {}).values() if isinstance(s, dict) and s.get('state') == 'ESTAB')
+    assert int(count_post) > int(count_pre), (
+        f"Active sessions count did not increase\n"
+        f"Before: {count_pre}\n"
+        f"After: {count_post}"
+    )
 
 
 def parse_ssh_login_notification(dut_ip, username, password, assert_last_login=True, assert_no_errors=False):
@@ -252,223 +830,17 @@ def get_current_time_in_secs():
     return current_date
 
 
-@pytest.mark.cumulus
-@pytest.mark.simx_security
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-def test_ssh_login_notifications_default_fields_admin(engines, login_source_ip_addresses):
-    '''
-    @summary: in this test case we want to validate admin username ssh login notification
-    '''
-    with allure.step("Connecting to switch before validation to clear all failed messages"):
-        logger.info("Connecting to switch before validation to clear all failed messages")
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(System().datetime.show())
-        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip)
-        # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-        #                                                       username=engines.dut.username,
-        #                                                       password=engines.dut.password)
-    validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                    username=engines.dut.username,
-                                                    password=engines.dut.password,
-                                                    capability=Consts.ADMIN_CAPABITILY,
-                                                    last_successful_login=successful_login_time)
-
-
-@pytest.mark.cumulus
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-def test_ssh_login_notification_password_change_admin(engines, login_source_ip_addresses,
-                                                      disable_password_hardening_rules):
-    '''
-    @summary: in this test case we want to validate admin username ssh login notification
-    '''
-    with allure.step('Create test user'):
-        system = System(force_api=ApiType.NVUE)
-        username, password = system.aaa.user.set_new_user(apply=True)
-        new_password = generate_strong_password()
-
-    with allure.step("Connecting to switch before validation to clear all failed messages"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(username, password, engines.dut.ip).attempt_login_success()
-        # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-        #                                                       username=username,
-        #                                                       password=password)
-    with allure.step('Change password'):
-        change_username_password(engines, username=username,
-                                 curr_password=password,
-                                 new_password=new_password)
-    with allure.step('Validate ssh login notification'):
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                        username=username,
-                                                        password=new_password,
-                                                        capability=Consts.ADMIN_CAPABITILY,
-                                                        check_password_change_msg=True,
-                                                        last_successful_login=successful_login_time)
-
-
-@pytest.mark.cumulus
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses):
-    '''
-    @summary: in this test case we want to validate new user role change on ssh login notification,
-    where we expect role message to appear
-    '''
-    with allure.step("Creating a new username"):
-        system = System(force_api=ApiType.NVUE)
-        user_name, password = system.aaa.user.set_new_user(role=AaaConsts.ADMIN, apply=True)
-        logging.info(
-            f"User created: \nusername: {user_name} \npassword: {password}\ncapability: {SystemConsts.ROLE_CONFIGURATOR}")
-
-    with allure.step("Connecting to switch with the new user for first time"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
-        # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip, username=user_name, password=password)
-
-    with allure.step(f"Change user '{user_name}' role to {SystemConsts.ROLE_VIEWER}"):
-        system.aaa.user.user_id[user_name].set(SystemConsts.USER_ROLE, SystemConsts.ROLE_VIEWER,
-                                               apply=True).verify_result()
-
-    validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                    username=user_name,
-                                                    password=password,
-                                                    capability=SystemConsts.ROLE_VIEWER,
-                                                    check_password_change_msg=False,
-                                                    check_role_change_msg=True,
-                                                    last_successful_login=successful_login_time)
-
-
-@pytest.mark.cumulus
-@pytest.mark.simx_security
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-def test_ssh_login_notification_cli_commands_good_flow(engines, login_source_ip_addresses,
-                                                       restore_original_record_period):
-    '''
-    @summary: in this test case we want to test the new cli commands for login ssh notification,
-    this test case will contain the good flow,
-    commands to be tested:
-    1. nv set system ssh-server login-record-period
-    2. nv show system ssh-server
-    '''
-    system = System(None)
-
-    with allure.step("Connecting to switch before validation to clear all failed messages"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success()
-        # ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip,
-        #                                                       username=engines.dut.username,
-        #                                                       password=engines.dut.password)
-
-    with allure.step("Validating ssh login record period set command"):
-        pass
-
-    with allure.step("Setting new value for login record period"):
-        record_days = random.randint(Consts.MIN_RECORD_PERIOD_VAL, Consts.MAX_RECORD_PERIOD_VAL)
-        system.ssh_server.set(Consts.RECORD_PERIOD, record_days, apply=True, ask_for_confirmation=True)
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                        username=engines.dut.username,
-                                                        password=engines.dut.password,
-                                                        capability=SystemConsts.ROLE_CONFIGURATOR,
-                                                        check_password_change_msg=False,
-                                                        check_role_change_msg=False,
-                                                        expected_login_record_period=record_days,
-                                                        last_successful_login=successful_login_time)
-
-    with allure.step("Validating Validating show system ssh-server command"):
-        output = json.loads(system.ssh_server.show())
-        # assert output[Consts.RECORD_PERIOD] == str(record_days), \
-        #     "Could not match same login record period ib the show system ssh-server command\n" \
-        #     "expected: {}, actual: {}".format(record_days, output[Consts.RECORD_PERIOD])
-
-
-@pytest.mark.cumulus
-@pytest.mark.simx_security
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-def test_login_ssh_notification_performance(engines, login_source_ip_addresses, restore_original_record_period,
-                                            delete_auth_logs):
-    '''
-    @summary: in this test case we want to validate the performance of the feature when there is a huge
-    auth.log file
-    '''
-    system = System(None)
-
-    with allure.step("Setting max value for login record period"):
-        system.ssh_server.set(Consts.RECORD_PERIOD,
-                              Consts.MAX_RECORD_PERIOD_VAL,
-                              apply=True, ask_for_confirmation=False).verify_result()
-
-    with allure.step("populating auth. logs by uploading from previously created files"):
-        logging.info('Create temp directory in the switch')
-        engines.dut.run_cmd(f'mkdir {Consts.TMP_TEST_DIR_SWITCH_PATH}')
-        logging.info('Upload auth log files using SCP')
-        scp_file(engines.dut, Consts.AUTH_LOGS_SHARED_LOCATION, Consts.TMP_TEST_DIR_SWITCH_PATH)
-        logging.info('Move files from temp directory to correct path using sudo')
-        engines.dut.run_cmd(f'sudo mv {Consts.TMP_TEST_DIR_SWITCH_PATH}/auth.log* {Consts.AUTH_LOG_DIR_SWITCH_PATH}')
-        logging.info('Remove temp directory from the switch')
-        engines.dut.run_cmd(f'rmdir {Consts.TMP_TEST_DIR_SWITCH_PATH}')
-        # player_engine = engines['sonic_mgmt']
-        # player_engine.upload_file_using_scp(dest_username=engines.dut.username,
-        #                                     dest_password=engines.dut.password,
-        #                                     dest_folder=Consts.AUTH_LOG_DIR_SWITCH_PATH,
-        #                                     dest_ip=engines.dut.ip,
-        #                                     local_file_path=Consts.AUTH_LOGS_SHARED_LOCATION)
-
-    with allure.step("Measuring login time"):
-        start_time = datetime.datetime.now()
-        ssh_to_device_and_retrieve_raw_login_ssh_notification(engines.dut.ip)
-        end_time = datetime.datetime.now()
-        login_time_sec = end_time.second - start_time.second
-        logger.info("Login time is: {} secs".format(login_time_sec))
-        assert login_time_sec <= Consts.MAX_LOGIN_TIME, \
-            "Took too long to login to switch using ssh, max threshold: {}," \
-            "actual: {}".format(Consts.MAX_LOGIN_TIME, login_time_sec)
-
-
-@pytest.mark.login_ssh_notification
-@pytest.mark.checklist
-@pytest.mark.cumulus
-def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_addresses):
-    '''
-    @summary: in this test case we want to validate login failure of one user is not displayed on another user
-    '''
-
-    with allure.step("Creating a new username"):
-        system = System(force_api=ApiType.NVUE)
-        user_name, password = system.aaa.user.set_new_user(apply=True)
-        logging.info(f"User created: \nusername: {user_name} \npassword: {password}\ncapability: {SystemConsts.ROLE_CONFIGURATOR}")
-
-    with allure.step("Connecting to switch with cumulus user before validation to clear all failed messages"):
-        _, _, _ = SshAuthenticator(engines.dut.username, engines.dut.password, engines.dut.ip).attempt_login_success(return_output=True)
-
-    with allure.step("Connecting to switch with newly created user to collect the login timestamp"):
-        logger.info("Connecting to switch with newly created user to collect the login timestamp")
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
-
-    random_number_of_connection_fails = random.randint(5, 7)
-    with allure.step("Fail {} times connecting to device with newly created user".format(random_number_of_connection_fails)):
-        authenticator = SshAuthenticator(user_name, password, engines.dut.ip)
-        for index in range(random_number_of_connection_fails):
-            logger.info(f'Attempt number {index + 1}')
-            authenticator.attempt_login_failure()
-
-    with allure.step("Connecting to switch with cumulus user to store details"):
-        second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, engines.dut.username,
-                                                                         engines.dut.password)
-    logger.info(second_login_notification_message)
-    with allure.step("Validating failed attempts is not in the non failed/cumulus user login logs"):
-        assert second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN] is None, \
-            "Number of failed connections is not the same, \n" \
-            "Expected : {} \n" \
-            "Actually : {}".format("None",
-                                   second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN])
-
-    with allure.step("Connecting to switch and check the failure message with the newly created user"):
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                        username=user_name,
-                                                        password=password,
-                                                        already_login_failed=random_number_of_connection_fails,
-                                                        capability=Consts.ADMIN_CAPABITILY,
-                                                        last_successful_login=successful_login_time)
+@pytest.fixture
+def monitor_user_for_ssh_allowed(engines):
+    """
+    Create a new NVUE monitor user for SSH allowed-user tests.
+    Yields (user_name, password); teardown deletes the user.
+    """
+    system = System(force_api=ApiType.NVUE)
+    with allure.step("Create new user"):
+        user_name, password = system.aaa.user.set_new_user(role=Consts.NVUE_MONITOR_ROLE, apply=True)
+    try:
+        yield (user_name, password)
+    finally:
+        with allure.step("Delete user"):
+            delete_user(engines, user_name)
