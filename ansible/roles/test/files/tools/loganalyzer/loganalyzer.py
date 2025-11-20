@@ -465,6 +465,8 @@ class AnsibleLogAnalyzer:
 
         ignore_marker_run_ids = []
         for rev_line in reversed(log_file.readlines()):
+            if len(rev_line) > MAX_LOG_MESSAGE_LENGTH:
+                continue
             if stdin_as_input:
                 in_analysis_range = True
             else:
