@@ -125,9 +125,8 @@ class LoadExtraDpuConfigModule(object):
         # Wait for the DPU control plane to be up for at least required_success_count DPUs
         if not self.wait_for_dpu_count_mid_plane_up(required_success_count):
             self.module.warn(
-                "DPU control planes are not ready on switch (required {}) after {} retries. Trying to reboot the DPUs".format(required_success_count,
-                    MAX_RETRIES,
-                )
+                "DPU control planes are not ready on switch (required {}) after {} retries."
+                .format(required_success_count, MAX_RETRIES)
             )
 
         self.module.log("Configuring {} DPUs, requiring at least {} successful configurations".format(
@@ -242,14 +241,15 @@ class LoadExtraDpuConfigModule(object):
         cmd = "show system-health dpu all"
         rc, out, err = self.module.run_command(cmd)
         if rc != 0:
-            self.module.warn(f"Failed to execute DPU system health command: cmd: {cmd}, rc: {rc}, Err: {err}, Out: {out}")
+            self.module.warn("Failed to execute DPU system health command: "
+                             "cmd: {}, rc: {}, Err: {}, Out: {}".format(cmd, rc, err, out))
             return 0, 0
         dpu_online_count = 0
         dpu_midplane_up_count = 0
         for line in out.split("\n"):
             if "up" in line and "dpu_midplane_link_state" in line:
                 dpu_midplane_up_count += 1
-            if line.startswith("DPU") and "Online" in line:
+            if line.startswith("DPU") and "Online" in line and "Partial" not in line:
                 dpu_online_count += 1
         return dpu_online_count, dpu_midplane_up_count
 
@@ -265,12 +265,11 @@ class LoadExtraDpuConfigModule(object):
     def wait_for_dpu_count_fully_online(self, required_count):
         retry_count = 0
         while retry_count < MAX_RETRIES:
-            if self.get_dpu_online_mid_plane_up_counts()[0]  >= required_count:
+            if self.get_dpu_online_mid_plane_up_counts()[0] >= required_count:
                 return True
             time.sleep(RETRY_DELAY)
             retry_count += 1
         return False
-
 
     def run(self):
         success_count, failure_count = self.configure_dpus()
