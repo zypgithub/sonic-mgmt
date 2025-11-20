@@ -545,30 +545,6 @@ def is_support_mock_asic(duthosts, rand_one_dut_hostname):
     duthost = duthosts[rand_one_dut_hostname]
     return not is_mellanox_device(duthost)
 
-@pytest.fixture(scope='module')
-def is_support_fan(duthosts, rand_one_dut_hostname):
-    """
-    Check if dut has fan
-    """
-    duthost = duthosts[rand_one_dut_hostname]
-    if is_mellanox_device(duthost):
-        platform_data = get_platform_data(duthost)
-        return platform_data['fans']['number'] > 0
-    else:
-        return True
-
-@pytest.fixture(scope='module')
-def is_support_psu(duthosts, rand_one_dut_hostname):
-    """
-    Check if dut has psu
-    """
-    duthost = duthosts[rand_one_dut_hostname]
-    if is_mellanox_device(duthost):
-        platform_data = get_platform_data(duthost)
-        return platform_data['psus']['number'] > 0
-    else:
-        return True
-
 
 @pytest.fixture(scope='module')
 def is_support_fan(duthosts, rand_one_dut_hostname):
@@ -887,6 +863,11 @@ def duthost_mgmt_ip(duthost):
     Gets the management IP address (v4 or v6) on eth0.
     Defaults to IPv4 on a dual stack configuration.
     """
+    # For SmartSwitch DPU, the exposed mgmt IP is the switch mgmt IP with a NAT port
+    # And it's IPv4 only
+    if duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_dpu"):
+        return {"mgmt_ip": duthost.mgmt_ip, "version": "v4"}
+
     ipv4_regex = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/\d+")
     ipv6_regex = re.compile(r"([a-fA-F0-9:]+)/\d+")
 
