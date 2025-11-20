@@ -102,16 +102,12 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
             analyzers[duthost.hostname] = analyzer
 
     with allure.step("Marker"):
-        if len(duthosts) == 1:
-            markers = {}
-            analyzer_add_marker(analyzers, duthosts[0], results=markers)
-        else:
-            markers_start_time = time.time()
-            markers = parallel_run(analyzer_add_marker, [analyzers], {}, duthosts, timeout=120)
-            markers_end_time = time.time()
-            markers_execution_time = markers_end_time - markers_start_time
-            logging.info(f"Marker took {markers_execution_time: .2f} seconds to execute")
-            allure.attach(f"Marker took {markers_execution_time: .2f} seconds to execute")
+        markers_start_time = time.time()
+        markers = parallel_run(analyzer_add_marker, [analyzers], {}, duthosts, timeout=120)
+        markers_end_time = time.time()
+        markers_execution_time = markers_end_time - markers_start_time
+        logging.info(f"Marker took {markers_execution_time:.2f} seconds to execute")
+        allure.attach(f"Marker took {markers_execution_time:.2f} seconds to execute")
 
     yield analyzers
 
@@ -124,19 +120,13 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
         raise Exception(f"Some duthost objects are None so loganalyzer can't run: {duthosts=}. This is probably due to "
                         f"a network error.")
     logging.info("Starting to analyse on all DUTs")
-    if len(duthosts) == 1:
-        la_results = {}
-        analyze_logs(
-            analyzers, markers, duthosts[0], results=la_results,
-            fail_test=fail_test, store_la_logs=store_la_logs)
-    else:
-        la_results = parallel_run(
-            analyze_logs,
-            [analyzers, markers],
-            {'fail_test': fail_test, 'store_la_logs': store_la_logs},
-            duthosts,
-            timeout=240
-        )
+    la_results = parallel_run(
+        analyze_logs,
+        [analyzers, markers],
+        {'fail_test': fail_test, 'store_la_logs': store_la_logs},
+        duthosts,
+        timeout=240
+    )
     consolidated_bughandler = get_bughandler_instance({"type": "consolidated"})
     consolidated_bughandler.bug_handler_wrapper(analyzers, duthosts, la_results)
 
