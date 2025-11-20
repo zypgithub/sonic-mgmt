@@ -517,3 +517,6 @@ r, ".*ERR bgp\#bgpmon:\s+\*ERROR\*\s+Failed\s+with\s+rc:\d+\s+when\s+execute:\s+
 
 # This is an info log which matches the regex "kernel:.*\serr", not an err
 r, ".*sonic kernel.*ACPI.*System may be unstable or behave erratically.*"
+
+# Ignore ntp error log, just a suggestion of minimum sane ntp servers, no functional impact
+r, ".*ERR\s+ntpd\[\d+\]:\s+SYNC:\s+Found\s+\d+\s+servers,\s+suggest\s+minsane\s+at\s+least\s+\d+.*"
