@@ -601,11 +601,12 @@
     - sn5640_simx
 
 - Errors_list:
-  - '.* ERR kernel: \[.*\] mlxsw_minimal 2-0048: Could not acquire lock.*'
-  - '.* ERR kernel: \[.*\] hwmon hwmon\d+: Failed to query module temperature.*'
-  - '.* ERR kernel: \[.*\] mlxsw_minimal \d+-0048: Failed to query temp sensor.*'
-  - '.* ERR kernel: \[.*\] mlxsw_minimal 2-0048: Failed to query PWM.*'
-  - '.* ERR kernel: \[.*\] mlxsw_minimal 2-0048: Failed to query fan.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Could not acquire lock.*'
+  - '.* ERR kernel:.*hwmon hwmon\d+: Failed to query module temperature.*'
+  - '.* ERR kernel:.*mlxsw_minimal \d+-0048: Failed to query temp sensor.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query PWM.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query fan.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Reg cmd access failed.*'
   - '.* ERR pmon#thermalctld: Failed to read from file /run/hw-management/thermal/module.*_temp_fault - OSError.*'
   Conditions:
   - Redmine:
