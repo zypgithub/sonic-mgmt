@@ -12,6 +12,9 @@ NVOS_BAT_ONLY:
 
 SONIC_BAT_ONLY:
   - ngts/tests
+  - ngts/scripts/sonic_deploy
+  - ngts/scripts/sonic_add_session_info
+  - ngts/scripts/upload_regression_results_to_msft
   - ansible
   - tests/common/devices
   - tests/common/fixtures
