@@ -13,32 +13,9 @@ import pytest
 from tests.common.utilities import wait, wait_until
 from tests.common.mellanox_data import get_platform_data, get_chip_type
 from tests.common.errors import RunAnsibleModuleFail
+from tests.common.reboot import reboot, REBOOT_TYPE_COLD
 
 pytestmark = [pytest.mark.disable_loganalyzer]
-
-
-def reboot_dut(dut, localhost):
-    logging.info("Reboot the dut")
-    reboot_task, reboot_res = dut.command("reboot", module_async=True)
-
-    logging.info("Wait for DUT to go down")
-    try:
-        localhost.wait_for(host=dut.hostname, port=22, state="stopped", delay=10, timeout=300)
-    except RunAnsibleModuleFail as e:
-        logging.error("DUT did not go down, exception: " + repr(e))
-        if reboot_task.is_alive():
-            logging.error("Rebooting is not completed")
-            reboot_task.terminate()
-        logging.error("reboot result %s" % str(reboot_res.get()))
-        assert False, "Failed to reboot the DUT"
-
-    localhost.wait_for(host=dut.hostname, port=22, state="started", delay=10, timeout=300)
-
-    logging.info("Wait until system is stable")
-    wait_until(300, 30, 0, dut.critical_services_fully_started)
-
-    logging.info("Wait some extra time")
-    time.sleep(120)
 
 
 def set_issu(dut, issu_enabled=False):
@@ -126,7 +103,15 @@ def common_setup_teardown(duthost, localhost):
         reboot_required = True
 
     if reboot_required:
-        reboot_dut(duthost, localhost)
+        reboot(
+            duthost,
+            localhost,
+            reboot_type=REBOOT_TYPE_COLD,
+            reboot_helper=None,
+            reboot_kwargs=None,
+            safe_reboot=True,
+            check_intf_up_ports=True
+        )
 
     logging.info("Done common teardown")
 
@@ -177,7 +162,15 @@ def configure_table_size_issu_and_check(table_size, dut, localhost, request, iss
     set_issu(dut, issu_enabled)
 
     logging.info("Reboot the dut")
-    reboot_dut(dut, localhost)
+    reboot(
+        dut,
+        localhost,
+        reboot_type=REBOOT_TYPE_COLD,
+        reboot_helper=None,
+        reboot_kwargs=None,
+        safe_reboot=True,
+        check_intf_up_ports=True
+    )
 
     logging.info("Set CRM polling interval to a short time")
     dut.command("crm config polling interval 5")
