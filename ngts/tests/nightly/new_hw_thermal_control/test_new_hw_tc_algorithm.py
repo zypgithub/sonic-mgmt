@@ -35,8 +35,10 @@ class TestNewTc:
         before the test and start it after the test.
         """
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
+        self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
         yield
         self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")
+        self.dut_engine.run_cmd("sudo systemctl start hw-management-sync")
 
     @allure.title('test temperature sweep')
     @pytest.mark.usefixtures("hide_thermalctld")
