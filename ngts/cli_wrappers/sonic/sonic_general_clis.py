@@ -126,6 +126,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         """
         self.engine.run_cmd('sudo config feature state {} {}'.format(feature_name, state), validate=True)
 
+    def restart_determine_reboot_cause(self):
+        """
+        This method restarts the determine-reboot-cause service, necessary for AIR platform after sku change
+        """
+        logger.info('Restarting determine-reboot-cause service')
+        self.engine.run_cmd('sudo systemctl restart determine-reboot-cause', validate=True)
+
     def get_installer_delimiter(self):
         dash_installer = 'sonic-installer'
         delimiter = '_'
@@ -507,6 +514,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step("Apply basic config"):
                 self.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=disable_ztp,
                                         configure_dns=configure_dns, is_air=is_air, custom_config_db_air_path=custom_config_db_air_path)
+            self.restart_determine_reboot_cause()
         else:
             self.disable_ztp(disable_ztp)
 
