@@ -11,7 +11,7 @@ import ast
 from natsort import natsorted
 import pytest
 
-from .util import parse_eeprom, parse_eeprom_hexdump
+from .util import get_sfp_module_type, parse_eeprom, parse_eeprom_hexdump, parse_sfp_type_output
 from .util import parse_output
 from .util import get_dev_conn
 from tests.common.utilities import skip_release, wait_until
@@ -343,31 +343,6 @@ def get_phy_intfs_to_test_per_asic(duthost,
     logging.info("Interfaces to test for asic {}: {}".format(enum_frontend_asic_index,
                                                              phy_intfs_to_test_per_asic))
     return phy_intfs_to_test_per_asic
-
-
-def parse_sfp_type_output(lines, cmd_type="SFP_TYPE"):
-    result = {}
-    current_port = None
-    for line in lines:
-        line = line.strip()
-        if line.startswith(f"=== {cmd_type} "):
-            # Line is a header like "=== SFP_TYPE Ethernet104 ==="
-            parts = line.split()
-            if len(parts) >= 3:
-                current_port = parts[2]  # "Ethernet104"
-        elif current_port and line:
-            result[current_port] = line
-            current_port = None  # Reset for next block
-    return result
-
-def get_sfp_types(duthost, dev_conn):
-    ports_str = " ".join(dev_conn)
-    cmd_type = "SFP_TYPE"
-    sfp_type_cmd = 'redis-cli -n 6 --raw hget "TRANSCEIVER_INFO|$port" type'
-
-    cmd = f"""for port in {ports_str}; do echo "=== {cmd_type} $port ==="; {sfp_type_cmd}; echo; done"""
-    result = duthost.shell(cmd)
-    return parse_sfp_type_output(result["stdout_lines"], cmd_type)
 
 def get_power_class(duthost, dev_conn):
     ports_str = " ".join(dev_conn)
@@ -743,7 +718,7 @@ def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend
     tested_physical_ports = set()
 
     not_supporting_lpm_physical_ports = set()
-    sfp_type_data = get_sfp_types(duthost, dev_conn)
+    sfp_type_data = get_sfp_module_type(duthost, dev_conn)
     power_class_data = get_power_class(duthost, dev_conn)
     for intf in dev_conn:
         if intf not in xcvr_skip_list[duthost.hostname]:

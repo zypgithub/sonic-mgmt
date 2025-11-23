@@ -112,7 +112,7 @@ def write_eeprom_by_page_and_byte(
 
 def get_sfp_type_per_interface(duthost,interfaces, interfaces_skip_list):
     sfp_type_sc_port_dict = {}
-    sfp_type_all_interfaces = get_sfp_type(duthost, interfaces)
+    sfp_type_all_interfaces = get_sfp_mgmt_iface_type(duthost, interfaces)
     for intf in interfaces:
         if intf not in interfaces_skip_list[duthost.hostname]:
             sfp_type = sfp_type_all_interfaces[intf]
@@ -169,24 +169,49 @@ def read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type(duthost,cmd
     return read_write_eeprom_data_all_types
 
 
-def get_sfp_type(duthost, interfaces):
-    """
-    Get sfp type by reading the first byte of o page in eeprom.
-    """
-    no_format=True
-    cmd_read_suffix =  " --no-format" if no_format else ""
-    page = 0
-    offset = 0
-    size = 1
-    cmd_read_eeprom = f"""sudo sfputil read-eeprom -p "$port" -n {page} -o {offset} -s {size}"""
-    cmd_read_eeprom_cmis = f"{cmd_read_eeprom}" + cmd_read_suffix
-    cmd_read_eeprom_sff8472 =  f"{cmd_read_eeprom} --wire-addr a0h" + cmd_read_suffix
-    eeprom_read_cmis = read_write_eeprom_by_page_and_byte_to_interfaes_list(duthost, cmd_read_eeprom_cmis, interfaces, "READ_EEPROM")
-    cmis_interfaces_type = {intf: "cmis" for intf in eeprom_read_cmis if 'Error' not in eeprom_read_cmis[intf]}
-    interfaces_to_read_sff8472 = [intf for intf in interfaces if intf not in cmis_interfaces_type]
-    eeprom_read_sff8472 = read_write_eeprom_by_page_and_byte_to_interfaes_list(duthost, cmd_read_eeprom_sff8472, interfaces_to_read_sff8472, "READ_EEPROM")
-    sff8472_interfaces_type = {intf: "sff8472" for intf in eeprom_read_sff8472 if 'Error' not in eeprom_read_sff8472[intf]}
-    sff8636_interfaces_type = {intf: "sff8636" for intf in eeprom_read_sff8472 if 'Error' in eeprom_read_sff8472[intf]}
-    sfp_type_per_interface = {**cmis_interfaces_type, **sff8472_interfaces_type, **sff8636_interfaces_type}
-    logging.info(f"sfp_type is {sfp_type_per_interface}")
-    return sfp_type_per_interface
+def parse_sfp_type_output(lines, cmd_type="SFP_TYPE"):
+    result = {}
+    current_port = None
+    for line in lines:
+        line = line.strip()
+        if line.startswith(f"=== {cmd_type} "):
+            # Line is a header like "=== SFP_TYPE Ethernet104 ==="
+            parts = line.split()
+            if len(parts) >= 3:
+                current_port = parts[2]  # "Ethernet104"
+        elif current_port and line:
+            result[current_port] = line
+            current_port = None  # Reset for next block
+    logging.info(f"result: {result}")
+    return result
+
+
+def get_sfp_module_type(duthost, dev_conn):
+    ports_str = " ".join(dev_conn)
+    cmd_type = "SFP_TYPE"
+    sfp_type_cmd = 'redis-cli -n 6 --raw hget "TRANSCEIVER_INFO|$port" type'
+
+    cmd = f"""for port in {ports_str}; do echo "=== {cmd_type} $port ==="; {sfp_type_cmd}; echo; done"""
+    result = duthost.shell(cmd)
+    return parse_sfp_type_output(result["stdout_lines"], cmd_type)
+
+
+def get_sfp_mgmt_iface_type(duthost, interfaces):
+    sfp_mgmt_iface_type = get_sfp_module_type(duthost, interfaces)
+
+    cmis_identifiers = ['OSFP', 'QSFP-DD']
+    sff8472_identifiers = ['SFP', 'SFP+']
+    sff8636_identifiers = ['QSFP-28', 'QSFP+', 'QSFP']
+
+    for intf, module_type in sfp_mgmt_iface_type.items():
+        module_type = module_type.split()[0].upper()
+        logging.info(f"module_type: {module_type}")
+        if module_type in cmis_identifiers:
+            sfp_mgmt_iface_type[intf] = "cmis"
+        elif module_type in sff8472_identifiers:
+            sfp_mgmt_iface_type[intf] = "sff8472"
+        elif module_type in sff8636_identifiers:
+            sfp_mgmt_iface_type[intf] = "sff8636"
+
+    logging.info(f"sfp_mgmt_iface_type: {sfp_mgmt_iface_type}")
+    return sfp_mgmt_iface_type
