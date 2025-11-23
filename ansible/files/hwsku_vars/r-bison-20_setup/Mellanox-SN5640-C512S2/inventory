@@ -11,7 +11,6 @@ r-bison-20-ptp-256 ansible_host=10.210.25.178 sonic_version=v2  sonic_hwsku=Mell
 
 r-bison-21 ansible_host=r-bison-21 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
 r-moose-06 ansible_host=r-moose-06 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
-r-leopard-90 ansible_host=r-leopard-90 ansible_ssh_user="{{ lookup('env','SONIC_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','SONIC_SWITCH_PASSWORD') }}" os=sonic
 
 [sonic:children]
 sonic_latest
