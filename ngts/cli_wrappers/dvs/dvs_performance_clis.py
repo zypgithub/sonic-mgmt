@@ -6,7 +6,7 @@ from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, UndefinedError, meta
 
 
 class DvsPerformance(PerformanceCommon):
@@ -20,7 +20,9 @@ class DvsPerformance(PerformanceCommon):
         self.original_port_lanes = self.ports_lanes
         self.port_groups = None
 
-    def configure_reserved_buffer_size(self, shared_buffer_size, port_group_df, collectors_list=[ValidationConsts.COUNTERS_SAMPLES, ValidationConsts.BW_SAMPLES]):
+    def configure_reserved_buffer_size(self, shared_buffer_size, port_group_df,
+                                       collectors_list=[ValidationConsts.COUNTERS_SAMPLES,
+                                                        ValidationConsts.BW_SAMPLES]):
         self.set_configuration_file(port_group_df, shared_buffer_size, collectors_list)
         configure_shared_buffer_size_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names HeadroomConfig"
         self.execute_cmd(self.get_cmd_for_sdk(configure_shared_buffer_size_cmd))
@@ -63,23 +65,224 @@ class DvsPerformance(PerformanceCommon):
         self.port_groups = json_dict[PerfConsts.SDK_TEST_CONF][PerfConsts.PORT_GROUPS]
         return json_dict["sdk_test_info"]["sdk_test_name"]
 
-    def render_configuration_file(self, conf_args, templates_path):
-        env = Environment(loader=FileSystemLoader(templates_path))
-        jinja_template = env.get_template(f"{self.dut_alias}.jinja")
-        func_dict = {"get_split_ports": self.get_split_ports,
-                     "generate_ip_list": generate_ip_address_dict,
-                     "get_player_unconnected_connected_after_split": self.get_player_unconnected_connected_after_split,
-                     "PerfConsts": PerfConsts}
-        jinja_template.globals.update(func_dict)
+    def _get_template_function_dict(self):
+        """
+        Get the standard function dictionary for Jinja2 template rendering.
+
+        Returns:
+            dict: Dictionary of functions and constants available in templates.
+        """
+        return {"get_split_ports": self.get_split_ports,
+                "generate_ip_list": generate_ip_address_dict,
+                "get_player_unconnected_connected_after_split": self.get_player_unconnected_connected_after_split,
+                "PerfConsts": PerfConsts}
+
+    def _validate_template_variables(self, template_source, template_context, template_globals):
+        """
+        Validate that all variables referenced in the template are available in the context.
+
+        Args:
+            template_source: The raw template source code
+            template_context: Dictionary of variables passed to render()
+            template_globals: Dictionary of global functions/variables in template
+
+        Returns:
+            tuple: (missing_variables, available_variables)
+        """
+        env = Environment()
+        ast = env.parse(template_source)
+        template_vars = meta.find_undeclared_variables(ast)
+
+        complete_context = set(template_context.keys())
+        complete_context.update(template_globals.keys())
+
+        missing_vars = template_vars - complete_context
+        available_vars = template_vars & complete_context
+
+        return missing_vars, available_vars
+
+    def _diagnose_undefined_error(self, error, env, template_name, render_context, func_dict):
+        """
+        Diagnose and log details about an UndefinedError during template rendering.
+
+        Args:
+            error: The UndefinedError exception
+            env: The Jinja2 Environment
+            template_name: Name of the template being rendered
+            render_context: Dictionary of variables passed to render()
+            func_dict: Dictionary of functions available in template globals
+        """
+        logging.error(f"UndefinedError: {error}")
+        logging.error("The template tried to access a variable that doesn't exist.")
 
         try:
-            template_string = jinja_template.render(conf_args=conf_args, dut_alias=self.dut_alias, right_left_ports_dict=self.right_left_ports_dict)
-            logging.info(f"Template string: {template_string}")
-            json_dict = json.loads(template_string)
+            template_source = env.loader.get_source(env, template_name)[0]
+            template_globals = {**func_dict, **env.globals}
+            missing_vars, available_vars = self._validate_template_variables(
+                template_source, render_context, template_globals
+            )
+
+            if missing_vars:
+                logging.error(f"Template references {len(missing_vars)} UNDEFINED variables:")
+                for var in sorted(missing_vars):
+                    logging.error(f"  - {var}")
+
+            conf_args = render_context.get("conf_args", {})
+            logging.error("Available variables in render context:")
+            if isinstance(conf_args, dict):
+                logging.error(f"  conf_args (dict with {len(conf_args)} keys):")
+                for key in sorted(conf_args.keys()):
+                    logging.error(f"    - conf_args.{key}")
+            else:
+                logging.error("  conf_args (not a dict)")
+            logging.error(f"  dut_alias: {self.dut_alias}")
+            logging.error(f"  right_left_ports_dict: {list(self.right_left_ports_dict.keys())}")
+            logging.error("  Functions: " + ", ".join(sorted(func_dict.keys())))
+        except Exception as analysis_error:
+            logging.error(f"Could not analyze template variables: {analysis_error}")
+
+    def _diagnose_type_error(self, error, conf_args, func_dict):
+        """
+        Diagnose and log details about a TypeError during template rendering.
+
+        Args:
+            error: The TypeError exception
+            conf_args: Configuration arguments dictionary
+            func_dict: Dictionary of functions available in template globals
+        """
+        logging.error(f"TypeError during template rendering: {error}")
+        logging.error("This likely means:")
+        logging.error("  1. A function in the template is trying to JSON serialize an Undefined value")
+        logging.error("  2. The '| to json' filter is being applied to a non-serializable object")
+
+        logging.error("Checking conf_args for non-JSON-serializable values...")
+        non_serializable_count = 0
+        if isinstance(conf_args, dict):
+            for key, value in conf_args.items():
+                try:
+                    json.dumps({key: value})
+                except (TypeError, ValueError) as check_error:
+                    non_serializable_count += 1
+                    logging.error(f"  conf_args['{key}'] is not JSON serializable: {type(value)} - {check_error}")
+
+        if non_serializable_count:
+            logging.error(f"Found {non_serializable_count} non-serializable values in conf_args")
+        else:
+            logging.error("All conf_args values appear to be JSON serializable")
+
+        logging.error(f"\nTemplate functions available: {list(func_dict.keys())}")
+        logging.error(f"conf_args keys: {list(conf_args.keys()) if isinstance(conf_args, dict) else 'Not a dict'}")
+
+    def _diagnose_json_decode_error(self, error, template_string):
+        """
+        Diagnose and log details about a JSONDecodeError after template rendering.
+
+        Args:
+            error: The JSONDecodeError exception
+            template_string: The rendered template string that failed to parse
+        """
+        logging.error(f"JSON parsing error at position {error.pos}: {error.msg}")
+        # Show context around error
+        start = max(0, error.pos - 150)
+        end = min(len(template_string), error.pos + 150)
+        context = template_string[start:end]
+        logging.error(f"Context around error:\n{context}")
+        logging.error(f"\nFull rendered template:\n{template_string}")
+
+    def check_template_requirements(self, scenario, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        """
+        Utility method to check what variables a template requires without rendering it.
+        Useful for debugging and documentation.
+
+        Args:
+            scenario: Scenario name (e.g., "alibaba_performance")
+            template_suite: Template suite directory name
+
+        Returns:
+            dict: Dictionary with template requirements
+                {
+                    'template_name': str,
+                    'required_variables': set,
+                    'available_functions': list
+                }
+        """
+        templates_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                      template_suite, scenario, "dvs")
+        template_name = f"{self.dut_alias}.jinja"
+
+        env = Environment(loader=FileSystemLoader(templates_path))
+        template_source = env.loader.get_source(env, template_name)[0]
+        ast = env.parse(template_source)
+        required_vars = meta.find_undeclared_variables(ast)
+
+        func_dict = self._get_template_function_dict()
+
+        return {
+            'template_name': template_name,
+            'template_path': os.path.join(templates_path, template_name),
+            'required_variables': required_vars,
+            'available_functions': list(func_dict.keys()),
+            'context_variables': ['conf_args', 'dut_alias', 'right_left_ports_dict']
+        }
+
+    def render_configuration_file(self, conf_args, templates_path):
+        """
+        Render Jinja2 configuration template with comprehensive error handling.
+
+        This method renders templates and provides detailed error messages if rendering fails.
+        Validation checks are only performed on failure to avoid overhead during successful runs.
+
+        Args:
+            conf_args (dict): Dictionary of configuration arguments
+            templates_path (str): Path to directory containing Jinja2 templates
+
+        Returns:
+            dict: Parsed JSON configuration
+
+        Raises:
+            UndefinedError: If template references undefined variables
+            json.JSONDecodeError: If rendered template is not valid JSON
+            TypeError: If conf_args contains non-JSON-serializable values
+        """
+        template_name = f"{self.dut_alias}.jinja"
+        logging.info(f"Rendering template: {template_name} from {templates_path}")
+
+        env = Environment(loader=FileSystemLoader(templates_path), undefined=StrictUndefined)
+        jinja_template = env.get_template(template_name)
+
+        func_dict = self._get_template_function_dict()
+        jinja_template.globals.update(func_dict)
+
+        render_context = {
+            "conf_args": conf_args,
+            "dut_alias": self.dut_alias,
+            "right_left_ports_dict": self.right_left_ports_dict
+        }
+
+        try:
+            template_string = jinja_template.render(**render_context)
+            logging.info(f"Template rendered successfully, length: {len(template_string)} characters")
+
+        except UndefinedError as e:
+            self._diagnose_undefined_error(e, env, template_name, render_context, func_dict)
+            raise
+
+        except TypeError as e:
+            self._diagnose_type_error(e, conf_args, func_dict)
+            raise
+
         except Exception as e:
-            logging.error(f"Error {e}. \n\nTemplate string: {template_string}")
-            raise e
-        return json_dict
+            logging.error(f"Unexpected error during template rendering: {type(e).__name__}: {e}")
+            raise
+
+        try:
+            json_dict = json.loads(template_string)
+            logging.info(f"JSON parsed successfully, {len(json_dict)} top-level keys")
+            return json_dict
+
+        except json.JSONDecodeError as e:
+            self._diagnose_json_decode_error(e, template_string)
+            raise
 
     def get_device_configuration(self, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         conf_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
@@ -142,8 +345,14 @@ class DvsPerformance(PerformanceCommon):
         }
         """
         player_ports_aliases_dict = {"unconnected_ports": [], "connected_ports": []}
-        player_ports_aliases_dict["unconnected_ports"] = [(f"{self.dut_alias}_unconnected_port_p{port_index}", unconnected_port) for port_index, unconnected_port in enumerate(self.get_sdk_ports(self.unconnected_ports), start=1)]
-        player_ports_aliases_dict["connected_ports"] = [(f"{self.dut_alias}_connected_port_p{port_index}", connected_port) for port_index, connected_port in enumerate(self.get_sdk_ports(self.connected_ports), start=1)]
+        player_ports_aliases_dict["unconnected_ports"] = [
+            (f"{self.dut_alias}_unconnected_port_p{port_index}", unconnected_port)
+            for port_index, unconnected_port in enumerate(self.get_sdk_ports(self.unconnected_ports), start=1)
+        ]
+        player_ports_aliases_dict["connected_ports"] = [
+            (f"{self.dut_alias}_connected_port_p{port_index}", connected_port)
+            for port_index, connected_port in enumerate(self.get_sdk_ports(self.connected_ports), start=1)
+        ]
         return player_ports_aliases_dict
 
     def get_player_unconnected_connected_after_split(self, split_num):

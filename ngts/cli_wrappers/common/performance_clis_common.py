@@ -2,9 +2,8 @@ import logging
 import os
 import re
 import json
-import pandas as pd
-import allure
 import fcntl
+import pandas as pd
 from retry import retry
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
 from infra.tools.exceptions.test_issue import TestIssue
@@ -185,7 +184,7 @@ class PerformanceCommon:
         except TestIssue as e:
             error_msg = f"Command: {cmd} failed on {self.dut_alias} with error:\n{e}\n"
             logging.error(error_msg)
-            raise TestIssue(msg=error_msg)
+            raise TestIssue(msg=error_msg) from e
 
     def get_port_mapping_df(self):
         sdk_port_to_local_port_mapping = {}
@@ -209,7 +208,7 @@ class PerformanceCommon:
                 self.check_mloops_up()
         except Exception as e:
             logging.warning(f"Failed to configure Mloop on {self.dut_alias}: {e}")
-            raise TestIssue(msg=f"Failed to configure Mloop on {self.dut_alias}: {e}")
+            raise TestIssue(msg=f"Failed to configure Mloop on {self.dut_alias}: {type(e).__name__}: {e}") from e
 
     @retry(exceptions=TestIssue, tries=2, delay=10)
     def run_traffic(self, scenario, traffic_jsons):
@@ -224,7 +223,7 @@ class PerformanceCommon:
             self.execute_cmd(self.get_cmd_for_sdk(run_traffic_cmd, env_variables=[f'TG_JSON={traffic_json_path}']))
         except Exception as e:
             logging.error(f"Error running traffic: {e}")
-            raise TestIssue(msg=f"Error running traffic: {e}")
+            raise TestIssue(msg=f"Error running traffic: {type(e).__name__}: {e}") from e
 
     @retry(exceptions=TestIssue, tries=2, delay=2)
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
@@ -240,7 +239,7 @@ class PerformanceCommon:
             self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=env_variables))
         except Exception as e:
             logging.error(f"Error running traffic validator: {e}")
-            raise TestIssue(msg=f"Error running traffic validator: {e}")
+            raise TestIssue(msg=f"Error running traffic validator: {type(e).__name__}: {e}") from e
 
         source_path = os.path.join(dst_dut_dir, "TrafficValidator.json")
         try:
@@ -248,7 +247,7 @@ class PerformanceCommon:
                                   overwrite_file=True, verify_file=False, direction='get')
         except Exception as e:
             logging.error(f"Error copying validation file from {source_path} on DUT to {json_path}: {e}")
-            raise TestIssue(msg=f"Error copying validation file from DUT: {e}")
+            raise TestIssue(msg=f"Error copying validation file from DUT: {type(e).__name__}: {e}") from e
 
         if not os.path.exists(json_path):
             raise TestIssue(f"Traffic validation file was not created at {json_path} after copy from DUT. "
@@ -263,7 +262,7 @@ class PerformanceCommon:
             self.execute_cmd(self.get_cmd_for_sdk(remove_mloops_cmd))
         except Exception as e:
             logging.error(f"Error stopping traffic: {e}")
-            raise TestIssue(msg=f"Error stopping traffic: {e}")
+            raise TestIssue(msg=f"Error stopping traffic: {type(e).__name__}: {e}") from e
 
     def copy_traffic_json_to_player(self, scenario, json_path, dst_dut_dir="/tmp"):
         file_name = f"{scenario.replace('/', '_')}_traffic.json"
@@ -373,6 +372,67 @@ class PerformanceCommon:
         create_acl_dump_cmd = "sx_api_flex_acl_dump.py"
         return self.run_customer_examples_on_sdk(create_acl_dump_cmd)
 
+    def modify_pg_buffer_for_connected_ports(self):
+        """
+        Modify PG buffer configuration for connected ports only.
+
+        This method runs a sys_sdk test that modifies the buffer configuration for
+        specified Priority Groups on all connected ports. It preserves all existing buffer
+        parameters and only modifies the pipeline_latency_size and max_borrowed_delta values.
+
+        The modification sets:
+        - override_default_max_borrowed_delta: True
+        - pipeline_latency_size: User-defined value
+        - max_borrowed_delta: User-defined value
+
+        Note: This method assumes pg_buffer_config is already in /tmp/conf.json from apply_test_configuration.
+        The configuration is read from the existing conf.json file by the sys_sdk test.
+
+        Returns:
+            str: The output from running the buffer modification test.
+
+        Raises:
+            TestIssue: If pg_buffer_config is missing, required fields are missing,
+                      or the buffer modification fails.
+        """
+        logging.info(f"[{self.dut_alias}] Running PG buffer modification from existing conf.json")
+
+        modify_pg_buffer_cmd = (f"{PerfConsts.DVS_RUN_TEST_PATH} --names "
+                                f"{PerfConsts.DVS_MODIFY_PG_BUFFER_CONNECTED_PORTS}")
+
+        try:
+            result = self.execute_cmd(self.get_cmd_for_sdk(modify_pg_buffer_cmd))
+        except TestIssue as e:
+            raise TestIssue(msg=f"[{self.dut_alias}] Failed to modify PG buffer for connected ports: {e}") from e
+
+        return result
+
+    def get_occ_watermark_per_port_dump(self, sonic_mgmt_path, tar_file_name="occ_headroom_per_port.tar.gz",
+                                        tar_file_system='/tmp'):
+        """
+        Copy occupancy and watermark data tar archive from DUT to local machine.
+
+        This method copies the tar archive file that was created during validation
+        from the DUT to the local management system.
+
+        Args:
+            sonic_mgmt_path (str): The local path where the tar file will be copied.
+            tar_file_name (str, optional): The name of the tar file on the DUT.
+                                           Defaults to "occ_headroom_per_port.tar.gz".
+            tar_file_system (str, optional): The remote filesystem path where the tar file is located.
+                                             Defaults to '/tmp'.
+
+        Returns:
+            str: The local path to the copied tar file.
+        """
+        logging.info(f"Copying occupancy and watermark dump from DUT: {tar_file_system}/{tar_file_name} "
+                     f"to {sonic_mgmt_path}")
+
+        self.engine.copy_file(source_file=tar_file_name, file_system=tar_file_system,
+                              dest_file=sonic_mgmt_path, overwrite_file=True, verify_file=False, direction='get')
+
+        return sonic_mgmt_path
+
     def create_sdk_dump(self, sonic_mgmt_path, sdk_dump_file_name="sdkdump", sdk_dump_file_system='/var/log/sdk_dbg'):
         """
         Generate an SDK debug dump and retrieve its contents.
@@ -400,15 +460,17 @@ class PerformanceCommon:
             sdk_dump_str = f.read()
         return sdk_dump_str
 
-    def write_shared_json(self, key=None, json_path='/tmp', data=None):
+    def write_shared_json(self, key=None, json_path='/tmp', data=None, raise_on_existing=True):
         """
         Write a value for a specific key to the shared JSON file.
         Args:
             key (str): Key to write/update
             json_path (str): Path to the shared JSON file
             data (any): Data to store under the key
+            raise_on_existing (bool): If True, raise KeyError if key already exists.
+                                      If False, override the existing value. Default is True.
         Raises:
-            FileNotFoundError: If the JSON file does not exist
+            KeyError: If the key already exists and raise_on_existing is True
         """
         file_name = MultiNosSharedData.DEFAULT_SHARED_JSON
         full_path = os.path.join(json_path, file_name)
@@ -423,7 +485,7 @@ class PerformanceCommon:
                 else:
                     content = {}
 
-                if key in content:
+                if key in content and raise_on_existing:
                     raise KeyError(f"Key '{key}' already exists in the shared JSON file.")
                 content[key] = data
 
@@ -432,7 +494,8 @@ class PerformanceCommon:
             finally:
                 fcntl.flock(lock_file, fcntl.LOCK_UN)
 
-        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path, overwrite_file=True, verify_file=True, direction='put')
+        self.engine.copy_file(source_file=full_path, dest_file=file_name, file_system=json_path,
+                              overwrite_file=True, verify_file=True, direction='put')
 
     def read_shared_json(self, key, json_path='/tmp'):
         """
@@ -448,7 +511,8 @@ class PerformanceCommon:
 
         file_name = MultiNosSharedData.DEFAULT_SHARED_JSON
         full_path = os.path.join(json_path, file_name)
-        self.engine.copy_file(source_file=file_name, dest_file=json_path, file_system=json_path, overwrite_file=True, verify_file=True, direction='get')
+        self.engine.copy_file(source_file=file_name, dest_file=json_path, file_system=json_path,
+                              overwrite_file=True, verify_file=True, direction='get')
 
         with open(full_path, 'r') as f:
             fcntl.flock(f, fcntl.LOCK_SH)
@@ -460,7 +524,8 @@ class PerformanceCommon:
 
     def cleanup_shared_json_file(self, json_path='/tmp'):
         """
-        Create an empty (zero-byte) shared JSON file at the given path. If no path is provided, use the default from PerfConsts.
+        Create an empty (zero-byte) shared JSON file at the given path.
+        If no path is provided, use the default from PerfConsts.
         Args:
             json_path (str): Path to the shared JSON file. If None, use default.
         """

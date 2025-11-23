@@ -55,7 +55,7 @@ class TestOptimizeLossyLossless:
                                                                          samples_params_dict=PerfConsts.SAMPLES_PARAMS)
             with allure.step("Save the validation results"):
                 results_dict[test_name] = {}
-                results_dict[test_name]['Bandwidth_samples'] = traffic_validation_jsons_list[0]['Bandwidth_samples']
-                results_dict[test_name]['TC_samples'] = traffic_validation_jsons_list[0]['TC_samples']
+                results_dict[test_name]['Bandwidth_samples'] = traffic_validation_jsons_list[0]['traffic_json']['Bandwidth_samples']
+                results_dict[test_name]['TC_samples'] = traffic_validation_jsons_list[0]['traffic_json']['TC_samples']
                 with open(self.conf_args['result_file_location'], 'w') as f:
                     json.dump(results_dict, f)

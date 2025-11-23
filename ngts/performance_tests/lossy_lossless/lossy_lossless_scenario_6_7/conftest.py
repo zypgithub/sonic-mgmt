@@ -109,6 +109,7 @@ def get_conf_args(scenario_name, players, all_ports_after_split):
 
     conf_args = {
         "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
+        "fboss_enabled": True,
         "auto_buffer_mode": "False",
         "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
         "is_ipv6": False,
@@ -133,7 +134,7 @@ def apply_basic_setup_configuration(scenario_name, players, all_ports_after_spli
     with allure.step('Save Players initial Configuration'):
         save_base_configuration(players)
     with allure.step("Apply Test configuration on all Players"):
-        apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args, parallel_run=True)
+        apply_test_configuration(players, scenario=TESTS_SCENARIO, conf_args=conf_args)
     return conf_args
 
 

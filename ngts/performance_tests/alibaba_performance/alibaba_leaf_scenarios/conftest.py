@@ -39,6 +39,10 @@ TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS = "shaper_99.9_pkt_size_4096_ar_
 TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS = "shaper_97.5_pkt_size_1900_ar_disabled_split_4_host_ports_64000_dips_to_host_64000_dips_to_spine"
 TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS = "shaper_97.5_pkt_size_2000_ar_disabled_split_2_host_ports_64000_dips_to_host_64000_dips_to_spine"
 TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS = "super_spine_to_leaf_ar_enabled_split_2_host_ports_64000_dips_to_host_64000_dips_to_spine"
+TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_2 = "ali_pws_spine_ar_enabled_split_2_host_ports"
+TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_4 = "ali_pws_spine_ar_enabled_split_4_host_ports"
+TEST_ID_ALI_PWS_SPINE_AR_ENABLED_ASYM_SPLIT = "ali_pws_spine_ar_enabled_asymmetric_split"
+ALI_PWS_TESTS_LIST = [TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_2, TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_4, TEST_ID_ALI_PWS_SPINE_AR_ENABLED_ASYM_SPLIT]
 
 # Dictionary mapping PacketSizeKey to packet_size
 PACKET_SIZE_MAPPING = {
@@ -89,9 +93,12 @@ class TestParameters:
     shaper_value: float
     ar_enabled: bool
     split_host_ports: int
+    split_left: int
     num_left_dips: int
     num_right_dips: int
     is_leaf_scenario: bool
+    traffic_function: callable
+    adjust_buffer_config: bool
     test_id: str
 
 
@@ -124,6 +131,12 @@ def ar_enabled(test_params):
 def split_host_ports(test_params):
     """Extract split_host_ports from test_params"""
     return test_params.split_host_ports
+
+
+@pytest.fixture(scope='class')
+def split_left(test_params):
+    """Extract split_left from test_params"""
+    return test_params.split_left
 
 
 @pytest.fixture(scope='class')
@@ -160,6 +173,12 @@ def ip_combinations(request):
 def ipv4_enabled(ip_combinations):
     """Extract ipv4_enabled from ip_combinations"""
     return ip_combinations.ipv4_enabled
+
+
+@pytest.fixture(scope='class')
+def adjust_buffer_config(test_params):
+    """Extract adjust_buffer_config from test_params"""
+    return test_params.adjust_buffer_config
 
 
 @pytest.fixture(scope='class')
@@ -210,17 +229,17 @@ def get_super_spine_to_leaf_port_groups(players, conf_args, split_right=2, split
 
 
 @pytest.fixture(scope='class', autouse=True)
-def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, num_left_dips, num_right_dips, ipv4_enabled, ipv6_enabled, is_leaf_scenario):
+def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, split_left, num_left_dips, num_right_dips, ipv4_enabled, ipv6_enabled, is_leaf_scenario, adjust_buffer_config):
 
-    conf_args = {"run_fw_latency_optimization": "False",
-                 "auto_buffer_mode": "False",
+    conf_args = {"auto_buffer_mode": "False",
                  "congestion_thresh_lo": 190,
                  "two_sided_ar": False,
                  "ar_enabled": ar_enabled,
                  "split_right": split_host_ports,
-                 "split_left": 2,
+                 "split_left": split_left,
                  "host": "right_tg",
                  "spine": "left_tg",
+                 "get_acl_dump": False,
                  "scenario": TESTS_SCENARIO,
                  "packet_size": get_packet_size_for_test(test_id, ipv4_enabled == "ipv4_enabled", ipv6_enabled == "ipv6_enabled"),
                  "left_num_packets": SPCXRAConsts.PACKET_NUM_800G_x1_WITH_INCREMENTAL_DIPS // 2,
@@ -230,25 +249,31 @@ def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, num_
                  "num_routes_ipv4": 64000,
                  "num_routes_ipv6": 64000,
                  "disable_locality": True,
+                 "apply_acl": True,
                  "set_lpm_root": True,
                  "hash_type": "crc",
-                 "ecmp_size": 512,
+                 "ecmp_size": 4096,
                  "from_leaf_dest_mac": "00:00:00:00:10:60",
                  "from_spine_dest_mac": "00:01:02:03:04:06",
+                 "left_ingress_dmac": "00:01:02:03:04:06",
+                 "right_ingress_dmac": "00:00:00:00:10:60",
                  "is_ipv4": ipv4_enabled == "ipv4_enabled",
                  "is_ipv6": ipv6_enabled == "ipv6_enabled",
                  "ipv4_source_ip": "4.4.4.4",
                  "ipv6_source_ip": "192:168:0:0:0:0:0:1",
-                 "dip_left_to_right_start_ipv4_list": ["10.0.1.0"],
-                 "dip_left_to_right_start_ipv6_list": ["2001:db8::2"],
-                 "dip_right_to_left_start_ipv4_list": ["192.168.1.0"],
-                 "dip_right_to_left_start_ipv6_list": ["192:168:5:1:1:1:2:0"],
-                 "neigh_mac_left_to_right_start": "00:00:00:00:10:70",
-                 "neigh_mac_right_to_left_start": "00:01:02:03:04:08",
+                 "dip_left_to_right_start_ipv4_list": ["10.0.1.0"],  # DIP received in right
+                 "dip_left_to_right_start_ipv6_list": ["2001:db8::2"],  # DIP received in right
+                 "dip_right_to_left_start_ipv4_list": ["192.168.1.0"],  # DIP received in left
+                 "dip_right_to_left_start_ipv6_list": ["192:168:5:1:1:1:2:0"],  # DIP received in left
+                 "neigh_mac_left_to_right_start": "00:00:00:00:10:70",  # Neigh MAC for DIP received in right. ingres rif
+                 "neigh_mac_right_to_left_start": "00:01:02:03:04:08",  # Neigh MAC for DIP received in left. ingress rif
                  "is_leaf_scenario": is_leaf_scenario,
                  "shaper_value": shaper_value,
+                 "adjust_buffer_config": adjust_buffer_config,
+                 "get_occ_per_port": False,
                  "params": None
                  }
+
     if conf_args['is_ipv4'] and conf_args['is_ipv6']:
         conf_args['left_num_packets'] = conf_args['left_num_packets'] // 2
         conf_args['right_num_packets'] = conf_args['right_num_packets'] // 2
@@ -265,6 +290,31 @@ def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, num_
         conf_args['dip_left_to_right_start_ipv6_list'] = ["2001:db8::2", "192:168:5:1:1:1:2:0"]
         conf_args['dip_right_to_left_start_ipv4_list'] = ["192.168.1.0", "10.0.1.0"]
         conf_args['dip_right_to_left_start_ipv6_list'] = ["192:168:5:1:1:1:2:0", "2001:db8::2"]
+
+    if test_id in ALI_PWS_TESTS_LIST:
+        arch_defined_pipeline_latency_size = 700  # (99% occupancy + max_occupancy) / 2, calculation based on arch definition, results checked manually
+        arch_defined_max_borrowed_delta = 600  # (max_watermark - 99% occupancy) * 2, calculation based on arch definition, results checked manually
+
+        conf_args['pg_buffer_configs'] = {
+            PerfConsts.LEFT_TG_ALIAS: {
+                "pg_list": [4],
+                "pipeline_latency_size": (arch_defined_pipeline_latency_size // split_left) * 2,
+                "max_borrowed_delta": (arch_defined_max_borrowed_delta // split_left) * 2
+            },
+            PerfConsts.RIGHT_TG_ALIAS: {
+                "pg_list": [4],
+                "pipeline_latency_size": (arch_defined_pipeline_latency_size // split_host_ports) * 2,
+                "max_borrowed_delta": (arch_defined_max_borrowed_delta // split_host_ports) * 2
+            }
+        }
+
+        conf_args['num_routes_ipv4'] = max(num_left_dips, num_right_dips)
+        conf_args['num_routes_ipv6'] = max(num_left_dips, num_right_dips)
+        conf_args['disable_locality'] = False
+        conf_args['apply_acl'] = False
+        conf_args['sdk_tg_config_script_name'] = "IngressAclTG"
+    else:
+        conf_args['sdk_tg_config_script_name'] = "SpcxTG"
 
     right_side_ipv4_to_mac_list = generate_incremental_addresses(conf_args["neigh_mac_right_to_left_start"],
                                                                  conf_args["dip_right_to_left_start_ipv4_list"][0],
@@ -285,17 +335,37 @@ def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, num_
     conf_args["ip_to_mac_dict"] = {"left": {"ipv4": left_side_ipv4_to_mac_list, "ipv6": left_side_ipv6_to_mac_list},
                                    "right": {"ipv4": right_side_ipv4_to_mac_list, "ipv6": right_side_ipv6_to_mac_list}}
 
+    conf_args["left_uc_route_ipv4_list"] = []
+    conf_args["right_uc_route_ipv4_list"] = []
+    conf_args["left_uc_route_ipv6_list"] = []
+    conf_args["right_uc_route_ipv6_list"] = []
+
+    if test_id in ALI_PWS_TESTS_LIST:
+        left_uc_route_ipv4_list = [left_side_ipv4_to_mac_list[i][0] for i in range(num_left_dips)]
+        right_uc_route_ipv4_list = [right_side_ipv4_to_mac_list[i][0] for i in range(num_right_dips)]
+        left_uc_route_ipv6_list = [left_side_ipv6_to_mac_list[i][0] for i in range(num_left_dips)]
+        right_uc_route_ipv6_list = [right_side_ipv6_to_mac_list[i][0] for i in range(num_right_dips)]
+
+        conf_args["left_uc_route_ipv4_list"] = left_uc_route_ipv4_list
+        conf_args["right_uc_route_ipv4_list"] = right_uc_route_ipv4_list
+        conf_args["left_uc_route_ipv6_list"] = left_uc_route_ipv6_list
+        conf_args["right_uc_route_ipv6_list"] = right_uc_route_ipv6_list
+
     return conf_args
 
 
 def move_alibaba_acl_dump(players):
     """
     Move the Alibaba ACL dump to the DUT, using the shared JSON file.
+
+    Args:
+        players (dict): Dictionary of test players containing DUT configurations.
+
+    Raises:
+        FileNotFoundError: If the ACL dump source file does not exist.
     """
     acl_dump_path = '/tmp'
     acl_dump_name = 'acl_list.txt'
-    players[PerfConsts.DUT_ALIAS]['cli'].performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_PATH, data=acl_dump_path)
-    players[PerfConsts.DUT_ALIAS]['cli'].performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_NAME, data=acl_dump_name)
     acl_dump_original_file = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", TESTS_SCENARIO, "acl_list.txt")
 
     logger.info(f"ACL dump source file path: {acl_dump_original_file}")
@@ -306,7 +376,10 @@ def move_alibaba_acl_dump(players):
         logger.error(f"ACL dump source file does not exist at: {acl_dump_original_file}")
         raise FileNotFoundError(f"ACL dump source file not found: {acl_dump_original_file}")
 
-    player_cli_obj = players[PerfConsts.PERF_SETUP_DUT_ALIASES[0]]['cli']
+    dut_alias = PerfConsts.PERF_SETUP_DUT_ALIASES[0]
+    player_cli_obj = players[dut_alias]['cli']
+    player_cli_obj.performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_PATH, data=acl_dump_path)
+    player_cli_obj.performance.write_shared_json(key=MultiNosSharedData.ALIBABA_ACL_DUMP_NAME, data=acl_dump_name)
     player_cli_obj.performance.engine.copy_file(
         source_file=acl_dump_original_file,
         file_system=acl_dump_path,
@@ -317,7 +390,10 @@ def move_alibaba_acl_dump(players):
 
 
 @pytest.fixture(scope='class', autouse=True)
-def basic_setup_configuration(players, conf_args):
+def basic_setup_configuration(players, conf_args, test_id, ipv6_enabled):
+    if test_id in ALI_PWS_TESTS_LIST and ipv6_enabled == "ipv6_enabled":
+        pytest.skip(f"Skipping PWS test {test_id} with IPv6 enabled")
+
     try:
         with allure.step('Save Players initial Configuration'):
             save_base_configuration(players)

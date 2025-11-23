@@ -13,7 +13,6 @@
 
             {# Configuration flags #}
             "is_ipv6": "{{ conf_args.is_ipv6 }}",
-            "run_fw_latency_optimization": "{{ conf_args.run_fw_latency_optimization }}",
             "override_qos_to_tc_map": "False",
 
             {# Retrieve port mappings #}
@@ -77,7 +76,11 @@
 
             {# Buffer configuration #}
             "fboss_enabled": "{{ conf_args.fboss_enabled }}",
+            {% if conf_args.adjust_buffer_config is defined %}
             "adjust_buffer_config": "{{ conf_args.adjust_buffer_config }}",
+            {% else %}
+            "adjust_buffer_config": "False",
+            {% endif %}
             {% if conf_args.num_of_downlink_ports is defined %}
             "num_of_downlink_ports": {{ conf_args.num_of_downlink_ports }},
             {% endif %}
@@ -88,15 +91,13 @@
 
             {# Configure port groups - either from provided config or default mapping #}
             {% if conf_args.port_groups is defined %}
-            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.DUT_ALIAS] | tojson }},
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args.port_groups[PerfConsts.DUT_ALIAS] | tojson }}
             {% else %}
             "{{ PerfConsts.PORT_GROUPS }}": {
                 "left_ports": {{ left_split_ports | tojson }},
                 "right_ports": {{ right_split_ports | tojson }}
-            },
+            }
             {% endif %}
-            {# Generate IP list for right-side ports #}
-            "right_side_ports_to_ip_dict": {{ generate_ip_list(address_start = ip_address, step = 1, mode = ip_mode, list_of_ports = right_split_ports ) | tojson }}
 
         }
     }

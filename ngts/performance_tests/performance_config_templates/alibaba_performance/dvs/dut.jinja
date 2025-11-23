@@ -94,8 +94,16 @@
         "hash_type": "crc",
         {% endif %}
 
+        {# Buffer configuration #}
+        "adjust_buffer_config": "{{ conf_args.adjust_buffer_config }}",
+
         {# LPM root configuration #}
         "set_lpm_root": "{{ conf_args.set_lpm_root }}",
-        "disable_locality": "{{ conf_args.disable_locality }}"
+        "disable_locality": "{{ conf_args.disable_locality }}",
+
+        {# Occupancy watermark collection configuration #}
+        {% if conf_args.get_occ_per_port is defined %}
+        "get_occ_per_port": {{ conf_args.get_occ_per_port | tojson }}
+        {% endif %}
     }
 }

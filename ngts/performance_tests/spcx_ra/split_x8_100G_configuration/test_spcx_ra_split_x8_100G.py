@@ -161,7 +161,8 @@ class TestSPCXRA_x8Split_100G:
                                                                      self.scenario, PerfConsts.SAMPLES_PARAMS)
 
             violations_list = []
-            for traffic_json in traffic_validation_jsons_list:
+            for result in traffic_validation_jsons_list:
+                traffic_json = result['traffic_json']
                 with allure.step("Verifying the B/W utilization is 0% on down ports"):
                     validate_bw_per_ports(traffic_json, bw_threshold=0,
                                           ports_list=ports_to_shutdown, violations_list=violations_list)

@@ -259,7 +259,8 @@ class TestSRv6Base:
                 additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                          'pg_keys': [ValidationConsts.OCC_AVG],
                                                                                                          'pg_to_validate': MRCConsts.PG_LIST,
-                                                                                                         'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION})
+                                                                                                         'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION,
+                                                                                                         'pg_buffer_type': ValidationConsts.PG_BUFFER_DATAFRAME})
 
                 if not is_redmine_issue_active([4743477])[0]:
                     additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,

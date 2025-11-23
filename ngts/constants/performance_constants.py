@@ -17,11 +17,14 @@ class ValidationConsts:
     SHARED_BUFFER_SIZE = "shared_buffer_size"
     COLLECTORS_LIST = "collectors_list"
     TC_DATAFRAME = "tc_dataframe"
-    PG_DATAFRAME = "pg_dataframe"
+    PG_HEADROOM_DATAFRAME = "pg_headroom_dataframe"
+    PG_BUFFER_DATAFRAME = "pg_buffer_dataframe"
     TC_PG_SAMPLES = "TC_PG_samples"
     TC_SAMPLES = "TC_samples"
     TC_NAME = "tc"
     PG_NAME = "pg"
+    PG_HEADROOM = "pg_headroom"
+    PG_BUFFER = "pg_buffer"
     OCC_AVG = "occAvg"
     OCC_99 = "occ99"
     OCC_MAX = "occMax"
@@ -36,7 +39,8 @@ class ValidationConsts:
     DATAFRAME_KEYS_DICT = {
         TC_LATENCY_DATAFRAME: [TC_AVG_LATENCY, TC_MAX_LATENCY, TC_99_LATENCY],
         TC_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK],
-        PG_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK]
+        PG_HEADROOM_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK],
+        PG_BUFFER_DATAFRAME: [OCC_AVG, OCC_99, OCC_MAX, MAX_WATERMARK]
     }
     COUNTERS_SAMPLES = "Counters_samples"
     PERF_COUNTERS_SAMPLES = "perf_counters_samples"
@@ -115,6 +119,7 @@ class PerfConsts:
     NON_SONIC_CLI_TYPE = NvosCliTypes.NvueCliTypes + DVSCliTypes.DVSCliTypes
 
     # Paths and Directories
+
     DVS_RUN_TEST_PATH = "/root/sys_sdk/sx_sdk_py_tests/tests/run_tests.py"
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
@@ -160,6 +165,7 @@ class PerfConsts:
     DVS_UNSPLIT_ALL_PORTS = "UnsplitAllPorts"
     DVS_DYNAMIC_CONF_PREFIX = "DynamicConfiguration"
     DVS_CREATE_INCREMENTAL_DIPS = "MultiDipsTG"
+    DVS_MODIFY_PG_BUFFER_CONNECTED_PORTS = "ModifyPGBufferConnectedPorts"
 
     # Traffic Generator Aliases
     LEFT_TG_ALIAS = "left_tg"

@@ -1,21 +1,33 @@
 import allure
 import logging
+import os
 import pytest
 
 from ngts.constants.constants import InfraConst
-from ngts.helpers.performance.performance_setup_helpers import (configure_mloops, run_traffic, run_validation, get_topology_obj, create_acl_dump,
-                                                                ValidationConfig, stop_traffic, configure_incremental_dips_on_tg)
+from ngts.constants.performance_constants import PerfConsts
+from ngts.helpers.performance.performance_setup_helpers import (configure_mloops, run_traffic, run_validation,
+                                                                get_topology_obj, create_acl_dump, ValidationConfig,
+                                                                stop_traffic, configure_incremental_dips_on_tg,
+                                                                create_occ_watermark_dump,
+                                                                modify_pg_buffer_for_connected_ports)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import SPCXRAConsts
-from ngts.performance_tests.alibaba_performance.conftest import get_alibaba_leaf_traffic, get_alibaba_super_spine_to_leaf_traffic
-from ngts.performance_tests.alibaba_performance.alibaba_leaf_scenarios.conftest import (TESTS_SCENARIO, TestIPCombinations, TestParameters,
-                                                                                        TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS,
-                                                                                        TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS,
-                                                                                        TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS,
-                                                                                        TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS,
-                                                                                        TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS)
+from ngts.performance_tests.alibaba_performance.conftest import (get_alibaba_leaf_traffic,
+                                                                 get_alibaba_super_spine_to_leaf_traffic,
+                                                                 get_pws_traffic)
+from ngts.performance_tests.alibaba_performance.alibaba_leaf_scenarios.conftest import (
+    TESTS_SCENARIO, TestIPCombinations, TestParameters,
+    TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS,
+    TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS,
+    TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS,
+    TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS,
+    TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS,
+    TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_2,
+    TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_4,
+    TEST_ID_ALI_PWS_SPINE_AR_ENABLED_ASYM_SPLIT,
+    ALI_PWS_TESTS_LIST)
 from ngts.constants.constants import BugHandlerConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +35,14 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize(
     "test_params",
     [
-
-        TestParameters(shaper_value=0.975, ar_enabled=True, split_host_ports=4, num_left_dips=128, num_right_dips=60, is_leaf_scenario=True, test_id=TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS),
-        TestParameters(shaper_value=0.999, ar_enabled=True, split_host_ports=4, num_left_dips=128, num_right_dips=60, is_leaf_scenario=True, test_id=TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS),
-        TestParameters(shaper_value=0.975, ar_enabled=False, split_host_ports=4, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=True, test_id=TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS),
-        TestParameters(shaper_value=0.975, ar_enabled=False, split_host_ports=2, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=True, test_id=TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS),
-        TestParameters(shaper_value=round(0.975 * 0.975, 3), ar_enabled=True, split_host_ports=2, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=False, test_id=TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS),
+        TestParameters(shaper_value=0.975, ar_enabled=True, split_host_ports=4, split_left=2, num_left_dips=128, num_right_dips=60, is_leaf_scenario=True, traffic_function=get_alibaba_leaf_traffic, adjust_buffer_config=False, test_id=TEST_ID_SHAPER_97_5_AR_ENABLED_SPLIT_4_64K_DIPS),
+        TestParameters(shaper_value=0.999, ar_enabled=True, split_host_ports=4, split_left=2, num_left_dips=128, num_right_dips=60, is_leaf_scenario=True, traffic_function=get_alibaba_leaf_traffic, adjust_buffer_config=False, test_id=TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS),
+        TestParameters(shaper_value=0.975, ar_enabled=False, split_host_ports=4, split_left=2, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=True, traffic_function=get_alibaba_leaf_traffic, adjust_buffer_config=False, test_id=TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_4_64K_DIPS),
+        TestParameters(shaper_value=0.975, ar_enabled=False, split_host_ports=2, split_left=2, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=True, traffic_function=get_alibaba_leaf_traffic, adjust_buffer_config=False, test_id=TEST_ID_SHAPER_97_5_AR_DISABLED_SPLIT_2_64K_DIPS),
+        TestParameters(shaper_value=round(0.975 * 0.975, 3), ar_enabled=True, split_host_ports=2, split_left=2, num_left_dips=64000, num_right_dips=64000, is_leaf_scenario=False, traffic_function=get_alibaba_super_spine_to_leaf_traffic, adjust_buffer_config=False, test_id=TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS),
+        TestParameters(shaper_value=0.975, ar_enabled=True, split_host_ports=2, split_left=2, num_left_dips=64, num_right_dips=64, is_leaf_scenario=False, traffic_function=get_pws_traffic, adjust_buffer_config=True, test_id=TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_2),
+        TestParameters(shaper_value=0.975, ar_enabled=True, split_host_ports=4, split_left=4, num_left_dips=128, num_right_dips=128, is_leaf_scenario=False, traffic_function=get_pws_traffic, adjust_buffer_config=True, test_id=TEST_ID_ALI_PWS_SPINE_AR_ENABLED_SPLIT_4),
+        TestParameters(shaper_value=0.975, ar_enabled=True, split_host_ports=4, split_left=2, num_left_dips=64, num_right_dips=128, is_leaf_scenario=False, traffic_function=get_pws_traffic, adjust_buffer_config=True, test_id=TEST_ID_ALI_PWS_SPINE_AR_ENABLED_ASYM_SPLIT),
     ],
     indirect=True
 )
@@ -78,12 +92,17 @@ class TestAlibabaLeafScenario:
 
             expected_bw = {
                 "left_split_ports": {"tx": expected_tx_super_spine * 0.95, "rx": expected_rx_super_spine * 0.95},
-                "right_split_ports": {"tx": expected_tx_leaf * 0.95, "rx": expected_rx_leaf * 0.95}
+                "right_split_ports": {"tx": expected_tx_leaf * 0.95, "rx": expected_rx_leaf * 0.95},
+            }
+        elif test_params.test_id in ALI_PWS_TESTS_LIST:
+            expected_bw = {
+                "connected_ports": {"tx": (0.7 / conf_args['split_right']) * 2, "rx": (0.7 / conf_args['split_right']) * 2},
+                "unconnected_ports": {"tx": (0.7 / conf_args['split_right']) * 2, "rx": (0.7 / conf_args['split_right']) * 2}
             }
         else:
             expected_bw = {
                 "left_split_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH},
-                "right_split_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / (conf_args['split_right'] * 2), "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / (conf_args['split_right'] * 2)}
+                "right_split_ports": {"tx": (SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / conf_args['split_right']) * 2, "rx": (SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / conf_args['split_right']) * 2}
             }
         return expected_bw
 
@@ -93,17 +112,32 @@ class TestAlibabaLeafScenario:
         logging.info(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}")
         test_name = get_perf_test_name(request)
 
-        with allure.step("Adding dynamic description to allure report"):
-            scenario_name = (f"Alibaba Performance real life leaf Scenario. "
-                             f"{32 * conf_args['split_left']} X {32 * conf_args['split_right']} ports. "
-                             f"shaper value: {conf_args['shaper_value']}. "
-                             f"packet size: {conf_args['packet_size']}. "
-                             f"{'with' if conf_args['is_ipv6'] else 'without'} IPv6. "
-                             f"{'with' if conf_args['is_ipv4'] else 'without'} IPv4. "
-                             f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
-                             f"{conf_args['left_num_dip_to_send']} dips to host. "
-                             f"{conf_args['right_num_dip_to_send']} dips to spine. "
-                             )
+        if test_params.test_id in ALI_PWS_TESTS_LIST and ip_combinations.ipv6_enabled == "ipv6_enabled":
+            pytest.skip(f"Skipping PWS test {test_params.test_id} with IPv6 enabled")
+
+        if test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
+            pytest.skip("Skipping test for 99.9 percent shaper value")
+
+        if not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
+            pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
+
+        if not test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
+            pytest.skip("Skipping Ali scenario 3, IPv4 enabled and IPv6 enabled")
+
+        with allure.step(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}"):
+            with allure.step("Adding dynamic description to allure report"):
+                scenario_name = (f"Alibaba Performance real life leaf Scenario. "
+                                 f"{32 * conf_args['split_left']} X {32 * conf_args['split_right']} ports. "
+                                 f"shaper value: {conf_args['shaper_value']}. "
+                                 f"packet size: {conf_args['packet_size']}. "
+                                 f"{'with' if conf_args['is_ipv6'] else 'without'} IPv6. "
+                                 f"{'with' if conf_args['is_ipv4'] else 'without'} IPv4. "
+                                 f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
+                                 f"{conf_args['left_num_dip_to_send']} dips to host. "
+                                 f"{conf_args['right_num_dip_to_send']} dips to spine. "
+                                 )
+                if test_params.test_id in ALI_PWS_TESTS_LIST:
+                    scenario_name = f"PWS scenario.\n" + scenario_name
 
             scenario_description = f"{scenario_name} "
             f"{'with' if conf_args['set_lpm_root'] else 'without'} LPM root. "
@@ -118,32 +152,54 @@ class TestAlibabaLeafScenario:
         if is_redmine_issue_active([4662379])[0] and not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
             pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
 
-        with allure.step(f"Create incremental dips"):
-            configure_incremental_dips_on_tg(self.players)
+        if test_params.test_id not in ALI_PWS_TESTS_LIST:
+            with allure.step("Create incremental dips"):
+                configure_incremental_dips_on_tg(self.players)
 
-        with allure.step(f"Get Alibaba traffic"):
-            traffic_jsons = get_alibaba_super_spine_to_leaf_traffic(self.players, conf_args) if test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS else get_alibaba_leaf_traffic(self.players, conf_args)
+        with allure.step("Get Alibaba traffic"):
+            traffic_jsons = test_params.traffic_function(self.players, conf_args)
 
-        with allure.step(f"Run Traffic on all the ports"):
+        with allure.step("Run Traffic on all the ports"):
             run_traffic(self.players, self.scenario, traffic_jsons)
 
-        with allure.step(f"Creating ACL dump"):
-            acl_dump = create_acl_dump(self.players)
-            logging.info(f"Creating ACL dump {acl_dump}")
+        if test_params.test_id in ALI_PWS_TESTS_LIST:
+            with allure.step("Modify PG buffer configuration for connected ports"):
+                modified_count = modify_pg_buffer_for_connected_ports(self.players)
 
-            if acl_dump:
-                allure.attach(acl_dump, name="ACL_Dump", attachment_type=allure.attachment_type.TEXT)
+            with allure.step(f"PG buffer modification completed: {modified_count} TG(s) configured"):
+                logging.info(f"PG buffer modification completed: {modified_count} TG(s) configured")
 
-        with allure.step(f"Verifying the traffic"):
+        if conf_args['get_acl_dump']:
+            with allure.step("Creating ACL dump"):
+                acl_dump = create_acl_dump(self.players)
+                logging.info(f"Creating ACL dump {acl_dump}")
+
+                if acl_dump:
+                    allure.attach(acl_dump, name="ACL_Dump", attachment_type=allure.attachment_type.TEXT)
+
+        with allure.step("Verifying the traffic"):
             expected_bw = self.get_expected_bw(test_params, conf_args)
-            ignore_counter_list = ['tx_ecn_marked_tc_3']
+            if test_params.test_id not in ALI_PWS_TESTS_LIST:
+                ignore_counter_list = ['tx_ecn_marked_tc_3']
+            elif test_params.test_id in ALI_PWS_TESTS_LIST:
+                ignore_counter_list = ['egress_vlan_membership']
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
                                       bw_threshold=expected_bw,
                                       power_threshold=self.power_thresholds_by_chip_type,
                                       skip_first_counters_iteration=True,
-                                      ignore_counter_list=ignore_counter_list)
+                                      tc_occ_threshold=None,
+                                      ignore_counter_list=ignore_counter_list,
+                                      players_to_be_validated=PerfConsts.PERF_SETUP_TG_ALIASES if test_params.test_id in ALI_PWS_TESTS_LIST else PerfConsts.PERF_SETUP_DUT_ALIASES)
             run_validation(config)
+
+        if conf_args['get_occ_per_port']:
+            with allure.step("Copy occupancy and watermark dump from DUT"):
+                hostname = self.players[PerfConsts.DUT_ALIAS]['cli'].chassis.get_hostname()
+                tar_file_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", "occ_watermark_dumps",
+                                             self.scenario, f"{hostname}_{test_name}_occ_headroom_per_port.tar.gz")
+                os.makedirs(os.path.dirname(tar_file_path), exist_ok=True)
+                create_occ_watermark_dump(self.players, sonic_mgmt_path=tar_file_path)
 
     def _run_single_test_with_packet_size(self, packet_size, conf_args, test_params, test_name, create_acl_dump_flag=True):
         """
@@ -167,7 +223,7 @@ class TestAlibabaLeafScenario:
 
             with allure.step(f"Testing packet size: {packet_size}"):
                 with allure.step(f"Get Alibaba traffic with packet size {packet_size}"):
-                    traffic_jsons = get_alibaba_super_spine_to_leaf_traffic(self.players, modified_conf_args) if test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS else get_alibaba_leaf_traffic(self.players, modified_conf_args)
+                    traffic_jsons = test_params.traffic_function(self.players, modified_conf_args)
 
                 with allure.step(f"Run Traffic on all the ports with packet size {packet_size}"):
                     run_traffic(self.players, self.scenario, traffic_jsons)
@@ -284,6 +340,7 @@ class TestAlibabaLeafScenario:
                              f"{'with' if conf_args['ar_enabled'] else 'without'} AR. "
                              f"{conf_args['left_num_dip_to_send']} dips to host. "
                              f"{conf_args['right_num_dip_to_send']} dips to spine. "
+                             f"{'with' if conf_args['adjust_buffer_config'] else 'without'} adjust buffer config. "
                              )
 
             scenario_description = f"{scenario_name} "

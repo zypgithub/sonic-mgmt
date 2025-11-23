@@ -96,7 +96,7 @@ def create_empty_json_traffic_file(json_path):
     traffic_json = {
         "port_groups": [
             {
-                "name": f"EMPTY_TRAFFIC_STREAM",
+                "name": "EMPTY_TRAFFIC_STREAM",
                 "ports": [],
                 "stream_list": [PacketGenerator(ports=[], packet_size=0, num_packets=0).get_json()]
             }
@@ -503,31 +503,38 @@ def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_val
                                 violations_list.append(f"In sample {sample_id} for port group {port_group_name} - TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
 
 
-def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validate, allowed_deviation, violations_list):
+def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validate, allowed_deviation, violations_list,
+                            pg_buffer_type):
     """
-    This function is used to compare the PG occupancy to a reference PG occupancy
-    :param traffic_json: current test validation json
-    :param reference_json: reference validation json, can be from a previous test run or from a reference file
-    :param pg_keys: list of pg keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
-    :param pg_to_validate: list of pg to validate, i.e [1, 2]
-    :param allowed_deviation: allowed deviation from the reference PG occupancy, i.e +-1
-    :param violations_list: list of violations
+    Compare PG occupancy to a reference PG occupancy.
+
+    Args:
+        traffic_json: current test validation json
+        reference_json: reference validation json, can be from a previous test run or from a reference file
+        pg_keys: list of pg keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
+        pg_to_validate: list of pg to validate, i.e [1, 2]
+        allowed_deviation: allowed deviation from the reference PG occupancy, i.e +-1
+        violations_list: list of violations
+        pg_buffer_type: which PG buffer to validate - ValidationConsts.PG_HEADROOM_DATAFRAME or
+                       ValidationConsts.PG_BUFFER_DATAFRAME (REQUIRED - must be explicitly specified)
     """
-    with allure.step(f"Compare PG occupancy to reference for {pg_to_validate}"):
+    buffer_type_name = "headroom" if pg_buffer_type == ValidationConsts.PG_HEADROOM_DATAFRAME else "buffer"
+    with allure.step(f"Compare PG {buffer_type_name} occupancy to reference for {pg_to_validate}"):
         pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         for sample_id, port_groups in pg_samples.items():
             for port_group_name, port_group_data in port_groups.items():
-                pg_df = port_group_data[ValidationConsts.PG_DATAFRAME]
+                pg_df = port_group_data[pg_buffer_type]
                 for pg_dict in pg_df:
                     pg_name = pg_dict[ValidationConsts.PG_NAME]
                     if pg_name in pg_to_validate:
                         for key in pg_keys:
                             pg_occ = pg_dict[key]
-                            reference_pg_occ = get_pg_occ_from_traffic_json(reference_json, port_group_name, key, pg_name)
+                            reference_pg_occ = get_pg_occ_from_traffic_json(reference_json, port_group_name, key, pg_name,
+                                                                            pg_buffer_type)
                             min_limit, max_limit = reference_pg_occ - allowed_deviation, reference_pg_occ + allowed_deviation
                             if pg_occ < min_limit or pg_occ > max_limit:
-                                violations_list.append(f"In sample {sample_id} for port group {port_group_name} - PG {pg_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {pg_occ}")
+                                violations_list.append(f"In sample {sample_id} for port group {port_group_name} - PG {pg_name} {buffer_type_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {pg_occ}")
 
 
 def get_tc_occ_from_traffic_json(traffic_json, port_group_name, tc_key, tc):
@@ -543,12 +550,26 @@ def get_tc_occ_from_traffic_json(traffic_json, port_group_name, tc_key, tc):
     return tc_occ
 
 
-def get_pg_occ_from_traffic_json(traffic_json, port_group_name, pg_key, pg):
+def get_pg_occ_from_traffic_json(traffic_json, port_group_name, pg_key, pg, pg_buffer_type):
+    """
+    Get PG occupancy value from traffic JSON.
+
+    Args:
+        traffic_json: traffic validation json
+        port_group_name: name of the port group
+        pg_key: occupancy key (e.g., 'occ_avg', 'occ_max')
+        pg: PG number to get data for
+        pg_buffer_type: which PG buffer to get - ValidationConsts.PG_HEADROOM_DATAFRAME or
+                       ValidationConsts.PG_BUFFER_DATAFRAME (REQUIRED - must be explicitly specified)
+
+    Returns:
+        PG occupancy value or None if not found
+    """
     pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
     pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     pg_occ = None
     for sample_id, port_groups in pg_samples.items():
-        pg_df = port_groups[port_group_name][ValidationConsts.PG_DATAFRAME]
+        pg_df = port_groups[port_group_name][pg_buffer_type]
         for pg_dict in pg_df:
             pg_name = pg_dict[ValidationConsts.PG_NAME]
             if pg_name == pg:

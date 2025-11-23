@@ -48,6 +48,7 @@ def conf_args():
     split_right = 2
 
     conf_args = {"congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
+                 "fboss_enabled": True,
                  "auto_buffer_mode": "False",
                  "packet_size": PerfConsts.PACKET_SIZE_LIST[0],
                  "is_ipv6": False,

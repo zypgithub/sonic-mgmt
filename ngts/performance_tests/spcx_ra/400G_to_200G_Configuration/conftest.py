@@ -51,8 +51,7 @@ def conf_args():
     """
     This function alters all of the jinja template files.
     """
-    conf_args = {"run_fw_latency_optimization": "False",
-                 "auto_buffer_mode": "False",
+    conf_args = {"auto_buffer_mode": "False",
                  "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "is_ipv6": False,
                  "split_right": 4,

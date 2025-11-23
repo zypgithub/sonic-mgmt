@@ -40,4 +40,4 @@ def parse_threads_exceptions_at_join(threads_list, players_info, step):
             player_hostname = players_info[th.name]['cli'].chassis.get_hostname()
             exceptions.append(f"{th.name} - {player_hostname} failed with Exception,please check thread logs\n")
             print_players_logs(players_list=players, players_info=players_info, print_to_stdout=True)
-            raise TestIssue(f"Caught failure in {step}\n" + "\n".join(exceptions))
+            raise TestIssue(f"Caught failure in {step}\n" + "\n".join(exceptions)) from e

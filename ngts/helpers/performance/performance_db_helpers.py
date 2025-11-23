@@ -139,7 +139,7 @@ def restructure_validator_results(validation_json, ports_group_df, os_ports_name
     test_validation_to_mongo_db = {}
     test_validation_to_mongo_db[MongoDbConsts.BW_COUTERS_DATA] = get_bw_counters_data(validation_json, ports_group_df, os_ports_name_mapping_df, trimmed_untrimmed_dropped_percentages, performance_counters_df)
     test_validation_to_mongo_db[MongoDbConsts.TC_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_PG_SAMPLES, ValidationConsts.TC_DATAFRAME)
-    test_validation_to_mongo_db[MongoDbConsts.PG_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_PG_SAMPLES, ValidationConsts.PG_DATAFRAME)
+    test_validation_to_mongo_db[MongoDbConsts.PG_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_PG_SAMPLES, ValidationConsts.PG_BUFFER_DATAFRAME)
     test_validation_to_mongo_db[MongoDbConsts.TC_LATENCY_DATA] = get_tc_and_pg_info(validation_json, ValidationConsts.TC_LATENCY_SAMPLES, ValidationConsts.TC_LATENCY_DATAFRAME)
     test_validation_to_mongo_db[MongoDbConsts.TEMP_DATA] = restructure_temp(validation_json)
     test_validation_to_mongo_db[MongoDbConsts.POWER_TOTAL] = restructure_power(power_total)

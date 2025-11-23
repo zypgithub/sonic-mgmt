@@ -59,6 +59,8 @@ class ValidationConfig:
         port_list (List[str], optional): List of ports to validate
         skip_first_counters_iteration (bool): Whether to skip first counter check
         additional_validations (List[Validation], optional): Additional validations to run from test
+        players_to_be_validated (List[str], optional): List of player aliases to run validation on.
+            Defaults to DUT only. Can be set to TG aliases for traffic generator validation.
     """
     players: Any
     test_name: str
@@ -79,6 +81,7 @@ class ValidationConfig:
     ignore_counter_list: List = field(default_factory=list)
     skip_first_counters_iteration: Optional[bool] = False
     additional_validations: Optional[List[Validation]] = field(default_factory=dict)
+    players_to_be_validated: List[str] = field(default_factory=lambda: PerfConsts.PERF_SETUP_DUT_ALIASES)
 
     def get_validations(self) -> Dict[str, Validation]:
         """
@@ -243,7 +246,7 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
                              players_to_be_validated=PerfConsts.PERF_SETUP_DUT_ALIASES,
                              attach_to_allure=True,
                              add_validator_results_to_mongo_db=True):
-    traffic_validation_jsons_list = []
+    traffic_validation_results = []
     for player_alias in players_to_be_validated:
         cli_object = players[player_alias]['cli']
         hostname = cli_object.chassis.get_hostname()
@@ -261,11 +264,14 @@ def validate_traffic_results(players, test_name, scenario, samples_params_dict,
         traffic_json = attach_json_to_allure(full_path,
                                              f'Traffic Validation JSON results on {player_alias} - {hostname}',
                                              attach_to_allure)
-        traffic_validation_jsons_list.append(traffic_json)
+        traffic_validation_results.append({
+            'player_alias': player_alias,
+            'traffic_json': traffic_json
+        })
 
         if add_validator_results_to_mongo_db:
             add_test_mongo_metadata(test_name, {MongoDbConsts.VALIDATOR_RESULTS: traffic_json})
-    return traffic_validation_jsons_list
+    return traffic_validation_results
 
 
 def attach_json_to_allure(json_path, attachment_name, attach_to_allure=True):
@@ -289,23 +295,28 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
         config (ValidationConfig): Configuration object containing validation settings
 
     Returns:
-        list: List of traffic validation JSON results
+        tuple: (list of traffic validation results, list of all violations)
 
     Raises:
         TestIssue: If any validation violations are detected
     """
     with allure.step("Run traffic validation on Json results"):
         # Get traffic validation results for the configured test
-        traffic_validation_jsons_list = validate_traffic_results(players=config.players, test_name=config.test_name,
-                                                                 scenario=config.scenario,
-                                                                 samples_params_dict=config.samples_params_dict,
-                                                                 attach_to_allure=attach_to_allure,
-                                                                 add_validator_results_to_mongo_db=add_validator_results_to_mongo_db)
+        traffic_validation_results = validate_traffic_results(players=config.players, test_name=config.test_name,
+                                                              scenario=config.scenario,
+                                                              samples_params_dict=config.samples_params_dict,
+                                                              players_to_be_validated=config.players_to_be_validated,
+                                                              attach_to_allure=attach_to_allure,
+                                                              add_validator_results_to_mongo_db=add_validator_results_to_mongo_db)
 
         # Process each traffic validation JSON result
+        all_violations = []
 
-        for traffic_json in traffic_validation_jsons_list:
-            violations_list = []
+        for result in traffic_validation_results:
+            player_alias = result['player_alias']
+            traffic_json = result['traffic_json']
+
+            player_violations = []
             skipped_validations = []
             validations = {}
 
@@ -319,17 +330,25 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
                     validations[name] = validation
 
             # Log validation execution plan
-            logging.info(f"Skipped validations: {skipped_validations}\n")
-            logging.info(f"Validations to run: {list(validations.keys())}\n")
+            logging.info(f"[{player_alias}] Skipped validations: {skipped_validations}\n")
+            logging.info(f"[{player_alias}] Validations to run: {list(validations.keys())}\n")
 
             for name, validation in validations.items():
                 # Run validation function with its extra arguments and collect violations
-                validation.func(traffic_json, **(validation.extra_args or {}), violations_list=violations_list)
+                validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
 
-            if violations_list and not ignore_violations:
-                raise TestIssue("\n".join(violations_list))
+            if player_violations:
+                player_header = f"Validation failures on {player_alias}:"
+                all_violations.append(player_header)
+                all_violations.extend([f"  - {violation}" for violation in player_violations])
+                all_violations.append("")  # Add empty line for readability
 
-        return traffic_validation_jsons_list, violations_list
+        if all_violations and not ignore_violations:
+            raise TestIssue("\n".join(all_violations))
+
+        traffic_validation_jsons_list = [result['traffic_json'] for result in traffic_validation_results]
+
+        return traffic_validation_jsons_list, all_violations
 
 
 def set_ports_admin_state(players, port_list, port_state="up", step="Test Body - set_ports_admin_state"):
@@ -418,6 +437,44 @@ def create_acl_dump(players):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_acl_dump()
 
 
+def create_occ_watermark_dump(players, sonic_mgmt_path, tar_file_name="occ_headroom_per_port.tar.gz",
+                              tar_file_system='/tmp'):
+    """
+    Copy occupancy and watermark data dump from DUT and attach to Allure report.
+
+    Args:
+        players: Test players configuration
+        sonic_mgmt_path (str): The local path where the tar file will be copied.
+        tar_file_name (str, optional): The name of the tar file on the DUT.
+                                       Defaults to "occ_headroom_per_port.tar.gz".
+        tar_file_system (str, optional): The remote filesystem path where the tar file is located.
+                                         Defaults to '/tmp'.
+
+    Returns:
+        Path to the copied tar archive file.
+    """
+    tar_file = players[PerfConsts.DUT_ALIAS]['cli'].performance.get_occ_watermark_per_port_dump(
+        sonic_mgmt_path=sonic_mgmt_path,
+        tar_file_name=tar_file_name,
+        tar_file_system=tar_file_system
+    )
+
+    if os.path.exists(tar_file):
+        try:
+            allure.attach.file(
+                source=tar_file,
+                name='Occupancy and Watermark Data',
+                extension='.tar.gz'
+            )
+            logger.info(f"Attached occupancy/watermark tar file to Allure report: {tar_file}")
+        except Exception as e:
+            logger.warning(f"Failed to attach tar file to Allure report: {e}")
+    else:
+        logger.warning(f"Tar file not found: {tar_file}")
+
+    return tar_file
+
+
 def create_sdk_dump(players, full_path):
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
 
@@ -427,6 +484,48 @@ def configure_incremental_dips_on_tg(players, step="basic_test_configuration - c
                                            action="create incremental dips",
                                            performance_clis_function_name="configure_incremental_dips_on_tg",
                                            performance_clis_function_args=(), step=step)
+
+
+def modify_pg_buffer_for_connected_ports(players, step="Test Body - modify_pg_buffer_for_connected_ports", parallel_run=True):
+    """
+    Modify PG buffer configuration for connected ports on traffic generators.
+
+    This function expects pg_buffer_configs to already be in conf_args and loaded into conf.json
+    on each TG from apply_test_configuration. It simply runs the sys_sdk test that reads
+    the configuration and applies it.
+
+    The test modifies only:
+    - pipeline_latency_size (from user config)
+    - override_default_max_borrowed_delta (always True)
+    - max_borrowed_delta (from user config)
+
+    All other values (size, xon, xoff, is_lossy, etc.) are preserved from current configuration.
+
+    Args:
+        players: Test players configuration
+        step: Description of the current step for allure reporting
+        parallel_run: If True, modifies buffers in parallel. If False, modifies sequentially.
+
+    Returns:
+        int: Number of TGs where buffer configuration was successfully modified
+
+    Raises:
+        TestIssue: If pg_buffer_config is missing or buffer modification fails on any TG
+    """
+    if parallel_run:
+        call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
+                                               action="modify PG buffer for connected ports",
+                                               performance_clis_function_name="modify_pg_buffer_for_connected_ports",
+                                               performance_clis_function_args=(),
+                                               step=step)
+        modified_count = len(PerfConsts.PERF_SETUP_TG_ALIASES)
+    else:
+        modified_count = 0
+        for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
+            players[player_alias]['cli'].performance.modify_pg_buffer_for_connected_ports()
+            modified_count += 1
+
+    return modified_count
 
 
 def update_port_group_in_df(port_group_df, port_group_name, port_list):

@@ -2,7 +2,7 @@
     "sdk_test_info":
         {
             "sdk_test_path": "sx_sdk_py_tests/tests/multi_os_tests/spcx_tests/spx_ra_tg.py",
-            "sdk_test_name": "SpcxTG"
+            "sdk_test_name": "{{conf_args.sdk_tg_config_script_name}}"
         },
     "{{ PerfConsts.SDK_TEST_CONF }}": {
             {% set ports = right_left_ports_dict %}
@@ -20,9 +20,6 @@
             "source_ip": {% if conf_args.is_ipv6 %} "192:168:0:0:0:0:0:1" {% else %} "4.4.4.4" {% endif %},
             "vlan": 3,
 
-            "left_dst_ip": "None",
-            "right_dst_ip": "None",
-
             {# Support for multi-destination IPs #}
             "is_ipv4": "{{conf_args.is_ipv4}}",
             "is_ipv6": "{{conf_args.is_ipv6}}",
@@ -31,11 +28,28 @@
             "num_dip_ipv4_to_send": "{{conf_args.left_num_dip_to_send}}",
             "num_dip_ipv6_to_send": "{{conf_args.left_num_dip_to_send}}",
 
+            {# Allow L3 traffic in the traffic generator- ingress#}
+            "uc_route_ipv4_list": {{conf_args.right_uc_route_ipv4_list | tojson}},
+            "uc_route_ipv6_list": {{conf_args.right_uc_route_ipv6_list | tojson}},
+            "received_dmac": "{{conf_args.neigh_mac_right_to_left_start}}",
+
+            {# Create traffic- egress#}
+            "left_dst_ip": "None",
+            "right_dst_ip": "None",
+
             {# Configure port groups - either from provided config or default mapping #}
             {% if conf_args.port_groups is defined %}
-            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args[PerfConsts.PORT_GROUPS][PerfConsts.LEFT_TG_ALIAS] | tojson }}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ conf_args[PerfConsts.PORT_GROUPS][PerfConsts.LEFT_TG_ALIAS] | tojson }},
             {% else %}
-            "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_left) | tojson }}
+            "{{ PerfConsts.PORT_GROUPS }}": {{ get_player_unconnected_connected_after_split(conf_args.split_left) | tojson }},
+            {% endif %}
+            {% if conf_args.pg_buffer_configs is defined %}
+            "pg_buffer_config": {{ conf_args.pg_buffer_configs[PerfConsts.LEFT_TG_ALIAS] | tojson }},
+            {% endif %}
+
+            {# Occupancy watermark collection configuration #}
+            {% if conf_args.get_occ_per_port is defined %}
+            "get_occ_per_port": {{ conf_args.get_occ_per_port | tojson }}
             {% endif %}
         }
 }

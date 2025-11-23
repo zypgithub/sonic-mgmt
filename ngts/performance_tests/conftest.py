@@ -35,7 +35,7 @@ def performance_parameters(request):
                 params_json = json.load(file)
             return params_json["parameter_set"]
         except json.JSONDecodeError as e:
-            raise TestIssue(f"Failed to parse params as JSON: {e}")
+            raise TestIssue(f"Failed to parse params as JSON: {type(e).__name__}: {e}") from e
     return False
 
 

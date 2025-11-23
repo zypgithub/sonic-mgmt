@@ -21,8 +21,7 @@ TESTS_SCENARIO = "spcx_ra"
 
 
 def get_conf_args(is_ipv6):
-    conf_args = {"run_fw_latency_optimization": "False",
-                 "auto_buffer_mode": "False",
+    conf_args = {"auto_buffer_mode": "False",
                  "congestion_thresh_lo": PerfConsts.LOW_AR_THRESHOLD,
                  "two_sided_ar": True,
                  "is_ipv6": is_ipv6,
