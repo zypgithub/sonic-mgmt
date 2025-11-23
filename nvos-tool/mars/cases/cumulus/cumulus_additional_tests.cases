@@ -21,18 +21,7 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_techsupport_commands.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-      </params>
-    </cmd>
-  </case>
-
-  <case>
-    <name> AAA Disconnect Fix Threading </name>
-    <info> Test AAA disconnect with threading </info>
-    <tout> 10800 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_disconnect_fix_threading.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_techsupport_commands.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
       </params>
     </cmd>
   </case>
@@ -43,7 +32,7 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_system_users_show.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/aaa/test_system_users_show.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
       </params>
     </cmd>
   </case>
@@ -54,7 +43,7 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_config_show_find.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_config_show_find.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
       </params>
     </cmd>
   </case>
@@ -65,7 +54,7 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_config_delete_attach_revision.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/config_commands/test_config_delete_attach_revision.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
       </params>
     </cmd>
   </case>

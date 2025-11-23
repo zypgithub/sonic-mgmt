@@ -28,6 +28,7 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
 from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts, \
@@ -275,6 +276,38 @@ def engines(topology_obj, devices, request, is_ipv6):
     command_tracker.wrap_engines_recursively(engines_data)
 
     return engines_data
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_cumulus_sudoers(topology_obj, engines):
+    """
+    Automatically setup sudoers for cumulus user if the device is running Cumulus Linux.
+    This fixture runs once per session and modifies sudoers for all cumulus tests.
+    """
+    # Check if the device is a Cumulus switch by checking topology attributes
+    is_cumulus_device = False
+    try:
+        # Check if 'is_cumulus' flag is set on the player (set in ngts/conftest.py)
+        if topology_obj.players['dut'].get('is_cumulus'):
+            is_cumulus_device = True
+        else:
+            # Fallback: check switch type from topology attributes
+            switch_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'].get('TYPE', '')
+            from ngts.constants.constants import NvosCliTypes
+            if switch_type == NvosCliTypes.CumulusCliType:
+                is_cumulus_device = True
+    except (KeyError, AttributeError) as e:
+        logger.debug(f"Could not determine switch type from topology: {e}")
+
+    if is_cumulus_device:
+        try:
+            logger.info("Detected Cumulus Linux device. Setting up sudoers for cumulus user...")
+            cli_common = CumulusGeneralCli(engines.dut, engines.dut)
+            cli_common.modify_sudoers_for_cumulus()
+            logger.info("Successfully configured sudoers for cumulus user")
+        except Exception as e:
+            logger.warning(f"Failed to setup sudoers for cumulus user: {e}")
+            # Don't fail the session if this fails, let individual tests handle it
 
 
 @pytest.fixture(scope='function', autouse=True)

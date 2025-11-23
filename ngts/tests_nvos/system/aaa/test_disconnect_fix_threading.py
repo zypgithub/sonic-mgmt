@@ -48,7 +48,6 @@ def module_fixture(engines):
     """
     global cli_common
     cli_common = CumulusGeneralCli(engines.dut, engines.dut)
-    cli_common.modify_sudoers_for_cumulus()
     change_max_files(engines)
     increase_pty_limit(engines)
 

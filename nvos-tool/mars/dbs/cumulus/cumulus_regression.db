@@ -73,6 +73,16 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_login_ssh_notification.cases </cases>
 	</test>
 	
+	<!-- Disconnect Action Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_disconnect_action.cases </cases>
+	</test>
+
+	<!-- Security - SSH Ciphers Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_security_ssh_ciphers.cases </cases>
+	</test>
+
 	<!-- Additional Cumulus Tests -->
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_additional_tests.cases </cases>
