@@ -14,7 +14,7 @@ from ngts.constants.constants import MarsConstants, SonicDeployConstants, SonicC
 from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigraph_cmd, deploy_minigpraph, \
     reboot_validation, execute_script, is_dualtor_topo, is_dualtor_aa_topo, generate_minigraph, \
     config_y_cable_simulator, add_host_for_y_cable_simulator
-from retry.api import retry_call
+from retry.api import retry_call, retry
 from ngts.helpers.run_process_on_host import run_background_process_on_host
 from ngts.common.util import get_installed_dpu_info
 
@@ -25,7 +25,9 @@ class SonicInstallationSteps:
 
     @staticmethod
     def is_multi_asic_platform(platform_params):
-        return "sn5800_ld" in platform_params.platform.lower()
+        if not platform_params:
+            logger.warning("platform_params is empty, assuming single-ASIC device")
+        return platform_params and "sn5800_ld" in platform_params.platform.lower()
 
     @staticmethod
     def pre_installation_steps_ha(sonic_topo, neighbor_type,
@@ -579,20 +581,15 @@ class SonicInstallationSteps:
         for dut in setup_info['duts']:
             cli = dut['cli_obj']
             cli.enable_async_route_feature(platform_params['platform'], platform_params['hwsku'])
-        # TODO: Remove this once we can support full deploy for multi-asic platform, pls contact Yael Tzur before changing or for further details
+
         if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
-            logger.warning(f"Finished part of the deploy for multi-asic platform {platform_params['platform']}")
-            pytest.skip(
-                f"Performed partial deploy for multi-asic platform {platform_params['platform']}\n"
-                f"Skipping the rest of the deploy for multi-asic platform {platform_params['platform']}\n"
-                "Executed steps can be found in the log"
-            )
+            logger.info(f"Multi-ASIC platform {platform_params['platform']} detected")
 
         if not is_community(sonic_topo) and not is_performance:
             # Enable Port Init Profile for Canonical setups
             logger.info("Prepare sai.xml files for Port Init feature testing")
             cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
-                                    local_flags=False)
+                                    local_flags=False, platform_params=platform_params)
 
         # Community only steps
         if is_community(sonic_topo):
@@ -677,8 +674,21 @@ class SonicInstallationSteps:
         if not is_community(sonic_topo) and not is_performance:
             if xml_rpc:
                 # deploy the xmlrpc, the traffic may loss right after the xml rpc server is started
-                topology_obj.players['ha']['engine'].start_xml_rcp_server()
-                topology_obj.players['hb']['engine'].start_xml_rcp_server()
+                # Get all traffic hosts (ha-*/hb-* players with engines)
+                traffic_hosts = [name for name in topology_obj.players.keys()
+                                 if name.startswith(('ha-', 'hb-')) and 'engine' in topology_obj.players[name]]
+
+                if traffic_hosts:
+                    logger.info(f"Starting XML-RPC servers on traffic hosts: {traffic_hosts}")
+                    for host in traffic_hosts:
+                        try:
+                            logger.info(f"Starting XML-RPC server on {host}")
+                            topology_obj.players[host]['engine'].start_xml_rcp_server()
+                        except Exception as e:
+                            logger.error(f"Failed to start XML-RPC server on {host}: {e}")
+                    logger.info(f"✓ Successfully started XML-RPC servers on all {len(traffic_hosts)} traffic hosts")
+                else:
+                    logger.info("No traffic hosts (ha/hb) found in topology, skipping XML-RPC server startup")
 
             if deploy_dpu:
                 with allure.step('Update the dash api in sonic-mgmt'):
@@ -839,7 +849,7 @@ class SonicInstallationSteps:
             with allure.step("Save new running config to config_db.json"):
                 cli.cli_obj.qos.reload_qos()
                 cli.cli_obj.general.verify_dockers_are_up()
-                cli.cli_obj.general.enable_info_logging_on_docker(docker_name='swss')
+                cli.cli_obj.general.enable_info_logging_on_swss()
                 cli.cli_obj.general.save_configuration()
 
             with allure.step("Post installation check for community setup"):
@@ -1026,3 +1036,109 @@ def sync_docker_time_to_israel(topology_obj):
             logger.warning(f"Timezone update failed for {failed_containers}.")
     except Exception as e:
         logger.warning(f"Unexpected error while updating timezones: {str(e)}")
+
+
+def detect_asic_count(engine, platform_params, raise_on_error=False):
+    """
+    Detect the actual number of ASICs by reading asic.conf file.
+    This is a shared utility function to avoid code duplication across modules.
+
+    :param engine: SSH engine object for running commands
+    :param platform_params: Platform parameters dict
+    :param raise_on_error: If True, raises exception on failure; if False, returns default count
+    :return: Number of ASICs detected
+    :raises Exception: If raise_on_error is True and reading asic.conf fails
+    """
+    asic_count = None
+
+    try:
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            asic_conf_path = SonicConst.MultiAsic.ASIC_CONF_PATH.format(PLATFORM=platform_params.platform)
+            read_cmd = f"cat {asic_conf_path} | grep '^NUM_ASIC=' | cut -d'=' -f2"
+            asic_count = int(engine.run_cmd(read_cmd, validate=True).strip())
+            logger.info(f"{asic_count} ASIC(s) from asic.conf found in {asic_conf_path}")
+        else:
+            asic_count = SonicConst.DEFAULT_ASIC_COUNT
+    except Exception as e:
+        logger.warning(f"✗ Failed to read asic.conf: {e}")
+        if raise_on_error:
+            raise Exception(f"Failed to read asic.conf: {e}")
+
+    return asic_count
+
+
+def validate_and_get_asic_count(platform_params):
+    """
+    Validate that asic_count is provided for multi-ASIC platforms and return it.
+    This prevents silent partial configurations by failing fast when asic_count is missing.
+
+    :param platform_params: Platform parameters dict
+    :return: asic_count value from platform_params
+    :raises ValueError: If platform is multi-ASIC but asic_count is not specified
+    """
+    if not platform_params:
+        raise ValueError("platform_params is required but not provided")
+
+    if not SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+        # Not a multi-ASIC platform, this function shouldn't be called
+        raise ValueError(
+            f"validate_and_get_asic_count() called for non-multi-ASIC platform: "
+            f"{platform_params.get('platform')}"
+        )
+
+    asic_count = platform_params.get('asic_count')
+    if asic_count is None:
+        raise ValueError(
+            f"Multi-ASIC platform '{platform_params.get('platform')}' detected, "
+            f"but 'asic_count' is not specified in platform_params. "
+            f"Cannot proceed with partial configuration."
+        )
+
+    return asic_count
+
+
+@retry(Exception, tries=20, delay=5)
+def wait_for_system_table_to_exist(engine, asic_id=None):
+    """
+    Wait for SYSTEM_READY|SYSTEM_STATE table to exist in Redis STATE_DB
+    :param engine: SSH engine object
+    :param asic_id: ASIC ID for multi-ASIC systems (e.g., 0, 1, 2...). None for global/single-ASIC
+    """
+    asic_ns = f"-n asic{asic_id} " if asic_id is not None else ""
+    cmd = f'sonic-db-cli {asic_ns}STATE_DB hgetall "SYSTEM_READY|SYSTEM_STATE"'
+    output = engine.run_cmd(cmd)
+
+    if '(empty array)' in output:
+        asic_info = f" for ASIC {asic_id}" if asic_id is not None else ""
+        logger.info(f'Waiting for SYSTEM_STATUS table to be available{asic_info}')
+        raise Exception(f"System is not ready yet{asic_info}")
+    return True
+
+
+def wait_for_system_ready(engine, platform_params=None):
+    """
+    Wait for system to be ready by checking Redis STATE_DB
+    For single-ASIC: checks global namespace only
+    For multi-ASIC: checks global namespace + all ASIC namespaces
+    :param engine: SSH engine object
+    :param platform_params: Platform parameters dict (optional, None for single-ASIC)
+    :return: True if system is ready
+    """
+    # Always check global namespace first
+    logger.info("Checking global namespace Redis/system readiness...")
+    wait_for_system_table_to_exist(engine)
+    logger.info("✓ Global namespace is ready")
+
+    # If multi-ASIC, check each ASIC namespace as well
+    if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+        asic_count = detect_asic_count(engine, platform_params, raise_on_error=False)
+        logger.info(f"Multi-ASIC platform: checking Redis/system readiness for {asic_count} ASIC namespaces")
+
+        for asic_id in range(asic_count):
+            logger.info(f"Checking ASIC {asic_id} namespace...")
+            wait_for_system_table_to_exist(engine, asic_id=asic_id)
+            logger.info(f"✓ ASIC {asic_id} is ready")
+
+        logger.info(f"✓ All {asic_count} ASIC namespaces are ready")
+
+    return True

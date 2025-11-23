@@ -12,6 +12,7 @@ from retry.api import retry_call
 
 import ngts.helpers.json_file_helper as json_file_helper
 from ngts.helpers.system_helpers import set_timezone as system_set_timezone
+from ngts.scripts.sonic_deploy.sonic_only_methods import validate_and_get_asic_count
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
 from infra.tools.general_constants.air_constants import HostsConstants
@@ -40,7 +41,7 @@ from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.scripts.check_and_store_sanitizer_dump import check_sanitizer_and_store_dump
-from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
+from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, detect_asic_count
 from ngts.scripts.sonic_deploy.os_upgrade_flag import set_os_upgrade_flag
 
 from ngts.tests.nightly.app_extension.app_extension_helper import get_installed_mellanox_extensions
@@ -307,82 +308,168 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                    "exit"]
             self.engine.run_cmd_set(restore_backup_cmds)
 
-    def validate_dockers_are_up_reboot_if_fail(self, retries=2):
+    def validate_dockers_are_up_reboot_if_fail(self, topology_obj, retries=2, dockers_list=None, platform_params=None):
         """
         Reboot and validate docker containers are up on the switch
+        :param topology_obj: Topology object for safe_reboot_flow (required)
         :param retries: int how many times do reboot of switch
+        :param dockers_list: list of dockers to check (optional)
+        :param platform_params: Platform parameters for multi-ASIC detection (optional)
         """
         initial_count = retries
         while retries:
             try:
-                self.verify_dockers_are_up()
+                self.verify_dockers_are_up(dockers_list=dockers_list, platform_params=platform_params)
+                logger.info(f"✓ All docker containers verified successfully")
                 break
             except BaseException:
                 logger.error('Caught exception {} during verifying docker containers are up.'
                              ' Rebooting dut and try again, try number {}'.format(traceback.print_exc(),
                                                                                   initial_count - retries + 1))
-                self.engine.reload(['sudo reboot'])
+                logger.info(f"Performing reboot (attempt {initial_count - retries + 1}/{initial_count}) via safe_reboot_flow...")
+                self.safe_reboot_flow(topology_obj, reboot_type='reboot')
             retries = retries - 1
 
     # Add 6 tries due to fw update would add external delay to syncd container boot up
     @retry(Exception, tries=21, delay=10)
-    def verify_dockers_are_up(self, dockers_list=None, running_config=False):
+    def verify_dockers_are_up(self, dockers_list=None, running_config=False, platform_params=None):
         """
         Verifying the dockers are in up state during a specific time interval
         :param dockers_list: list of dockers to check
         :param running_config: whether to read config from running config or file
+        :param platform_params: Platform parameters for multi-ASIC detection
         :return: None, raise error in case of unexpected result
         """
         with allure.step('Check that dockers in UP state'):
-            self._verify_dockers_are_up(dockers_list, running_config=running_config)
+            self._verify_dockers_are_up(dockers_list, running_config=running_config, platform_params=platform_params)
 
-    def _verify_dockers_are_up(self, dockers_list, running_config=False):
+    def _get_default_dockers_list(self, running_config=False):
         """
         Verifying the dockers are in up state
         :param dockers_list: list of dockers to check
         :param running_config: whether to read config from running config or file
         :return: None, raise error in case of unexpected result
         """
-        if dockers_list is None:
-            dockers_list = SonicConst.DOCKERS_LIST_LEAF
+        dockers_list = SonicConst.DOCKERS_LIST_LEAF
 
-            # Try to get extended docker list for DUT type ToRRouter
-            try:
-                if running_config:
-                    logger.info('Reading config from running config')
-                    config_db = self.get_config_db_from_running_config()
-                else:
-                    logger.info('Reading config from config_db.json')
-                    config_db = self.get_config_db()
-                if self.is_bluefield(config_db['DEVICE_METADATA']['localhost']['hwsku']):
-                    dockers_list = SonicConst.DOCKERS_LIST_BF
-                elif config_db['DEVICE_METADATA']['localhost']['type'] == 'ToRRouter':
-                    dockers_list = SonicConst.DOCKERS_LIST_TOR
-                # in performance setup the docker dhcp_relay is disabled on TG switches to exclude multicast
-                if self.cli_obj.dut_alias in ['left_tg', 'right_tg']:
-                    if 'dhcp_relay' in dockers_list:
-                        dockers_list.remove('dhcp_relay')
-            except json.JSONDecodeError:
-                logger.warning('Can not get device type from config_db.json. Unable to parse config_db.json file')
-            except KeyError:
-                logger.warning('Can not get device type from config_db.json. Key does not exist')
+        # Try to get extended docker list for DUT type ToRRouter
+        try:
+            if running_config:
+                logger.info('Reading config from running config')
+                config_db = self.get_config_db_from_running_config()
+            else:
+                logger.info('Reading config from config_db.json')
+                config_db = self.get_config_db()
+            if self.is_bluefield(config_db['DEVICE_METADATA']['localhost']['hwsku']):
+                dockers_list = SonicConst.DOCKERS_LIST_BF
+            elif config_db['DEVICE_METADATA']['localhost']['type'] == 'ToRRouter':
+                dockers_list = SonicConst.DOCKERS_LIST_TOR
+            # in performance setup the docker dhcp_relay is disabled on TG switches to exclude multicast
+            if self.cli_obj.dut_alias in ['left_tg', 'right_tg']:
+                if 'dhcp_relay' in dockers_list:
+                    dockers_list.remove('dhcp_relay')
+        except json.JSONDecodeError:
+            logger.warning('Can not get device type from config_db.json. Unable to parse config_db.json file')
+        except KeyError:
+            logger.warning('Can not get device type from config_db.json. Key does not exist')
 
-        # Remove the unsupported dockers based on the branch
+        return dockers_list
+
+    def _filter_dockers_by_branch(self, dockers_list):
+        """
+        Remove unsupported dockers based on the SONiC branch version
+        :param dockers_list: List of docker names
+        :return: Filtered list of docker names
+        """
         cur_branch = self.get_image_sonic_version()
         base_branch = re.match(r'20[0-9]{4}', cur_branch)
+
         if not base_branch:
             base_branch = 999999
         else:
             base_branch = int(base_branch.group()[0])
+
         if base_branch < 202411:
             if 'gnmi' in dockers_list:
                 dockers_list.remove('gnmi')
 
+        return dockers_list
+
+    def _expand_dockers_for_multi_asic(self, dockers_list, platform_params):
+        """
+        Expand docker names with ASIC indices for multi-ASIC platforms
+        :param dockers_list: Original list of docker names
+        :param platform_params: Platform parameters dict
+        :return: Expanded list of docker names with ASIC indices
+        """
+        asic_count = detect_asic_count(self.engine, platform_params, raise_on_error=True)
+        logger.info(f"Multi-ASIC platform: {platform_params.get('platform')}, expanding {len(dockers_list)} dockers for {asic_count} ASICs")
+
+        expanded_dockers = []
         for docker in dockers_list:
-            try:
-                self.engine.run_cmd('docker ps | grep {}'.format(docker), validate=True)
-            except BaseException:
-                raise Exception("{} docker is not up".format(docker))
+            if docker in SonicConst.MultiAsic.DOCKERS_GLOBAL:
+                expanded_dockers.append(docker)
+            if docker in SonicConst.MultiAsic.DOCKERS_PER_ASIC:
+                for asic_id in range(asic_count):
+                    expanded_dockers.append(f'{docker}{asic_id}')
+
+        return expanded_dockers
+
+    def _verify_all_dockers_running(self, dockers_list):
+        """
+        Verify multiple docker containers are running using a single command execution on DUT.
+        This is much faster than checking each container individually (1 SSH call vs N calls).
+
+        :param dockers_list: list of docker container names to check
+        :raises Exception: If any docker is not running
+        """
+        if not dockers_list:
+            return
+
+        # Get all running containers in a single command
+        try:
+            result = self.engine.run_cmd("docker ps --format '{{.Names}}'", validate=True)
+            running_containers = set(result.strip().split('\n'))
+
+            # Check which containers are missing
+            required_containers = set(dockers_list)
+            missing_containers = required_containers - running_containers
+
+            if missing_containers:
+                missing_list = ', '.join(sorted(missing_containers))
+                raise Exception(f"Docker containers not running: {missing_list}")
+
+        except Exception as e:
+            if "Docker containers not running:" in str(e):
+                raise
+            else:
+                logger.error(f"Error during batch docker verification: {e}")
+                raise Exception(f"Failed to verify docker containers: {e}")
+
+    def _verify_dockers_are_up(self, dockers_list, running_config=False, platform_params=None):
+        """
+        Verifying the dockers are in up state
+        :param dockers_list: list of dockers to check
+        :param running_config: whether to read config from running config or file
+        :param platform_params: Platform parameters for multi-ASIC detection
+        :return: None, raise error in case of unexpected result
+        """
+        # Get default docker list if not provided
+        if dockers_list is None:
+            dockers_list = self._get_default_dockers_list()
+
+        # Filter dockers based on SONiC branch version
+        dockers_list = self._filter_dockers_by_branch(dockers_list)
+
+        # Expand docker names for multi-ASIC platforms
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            dockers_list = self._expand_dockers_for_multi_asic(dockers_list, platform_params)
+
+        logger.info(f"Verifying docker containers are UP: {dockers_list}")
+
+        self._verify_all_dockers_running(dockers_list)
+
+        logger.info(f"✓ All {len(dockers_list)} docker containers verified successfully")
 
     def verify_processes_of_dockers(self, docker_list, hwsku):
         """
@@ -501,9 +588,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
             self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
 
-        if reboot_after_install:
+        # Remove asic_table.json only for multi-asic Air platforms
+        if is_air and SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            with allure.step('Remove asic_table.json to allow regeneration'):
+                self.remove_asic_table(self.engine)
+
+        # Validate and reboot if needed for multi-asic Air platforms or when reboot_after_install is True
+        if reboot_after_install or (is_air and SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params)):
             with allure.step("Validate dockers are up, reboot if any docker is not up"):
-                self.validate_dockers_are_up_reboot_if_fail()
+                self.validate_dockers_are_up_reboot_if_fail(topology_obj, retries=3)
 
         if set_timezone:
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
@@ -948,10 +1041,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         with allure.step('Remove FRR configuration(which may contain default BGP config)'):
             self.cli_obj.frr.remove_frr_config_files()
-        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
-            logger.info(f"Finished applying basic config for multi-asic platform {platform_params['platform']} \
-                exiting apply_basic_config for multi-asic platform")
-            return
 
         if reload_before_qos:
             with allure.step("Reload the dut"):
@@ -961,12 +1050,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if not self.is_performance_setup(setup_name):
             with allure.step("Apply qos and dynamic buffer config"):
                 self.cli_obj.qos.reload_qos(no_dynamic=True)
-                self.verify_dockers_are_up(dockers_list=['swss'])
-                self.cli_obj.qos.stop_buffermgrd()
-                self.cli_obj.qos.start_buffermgrd()
+                self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
+                self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)
+                self.cli_obj.qos.start_buffermgrd(platform_params=platform_params)
 
         with allure.step("Enable INFO logging on swss"):
-            self.enable_info_logging_on_docker(docker_name='swss')
+            self.enable_info_logging_on_swss(platform_params=platform_params)
 
         with allure.step("Configure ntp servers"):
             for ntp_server in SonicConst.NTP_SERVERS:
@@ -986,46 +1075,152 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config_db_path = os.path.join(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name, SonicConst.CONFIG_DB_JSON)
         return os.path.exists(config_db_path)
 
-    def apply_multi_asic_config_db(self, engine, topology_obj, config_db_files_path):
+    def _list_config_db_files(self, config_db_files_path):
+        """
+        List all config_db files from source directory
+        :param config_db_files_path: Path to directory containing multi-ASIC config files
+        :return: List of config file names
+        """
+        config_files = [f for f in os.listdir(config_db_files_path)
+                        if f.startswith('config_db') and os.path.isfile(os.path.join(config_db_files_path, f))]
+
+        if not config_files:
+            error_msg = f"No config_db files found in {config_db_files_path}"
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+
+        logger.info(f"Found {len(config_files)} config_db files: {config_files}")
+        return config_files
+
+    def _copy_config_db_files_to_switch_tmp(self, config_db_files_path, config_files):
+        """
+        Copy config_db files from source directory to /tmp/ on the switch
+        :param config_db_files_path: Path to directory containing multi-ASIC config files
+        :param config_files: List of config file names to copy
+        """
+        logger.info(f"Copying {len(config_files)} config files to /tmp/ on the switch: {config_files}")
+        for config_file in config_files:
+            source_file = os.path.join(config_db_files_path, config_file)
+            try:
+                self.engine.copy_file(source_file=source_file,
+                                      dest_file=config_file, file_system='/tmp/',
+                                      overwrite_file=True, verify_file=False)
+            except Exception as e:
+                logger.error(f"✗ Failed to copy {config_file}: {e}")
+                raise
+
+    def _move_config_files_to_sonic(self, engine):
+        """
+        Move all config_db files from /tmp/ to /etc/sonic/
+        :param engine: SSH engine object
+        """
+        engine.run_cmd(f'sudo mv /tmp/config_db* /etc/sonic/')
+
+    def _run_db_migrator(self, engine):
+        """
+        Run db_migrator to migrate configuration
+        :param engine: SSH engine object
+        """
+        logger.info("Running db_migrator to migrate configuration")
+        engine.run_cmd('sudo /usr/local/bin/db_migrator.py -o migrate')
+
+    def _load_global_config_to_db(self, engine):
+        """
+        Load global configuration to database
+        :param engine: SSH engine object
+        """
+        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -j /etc/sonic/init_cfg.json -j /etc/sonic/config_db.json --write-to-db')
+
+    def _load_per_asic_configs(self, engine, config_files):
+        """
+        Load per-ASIC configurations into their respective namespaces
+        :param engine: SSH engine object
+        :param config_files: List of all config file names
+        """
+        per_asic_configs = [f for f in config_files if f.startswith('config_db') and f != 'config_db.json']
+
+        if not per_asic_configs:
+            return
+
+        logger.info(f"Loading {len(per_asic_configs)} per-ASIC configs: {sorted(per_asic_configs)}")
+        for config_file in per_asic_configs:
+            match = re.search(r'config_db(\d+)\.json', config_file)
+            if not match:
+                logger.warning(f"Skipping {config_file}: doesn't match expected pattern config_db<N>.json")
+                continue
+
+            asic_num = match.group(1)
+            try:
+                engine.run_cmd(f'sudo ip netns exec asic{asic_num} sonic-cfggen -j /etc/sonic/{config_file} --write-to-db')
+            except Exception as e:
+                logger.error(f"✗ Failed to load {config_file} into asic{asic_num}: {e}")
+                raise
+
+    def _generate_sonic_environment(self, engine):
+        """
+        Generate sonic-environment configuration
+        :param engine: SSH engine object
+        """
+        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -d -y /etc/sonic/sonic_version.yml -t /usr/share/sonic/templates/sonic-environment.j2,/etc/sonic/sonic-environment')
+
+    def _cleanup_docker_containers(self, engine):
+        """
+        Remove all docker containers before reboot
+        :param engine: SSH engine object
+        """
+        logger.info("Cleaning up docker containers before reboot")
+        engine.run_cmd('sudo docker rm -f $(docker ps -aq)', validate=False)
+
+    def apply_multi_asic_config_db(self, engine, topology_obj, config_db_files_path, platform_params=None):
         """
         Finish multi-asic setup
         :param engine: SSH engine object
         :param topology_obj: Topology object
+        :param config_db_files_path: Path to directory containing multi-ASIC config files
+        :param platform_params: Platform parameters for docker verification (optional)
         """
-        logger.info(f"Copying config_db files from {config_db_files_path} to /tmp/")
-        config_files = [f for f in os.listdir(config_db_files_path) if f.startswith('config_db')]
-        for config_file in config_files:
-            logger.info(f"Copying config_db file {config_file} to /tmp/")
-            source_file = os.path.join(config_db_files_path, config_file)
-            self.engine.copy_file(source_file=source_file,
-                                  dest_file=config_file, file_system='/tmp/',
-                                  overwrite_file=True, verify_file=False)
-        engine.run_cmd(f'sudo mv /tmp/config_db* /etc/sonic/')
-        engine.run_cmd('sudo /usr/local/bin/db_migrator.py -o migrate')
-        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -j /etc/sonic/init_cfg.json -j /etc/sonic/config_db.json --write-to-db')
-        engine.run_cmd('sudo /usr/local/bin/sonic-cfggen -d -y /etc/sonic/sonic_version.yml -t /usr/share/sonic/templates/sonic-environment.j2,/etc/sonic/sonic-environment')
-        engine.run_cmd('sudo docker rm -f $(docker ps -aq)')
+        logger.info(f"Applying multi-ASIC config from: {config_db_files_path}")
+
+        config_files = self._list_config_db_files(config_db_files_path)
+        self._copy_config_db_files_to_switch_tmp(config_db_files_path, config_files)
+        self._move_config_files_to_sonic(engine)
+        self._run_db_migrator(engine)
+        self._load_global_config_to_db(engine)
+        self._load_per_asic_configs(engine, config_files)
+        self._generate_sonic_environment(engine)
+        self._cleanup_docker_containers(engine)
+
+        logger.info("Rebooting to apply multi-ASIC configuration")
         self.safe_reboot_flow(topology_obj, reboot_type='reboot')
+
+        # Verify dockers are up, with automatic reboot-and-retry if needed (up to 2 attempts)
+        logger.info("Verifying multi-ASIC docker containers are up (will auto-reboot if needed)...")
+        self.validate_dockers_are_up_reboot_if_fail(topology_obj, retries=2, dockers_list=None,
+                                                    platform_params=platform_params)
+
+        logger.info("✓ Multi-ASIC configuration applied successfully")
 
     def apply_config_files(self, topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path=None):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
         config_db = None
+
         if is_air:
             if custom_config_db_air_path:
                 if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
-                    self.apply_multi_asic_config_db(self.engine, topology_obj, custom_config_db_air_path)
-                    logger.info(f"Applied multi-asic config_db for {setup_name} - finished applying config files and \
-                        exiting apply_config_files for multi-asic platform")
+                    logger.info(f"Applying multi-ASIC config from: {custom_config_db_air_path}")
+                    self.apply_multi_asic_config_db(self.engine, topology_obj, custom_config_db_air_path, platform_params)
+                    logger.info(f"✓ Multi-ASIC config applied for {setup_name}")
                     return
-                logger.info(f"Using custom config_db.json file for {setup_name} from {custom_config_db_air_path}")
-                with open(custom_config_db_air_path, 'r') as f:
-                    config_db = json.load(f)
+                else:
+                    logger.info(f"Loading single-ASIC config from: {custom_config_db_air_path}")
+                    with open(custom_config_db_air_path, 'r') as f:
+                        config_db = json.load(f)
             else:
+                logger.info("Preparing default AIR config")
                 config_db = self.prepare_nvidia_air_basic_config_db_json(topology_obj, setup_name, hwsku, platform)
         elif not self.is_performance_setup(setup_name):
-            # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
         config_db = self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, config_db)
@@ -1065,8 +1260,19 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.reload_configuration(force=True)
         return config_db
 
-    def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False):
-        switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
+    def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False, platform_params=None):
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            # Workaround for bug https://redmine.mellanox.com/issues/4741956
+            # Per HLD, sai.profile should be in the common/ directory for multi-ASIC platforms,
+            # but is currently located under the /0 directory. Check if bug is still active.
+            if is_redmine_issue_active(4741956):
+                logger.info("Bug 4741956 still active - using workaround path: /0 directory")
+                switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}/0'
+            else:
+                logger.info("Bug 4741956 resolved - using correct path: common/ directory")
+                switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}/common'
+        else:
+            switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
         default_sai_xml_file_name = 'sai.profile'
 
         logger.info('Get SAI init config file path')
@@ -1657,8 +1863,34 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             if self.is_dummy_command_succeed():
                 return engine
 
-    def enable_info_logging_on_docker(self, docker_name):
-        self.engine.run_cmd(f"{docker_name}loglevel -l INFO -a")
+    def enable_info_logging_on_swss(self, platform_params=None):
+        """
+        Enable INFO logging on swss container(s) using swssloglevel
+        :param platform_params: Platform parameters for multi-ASIC detection
+        """
+        logger.info(f"Starting enable_info_logging_on_swss")
+
+        # Multi-ASIC specific logic
+        if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
+            asic_count = validate_and_get_asic_count(platform_params)
+            logger.info(f"MULTI-ASIC platform detected: platform={platform_params.get('platform')}, asic_count={asic_count}")
+            logger.info(f"Enabling INFO logging on {asic_count} swss containers")
+
+            for asic_id in range(asic_count):
+                logger.info(f"[ASIC {asic_id}/{asic_count - 1}] Enabling INFO logging on swss{asic_id}")
+                try:
+                    self.engine.run_cmd(f"swssloglevel -n {asic_id} -l INFO -a")
+                    logger.info(f"[ASIC {asic_id}/{asic_count - 1}] Successfully enabled INFO logging on swss{asic_id}")
+                except Exception as e:
+                    logger.error(f"[ASIC {asic_id}/{asic_count - 1}] Failed to enable INFO logging on swss{asic_id}: {e}")
+                    raise
+
+            logger.info(f"✓ Successfully enabled INFO logging on all {asic_count} swss containers")
+            return
+        else:
+            logger.info(f"Enabling INFO logging on swss container")
+            self.engine.run_cmd(f"swssloglevel -l INFO -a")
+            logger.info(f"✓ Successfully enabled INFO logging on swss container")
 
     def restart_service(self, service_name):
         self.engine.run_cmd(f'sudo service {service_name} restart')
@@ -2038,6 +2270,102 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                         f.write(line)
                 f.write(default_docker_dns_server)
             logger.info("IPv6 DNS configuration completed for sonic-mgmt container")
+
+    @staticmethod
+    def get_swss_instances(dut_engine):
+        """
+        Get list of swss instance services for multi-ASIC systems
+        :param dut_engine: SSH engine object
+        :return: List of swss instance service names (e.g., ['swss@0.service', 'swss@1.service'])
+        """
+        logger.info('Getting list of swss instances')
+        swss_instances = []
+        try:
+            result = dut_engine.run_cmd('systemctl list-units "swss@*" --all --no-legend')
+            swss_instances = [
+                line.split()[0] for line in result.splitlines()
+                if line.strip() and 'swss@' in line and '@' in line.split()[0]
+            ]
+            logger.info(f'Found {len(swss_instances)} swss instances: {swss_instances}')
+        except Exception as err:
+            logger.error(f'Failed to list swss instances: {err}')
+            raise
+        return swss_instances
+
+    @staticmethod
+    def stop_swss_instance(dut_engine, instance_num=''):
+        """
+        Stop a swss instance service
+        :param dut_engine: SSH engine object
+        :param instance_num: Instance number (e.g., '0', '1', '2', '3') or empty string for single-ASIC (default: '')
+        """
+        service_name = f'swss@{instance_num}' if instance_num else 'swss'
+        logger.info(f'Stopping {service_name} service')
+        try:
+            dut_engine.run_cmd(f'sudo config feature state {service_name} disabled')
+            logger.info(f'Successfully stopped {service_name} service')
+        except Exception as err:
+            logger.error(f'Failed to stop {service_name} service: {err}')
+            raise
+
+    @staticmethod
+    def remove_swss_container(dut_engine, instance_num=''):
+        """
+        Remove a swss instance container
+        :param dut_engine: SSH engine object
+        :param instance_num: Instance number (e.g., '0', '1', '2', '3') or empty string for single-ASIC (default: '')
+        """
+        container_name = f'swss{instance_num}'
+        logger.info(f'Removing {container_name} container')
+        try:
+            dut_engine.run_cmd(f'sudo docker rm -f {container_name}')
+            logger.info(f'Successfully removed {container_name} container')
+        except Exception as err:
+            logger.error(f'Failed to remove {container_name} container: {err}')
+            raise
+
+    @staticmethod
+    def remove_asic_table_file(dut_engine):
+        """
+        Remove the asic_table.json file
+        :param dut_engine: SSH engine object
+        """
+        logger.info('Removing /etc/sonic/asic_table.json')
+        try:
+            dut_engine.run_cmd('sudo rm -f /etc/sonic/asic_table.json')
+            logger.info('Successfully removed /etc/sonic/asic_table.json')
+        except Exception as err:
+            logger.error(f'Failed to remove asic_table.json: {err}')
+            raise
+
+    @staticmethod
+    @retry(Exception, tries=20, delay=5)
+    def remove_asic_table(dut_engine):
+        """
+        Remove asic_table.json file to generate new one
+        Auto-detects and handles both single-ASIC and multi-ASIC systems
+        :param dut_engine: SSH engine object
+        """
+        logger.info("Starting asic_table removal")
+        try:
+            swss_instances = SonicGeneralCliDefault.get_swss_instances(dut_engine)
+            if swss_instances:
+                instance_nums = [inst.split('@')[1].split('.')[0] for inst in swss_instances]
+            else:
+                instance_nums = ['']
+            logger.info(f'Found {len(instance_nums)} swss instance(s)')
+
+            for instance_num in instance_nums:
+                SonicGeneralCliDefault.stop_swss_instance(dut_engine, instance_num)
+
+            for instance_num in instance_nums:
+                SonicGeneralCliDefault.remove_swss_container(dut_engine, instance_num)
+
+            SonicGeneralCliDefault.remove_asic_table_file(dut_engine)
+            logger.info('Successfully completed asic_table removal')
+        except Exception as err:
+            logger.error(f'Failed to remove asic_table.json: {err}')
+            raise
 
 
 class SonicGeneralCli202012(SonicGeneralCliDefault):

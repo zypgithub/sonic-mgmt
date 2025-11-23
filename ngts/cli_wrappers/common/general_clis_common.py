@@ -96,6 +96,19 @@ class GeneralCliCommon(GeneralCliInterface, SdkCliCommon):
         """
         return self.engine.run_cmd("docker ps --format '{{.Names}}'").splitlines()
 
+    def verify_container_running(self, container_name):
+        """
+        Verify a single container is running.
+
+        :param container_name: Docker container name
+        :raises Exception: If container is not running
+        """
+        try:
+            self.engine.run_cmd(f'docker ps | grep {container_name}', validate=True)
+        except BaseException as e:
+            logger.error(f"✗ Container {container_name} is NOT running - Error: {e}")
+            raise Exception(f"Container {container_name} is not running")
+
     def hostname(self, flags=''):
         return self.engine.run_cmd(f'hostname {flags}')
 
