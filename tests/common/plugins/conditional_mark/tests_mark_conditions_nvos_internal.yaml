@@ -528,23 +528,11 @@ tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_stat
 
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
-    - reason: "Testcase skipped on Juliet or Rosalind systems, feature is pruned in Juliet"
-      conditions:
-        - "'juliet' in testbed or 'rosalind' in testbed"
-
-    - reason: "Testcase skipped on black mamba dgx system due to RM issue: https://redmine.mellanox.com/issues/4583761"
-      conditions_logical_operator: and
-      conditions:
-        - "'mamba-dgx' in testbed"
-        - https://redmine.mellanox.com/issues/4583761
-
-tests_nvos/general/test_kernel_crash.py:
-  skip:
-    reason: "Testcase skipped on black mamba dgx system due to RM issue: https://redmine.mellanox.com/issues/4583761"
-    conditions_logical_operator: and
+    reason: "Testcase skipped on Juliet or Rosalind systems, feature is pruned in Juliet"
+    conditions_logical_operator: or
     conditions:
-      - "'mamba-dgx' in testbed"
-      - https://redmine.mellanox.com/issues/4583761
+      - "'juliet' in testbed"
+      - "'rosalind' in testbed"
 
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
@@ -800,15 +788,15 @@ ngts/tests_nvos/checklist/test_firmware_install_same_version.py:
 ngts/tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4543350"
-    onditions_logical_operator: and
+    conditions_logical_operator: and
     conditions:
       - https://redmine.mellanox.com/issues/4543350
       - "'juliet' in testbed"
 
 ngts/tests_nvos/cluster/test_cluster_state.py::test_cluster_state:
-   skip:
+  skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4543350"
-    onditions_logical_operator: and
+    conditions_logical_operator: and
     conditions:
       - https://redmine.mellanox.com/issues/4543350
       - "'juliet' in testbed"
