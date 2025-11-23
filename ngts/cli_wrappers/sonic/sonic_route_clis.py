@@ -2,13 +2,14 @@ import json
 import re
 
 from ngts.cli_wrappers.common.route_clis_common import RouteCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.helpers.network import is_ip_address
 
 
-class SonicRouteCli(RouteCliCommon):
+class SonicRouteCli(RouteCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
 
     def add_del_route(self, action, dst, via, dst_mask, vrf):
         """
@@ -23,7 +24,7 @@ class SonicRouteCli(RouteCliCommon):
         if action not in ['add', 'del']:
             raise NotImplementedError('Incorrect action {} provided, supported only add/del'.format(action))
 
-        cmd = 'sudo config route {} prefix '.format(action)
+        cmd = 'sudo config route {} {} prefix '.format(self.multi_asic_config_cmd_ext, action)
         if vrf:
             cmd += 'vrf {} '.format(vrf)
 
@@ -75,6 +76,7 @@ class SonicRouteCli(RouteCliCommon):
             cmd += route_type
         if route:
             cmd += route
+        cmd = "{} {}".format(cmd, self.multi_asic_config_cmd_ext)
         if is_json:
             cmd += ' json'
             return json.loads(self.engine.run_cmd(cmd))

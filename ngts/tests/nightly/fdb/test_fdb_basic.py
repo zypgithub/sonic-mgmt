@@ -21,7 +21,7 @@ PKT_TYPE_LIST = ["arp_req", "arp_resp", "lldp", "icmp"]
 class TestFdbBasic:
 
     @pytest.fixture(autouse=True)
-    def setup(self, topology_obj, engines, cli_objects, interfaces, players):
+    def setup(self, topology_obj, engines, cli_objects, interfaces, players, tested_asic_index):
         self.topology_obj = topology_obj
         self.engines = engines
         self.interfaces = interfaces
@@ -32,6 +32,7 @@ class TestFdbBasic:
         self.receive_packet_counts = [1]
         self.port1 = self.interfaces.dut_ha_1
         self.port2 = self.interfaces.dut_ha_2
+        self.tested_asic_index = tested_asic_index
 
     @pytest.mark.parametrize("pkt_type", PKT_TYPE_LIST)
     @allure.title('Test dynamic mac is learned')
@@ -223,7 +224,7 @@ class TestFdbBasic:
         Generate static fdb item
         """
         fdb_conf_set = SonicMacCli.generate_fdb_config(1, self.vlan_id, self.port2, "SET", fdb_type="static")
-        SwssContainer.apply_config(self.engines.dut, fdb_conf_set)
+        SwssContainer.apply_config(self.engines.dut, fdb_conf_set, asic_id_extension=self.cli_objects.dut.multi_asic_cli.multi_asic_docker_cmd_ext)
         verify_mac_saved_to_fdb_table(self.cli_objects.dut, self.vlan_id, self.src_mac, self.port2, fdb_type="static")
 
     def generate_dynamic_fdb_item(self):
@@ -238,5 +239,5 @@ class TestFdbBasic:
         Delete static fdb item
         """
         fdb_conf_set = SonicMacCli.generate_fdb_config(1, self.vlan_id, self.port2, "DEL", fdb_type="static")
-        SwssContainer.apply_config(self.engines.dut, fdb_conf_set)
+        SwssContainer.apply_config(self.engines.dut, fdb_conf_set, asic_id_extension=self.cli_objects.dut.multi_asic_cli.multi_asic_docker_cmd_ext)
         verify_mac_not_in_fdb_table(self.cli_objects.dut, self.vlan_id, self.src_mac, self.port2, fdb_type="static")

@@ -1,15 +1,16 @@
 from ngts.cli_wrappers.common.bgp_clis_common import BgpCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 BGP_SUMMARY_CMD = {'ipv4': 'show ip bgp summary', 'ipv6': 'show ipv6 bgp summary'}
 
 
-class SonicBgpCli(BgpCliCommon):
+class SonicBgpCli(BgpCliCommon, SonicMultiAsicCli):
     """
     This class is for bgp cli commands for sonic only
     """
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
 
     def startup_bgp_all(self):
         """
@@ -43,14 +44,14 @@ class SonicBgpCli(BgpCliCommon):
         """
         Restart BGP service
         """
-        cmd = 'sudo service bgp restart'
+        cmd = f'sudo service bgp{self.multi_asic_service_cmd_ext} restart'
         return self.engine.run_cmd(cmd)
 
     def show_ip_bgp_summary(self, ip_version='ipv4'):
         """
         Run command: "show ip bgp summary"
         """
-        cmd = f'sudo {BGP_SUMMARY_CMD.get(ip_version, "show ip bgp summary")}'
+        cmd = f'sudo {BGP_SUMMARY_CMD.get(ip_version, "show ip bgp summary")} {self.multi_asic_config_cmd_ext}'
         return self.engine.run_cmd(cmd)
 
     def parse_ip_bgp_summary(self, show_bgp_summary_output=None, ip_version='ipv4'):
@@ -91,6 +92,7 @@ class SonicBgpCli(BgpCliCommon):
         cmd = 'sudo show ip bgp neighbors'
         if neighbor:
             cmd += f' {neighbor}'
+        cmd += f' {self.multi_asic_config_cmd_ext}'
         return self.engine.run_cmd(cmd)
 
     @staticmethod

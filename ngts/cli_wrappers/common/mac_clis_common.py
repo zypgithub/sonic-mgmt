@@ -8,6 +8,7 @@ class MacCliCommon(MacCliInterface):
 
     def __init__(self, engine):
         self.engine = engine
+        self.ip_netns_prefix = getattr(self, 'ip_netns_prefix', "sudo ")
 
     def get_mac_address_for_interface(self, interface):
         """
@@ -15,4 +16,4 @@ class MacCliCommon(MacCliInterface):
         :param interface: interface name
         :return: mac address
         """
-        return self.engine.run_cmd("cat /sys/class/net/{}/address".format(interface))
+        return self.engine.run_cmd(f"{self.ip_netns_prefix}cat /sys/class/net/{interface}/address")

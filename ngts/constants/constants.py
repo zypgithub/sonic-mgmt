@@ -53,6 +53,7 @@ class SonicConst:
 
     # ASIC configuration
     DEFAULT_ASIC_COUNT = 1  # Default for single-ASIC platforms
+    DEFAULT_TESTED_ASIC_INDEX = 0
 
     # Multi-ASIC Platform Configuration
     class MultiAsic:

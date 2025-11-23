@@ -1,23 +1,24 @@
 import re
 
 from ngts.cli_wrappers.common.mac_clis_common import MacCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.helpers.network import generate_mac
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 
 FDB_AGING_TIME_FILE = "/etc/swss/config.d/switch.json"
 
 
-class SonicMacCli(MacCliCommon):
+class SonicMacCli(MacCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
 
     def show_mac(self):
         """
         This method runs 'show mac' command
         :return: command output
         """
-        return self.engine.run_cmd('show mac')
+        return self.engine.run_cmd(f'show mac {self.multi_asic_config_cmd_ext}')
 
     @staticmethod
     def generate_fdb_config(entries_num, vlan_id, iface, op, fdb_type="dynamic"):
@@ -62,15 +63,15 @@ class SonicMacCli(MacCliCommon):
         :param fdb_aging_time: fdb aging time
         :return: command output
         """
-        cmd_copy_file_from_swss_to_switch = f"docker cp swss:{FDB_AGING_TIME_FILE} /tmp/"
+        cmd_copy_file_from_swss_to_switch = f"docker cp swss{self.multi_asic_docker_cmd_ext}:{FDB_AGING_TIME_FILE} /tmp/"
         self.engine.run_cmd(cmd_copy_file_from_swss_to_switch)
 
         replace_fdb_aging_time = f"sudo sed -i 's/ \"fdb_aging_time\": \".*\"/\"fdb_aging_time\": \"{fdb_aging_time}\"/' /tmp/switch.json"
         self.engine.run_cmd(replace_fdb_aging_time)
 
-        cmd_copy_file_from_switch_to_swss = f"docker cp /tmp/switch.json swss:{FDB_AGING_TIME_FILE}"
+        cmd_copy_file_from_switch_to_swss = f"docker cp /tmp/switch.json swss{self.multi_asic_docker_cmd_ext}:{FDB_AGING_TIME_FILE}"
         self.engine.run_cmd(cmd_copy_file_from_switch_to_swss)
-        cmd_config_swss_config = f'docker exec swss bash -c "swssconfig {FDB_AGING_TIME_FILE}"'
+        cmd_config_swss_config = f'docker exec swss{self.multi_asic_docker_cmd_ext} bash -c "swssconfig {FDB_AGING_TIME_FILE}"'
         self.engine.run_cmd(cmd_config_swss_config)
 
     def get_fdb_aging_time(self):
@@ -78,10 +79,13 @@ class SonicMacCli(MacCliCommon):
         This method is to set fdb aging time
         :return: fdb aging time
         """
-        regrex_time = re.compile(r'\"(?P<time>\d+)\"')
-        cmd_get_fdb_aging_time = 'redis-cli -n 0 hget "SWITCH_TABLE:switch" fdb_aging_time'
-        fdb_aging_time = regrex_time.search(self.engine.run_cmd(cmd_get_fdb_aging_time, validate=True))
-
+        regrex_time = re.compile(r"[\"']?(?P<time>\d+)[\"']?")
+        if self.asic_id is not None:
+            cmd_get_fdb_aging_time = f'sonic-db-cli {self.multi_asic_config_cmd_ext} APPL_DB hget "SWITCH_TABLE:switch" "fdb_aging_time"'
+        else:
+            cmd_get_fdb_aging_time = 'redis-cli -n 0 hget "SWITCH_TABLE:switch" fdb_aging_time'
+        output = self.engine.run_cmd(cmd_get_fdb_aging_time, validate=True)
+        fdb_aging_time = regrex_time.search(output)
         return fdb_aging_time.groupdict()["time"] if fdb_aging_time else "nil"
 
     def parse_mac_table(self, option=""):
@@ -101,7 +105,7 @@ class SonicMacCli(MacCliCommon):
          '3': {'No.': '3', 'Vlan': '40', 'MacAddress': '00:00:00:00:00:01', 'Port': 'Ethernet0', 'Type': 'Dynamic'},
         }
         """
-        mac_table = self.engine.run_cmd(f'sudo show mac {option}', validate=True)
+        mac_table = self.engine.run_cmd(f'sudo show mac {self.multi_asic_config_cmd_ext} {option}', validate=True)
         mac_table_dict = generic_sonic_output_parser(mac_table,
                                                      headers_ofset=0,
                                                      len_ofset=1,

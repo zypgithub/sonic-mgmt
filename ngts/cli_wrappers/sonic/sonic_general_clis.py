@@ -206,7 +206,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf()
 
     def reboot_reload_flow(self, r_type='reboot', ports_list=None, topology_obj=None, wait_after_ping=45,
-                           reload_force=False, deploy_chipless=False):
+                           reload_force=False, deploy_chipless=False, platform_params=None):
         """
         Wrapper for reboot and reload methods - which executes appropriate method based on reboot/reload type
         """
@@ -214,11 +214,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.reload_configuration(reload_force)
             time.sleep(180)
         elif r_type == SonicConst.CONFIG_RELOAD_CMD:
-            self.reload_flow(ports_list, topology_obj, reload_force)
+            self.reload_flow(ports_list, topology_obj, reload_force, platform_params)
         else:
-            self.reboot_flow(r_type, ports_list, topology_obj, wait_after_ping)
+            self.reboot_flow(r_type, ports_list, topology_obj, wait_after_ping, platform_params)
 
-    def reboot_flow(self, reboot_type='reboot', ports_list=None, topology_obj=None, wait_after_ping=45):
+    def reboot_flow(self, reboot_type='reboot', ports_list=None, topology_obj=None, wait_after_ping=45, platform_params=None):
         """
         Rebooting switch by given way(reboot, fast-reboot, warm-reboot) and validate dockers and ports state
         :param reboot_type: reboot type
@@ -230,7 +230,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         ports_list = self.get_ports_list_reboot_reload_flow(ports_list, topology_obj)
         with allure.step('Reboot switch by CLI - sudo {}'.format(reboot_type)):
             self.safe_reboot_flow(topology_obj, reboot_type, wait_after_ping=wait_after_ping)
-            self.port_reload_reboot_checks(ports_list)
+            self.port_reload_reboot_checks(ports_list, platform_params=platform_params)
             self.check_and_apply_dns()
 
     def safe_reboot_flow(self, topology_obj, reboot_type='reboot', wait_after_ping=45):
@@ -244,7 +244,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             dumps_folder = os.environ.get(InfraConst.ENV_LOG_FOLDER)
             check_sanitizer_and_store_dump(self.engine, dumps_folder, test_name)
 
-    def reload_flow(self, ports_list=None, topology_obj=None, reload_force=False):
+    def reload_flow(self, ports_list=None, topology_obj=None, reload_force=False, platform_params=None):
         """
         Reloading switch and validate dockers and ports state
         :param ports_list: list of the ports to check status after reboot
@@ -257,7 +257,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         with allure.step('Reloading dut'):
             logger.info("Reloading dut")
             self.reload_configuration(reload_force)
-            self.port_reload_reboot_checks(ports_list)
+            self.port_reload_reboot_checks(ports_list, platform_params=platform_params)
             self.check_and_apply_dns()
 
     def get_ports_list_reboot_reload_flow(self, ports_list, topology_obj):
@@ -270,8 +270,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             ports_list = self.get_performance_ports_list(topology_obj)
         return ports_list
 
-    def port_reload_reboot_checks(self, ports_list):
-        self.verify_dockers_are_up()
+    def port_reload_reboot_checks(self, ports_list, platform_params=None):
+        self.verify_dockers_are_up(platform_params=platform_params)
         self.cli_obj.interface.check_link_state(ports_list)
 
     def is_logs_in_tmpfs(self):
@@ -334,8 +334,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.safe_reboot_flow(topology_obj, reboot_type='reboot')
             retries = retries - 1
 
-    # Add 6 tries due to fw update would add external delay to syncd container boot up
-    @retry(Exception, tries=21, delay=10)
+    @retry(Exception, tries=25, delay=10)
     def verify_dockers_are_up(self, dockers_list=None, running_config=False, platform_params=None):
         """
         Verifying the dockers are in up state during a specific time interval

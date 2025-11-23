@@ -165,7 +165,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
             reboot_type = random.choice(reboot_types)
             if is_simx:
                 reboot_type = 'reboot'
-            dut_cli.general.reboot_reload_flow(r_type=reboot_type, topology_obj=topology_obj)
+            dut_cli.general.reboot_reload_flow(r_type=reboot_type, topology_obj=topology_obj, platform_params=platform_params)
 
         with allure.step('STEP5: Validate port channel status and send traffic'):
             verify_port_channel_status_with_retry(dut_cli,
@@ -378,7 +378,7 @@ def exclude_dpu_interfaces(interfaces_info, platform):
 
 @pytest.mark.reboot_reload
 @allure.title('LAG members scale Test')
-def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, platform_params):
+def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, platform_params, tested_asic_index):
     """
     This test case will check the configuration of 1 port channel with max number of members.
     :param topology_obj: topology object
@@ -393,7 +393,7 @@ def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, plat
 
         chip_type = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['chip_type']
         max_lag_members = CHIP_LAG_MEMBERS_LIM[chip_type]
-        all_ifaces_info = dut_cli.interface.parse_interfaces_status()
+        all_ifaces_info = dut_cli.interface.parse_interfaces_status(asic_num=tested_asic_index)
         service_ports = get_service_port(platform_params.platform)
         all_ifaces_info = exclude_service_ports(all_ifaces_info, service_ports)
         all_ifaces_info = exclude_dpu_interfaces(all_ifaces_info, platform_params.platform)
@@ -456,7 +456,7 @@ def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, plat
                                                   expected_ports_status_list,
                                                   tries=10)
         with allure.step('Validate dockers status'):
-            dut_cli.general.verify_dockers_are_up()
+            dut_cli.general.verify_dockers_are_up(platform_params=platform_params)
 
     except BaseException as err:
         raise AssertionError(err)
@@ -464,7 +464,7 @@ def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, plat
 
 @pytest.mark.reboot_reload
 @allure.title('LAGs scale Test')
-def test_lags_scale(topology_obj, engines, cleanup_list):
+def test_lags_scale(topology_obj, engines, cleanup_list, platform_params):
     """
     This test case will check the configuration of maximum number of port channels with ipv4&ipv6 addresses.
     :param topology_obj: topology object
@@ -510,7 +510,7 @@ def test_lags_scale(topology_obj, engines, cleanup_list):
 
         with allure.step('Reloading the DUT config using cmd: "config reload -y"'):
             dut_cli.general.save_configuration()
-            dut_cli.general.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj)
+            dut_cli.general.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, platform_params=platform_params)
 
         with allure.step('Validation for bug 2435254 - validate lags and ips'
                          ' are configured properly after config reload'):
@@ -597,9 +597,15 @@ def check_dependency(topology_obj, dependency, cleanup_list):
         dut_engine = topology_obj.players['dut']['engine']
         dut_cli = topology_obj.players['dut']['cli']
         dut_hb_2 = topology_obj.ports['dut-hb-2']
-        eval('config_{}_dependency(topology_obj, cleanup_list)'.format(dependency))
-        err_msg = eval('get_{}_dependency_err_msg(dut_hb_2)'.format(dependency))
-        verify_add_member_to_lag_failed_with_err(dut_engine, dut_cli, dut_hb_2, err_msg)
+        config_dependency = eval('config_{}_dependency(topology_obj, cleanup_list)'.format(dependency))
+        if dependency == 'speed':
+            dut_hb_1 = topology_obj.ports['dut-hb-1']
+            portchannel_member_speeds = dut_cli.interface.get_interfaces_speed([dut_hb_1])
+            if config_dependency['dut'][0]['speed'] == portchannel_member_speeds[dut_hb_1]:
+                logger.info("skip speed dependency validation as the only possible speed is the same as the portchannel member speed")
+        else:
+            err_msg = eval('get_{}_dependency_err_msg(dut_hb_2)'.format(dependency))
+            verify_add_member_to_lag_failed_with_err(dut_engine, dut_cli, dut_hb_2, err_msg)
         cleanup_last_config_in_stack(cleanup_list)
 
 
@@ -658,6 +664,7 @@ def config_speed_dependency(topology_obj, cleanup_list):
                  'original_speed': dut_original_interfaces_speeds[dut_hb_2]}]
     }
     add_interface_conf(topology_obj, interfaces_config_dict, cleanup_list)
+    return interfaces_config_dict
 
 
 def add_interface_conf(topology_obj, interfaces_config_dict, cleanup_list):

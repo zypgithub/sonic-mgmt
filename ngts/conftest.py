@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import re
+import random
 
 import allure
 import pytest
@@ -25,7 +26,7 @@ from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
+from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
@@ -39,6 +40,7 @@ from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_
 from ngts.tools.infra import get_topology_from_noga
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.scripts.sonic_deploy.sonic_only_methods import detect_asic_count, SonicInstallationSteps
 
 logger = logging.getLogger()
 CleanUpT = Callable[[Callable[[], None]], None]
@@ -427,8 +429,46 @@ def skip_weekend_cases(request):
     return request.config.getoption('--skip_weekend_cases')
 
 
+@pytest.fixture(scope='session')
+def asic_count(initial_topology_obj, platform_params):
+    dut_engine = initial_topology_obj.players['dut']['engine']
+    return detect_asic_count(dut_engine, platform_params)
+
+
+@pytest.fixture(scope='session')
+def tested_asic_index(asic_count):
+    tested_asic_index = SonicConst.DEFAULT_TESTED_ASIC_INDEX
+    if asic_count > SonicConst.DEFAULT_ASIC_COUNT:
+        tested_asic_index = random.randrange(asic_count)
+    return tested_asic_index
+
+
+@pytest.fixture(scope='session')
+def is_multi_asic(platform_params):
+    return SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params)
+
+
+def set_asic_for_dut_clis(topology, tested_asic_index):
+    """Set ASIC for dut CLI and stub CLI objects in topology (resets cached sub-CLIs)."""
+    topology.players['dut']['cli'].set_asic(tested_asic_index)
+    topology.players['dut']['stub_cli'].set_asic(tested_asic_index)
+
+
 @pytest.fixture(scope='session', autouse=True)
-def topology_obj(setup_name, request, is_performance):
+def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic):
+    topo = initial_topology_obj
+    if is_multi_asic:
+        for side in ('ha', 'hb'):
+            topo.players[side] = topo.players.pop(f'{side}-{tested_asic_index}')
+            for i in (1, 2):
+                topo.ports[f'{side}-dut-{i}'] = topo.ports.pop(f'{side}-{tested_asic_index}-dut-{i}')
+                topo.ports[f'dut-{side}-{i}'] = topo.ports.pop(f'dut-{side}-{tested_asic_index}-{i}')
+        set_asic_for_dut_clis(topo, tested_asic_index)
+    return topo
+
+
+@pytest.fixture(scope='session')
+def initial_topology_obj(setup_name, request, is_performance):
     """
     Fixture which create topology object before run tests and doing cleanup for ssh engines after test executed
     :param setup_name: example: sonic_tigris_r-tigris-06
@@ -587,8 +627,8 @@ def update_nvos_topology(topology, player_key, player_info, request):
 
 
 @pytest.fixture(scope='session')
-def show_platform_summary(topology_obj):
-    return get_platform_info(topology_obj)
+def show_platform_summary(initial_topology_obj):
+    return get_platform_info(initial_topology_obj)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -739,7 +779,7 @@ def dynamic_ignore_set():
 
 
 @pytest.fixture(scope='session')
-def platform_params(show_platform_summary, setup_name, topology_obj):
+def platform_params(show_platform_summary, setup_name, initial_topology_obj):
     """
     Method for getting all platform related data
     :return: dictionary with platform data
@@ -750,13 +790,13 @@ def platform_params(show_platform_summary, setup_name, topology_obj):
         r"(msn\d{4}a\w?|msn\d{4}c|msn\d{4}|sn\d{4}\_(?!simx)[a-z]+|sn\d{4}[a-z]?|qm\d{4}|q\d{4}|mqm\d{4}|mbf.*c|900.*a|bf.*dpu|N5110_LD|N5100_LD|N5112_LD|N5200_LD|N5600_LD|N5500_LD|N6150_LD|[Nn]6100_LD)",
         show_platform_summary['platform'], re.IGNORECASE).group(1)
     if 'air' in setup_name.lower():
-        platform_data.hwsku = json.loads(topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
+        platform_data.hwsku = json.loads(initial_topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
     else:
         platform_data.hwsku = show_platform_summary['hwsku']
     platform_data.setup_name = setup_name
     platform_data.asic_type = show_platform_summary["asic_type"]
     platform_data.asic_count = show_platform_summary["asic_count"]
-    platform_data.host_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+    platform_data.host_name = initial_topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
     return platform_data
 
 

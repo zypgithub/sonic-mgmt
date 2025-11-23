@@ -5,7 +5,7 @@ import os
 
 class SwssContainer:
     @staticmethod
-    def apply_config(engine, config_dict):
+    def apply_config(engine, config_dict, asic_id_extension=''):
         with tempfile.NamedTemporaryFile(suffix=".json", prefix="config", mode='w') as fp:
             json.dump(config_dict, fp)
             fp.flush()
@@ -17,9 +17,9 @@ class SwssContainer:
                              overwrite_file=True, verify_file=False)
 
             # Copy JSON config inside swss container
-            cmd = "docker cp {} swss:/".format(os.path.join(dst_dir, file_name))
+            cmd = "docker cp {} swss{}:/".format(os.path.join(dst_dir, file_name), asic_id_extension)
             engine.run_cmd(cmd)
 
             # Apply config in swss container
-            cmd = "docker exec -i swss swssconfig /{}".format(file_name)
+            cmd = "docker exec -i swss{} swssconfig /{}".format(asic_id_extension, file_name)
             engine.run_cmd(cmd)

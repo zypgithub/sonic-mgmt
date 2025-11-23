@@ -34,12 +34,15 @@ def prepare_dut_bgp_config():
     with open(bgp_conf_file_path, 'w') as bgp_conf_file:
         json.dump(bgp_conf, bgp_conf_file, indent=4)
 
-    return bgp_conf_file_path
+    dummy_bgp_conf_file_path = os.path.join(CONFIGS_FOLDER, 'dummy_dut_bgp_conf.json')
+    with open(dummy_bgp_conf_file_path, 'w') as dummy_bgp_conf_file:
+        pass
+    return bgp_conf_file_path, dummy_bgp_conf_file_path
 
 
 @pytest.fixture(scope='class', autouse=True)
 def configuration(topology_obj, cli_objects, engines, interfaces, platform_params, setup_name,
-                  ha_dut_1_mac, hb_dut_1_mac, dut_ha_1_mac, dut_hb_1_mac):
+                  ha_dut_1_mac, hb_dut_1_mac, dut_ha_1_mac, dut_hb_1_mac, asic_count, tested_asic_index):
     """
     Pytest fixture which are doing configuration for routing tests
     Configuration schema:
@@ -83,15 +86,15 @@ def configuration(topology_obj, cli_objects, engines, interfaces, platform_param
         'hb': {'configuration': {'config_name': 'hb_frr.conf', 'path_to_config_file': CONFIGS_FOLDER},
                'cleanup': ['configure terminal', 'no router bgp 501', 'exit', 'exit']}
     }
-
     IpConfigTemplate.configuration(topology_obj, ip_config_dict)
     RouteConfigTemplate.configuration(topology_obj, static_route_config_dict)
 
     # config below for ARP must be removed later, it's temporary workaround
-    engines.dut.run_cmd(f'sudo ip neigh add 20.0.0.2 dev {interfaces.dut_ha_1} lladdr {ha_dut_1_mac}')
-    engines.dut.run_cmd(f'sudo ip neigh change 20.0.0.2 dev {interfaces.dut_ha_1} lladdr {ha_dut_1_mac}')
-    engines.dut.run_cmd(f'sudo ip neigh add 30.0.0.2 dev {interfaces.dut_hb_1} lladdr {hb_dut_1_mac}')
-    engines.dut.run_cmd(f'sudo ip neigh change 30.0.0.2 dev {interfaces.dut_hb_1} lladdr {hb_dut_1_mac}')
+    dut_ip_cli = cli_objects.dut.ip
+    dut_ip_cli.add_ip_neigh('20.0.0.2', ha_dut_1_mac, interfaces.dut_ha_1, action='add')
+    dut_ip_cli.add_ip_neigh('20.0.0.2', ha_dut_1_mac, interfaces.dut_ha_1, action='change')
+    dut_ip_cli.add_ip_neigh('30.0.0.2', hb_dut_1_mac, interfaces.dut_hb_1, action='add')
+    dut_ip_cli.add_ip_neigh('30.0.0.2', hb_dut_1_mac, interfaces.dut_hb_1, action='change')
 
     engines.ha.run_cmd(f'sudo ip neigh add 20.0.0.1 dev {interfaces.ha_dut_1} lladdr {dut_ha_1_mac}')
     engines.ha.run_cmd(f'sudo ip neigh change 20.0.0.1 dev {interfaces.ha_dut_1} lladdr {dut_ha_1_mac}')
@@ -100,36 +103,49 @@ def configuration(topology_obj, cli_objects, engines, interfaces, platform_param
     engines.hb.run_cmd(f'sudo ip neigh change 30.0.0.1 dev {interfaces.hb_dut_1} lladdr {dut_hb_1_mac}')
 
     FrrConfigTemplate.configuration(topology_obj, frr_config_dict)
-
-    dut_bgp_conf_file_path = prepare_dut_bgp_config()
-    engines.dut.copy_file(source_file=dut_bgp_conf_file_path, file_system='/tmp', dest_file='dut_bgp_conf.json')
-    engines.dut.run_cmd('sudo config load -y /tmp/dut_bgp_conf.json')
+    load_dut_bgp_config(engines, asic_count, tested_asic_index)
+    cmd_extetion_in_case_of_multi_asic = cli_objects.dut.multi_asic_cli.multi_asic_config_cmd_ext
+    engines.dut.run_cmd(f'sudo sonic-cfggen {cmd_extetion_in_case_of_multi_asic} -j /tmp/dut_bgp_conf.json -w')
     cli_objects.dut.general.save_configuration()
 
-    cli_objects.dut.general.restart_service('bgp')
-    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False)
+    cli_objects.dut.bgp.restart_bgp_service()
+    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False, platform_params=platform_params)
 
     yield
 
     FrrConfigTemplate.cleanup(topology_obj, frr_config_dict)
 
     # Remove BGP related data from config_db.json
-    engines.dut.run_cmd('sudo sonic-db-cli CONFIG_DB DEL "BGP_NEIGHBOR|20.0.0.2"')
-    engines.dut.run_cmd('sudo sonic-db-cli CONFIG_DB DEL "BGP_NEIGHBOR|30.0.0.2"')
-    engines.dut.run_cmd('sudo sonic-db-cli CONFIG_DB HDEL "DEVICE_METADATA|localhost" "bgp_asn"')
+    engines.dut.run_cmd(f'sudo sonic-db-cli {cmd_extetion_in_case_of_multi_asic} CONFIG_DB DEL "BGP_NEIGHBOR|20.0.0.2"')
+    engines.dut.run_cmd(f'sudo sonic-db-cli {cmd_extetion_in_case_of_multi_asic} CONFIG_DB DEL "BGP_NEIGHBOR|30.0.0.2"')
+    engines.dut.run_cmd(f'sudo sonic-db-cli {cmd_extetion_in_case_of_multi_asic} CONFIG_DB HDEL "DEVICE_METADATA|localhost" "bgp_asn"')
 
     RouteConfigTemplate.cleanup(topology_obj, static_route_config_dict)
     IpConfigTemplate.cleanup(topology_obj, ip_config_dict)
     cli_objects.dut.general.save_configuration()
 
     cli_objects.dut.frr.remove_frr_config_files()
-    cli_objects.dut.general.restart_service('bgp')
-    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False)
+    cli_objects.dut.bgp.restart_bgp_service()
+    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False, platform_params=platform_params)
 
     # config below for ARP must be removed later, it's temporary workaround
-    engines.dut.run_cmd(f'sudo ip neigh flush dev {interfaces.dut_ha_1}')
-    engines.dut.run_cmd(f'sudo ip neigh flush dev {interfaces.dut_hb_1}')
+    dut_ip_cli.ip_neigh_flush(interfaces.dut_ha_1)
+    dut_ip_cli.ip_neigh_flush(interfaces.dut_hb_1)
 
     engines.ha.run_cmd(f'sudo ip neigh flush dev {interfaces.ha_dut_1}')
 
     engines.hb.run_cmd(f'sudo ip neigh flush dev {interfaces.hb_dut_1}')
+
+
+def load_dut_bgp_config(engines, asic_count, tested_asic_index):
+    dut_bgp_conf_file_path, dummy_bgp_conf_file_path = prepare_dut_bgp_config()
+    engines.dut.copy_file(source_file=dut_bgp_conf_file_path, file_system='/tmp', dest_file='dut_bgp_conf.json')
+    engines.dut.copy_file(source_file=dummy_bgp_conf_file_path, file_system='/tmp', dest_file='dummy_dut_bgp_conf.json')
+    config_files = []
+    for asic_index in range(0, asic_count):
+        if asic_index != tested_asic_index:
+            config_files.append('/tmp/dummy_dut_bgp_conf.json')
+        else:
+            config_files.append('/tmp/dut_bgp_conf.json')
+    config_load_cmd = f"sudo config load -y {','.join(config_files)}"
+    engines.dut.run_cmd(config_load_cmd)

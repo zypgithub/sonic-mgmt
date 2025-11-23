@@ -1,6 +1,7 @@
 import logging
 
 from ngts.cli_wrappers.common.vlan_clis_common import VlanCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 
 logger = logging.getLogger()
 
@@ -10,8 +11,9 @@ class SonicVlanCli:
     def __new__(cls, **kwargs):
         branch = kwargs['branch']
         engine = kwargs['engine']
+        asic_id = kwargs.get('asic_id', None)
 
-        supported_cli_classes = {'default': SonicVlanCliDefault(engine),
+        supported_cli_classes = {'default': SonicVlanCliDefault(engine, asic_id=asic_id),
                                  '202012': SonicVlanCli202012(engine)}
 
         cli_class = supported_cli_classes.get(branch, supported_cli_classes['default'])
@@ -21,10 +23,10 @@ class SonicVlanCli:
         return cli_class
 
 
-class SonicVlanCliDefault(VlanCliCommon):
+class SonicVlanCliDefault(VlanCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
 
     def configure_vlan_and_add_ports(self, vlan_info):
         """
@@ -58,7 +60,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo config vlan add {}".format(vlan))
+        return self.engine.run_cmd("sudo config vlan {} add {}".format(self.multi_asic_config_cmd_ext, vlan))
 
     def del_vlan(self, vlan):
         """
@@ -66,7 +68,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo config vlan del {}".format(vlan))
+        return self.engine.run_cmd("sudo config vlan {} del {}".format(self.multi_asic_config_cmd_ext, vlan))
 
     def add_port_to_vlan(self, port, vlan, mode='trunk'):
         """
@@ -77,11 +79,11 @@ class SonicVlanCliDefault(VlanCliCommon):
         :return: command output
         """
         if mode == 'trunk':
-            return self.engine.run_cmd("sudo config vlan member add {} {}".format(vlan, port))
+            return self.engine.run_cmd("sudo config vlan {} member add {} {}".format(self.multi_asic_config_cmd_ext, vlan, port))
         elif mode == 'access':
-            return self.engine.run_cmd("sudo config vlan member add --untagged {} {}".format(vlan, port))
+            return self.engine.run_cmd("sudo config vlan {} member add --untagged {} {}".format(self.multi_asic_config_cmd_ext, vlan, port))
         else:
-            raise Exception('Incorrect port mode: "{}" provided, expected "trunk" or "access"')
+            raise Exception('Incorrect port mode: "{}" provided, expected "trunk" or "access"'.format(mode))
 
     def del_port_from_vlan(self, port, vlan):
         """
@@ -90,14 +92,14 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo config vlan member del {} {}".format(vlan, port))
+        return self.engine.run_cmd("sudo config vlan {} member del {} {}".format(self.multi_asic_config_cmd_ext, vlan, port))
 
     def show_vlan_config(self):
         """
         This method performs show vlan command
         :return: command output
         """
-        return self.engine.run_cmd("show vlan config")
+        return self.engine.run_cmd("show vlan config {}".format(self.multi_asic_config_cmd_ext))
 
     def shutdown_vlan(self, vlan):
         """
@@ -105,7 +107,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo ip link set dev Vlan{} down".format(vlan))
+        return self.engine.run_cmd("sudo ip {} link set dev Vlan{} down".format(self.multi_asic_config_cmd_ext, vlan))
 
     def startup_vlan(self, vlan):
         """
@@ -113,7 +115,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo ip link set dev Vlan{} up".format(vlan))
+        return self.engine.run_cmd("sudo ip {} link set dev Vlan{} up".format(self.multi_asic_config_cmd_ext, vlan))
 
     def disable_vlan_arp_proxy(self, vlan):
         """
@@ -121,7 +123,7 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo config vlan proxy_arp {} disabled".format(vlan), validate=True)
+        return self.engine.run_cmd("sudo config vlan {} proxy_arp {} disabled".format(self.multi_asic_config_cmd_ext, vlan), validate=True)
 
     def enable_vlan_arp_proxy(self, vlan):
         """
@@ -129,14 +131,14 @@ class SonicVlanCliDefault(VlanCliCommon):
         :param vlan: vlan ID
         :return: command output
         """
-        return self.engine.run_cmd("sudo config vlan proxy_arp {} enabled".format(vlan), validate=True)
+        return self.engine.run_cmd("sudo config vlan {} proxy_arp {} enabled".format(self.multi_asic_config_cmd_ext, vlan), validate=True)
 
     def show_vlan_brief(self):
         """
         This method performs "show vlan brief"
         :return: command output
         """
-        return self.engine.run_cmd("show vlan brief")
+        return self.engine.run_cmd("show vlan brief {}".format(self.multi_asic_config_cmd_ext))
 
     def get_show_vlan_brief_parsed_output(self, show_vlan_brief_output=None, data_line_index=4):
         """

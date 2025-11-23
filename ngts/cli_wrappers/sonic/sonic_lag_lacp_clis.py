@@ -1,11 +1,12 @@
 from ngts.cli_wrappers.common.lag_lacp_clis_common import LagLacpCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 
 
-class SonicLagLacpCli(LagLacpCliCommon):
+class SonicLagLacpCli(LagLacpCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
 
     def create_lag_interface_and_assign_physical_ports(self, lag_lacp_info):
         """
@@ -105,8 +106,9 @@ class SonicLagLacpCli(LagLacpCliCommon):
                     params example: '--min-links 2 --fallback enable/disable'
         :return: command output
         """
-        return self.engine.run_cmd("sudo config portchannel add {} {}".format(lacp_interface_name,
-                                                                              lacp_interface_params))
+        return self.engine.run_cmd("sudo config portchannel {} add {} {}".format(self.multi_asic_config_cmd_ext,
+                                                                                 lacp_interface_name,
+                                                                                 lacp_interface_params))
 
     def delete_lag_interface(self, lacp_interface_name):
         """
@@ -114,7 +116,8 @@ class SonicLagLacpCli(LagLacpCliCommon):
         :param lacp_interface_name: LACP interface name which should be deleted
         :return: command output
         """
-        return self.engine.run_cmd("sudo config portchannel del {}".format(lacp_interface_name))
+        return self.engine.run_cmd("sudo config portchannel {} del {}".format(self.multi_asic_config_cmd_ext,
+                                                                              lacp_interface_name))
 
     def add_port_to_port_channel(self, interface, lacp_interface_name):
         """
@@ -123,7 +126,9 @@ class SonicLagLacpCli(LagLacpCliCommon):
         :param lacp_interface_name: LACP interface name to which we will add interface
         :return: command output
         """
-        return self.engine.run_cmd("sudo config portchannel member add {} {}".format(lacp_interface_name, interface))
+        return self.engine.run_cmd("sudo config portchannel {} member add {} {}".format(self.multi_asic_config_cmd_ext,
+                                                                                        lacp_interface_name,
+                                                                                        interface))
 
     def delete_port_from_port_channel(self, interface, lacp_interface_name):
         """
@@ -132,7 +137,9 @@ class SonicLagLacpCli(LagLacpCliCommon):
         :param lacp_interface_name: LACP interface name from which we will remove interface
         :return: command output
         """
-        return self.engine.run_cmd("sudo config portchannel member del {} {}".format(lacp_interface_name, interface))
+        return self.engine.run_cmd("sudo config portchannel {} member del {} {}".format(self.multi_asic_config_cmd_ext,
+                                                                                        lacp_interface_name,
+                                                                                        interface))
 
     def show_interfaces_port_channel(self):
         """

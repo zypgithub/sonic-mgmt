@@ -361,15 +361,19 @@ def get_speed_option_by_breakout_modes(breakout_modes):
     """
     breakout_port_by_modes = {}
     for breakout_mode in breakout_modes:
-        breakout_pattern = r"\dx\d+G(?:\(\d\))?[[\d*G,]*\]|\dx\d+\[[\d*G,]*\]"
+        breakout_pattern = r"\dx\d+G(?: \(\d\))?[[\d*G,]*\]|\dx\d+\[[\d*G,]*\]|\dx\d+G"
         if re.search(breakout_pattern, breakout_mode):
             breakout_num, speed_conf = breakout_mode.split("x")
-            speed, _ = speed_conf.split('[')
+            speed = speed_conf.split('[')[0]
             speed = re.sub(r"\(\d\)", "", speed)
             speeds_list_pattern = r"\[(.*)\]"
-            speeds_list_str = re.search(speeds_list_pattern, speed_conf).group(1)
-            speeds_list = speeds_list_str.split(sep=',')
-            speeds_list.append(speed)
+            match = re.search(speeds_list_pattern, speed_conf)
+            if match:
+                speeds_list_str = match.group(1)
+                speeds_list = speeds_list_str.split(sep=',')
+                speeds_list.append(speed)
+            else:
+                speeds_list = [speed]
             breakout_port_by_modes[breakout_mode] = speeds_list
     return breakout_port_by_modes
 

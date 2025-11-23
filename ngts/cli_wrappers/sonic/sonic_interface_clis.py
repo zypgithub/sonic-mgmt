@@ -5,6 +5,7 @@ import allure
 import json
 from retry.api import retry_call
 from ngts.cli_wrappers.common.interface_clis_common import InterfaceCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser, parse_show_interfaces_transceiver_eeprom
 from ngts.constants.constants import AutonegCommandConstants, SonicConst
@@ -12,10 +13,10 @@ from ngts.constants.constants import AutonegCommandConstants, SonicConst
 logger = logging.getLogger()
 
 
-class SonicInterfaceCli(InterfaceCliCommon):
+class SonicInterfaceCli(InterfaceCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine, cli_obj):
-        self.engine = engine
+    def __init__(self, engine, cli_obj, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
         self.cli_obj = cli_obj
 
     def add_interface(self, interface, iface_type):
@@ -30,7 +31,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interface: interface name which should be enabled, example: Ethernet0
         :return: command output
         """
-        return self.engine.run_cmd("sudo config interface startup {}".format(interface))
+        return self.engine.run_cmd("sudo config interface {} startup {}".format(self.multi_asic_config_cmd_ext, interface))
 
     def enable_interfaces(self, interfaces_list):
         """
@@ -38,8 +39,11 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interfaces_list: a list of interfaces which should be enabled, example: ["Ethernet0", "Ethernet4"]
         :return: command output
         """
-        interfaces_to_enable = ','.join(interfaces_list)
-        return self.engine.run_cmd("sudo config interface startup {}".format(interfaces_to_enable))
+        if self.asic_id is None:
+            interfaces_to_enable = ','.join(interfaces_list)
+            return self.enable_interface(interfaces_to_enable)
+        for interface in interfaces_list:
+            self.enable_interface(interface)
 
     def disable_interface(self, interface):
         """
@@ -47,7 +51,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interface: interface name which should be disabled, example: Ethernet0
         :return: command output
         """
-        return self.engine.run_cmd("sudo config interface shutdown {}".format(interface))
+        return self.engine.run_cmd("sudo config interface {} shutdown {}".format(self.multi_asic_config_cmd_ext, interface))
 
     def disable_interfaces(self, interfaces_list):
         """
@@ -55,6 +59,9 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interfaces_list: a list of interfaces which should be disabled, example: ["Ethernet0", "Ethernet4"]
         :return: none
         """
+        if self.asic_id is None:
+            interfaces_to_disable = ','.join(interfaces_list)
+            return self.disable_interface(interfaces_to_disable)
         for interface in interfaces_list:
             self.disable_interface(interface)
 
@@ -71,7 +78,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         elif 'M' in speed:
             speed = int(speed.split('M')[0])
 
-        return self.engine.run_cmd("sudo config interface speed {} {}".format(interface, speed), validate=validate)
+        return self.engine.run_cmd("sudo config interface {} speed {} {}".format(self.multi_asic_config_cmd_ext, interface, speed), validate=validate)
 
     def set_interfaces_speed(self, interfaces_speed_dict):
         """
@@ -89,7 +96,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param mtu: mtu value
         :return: command output
         """
-        return self.engine.run_cmd("sudo config interface mtu {} {}".format(interface, mtu))
+        return self.engine.run_cmd("sudo config interface {} mtu {} {}".format(self.multi_asic_config_cmd_ext, interface, mtu))
 
     def show_interfaces_status(self):
         """
@@ -98,7 +105,7 @@ class SonicInterfaceCli(InterfaceCliCommon):
         """
         return self.engine.run_cmd("sudo show interfaces status")
 
-    def parse_interfaces_status(self, headers_ofset=0, len_ofset=1, data_ofset_from_start=2):
+    def parse_interfaces_status(self, headers_ofset=0, len_ofset=1, data_ofset_from_start=2, asic_num=None):
         """
         Method which getting parsed interfaces status
         :param headers_ofset: Line number in which we have headers
@@ -109,9 +116,26 @@ class SonicInterfaceCli(InterfaceCliCommon):
         'Asym PFC': 'N/A'}, 'Ethernet8': {'Lanes'.......
         """
         ifaces_status = self.show_interfaces_status()
-        return generic_sonic_output_parser(ifaces_status, headers_ofset=headers_ofset, len_ofset=len_ofset,
-                                           data_ofset_from_start=data_ofset_from_start,
-                                           data_ofset_from_end=None, column_ofset=2, output_key='Interface')
+        result = generic_sonic_output_parser(ifaces_status, headers_ofset=headers_ofset, len_ofset=len_ofset,
+                                             data_ofset_from_start=data_ofset_from_start,
+                                             data_ofset_from_end=None, column_ofset=2, output_key='Interface')
+        if asic_num is not None:
+            result = self._filter_interfaces_status_by_asic(result, asic_num)
+        return result
+
+    def _filter_interfaces_status_by_asic(self, ifaces_info, asic_num):
+        """Return only Ethernet interfaces belonging to the given ASIC (single-ASIC: all; multi-ASIC: asic{asic_num})."""
+        filtered = {}
+        for iface, info in ifaces_info.items():
+            if not iface.startswith('Ethernet'):
+                continue
+            alias = info.get('Alias', '')
+            if alias.startswith('etp'):
+                # Single ASIC - no filtering, return full dict
+                return ifaces_info
+            if alias.startswith(f'asic{asic_num}'):
+                filtered[iface] = info
+        return filtered
 
     def show_interfaces_fec_status(self):
         """
@@ -458,8 +482,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param mode: the auto negotiation mode to be configured, i.e. 'enabled'/'disabled'
         :return: the command output
         """
-        return self.engine.run_cmd("sudo config interface autoneg {interface_name} {mode}"
-                                   .format(interface_name=interface, mode=mode))
+        return self.engine.run_cmd("sudo config interface {} autoneg {interface_name} {mode}"
+                                   .format(self.multi_asic_config_cmd_ext, interface_name=interface, mode=mode))
 
     def config_advertised_speeds(self, interface, speed_list):
         """
@@ -468,8 +492,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param speed_list: a string of speed configuration, i.e, "10000,50000" or "all"
         :return:  the command output
         """
-        return self.engine.run_cmd("sudo config interface advertised-speeds {interface_name} {speed_list}"
-                                   .format(interface_name=interface, speed_list=speed_list))
+        return self.engine.run_cmd("sudo config interface {} advertised-speeds {interface_name} {speed_list}"
+                                   .format(self.multi_asic_config_cmd_ext, interface_name=interface, speed_list=speed_list))
 
     def config_interface_type(self, interface, interface_type):
         """
@@ -478,8 +502,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interface_type: a string of interface type , i.e. "CR"/"CR2"
         :return: the command output
         """
-        return self.engine.run_cmd("sudo config interface type {interface_name} {interface_type}"
-                                   .format(interface_name=interface, interface_type=interface_type))
+        return self.engine.run_cmd("sudo config interface {} type {interface_name} {interface_type}"
+                                   .format(self.multi_asic_config_cmd_ext, interface_name=interface, interface_type=interface_type))
 
     def config_advertised_interface_types(self, interface, interface_type_list):
         """
@@ -488,8 +512,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param interface_type_list:  a string of interfaces types to advertised , i.e. "CR,CR2" or "all"
         :return: the command output
         """
-        return self.engine.run_cmd("sudo config interface advertised-types {interface_name} {interface_type_list}"
-                                   .format(interface_name=interface, interface_type_list=interface_type_list))
+        return self.engine.run_cmd("sudo config interface {} advertised-types {interface_name} {interface_type_list}"
+                                   .format(self.multi_asic_config_cmd_ext, interface_name=interface, interface_type_list=interface_type_list))
 
     def show_interfaces_auto_negotiation_status(self, interface='', validate=False):
         """
@@ -535,8 +559,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
         :param fec_option: i.e, none | fec91 | fec74
         :return: the command output
         """
-        return self.engine.run_cmd("sudo config interface fec {interface_name} {fec_option}"
-                                   .format(interface_name=interface, fec_option=fec_option))
+        return self.engine.run_cmd("sudo config interface {} fec {interface_name} {fec_option}"
+                                   .format(self.multi_asic_config_cmd_ext, interface_name=interface, fec_option=fec_option))
 
     def parse_port_mlxlink_status(self, pci_conf, port_number, port_name=""):
         """

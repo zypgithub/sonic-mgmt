@@ -1,6 +1,7 @@
 import logging
 
 from ngts.cli_wrappers.sonic.sonic_ip_clis import SonicIpCli
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.cli_wrappers.sonic.sonic_lag_lacp_clis import SonicLagLacpCli
 from ngts.cli_wrappers.sonic.sonic_interface_clis import SonicInterfaceCli
 from ngts.cli_wrappers.sonic.sonic_lldp_clis import SonicLldpCli
@@ -43,11 +44,12 @@ logger = logging.getLogger()
 
 
 class SonicCli:
-    def __init__(self, topology, dut_alias='dut'):
+    def __init__(self, topology, dut_alias='dut', asic_id=None):
         self.topology = topology
         self.dut_alias = dut_alias
         self.branch = topology.players['dut'].get('branch')
         self.engine = topology.players[self.dut_alias]['engine']
+        self.asic_id = asic_id
 
         self._ip = None
         self._arp = None
@@ -87,17 +89,30 @@ class SonicCli:
         self._performance = None
         self._trimming = None
         self._wjh = None
+        self._multi_asic_cli = None
+
+    def set_asic(self, asic_id):
+        """Set ASIC and reset all cached CLI properties"""
+        self.asic_id = asic_id
+        self._ip = None
+        self._mac = None
+        self._vlan = None
+        self._lag = None
+        self._interface = None
+        self._route = None
+        self._bgp = None
+        self._multi_asic_cli = None
 
     @property
     def ip(self):
         if self._ip is None:
-            self._ip = SonicIpCli(engine=self.engine)
+            self._ip = SonicIpCli(engine=self.engine, asic_id=self.asic_id)
         return self._ip
 
     @property
     def arp(self):
         if self._arp is None:
-            self._arp = SonicArpCli(engine=self.engine)
+            self._arp = SonicArpCli(engine=self.engine, asic_id=self.asic_id)
         return self._arp
 
     @property
@@ -109,31 +124,31 @@ class SonicCli:
     @property
     def mac(self):
         if self._mac is None:
-            self._mac = SonicMacCli(engine=self.engine)
+            self._mac = SonicMacCli(engine=self.engine, asic_id=self.asic_id)
         return self._mac
 
     @property
     def vlan(self):
         if self._vlan is None:
-            self._vlan = SonicVlanCli(branch=self.branch, engine=self.engine)
+            self._vlan = SonicVlanCli(branch=self.branch, engine=self.engine, asic_id=self.asic_id)
         return self._vlan
 
     @property
     def lag(self):
         if self._lag is None:
-            self._lag = SonicLagLacpCli(engine=self.engine)
+            self._lag = SonicLagLacpCli(engine=self.engine, asic_id=self.asic_id)
         return self._lag
 
     @property
     def interface(self):
         if self._interface is None:
-            self._interface = SonicInterfaceCli(engine=self.engine, cli_obj=self)
+            self._interface = SonicInterfaceCli(engine=self.engine, cli_obj=self, asic_id=self.asic_id)
         return self._interface
 
     @property
     def route(self):
         if self._route is None:
-            self._route = SonicRouteCli(engine=self.engine)
+            self._route = SonicRouteCli(engine=self.engine, asic_id=self.asic_id)
         return self._route
 
     @property
@@ -194,7 +209,7 @@ class SonicCli:
     @property
     def bgp(self):
         if self._bgp is None:
-            self._bgp = SonicBgpCli(engine=self.engine)
+            self._bgp = SonicBgpCli(engine=self.engine, asic_id=self.asic_id)
         return self._bgp
 
     @property
@@ -324,6 +339,12 @@ class SonicCli:
         if self._wjh is None:
             self._wjh = SonicWjhCli(engine=self.engine)
         return self._wjh
+
+    @property
+    def multi_asic_cli(self):
+        if self._multi_asic_cli is None:
+            self._multi_asic_cli = SonicMultiAsicCli(engine=self.engine, asic_id=self.asic_id)
+        return self._multi_asic_cli
 
 
 class SonicCliStub(SonicCli):

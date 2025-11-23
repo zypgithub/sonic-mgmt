@@ -40,7 +40,7 @@ def lag_config_order(request):
 
 
 @pytest.fixture()
-def l3_route_config(interfaces, engines):
+def l3_route_config(interfaces, cli_objects):
     """
     Fixture to setup L3 routing for traffic validation.
     Traffic path: ha (51.0.0.2) -> DUT (51.0.0.1) routes to -> hb (50.0.0.3) via LAG
@@ -49,9 +49,9 @@ def l3_route_config(interfaces, engines):
     dut_l3_iface = interfaces.dut_ha_2
     ha_l3_ip, dut_l3_ip, hb_subnet = '51.0.0.2', '51.0.0.1', '50.0.0.0'
 
-    engines.dut.run_cmd('sudo config interface ip add {} {}/24'.format(dut_l3_iface, dut_l3_ip))
-    engines.ha.run_cmd('sudo ip addr add {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface))
-    engines.ha.run_cmd('sudo ip route add {}/24 via {}'.format(hb_subnet, dut_l3_ip))
+    cli_objects.dut.ip.add_ip_to_interface(dut_l3_iface, dut_l3_ip)
+    cli_objects.ha.engine.run_cmd('sudo ip addr add {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface))
+    cli_objects.ha.engine.run_cmd('sudo ip route add {}/24 via {}'.format(hb_subnet, dut_l3_ip))
 
     yield {
         'ha_l3_iface': ha_l3_iface,
@@ -60,9 +60,9 @@ def l3_route_config(interfaces, engines):
         'dut_l3_ip': dut_l3_ip
     }
 
-    engines.ha.run_cmd('sudo ip route del {}/24 via {}'.format(hb_subnet, dut_l3_ip), validate=False)
-    engines.ha.run_cmd('sudo ip addr del {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface), validate=False)
-    engines.dut.run_cmd('sudo config interface ip remove {} {}/24'.format(dut_l3_iface, dut_l3_ip))
+    cli_objects.ha.engine.run_cmd('sudo ip route del {}/24 via {}'.format(hb_subnet, dut_l3_ip), validate=False)
+    cli_objects.ha.engine.run_cmd('sudo ip addr del {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface), validate=False)
+    cli_objects.dut.ip.del_ip_from_interface(dut_l3_iface, dut_l3_ip)
 
 
 @pytest.fixture(scope='package', autouse=True)

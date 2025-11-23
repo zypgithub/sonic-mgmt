@@ -26,7 +26,7 @@ PI_LINK = "https://app.powerbi.com/groups/9b79a1d8-7408-4848-90c5-9dd5dab8493d/r
 # inject dut hostname into log file name to avoid collision
 LOG_ANALYZER_LOG_FILE = '/tmp/loganalyzer-[{0}].log'
 KEY_IS_TEST_FUNCTION_FAILED = "is_test_function_failed"
-PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master", "master_rc", "master_rc_chamelleon", "master_spc6", "master_trixie"]
+PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST = ["smart-switch-master", "master_rc", "master_rc_chamelleon", "master_spc6", "master_trixie", "multi-asic"]
 
 class BugHandler(ABC):
     @abstractmethod

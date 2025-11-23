@@ -3,15 +3,34 @@ import re
 import json
 
 from ngts.cli_wrappers.common.ip_clis_common import IpCliCommon
+from ngts.cli_wrappers.sonic.sonic_multi_asic_cli import SonicMultiAsicCli
 from ngts.helpers.network import generate_mac
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.constants.constants import IpIfaceAddrConst, SonicConst
 
 
-class SonicIpCli(IpCliCommon):
+class SonicIpCli(IpCliCommon, SonicMultiAsicCli):
 
-    def __init__(self, engine):
-        self.engine = engine
+    def __init__(self, engine, asic_id=None):
+        SonicMultiAsicCli.__init__(self, engine, asic_id)
+
+    def add_ip_neigh(self, neighbor, neigh_mac_addr, dev, action="replace"):
+        """
+        Add or update a neighbor entry in the ARP/NDP table. Uses multi-ASIC namespace when needed.
+        :param neighbor: neighbor IP address
+        :param neigh_mac_addr: neighbor MAC address
+        :param dev: interface to which neighbour is attached
+        :param action: "add", "change", or "replace"
+        """
+        return self.engine.run_cmd(
+            "sudo ip {} neigh {} {} lladdr {} dev {}".format(self.multi_asic_config_cmd_ext, action, neighbor, neigh_mac_addr, dev))
+
+    def ip_neigh_flush(self, dev):
+        """
+        Flush neighbor entries for an interface. Uses multi-ASIC namespace when needed.
+        :param dev: interface name (e.g. Ethernet0)
+        """
+        return self.engine.run_cmd("sudo ip {} neigh flush dev {}".format(self.multi_asic_config_cmd_ext, dev))
 
     def add_del_ip_from_interface(self, action, interface, ip, mask):
         """
@@ -27,7 +46,7 @@ class SonicIpCli(IpCliCommon):
                 'Incorrect action {} provided, supported only add/del'.format(action))
 
         self.engine.run_cmd(
-            'sudo config interface ip {} {} {}/{}'.format(action, interface, ip, mask))
+            'sudo config interface {} ip {} {} {}/{}'.format(self.multi_asic_config_cmd_ext, action, interface, ip, mask))
 
     def add_ip_to_interface(self, interface, ip, mask=24):
         """
