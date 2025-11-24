@@ -253,6 +253,7 @@ def transform_redis_transceiver_data(duthost, cmd_type, asic_index, interfaces):
             redis_all_data_dict.update({item[0]: item[1].rstrip()})
         # Clean up the placeholder (\x00 or \u0000) in vendor_date field
         cleanup_placeholder(redis_all_data_dict, "vendor_date")
+        cleanup_placeholder(redis_all_data_dict, "vendor_rev")
         result_dict.update({intf: redis_all_data_dict})
     return result_dict
 
@@ -261,6 +262,7 @@ def compare_data_from_cli_and_redis(cli_data, redis_data, port, key_mapping):
     for cli_eeprom_key, redis_key in key_mapping.items():
         # For SFF cables some fields having multi line output, taking first and check if present in redis db output
         cli_value = cli_data[cli_eeprom_key.replace("\\", "")]
+        cli_value = cli_value.rstrip('\x00')
         redis_value = redis_data[port][redis_key].strip()
         assert cli_value == redis_value if ":" not in cli_value else cli_value.split(":")[-1].strip() in redis_value, \
             f"Data from cli param {cli_eeprom_key} does not match data from redis"
@@ -405,11 +407,11 @@ def sc_ms_sku(duthost):
 
 def cleanup_placeholder(parsed_eeprom:dict, key:str):
     """
-    Clean up the placeholder (\x00 or \u0000) in Vendor Date Code field
+    Clean up the placeholder (\x00 or \u0000) in Vendor Date and Vendor Rev Code field
 
     Args:
         parsed_eeprom: dict, Dictionary containing parsed EEPROM data
-        key: str, Key name for vendor date in the EEPROM dictionary
+        key: str, Key name for vendor date or vendor rev in the EEPROM dictionary
     """
     if key in parsed_eeprom:
         logger.info(f"The current vendor date is [{parsed_eeprom[key]}]")
