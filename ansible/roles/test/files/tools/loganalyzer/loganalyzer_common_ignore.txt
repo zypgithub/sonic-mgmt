@@ -523,3 +523,6 @@ r, ".*ACPI.*System may be unstable or behave erratically.*"
 
 # Ignore ntp error log, just a suggestion of minimum sane ntp servers, no functional impact
 r, ".*ERR\s+ntpd\[\d+\]:\s+SYNC:\s+Found\s+\d+\s+servers,\s+suggest\s+minsane\s+at\s+least\s+\d+.*"
+
+# Ignore the error when the sysfs was accessed too soon, before sys creation has been completed.
+r, ".*ERR sfputil: Failed to read from file /sys/module/sx_core/asic\d+/module\d+/present - FileNotFoundError.*"
