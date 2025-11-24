@@ -57,6 +57,7 @@ def _parse_args():
     return parser.parse_args()
 
 
+@retry(ThreadException, tries=3, delay=10)
 def inspect_container(conn, image_name, image_tag, container_name):
     """
     @summary: Inspect the specified docker image and container, gather some basic information.
@@ -230,8 +231,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     )
     logger.info("Try to remove existing docker container anyway")
     conn.run("docker rm -f {CONTAINER_NAME}".format(CONTAINER_NAME=container_name), warn=True)
-    @retry(exceptions=AssertionError, tries=10, delay=60)
 
+    @retry(exceptions=AssertionError, tries=10, delay=60)
     def _create_container():
         conn.run(cmd, warn=True)
         logger.info("Created container, wait a few seconds for it to start")
@@ -261,8 +262,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     if not configure_docker_route(conn, container_name):
         logger.error("Configure docker container failed.")
         sys.exit(1)
-@retry(Exception, tries=3, delay=10)
 
+@retry(Exception, tries=3, delay=10)
 def validate_docker_is_up(conn, container_name):
     """
     This function will run a dummy echo command on docker containers,
