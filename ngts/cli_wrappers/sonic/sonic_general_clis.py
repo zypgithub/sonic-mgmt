@@ -34,7 +34,7 @@ from ngts.helpers.breakout_helpers import get_port_current_breakout_mode, get_al
     get_split_mode_supported_breakout_modes, get_split_mode_supported_speeds, get_all_unsplit_ports
 from ngts.helpers.config_db_utils import save_config_db_json
 from ngts.helpers.interface_helpers import get_dut_default_ports_list
-from ngts.helpers.run_process_on_host import run_background_process_on_host
+from ngts.helpers.run_process_on_host import run_process_on_host
 
 
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
@@ -747,9 +747,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             return False
         return True
 
-    def deploy_fanout_image(self, topology_obj, image_path, dut_alias, platform_params=None, set_timezone='Israel'):
+    def deploy_fanout_image(self, topology_obj, image_path, fanout_alias, platform_params=None):
         deploy_type = "onie"
-        disable_ztp = True
         fw_pkg_path = None
 
         if image_path.startswith('http'):
@@ -757,36 +756,25 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         try:
             with allure.step("Trying to install sonic image"):
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, fanout_alias)
         except OnieInstallationError:
             with allure.step("Caught exception OnieInstallationError during install. Perform reboot and trying again"):
                 logger.error('Caught exception OnieInstallationError during install. Perform reboot and trying again')
                 self.engine.disconnect()
-                self.remote_reboot(topology_obj)
+                self.remote_reboot(topology_obj, fanout_alias)
                 logger.info('Sleeping %s seconds to handle ssh flapping' % InfraConst.SLEEP_AFTER_RRBOOT)
                 time.sleep(InfraConst.SLEEP_AFTER_RRBOOT)
-                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, dut_alias)
+                self.do_installation(topology_obj, image_path, deploy_type, fw_pkg_path, platform_params, fanout_alias)
 
         with allure.step('Verify dockers are up'):
             self.verify_dockers_are_up(dockers_list=SonicConst.DOCKERS_FANOUT)
 
-        if set_timezone:
-            with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
-                self.engine.disconnect()
-                system_set_timezone(self.engine, set_timezone)
-
-        with allure.step("Init telemetry keys"):
-            self.init_telemetry_keys()
-
-        self.engine.disconnect()
-
-        self.disable_ztp(disable_ztp)
-
-    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, threads_dict, platform_params, fanout_name,
-                            dut_alias):
+    def deploy_sonic_fanout(self, topology_obj, target_version, setup_info, platform_params, fanout_name,
+                            fanout_alias, set_timezone='Israel', disable_ztp=True):
         if target_version:
             # Check if is needed to install image on fanout.
             cli_version = self.get_image_sonic_version(only_branch=False)
+            logger.info(f"Current fanout version is {cli_version}. The target version is {target_version}")
 
             match = re.search(r'sonic/([\w.-]+)/dev', target_version)
 
@@ -805,13 +793,30 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             if install_image:
                 with allure.step("Upgrade fanout version on fanout."):
-                    self.deploy_fanout_image(topology_obj, target_version, dut_alias, platform_params)
+                    self.deploy_fanout_image(topology_obj, target_version, fanout_alias, platform_params)
 
         logger.info('Deploy SONiC fanout switch configurations')
         ansible_cmd = f"ansible-playbook -i lab fanout.yml -l {fanout_name}"
         logger.info(f"Running CMD: {ansible_cmd}")
-        run_background_process_on_host(threads_dict, 'deploy_sonic_fanout', ansible_cmd, timeout=600,
-                                       exec_path=setup_info['ansible_path'])
+        run_process_on_host(ansible_cmd, timeout=600, exec_path=setup_info['ansible_path'], validate=True)
+        logger.info(f"Ansible deployment for fanout {fanout_name} completed")
+
+        # Post deployment configuration
+        with allure.step('Verify dockers are up'):
+            self.verify_dockers_are_up(dockers_list=SonicConst.DOCKERS_FANOUT)
+
+        if set_timezone:
+            with allure.step("Set fanout NTP timezone to {} time.".format(set_timezone)):
+                self.engine.disconnect()
+                system_set_timezone(self.engine, set_timezone)
+
+        with allure.step("Init telemetry keys"):
+            self.init_telemetry_keys()
+
+        self.engine.disconnect()
+
+        with allure.step("Disable ZTP"):
+            self.disable_ztp(disable_ztp)
 
     def deploy_onyx_fanout(self, base_path, setup_info, destination_hwsku, fanout_engine, fanout_name):
         fanout_config_path = os.path.join(base_path,
@@ -836,8 +841,13 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if fanout and 'r-moose-06' not in fanout_name:
             if fanout_engine_type == CliType.SONIC:
-                fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info, threads_dict,
-                                           platform_params, fanout_name, dut_alias)
+                # Convert dut_alias to fanout_alias
+                fanout_alias = 'fanout'
+                if dut_alias == 'dut-b':
+                    fanout_alias = 'fanout-b'
+
+                fanout.deploy_sonic_fanout(topology_obj, fanout_target_version, setup_info,
+                                           platform_params, fanout_name, fanout_alias)
             else:
                 base_path = os.path.dirname(os.path.realpath(__file__))
                 self.deploy_onyx_fanout(base_path, setup_info, destination_hwsku, fanout, fanout_name)
