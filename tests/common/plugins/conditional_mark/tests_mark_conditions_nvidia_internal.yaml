@@ -416,6 +416,12 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
 ########################## NGTS IGNORE END ##########################
 
 ########################## Community IGNORE START ##########################
+iface_loopback_action/test_iface_loopback_action.py::test_loopback_action_reload:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4747006 on sn2700 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4747006 and 'sn2700' in platform"
+
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   xfail:
     reason: "Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20670 issue"
