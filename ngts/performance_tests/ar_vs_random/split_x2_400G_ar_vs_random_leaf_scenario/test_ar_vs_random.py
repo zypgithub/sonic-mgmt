@@ -31,11 +31,11 @@ class TestARvsRandom:
 
     def _get_bw_threshold(self, bisection_traffic, packet_size):
         if bisection_traffic:
-            return SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]
+            return SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH
         else:
             return {
-                LEFT_PORTS_LEAF_TO_SPINE: {"tx": 0, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]},
-                RIGHT_PORTS_LEAF_TO_HOST: {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size], "rx": 0}
+                LEFT_PORTS_LEAF_TO_SPINE: {"tx": 0, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH},
+                RIGHT_PORTS_LEAF_TO_HOST: {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH, "rx": 0}
             }
 
     @pytest.mark.parametrize(

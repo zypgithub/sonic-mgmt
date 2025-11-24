@@ -84,11 +84,12 @@ class TestDropOverMax:
                                       chip_type=self.chip_type,
                                       bw_threshold=bw_threshold,
                                       tc_occ_threshold=None,
+                                      temperature_threshold=None,
                                       power_threshold=None,
                                       run_validate_no_drops_on_tg_ports=None,
                                       run_validate_counters=True,
                                       ignore_counter_list=counters_to_ignore)
-            run_validation(config)
+            run_validation(config, add_validator_results_to_mongo_db=False)
 
     @allure.title('drop over max scenario')
     @allure.description('Lossy drop over max test scenario send 1 to 1 one sided traffic')

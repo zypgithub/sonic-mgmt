@@ -406,7 +406,7 @@ class SonicPerformanceCli(PerformanceCommon):
         self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
         if validate_mloops:
             self.cli_obj.interface.check_link_state(ifaces=self.unconnected_ports + self.connected_ports)
-        self.configure_ports_shaper(shaper_value=PerfConsts.SHAPER_VALUE)
+        self.configure_ports_shaper(shaper_value=PerfConsts.SRV6_SONIC_OS_SHAPER_VALUE)
 
     def update_mloops_conf_on_syncd(self):
         mloops = list(zip(self.get_hex_int_sdk_ports(self.unconnected_ports),
@@ -709,7 +709,7 @@ class SonicPerformanceCli(PerformanceCommon):
         uplinks = MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.UPLINKS]
         egress_ports_num = num_of_ingress_ports // M
         uplinks_start_index = random.randint(0, len(uplinks) - num_of_ingress_ports)
-        egress_ports = pick_random_non_consecutive_ports(downlinks, egress_ports_num, MRCConsts.EIGHT_X_SKIP_GAP)
+        egress_ports = random.sample(downlinks, egress_ports_num)
         ingress_ports = uplinks[uplinks_start_index:uplinks_start_index + num_of_ingress_ports]
         sdk_port_list_egress = self.get_sdk_ports(egress_ports)
         sdk_port_list_ingress = self.get_sdk_ports(ingress_ports)

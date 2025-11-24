@@ -61,7 +61,7 @@ class NvueTrimmingCli(TrimmingCommon):
                     }
                     queue_packet_percentages.append(queue_packet_percentages_dict)
 
-                    self.validate_trimming_counters(interface, total_drop_packets, trimmed_packets, violations_list)
+                    self.validate_trimming_counters_values(interface, total_drop_packets, trimmed_packets, violations_list)
                     if return_dict:
                         return queue_packet_percentages_dict
 
@@ -91,7 +91,7 @@ class NvueTrimmingCli(TrimmingCommon):
 
         return total_drop_packets, trimmed_packets, trimming_percentage, dropped_without_trimming_percentage, untrimmed_percentage, trimming_packets_per_second
 
-    def validate_trimming_counters(self, interface, total_drop_packets, trimmed_packets, violations_list):
+    def validate_trimming_counters_values(self, interface, total_drop_packets, trimmed_packets, violations_list):
         if trimmed_packets != total_drop_packets and total_drop_packets > 0:
             if not is_redmine_issue_active([4702808])[0]:
                 violations_list.append(f"Some packets are not dropped and trimmed on {interface}")

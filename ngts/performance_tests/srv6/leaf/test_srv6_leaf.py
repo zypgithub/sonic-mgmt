@@ -16,10 +16,10 @@ from ngts.constants.constants import InfraConst, CliType
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.conftest import (get_upstream_downstream_port_group_df,
                                                   get_upstream_downstream_groups_port_group_df,
-                                                  get_srv6_tests_skip_condition)
+                                                  get_srv6_tests_skip_condition, get_victim_flow_port_group_df)
 from ngts.performance_tests.srv6.utils.srv6_common import TestSRv6Base
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
-from ngts.performance_tests.srv6.leaf.conftest import (get_bisection_traffic)
+from ngts.performance_tests.srv6.leaf.conftest import get_bisection_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_per_tc
 from infra.tools.exceptions.test_issue import TestIssue
@@ -152,7 +152,7 @@ class TestSRv6Leaf(TestSRv6Base):
             raise TestIssue("\n".join(violations_list))
 
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])
-    def test_victim_flow_srv6(self, request, victim_flow_port_group_df, traffic_type, packet_size=4096):
+    def test_victim_flow_srv6(self, request, traffic_type, packet_size=4096):
         skip_test_on_unsupported_chip_type(self.chip_type, "SPC4")
         skip_performance_test_conditionally(isinstance(self.cli_object, NvueCli), "This test is to verify a FW bug, it's not OS related, so it can run on 1 OS and not all")
         test_name = get_perf_test_name(request)
@@ -161,7 +161,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                     {MongoDbConsts.CONF_NAME:
                                      f"leaf-victim-flow-{traffic_type}"})
         with allure.step(f"Set test correct port group dataframe"):
-            bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df = victim_flow_port_group_df
+            bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df = get_victim_flow_port_group_df(self.players)
             egress_ports = bisection_left + bisection_right + many_to_one_egress_ports
             self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
             add_test_mongo_metadata(test_name, {MongoDbConsts.PORT_GROUP_DF: port_group_df,

@@ -354,7 +354,7 @@ class Cl_Consts:
 
 
 class SPCXRAConsts:
-
+    DUT_TX_UTIL_IBM_BW_TH = 0.96
     DUT_TX_UTIL_AUTO_TH_DICT = {
         PerfConsts.PACKET_SIZE_4K: {
             "left_ports": 0.92,
@@ -363,8 +363,8 @@ class SPCXRAConsts:
     }
     DUT_TX_UTIL_IBM_TH_DICT = {
         PerfConsts.PACKET_SIZE_4K: {
-            "left_ports": 0.96,
-            "right_ports": 0.96
+            "left_ports": DUT_TX_UTIL_IBM_BW_TH,
+            "right_ports": DUT_TX_UTIL_IBM_BW_TH
         }
     }
     if is_redmine_issue_active([4667031])[0]:

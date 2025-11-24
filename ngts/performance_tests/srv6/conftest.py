@@ -99,9 +99,7 @@ def get_spine_many_to_few_port_group_df(players, M):
     return egress_ports, ingress_ports, port_group_df
 
 
-@pytest.fixture(scope="class", autouse=False)
-def victim_flow_port_group_df(request, players):
-    request.getfixturevalue('basic_setup_configuration')
+def get_victim_flow_port_group_df(players):
     port_group_df = []
     victim_ports_num = MRCConsts.VICTIM_PORTS_NUM
     upstream_ports_num = 2 * victim_ports_num - 1
