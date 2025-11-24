@@ -1,4 +1,4 @@
-from tests_nvos.general.security.ssh_ciphers.ssh_ciphers_utilis import boundary_check, clean_ssh_server_configuration, cleanup_after_test, extract_negotiated_algorithms, general_test_flow, generate_user, get_ssh_verbose_output, pubkey_test_flow, set_ssh_server_param, setup_api_type, verify_values_for_property
+from ngts.tests_nvos.general.security.ssh_ciphers.ssh_ciphers_utilis import boundary_check, clean_ssh_server_configuration, cleanup_after_test, extract_negotiated_algorithms, general_test_flow, generate_user, get_ssh_verbose_output, pubkey_test_flow, set_ssh_server_param, setup_api_type, verify_values_for_property
 import pytest
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System

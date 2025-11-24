@@ -44,15 +44,22 @@ def mark_conditions_files_param_already_provided(session):
 
 
 def pytest_sessionstart(session):
+    # In collect-only mode, skip expensive topology operations
+    is_collect_only = session.config.getoption('--collect-only', default=False)
+
     setup_topology = get_setup_topology(session)
     condition_file_req_sub_string_name = ""
-    if not testbed_param_already_loaded(session):
+
+    # Only connect to topology if NOT in collect-only mode
+    if not is_collect_only and not testbed_param_already_loaded(session):
         topology = get_topology_from_noga(session)
         dut_name = topology.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         session.config.option.testbed = f'{dut_name}-{setup_topology}'
         condition_file_req_sub_string_name = get_condition_file_req_sub_string_name(topology)
+
     if is_dualtor_topo(setup_topology):
         session.config.option.testbed = f'{session.config.option.setup_name}-{setup_topology}'
+
     testbed_file_full_path = session.config.option.ansible_inventory.replace('inventory', 'testbed.yaml')
     session.config.option.testbed_file = testbed_file_full_path
 

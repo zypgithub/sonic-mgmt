@@ -77,6 +77,11 @@ def pytest_sessionstart(session: pytest.Session):
 
 
 def pytest_collection(session: pytest.Session):
+    # If pytest is running in collect-only mode, skip the rest of the code
+    # WHY? because we want the collection mode to run faster
+    if session.config.getoption('--collect-only'):
+        return
+
     topology = get_topology_from_noga(session)
     logger.debug('Get switch devdescription from Noga')
     switch_attributes = topology.players['dut']['attributes'].noga_query_data['attributes']
@@ -84,11 +89,6 @@ def pytest_collection(session: pytest.Session):
 
     platform = json.loads(devinfo).get('platform')
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_PLATFORM_TYPE, platform)
-
-    # If pytest is running in collect-only mode, skip the rest of the code
-    # WHY? because we want the collection mode to run faster
-    if session.config.getoption('--collect-only'):
-        return
 
     if is_deploy_run():
         # Required for prevent SSH attempts into DUT at the beginning of deploy image test(in case when device in ONIE)
