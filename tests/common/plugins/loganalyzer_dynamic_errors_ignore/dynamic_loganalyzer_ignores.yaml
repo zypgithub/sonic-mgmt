@@ -49,7 +49,7 @@
   - '.* ERR syncd#SDK:.*Unsupported debug counter type.*'
   - '.* ERR syncd#SDK:.*Invalid port counter.*'
   - '.* INFO systemd.*Start.*Kernel crash dump capture service.*'
-  - '.* ERR syncd#SDK:.*mlnx_initialize_switch: Transaction mode should be enabled, enabling now.*'
+  - '.* ERR syncd#SDK:.*mlnx_initialize_switch_impl: Transaction mode should be enabled, enabling now.*'
   - '.* NOTICE syncd#SDK:.*Create trap.*'
   - '.* ERR neighbor_advertiser: EVERFLOW.* table does not exist.*'
   - '.* INFO systemd.*: Finished Kernel crash dump capture service.*'
