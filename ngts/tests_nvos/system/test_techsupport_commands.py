@@ -4,7 +4,7 @@ import random
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tests_nvos.constants import MINUTE
@@ -15,6 +15,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.mark.system
 @pytest.mark.tech_support
+@pytest.mark.cumulus
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_techsupport_show(engines, test_name, random_api, devices, serial_log_analyzers):
     """
@@ -38,11 +39,12 @@ def test_techsupport_show(engines, test_name, random_api, devices, serial_log_an
         with serial_analyzer.stage("Generate tech-support 1"):
             folder, duration = system.techsupport.action_generate(test_name=test_name, verify_size=True)
 
-        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.techsupport_threshold).verify_result()
         file1 = system.techsupport.file_name
         with serial_analyzer.stage("Generate tech-support 2"):
             folder, duration = system.techsupport.action_generate(verify_size=True)
-        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
+
+        OperationTime.verify_operation_time(duration, operation, devices.dut.techsupport_threshold).verify_result()
         file2 = system.techsupport.file_name
         output_dictionary_after_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
             system.techsupport.files.show()).get_returned_value().values())
@@ -59,7 +61,8 @@ def test_techsupport_show(engines, test_name, random_api, devices, serial_log_an
             f"Output of show tech-support contains a file marked 'latest', but that file either doesn't exist or is not"
             f" really the latest file. File is {latest_file}."
         )
-        assert list(output_dict.keys()) == [full_path.replace(SystemConsts.TECHSUPPORT_FILES_PATH, '')
+        path = TestToolkit.devices.dut.techsupport_files_path
+        assert list(output_dict.keys()) == [full_path.replace(path, '')
                                             for full_path in output_dict.values()], \
             f"Output of show tech-support has mismatch between keys (file names) and full-paths: {output_dict.items()}"
 
@@ -173,8 +176,9 @@ def test_techsupport_delete(engines, random_api, devices):
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.cumulus
+@pytest.mark.parametrize('protocol', SystemConsts.FILE_TRANSFER_PROTOCOLS)
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_techsupport_upload(engines, random_api, devices):
+def test_techsupport_upload(engines, random_api, devices, protocol):
     """
     Test flow:
         1. upload non exist tech-support file
@@ -195,7 +199,7 @@ def test_techsupport_upload(engines, random_api, devices):
     success_message = devices.dut.techsupport_upload_success_message
 
     # Use helper function to create upload URLs based on device type
-    invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices)
+    invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices, protocol)
 
     with allure.step('Try to upload non exist tech-support file'):
         system.techsupport.files.file_name['nonexist'].action_upload(upload_path=upload_path).verify_result(False, expected_value="File not found: nonexist")
@@ -212,10 +216,10 @@ def test_techsupport_upload(engines, random_api, devices):
             assert tech_file in output
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
-        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_1).verify_result(False, expected_value="is not a")
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_1).verify_result(False, expected_value=devices.dut.techsupport_file_not_found_message)
 
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
-        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_2).verify_result(False, expected_value="is not a")
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_2).verify_result(False, expected_value=devices.dut.techsupport_file_not_found_message)
 
     system.techsupport.files.file_name[tech_file].action_delete()
 
@@ -305,10 +309,10 @@ def find_latest_key(tech_support_dict):
         result = find_latest_key(tech_support_dict)
         # result -> "/host/dump/nvos_dump_mtvr-croc-19-mgmt2_20241119_001126.tar.gz"
     """
-    return SystemConsts.TECHSUPPORT_FILES_PATH + max(tech_support_dict.keys(), key=lambda x: x.split('_')[-2:])
+    return TestToolkit.devices.dut.techsupport_files_path + max(tech_support_dict.keys(), key=lambda x: x.split('_')[-2:])
 
 
-def _create_upload_urls(engines, devices):
+def _create_upload_urls(engines, devices, protocol):
     """
     Helper function to create upload URLs based on device type.
 
@@ -322,15 +326,15 @@ def _create_upload_urls(engines, devices):
     if devices.dut.is_ib():
         # For IB devices, use player (sonic_mgmt)
         player = engines['sonic_mgmt']
-        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
+        invalid_url_1 = '{}://{}:{}{}/tmp/'.format(protocol, player.username, player.password, player.ip)
         invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+        upload_path = '{}://{}:{}@{}/tmp/'.format(protocol, player.username, player.password, player.ip)
         target_engine = player
     else:
         # For ETH devices, use engines.dut
-        invalid_url_1 = "\'scp://{}:{}{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        invalid_url_1 = "\'{}://{}:{}{}:/tmp/\'".format(protocol, engines.dut.username, engines.dut.password, engines.dut.ip)
         invalid_url_2 = "\'ffff://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
-        upload_path = "\'scp://{}:{}@{}:/tmp/\'".format(engines.dut.username, engines.dut.password, engines.dut.ip)
+        upload_path = "\'{}://{}:{}@{}:/tmp/\'".format(protocol, engines.dut.username, engines.dut.password, engines.dut.ip)
         target_engine = engines.dut
 
     return invalid_url_1, invalid_url_2, upload_path, target_engine

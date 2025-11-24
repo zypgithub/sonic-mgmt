@@ -3,7 +3,7 @@ import os
 from typing import List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
@@ -72,6 +72,8 @@ class EthSwitch(BaseSwitch):
         self.techsupport_files_path = CumulusConsts.TECHSUPPORT_FILES_PATH
         self.techsupport_upload_success_message = 'Successfully uploaded the file'
         self.techsupport_delete_success_message = CumulusConsts.TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE
+        self.techsupport_threshold = CumulusConsts.TECHSUPPORT_THRESHOLD
+        self.techsupport_file_not_found_message = CumulusConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
 
         self.voltage_sensors = ["PMIC-1-PSU-12V-RAIL-IN", "PMIC-2-PSU-12V-RAIL-IN",
                                 "PMIC-2-ASIC-1.2V_MAIN-RAIL-OUT2", "PMIC-2-ASIC-1.8V_MAIN-RAIL-OUT1",

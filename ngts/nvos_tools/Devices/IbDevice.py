@@ -9,7 +9,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts)
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -320,6 +320,8 @@ class IbSwitch(BaseSwitch):
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
         self.techsupport_upload_success_message = 'File upload successfully'
         self.techsupport_delete_success_message = 'File delete successfully'
+        self.techsupport_threshold = OperationTimeConsts.THRESHOLDS.get('generate tech-support')
+        self.techsupport_file_not_found_message = SystemConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
 
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
