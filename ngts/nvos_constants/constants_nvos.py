@@ -76,6 +76,9 @@ class CumulusConsts:
     NTP_LOGS_COMPONENT_ID = "nvue"
     LOG_MSG_SET_NTP = ["nv set system ntp server 10.7.77.134 state"]
 
+    DISK_MODE_FULL_DISK = 'full-disk'
+    DISK_MODE_USAGE = 'usage'
+
 
 class TestConsts:
     PASSED = "passed"
