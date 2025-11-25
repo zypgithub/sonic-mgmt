@@ -4,12 +4,15 @@ import math
 import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import shlex
+import time
 
 import allure
+from ngts.scripts.sonic_deploy.community_only_methods import is_dualtor_topo
 import pytest
 
 from ngts.conftest import update_topology_with_cli_class
-from ngts.constants.constants import PytestConst, InfraConst
+from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF, PytestConst
 from ngts.helpers.general_helper import get_dut_cli_obj_from_topo_obj
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
@@ -18,6 +21,9 @@ from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_constants.constants_nvos import TopologyConsts
 from ngts.tools.infra import get_dumps_folder
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+
+DUAL_TOR_SIMULATOR_LOG_PREFIXE_REGEX_LIST = ['mux_simulator_*', 'nic_simulator_*']
+DUAL_TOR_SIMULATOR_LOG_FOLDER = '/tmp/'
 
 logger = logging.getLogger()
 
@@ -30,11 +36,84 @@ def get_topology_obj(item):
     return topology
 
 
+def collect_ptf_logs(hyper_engine, dumps_folder, setup_name):
+    ptf_log_file = 'ptf_logs.{}.tgz'.format(time.time_ns())
+    dest_file = dumps_folder + '/' + ptf_log_file
+    ptf_docker_name = f'ptf_vm-t{2 if setup_name in SETUPS_WITH_NON_DEFAULT_PTF else 1}'
+    try:
+        with allure.step('Generate ptf log tar file {}'.format(ptf_log_file)):
+            hyper_engine.run_cmd('docker exec {} tar -czvf /tmp/{} --exclude=/tmp/{} /tmp/'.format(
+                ptf_docker_name, ptf_log_file, ptf_log_file))
+            hyper_engine.run_cmd('docker cp {}:/tmp/{} /tmp'.format(ptf_docker_name, ptf_log_file))
+            hyper_engine.run_cmd('docker exec {} rm /tmp/{}'.format(ptf_docker_name, ptf_log_file))
+        with allure.step('Copy the ptf log tar file to log folder {}'.format(dumps_folder)):
+            hyper_engine.run_cmd('sudo cp /tmp/{} {}'.format(ptf_log_file, dest_file))
+            os.chmod(dest_file, 0o777)
+            hyper_engine.run_cmd('rm /tmp/{}'.format(ptf_log_file))
+        logger.info('Ptf log tar file location: {}'.format(dest_file))
+    except Exception as err:
+        logger.error(f'Failed to collect the ptf log files: {err}')
+
+
+def is_file_exist(hypervisor_engine, folder, file):
+    """
+    Method for file exist validation
+    :param hypervisor_engine: hypervisor engine
+    :param folder: the check folder
+    :param file: the check file
+    :return: True if the file exists, False otherwise
+    """
+    safe_file = shlex.quote(file)
+    safe_folder = shlex.quote(folder)
+    cmd = f"find {safe_folder} -maxdepth 1 -name {safe_file} | wc -l"
+    res = hypervisor_engine.run_cmd(cmd)
+    return int(res.strip()) > 0
+
+
+def collect_dualtor_logs(hypervisor_engine, dumps_folder):
+    """
+    Method for collecting dual-tor related simulator logs
+    :param hypervisor_engine: the hypervisor engine
+    :param target_folder: the target folder to store the simulator logs
+    :return:
+    """
+    for log_file_regex in DUAL_TOR_SIMULATOR_LOG_PREFIXE_REGEX_LIST:
+        if is_file_exist(hypervisor_engine, DUAL_TOR_SIMULATOR_LOG_FOLDER, log_file_regex):
+            name_prefix = time.strftime('%Y_%b_%d_%H_%M_%S')
+            tar_file_name = log_file_regex[:-1] + name_prefix + '.tar.gz'
+            tar_file_path = DUAL_TOR_SIMULATOR_LOG_FOLDER + tar_file_name
+            dest_tar_file_path = os.path.join(dumps_folder, tar_file_name)
+            log_files = hypervisor_engine.run_cmd(f"ls -l {DUAL_TOR_SIMULATOR_LOG_FOLDER} | grep '{log_file_regex}'")
+            try:
+                logger.info(f"Compressing: \n{log_files}")
+                hypervisor_engine.run_cmd(f"tar -czvf {tar_file_path} {DUAL_TOR_SIMULATOR_LOG_FOLDER + log_file_regex}")
+                logger.info(f"Copying {tar_file_path} to {dest_tar_file_path}")
+                hypervisor_engine.copy_file(source_file=tar_file_path,
+                                            dest_file=dest_tar_file_path,
+                                            file_system='/',
+                                            direction='get',
+                                            overwrite_file=True,
+                                            verify_file=False)
+                os.chmod(dest_tar_file_path, 0o777)
+            except Exception as err:
+                logger.error(f"Error exist during collection of dualtor simulator logs: {err}")
+            finally:
+                hypervisor_engine.run_cmd(f"rm -f {tar_file_path}")
+
+
 def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
     switch_type = get_switch_type(topology_obj)
     dut_engine = topology_obj.players['dut']['engine']
     collect_stored_cmds_then_attach_to_allure_report(topology_obj)
     generate_dump_method[switch_type](topology_obj, dut_engine, dumps_folder, duration, item)
+    if switch_type == TopologyConsts.SONIC:
+        hypervisor_engine = topology_obj.players['hypervisor']['engine']
+        testbed = item.config.option.testbed
+        setup_name = item.config.option.setup_name
+        if 'ptf-any' not in testbed:
+            collect_ptf_logs(hypervisor_engine, dumps_folder, setup_name)
+        if is_dualtor_topo(testbed):
+            collect_dualtor_logs(hypervisor_engine, dumps_folder)
 
 
 def is_performance_setup(item):
