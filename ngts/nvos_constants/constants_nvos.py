@@ -2720,3 +2720,17 @@ class ServiceConsts:
     NTP_RESOURCE_LIMIT_CPU_DEFAULT_VALUE = 10
     NTP_RESOURCE_LIMIT_MEMORY = 'memory'
     NTP_RESOURCE_LIMIT_MEMORY_DEFAULT_VALUE = "1000G"
+
+
+class PackageConsts:
+    REPO_ID = 'repository'
+    REPO_DIST_ID = 'distribution'
+    POOL_ID = 'pool'
+    INSECURE = 'insecure'
+    SOURCE = 'source'
+    KEY = 'key'
+    USE_VRF = 'use-vrf'
+    SCOPE = 'scope'
+    VRF = 'vrf'
+    TRIES = 'tries'
+    REMOTE_URL = 'remote-url'
