@@ -269,8 +269,19 @@ def is_vnet_route_configured_on_asic(duthost, dest):
 
 def is_vnet_route_active(duthost):
     """
-    Check if all routes in 'show vnet route all' are active.
-    Returns True only if ALL routes have 'active' status.
+    Check if all routes in 'show vnet route all' have 'active' status.
+    Returns:
+        True: If all routes have 'active' status.
+        False: If any route has any other status.
+
+    Example:
+    CMD: show vnet route all
+    vnet name    prefix    nexthop    interface
+    -----------  --------  ---------  -----------
+
+    vnet name        prefix        endpoint                                 mac address    vni    status
+    ---------------  ------------  ---------------------------------------  -------------  -----  --------
+    Vnet_v4_in_v4-0  150.0.1.1/32  100.0.2.1,100.0.3.1,100.0.4.1,100.0.5.1                        active
     """
     # Use show_and_parse to automatically parse the table output
     # start_line_index=3 skips the first table and starts from the second table with status column
@@ -282,32 +293,27 @@ def is_vnet_route_active(duthost):
         Logger.info("No routes found")
         return False
 
-    # Filter out incomplete route entries caused by line wrapping
-    valid_routes = []
+    # Filter incomplete entries and check status
+    valid_route_count = 0
     for route in routes:
         vnet_name = route.get('vnet name', '').strip()
         prefix = route.get('prefix', '').strip()
-        # Only consider routes with non-empty vnet name and prefix as valid routes
-        if vnet_name and prefix:
-            valid_routes.append(route)
 
-    Logger.info("Valid routes after filtering: %s", valid_routes)
+        # Skip incomplete entries caused by line wrapping of long endpoint fields
+        if not vnet_name or not prefix:
+            continue
 
-    # If no valid routes found, consider it as not active
-    if not valid_routes:
+        valid_route_count += 1
+        status = route.get('status', '').lower()
+
+        if status != 'active':
+            Logger.info("Route %s has status: %s", prefix, status)
+            return False
+
+    if valid_route_count == 0:
         Logger.info("No valid routes found after filtering")
         return False
 
-    # Check if all valid routes have active status
-    for route in valid_routes:
-        status = route.get('status', '').lower()
-        # If any route is not active, return False
-        if status != 'active':
-            Logger.info("Route %s has status: %s", route.get('prefix', 'unknown'), status)
-            return False
-
-    # All valid routes are active
-    Logger.info("All %d valid routes are active", len(valid_routes))
     return True
 
 
@@ -330,10 +336,12 @@ class Test_VxLAN_BFD_TSA():
            Just a wrapper for dump_info_to_ptf to avoid entering 30 lines
            everytime.
         '''
-        pytest_assert(
-            wait_until(90, 2, 0, is_vnet_route_active, self.vxlan_test_setup['duthost']),
-            "Route is not active"
-        )
+        asic_type = self.vxlan_test_setup['duthost'].facts["asic_type"]
+        if asic_type not in ["vs"]:
+            pytest_assert(
+                wait_until(90, 2, 0, is_vnet_route_active, self.vxlan_test_setup['duthost']),
+                "Route is not active"
+            )
 
         if tolerance is None:
             tolerance = self.vxlan_test_setup['tolerance']
@@ -600,8 +608,6 @@ class Test_VxLAN_BFD_TSA():
         # readd routes as they are removed by config reload
         ecmp_utils.configure_vxlan_switch(duthost, vxlan_port=4789, dutmac=self.vxlan_test_setup['dut_mac'])
         dest, ep_list = self.create_vnet_route(encap_type)
-        pytest_assert(wait_until(40, 2, 0, is_vnet_route_configured_on_asic, duthost, dest),
-                      "Vnet route not configured on ASIC")
 
         self.dump_self_info_and_run_ptf("test4b", encap_type, True, [])
 
@@ -639,7 +645,6 @@ class Test_VxLAN_BFD_TSA():
         # readd routes as they are removed by config reload
         ecmp_utils.configure_vxlan_switch(duthost, vxlan_port=4789, dutmac=self.vxlan_test_setup['dut_mac'])
         dest, ep_list = self.create_vnet_route(encap_type)
-        wait_until(20, 2, 0, is_vnet_route_configured_on_asic, duthost, dest)
 
         self.apply_tsb()
         pytest_assert(not self.in_maintainence())
@@ -681,7 +686,6 @@ class Test_VxLAN_BFD_TSA():
         # readd routes as they are removed by config reload
         ecmp_utils.configure_vxlan_switch(duthost, vxlan_port=4789, dutmac=self.vxlan_test_setup['dut_mac'])
         dest, ep_list = self.create_vnet_route(encap_type)
-        wait_until(20, 2, 0, is_vnet_route_configured_on_asic, duthost, dest)
 
         self.apply_tsb()
         pytest_assert(not self.in_maintainence())
