@@ -194,6 +194,7 @@ def test_set_inactivity_timeout(engines, devices, topology_obj, test_name):
 
 @pytest.mark.checklist
 @pytest.mark.ssh_config
+@pytest.mark.cumulus
 def test_set_sysrq_capabilities(engines):
     """
     Test flow:
