@@ -1,5 +1,5 @@
 import pytest
-
+from tests.common.reboot import reboot
 
 class BaseMocker:
     """
