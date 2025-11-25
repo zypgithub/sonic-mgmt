@@ -51,6 +51,7 @@ class IbSwitch(BaseSwitch):
 
     def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE, switch_class=NvosConst.IB_SWITCH_TYPE):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
+        self.port_type = self.switch_type.lower()
         self.documents_path = None
         self.documents_files = None
         # Default firmware components list for IB switches (can be overridden by subclasses)

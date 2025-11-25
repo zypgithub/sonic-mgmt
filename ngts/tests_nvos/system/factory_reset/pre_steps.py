@@ -1,5 +1,6 @@
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import OutputFormat, LinkDetectionConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -13,7 +14,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 @disabled_access_ports
 def factory_reset_no_params_pre_steps(engines, platform_params, system, devices, has_loopbox, setup_name, standalone_system):
-    port_type = devices.dut.switch_type.lower()
+    port_type = devices.dut.port_type
     init_cluster_status = None
 
     with allure.step('Create System object'):
@@ -104,7 +105,7 @@ def factory_reset_keep_basic_pre_steps(engines, system):
 
     with allure.step('Set description to eth0 port'):
         mgmt_port = Port('eth0')
-        mgmt_port.interface.set(NvosConst.DESCRIPTION, 'nvosdescription', apply=True).verify_result()
+        mgmt_port.interface.set(NvosConst.DESCRIPTION, 'nvosdescription', apply=True, ask_for_confirmation=True).verify_result()
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
             mgmt_port.interface.show()).get_returned_value()
 
@@ -123,7 +124,7 @@ def factory_reset_keep_basic_pre_steps(engines, system):
 
 
 def factory_reset_general_pre_steps(engines, devices, system):
-    port_type = devices.dut.switch_type.lower()
+    port_type = devices.dut.port_type
 
     with allure.step('Get health status'):
         health_status = get_health_status(system)
@@ -136,14 +137,23 @@ def factory_reset_general_pre_steps(engines, devices, system):
         just_apply_port = ports[1]
         not_apply_port = ports[2]
 
+    with allure.step(f'Bring selected {port_type} interfaces up'):
+        for port in (apply_and_save_port, just_apply_port, not_apply_port):
+            port.interface.link.state.set(
+                op_param_name=NvosConsts.LINK_STATE_UP, apply=True,
+                ask_for_confirmation=True).verify_result()
+
     with allure.step(f'Set and apply description to {port_type} port, save config after it'):
-        apply_and_save_port.interface.set(NvosConst.DESCRIPTION, description, apply=True).verify_result()
+        apply_and_save_port.interface.set(NvosConst.DESCRIPTION, description, apply=True, ask_for_confirmation=True).verify_result()
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
         NvueGeneralCli.save_config(engines.dut)
+
     with allure.step(f'Set and apply description to {port_type} port'):
-        just_apply_port.interface.set(NvosConst.DESCRIPTION, description, apply=True).verify_result()
+        just_apply_port.interface.set(NvosConst.DESCRIPTION, description, apply=True, ask_for_confirmation=True).verify_result()
+
     with allure.step(f'Set description to {port_type} port'):
         not_apply_port.interface.set(NvosConst.DESCRIPTION, description, apply=False).verify_result()
+
     with allure.step('Validate ports description'):
         validate_port_description(engines.dut, apply_and_save_port, description)
         validate_port_description(engines.dut, just_apply_port, description)
@@ -165,7 +175,6 @@ def get_health_status(system):
 
 
 def factory_reset_system_message_pre_steps(engines, devices, system):
-    port_type = devices.dut.switch_type.lower()
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"

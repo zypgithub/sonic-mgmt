@@ -1,12 +1,15 @@
 import allure
 import logging
 import os
+import time
 from datetime import datetime
 from typing import List
 
+import pexpect
+
 from packaging.version import Version
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts, ImageConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType, NtpConsts, TcpDumpConsts, RebootConsts, ImageConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -36,16 +39,26 @@ class EthSwitch(BaseSwitch):
         self.default_username = os.environ["CUMULUS_SWITCH_USER"]
         self.manufacture_password = "cumulus"
         self.switch_type = CumulusConsts.ETH_SWITCH_TYPE
+        self.port_type = "swp"
         self.init_documents_consts()
         self.init_cli_coverage_prop("cumulus")
         self._init_eth0_speeds()
         self._init_eth0_duplex()
+        # Cumulus reports factory reset as "SW asserted reset through CPLD", user "system/root"
+        self.reboot_reason_dict = {
+            RebootConsts.FACTORY_RESET: ("SW asserted reset through CPLD", RebootConsts.REBOOT_USER_SYSTEM),
+        }
 
     def init_documents_consts(self):
         super().init_documents_consts()
 
     def verify_sed_password(self, tpm_tool, sed_default_password=""):
         pass  # This should be ignored on eth switches, overrides method from base switch
+
+    @staticmethod
+    def check_fec_capability():
+        """Ethernet switches do not have IB FEC (NVLink-6) capability."""
+        return False
 
     def get_voltage_sensors(self, dut_engine=None):
         return self.voltage_sensors
@@ -84,6 +97,51 @@ class EthSwitch(BaseSwitch):
             psu_display_name: {"bad"},
             fan_display_name: "bad",
         }
+
+    def check_and_set_default_password(self, engine):
+        """Connect via SSH; if image requires default password change, set it and update engine.password.
+
+        Initial login uses manufacturing password; the new password is always CUMULUS_SWITCH_PASSWORD
+        (self.default_password). It must be set and must differ from the manufacturing default.
+        """
+        cur = self.manufacture_password
+        new = self.default_password
+        if not new or new == self.manufacture_password:
+            logger.info(
+                "Skipping Cumulus forced password change: set CUMULUS_SWITCH_PASSWORD to the target password "
+                "(not the manufacturing default)."
+            )
+            return
+        ssh_cmd = f'ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" -o "PubkeyAuthentication=no" -p {engine.ssh_port} {self.default_username}@{engine.ip}'
+        logger.info("Checking if DUT requires default password change...")
+        session = pexpect.spawn(ssh_cmd, use_poll=True, encoding='utf-8')
+        logfile = open(os.devnull, 'w')
+        session.logfile = logfile
+        changed = False
+        try:
+            if session.expect([r".*'s password:", pexpect.TIMEOUT, pexpect.EOF], timeout=30) != 0:
+                logger.info("SSH did not prompt for password")
+                return
+            session.sendline(cur)
+            idx = session.expect([r"\(current\) UNIX password: ", r"Current password: ", r".*'s password:", pexpect.TIMEOUT, pexpect.EOF], timeout=30)
+            if idx <= 1:
+                session.sendline(cur)
+                session.sendline(new)
+                session.sendline(new)
+                changed = True
+                session.expect([r"cumulus@.*[$#]", r".*[$#]", pexpect.TIMEOUT, pexpect.EOF], timeout=10)
+            elif idx == 2:
+                session.expect([r"cumulus@.*[$#]", r".*[$#]", pexpect.TIMEOUT], timeout=10)
+            time.sleep(2)
+        except (pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF, Exception) as e:
+            logger.info("Password check skipped/failed (non-fatal): %s", e)
+            return
+        finally:
+            session.close()
+            logfile.close()
+        if changed:
+            engine.password = new
+            logger.info("Engine password updated for subsequent connections.")
 
     def _init_constants(self):
         super()._init_constants()
@@ -170,9 +228,6 @@ class EthSwitch(BaseSwitch):
         self.fetch_success_message = CumulusConsts.FETCH_SUCCESS_MESSAGE
         self.fetch_error_message = CumulusConsts.FETCH_ERROR_MESSAGE
         self.ask_for_confirmation = True
-        self.expected_selector_dictionary = NvosConst.EXPECTED_SELECTOR_DICTIONARY
-        self.welf_format_regex = r'id=firewall time="[^"]+" fw="{}" severity="[^"]+"(?: [^=]+="[^"]+")* msg=".*"'
-        self.vrf_mgmt = CumulusConsts.VRF_MGMT
 
     def get_base_image(self):
         release_name = ImageConsts.CL_RELEASE_5_16_0
@@ -196,7 +251,12 @@ class EthSwitch(BaseSwitch):
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
         with allure.step('Wait for OS to become functional'):
-            return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)
+            try:
+                self.check_and_set_default_password(engine)
+            except Exception as e:
+                logger.info("Password check/set skipped or failed (non-fatal): %s", e)
+            result_obj = DutUtilsTool.wait_for_cumulus_to_become_functional(engine)
+            return result_obj
 
     def reload_device(self, engine, cmd_set, validate=False):
         with allure.step('Reload device'):

@@ -315,7 +315,7 @@ def update_timezone(engines):
     with allure.step("Update timezone"):
         logging.info(
             "Configuring same time zone for dut and local engine to {}".format(LinuxConsts.JERUSALEM_TIMEZONE))
-        ClockTools.set_timezone(LinuxConsts.JERUSALEM_TIMEZONE, System(), apply=True).verify_result()
+        ClockTools.set_timezone(LinuxConsts.JERUSALEM_TIMEZONE, System(), apply=True, ask_for_confirmation=True).verify_result()
         with allure.step('Set timezone using timedatectl command'):
             os.popen('sudo timedatectl set-timezone {}'.format(LinuxConsts.JERUSALEM_TIMEZONE))
 

@@ -77,6 +77,13 @@ def create_date_time_obj(str_info):
 
 
 def add_verification_data(engine, system):
+    if TestToolkit.devices.dut.is_ib():
+        return add_verification_data_for_ib(engine, system)
+    if TestToolkit.devices.dut.is_eth():
+        return add_verification_data_for_cumulus(engine, TestToolkit.devices.dut)
+
+
+def add_verification_data_for_ib(engine, system):
     with allure.step("Clear running dockers dict"):
         running_dockers.clear()
     with allure.step(f"Add file to {NvosConst.PATH_TO_IMAGES}"):
@@ -145,6 +152,25 @@ def add_verification_data(engine, system):
 
 
 def verify_cleanup_done(engine, time_before_rf, system, username, param='', ib_router=False):
+    logging.info("Verify cleanup done as expected")
+    errors = ""
+    device = TestToolkit.devices.dut
+    if TestToolkit.devices.dut.is_ib():
+        verify_cleanup_done_for_ib(engine, time_before_rf, device, username, param, ib_router=ib_router)
+    if TestToolkit.devices.dut.is_eth():
+        verify_cleanup_done_for_cumulus(engine, time_before_rf, param=param, username=username)
+
+
+def verify_services_status(engines, services):
+    """Verify each service is active (systemctl is-active)."""
+    for svc in services:
+        out = engines.dut.run_cmd(f"systemctl is-active {svc}", validate=False)
+        raw = (out or "").strip()
+        state = raw.splitlines()[0].strip() if raw else ""
+        assert state == "active", f"Service {svc} not active (state={state!r}): {out}"
+
+
+def verify_cleanup_done_for_ib(engine, time_before_rf, system, username, param='', ib_router=False):
     logging.info("Verify cleanup done as expected")
     errors = ""
     device = TestToolkit.devices.dut
@@ -355,3 +381,103 @@ def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
     current_time = parser.parse(date_time_str)
     return current_time
+
+
+def verify_cleanup_done_for_cumulus(engine, time_before_rf, param='', username=None):
+    # Verify if files are deleted or kept, depending on the option of factory reset
+    errors = ""
+    if param == KEEP_BASIC:
+        output = engine.run_cmd("ls /etc/cumulus/")
+        if "verification_test.txt" in output:
+            errors += "\n/etc/cumulus/verification_test.txt file was not deleted "
+        output = engine.run_cmd("ls /home/cumulus/")
+        if "verification_test.txt" not in output:
+            errors += "\n/home/cumulus/verification_test.txt file was deleted "
+        output = engine.run_cmd("ls /var/log/")
+        if "verification_test.txt" in output:
+            errors += "\n/var/log/verification_test.txt file was not deleted "
+        if errors:
+            logger.info(errors)
+        verify_factory_reset_log(engine)
+    elif param == KEEP_ALL_CONFIG:
+        output = engine.run_cmd("ls /etc/cumulus/")
+        if "verification_test.txt" not in output:
+            errors += "\n/etc/cumulus/verification_test.txt file was deleted "
+        output = engine.run_cmd("ls /home/cumulus/")
+        if "verification_test.txt" not in output:
+            errors += "\n/home/cumulus/verification_test.txt file was deleted "
+        output = engine.run_cmd("ls /var/log/")
+        if "verification_test.txt" in output:
+            errors += "\n/var/log/verification_test.txt file was not deleted "
+        if errors:
+            logger.info(errors)
+        verify_factory_reset_log(engine)
+    elif param == KEEP_ONLY_FILES:
+        output = engine.run_cmd("ls /etc/cumulus/")
+        if "verification_test.txt" in output:
+            errors += "\n/etc/cumulus/verification_test.txt file was not deleted "
+        output = engine.run_cmd("ls /home/cumulus/")
+        if "verification_test.txt" in output:
+            errors += "\n/home/cumulus/verification_test.txt file was not deleted "
+        output = engine.run_cmd("ls /var/log/")
+        if "verification_test.txt" not in output:
+            errors += "\n/var/log/verification_test.txt file was deleted "
+        if errors:
+            logger.info(errors)
+    else:
+        output = engine.run_cmd("ls /etc/cumulus/")
+        if "verification_test.txt" in output:
+            errors += "\n/etc/cumulus/verification_test.txt file was not deleted "
+        output = engine.run_cmd("ls /home/cumulus/")
+        if "verification_test.txt" in output:
+            errors += "\n/home/cumulus/verification_test.txt file was not deleted "
+        output = engine.run_cmd("ls /var/log/")
+        if "verification_test.txt" in output:
+            errors += "\n/var/log/verification_test.txt file was not deleted "
+        if errors:
+            logger.info(errors)
+        verify_factory_reset_log(engine)
+
+    with allure.step("Verify created user was deleted"):
+        if param not in [KEEP_ALL_CONFIG, KEEP_BASIC]:
+            output = engine.run_cmd("nv show system aaa user -o json")
+            if username and username in output:
+                errors += "\nCreated user was not deleted"
+
+    assert not errors, errors
+
+
+def verify_factory_reset_log(engine):
+    """
+    This function checks /var/log/factory-reset.log for 'Factory reset complete'
+
+    """
+    logger.info("This function checks /var/log/factory-reset.log for Factory reset complete")
+    output = engine.run_cmd("sudo cat /var/log/factory-reset.log | grep -i 'Factory reset complete'")
+    logger.info(output)
+    output = engine.run_cmd("sudo cat /var/log/factory-reset.log")
+    logger.info(output)
+    if 'Factory reset complete' not in output:
+        logger.error("Failed: 'Factory reset complete. Rebooting now !' log not found in /var/log/factory-reset.log")
+        assert False, "Failed: 'Factory reset complete. Rebooting now !' log not found in /var/log/factory-reset.log"
+    else:
+        logger.info("'Factory reset complete. Rebooting now !' log found in /var/log/factory-reset.log")
+
+
+def add_verification_data_for_cumulus(engine, device):
+    with allure.step("Create test files for Cumulus system"):
+        with allure.step("Add file to /etc/cumulus/"):
+            output = engine.run_cmd("ls /etc/cumulus/")
+            if "verification_test.txt" not in output:
+                output = engine.run_cmd("sudo touch /etc/cumulus/verification_test.txt")
+        with allure.step("Add file to /home/cumulus/"):
+            output = engine.run_cmd("ls /home/cumulus/")
+            if "verification_test.txt" not in output:
+                output = engine.run_cmd("sudo touch /home/cumulus/verification_test.txt")
+        with allure.step("Add file to /var/log/"):
+            output = engine.run_cmd("ls /var/log/")
+            if "verification_test.txt" not in output:
+                output = engine.run_cmd("sudo touch /var/log/verification_test.txt")
+    with allure.step("Create new user for Cumulus system"):
+        username, password = System(force_api=ApiType.NVUE).aaa.user.set_new_user(apply=True)
+        return username

@@ -689,7 +689,7 @@ class ValidationTool:
 
     @staticmethod
     @retry(Exception, tries=6, delay=10)
-    def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
+    def validate_reboot_reason_and_user_ib(system, expected_reason: str, expected_user: str):
         with allure.step("Check reboot reason event in system events"):
             reboot_reason, reboot_user = OutputParsingTool.get_reboot_reason_and_user_from_system_events(system)
 
@@ -700,3 +700,30 @@ class ValidationTool:
             with allure.independent_step("Validate reboot user"):
                 assert expected_user in reboot_user, \
                     f"Reboot user is '{reboot_user}' instead of expected '{expected_user}'"
+
+    @staticmethod
+    @retry(Exception, tries=6, delay=10)
+    def validate_reboot_reason_and_user_eth(system, expected_reason: str, expected_user: str):
+        with allure.step("Check reboot reason in system reboot history"):
+            output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.history.show()).get_returned_value()
+            if not output or len(output.keys()) == 0:
+                raise ValueError("Reboot history output is empty")
+            latest = output[list(output.keys())[0]]
+            ValidationTool.verify_all_fields_value_exist_in_output_dictionary(latest,
+                                                                              ["gentime", "reason", "user"]).verify_result()
+            with allure.independent_step("Validate reboot reason"):
+                assert expected_reason in latest["reason"], \
+                    f"Reboot reason is '{latest['reason']}' instead of expected '{expected_reason}'"
+            with allure.independent_step("Validate reboot user"):
+                assert expected_user in latest["user"], \
+                    f"Reboot user is '{latest['user']}' instead of expected '{expected_user}'"
+
+    @staticmethod
+    def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
+        # Lazy import avoids circular imports (ValidationTool/BaseDevice vs NvosTestToolkit).
+        from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+
+        if TestToolkit.devices.dut.is_ib():
+            ValidationTool.validate_reboot_reason_and_user_ib(system, expected_reason, expected_user)
+        if TestToolkit.devices.dut.is_eth():
+            ValidationTool.validate_reboot_reason_and_user_eth(system, expected_reason, expected_user)

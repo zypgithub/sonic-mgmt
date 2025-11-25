@@ -7,8 +7,9 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 
-
 # @disabled_access_ports
+
+
 def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, pre_health_status, machine_type,
                                        not_apply_port, system, init_cluster_status, has_loopbox, devices, setup_name, standalone_system):
     with allure.step('update timezone'):

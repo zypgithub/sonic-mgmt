@@ -12,7 +12,6 @@ from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthCons
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -41,9 +40,7 @@ from ngts.nvos_tools.system.Syslog import Syslog
 from ngts.nvos_tools.system.Techsupport import TechSupport
 from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
-from ngts.nvos_tools.system.SystemInternal import SystemInternal
 from ngts.nvos_tools.system.Dns import Dns
-from ngts.nvos_tools.system.AsicDebugConfig import AsicDebugConfig
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -87,8 +84,7 @@ class System(BaseComponent):
         self.disk = Disk(self)
         self.memory = BaseComponent(self, path='/memory')
         self.cpu = BaseComponent(self, path='/cpu')
-        self.internal = SystemInternal(self)
-        self.asic_debug_config = AsicDebugConfig(self)
+        self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
         self.cpu_debug_config = BaseComponent(self, path='/cpu-debug-config')
         self.bmc_debug_config = BaseComponent(self, path='/bmc-debug-config')
         self.nv_bridge = BaseComponent(self, path='/nv-bridge')
@@ -104,37 +100,13 @@ class System(BaseComponent):
             dut_engine = TestToolkit.get_engine()
         with allure.step("Validate health status with \"nv show system\" cmd"):
             logger.info("Validate health status with \"nv show system\" cmd")
-            actual_status = None
-            # Retry up to 3 times if health status is N/A (may take a moment to populate)
-            for attempt in range(3):
-                system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=dut_engine)).get_returned_value()
-
-                if (actual_status := system_output.get(SystemConsts.HEALTH, {}).get(HealthConsts.STATUS)) is None:
-                    actual_status = system_output.get(SystemConsts.LEGACY_HEALTH_STATUS)  # Fallback
-
-                if actual_status == expected_status:
-                    logger.info(f"Health status matches expected: {expected_status}")
-                    return
-                if actual_status != "N/A":
-                    # Status is neither expected nor N/A (e.g. "Not OK") - no point retrying
-                    break
-                logger.info(f"Health status is N/A (attempt {attempt + 1}/3), sleeping 5 seconds before retry...")
-                time.sleep(5)
-
-            # Status mismatch - check detailed health via "nv show system health" before failing
-            logger.info(f"Summary health status is '{actual_status}' (expected '{expected_status}'), "
-                        f"checking detailed health via \"nv show system health\" cmd")
-            health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
-            detailed_status = health_output[HealthConsts.STATUS]
-            health_issues = health_output[HealthConsts.ISSUES]
-            health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_issues.items())
-
-            if detailed_status == expected_status:
-                logger.info(f"Summary health status is {actual_status}, but detailed health check shows {detailed_status}. Passing check.")
-            else:
+            system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=dut_engine)).get_returned_value()
+            if expected_status != system_output[SystemConsts.HEALTH][HealthConsts.STATUS]:
+                health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
+                health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
                 exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
                     " with the following health issues:\n{}".\
-                    format(expected_status, actual_status, health_issues_str)
+                    format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)
                 logger.warning(exception_str)
                 if throw_exception:
                     assert False, exception_str
@@ -201,7 +173,6 @@ class Events(BaseComponent):
 class Documentation(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/documentation')
-        self.files = Files(self)
 
     def action_upload(self, upload_path, file_name):
         with allure.step("Upload {file} to '{path}".format(file=file_name, path=upload_path)):
@@ -253,9 +224,9 @@ class FactoryDefault(BaseComponent):
                     result_obj = device.wait_for_os_to_become_functional(engine)
                 else:
                     result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+            if device:
+                device.post_reload_actions(engine)
             if log_analyzer_marker:
-                if device:
-                    device.post_reload_actions(engine)
                 TestToolkit.add_loganalyzer_marker_at_beginning(engine, log_analyzer_marker)
             logger.info("Reset factory till system is ready takes: {} seconds".format(duration))
             res_obj.duration = duration

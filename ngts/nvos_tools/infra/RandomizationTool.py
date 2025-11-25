@@ -42,7 +42,9 @@ class RandomizationTool:
             dut_engine = TestToolkit.get_engine()
 
         if not requested_ports_type:
-            requested_ports_type = (TestToolkit.get_device().switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
+            dev = TestToolkit.get_device()
+            requested_ports_type = getattr(dev, 'port_type', None) or (
+                dev.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
 
         result_obj = RandomizationTool.select_random_ports(dut_engine=dut_engine,
                                                            requested_ports_state=requested_ports_state,
@@ -78,7 +80,7 @@ class RandomizationTool:
                 if not dut_device and TestToolkit.devices:
                     dut_device = getattr(TestToolkit.devices, 'dut', None)
                 if dut_device:
-                    requested_ports_type = dut_device.switch_type.lower()
+                    requested_ports_type = getattr(dut_device, 'port_type', None) or dut_device.switch_type.lower()
                 else:
                     requested_ports_type = IbInterfaceConsts.IB_PORT_TYPE.lower()
 

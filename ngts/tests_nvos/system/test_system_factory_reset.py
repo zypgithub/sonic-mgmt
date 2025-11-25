@@ -1,4 +1,3 @@
-
 import pytest
 import logging
 
@@ -16,7 +15,7 @@ from ngts.tests_nvos.system.test_system_profile_change import update_timezone
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootConsts, ApiType, HealthConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, RebootConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
@@ -88,6 +87,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 
 
 @pytest.mark.timeout(25 * MINUTE, func_only=True)
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -132,7 +132,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, seria
                                                           field_name=NvosConst.DESCRIPTION,
                                                           expected_value='nvosdescription')
 
-        mgmt_port.interface.unset(NvosConst.DESCRIPTION, apply=True).verify_result()
+        mgmt_port.interface.unset(NvosConst.DESCRIPTION, apply=True, ask_for_confirmation=True).verify_result()
 
     with allure.step("Verify the setup is functional"):
         verify_the_setup_is_functional(system, engines)
@@ -142,6 +142,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, seria
 
 
 @pytest.mark.timeout(25 * MINUTE)
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -196,6 +197,7 @@ def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, 
 
 
 @pytest.mark.timeout(30 * MINUTE)
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
@@ -243,6 +245,7 @@ def test_reset_factory_keep_only_files(engines, devices, random_api, test_name, 
         OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
+@pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.checklist
 def test_error_flow_reset_factory_with_params(random_api, engines, devices, topology_obj):

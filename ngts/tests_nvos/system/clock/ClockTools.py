@@ -465,15 +465,21 @@ class ClockTools:
             ClockTools.verify_same_datetimes(orig_datetime, timedatectl_datetime)
 
     @staticmethod
-    def set_timezone(new_tz, system_obj, apply=True):
+    def set_timezone(new_tz, system_obj, apply=True, ask_for_confirmation=False):
         """Set a given timezone
 
         :param new_tz: timezone to set (str)
         :param system_obj: System object
         :param apply: whether to apply the set or not, defaults to True
+        :param ask_for_confirmation: passed to ``datetime.set`` / apply (Cumulus-style prompts)
         :return: ResultObj from the set command
         """
-        return system_obj.datetime.set(op_param_name=ClockConsts.TIMEZONE, op_param_value=new_tz, apply=apply)
+        return system_obj.datetime.set(
+            op_param_name=ClockConsts.TIMEZONE,
+            op_param_value=new_tz,
+            apply=apply,
+            ask_for_confirmation=ask_for_confirmation,
+        )
 
     @staticmethod
     def unset_timezone(system_obj, apply=True):
