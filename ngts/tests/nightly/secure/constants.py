@@ -71,7 +71,7 @@ class SonicSecureBootConsts(SecureBootConsts):
              "Key was rejected by service",
              "CMS signature verification failed"],
         BIOS_COMPONENT:
-            ["ONIE: ERROR: bios_update firmware update: /mnt/onie-boot/onie/update/pending/0ACQF.cab, attempt: 3"],
+            ["ONIE: ERROR: bios_update firmware update.* attempt: 3"],
         CPLD_COMPONENT:
             [".*PASS!.*"]}
     REBOOT = "sudo reboot -f"
