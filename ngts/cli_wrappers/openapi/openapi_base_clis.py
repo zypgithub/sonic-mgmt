@@ -20,12 +20,10 @@ class OpenApiBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device, nvue_include_param_name=False):
+               send_user_confirmation, expected_output, device):
         """See documentation of BaseComponent.action()"""
         if send_user_confirmation:
             logger.warning(f'The following argument is ignored for OpenAPI commands: {send_user_confirmation=}')
-        if nvue_include_param_name:
-            pass  # OpenAPI always uses parameter names, so this flag is ignored
 
         url = cls._resource_path_to_rest_path(resource_path)
         params = additional_params.copy()

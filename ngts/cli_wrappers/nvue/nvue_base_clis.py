@@ -38,9 +38,9 @@ class NvueBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device, nvue_include_param_name=False) -> ResultObj:
+               send_user_confirmation, expected_output, device) -> ResultObj:
         """See documentation of BaseComponent.action()"""
-        cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params, nvue_include_param_name)
+        cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
         with allure.step('Running cmd: ' + cmd):
             # Todo: Instead of send_command_timing, use send_command to expect one of [expected_output, prompt_message,
