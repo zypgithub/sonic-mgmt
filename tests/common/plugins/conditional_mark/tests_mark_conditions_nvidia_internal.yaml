@@ -1217,6 +1217,18 @@ ipfwd/test_nhop_group.py::test_nhop_group_member_order_capability:
     conditions:
     - "https://redmine.mellanox.com/issues/4739804"
 
+tacacs/test_authorization.py::test_fallback_to_local_authorization_with_config_reload:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
+
+tacacs/test_authorization.py::test_send_remote_address:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
+
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
