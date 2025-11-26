@@ -1694,3 +1694,9 @@ class WJHConsts:
     NA = 'N/A'
     TCP_IPV4_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IP(src="{SRC_IP}", dst="{DST_IP}")/TCP()'
     TCP_IPV6_PACKET_FORMAT = 'Ether(src="{SRC_MAC}", dst="{DST_MAC}")/IPv6(src="{SRC_IP}", dst="{DST_IP}")/TCP()'
+
+
+class FanoutVersionConsts:
+    EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
+    EXPECTED_SONIC_VERSION_LIST = ["202412_RC.45-64043bb73_Internal", "202412_RC.64-51501918d_Internal",
+                                   "202412_RC.100-526c8c6a0_Internal", "202505_RC.94-7d1d472f8_Internal"]

@@ -3,7 +3,7 @@ import logging
 import pytest
 import allure
 
-from ngts.constants.constants import CliType
+from ngts.constants.constants import CliType, FanoutVersionConsts
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 
 logger = logging.getLogger()
@@ -24,6 +24,15 @@ def test_fanout_upgrade(topology_obj, workspace_path, setup_name, fanout_target_
         for dut in setup_info['duts']:
             fanout_engine_type, fanout_name, fanout = dut['cli_obj'].get_fanout_info(topology_obj, dut['dut_alias'])
             if fanout_engine_type == CliType.SONIC:
+                # Check if current fanout version is already in the expected version list
+                _, current_image = fanout.get_base_and_target_images()
+                current_version = current_image.replace("SONiC-OS-", "")
+                logger.info(f"Current fanout version: {current_version}")
+
+                if current_version in FanoutVersionConsts.EXPECTED_SONIC_VERSION_LIST:
+                    logger.info("Skipping fanout upgrade as it already runs an expected version")
+                    continue
+
                 # Prepare fanout_alias
                 fanout_alias = 'fanout'
                 if dut['dut_alias'] == 'dut-b':
