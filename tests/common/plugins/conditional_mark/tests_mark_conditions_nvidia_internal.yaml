@@ -738,6 +738,12 @@ generic_config_updater/test_pfcwd_status.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4707416"
 
+minigraph/test_masked_services.py::test_masked_services:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
+
 platform_tests/sfp/software_control/test_software_control.py:
   skip:
     reason: "Simx doesn't support Software Control feature"
