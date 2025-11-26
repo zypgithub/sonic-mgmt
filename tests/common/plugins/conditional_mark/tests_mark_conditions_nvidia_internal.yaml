@@ -521,6 +521,12 @@ dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_monitor_checksum_validation:
     conditions:
     - "https://redmine.mellanox.com/issues/4690202"
 
+dns/test_dns_resolv_conf.py::test_dns_resolv_conf:
+  xfail:
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
+
 drop_packets/test_wjh.py:
   skip:
     reason: "WJH test doesn't support dualtor topology"
