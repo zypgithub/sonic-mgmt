@@ -12,7 +12,7 @@ from tests.common.helpers.assertions import pytest_assert
 from tests.common.helpers.platform_api import bmc
 from tests.common.platform.device_utils import platform_api_conn, start_platform_api_service    # noqa: F401
 from .platform_api_test_base import PlatformApiTestBase
-from tests.common.helpers.firmware_helper import show_firmware
+from tests.common.helpers.firmware_helper import show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE
 
 
 logger = logging.getLogger(__name__)
@@ -29,12 +29,37 @@ BMC_DUMP_PATH = "/tmp"
 LATEST_BMC_VERSION_IDX = 0
 OLD_BMC_VERSION_IDX = 1
 EROT_BUSY_MSG = "ERoT is busy"
+EROT_STABLE_TIMEOUT = 600
 WAIT_TIME = 30
+BMC_COMPONENT_NAME = 'BMC'
+BMC_UPDATE_COMMAND = "sudo config platform firmware {} chassis component BMC fw -y"
+BMC_INSTALL_COMMAND = "sudo config platform firmware {} chassis component BMC fw -y {}"
+BMC_GET_STATUS_COMMAND = "curl -k -u {}:{} -X GET https://{}/redfish/v1/Chassis/MGX_ERoT_BMC_0"
+BMC_COMPLETE_STATUS = "Completed"
+
+def pytest_generate_tests(metafunc):
+    """
+    Generate test parameters based on completeness_level for test_bmc_firmware_update
+        If the completeness_level is basic, randomly select one command type from install and update
+        If the completeness_level is others, test both install and update command types
+            in this case,the test test_bmc_firmware_update will be executed twice times
+    """
+    if 'bmc_firmware_command_type' in metafunc.fixturenames:
+        completeness_level = metafunc.config.getoption("--completeness_level", default="thorough")
+
+        if completeness_level == "basic":
+            command_type = random.choice(['install', 'update'])
+            metafunc.parametrize("bmc_firmware_command_type", [command_type])
+            logger.info(f"BMC firmware update test: basic level, randomly selected command type: {command_type}")
+        else:
+            metafunc.parametrize("bmc_firmware_command_type", ['install', 'update'])
+            logger.info(f"BMC firmware update test: {completeness_level} level, testing both install and update")
 
 
-@pytest.fixture(scope="function", autouse=True)
-def is_bmc_present(platform_api_conn):           # noqa: F811
-    if not bmc.get_presence(platform_api_conn):  # noqa: F811
+@pytest.fixture(scope="module", autouse=True)
+def is_bmc_present(duthosts, enum_rand_one_per_hwsku_hostname):
+    duthost = duthosts[enum_rand_one_per_hwsku_hostname]
+    if not bmc.is_bmc_exists(duthost):
         pytest.skip("BMC is not present, skipping BMC platform API tests")
 
 
@@ -57,28 +82,97 @@ class TestBMCApi(PlatformApiTestBase):
         self.bmc_root_user = creds['sonic_bmc_root_user']
         self.bmc_root_password = creds['sonic_bmc_root_password']
 
-    @pytest.fixture(scope="module")
-    def _update_bmc_firmware_by_api(self, duthost, fw_image, timeout=600):
+    def _is_bmc_busy(self, duthost, bmc_ip):
+        """
+        Check if BMC is busy by querying BackgroundCopyStatus from Redfish API
+
+        Args:
+            duthost: DUT host object
+            bmc_ip: BMC IP address
+        Returns:
+            bool: True if BMC is busy (BackgroundCopyStatus != "Completed"), False otherwise
+        """
+        res = duthost.command(BMC_GET_STATUS_COMMAND.format(self.bmc_root_user, self.bmc_root_password, bmc_ip))["stdout"]
+        pytest_assert(res is not None, "Failed to query BMC status")
+
+        try:
+            response_json = json.loads(res)
+            background_copy_status = response_json.get("Oem", {}).get("Nvidia", {}).get("BackgroundCopyStatus", "")
+            logger.info(f"BMC BackgroundCopyStatus: {background_copy_status}")
+
+            return background_copy_status != BMC_COMPLETE_STATUS
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            logger.warning(f"Failed to parse BMC status response: {e}, response: {res}")
+            return True
+
+    def _update_bmc_firmware(self, duthost, fw_image, bmc_ip, method='api',
+                             cli_type=None, timeout=EROT_STABLE_TIMEOUT):
+        """
+        Update BMC firmware with retry mechanism for ERoT busy scenarios
+
+        Args:
+            duthost: DUT host object
+            fw_image: Path to firmware image file
+            bmc_ip: BMC IP address
+            method: Update method - 'api' or 'cli' (default: 'api')
+            cli_type: CLI command type when method='cli' - FW_TYPE_INSTALL or FW_TYPE_UPDATE
+            timeout: Maximum time to wait for update (default: EROT_STABLE_TIMEOUT)
+
+        Returns:
+            bool: True if update successful, False otherwise
+        """
         start_time = time.time()
+
+        logger.info(f"Starting BMC firmware update via {method.upper()}" +
+                   (f" ({cli_type})" if method == 'cli' and cli_type else ""))
 
         while True:
             if time.time() - start_time > timeout:
                 logger.warning(f"Timeout after {timeout} seconds while updating BMC firmware")
                 return False
-
             time.sleep(WAIT_TIME)
-            ret_code, message = bmc.update_firmware(duthost, fw_image)
-            if EROT_BUSY_MSG in message:
-                logger.info(f"{EROT_BUSY_MSG}, waiting for {WAIT_TIME} seconds")
-                continue
-            elif ret_code != 0:
-                logger.warning(f"Failed to update BMC firmware: return code: {ret_code}, message: {message}")
-                return False
-            else:
-                logger.info("BMC firmware updated successfully!")
-                break
 
-        bmc.request_bmc_reset(duthost)
+            if method == 'api':
+                ret_code, message = bmc.update_firmware(duthost, fw_image)
+
+                if EROT_BUSY_MSG in message:
+                    logger.info(f"{EROT_BUSY_MSG}, waiting for {WAIT_TIME} seconds")
+                    continue
+                elif ret_code != 0:
+                    logger.warning(f"Failed to update BMC firmware: return code: {ret_code}, message: {message}")
+                    return False
+                else:
+                    logger.info("BMC firmware updated successfully via API!")
+                    break
+
+            elif method == 'cli':
+                if cli_type is None:
+                    logger.error("cli_type must be specified when method='cli'")
+                    return False
+
+                is_bmc_busy = self._is_bmc_busy(duthost, bmc_ip)
+                if is_bmc_busy:
+                    logger.info(f"BMC is busy, waiting for {WAIT_TIME} seconds")
+                    continue
+
+                if cli_type == FW_TYPE_UPDATE:
+                    res = duthost.command(BMC_UPDATE_COMMAND.format(cli_type))
+                else:
+                    res = duthost.command(BMC_INSTALL_COMMAND.format(cli_type, fw_image))
+
+                if res['rc'] == 0:
+                    logger.info(f"BMC firmware updated successfully via CLI ({cli_type})!")
+                else:
+                    logger.info(f"Failed to update BMC firmware: {res['stdout']}")
+                break
+            else:
+                logger.error(f"Unknown update method: {method}")
+                return False
+
+        if method == 'api':
+            logger.info("Requesting BMC reset after successful update by platform api")
+            bmc.request_bmc_reset(duthost)
+
         return True
 
     def _generate_password(self):
@@ -137,6 +231,55 @@ class TestBMCApi(PlatformApiTestBase):
                     if entry['version'] == 'N/A':
                         continue
                     return entry['version']
+
+    def _generate_platform_file(self, duthost, chassis_name, fw_path, fw_version):
+        """
+        Generate 'platform_components.json' file for BMC firmware update test case
+
+        This function:
+        1. Tries to read existing platform_components.json from duthost
+        2. If exists, updates the BMC component section
+        3. If not exists, raises an error
+        4. Writes the updated content back to duthost
+
+        Args:
+            duthost: DUT host object
+            chassis_name: Name of the chassis
+            fw_path: Path to the firmware file
+            fw_version: Version of the firmware
+        """
+        platform_type = duthost.facts['platform']
+        remote_comp_file_path = PLATFORM_COMP_PATH_TEMPLATE.format(platform_type)
+        local_comp_file_path = "/tmp/platform_components.json"
+
+        logger.info(f"Checking if '{remote_comp_file_path}' exists on {duthost.hostname}")
+        check_result = duthost.stat(path=remote_comp_file_path)
+
+        if check_result['stat']['exists']:
+
+            logger.info(f"Reading existing 'platform_components.json' from {duthost.hostname}: {remote_comp_file_path}")
+            output = duthost.command(f"cat {remote_comp_file_path}")["stdout"]
+            json_data = json.loads(output)
+
+            if BMC_COMPONENT_NAME not in json_data['chassis'][chassis_name]['component']:
+                json_data['chassis'][chassis_name]['component'][BMC_COMPONENT_NAME] = {}
+
+            json_data['chassis'][chassis_name]['component'][BMC_COMPONENT_NAME]['firmware'] = fw_path
+            json_data['chassis'][chassis_name]['component'][BMC_COMPONENT_NAME]['version'] = fw_version
+            logger.info(f"Updated BMC component: firmware={fw_path}, version={fw_version}")
+
+            logger.info(f"Writing updated 'platform_components.json' to localhost: {local_comp_file_path}")
+            with open(local_comp_file_path, 'w') as comp_file:
+                json.dump(json_data, comp_file, indent=4)
+                logger.info(f"Updated 'platform_components.json':\n{json.dumps(json_data, indent=4)}")
+
+            logger.info(f"Copying 'platform_components.json' to {duthost.hostname}: {remote_comp_file_path}")
+            duthost.copy(src=local_comp_file_path, dest=remote_comp_file_path)
+
+            logger.info(f"Removing 'platform_components.json' from localhost: {local_comp_file_path}")
+            os.remove(local_comp_file_path)
+        else:
+            raise RuntimeError(f"{remote_comp_file_path} could not be found on {duthost.hostname}")
 
     def test_get_name(self, platform_api_conn):        # noqa: F811
         name = bmc.get_name(platform_api_conn)
@@ -240,14 +383,20 @@ class TestBMCApi(PlatformApiTestBase):
         pytest_assert(duthost.command(
             f"ls -l {bmc_dump_path}")["rc"] == 0, f"BMC dump file not found: {bmc_dump_path}")
 
-    def test_bmc_firmware_update(self, duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg):
+    def test_bmc_firmware_update(self, duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg, bmc_firmware_command_type,
+                                 backup_platform_file, bmc_ip, request):
         """
         Test BMC firmware update with platform API and CLI
 
         Steps:
         1. Check and record the original BMC firmware version
         2. Update the BMC firmware version by command
-            'config platform firmware install chassis component BMC fw -y xxx'
+            'config platform firmware install chassis component BMC fw -y xxx' or
+            'config platform firmware update chassis component BMC fw -y xxx'
+            depending on completeness_level:
+                if the completeness_level is basic, only test one command type randomly
+                if the completeness_level is others, test both command types
+                in this case,the test test_bmc_firmware_update will be executed twice times
         3. Wait after the installation done
         4. Validate the BMC firmware had been updated to the destination version by command
             'show platform firmware status'
@@ -259,23 +408,31 @@ class TestBMCApi(PlatformApiTestBase):
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
         bmc_version_origin = self._get_bmc_version(duthost)
         logger.info(f"BMC version origin: {bmc_version_origin}")
+        logger.info(f"Testing with command type: {bmc_firmware_command_type}")
 
         chassis = list(show_firmware(duthost)["chassis"].keys())[0]
         logger.info(f"Chassis: {chassis}")
         fw_pkg_path_new = fw_pkg["chassis"][chassis]["component"]["BMC"][LATEST_BMC_VERSION_IDX]["firmware"]
+        fw_version_new = fw_pkg["chassis"][chassis]["component"]["BMC"][LATEST_BMC_VERSION_IDX]["version"]
         fw_pkg_clean_path_new = urlparse(fw_pkg_path_new).path
         fw_pkt_name_new = os.path.basename(fw_pkg_path_new)
+        if bmc_firmware_command_type == FW_TYPE_UPDATE:
+            logger.info(f"Generate 'platform_components.json' for BMC firmware: {fw_version_new}")
+            self._generate_platform_file(duthost, chassis, f"/tmp/{fw_pkt_name_new}", fw_version_new)
+
         logger.info(f"BMC firmware path: {fw_pkg_clean_path_new}")
         logger.info(f"Copy BMC firmware to localhost: /tmp/{fw_pkt_name_new}")
         duthost.copy(src=fw_pkg_clean_path_new, dest=f"/tmp/{fw_pkt_name_new}")
 
-        logger.info(f"Execute BMC firmware update to {fw_pkt_name_new} and Wait for BMC firmware update to complete")
-        res = duthost.command(
-            f"sudo config platform firmware install chassis component BMC fw -y /tmp/{fw_pkt_name_new}")
+        logger.info(f"Execute BMC firmware {bmc_firmware_command_type} to {fw_pkt_name_new} and "
+                    f"Wait for BMC firmware update to complete")
+        res = self._update_bmc_firmware(duthost, f"/tmp/{fw_pkt_name_new}", bmc_ip,
+                                        method='cli', cli_type=bmc_firmware_command_type)
+        pytest_assert(res, f"Failed to execute BMC firmware {bmc_firmware_command_type} by CLI!")
 
         bmc_version_latest = self._get_bmc_version(duthost)
-        logger.info(f"BMC version after update: {bmc_version_latest}")
-        pytest_assert(bmc_version_latest != bmc_version_origin, "BMC firmware update failed")
+        logger.info(f"BMC version after {bmc_firmware_command_type}: {bmc_version_latest}")
+        pytest_assert(bmc_version_latest != bmc_version_origin, f"BMC firmware {bmc_firmware_command_type} failed")
 
         fw_pkg_path_old = fw_pkg["chassis"][chassis]["component"]["BMC"][OLD_BMC_VERSION_IDX]["firmware"]
         fw_pkg_clean_path_old = urlparse(fw_pkg_path_old).path
@@ -285,9 +442,9 @@ class TestBMCApi(PlatformApiTestBase):
         duthost.copy(src=fw_pkg_clean_path_old, dest=f"/tmp/{fw_pkt_name_old}")
 
         logger.info(f"Execute BMC firmware update to {fw_pkt_name_old} and Wait for BMC firmware update to complete")
-        res = self._update_bmc_firmware_by_api(duthost, f"/tmp/{fw_pkt_name_old}")
+        res = self._update_bmc_firmware(duthost, f"/tmp/{fw_pkt_name_old}", bmc_ip, method='api')
         pytest_assert(res, "Failed to execute BMC firmware update by API!")
 
         bmc_version_current = self._get_bmc_version(duthost)
-        logger.info(f"BMC version after update: {bmc_version_current}")
+        logger.info(f"BMC version after recovery: {bmc_version_current}")
         pytest_assert(bmc_version_latest != bmc_version_current, "BMC firmware recovery failed")

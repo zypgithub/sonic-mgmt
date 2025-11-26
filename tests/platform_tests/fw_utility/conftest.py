@@ -76,33 +76,6 @@ def skip_if_no_update(component_object, component_firmware):
 
 
 @pytest.fixture(scope='function')
-def backup_platform_file(duthost):
-    """
-    Backup the original 'platform_components.json' file
-    """
-    hostname = duthost.hostname
-    platform_type = duthost.facts['platform']
-
-    platform_comp_path = PLATFORM_COMP_PATH_TEMPLATE.format(platform_type)
-    backup_path = tempfile.mkdtemp(prefix='json-')
-    current_backup_path = os.path.join(backup_path, 'current_platform_components.json')
-
-    msg = "Fetch 'platform_components.json' from {}: remote_path={}, local_path={}"
-    logger.info(msg.format(hostname, platform_comp_path, current_backup_path))
-    duthost.fetch(src=platform_comp_path, dest=current_backup_path, flat='yes')
-
-    yield
-
-    msg = "Copy 'platform_components.json' to {}: local_path={}, remote_path={}"
-    logger.info(msg.format(hostname, current_backup_path, platform_comp_path))
-    duthost.copy(src=current_backup_path, dest=platform_comp_path)
-
-    logger.info("Remove 'platform_components.json' backup from localhost: path={}".format(backup_path))
-    os.remove(current_backup_path)
-    os.rmdir(backup_path)
-
-
-@pytest.fixture(scope='function')
 def setup_images(request, duthost, component_firmware):
     """"
     Setup part of 'update from next image test' case.

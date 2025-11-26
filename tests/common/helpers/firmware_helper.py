@@ -1,6 +1,10 @@
 import re
 
 
+PLATFORM_COMP_PATH_TEMPLATE = '/usr/share/sonic/device/{}/platform_components.json'
+FW_TYPE_INSTALL = 'install'
+FW_TYPE_UPDATE = 'update'
+
 def show_firmware(duthost):
     out = duthost.command("fwutil show status")
     num_spaces = 2

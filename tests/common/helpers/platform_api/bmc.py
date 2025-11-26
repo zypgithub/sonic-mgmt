@@ -27,6 +27,17 @@ def bmc_host_api(duthost, api_name, *args):
         return res.strip()
 
 
+def is_bmc_exists(duthost):
+    all_components = "sudo python -c 'import sonic_platform; \
+                                      com = sonic_platform.platform.Platform().get_chassis().get_all_components(); \
+                                      print(com)'"
+    components = duthost.shell(all_components)['stdout']
+    if 'BMC' in components:
+        return True
+    else:
+        return False
+
+
 def get_name(conn):
     return bmc_pmon_api(conn, 'get_name')
 
@@ -80,4 +91,4 @@ def update_firmware(duthost, fw_image):
 
 
 def request_bmc_reset(duthost):
-    return bmc_host_api(duthost, '_request_bmc_reset')
+    return bmc_host_api(duthost, 'request_bmc_reset')

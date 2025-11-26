@@ -11,8 +11,7 @@ import pytest
 
 from tests.common.utilities import wait_until
 from tests.common.plugins.loganalyzer.loganalyzer import LogAnalyzer, LogAnalyzerError
-
-PLATFORM_COMP_PATH_TEMPLATE = '/usr/share/sonic/device/{}/platform_components.json'
+from tests.common.helpers.firmware_helper import PLATFORM_COMP_PATH_TEMPLATE, FW_TYPE_INSTALL, FW_TYPE_UPDATE
 
 FW_INSTALL_INVALID_NAME_LOG = '.*Invalid value for "<component_name>"*.'
 FW_INSTALL_INVALID_PATH_LOG = '.*Error: Invalid value for "<fw_path>"*.'
@@ -27,9 +26,6 @@ FW_INSTALL_SUCCESS_LOG = "Firmware install ended: component=.*, firmware=.*, sta
 
 FW_UPDATE_START_LOG = "Firmware update started: component=.*, firmware=.*"
 FW_UPDATE_SUCCESS_LOG = "Firmware update ended: component=.*, firmware=.*, status=success"
-
-FW_TYPE_INSTALL = 'install'
-FW_TYPE_UPDATE = 'update'
 
 IMAGE_TYPE_CURRENT = 'current'
 IMAGE_TYPE_NEXT = 'next'
