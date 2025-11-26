@@ -1,5 +1,6 @@
 from ngts.cli_wrappers.common.bgp_clis_common import BgpCliCommon
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
+BGP_SUMMARY_CMD = {'ipv4': 'show ip bgp summary', 'ipv6': 'show ipv6 bgp summary'}
 
 
 class SonicBgpCli(BgpCliCommon):
@@ -45,14 +46,14 @@ class SonicBgpCli(BgpCliCommon):
         cmd = 'sudo service bgp restart'
         return self.engine.run_cmd(cmd)
 
-    def show_ip_bgp_summary(self):
+    def show_ip_bgp_summary(self, ip_version='ipv4'):
         """
         Run command: "show ip bgp summary"
         """
-        cmd = 'sudo show ip bgp summary'
+        cmd = f'sudo {BGP_SUMMARY_CMD.get(ip_version, "show ip bgp summary")}'
         return self.engine.run_cmd(cmd)
 
-    def parse_ip_bgp_summary(self, show_bgp_summary_output=None):
+    def parse_ip_bgp_summary(self, show_bgp_summary_output=None, ip_version='ipv4'):
         """
         Parse output of command: "show ip bgp summary"
         :param show_bgp_summary_output: "show ip bgp summary" output
@@ -63,7 +64,7 @@ class SonicBgpCli(BgpCliCommon):
         'InQ': '0', 'OutQ': '0', 'Up/Down': '00:07:02', 'State/PfxRcd': '2', 'NeighborName': 'HB'}}
         """
         if not show_bgp_summary_output:
-            show_bgp_summary_output = self.show_ip_bgp_summary()
+            show_bgp_summary_output = self.show_ip_bgp_summary(ip_version=ip_version)
         output_key = "Neighbhor" if "Neighbhor" in show_bgp_summary_output else "Neighbor"
         bgp_summary_dict = generic_sonic_output_parser(show_bgp_summary_output,
                                                        headers_ofset=8,

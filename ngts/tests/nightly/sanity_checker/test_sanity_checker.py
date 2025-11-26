@@ -217,7 +217,9 @@ def test_bgp_session_status_check(topology_obj):
     This test is verify that bgp session status is ok.
     If case fail, the consequent regression steps will be stopped by mars
     """
-    ip_bgp_summary = topology_obj.players['dut']['cli'].bgp.parse_ip_bgp_summary()
+    ip_bgp_summary = topology_obj.players['dut']['cli'].bgp.parse_ip_bgp_summary(ip_version='ipv4')
+    if not ip_bgp_summary:
+        ip_bgp_summary = topology_obj.players['dut']['cli'].bgp.parse_ip_bgp_summary(ip_version='ipv6')
     regex_full_digit = r"^\d+$"
     for neighbor_ip, neighbor_info in ip_bgp_summary.items():
         assert re.match(regex_full_digit, neighbor_info["State/PfxRcd"]), \
