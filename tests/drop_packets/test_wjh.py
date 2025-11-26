@@ -140,6 +140,10 @@ def get_agg_tables_output(duthost, command="show what-just-happened poll --aggre
     return table_output
 
 
+def norm(pkt_mac):
+    return pkt_mac.decode() if isinstance(pkt_mac, bytes) else pkt_mac
+
+
 def check_if_entry_exists(table, pkt):
     entries = []
     entry_found = False
@@ -151,8 +155,8 @@ def check_if_entry_exists(table, pkt):
     for entry in table:
         src_ip_port = entry['Src IP:Port'].rsplit(':', 1)
         dst_ip_port = entry['Dst IP:Port'].rsplit(':', 1)
-        if (pkt.dst.lower() == entry['dMAC'].lower() and
-            pkt.src.lower().decode("utf-8") == entry['sMAC'].lower()):
+        if (norm(pkt.dst).lower() == entry['dMAC'].lower() and
+            norm(pkt.src).lower() == entry['sMAC'].lower()):
 
                 if src_ip_port[0] != 'N/A':
                     if ip_key in pkt:
