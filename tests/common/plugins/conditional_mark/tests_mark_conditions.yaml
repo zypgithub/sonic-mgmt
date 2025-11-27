@@ -3900,10 +3900,10 @@ pfcwd/test_pfcwd_.*\[IPv6.*:
       - "https://github.com/sonic-net/sonic-mgmt/issues/21082 and asic_type in ['mellanox']"
 
 pfcwd/test_pfcwd_cli.py:
-   skip:
-     reason: "Skip at dualtor aa testbed due to https://github.com/sonic-net/sonic-mgmt/issues/17218"
+   xfail:
+     reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21466"
      conditions:
-        - "'dualtor-aa' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/17218"
+        - "https://github.com/sonic-net/sonic-mgmt/issues/21466"
 
 pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_actions:
   xfail:
