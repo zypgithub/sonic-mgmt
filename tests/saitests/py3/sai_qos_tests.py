@@ -4562,6 +4562,7 @@ class WRRtest(sai_base_test.ThriftInterfaceDataPlane):
                 else:
                     print("Success in setting scheduler in DUT.", file=sys.stderr)
             else:
+                self.dataplane.flush()
                 # Release port
                 self.sai_thrift_port_tx_enable(
                     self.dst_client,
@@ -4575,7 +4576,7 @@ class WRRtest(sai_base_test.ThriftInterfaceDataPlane):
 
             while recv_pkt:
                 received = self.dataplane.poll(
-                    device_number=0, port_number=dst_port_id, timeout=2)
+                    device_number=0, port_number=dst_port_id, timeout=10)
                 if isinstance(received, self.dataplane.PollFailure):
                     recv_pkt = None
                     break
