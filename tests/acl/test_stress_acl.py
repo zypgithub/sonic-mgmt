@@ -256,6 +256,9 @@ def acl_rule_loaded(rand_selected_dut, acl_rule_list):
     acl_rule_infos = rand_selected_dut.show_and_parse("show acl rule")
     acl_id_list = []
     for acl_info in acl_rule_infos:
+        # Check if rule is Active (programmed in hardware), not just in CONFIG_DB
+        if acl_info.get('status', '').lower() != 'active':
+            return False
         acl_id = int(acl_info['rule'][len('RULE_'):])
         acl_id_list.append(acl_id)
     if sorted(acl_id_list) != sorted(acl_rule_list):
