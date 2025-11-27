@@ -75,6 +75,10 @@ def test_2_mgmt_snmp(engines, topology_obj):
     dut_setup_specific_attributes: Dict[str, str] = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']
     setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
     dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
+
+    if "-mgmt2" in dhcp_hostname:
+        dhcp_hostname = dhcp_hostname.replace("-mgmt2", "")
+
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
