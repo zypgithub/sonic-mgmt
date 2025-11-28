@@ -979,8 +979,10 @@ platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
 platform_tests/api/test_watchdog.py:
   skip:
     reason: "Simx doesn't support CPLD"
+    conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4722415 and 'dpu' in platform"
 
 platform_tests/test_reload_config.py::test_reload_configuration:
   skip:
