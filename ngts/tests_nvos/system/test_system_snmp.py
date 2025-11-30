@@ -236,14 +236,7 @@ def test_system_snmp_functional(engines, topology_obj):
 
     with allure.step("Enable snmp"):
         with allure.step('Get ipv6 address'):
-            logging.info("Running 'nv show interface eth0 ip address'")
-            output = engines.dut.run_cmd("nv show interface eth0 ip address")
-            assert output, "The output is empty"
-            addresses = output.split()
-            assert len(addresses) >= 4, "The output is invalid"
-            for add in addresses:
-                if ":" in add and len(add) >= 32:
-                    ipv6_address = add.split("/")[0]
+            ipv6_address = mgmt_port.interface.ipv6.get_primary_ip_address()
 
         with allure.step('Set ipv6 listening address'):
             system.snmp_server.set('listening-address', ipv6_address).verify_result()

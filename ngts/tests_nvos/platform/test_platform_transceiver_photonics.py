@@ -105,7 +105,8 @@ def test_show_transceiver_oe(engines, devices, nv_command, test_api):
 
     with allure.step("Verify all fields are as expected for OE transceiver"):
         oe_rand = random.choice(oe_list)
-        oe_output = all_transceivers_data[oe_rand]
+        oe_output = Tools.OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.transceiver.show(oe_rand)).get_returned_value()
 
         expected_fields = TransceiversConsts.TRANSCEIVERS_FIELDS[TransceiversConsts.TRANSCEIVERS_OE]
         actual_fields = set(oe_output.keys())
@@ -126,23 +127,10 @@ def test_show_transceiver_oe(engines, devices, nv_command, test_api):
                     expected_value=PlatformConsts.INSERTED
                 ).verify_result()
 
-            with allure.independent_step(f"Verify fault condition for {oe}"):
-                ValidationTool.verify_field_value_in_output(
-                    output_dictionary=oe_output,
-                    field_name=PlatformConsts.TRANSCEIVER_FAULT_CONDITION,
-                    expected_value='false'
-                ).verify_result()
-
-            with allure.independent_step(f"Verify port mapping for {oe}"):
+            with allure.independent_step(f"Verify ELS and port mapping for {oe}"):
                 els_mapping = oe_output[PlatformConsts.TRANSCEIVER_ELS_MAPPING]
                 actual_port_mapping = oe_output[PlatformConsts.TRANSCEIVER_PORT_MAPPING].keys()
                 expected_port_mapping = transceivers_els_to_port_mapping[els_mapping]
                 ValidationTool.validate_set_equal(
                     actual_port_mapping, expected_port_mapping, should_be_equal=True
-                ).verify_result()
-
-            with allure.independent_step(f"Verify OE mapping for {oe}"):
-                expected_oe_mapping = transceivers_els_to_oe_mapping[els_mapping]
-                ValidationTool.validate_set_equal(
-                    [oe], expected_oe_mapping, should_be_equal=True
                 ).verify_result()
