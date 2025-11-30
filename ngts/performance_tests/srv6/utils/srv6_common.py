@@ -256,14 +256,16 @@ class TestSRv6Base:
                                                                                                                  'tc_keys': [ValidationConsts.OCC_AVG],
                                                                                                                  'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
                                                                                                                  'allowed_deviation': tc_occ_allowed_deviation})
-                additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,
-                                                                                                                   'latency_keys': [ValidationConsts.TC_AVG_LATENCY],
-                                                                                                                   'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
-                                                                                                                   'allowed_deviation': MRCConsts.LATENCY_ALLOWED_DEVIATION})
                 additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                          'pg_keys': [ValidationConsts.OCC_AVG],
                                                                                                          'pg_to_validate': MRCConsts.PG_LIST,
                                                                                                          'allowed_deviation': MRCConsts.HEADROOM_ALLOWED_DEVIATION})
+
+                if not is_redmine_issue_active([4743477])[0]:
+                    additional_validations['compare_latency_to_reference'] = Validation(compare_latency_to_reference, {'reference_json': ipv6_validation_json,
+                                                                                                                       'latency_keys': [ValidationConsts.TC_AVG_LATENCY],
+                                                                                                                       'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
+                                                                                                                       'allowed_deviation': MRCConsts.LATENCY_ALLOWED_DEVIATION})
         return additional_validations
 
     def get_many_to_few_additional_validations(self, egress_ports, tc_threshold):
@@ -271,8 +273,14 @@ class TestSRv6Base:
         if not is_redmine_issue_active([4668758])[0]:
             max_watermark_th = self.get_max_watermark_th(num_of_congested_ports=len(egress_ports), num_of_congested_tc=len(MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM))
             additional_validations = {
-                'validate_max_watermark_on_trimming_queue': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th, 'tc_to_validate': MRCConsts.TRIMMING_QUEUE_NUM, 'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE}),
-                'validate_max_watermark_on_data_queues': Validation(validate_per_tc, {'tc_occ_threshold': tc_threshold, 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM, 'tolerance': None})
+                'validate_max_watermark_on_trimming_queue': Validation(validate_per_tc, {'tc_occ_threshold': max_watermark_th,
+                                                                                         'tc_to_validate': MRCConsts.TRIMMING_QUEUE_NUM,
+                                                                                         'tolerance': MRCConsts.MAX_WATERMARK_BY_ALPHA_TOLERANCE,
+                                                                                         'port_group_name_to_validate_list': [MRCConsts.EGRESS_PORT_GROUP_NAME]}),
+                'validate_max_watermark_on_data_queues': Validation(validate_per_tc, {'tc_occ_threshold': tc_threshold,
+                                                                                      'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
+                                                                                      'tolerance': None,
+                                                                                      'port_group_name_to_validate_list': [MRCConsts.EGRESS_PORT_GROUP_NAME]})
             }
         return additional_validations
 

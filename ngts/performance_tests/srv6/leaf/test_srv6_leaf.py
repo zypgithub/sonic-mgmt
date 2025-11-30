@@ -162,7 +162,7 @@ class TestSRv6Leaf(TestSRv6Base):
                                      f"leaf-victim-flow-{traffic_type}"})
         with allure.step(f"Set test correct port group dataframe"):
             bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df = get_victim_flow_port_group_df(self.players)
-            egress_ports = bisection_left + bisection_right + many_to_one_egress_ports
+            bisection_ports = bisection_left + bisection_right
             self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
             add_test_mongo_metadata(test_name, {MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type})
@@ -205,7 +205,7 @@ class TestSRv6Leaf(TestSRv6Base):
         with allure.step(f"stop traffic"):
             stop_traffic(self.players)
         with allure.step(f"validate no dropped packets on queues"):
-            self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(egress_ports,
+            self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(bisection_ports,
                                                                                     trimming_queue=MRCConsts.TRIMMING_TC,
                                                                                     drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
                                                                                     violations_list=violations_list,
@@ -216,7 +216,10 @@ class TestSRv6Leaf(TestSRv6Base):
 
     def get_victim_flow_additional_validations(self):
         additional_validations = {
-            'validate_per_tc': Validation(validate_per_tc, {'tc_occ_threshold': MRCConsts.OCC_TH_DICT, 'tc_to_validate': MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST, 'tolerance': None})
+            'validate_per_tc': Validation(validate_per_tc, {'tc_occ_threshold': MRCConsts.OCC_TH_DICT,
+                                                            'tc_to_validate': MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,
+                                                            'tolerance': None,
+                                                            'port_group_name_to_validate_list': []})
         }
         return additional_validations
 

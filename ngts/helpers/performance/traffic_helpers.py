@@ -399,24 +399,40 @@ def validate_tc(traffic_json, tc_occ_threshold, violations_list):
                                 pass
 
 
-def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, tolerance, violations_list):
+def validate_per_tc(traffic_json, tc_occ_threshold, tc_to_validate, tolerance, port_group_name_to_validate_list, violations_list):
+    """
+    This function is used to validate the TC occupancy rate is below the threshold
+    :param traffic_json: current test validation json
+    :param tc_occ_threshold: tc occupancy threshold, i.e {1: 100, 2: 200} for 100 cells and 200 cells respectively
+    :param tc_to_validate: tc to validate, i.e [1, 2]
+    :param tolerance: tolerance, i.e 0.1 for 10% deviation
+    :param port_group_name_to_validate_list: port group name to validate list, if empty, all port groups will be validated
+    :param violations_list: list of violations
+    """
     with allure.step(f"Validate {tc_to_validate} TC samples occupancy rate is below {tc_occ_threshold} cells"):
         tc_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         tc_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
         higher_tc_samples = []
         for sample_id, port_groups in tc_samples.items():
             for port_group_name, port_group_data in port_groups.items():
-                tc_df = port_group_data[ValidationConsts.TC_DATAFRAME]
-                for tc_dict in tc_df:
-                    tc_name = tc_dict[ValidationConsts.TC_NAME]
-                    tc_occ_threshold = _get_tc_occ_threshold(tc_occ_threshold, port_group_name)
-                    if tc_name in tc_to_validate:
-                        for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
-                            tc_occ = tc_dict[tc_occ_key]
-                            validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key)
+                if should_validate_tc_occ_for_port_group(port_group_name_to_validate_list, port_group_name):
+                    tc_df = port_group_data[ValidationConsts.TC_DATAFRAME]
+                    for tc_dict in tc_df:
+                        tc_name = tc_dict[ValidationConsts.TC_NAME]
+                        tc_occ_threshold = _get_tc_occ_threshold(tc_occ_threshold, port_group_name)
+                        if tc_name in tc_to_validate:
+                            for tc_occ_key, tc_occ_th in tc_occ_threshold.items():
+                                tc_occ = tc_dict[tc_occ_key]
+                                validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key)
         if higher_tc_samples:
             violations_list.append(f"Not all TC samples were lower than threshold {tc_occ_threshold}, "
                                    f"please check {higher_tc_samples}")
+
+
+def should_validate_tc_occ_for_port_group(port_group_name_to_validate_list, port_group_name):
+    all_port_groups_allowed = len(port_group_name_to_validate_list) == 0
+    specific_port_group_allowed = port_group_name in port_group_name_to_validate_list
+    return all_port_groups_allowed or specific_port_group_allowed
 
 
 def validate_tc_occ_value(tc_occ, tc_occ_th, tolerance, higher_tc_samples, sample_id, tc_name, tc_occ_key):
