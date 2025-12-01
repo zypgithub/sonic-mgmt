@@ -213,19 +213,19 @@ def get_scenario_6a_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "bisection_left_group": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "bisection_right_group": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "egress_ports_many_to_1_group_left": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: lossless_rx_expected_bw
             },
             "egress_ports_many_to_1_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: lossless_rx_expected_bw
             },
             "ingress_ports_many_to_1_group_left": {
@@ -354,11 +354,11 @@ def get_scenario_6b_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "egress_ports_few_to_many_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: None
             },
             "bisection_egress_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: None
             },
             "ingress_ports_few_to_many_group_left": {
@@ -466,11 +466,11 @@ def get_scenario_7a_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "ports_connected_to_spine": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "ports_connected_to_nic": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
         }
@@ -654,7 +654,7 @@ def get_groups_bw_threshold(all_groups):
     groups_bw_threshold = {
         **{
             group_name: {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_BW_TH,
+                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             }
             for group_name in all_groups
