@@ -1324,5 +1324,11 @@ platform_tests/cli/test_show_platform.py::test_show_platform_fan:
     conditions:
     - "'6600_simx' in platform"
 
+platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
+  skip:
+    reason: "Skipped on SPC6 due to RM 4765935"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4765935 and '6600_simx' in platform"
+
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
