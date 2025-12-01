@@ -465,4 +465,58 @@
         </cmd>
     </case>
 
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> multiasic_idf </info>
+        <name> multiasic_idf </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts generic_config_updater/test_multiasic_idf.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- daily case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> no </value>
+            </condition>
+        </ignore>
+        <info> multiasic_linkcrc </info>
+        <name> multiasic_linkcrc </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --alluredir=/tmp/allure-results --timeout 1800 --session-timeout 1800 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts generic_config_updater/test_multiasic_linkcrc.py </static_args>
+            </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <!-- weekend case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> load_minigraph_with_golden_config </info>
+        <name> load_minigraph_with_golden_config </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals --alluredir=/tmp/allure-results --timeout 2400 --session-timeout 2400 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts override_config_table/test_override_config_table_masic.py  </static_args>
+            </params>
+        </cmd>
+    </case>
+
 </CASEDEF>
