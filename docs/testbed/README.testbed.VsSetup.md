@@ -57,36 +57,63 @@ Example 2:
 root_path: /data/veos-vm
 ```
 
+Create a subfolder called `images` inside the `root_path` directory defined in `ansible/group_vars/vm_host/main.yml` file. For instance, if `root_path` is set to `veos-vm`, you should run the following command:
+
+```bash
+mkdir -p ~/veos-vm/images
+```
+
 ### Option 1: vEOS (KVM-based) image
 1. Download the [vEOS image from Arista](https://www.arista.com/en/support/software-download)
-2. Copy below image files to location determined by `root_path` on your testbed host:
+2. Place below image files in the `images` subfolder located within the directory specified by the `root_path` variable in the `ansible/group_vars/vm_host/main.yml` file.
    - `Aboot-veos-serial-8.0.0.iso`
    - `vEOS-lab-4.20.15M.vmdk`
+3. Update `ansible/group_vars/vm_host/veos.yml` if you decided to use different veos image files from above.
+
 ### Option 2: cEOS (container-based) image (recommended)
-#### Option 2.1: Download and import cEOS image manually
-Download the [cEOS image from Arista](https://www.arista.com/en/support/software-download). For example download file `cEOS64-lab-4.29.3M.tar`.
-Put the downloaded file under `~/veos-vm/images/` on your testbed host.
-The playbook will automatically look for the cEOS image file in the `~/veos-vm/images/` directory and import it into the testbed server.
+   #### Option 2.1: Manually download cEOS image
 
-**Note**: *For time being, the image might be updated, in that case you can't download the same version of image as in the instruction,
-please download the corresponding version(following [Arista recommended release](https://www.arista.com/en/support/software-download#datatab300)) of image and import it to your local docker repository.
-The actual image version that is needed in the installation process is defined in the file [ansible/group_vars/all/ceos.yml](../../ansible/group_vars/all/ceos.yml), make sure you modify locally to keep it up with the image version you imported.*
+   1. Obtain the cEOS image from [Arista's software download page](https://www.arista.com/en/support/software-download). You can choose later cEOS versions, they do not guarantee to work (the latest 4.35.0F do not).
+   2. Unxz it with `unxz cEOS64-lab-4.29.3M.tar.xz`.
+   2. Place the image file in the `images` subfolder located within the directory specified by the `root_path` variable in the `ansible/group_vars/vm_host/main.yml` file.
 
-**Note**: *Please also notice the type of the bit for the image, in the example above, it is a standard 32-bit image. Please import the right image as your needs.*
-#### Option 2.2: Pull cEOS image automatically
-Alternatively, you can host the cEOS image on a http server. Specify `ceos_image_url` for downloading the image in file `ansible/group_vars/all/ceos.yml`. For example:
-```
-ceos_image_url: "http://example1.com/cEOS64-lab-4.29.3M.tar"
-```
-The `ceos_image_url` variable also can be a list of URLs, for example:
-```
-ceos_image_url:
-  - "http://example1.com/cEOS64-lab-4.29.3M.tar"
-  - "http://example2.com/cEOS64-lab-4.29.3M.tar"
-```
-The playbook will try to download the image from the URLs in the list one by one until it succeeds.
+      Assuming you set `root_path` to `veos-vm`, you should run the following command:
+      ```bash
+      cp cEOS64-lab-4.29.3M.tar ~/veos-vm/images/
+      ```
+      The Ansible playbook for deploying testbed topology will automatically use the manually prepared image file from this location.
+   3. Update `ansible/group_vars/vm_host/ceos.yml` if you decided to use different ceos image files from above.
 
-If you want to skip downloading the image when the cEOS image is not imported locally and image file is not available on testbed server, set `skip_ceos_image_downloading` to `true` in `ansible/group_vars/all/ceos.yml`. Then, when the cEOS image is not locally available, the scripts will not try to download it and will fail with an error message. Please use option 2.1 to download the cEOS image manually.
+   #### Option 2.2: Host the cEOS image file on a HTTP server
+   If you need to deploy VS setup on multiple testbed hosts, this option is more recommended.
+
+   1. **Download the cEOS Image**
+
+      Obtain the cEOS image from [Arista's software download page](https://www.arista.com/en/support/software-download).
+
+   2. **Host the cEOS Image**
+
+      Host the cEOS image file on an HTTP server. Ensure that the image file is accessible via HTTP from the `sonic-mgmt` container running the testbed deployment code. For example, the URL might look like `http://192.168.1.10/cEOS64-lab-4.29.3M.tar`.
+
+   3. **Update the Ansible Configuration**
+
+      Update the `ceos_image_url` variable in `ansible/group_vars/all/ceos.yml` with the URL of the cEOS image. This variable can be a single string for one URL or a list of strings for multiple URLs.
+
+      The Ansible playbook will attempt to download the image from each URL in the list until it succeeds. Downloaded file is stored to `images` subfolder of the location determined by `root_path` variable in `ansible/group_vars/vm_host/main.yml`. For example if `root_path` is `/data/veos-vm`, then the downloaded image file is put to `/data/veso-vm/images`
+
+      Variable `skip_ceos_image_downloading` in `ansible/group_vars/all/ceos.yml` also must be set to `false` if you wish ansible playbook to automatically try downloading cEOS image file. For example
+      ```yaml
+      ceos_image_url: http://192.168.1.10/cEOS64-lab-4.29.3M.tar
+      skip_ceos_image_downloading: false
+      ```
+      Or:
+      ```yaml
+      ceos_image_url:
+         - http://192.168.1.10/cEOS64-lab-4.29.3M.tar
+      skip_ceos_image_downloading: false
+      ```
+
+   4. Update `ansible/group_vars/vm_host/ceos.yml` if you decided to use different ceos image files from above.
 
 ### Option 3: Use SONiC image as neighboring devices
 You need to create a valid SONiC image named `sonic-vs.img` in the `~/veos-vm/images/` directory. Currently, we don’t support downloading a pre-built SONiC image. However, for testing purposes, you can refer to the section Download the sonic-vs image to obtain an available image and place it in the `~/veos-vm/images/` directory.
@@ -171,7 +198,7 @@ In order to configure the testbed on your host automatically, Ansible needs to b
      STR-ACS-VSERV-01:
        ansible_host: 172.17.0.1
        ansible_user: foo
-       vm_host_user: use_own_value
+       vm_host_user: use_own_value  // you can leave it as is
 ```
 
 2. Modify `/data/sonic-mgmt/ansible/ansible.cfg` to uncomment the two lines:
@@ -181,7 +208,7 @@ become_user='root'
 become_ask_pass=False
 ```
 
-3. Modify `/data/sonic-mgmt/ansible/group_vars/vm_host/creds.yml` to use the username (e.g. `foo`) and password (e.g. `foo123`) you want to use to login to the host machine (this can be your username and sudo password on the host). For more information about credentials variables, see: [credentials management configuration](https://github.com/sonic-net/sonic-mgmt/blob/master/docs/testbed/README.new.testbed.Configuration.md#credentials-management).
+3. Modify `/data/sonic-mgmt/ansible/group_vars/vm_host/creds.yml` to use the username (e.g. `foo`) and password (e.g. `foo123`) you want to use to login to the host machine. This can be your username and sudo password on the host, and you might not need to set the password if your host machine is accessed with ssh key and need no further password for sudo. For more information about credentials variables, see: [credentials management configuration](https://github.com/sonic-net/sonic-mgmt/blob/master/docs/testbed/README.new.testbed.Configuration.md#credentials-management).
 
 ```
 vm_host_user: foo
@@ -321,14 +348,17 @@ Now we're finally ready to deploy the topology for our testbed! Run the followin
 ### vEOS
 ```
 cd /data/sonic-mgmt/ansible
-./testbed-cli.sh -t vtestbed.yaml -m veos_vtb add-topo vms-kvm-t0 password.txt
+./testbed-cli.sh -t vtestbed.yaml -m veos_vtb -k veos add-topo vms-kvm-t0 password.txt
 ```
 
 ### cEOS
 ```
 cd /data/sonic-mgmt/ansible
-./testbed-cli.sh -t vtestbed.yaml -m veos_vtb -k ceos add-topo vms-kvm-t0 password.txt
+./testbed-cli.sh -t vtestbed.yaml -m veos_vtb add-topo vms-kvm-t0 password.txt
 ```
+Command `add-topo` above defaults to ceos if you do not provide `-k`.
+
+If you see something like `cached_topologies_path file content is empty`, that does not mean the add-topo is not successful.
 
 Verify that the cEOS neighbors were created properly:
 
@@ -352,6 +382,8 @@ cd /data/sonic-mgmt/ansible
 ./testbed-cli.sh -t vtestbed.yaml -m veos_vtb -k vsonic add-topo vms-kvm-t0 password.txt
 ```
 
+For vtestbed, add-topo/remove-topo also takes care of create/remove kvm dut. Old kvm dut will be removed and recreated if it was present prior to add-topo.
+
 ## Deploy minigraph on the DUT
 Once the topology has been created, we need to give the DUT an initial configuration.
 
@@ -370,6 +402,8 @@ In your host run
 -------------------------
  3    vlab-01   running
  ```
+ It's good if you can see it, but if you don't, you can further verify if there is a qemu process running.
+
  Then you can try to login to your dut through the command and get logged in as shown below.
  For more information about how to get the DUT IP address, please refer to doc
  [testbed.Example#access-the-dut](README.testbed.Example.Config.md#access-the-dut)
@@ -417,7 +451,7 @@ Peers 4, using 87264 KiB of memory
 Peer groups 4, using 256 bytes of memory
 
 
-Neighbor      V     AS    MsgRcvd    MsgSent    TblVer    InQ    OutQ  Up/Down      State/PfxRcd  NeighborName
+Neighbhor      V     AS    MsgRcvd    MsgSent    TblVer    InQ    OutQ  Up/Down      State/PfxRcd  NeighborName
 -----------  ---  -----  ---------  ---------  --------  -----  ------  ---------  --------------  --------------
 10.0.0.57      4  64600       3792       3792         0      0       0  00:29:24             6400  ARISTA01T1
 10.0.0.59      4  64600       3792       3795         0      0       0  00:29:24             6400  ARISTA02T1
@@ -440,7 +474,7 @@ Peers 4, using 83680 KiB of memory
 Peer groups 4, using 256 bytes of memory
 
 
-Neighbor      V     AS    MsgRcvd    MsgSent    TblVer    InQ    OutQ  Up/Down    State/PfxRcd    NeighborName
+Neighbhor      V     AS    MsgRcvd    MsgSent    TblVer    InQ    OutQ  Up/Down    State/PfxRcd    NeighborName
 -----------  ---  -----  ---------  ---------  --------  -----  ------  ---------  --------------  --------------
 10.0.0.57      4  64600          8          8         0      0       0  00:00:10   3               ARISTA01T1
 10.0.0.59      4  64600          0          0         0      0       0  00:00:10   3               ARISTA02T1
@@ -481,3 +515,5 @@ Then run command:
 ```
 ./testbed-cli.sh -t vtestbed.yaml -m veos_vtb -k ceos remove-topo vms-kvm-t0 password.txt
 ```
+
+This will cleanup the ptf container, cEOS container and kvm dut. The `-k` option defaults to ceos, but you can provide veos or vsonic.
