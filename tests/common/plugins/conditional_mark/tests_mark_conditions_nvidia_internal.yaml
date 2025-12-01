@@ -515,6 +515,12 @@ dash/test_fnic.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4687261"
 
+dash:
+  xfail:
+    reason: "Xfailed due to RM issue: https://redmine.mellanox.com/issues/4749500"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4749500"
+
 dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_monitor_checksum_validation:
   xfail:
     reason: "xfail due to RM ticket https://redmine.mellanox.com/issues/4690202"
