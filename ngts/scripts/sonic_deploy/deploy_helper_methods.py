@@ -665,7 +665,7 @@ class DeployOrchestrator:
                                                                self.context.topology_obj,
                                                                self.context.base_version_dpu,
                                                                dut['dut_alias'], dut['dut_name'], dut['cli_obj'])))
-                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=1500)
+                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
 
         # Phase 3: Verify pre-installation processes
         with allure.step('verify pre installation processes are done'):
