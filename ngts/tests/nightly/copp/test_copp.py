@@ -212,14 +212,14 @@ class CoppBase:
         if self.is_trap_counters_supported:
             self.init_trap_names = list(self.dut_cli_object.flowcnt.parse_trap_stats().keys())
             with allure.step('Set short trap interval'):
-                self.change_flowcnt_trap_interval(self.short_interval)
+                self.set_counters_short_trap_interval()
         with allure.step('Check functionality of default rate limit'):
             self.run_validation_flow(self.default_cbs, self.default_simx_cir)
 
         # check non default rate limit value with reboot
         if self.is_trap_counters_supported:
             with allure.step('Set long trap interval'):
-                self.change_flowcnt_trap_interval(self.long_interval)
+                self.set_counters_long_trap_interval()
         if reboot_flow:
             self.run_validation_flow_with_reboot_for_simx()
             with allure.step('Check functionality of default rate limit after reboot flow'):
