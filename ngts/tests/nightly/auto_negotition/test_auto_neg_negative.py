@@ -13,6 +13,7 @@ from ngts.tests.nightly.conftest import cleanup
 from ngts.helpers.interface_helpers import get_lb_mutual_speed
 from ngts.constants.constants import AutonegCommandConstants
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
+from tests.common.plugins.loganalyzer.bug_handler_helper import get_bughandler_instance
 
 logger = logging.getLogger()
 
@@ -30,7 +31,7 @@ INVALID_AUTO_NEG_MODE_ERR_REGEX = r'Error:\s+Invalid\s+value\s+for\s+"<mode>":\s
 
 
 @pytest.fixture(autouse=False)
-def local_loganalyzer_mismatch_speed_type(duthosts, ignore_main_loganalyzer):
+def local_loganalyzer_mismatch_speed_type(duthosts, ignore_main_loganalyzer, request):
     """
     This fixture is specific for the mismatch speed and type test.
     It creates a local loganalyzer to catch the SAI errors in the log.
@@ -38,12 +39,14 @@ def local_loganalyzer_mismatch_speed_type(duthosts, ignore_main_loganalyzer):
 
     :param duthosts: duthosts fixture
     :param ignore_main_loganalyzer: disable main loganalyzer
+    :param request: pytest request object fixture
     :return: None
     """
     assert duthosts, "Need to have loganalyzer enabled to run this test"
 
     # Create a manual loganalyzer to catch the SAI errors in the log
-    local_loganalyzer = LogAnalyzer(ansible_host=duthosts[0], marker_prefix='autoneg_mismatch_local')
+    local_loganalyzer = LogAnalyzer(ansible_host=duthosts[0], marker_prefix='autoneg_mismatch_local',
+                                    request=request, bughandler=get_bughandler_instance({"type": "default"}))
     local_loganalyzer.load_common_config()
     local_loganalyzer.expect_regex.clear()
 
@@ -254,7 +257,7 @@ class TestAutoNegNegative(TestAutoNegBase):
                                      set_expected_mlxlink_autoneg=False)
 
         # analyze the log and check if the expected SAI errors are in the log
-        result = local_loganalyzer_mismatch_speed_type.analyze(marker, fail=True)
+        result = local_loganalyzer_mismatch_speed_type.analyze(marker)
         # Expecting to see all expected error messages
         assert result["total"]["expected_match"] >= len(local_loganalyzer_mismatch_speed_type.expect_regex), \
             "Expecting to match all SAI errors in the log"
