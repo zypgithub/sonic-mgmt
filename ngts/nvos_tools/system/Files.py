@@ -99,6 +99,10 @@ class File(BaseComponent):
                              reboot_params=reboot_params, expected_output=expected_output)
         return result
 
+    def action_generate(self, new_name) -> ResultObj:
+        """Generate token info from this file (e.g., for CRDT debug-image)."""
+        return self.action(ActionConsts.GENERATE, (ActionParamConsts.NEW_NAME, new_name))
+
     def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='', deny_reboot=False, skip_version_check=False) -> ResultObj:
         return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value, deny_reboot=deny_reboot, skip_version_check=skip_version_check)
 
@@ -124,7 +128,7 @@ class File(BaseComponent):
         if force:
             params.append('force')
             param_value_list.append(param_value)
-        elif 'platform' in resource_path:
+        elif 'platform' in resource_path and 'debug' not in resource_path:
             params.append('skip-reboot')
             param_value_list.append(True)
 
