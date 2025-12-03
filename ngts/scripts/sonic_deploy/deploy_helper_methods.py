@@ -31,6 +31,7 @@ from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
 from ngts.common.util import save_specified_installed_dpus, get_installed_dpu_info
+from ngts.tools.infra import get_dumps_folder
 
 logger = logging.getLogger()
 
@@ -664,7 +665,8 @@ class DeployOrchestrator:
                                                executor.submit(DeployDpuHelper.bfb_install_dpu,
                                                                self.context.topology_obj,
                                                                self.context.base_version_dpu,
-                                                               dut['dut_alias'], dut['dut_name'], dut['cli_obj'])))
+                                                               dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
+                                                               self.context.setup_name)))
                     DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
 
         # Phase 3: Verify pre-installation processes
@@ -698,34 +700,65 @@ class DeployDpuHelper:
     """Handle DPU-specific deployment operations"""
 
     @staticmethod
-    def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj):
+    def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj, setup_name):
 
         rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
 
         with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
             DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
 
+        dut_engine = topology_obj.players[dut_alias]['engine']
+
         with allure.step('Copying image to switch dut'):
             dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
             dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-            retry_call(lambda: topology_obj.players[dut_alias]['engine'].run_cmd(
+            retry_call(lambda: dut_engine.run_cmd(
                 f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
                 tries=5, delay=2)
 
-        with allure.step('Install BFB image on all DPUs'):
-            # Disconnect ssh connection, prevent "Socket is closed" in case when pre step took more than 15 min
-            output = topology_obj.players[dut_alias]['engine'].run_cmd(
-                f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
-            failures = []
+        with allure.step('Start monitoring minicom'):
             for index in dpu_index_list:
-                pattern = f"{index}.*Installation Successful"
-                if not re.search(pattern, output):
-                    failures.append(index)
-            if failures:
-                assert False, f"Failed to install bfb image on DPU: {failures}."
+                try:
+                    dut_engine.run_cmd(
+                        f"sudo screen -dmS ttyUSB{index}_log minicom -D /dev/ttyUSB{index} -C /tmp/ttyUSB{index}", validate=True)
+                except Exception as e:
+                    logger.warning(f"Failed to start monitoring minicom for DPU{index}: {e}")
 
-            if installed_dpus:
-                save_specified_installed_dpus(installed_dpus, dut_alias, dut_name)
+        try:
+            with allure.step('Install BFB image on all DPUs'):
+                output = dut_engine.run_cmd(
+                    f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
+                failures = []
+                for index in dpu_index_list:
+                    pattern = f"{index}.*Installation Successful"
+                    if not re.search(pattern, output):
+                        failures.append(index)
+                if failures:
+                    assert False, f"Failed to install bfb image on DPU: {failures}."
+
+                if installed_dpus:
+                    save_specified_installed_dpus(installed_dpus, dut_alias, dut_name)
+        finally:
+            with allure.step('Stop monitoring minicom'):
+                for index in dpu_index_list:
+                    dut_engine.run_cmd(f"sudo screen -S ttyUSB{index}_log -X quit", validate=False)
+                # Always copy the minicom logs to the dumps folder
+                # Sometimes we need analyze the logs even if the deployment doesn't fail
+                try:
+                    dumps_folder = get_dumps_folder(setup_name, "monitor", topology_obj)
+                    for index in dpu_index_list:
+                        source_file = f"/tmp/ttyUSB{index}"
+                        dest_file = os.path.join(dumps_folder, f"ttyUSB{index}.log")
+                        dut_engine.copy_file(
+                            source_file=source_file,
+                            dest_file=dest_file,
+                            file_system='/',
+                            direction='get',
+                            overwrite_file=True,
+                            verify_file=False)
+                    logger.info(f"Minicom logs are copied to dumps folder: {dumps_folder}")
+                except Exception as e:
+                    logger.warning(f"Failed to copy minicom logs to dumps folder: {e}")
 
     @staticmethod
     def disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias):

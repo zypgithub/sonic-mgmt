@@ -6,6 +6,7 @@ import logging
 import json
 import re
 
+from datetime import datetime
 from ngts.constants.constants import InfraConst, PytestConst
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -52,6 +53,8 @@ def get_dumps_folder(setup_name, session_id, topology_obj):
     if not env_log_folder:  # default value is empty string, defined in steps file
         env_log_folder = create_result_dir(setup_name, session_id, InfraConst.CASES_DUMPS_DIR, topology_obj)
         os.environ[InfraConst.ENV_LOG_FOLDER] = env_log_folder
+    if session_id == "monitor" and "CI" not in setup_name:
+        env_log_folder = create_result_dir(setup_name, session_id, '', topology_obj)
     return env_log_folder
 
 
@@ -110,6 +113,8 @@ def create_result_dir(setup_name, session_id, suffix_path_name, topology_obj):
     player_info = topology_obj.players['dut']
     if not session_id:
         session_id = 'manual_run'
+    if session_id == "monitor":
+        session_id += "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     if player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE'] == "NVUE":
         return create_nvos_result_dir(setup_name, session_id, suffix_path_name, topology_obj)
     else:
