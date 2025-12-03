@@ -15,6 +15,7 @@ from tests.common.utilities import wait_until
 from dash_eni_counter_utils import get_eni_counters, get_eni_counter_oid, verify_eni_counter, \
     eni_counter_setup, ENI_COUNTER_READY_MAX_TIME  # noqa: F401
 from tests.dash.conftest import get_interface_ip
+from tests.common.config_reload import config_reload
 
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,12 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
         **pl.PE_SUBNET_ROUTE_CONFIG,
         **pl.VM_SUBNET_ROUTE_CONFIG
     }
+
+    if 'bluefield' in dpuhost.facts['asic_type']:
+        route_and_mapping_messages.update({
+            **pl.INBOUND_VNI_ROUTE_RULE_CONFIG
+        })
+
     logger.info(route_and_mapping_messages)
     apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index)
 
@@ -88,11 +95,8 @@ def common_setup_teardown(localhost, duthost, ptfhost, dpu_index, dpuhosts, skip
     apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index)
 
     yield
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_ROUTE_GROUP1_CONFIG, dpuhost.dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, pl.ENI_CONFIG, dpuhost.dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, meter_rule_messages, dpuhost.dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, route_and_mapping_messages, dpuhost.dpu_index, False)
-    apply_messages(localhost, duthost, ptfhost, base_config_messages, dpuhost.dpu_index, False)
+
+    config_reload(dpuhost, safe_reload=True, yang_validate=False)
 
 
 @pytest.fixture(scope="function", params=["vxlan", "gre"])
