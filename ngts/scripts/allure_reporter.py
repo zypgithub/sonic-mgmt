@@ -14,8 +14,9 @@ sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 
 from ngts.constants.constants import InfraConst  # noqa: E402
-from ngts.nvos_constants.constants_nvos import TopologyConsts
+from ngts.nvos_constants.constants_nvos import TopologyConsts  # noqa: E402
 
+ALLURE_PROJECT_ID_SUFFIX = "-session-reports"
 ALLURE_DOCKER_SERVICE = 'allure-docker-service'
 HTTP_TIMEOUT = 300
 SSL_VERIFICATION = False
@@ -183,7 +184,7 @@ if __name__ == "__main__":
     setup_name = args.setup_name
     cli_type = args.cli_type
     cli_type_str = f"-{cli_type}" if cli_type else ""
-    allure_project_id = (setup_name.replace('_', '-') + cli_type_str).lower() + "-session-reports"
+    allure_project_id = (setup_name.replace('_', '-') + cli_type_str).lower() + ALLURE_PROJECT_ID_SUFFIX
     allure_server_base_url = '{}/{}'.format(allure_server_addr, ALLURE_DOCKER_SERVICE)
 
     if args.action == 'upload':
