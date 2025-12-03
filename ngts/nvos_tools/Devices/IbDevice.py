@@ -286,7 +286,7 @@ class IbSwitch(BaseSwitch):
 
     def _init_dockers(self):
         super()._init_dockers()
-        self.available_dockers.extend(('database', 'nv-gnmi', 'nv-umf'))  # TODO: Add lldp container check
+        self.available_dockers.extend(('database', NvosConst.NV_GNMI_DOCKER, NvosConst.NV_UMF_DOCKER))  # TODO: Add lldp container check
         for deamon in NvosConst.DOCKER_PER_ASIC_LIST:
             for asic_num in range(0, self.asic_amount):
                 self.available_dockers.append("{deamon}{asic_num}".format(deamon=deamon, asic_num=asic_num))

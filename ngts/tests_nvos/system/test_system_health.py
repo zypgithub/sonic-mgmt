@@ -637,7 +637,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
     system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     system.validate_health_status(OK)
-    docker_to_stop = "gnmi-server"
+    docker_to_stop = NvosConst.NV_GNMI_DOCKER
     docker_not_running_log_str = "Container '" + docker_to_stop + "' is not running"
 
     try:
