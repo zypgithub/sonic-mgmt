@@ -526,3 +526,6 @@ r, ".*ERR\s+ntpd\[\d+\]:\s+SYNC:\s+Found\s+\d+\s+servers,\s+suggest\s+minsane\s+
 
 # Ignore the error when the sysfs was accessed too soon, before sys creation has been completed.
 r, ".*ERR sfputil: Failed to read from file /sys/module/sx_core/asic\d+/module\d+/present - FileNotFoundError.*"
+
+# This is a deprecation warning not a functional error, which matches the regex "kernel:.*allocation", not an err.
+r, ".*kernel.*gpio.*Static allocation of GPIO base is deprecated.*"
