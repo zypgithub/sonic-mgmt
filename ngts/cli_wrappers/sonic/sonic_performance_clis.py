@@ -449,6 +449,12 @@ class SonicPerformanceCli(PerformanceCommon):
 
         Returns: sdk port mapped to sonic port , i.e, 65777
         """
+        if port not in self.sonic_to_sdk_ports_dict:
+            raise TestIssue(f"Port not found in sonic_to_sdk_ports_dict debug info: "
+                            f"sonic_to_sdk_ports_dict: {self.sonic_to_sdk_ports_dict}, "
+                            f"port: {port}, "
+                            f"connected_ports: {self.connected_ports}, "
+                            f"unconnected_ports: {self.unconnected_ports}")
         return int(self.sonic_to_sdk_ports_dict[port], PerfConsts.HEX_BASE)
 
     def get_sdk_port(self, port):

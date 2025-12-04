@@ -299,6 +299,8 @@ class TestSRv6Base:
             bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.TRIMMING_SRV6_DUT_TX_UTIL_TH
         if is_redmine_issue_active([4667031])[0]:
             bw_threshold[ValidationConsts.VALIDATION_KEY] = (ValidationConsts.TX_BW_AVG, ValidationConsts.RX_BW_AVG)
+        if is_redmine_issue_active([4762193])[0] and isinstance(self.cli_object, NvueCli):
+            bw_threshold[MRCConsts.EGRESS_PORT_GROUP_NAME][ValidationConsts.TX] = MRCConsts.CL_TRIMMING_DUT_TX_UTIL_TH
         return bw_threshold
 
     def validate_trimmed_untrimmed_dropped_percentages(self, test_name, egress_ports, trimming_queue, drop_queues, violations_list, pairing_df=None, duration=None):

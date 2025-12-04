@@ -388,14 +388,14 @@ class SPCXRAConsts:
     DUT_TX_UTIL_IBM_BW_TH = 0.96
     DUT_TX_UTIL_AUTO_TH_DICT = {
         PerfConsts.PACKET_SIZE_4K: {
-            "left_ports": 0.92,
-            "right_ports": 0.92
+            "left_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92},
+            "right_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92}
         }
     }
     DUT_TX_UTIL_IBM_TH_DICT = {
         PerfConsts.PACKET_SIZE_4K: {
-            "left_ports": DUT_TX_UTIL_IBM_BW_TH,
-            "right_ports": DUT_TX_UTIL_IBM_BW_TH
+            "left_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH},
+            "right_ports": {ValidationConsts.TX: DUT_TX_UTIL_IBM_BW_TH, ValidationConsts.RX: DUT_TX_UTIL_IBM_BW_TH}
         }
     }
     if is_redmine_issue_active([4667031])[0]:
@@ -483,6 +483,10 @@ class PortMappingOptionsConsts:
 class MRCConsts:
     DOWNLINKS = "Downlinks"
     UPLINKS = "Uplinks"
+    T1_MANY_TO_FEW_INGRESS_PORTS_NUM_BY_CHIP_TYPE = {
+        "SPC4": 256,
+        "SPC5": 448
+    }
     T0_DOWNLINKS_LIST = []
     T0_UPLINKS_LIST = []
     T0_DOWNLINKS_LIST.extend(list(range(64)))
@@ -509,7 +513,7 @@ class MRCConsts:
     SPINE_ROUND_ROBIN_DOWNSTREAM_PORT_GROUP_2_NAME = "round_robin_downstream_group_2"
     MAX_INCAST_WITHOUT_TRIMMING_DROP = 10
     INCAST_VALUE_WITH_TRIMMING_DROP = MAX_INCAST_WITHOUT_TRIMMING_DROP + 1
-    TC_1_2_3_ALPHA = 1 / 64
+    TC_1_2_3_ALPHA = 1 / 128
     MIN_INGRESS_PORTS_NUM = 4
     MAX_INGRESS_PORTS_NUM = 5
     INGRESS_PORT_NUMBER_LIST = list(range(MIN_INGRESS_PORTS_NUM, MAX_INGRESS_PORTS_NUM))
@@ -557,6 +561,7 @@ class MRCConsts:
     DUT_TX_UTIL_TH = 0.95 if is_redmine_issue_active([4667031])[0] else 0.98
     # Many to one SRv6 DUT TX Util threshold was lowered to 0.73 because of bug #4527474
     TRIMMING_SRV6_DUT_TX_UTIL_TH = 0.73
+    CL_TRIMMING_DUT_TX_UTIL_TH = 0.5
     BUFFER_CELL_SIZE = 192
     SPC5_POOL_SIZE_MB = 105
     SPC5_POOL_SIZE_BYTES = SPC5_POOL_SIZE_MB * 1000 * 1000

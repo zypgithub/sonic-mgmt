@@ -100,12 +100,12 @@ class TestSRv6Spine(TestSRv6Base):
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
-    @pytest.mark.parametrize("M", MRCConsts.T1_MANY_TO_FEW_INGRESS_PORT_NUMBER_LIST)
+    @pytest.mark.parametrize("M", MRCConsts.INGRESS_PORT_NUMBER_LIST)
     def test_spine_srv6_trimming_many_to_few(self, request, traffic_type, workload, M):
         condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
         test_name = get_perf_test_name(request)
-        egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, M)
+        egress_ports, ingress_ports, port_group_df = get_spine_many_to_few_port_group_df(self.players, self.chip_type, M)
         self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
         with allure.step(f"Set test configuration description"):
             add_test_mongo_metadata(test_name,

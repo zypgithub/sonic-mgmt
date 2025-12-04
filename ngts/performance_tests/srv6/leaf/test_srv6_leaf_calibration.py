@@ -27,7 +27,7 @@ logger = logging.getLogger()
 class TestSRv6LeafCalibration(TestSRv6Base):
 
     @pytest.fixture(autouse=True)
-    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, power_thresholds_by_chip_type):
+    def setup(self, players, engines, cli_objects, is_ipv6, chip_type, conf_args, shaper_value, power_thresholds_by_chip_type):
         self.players = players
         self.engines = engines
         self.cli_objects = cli_objects
@@ -46,6 +46,7 @@ class TestSRv6LeafCalibration(TestSRv6Base):
         self.cli_object.trimming.config_optimal_trimming_size(self.chip_type)
         self.opt_ts = os.getenv(MRCConsts.OPT_TS, default=MRCConsts.OPT_TS_DEFAULT)
         self.cli_object.trimming.configure_custom_dwrr_weights()
+        self.shaper_value = shaper_value
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", [MRCConsts.TRAFFIC_TYPE_SRV6])

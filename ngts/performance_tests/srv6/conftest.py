@@ -82,14 +82,15 @@ def split_into_subsets(lst, subset_size):
     return [lst[i:i + subset_size] for i in range(0, len(lst), subset_size)]
 
 
-def get_spine_many_to_few_port_group_df(players, M):
+def get_spine_many_to_few_port_group_df(players, chip_type, M):
     port_group_df = []
+    num_of_ingress_ports = MRCConsts.T1_MANY_TO_FEW_INGRESS_PORTS_NUM_BY_CHIP_TYPE[chip_type]
     ports = players['dut']['cli'].performance.get_dut_ports()
     dut_ports = copy.deepcopy(ports)
     random.shuffle(dut_ports)
     egress_ports_num = len(dut_ports) // M
     egress_ports = dut_ports[:egress_ports_num]
-    ingress_ports = ports
+    ingress_ports = ports[:num_of_ingress_ports]
     sdk_port_list_egress = players['dut']['cli'].performance.get_sdk_ports(egress_ports)
     sdk_port_list_ingress = players['dut']['cli'].performance.get_sdk_ports(ingress_ports)
     for port in sdk_port_list_egress:

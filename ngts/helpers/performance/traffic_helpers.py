@@ -498,6 +498,7 @@ def compare_tc_occ_to_reference(traffic_json, reference_json, tc_keys, tc_to_val
                                 min_limit, max_limit = reference_tc_occ * (1 - allowed_deviation), reference_tc_occ * (1 + allowed_deviation)
                             else:
                                 min_limit, max_limit = reference_tc_occ - allowed_deviation, reference_tc_occ + allowed_deviation
+                            min_limit = max(min_limit, 0)
                             if tc_occ < min_limit or tc_occ > max_limit:
                                 violations_list.append(f"In sample {sample_id} for port group {port_group_name} - TC {tc_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {tc_occ}")
 
