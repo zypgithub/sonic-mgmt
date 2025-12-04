@@ -1905,8 +1905,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
         logger.info("all dpus:{dpu_index_list} are down")
 
-    # retry for ~140s if the dpus are up
-    @retry(Exception, tries=47, delay=3)
+    # retry for ~200s if the dpus are up
+    @retry(Exception, tries=51, delay=5)
     def verify_dpus_up(self, dpu_index_list):
         """
         Verifying the Oper-Status are Online and Admin-Status are up for the specified DPUs
