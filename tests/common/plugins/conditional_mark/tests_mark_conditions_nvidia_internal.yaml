@@ -1330,5 +1330,10 @@ platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
     conditions:
     - "https://redmine.mellanox.com/issues/4765935 and '6600_simx' in platform"
 
+high_frequency_telemetry/test_high_frequency_telemetry.py:
+  xfail:
+    reason: "xfail due to RM issue 4774921"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4774921"
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
