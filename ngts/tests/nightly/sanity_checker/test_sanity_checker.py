@@ -20,6 +20,7 @@ logger = logging.getLogger()
 
 POSSIBLE_CPLD_LIST = ['CPLD1', 'CPLD2', 'CPLD3', 'CPLD4']
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
+FANOUTS_TO_SKIP = ["r-moose-06"]
 
 # Component version check constants
 COMPONENT_SCRIPT_NAME = "get_component_versions.py"
@@ -78,6 +79,14 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     :param topology_obj: topology object fixture
     """
 
+    def should_skip_fanout(engine):
+        """Check if fanout should be skipped (shared resource)"""
+        hostname = engine.run_cmd("hostname").strip()
+        if hostname in FANOUTS_TO_SKIP:
+            logger.info(f"Skipping LLDP enable/disable on shared fanout {hostname}")
+            return True
+        return False
+
     def enable_lldp(engine):
         logger.info(f"enable lldp on {engine.ip}")
         cmd_enalbe_lldp = "sudo config feature state lldp enabled" if engine.device_type == "linux" else "lldp"
@@ -88,14 +97,21 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
         cmd_disable_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
         engine.run_cmd(cmd_disable_lldp)
 
-    enable_lldp(engines.fanout)
+    fanout_skipped = should_skip_fanout(engines.fanout)
+    fanout_b_skipped = False
+
+    if not fanout_skipped:
+        enable_lldp(engines.fanout)
     if 'fanout_b' in engines:
-        enable_lldp(engines.fanout_b)
+        fanout_b_skipped = should_skip_fanout(engines.fanout_b)
+        if not fanout_b_skipped:
+            enable_lldp(engines.fanout_b)
 
     yield
 
-    disable_lldp(engines.fanout)
-    if 'fanout_b' in engines:
+    if not fanout_skipped:
+        disable_lldp(engines.fanout)
+    if 'fanout_b' in engines and not fanout_b_skipped:
         disable_lldp(engines.fanout_b)
 
 
@@ -393,6 +409,9 @@ def check_one_dut_to_fanout_cable_connection(cli_object, dut_engine):
     map_dut_oper_up_interface_and_fanout_interface = {}
     for one_dut_fanout_link in dut_fanout_link_data:
         if one_dut_fanout_link["StartDevice"] != dut_name:
+            continue
+        if one_dut_fanout_link.get("EndDevice") in FANOUTS_TO_SKIP:
+            logger.info(f"Skipping port {one_dut_fanout_link['StartPort']} connected to {one_dut_fanout_link['EndDevice']}")
             continue
         dut_port = one_dut_fanout_link["StartPort"]
         if dut_port.startswith("Ethernet") and dut_port in interface_status_dict and \
