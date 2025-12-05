@@ -117,6 +117,10 @@ def _parse_args():
 if __name__ == "__main__":
     args = _parse_args()
     simulation_connections = get_simulation_connections(args.setup_name)
+    for simulation_node in simulation_connections:
+        node_connections = simulation_connections[simulation_node]
+        if None in node_connections.values():
+            raise Exception(f"Simulation {simulation_node} has empty connection values: {node_connections}")
     topo = get_xml_parsed_topo(args.setup_name)
     update_air_topo(topo, simulation_connections)
     write_air_topo_file(topo, args.setup_name)
