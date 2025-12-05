@@ -65,4 +65,7 @@
         </ignore>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/xon_xoff.cases </cases>
+    </test>
 </DBDEF>

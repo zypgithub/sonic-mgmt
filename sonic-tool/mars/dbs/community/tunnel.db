@@ -56,6 +56,10 @@
     </test>
 
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/vxlan_multi_tunnel.cases </cases>
+    </test>
+
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/restapi.cases </cases>
         <ignore>
             <!-- Case only for main hwsku, skip this case if it is non-main hwsku -->
