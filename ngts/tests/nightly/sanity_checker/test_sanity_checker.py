@@ -9,7 +9,7 @@ from retry.api import retry
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
-from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
+from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, CliType
 from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
 
 pytestmark = [
@@ -79,9 +79,20 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     :param topology_obj: topology object fixture
     """
 
-    def should_skip_fanout(engine):
+    def get_hostname(topology_obj, engine):
+        """Get hostname depending on CLI type."""
+        fanout_cli_type = topology_obj.players['fanout']['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
+        if fanout_cli_type == CliType.SONIC:
+            return engine.run_cmd("hostname").strip()
+        elif fanout_cli_type == CliType.MLNX_OS:
+            show_hosts_output = engine.run_cmd("show hosts")
+            hostname_match = re.search(r"Hostname\s*:\s*(\S+)", show_hosts_output)
+            return hostname_match.group(1) if hostname_match else ""
+        return
+
+    def should_skip_fanout(topology_obj, engine):
         """Check if fanout should be skipped (shared resource)"""
-        hostname = engine.run_cmd("hostname").strip()
+        hostname = get_hostname(topology_obj, engine)
         if hostname in FANOUTS_TO_SKIP:
             logger.info(f"Skipping LLDP enable/disable on shared fanout {hostname}")
             return True
@@ -97,7 +108,7 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
         cmd_disable_lldp = "sudo config feature state lldp disabled" if engine.device_type == "linux" else "no lldp"
         engine.run_cmd(cmd_disable_lldp)
 
-    fanout_skipped = should_skip_fanout(engines.fanout)
+    fanout_skipped = should_skip_fanout(topology_obj, engines.fanout)
     fanout_b_skipped = False
 
     if not fanout_skipped:
