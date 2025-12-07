@@ -1567,7 +1567,7 @@ class FatalStateConsts:
 
 
 class GnmiConsts:
-    GNMI_DOCKER = 'gnmi-server'
+    GNMI_DOCKER = 'nv-gnmi'
     GNMI_STATE_FIELD = 'state'
     GNMI_STATE_ENABLED = 'enabled'
     GNMI_STATE_DISABLED = 'disabled'
