@@ -1,11 +1,14 @@
 import copy
 import logging
+import socket
+import subprocess
 from typing import List, Dict
 
 from typing_extensions import TypeAlias
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.Ldap import Ldap
 from ngts.nvos_tools.system.Server import ServerId
 from ngts.nvos_tools.system.System import System
@@ -16,6 +19,74 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tools.test_utils import allure_utils as allure
 
 UsersPerAuthMedium: TypeAlias = Dict[str, Dict[str, List[UserInfo]]]
+
+
+def ping_server(address: str, count: int = 2, timeout: int = 3) -> bool:
+    """
+    Ping a server to check if it's reachable.
+
+    Args:
+        address: IP address (IPv4/IPv6) or hostname to ping
+        count: Number of ping attempts
+        timeout: Timeout in seconds for the ping command
+
+    Returns:
+        True if server is reachable, False otherwise
+    """
+    try:
+        is_ipv6 = ":" in address
+        ping_cmd = "ping6" if is_ipv6 else "ping"
+        cmd = [ping_cmd, "-c", str(count), "-W", str(timeout), address]
+        logging.debug(f"Running ping command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout * count + 5)
+        is_reachable = result.returncode == 0
+        if is_reachable:
+            logging.info(f"Server {address} is reachable")
+        else:
+            logging.warning(f"Server {address} is not reachable")
+        return is_reachable
+    except subprocess.TimeoutExpired:
+        logging.warning(f"Ping to {address} timed out")
+        return False
+    except Exception as ex:
+        logging.error(f"Failed to ping {address}: {ex}")
+        return False
+
+
+def check_port(address: str, port: int, timeout: int = 3) -> bool:
+    """
+    Check if a specific port is open on the server.
+
+    Args:
+        address: IP address (IPv4/IPv6) or hostname to check
+        port: Port number to check
+        timeout: Timeout in seconds for the connection attempt
+
+    Returns:
+        True if port is open, False otherwise
+    """
+    try:
+        is_ipv6 = ":" in address
+        family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        result = sock.connect_ex((address, port))
+        sock.close()
+        is_open = result == 0
+        if is_open:
+            logging.info(f"Port {port} on {address} is open")
+        else:
+            logging.warning(f"Port {port} on {address} is closed (code: {result})")
+        return is_open
+    except socket.timeout:
+        logging.warning(f"Connection to {address}:{port} timed out")
+        return False
+    except socket.gaierror as ex:
+        logging.error(f"Failed to resolve {address}: {ex}")
+        return False
+    except Exception as ex:
+        logging.error(f"Failed to check port {port} on {address}: {ex}")
+        return False
 
 
 class RemoteAaaServerInfo:
@@ -58,6 +129,43 @@ class RemoteAaaServerInfo:
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
         raise Exception('Method "configure" is not implemented!')
+
+    def get_ping_address(self) -> str:
+        """
+        Get the best address to use for pinging/checking availability.
+        Prefers ipv4_addr if available, otherwise uses hostname.
+
+        Returns:
+            Address string suitable for ping
+        """
+        if self.ipv4_addr:
+            return self.ipv4_addr
+        return self.hostname
+
+    def verify_availability(self, check_service: bool = True) -> ResultObj:
+        """
+        Verify that the AAA server is reachable via ping and optionally
+        check if the AAA service port is open.
+
+        Args:
+            check_service: If True, also checks if the service port is open.
+
+        Returns:
+            ResultObj with the result of the verification
+
+        """
+        address = self.get_ping_address()
+        with allure.step(f"Verify AAA server availability: {address}:{self.port}"):
+            is_available = ping_server(address)
+            if not is_available:
+                return ResultObj(False, f"AAA server {self.hostname} (ping: {address}) is not reachable. Cannot run good flow test.")
+
+            if check_service:
+                service_up = check_port(address, self.port)
+                if not service_up:
+                    return ResultObj(False, f"AAA service on {self.hostname}:{self.port} is not responding. Server is pingable but service may be down. Cannot run good flow test.")
+
+            return ResultObj(True, f"AAA server {self.hostname} (ping: {address}) is reachable and service is responding")
 
 
 def update_active_aaa_server(item, server: RemoteAaaServerInfo):

@@ -11,7 +11,7 @@ from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingFields, AuthConsts, AaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import *
+from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import verify_user_auth, check_accounting
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AaaServerManager import \
     AaaServerManager
@@ -48,6 +48,8 @@ def generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, 
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
     assert test_api in ApiType.ALL_TYPES, f'{test_api} is not one of {ApiType.ALL_TYPES}'
+
+    server.verify_availability().verify_result()
 
     TestToolkit.tested_api = test_api
     item = request.node
@@ -133,6 +135,9 @@ def generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_o
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
     assert test_api in ApiType.ALL_TYPES, f'{test_api} is not one of {ApiType.ALL_TYPES}'
+
+    lowest_server.verify_availability().verify_result()
+    highest_server.verify_availability().verify_result()
 
     TestToolkit.tested_api = test_api
     item = request.node
@@ -319,6 +324,8 @@ def generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, req
     """
     assert remote_aaa_type in RemoteAaaType.ALL_TYPES, f'{remote_aaa_type} is not one of {RemoteAaaType.ALL_TYPES}'
     assert test_api in ApiType.ALL_TYPES, f'{test_api} is not one of {ApiType.ALL_TYPES}'
+
+    server.verify_availability().verify_result()
 
     TestToolkit.tested_api = test_api
     item = request.node

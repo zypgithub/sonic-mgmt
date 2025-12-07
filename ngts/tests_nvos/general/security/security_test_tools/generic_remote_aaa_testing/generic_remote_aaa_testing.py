@@ -272,6 +272,9 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
         server = server_by_addr_type[addressing_type].copy()
         assert getattr(server, 'users_per_auth_medium', None) is not None, (f'given server must have "users_per_auth_medium" attr\n'
                                                                             f'server: {server.hostname} - {server.port} - {server.docker_name}')
+
+        server.verify_availability().verify_result()
+
         server_resource = remote_aaa_obj.server.server_id[server.hostname]
         server.configure(engines)
 
@@ -389,6 +392,9 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
     @param skip_auth_mediums: auth mediums to skip from the test (optional)
     """
     validate_params(test_flow=test_flow, test_api=test_api, remote_aaa_type=remote_aaa_type, auth_mediums=skip_auth_mediums)
+
+    server1.verify_availability().verify_result()
+    server2.verify_availability().verify_result()
 
     TestToolkit.tested_api = test_api
     item = request.node
@@ -556,6 +562,9 @@ def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, requ
     """
     validate_params(test_flow=test_flow, test_api=test_api, remote_aaa_type=remote_aaa_type,
                     auth_mediums=skip_auth_mediums)
+
+    server1.verify_availability().verify_result()
+    server2.verify_availability().verify_result()
 
     TestToolkit.tested_api = test_api
     item = request.node
