@@ -35,8 +35,8 @@ class CumulusGeneralCli(NvueGeneralCli):
         """
         with allure.step('Get SDK_VER git'):
             sdk_version = self.get_sdk_version()
+            sdk_branch = self.get_sdk_branch(sdk_version)
             if latest_version:
-                sdk_branch = self.get_sdk_branch(sdk_version)
                 sdk_version = self.get_latest_sdk_version(cur_sdk_version=sdk_version, sdk_branch=sdk_branch)
 
             deb_file_path = os.path.join(Cl_Consts.SDK_DEB_DIR_TEMPLATE.format(SDK_VERSION=sdk_version),
