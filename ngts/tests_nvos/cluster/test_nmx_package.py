@@ -151,7 +151,7 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
         ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result(False)
 
     with allure.step(f'try to install nmx package file {filename}'):
-        fae.cluster.package.files.file_name[filename].action_file_install(force=False).verify_result()
+        fae.cluster.package.files.file_name[filename].action_install(reboot_params=False, force=False).verify_result()
 
     with allure.step(f'verify installation nmx package file {filename}'):
         ClusterTools.verify_app_version(fae.cluster, app, expected_version)
@@ -227,7 +227,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
         nmx_package.action_fetch(path=new_path).verify_result()
 
     with allure.step(f'try to install nmx package without uninstall {filename} - should fail'):
-        fae.cluster.package.files.file_name[filename].action_file_install(force=False).verify_result(False)
+        fae.cluster.package.files.file_name[filename].action_install(reboot_params=False, force=False).verify_result(False)
 
     with allure.step(f'verify old version'):
         ClusterTools.verify_app_version(fae.cluster, app_to_test, default_version)

@@ -124,9 +124,11 @@ class OpenApiRequest:
         res = OpenApiRequest._config_diff(request_data)
         if not res.result:
             OpenApiRequest.clear_changeset_and_payload()
+            res.ignore_result()  # Remove from tracking before returning string
             return res.info
         res = OpenApiRequest._apply_config(request_data, add_approve, client_certs_after_apply)
         OpenApiRequest.clear_changeset_and_payload()
+        res.ignore_result()  # Remove from tracking before returning string
         return res.info
 
     @staticmethod
@@ -211,7 +213,8 @@ class OpenApiRequest:
                         msg = obj["transition"]['issue']['00000']["message"]
                     except BaseException:
                         msg = ""
-                    return ResultObj(False, "Error: Failed to apply configuration. Reason: " + msg)
+                    error_msg = "Error: Failed to apply configuration. Reason: " + msg
+                    return ResultObj(False, error_msg)
                 if obj["state"] == PENDING_RESPONSE:
                     try:
                         msg = obj["transition"]['issue']['00000']["message"]

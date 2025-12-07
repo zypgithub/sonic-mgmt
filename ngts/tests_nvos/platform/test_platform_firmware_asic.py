@@ -130,8 +130,8 @@ def test_platform_firmware_image_rename(engines, devices, topology_obj, clear_as
 
     with allure.step("Install original image name, should fail"):
         logging.info("Install original image name: {}, should fail".format(fetched_image_name))
-        platform.firmware.asic.files.file_name[fetched_image_name].action_file_install(
-            force=True).verify_result(should_succeed=False)
+        platform.firmware.asic.files.file_name[fetched_image_name].action_install(
+            reboot_params=False).verify_result(should_succeed=False)
 
     with allure.step("Delete original image name, should fail"):
         logging.info("Delete original image name, should fail")

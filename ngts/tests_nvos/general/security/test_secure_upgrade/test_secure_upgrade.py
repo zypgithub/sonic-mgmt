@@ -146,7 +146,7 @@ def test_non_secure_boot_upgrade_failure(keep_same_version_installed, is_secure_
 
         try:
             with allure.step("Attempting installing non secure image"):
-                system.image.files.file_name[img_name].action_file_install(expected_str="Failed to verify image signature").verify_result()
+                system.image.files.file_name[img_name].action_install(reboot_params=False, expected_output="Failed to verify image signature").verify_result()
         finally:
             with allure.step(f'delete img file: {img_name}'):
                 system.image.files.file_name[img_name].action_delete().verify_result()

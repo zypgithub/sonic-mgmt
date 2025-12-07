@@ -89,6 +89,16 @@ class File(BaseComponent):
             self._resource_path = f'/{new_name}'
         return result
 
+    def action_install(self, reboot_params, force=True, additional_flags=(), send_user_confirmation=None,
+                       expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES, skip_version_check=False) -> ResultObj:
+        flags = ([ActionParamConsts.FORCE] if force else []) + (
+            additional_flags.split() if isinstance(additional_flags, str) else list(additional_flags))
+        if skip_version_check:
+            flags.append('skip-version-check')
+        result = self.action(ActionConsts.INSTALL, flags=flags, send_user_confirmation=send_user_confirmation,
+                             reboot_params=reboot_params, expected_output=expected_output)
+        return result
+
     def action_file_install(self, expected_str="", force=True, dut_engine=None, param_value='', deny_reboot=False, skip_version_check=False) -> ResultObj:
         return self._action_file_install(False, expected_str, force, dut_engine, None, None, param_value, deny_reboot=deny_reboot, skip_version_check=skip_version_check)
 

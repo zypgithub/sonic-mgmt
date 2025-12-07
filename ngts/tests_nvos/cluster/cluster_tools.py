@@ -586,7 +586,7 @@ class ClusterTools:
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ], engines)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-            fm_generated_file_name].action_file_install(force=False)
+            fm_generated_file_name].action_install(reboot_params=False, force=False)
         return fm_config, fm_generated_file_name, fm_path, fm_original_content
 
     @staticmethod
@@ -607,7 +607,7 @@ class ClusterTools:
             "sudo sed -i '/^[ ]*plugin_options[ ]\\+-grpc_mgr[ ]\\+--config_file[ ]\\+/s/^/#/' {file}"
         ], engines)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-            sm_generated_file_name].action_file_install(force=False)
+            sm_generated_file_name].action_install(reboot_params=False, force=False)
         return sm_config, sm_generated_file_name, sm_path, sm_original_content
 
     @staticmethod
@@ -646,7 +646,7 @@ class ClusterTools:
         if "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
             engines.dut.run_cmd(f"echo '{fm_original_content}' | sudo tee {fm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
-                fm_generated_file_name].action_file_install(force=False)
+                fm_generated_file_name].action_install(reboot_params=False, force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
                 fm_generated_file_name].action_delete().verify_result()
 
@@ -654,7 +654,7 @@ class ClusterTools:
                 f'test -e {sm_path} && echo "Exists" || echo "Does not exist"'):
             engines.dut.run_cmd(f"echo '{sm_original_content}' | sudo tee {sm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
-                sm_generated_file_name].action_file_install(force=False)
+                sm_generated_file_name].action_install(reboot_params=False, force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
                 sm_generated_file_name].action_delete().verify_result()
 

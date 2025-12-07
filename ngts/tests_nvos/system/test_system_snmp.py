@@ -226,7 +226,7 @@ def test_system_snmp_functional(engines, topology_obj):
     noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
     ip_address = noga_query_data['Specific']['ip_address']
     dhcp_hostname = noga_query_data['Common']['Name'] or noga_query_data['Specific']['dhcp_hostname']
-    with allure.step("Enable snmp"):
+    with allure.step("Enable snmp server"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address=ip_address)
 
@@ -239,8 +239,7 @@ def test_system_snmp_functional(engines, topology_obj):
             ipv6_address = mgmt_port.interface.ipv6.get_primary_ip_address()
 
         with allure.step('Set ipv6 listening address'):
-            system.snmp_server.set('listening-address', ipv6_address).verify_result()
-            NvueGeneralCli.apply_config(engines.dut)
+            system.snmp_server.set('listening-address', ipv6_address, apply=True).verify_result()
 
         with allure.step("Check snmpget with listening eth0 ip_v6 address"):
             host_output = HostMethods.host_snmp_get(host_engine, ipv6_address)
@@ -248,14 +247,12 @@ def test_system_snmp_functional(engines, topology_obj):
 
         with allure.step("Configure listening address ipv6 all and do snmpget"):
             system.snmp_server.listening_address.unset(ipv6_address)
-            system.snmp_server.set('listening-address', 'all-v6').verify_result()
-            NvueGeneralCli.apply_config(engines.dut)
+            system.snmp_server.set('listening-address', 'all-v6', apply=True).verify_result()
             host_output = HostMethods.host_snmp_get(host_engine, ipv6_address)
             assert dhcp_hostname in host_output, 'snmp get with wrong port returned output'
 
     with allure.step("Configure auto-refresh interval and do snmpget"):
-        system.snmp_server.set('auto-refresh-interval', '8').verify_result()
-        NvueGeneralCli.apply_config(engines.dut)
+        system.snmp_server.set('auto-refresh-interval', '8', apply=True).verify_result()
 
     with allure.step('Set possible description on mgmt port'):
         mgmt_port.interface.set(op_param_name='description', op_param_value='nvosdescription',

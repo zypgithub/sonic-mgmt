@@ -196,6 +196,12 @@ class IbInterfaceConsts:
     NON_IB_COUNTERS_FORBIDDEN_OPTIONS = [IB_PORT_TYPE, "nvl", LINK]
 
 
+class AutoNegotiateConsts:
+    class State(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+
 class FWRecoveryConsts:
     # Define constants for recovery event fields
     TOTAL_SUCCESSFUL_RECOVERY_EVENTS = 'total-successful-recovery-events'

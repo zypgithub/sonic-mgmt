@@ -39,23 +39,25 @@ def test_ib_interface_state(test_name, test_api):
     TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
-    set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
+    try:
+        set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
 
-    output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-        selected_port.interface.link.show()).get_returned_value()
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
 
-    Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                      field_name=IbInterfaceConsts.LINK_STATE,
-                                                      expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
 
-    set_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+    finally:
+        set_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
 
-    output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-        selected_port.interface.link.show()).get_returned_value()
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
 
-    Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                      field_name=IbInterfaceConsts.LINK_STATE,
-                                                      expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                          field_name=IbInterfaceConsts.LINK_STATE,
+                                                          expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
 def set_port_state(selected_port, port_state, test_name=''):

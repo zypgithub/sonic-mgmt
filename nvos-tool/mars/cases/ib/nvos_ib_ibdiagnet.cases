@@ -3,8 +3,8 @@
   <global>
     <Test>
       <group> NVOS </group>
-      <name> Ibdiagnet Commands</name>
-      <info></info>
+      <name> Ibdiagnet Commands </name>
+      <info> </info>
       <owner> Rowadia Mahameed </owner>
     </Test>
     <Case>
@@ -16,12 +16,12 @@
   </global>
 
   <case>
-    <name> ib ibdiagnet commands </name>
-    <info></info>
-    <tout> 10800 </tout>
+    <name> IB Ibdiagnet Run </name>
+    <info> Test ibdiagnet run command </info>
+    <tout> 1800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
       </params>
     </cmd>
     <ignore>
@@ -32,4 +32,77 @@
       </condition>
     </ignore>
   </case>
+
+  <case>
+    <name> IB Ibdiagnet Run Multiple Times </name>
+    <info> Test ibdiagnet run multiple times </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run_multiple_times --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> in </op>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+      </condition>
+    </ignore>
+  </case>
+
+  <case>
+    <name> IB Ibdiagnet Negative </name>
+    <info> Test ibdiagnet negative cases </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_negative --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> in </op>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+      </condition>
+    </ignore>
+  </case>
+
+  <case>
+    <name> IB Ibdiagnet Upload </name>
+    <info> Test ibdiagnet upload command </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> in </op>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+      </condition>
+    </ignore>
+  </case>
+
+  <case>
+    <name> IB Ibdiagnet Delete </name>
+    <info> Test ibdiagnet delete command </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_delete --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> in </op>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+      </condition>
+    </ignore>
+  </case>
+
 </CASEDEF>

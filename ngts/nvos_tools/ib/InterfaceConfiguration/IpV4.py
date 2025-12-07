@@ -3,6 +3,7 @@ import logging
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from .DhcpClient import DhcpClient
 
@@ -47,11 +48,10 @@ class IpV4(BaseComponent):
                 dut_engine = TestToolkit.engines.dut
 
             addresses_show = self.address.show(dut_engine=dut_engine)
-            if isinstance(addresses_show, dict):
-                return list(addresses_show.keys())
-            elif isinstance(addresses_show, list):
-                return addresses_show
-            return []
+            addresses_dict = OutputParsingTool.parse_json_str_to_dictionary(addresses_show).get_returned_value()
+            addresses = list(addresses_dict.keys())
+            logger.info(f"IPv4 addresses found: {addresses}")
+            return addresses
 
         except Exception as e:
             logger.info(f"Error getting IPv4 addresses: {e}")
@@ -70,8 +70,10 @@ class IpV4(BaseComponent):
                 # Return the first address, removing any prefix
                 primary_addr = addresses[0]
                 if '/' in primary_addr:
-                    return primary_addr.split('/')[0]
+                    primary_addr = primary_addr.split('/')[0]
+                logger.info(f"Primary IPv4 address: {primary_addr}")
                 return primary_addr
+            logger.info("No IPv4 addresses found")
             return None
 
         except Exception as e:

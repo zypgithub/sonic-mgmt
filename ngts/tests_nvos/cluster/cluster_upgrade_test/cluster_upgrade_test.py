@@ -115,7 +115,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(ImageConsts.SCP_PATH + path_to_config[file_type])
-                    sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_file_install(force=False)
+                    sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_install(reboot_params=False, force=False)
                     output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
                     installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
                     output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
@@ -214,7 +214,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
                     conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
-                    sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[conf_file_name].action_file_install(force=False)
+                    sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[conf_file_name].action_install(reboot_params=False, force=False)
 
             with allure.step("Delete state/config Files"):
                 for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:

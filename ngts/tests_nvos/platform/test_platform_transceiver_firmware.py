@@ -76,7 +76,7 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
         interface = Interface(parent_obj=None, port_name=random_port)
 
     with allure.step(f"reset {random_transceiver} and verify expected behavior using show command"):
-        link_output_before_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
+        counters_before_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.counters.show()).verify_result()
         default_output = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
         platform.transceiver.action_reset(random_transceiver).verify_result()
@@ -88,11 +88,9 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
             _verify_expected_dict(output_after_reset, default_fw)
 
-        with allure.step(f"verify all {random_port} link fields back to the same values"):
-            link_output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-            link_output_before_reset = link_output_before_reset.pop('counters')
-            link_output_after_reset = link_output_after_reset.pop('counters')
-            check_counters(link_output_before_reset, link_output_after_reset)
+        with allure.step(f"verify all {random_port} counters back to the same values"):
+            counters_after_reset = OutputParsingTool.parse_json_str_to_dictionary(interface.counters.show()).verify_result()
+            check_counters(counters_before_reset, counters_after_reset)
 
 
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
@@ -165,18 +163,16 @@ def test_install_transceiver_firmware_positive(engines, devices, random_api, tes
                                                                    random_transceiver, transceiver_obj.downgrade_version_name)
                 OperationTime.verify_operation_time(duration, f"transceiver firmware installation", transceiver_obj.installation_time).verify_result()
 
-            with allure.step("run {} show link command".format(random_port)):
-                show_interface_before_install = OutputParsingTool.parse_json_str_to_dictionary(
-                    interface.link.show()).verify_result()
+            with allure.step("run {} show counters command".format(random_port)):
+                counters_before_install = OutputParsingTool.parse_json_str_to_dictionary(
+                    interface.counters.show()).verify_result()
 
             with allure.step("verify show commands after install"):
                 output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
                 if not is_bug_active(4380004):
                     _verify_expected_dict(command_output=output_after_install, default_fw=transceiver_obj.downgrade_version_number, status='OK', msg='N/A')
-                show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.link.show()).verify_result()
-                link_output_before_reset = show_interface_before_install.pop('counters')
-                link_output_after_reset = show_interface_after_install.pop('counters')
-                check_counters(link_output_before_reset, link_output_after_reset)
+                counters_after_install = OutputParsingTool.parse_json_str_to_dictionary(interface.counters.show()).verify_result()
+                check_counters(counters_before_install, counters_after_install)
         finally:
             with allure.independent_step("fetch and upgrade transceiver firmware"):
                 platform.firmware.transceiver.action_fetch(upgrade_version_path, base_url=scp_path).verify_result()
@@ -231,9 +227,6 @@ def test_install_reset_transceiver_firmware_negative_flow(engines, test_api):
         show_interface_after_install = OutputParsingTool.parse_json_str_to_dictionary(
             interface.link.show()).verify_result()
         output_after_install = OutputParsingTool.parse_json_str_to_dictionary(platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
-
-        show_interface_before_install.pop('counters')
-        show_interface_after_install.pop('counters')
 
         with allure.independent_step("validate the output of transceiver firmware command"):
             assert output_before_install == output_after_install, f"at elast one of the transceiver fields has been change, before installaion {output_before_install}, after instalaaion {output_after_install}"

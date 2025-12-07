@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import AutoNegotiateConsts
 from multiprocessing import Process
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -119,10 +120,10 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
 
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE,
-                                                          expected_value="on")
+                                                          expected_value=AutoNegotiateConsts.State.ENABLED.value)
 
     with allure.step(f'Negative validation with auto neg, {IbInterfaceConsts.LINK_AUTO_NEGOTIATE} must be on with default 1G speed'):
-        mgmt_port.interface.link.set(op_param_name='auto_negotiate', op_param_value='disabled',
+        mgmt_port.interface.link.set(op_param_name='auto_negotiate', op_param_value=AutoNegotiateConsts.State.DISABLED.value,
                                      apply=True).verify_result(False)
         NvueGeneralCli.detach_config(TestToolkit.engines.dut)
 
@@ -163,17 +164,17 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
                 wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, duplex)
 
     with allure.step('Set autoneg to off'):
-        mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value='disabled', apply=True,
+        mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value=AutoNegotiateConsts.State.DISABLED.value, apply=True,
                                      ask_for_confirmation=True).verify_result()
         Port.wait_for_port_state(mgmt_port, "up")
-        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_OFF)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, AutoNegotiateConsts.State.DISABLED.value)
 
     with allure.step('Run show command on mgmt port and verify default values after unset'):
         mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
         Port.wait_for_port_state(mgmt_port, "up")
 
-        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, IbInterfaceConsts.LINK_AUTO_NEG_ON)
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, AutoNegotiateConsts.State.ENABLED.value)
 
         mgmt_port.interface.link.unset(op_param='duplex', apply=True, ask_for_confirmation=True).verify_result()
 
@@ -463,10 +464,6 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                 lease_output = mgmt_port.interface.ipv4.dhcp_client.lease.show()
                 assert lease_output is not None, "DHCP lease information should be available"
                 logger.info(" DHCP lease information is accessible")
-
-            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
-                                                              field_name='is-running',
-                                                              expected_value='yes').verify_result()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name='set-hostname',

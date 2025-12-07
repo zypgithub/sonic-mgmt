@@ -5,6 +5,7 @@ from retry import retry
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.tests_nvos.constants import MINUTE
@@ -136,6 +137,6 @@ def fetch_install_img(system: System, img_path: str, engines):
                                                      ip=scp_player.ip, path=img_path)
         _fetch_img_with_retry(scp_url)
     with allure.step(f'install image: {img_name}'):
-        system.image.files.file_name[img_name].action_file_install_with_reboot()
+        system.image.files.file_name[img_name].action_install(reboot_params=RebootParams())
     with allure.step('disconnect dut engine'):
         engines.dut.disconnect()

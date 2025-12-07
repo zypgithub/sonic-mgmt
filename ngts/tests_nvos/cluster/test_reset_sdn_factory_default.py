@@ -85,7 +85,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         with allure.step("Install modified configurations"):
             for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
                 file_name = config_files_paths[file_type].split('/')[-1]
-                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file_name].action_file_install(force=False)
+                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file_name].action_install(reboot_params=False, force=False)
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')

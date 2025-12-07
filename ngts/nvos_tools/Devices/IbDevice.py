@@ -1037,6 +1037,13 @@ class TaipanSwitch(BlackMambaSwitch):
             "PMIC-8-Temp", "PMIC-9-Temp", "PMIC-10-Temp", "PMIC-11-Temp", "PMIC-12-Temp", "PMIC-13-Temp",
             "SODIMM-1-Temp", "SODIMM-2-Temp"]
 
+    @classmethod
+    def _get_lane_bmap(cls, port):
+        # For Taipan, lane_bmap cycles through 8 values per module based on port_number
+        # Each module has 8 ports: 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+        lane_index = (port.port_number - 1) % 8
+        return 2 ** lane_index
+
 
 # -------------------------- Crocodile Switch ----------------------------
 class CrocodileSwitch(IbSwitch):

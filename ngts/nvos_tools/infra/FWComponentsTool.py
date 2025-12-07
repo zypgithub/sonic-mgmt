@@ -2,6 +2,7 @@ import json
 import logging
 
 from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.tests_nvos.constants import FW_COMPONENT_FPGA
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.platform.Platform import Platform
@@ -22,7 +23,7 @@ class FWComponentsTool:
             platform_component.action_fetch(path).verify_result()
 
         with allure.step(f'installing image {name}'):
-            platform_component.files.file_name[filename].action_file_install_with_reboot(topology_obj=topology_obj)
+            platform_component.files.file_name[filename].action_install(reboot_params=RebootParams(topology_obj=topology_obj))
 
     @staticmethod
     def verify_platform_component_version(platform_component, expected_version: str):
