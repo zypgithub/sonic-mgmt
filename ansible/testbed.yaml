@@ -13781,7 +13781,7 @@
   ptf_ip: 10.215.216.3/16
   ptf_ipv6:
   ptf_extra_mgmt_ip:
-  netns_mgmt_ip: 10.215.26.215/16
+  netns_mgmt_ip: 10.215.216.59/16
   server: server_97
   vm_base: VM7801
   dut:
