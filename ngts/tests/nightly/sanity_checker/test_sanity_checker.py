@@ -114,7 +114,7 @@ def enable_and_disable_fanout_lldp(request, engines, topology_obj, interfaces):
     if not fanout_skipped:
         enable_lldp(engines.fanout)
     if 'fanout_b' in engines:
-        fanout_b_skipped = should_skip_fanout(engines.fanout_b)
+        fanout_b_skipped = should_skip_fanout(topology_obj, engines.fanout_b)
         if not fanout_b_skipped:
             enable_lldp(engines.fanout_b)
 
