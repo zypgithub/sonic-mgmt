@@ -1347,4 +1347,10 @@ high_frequency_telemetry/test_high_frequency_telemetry.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4774921"
 
+platform_tests/mellanox/test_reboot_cause.py:
+  skip:
+    reason: "Test is skipped - reboot cause emulation not supported on sn6600_simx platforms"
+    conditions:
+    - "'6600_simx' in platform"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
