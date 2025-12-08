@@ -27,6 +27,7 @@ DUT_ABSENT_TIMEOUT_FOR_KERNEL_PANIC = 100
 DUT_ABSENT_TIMEOUT_FOR_MEMORY_EXHAUSTION = 100
 EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG = 40
 
+
 @pytest.fixture(scope="function", autouse=True)
 def arm_watchdog_on_dpus(dpuhosts):
     """
@@ -195,14 +196,13 @@ def test_dpu_status_post_dpu_kernel_panic(duthosts, dpuhosts,
     check_dpus_are_not_pingable(duthost, ip_address_list)
 
     logging.info("Executing post test dpu check")
-    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list,
-                         num_dpu_modules, "Non-Hardware",
-                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
     if is_mellanox_devices(duthost.facts['hwsku']):
         expected_reboot_cause = "Watchdog"
     else:
         expected_reboot_cause = "Non-Hardware"
-    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list, num_dpu_modules, expected_reboot_cause)
+    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list,
+                         num_dpu_modules, expected_reboot_cause,
+                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
 
 
 @pytest.mark.disable_loganalyzer
