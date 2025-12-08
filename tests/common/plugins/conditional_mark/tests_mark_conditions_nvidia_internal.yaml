@@ -1371,4 +1371,10 @@ platform_tests/mellanox/test_reboot_cause.py:
     conditions:
     - "'6600_simx' in platform"
 
+platform_tests/api/:
+  skip:
+    reason: "API service is not fully functional on AIR - WIP https://redmine.mellanox.com/issues/4779975"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4779975 and 'air' in setup_name"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
