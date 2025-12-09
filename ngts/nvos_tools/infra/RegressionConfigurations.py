@@ -205,15 +205,13 @@ class RegressionConfigurations:
 
 
 class RegressionLinksConsts:
-    # New connectivity JSON location and keys
-    CONNECTIVITY_FILES_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/connectivity_files/"
+    SYSTEM_LINKS_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/connectivity_files/"
     PORTS_ROOT = "ports"
     KEY_LOOPBACK = "loopback"
-    KEY_CONNECTED_TO = "connected_to"               # neighbor port label
-    KEY_NEIGHBOR_DESCRIPTION = "neighbor_description"  # neighbor device/setup name
+    KEY_CONNECTED_TO = "connected_to"
+    KEY_NEIGHBOR_DESCRIPTION = "neighbor_description"
     KEY_LOGICAL_STATE = "state"
     KEY_PHYSICAL_STATE = "physical_state"
-    # Backward-compat constants retained (not used with new format)
     TRANSCEIVER_TYPE = "transceiver_type"
     PORTS_LIST = "ports_list"
     CONNECTED_TO = "connected_to"
@@ -229,12 +227,20 @@ class RegressionLinksConsts:
 class RegressionLinks:
     @staticmethod
     def _get_setup_links(setup_name):
-        links_path = RegressionLinksConsts.CONNECTIVITY_FILES_PATH + setup_name + ".json"
+        links_path = RegressionLinksConsts.SYSTEM_LINKS_PATH + setup_name + ".json"
         with allure.step(f'Read {setup_name} connectivity info from json {links_path}'):
             with open(links_path, 'r') as file:
                 connectivity = json.load(file)
-            # Return the 'ports' section for easier access
             return connectivity.get(RegressionLinksConsts.PORTS_ROOT, {})
+
+    @staticmethod
+    def get_filtered_ports_list(setup_name, is_loopback=False, connected_to=""):
+        setup_links = RegressionLinks._get_setup_links(setup_name)
+        filtered_ports = {}
+        for port, port_data in setup_links.items():
+            if port_data[RegressionLinksConsts.KEY_LOOPBACK] == is_loopback:
+                filtered_ports[port] = port_data[RegressionLinksConsts.CONNECTED_TO]
+        return filtered_ports
 
     @staticmethod
     def get_filtered_transceivers(setup_name, transceiver_type="", is_loopback=None, connected_to="",

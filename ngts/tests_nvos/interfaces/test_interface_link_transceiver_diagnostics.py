@@ -1,5 +1,6 @@
 import pytest
 
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *
@@ -202,7 +203,7 @@ def test_interface_link_diagnostics_basic_invalid_ports(engines, devices):
 
 @pytest.mark.ib
 @pytest.mark.transceiver
-def test_interface_link_diagnostics_functional(engines, start_sm, devices):
+def test_interface_link_diagnostics_functional(engines, start_sm, devices, setup_name):
     """
     The test will check functionality of link diagnostics in different scenarios.
 
@@ -213,30 +214,35 @@ def test_interface_link_diagnostics_functional(engines, start_sm, devices):
     4. Rewrite transceiver opcode for port to negative value, check output, should be empty
     5. Rewrite transceiver opcode for port to 0, check output, system should return correct code and status
     """
+
     selected_up_ports = Tools.RandomizationTool.select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_UP,
                                                                     requested_ports_type=devices.dut.switch_type.lower(),
                                                                     num_of_ports_to_select=0).get_returned_value()
     with allure.step('Get ports connected to each others'):
-        # Need to provide some good way to find loopback ports. Is it ibnetdiscover?
-        check_list = ['sw15p1', 'sw16p1', 'swA15p1', 'swA16p1', 'sw9p1', 'sw9p2', 'sw10p1', 'sw10p2']
-        ports_connected = [port for port in selected_up_ports if port.name in check_list]
+        ports_connected = RegressionLinks.get_filtered_ports_list(setup_name=setup_name, is_loopback=True)
         assert ports_connected, 'Connected in loopback ports not found'
+
+    with allure.step('Pick random port from ports_connected'):
+        random_port_name = Tools.RandomizationTool.select_random_value(ports_connected).get_returned_value()
+        random_port = next(p for p in selected_up_ports if p.name == random_port_name)
+        connected_port_name = ports_connected[random_port_name]
+        random_port_connected = next(p for p in selected_up_ports if p.name == connected_port_name)
 
     with allure.step('Check default code and status, should be the same'):
         first_port_status = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ports_connected[0].interface.link.diagnostics.show()).get_returned_value()
+            random_port.interface.link.diagnostics.show()).get_returned_value()
         second_port_status = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-            ports_connected[-1].interface.link.diagnostics.show()).get_returned_value()
+            random_port_connected.interface.link.diagnostics.show()).get_returned_value()
         assert first_port_status == second_port_status, "Status code isn't 1"
 
     with allure.step('Shutdown first port and check code and status on both'):
-        ports_connected[0].interface.link.state.set(NvosConsts.LINK_STATE_DOWN, apply=True,
-                                                    ask_for_confirmation=True).verify_result()
+        random_port.interface.link.state.set(NvosConsts.LINK_STATE_DOWN, apply=True,
+                                             ask_for_confirmation=True).verify_result()
 
-        _wait_until_status_changed(ports_connected[0], IbInterfaceConsts.LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT)
-        _wait_until_status_changed(ports_connected[1], IbInterfaceConsts.LINK_DIAGNOSTICS_SIGNAL_NOT_DETECTED)
-        ports_connected[0].interface.link.state.set(NvosConsts.LINK_STATE_UP, apply=True,
-                                                    ask_for_confirmation=True).verify_result()
+        _wait_until_status_changed(random_port, IbInterfaceConsts.LINK_DIAGNOSTICS_CLOSED_BY_COMMAND_PORT)
+        _wait_until_status_changed(random_port_connected, IbInterfaceConsts.LINK_DIAGNOSTICS_NEGOTIATION_FAILURE_PORT)
+        random_port.interface.link.state.set(NvosConsts.LINK_STATE_UP, apply=True,
+                                             ask_for_confirmation=True).verify_result()
 
 
 @retry(Exception, tries=15, delay=1)
