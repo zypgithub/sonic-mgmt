@@ -10,6 +10,7 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
@@ -145,6 +146,7 @@ def test_ib_interface_state_unset(engines, test_api):
                                                       expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
+@pytest.mark.timeout(25 * MINUTE, func_only=True)
 @pytest.mark.ib_interfaces
 def test_ib_interface_state_up_once(engines, devices, random_api):
     """
