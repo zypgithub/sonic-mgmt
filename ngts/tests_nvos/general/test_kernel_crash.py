@@ -9,7 +9,7 @@ from ngts.constants.constants import BugHandlerConst
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
-from ngts.nvos_constants.constants_nvos import OperationTimeConsts, NvosConst
+from ngts.nvos_constants.constants_nvos import OperationTimeConsts, NvosConst, SystemConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
@@ -19,7 +19,6 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -100,6 +99,64 @@ def test_kernel_crash(engines, devices, topology_obj, test_api):
 
         with allure.independent_step("Validate files sizes"):
             verify_techsupport_files_sizes(engines.dut, techsupport_file_name)
+
+    # Cleanup: Remove kdump files and tech-support after validation
+    with allure.step("Cleanup kdump files and tech-support after validation"):
+        # Extract kdump timestamp from the validated files (e.g., "kdump.202512091341" -> "202512091341")
+        kdump_timestamp = None
+        for filename in techsupport_files_dict["kdump"]:
+            if filename.startswith("kdump.") and not filename.endswith(".gz"):
+                kdump_timestamp = filename.split(".")[1]
+                break
+
+        if not kdump_timestamp:
+            logger.warning("Could not extract kdump timestamp, skipping kdump cleanup")
+            kdump_path = None
+        else:
+            kdump_path = f"/var/crash/collected/{kdump_timestamp}"
+            logger.info(f"Will cleanup kdump directory: {kdump_path}")
+
+        # Measure sizes before cleanup
+        kdump_size_before = int(engines.dut.run_cmd(
+            f'sudo du -sm {kdump_path} 2>/dev/null | cut -f1 || echo "0"' if kdump_path else 'echo "0"',
+            validate=False).strip() or 0)
+
+        techsupport_size = int(engines.dut.run_cmd(
+            f'sudo du -sm {techsupport_file_path} 2>/dev/null | cut -f1 || echo "0"',
+            validate=False).strip() or 0)
+
+        logger.info(f"Before cleanup - Kdump: {kdump_size_before} MB, Tech-support: {techsupport_size} MB")
+
+        # Cleanup specific kdump directory for this test run only
+        with allure.step("Cleanup kdump files from /var/crash/collected/"):
+            if kdump_path:
+                engines.dut.run_cmd(f'sudo rm -rf {kdump_path}', validate=False)
+                logger.info(f"Deleted kdump from /var/crash/collected/{kdump_timestamp}/")
+
+        # Cleanup kdump folder inside extracted tech-support
+        with allure.step("Cleanup kdump folder from extracted tech-support"):
+            if kdump_timestamp:
+                extracted_dir = techsupport_file_name.replace('.tar.gz', "")
+                extracted_techsupport_path = SystemConsts.TECHSUPPORT_FILES_PATH + extracted_dir
+                kdump_in_techsupport = f"{extracted_techsupport_path}/kdump"
+
+                # Delete the entire kdump folder (collected folder only exists after kernel crash)
+                engines.dut.run_cmd(f'sudo rm -rf {kdump_in_techsupport}', validate=False)
+                logger.info(f"Deleted kdump folder from tech-support: {kdump_in_techsupport}")
+
+        # Delete the tech-support tar.gz file
+        with allure.step("Cleanup tech-support archive file"):
+            if system.techsupport.file_name:
+                system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
+                logger.info(f"Deleted tech-support archive: {techsupport_file_path}")
+
+        # Measure and report cleanup results
+        total_freed = kdump_size_before + techsupport_size
+        logger.info(f"Cleanup completed - Total space freed: {total_freed} MB")
+
+        allure.attach("Cleanup Summary",
+                      f"Kdump freed: {kdump_size_before} MB (timestamp: {kdump_timestamp})\n"
+                      f"Tech-support: {techsupport_size} MB\nTotal: {total_freed} MB")
 
 
 def verify_techsupport_files_names(techsupport_files_list, expected_patterns_list):
