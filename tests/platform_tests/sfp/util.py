@@ -200,8 +200,8 @@ def get_sfp_mgmt_iface_type(duthost, interfaces):
     sfp_mgmt_iface_type = get_sfp_module_type(duthost, interfaces)
 
     cmis_identifiers = ['OSFP', 'QSFP-DD']
-    sff8472_identifiers = ['SFP', 'SFP+']
-    sff8636_identifiers = ['QSFP-28', 'QSFP+', 'QSFP']
+    sff8472_identifiers = ['SFP', 'SFP+', 'SFP28']
+    sff8636_identifiers = ['QSFP28', 'QSFP+', 'QSFP']
 
     for intf, module_type in sfp_mgmt_iface_type.items():
         module_type = module_type.split()[0].upper()

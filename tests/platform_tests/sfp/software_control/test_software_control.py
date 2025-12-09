@@ -113,7 +113,7 @@ class TestSoftwareControlFunctional:
         page = 0
         with allure.step("get passive port list"):
             passive_cable_port_list = get_passive_cable_port_list(self.duthost)
-        with allure.step("Get sfp type by reading the first byte of 0 page in eeprom"):
+        with allure.step("Get sfp type from redis db"):
             sfp_type_per_interface = get_sfp_type_per_interface(self.duthost, self.sc_port_list, xcvr_skip_list)
         original_eeprom_per_interface = read_write_eeprom_by_page_and_byte_to_interfaes_list_by_sfp_type(
                     self.duthost, "READ_EEPROM", sfp_type_per_interface, self.sc_port_list, page, DICT_WRITABLE_BYTE_FOR_PAGE_0, size=1)
@@ -160,7 +160,7 @@ class TestSoftwareControlFunctional:
             for intf, data_info in original_eeprom_per_interface.items():
                 sfp_type = sfp_type_per_interface[intf]
                 offset = DICT_WRITABLE_BYTE_FOR_PAGE_0[sfp_type]
-                if intf in passive_cable_port_list and sfp_type in ["cmis"]:
+                if intf in interfaces_not_support_write:
                     logger.info(f"Skip recover eeprom for {intf} due to it is cmis passive port")
                     continue
                 with allure.step(f"Recover original eeprom for {intf} with offset {offset} and data {data_info}"):
