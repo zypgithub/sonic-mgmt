@@ -170,8 +170,10 @@ class SonicOnieCli:
         image_name = image_path.split('/')[-1]
         local_image_file = '/tmp/' + image_name
 
+        logger.info('Removing existing sonic image if any')
+        self.run_cmd_set([f'rm -f "{local_image_file}"'])
         logger.info('Starting download sonic image via http')
-        download_image_cmd = f"wget -O {local_image_file} {full_image_path}"
+        download_image_cmd = f"wget --timeout=310 --continue -O {local_image_file} {full_image_path}"
         retry_call(self.run_cmd_set, fargs=[[download_image_cmd]], fkwargs={"custom_prompts": "100%", "timeout": 300}, tries=5, delay=2, logger=logger)
 
         logger.info('Starting onie-nos-install sonic image')
