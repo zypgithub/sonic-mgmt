@@ -4,7 +4,13 @@ import os
 from contextlib import contextmanager
 
 import allure
-from exceptiongroup import ExceptionGroup
+import sys
+# ExceptionGroup is built-in since Python 3.11, no import needed
+# Just use it directly, or if you need to import it:
+if sys.version_info >= (3, 11):
+    pass  # It's already available as a builtin
+else:
+    from exceptiongroup import ExceptionGroup
 
 from ngts.nvos_tools.infra import ExceptionTool
 

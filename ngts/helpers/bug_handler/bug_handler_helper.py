@@ -11,6 +11,8 @@ import allure
 import math
 import pathlib
 
+from ansible.utils.unsafe_proxy import AnsibleUnsafeText
+from collections.abc import Mapping, Iterable
 from retry.api import retry
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
@@ -680,6 +682,23 @@ def get_log_analyzer_yaml_path(test_name, dump_path):
     return yaml_file_path
 
 
+def sanitize_for_yaml(data):
+    """Convert Ansible-specific types to plain Python types for YAML serialization."""
+    # logger.info(f"sanitize_for_yaml data: {data}, type: {type(data)}, id: {id(data)}")
+    if isinstance(data, AnsibleUnsafeText):
+        #logger.info("converting AnsibleUnsafeText to plain string")
+        # Convert any AnsibleUnsafeText type to plain string
+        return "".join(c for c in data)
+    if isinstance(data, Mapping):
+        # logger.info("converting Mapping to dictionary")
+        return {sanitize_for_yaml(k): sanitize_for_yaml(v) for k, v in data.items()}
+    if isinstance(data, Iterable) and not isinstance(data, str) and not isinstance(data, bytes):
+        # logger.info("converting Iterable to list")
+        return [sanitize_for_yaml(item) for item in data]
+    #logger.info("returning data as is")
+    return data
+
+
 def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hostname,
                                   bug_info_dictionary, bug_handler_params, bug_handler_dumps_results,
                                   is_serial_log=False):
@@ -723,6 +742,7 @@ def create_log_analyzer_yaml_file(log_errors, dump_path, project, test_name, hos
                                 'attachments': [tar_file_path] if tar_file_path else None,
                                 'session_id': os.environ.get(InfraConst.ENV_SESSION_ID),
                                 'test_name': test_name})
+    bug_info_dictionary = sanitize_for_yaml(bug_info_dictionary)
     yaml_content = yaml.dump(bug_info_dictionary)
     yaml_content = yaml_content.replace(bug_regex, f"\"{bug_regex}\"")
     logger.info("yaml file content: {}".format(yaml_content))

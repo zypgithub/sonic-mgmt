@@ -1,7 +1,10 @@
 import logging
 import subprocess
 
-from netmiko.ssh_exception import NetmikoAuthenticationException
+try:
+    from netmiko.ssh_exception import NetmikoAuthenticationException
+except ImportError:
+    from netmiko.exceptions import NetmikoAuthenticationException
 from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
