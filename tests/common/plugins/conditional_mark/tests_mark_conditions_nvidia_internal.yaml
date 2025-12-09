@@ -970,9 +970,27 @@ platform_tests/test_sensors.py::test_sensors:
     conditions:
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
   xfail:
-    reason: "Testcase ignored due to RM 4501831 on sn4280"
+    reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup"
     conditions:
-    - "https://redmine.mellanox.com/issues/4501831 and 'sn4280' in platform"
+    - "https://redmine.mellanox.com/issues/4776315 and 'bobcat-10' in testbed"
+
+smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
+  xfail:
+    reason: "Testcase ignored due to RM 4776344 on sn4280"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4776344"
+
+dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_enabled:
+  xfail:
+    reason: "Testcase ignored due to RM 4779923"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4779923"
+
+dash/nasa_debug/test_nasa_debug.py::test_nasa_debug_action:
+  xfail:
+    reason: "Testcase ignored due to RM 4779923"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4779923"
 
 platform_tests/test_platform_info.py::test_turn_on_off_psu_and_check_psustatus:
   skip:
