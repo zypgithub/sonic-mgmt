@@ -201,13 +201,13 @@ def test_ztp_image(engines, devices):
                     _wait_until_ztp_step_status(system, '01-image', SystemConsts.ZTP_STATUS_SUCCESS, tries=100, delay=5)
                     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
                         system.image.show()).get_returned_value()
-                    assert output_dictionary['current'] == output_dictionary['next'], 'Image not installed'
+                    assert output_dictionary['partition1']['build-id'] != output_dictionary['partition2']['build-id'], 'Image not installed'
 
                 with allure.step("Check ztp status for uninstall image"):
                     _wait_until_ztp_step_status(system, '02-image', SystemConsts.ZTP_STATUS_SUCCESS)
                     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
                         system.image.show()).get_returned_value()
-                    assert output_dictionary['current'] == output_dictionary['next'], 'Image not uninstalled'
+                    assert output_dictionary['partition2']['build-id'] is None, 'Image not uninstalled'
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_image: {}".format(e))
@@ -581,6 +581,38 @@ def test_ztp_provisioning_script_positive(engines, devices):
 
     except Exception as e:
         logger.info("Received Exception during test_ztp_connectivity_check: {}".format(e))
+        raise e
+    finally:
+        _ztp_cleanup(engines, system)
+
+
+@pytest.mark.ztp
+@pytest.mark.system
+def test_ztp_hashed_password(engines, devices, topology_obj):
+    """
+    Test flow:
+        1. Check default values for ztp
+        2. Apply json file with hashed password script
+        3. Verify that SSH authentication is successful with hashed password
+    """
+    system = System(None)
+
+    try:
+        _run_system_ztp_with_empty_config(engines, system)
+
+        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
+
+        with allure.step("Running hashed password ztp provisioning script"):
+            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_HASHED_PASSWORD,
+                                       '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
+
+        with allure.step("Verify that SSH authentication is successful with hashed password"):
+            ssh_connection = SshAuthVerifier(username='sasha', password='sasha',
+                                             engines=engines, topology_obj=topology_obj)
+            ssh_connection.verify_authentication(True)
+
+    except Exception as e:
+        logger.info(f"Received Exception during test_ztp_hashed_password: {e}")
         raise e
     finally:
         _ztp_cleanup(engines, system)

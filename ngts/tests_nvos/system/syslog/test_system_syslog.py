@@ -1,6 +1,7 @@
 import logging
 import pytest
 import random
+from retry import retry
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -12,12 +13,18 @@ import re
 import socket
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.nvos_constants.constants_nvos import SyslogConsts, SyslogSeverityLevels, NvosConst
+from ngts.nvos_constants.constants_nvos import SyslogConsts, SyslogSeverityLevels, NvosConst, RebootConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SonicMgmtContainer import SonicMgmtContainer
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.nvos_tools.infra.Tools import Tools
 
 logger = logging.getLogger()
 INCOMPLETE_COMMAND = "Incomplete Command"
@@ -173,7 +180,7 @@ def test_rsyslog_multiple_servers_configuration(engines):
 
     finally:
         with allure.step("Cleanup syslog configurations"):
-            system.syslog.unset(apply=True)
+            system.syslog.servers.unset(apply=True)
 
 
 @pytest.mark.system
@@ -266,7 +273,7 @@ def test_rsyslog_configurations(random_api):
 
     finally:
         with allure.step("Cleanup syslog configurations"):
-            system.syslog.unset(apply=True)
+            system.syslog.servers.unset(apply=True)
 
 
 @pytest.mark.system
@@ -317,7 +324,87 @@ def test_rsyslog_server_severity_levels(engines, loganalyzer, random_api):
 
     finally:
         with allure.step("Cleanup syslog configurations"):
-            system.syslog.unset(apply=True)
+            system.syslog.servers.unset(apply=True)
+
+
+@pytest.mark.system
+@pytest.mark.syslog
+@pytest.mark.simx
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_rsyslog_server_and_global_severity_levels(test_api):
+    """
+    Will validate all the severity options:  debug, info, notice, warning, error, critical, alert, emerg, none.
+    Will configure the severity level, validate it in the show command and validate that the server catch the relevant
+    messages only.
+
+    Test flow:
+    * Configure remote syslog server
+    To each severity level:
+         * Set severity level
+         * Validate with show command
+         * Print msg that the server should catch, validate
+         * Print msg that the server should not catch, validate
+    * Unset server trap
+    * Cleanup
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+    server_a_name = 'server_a'
+
+    try:
+        with allure.step("Configure remote syslog server and Validate"):
+            server_a = system.syslog.servers.set_server(server_a_name, apply=True)
+            server_a.verify_trap_severity_level(None)
+
+        with allure.step("Set global severity and Validate"):
+            system.syslog.set_trap(SyslogSeverityLevels.ERROR, apply=True)
+            server_a.verify_trap_severity_level(None)
+
+        with allure.step("Unset server severity and Validate nothing change"):
+            system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].unset_severity(apply=True)
+            server_a.verify_trap_severity_level(None, SyslogConsts.DEFAULT_SELECTOR_NAME)
+
+        with allure.step("set server trap and Validate"):
+            server_a.set_trap(SyslogSeverityLevels.DEBUG, apply=True)
+            server_a.verify_trap_severity_level(SyslogSeverityLevels.SEVERITY_LEVEL_DICT[SyslogSeverityLevels.DEBUG])
+
+        with allure.step("Unset server trap and Validate"):
+            server_a.unset_trap(apply=True)
+            server_a.verify_trap_severity_level(None)
+
+        with allure.step("Unset global trap and Validate"):
+            system.syslog.unset_trap(apply=True)
+            server_a.verify_trap_severity_level(None)
+
+        with allure.step("Validate unset global trap override server trap"):
+            with allure.step("set global and server trap and Validate"):
+                system.syslog.set_trap(SyslogSeverityLevels.ERROR, apply=True)
+                server_a.set_trap(SyslogSeverityLevels.DEBUG, apply=True)
+                server_a.verify_trap_severity_level(
+                    SyslogSeverityLevels.SEVERITY_LEVEL_DICT[SyslogSeverityLevels.DEBUG])
+
+            with allure.step("Unset global trap and Validate"):
+                system.syslog.unset_trap(apply=True)
+                server_a.verify_trap_severity_level(None)
+
+        with allure.step("Validate global trap override server trap"):
+            with allure.step("set server trap and Validate"):
+                server_a.set_trap(SyslogSeverityLevels.DEBUG, apply=True)
+                system.syslog.verify_global_severity_level(
+                    SyslogSeverityLevels.SEVERITY_LEVEL_DICT[SyslogSeverityLevels.NOTICE])
+                server_a.verify_trap_severity_level(
+                    SyslogSeverityLevels.SEVERITY_LEVEL_DICT[SyslogSeverityLevels.DEBUG])
+
+            with allure.step("Set global trap and Validate"):
+                system.syslog.set_trap(SyslogSeverityLevels.ERROR, apply=True)
+                system.syslog.verify_global_severity_level(
+                    SyslogSeverityLevels.SEVERITY_LEVEL_DICT[SyslogSeverityLevels.ERROR])
+                server_a.verify_trap_severity_level(None)
+
+    finally:
+        with allure.step("Cleanup syslog configurations"):
+            system.syslog.servers.unset(apply=True)
+            system.syslog.selectors.unset(apply=True)
 
 
 @pytest.mark.system
@@ -397,9 +484,11 @@ def test_rsyslog_protocol(engines, random_api):
         6. validate with show commands
         7. send a msg and validate server received it
         8. simulate a disconnection, by stop the rsyslog process
-        9. send a msg and validate server did not receive it
-        10. reconnect , restart the rsyslog process
-        11. send a msg and validate server received it
+        9. send multiple messages during downtime (should be buffered)
+        10. wait for 1 minute during server downtime
+        11. reconnect, restart the rsyslog process
+        12. verify all buffered messages are delivered to remote server
+        13. send a msg and validate server received it
     """
     TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
@@ -420,17 +509,81 @@ def test_rsyslog_protocol(engines, random_api):
         config_and_verify_rsyslog_protocol(system.syslog.servers.servers_dict[remote_server_ip], remote_server_engine,
                                            remote_server_ip, SyslogConsts.TCP)
 
-        with allure.step("Disconnect and Reconnect to server"):
+        with allure.step("Test message buffering during server disconnection"):
 
             with allure.step("Simulate disconnection to the server"):
                 remote_server_engine.run_cmd('sudo pkill rsyslogd')
-                time.sleep(30)
-                random_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
-                send_msg_to_server(random_msg, remote_server_ip, remote_server_engine, verify_msg_didnt_received=True)
+                time.sleep(10)  # Allow time for service to fully stop
+
+                # First verify server is down by sending a test message
+                test_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
+                send_msg_to_server(test_msg, remote_server_ip, remote_server_engine, verify_msg_didnt_received=True)
+
+            # Generate multiple unique messages to send during downtime
+            buffered_messages = []
+            with allure.step("Send multiple messages while server is down (should be buffered)"):
+                for i in range(5):  # Send 5 messages during downtime
+                    msg = "PROTOCOL_BUFFERED_MSG_{}_{}".format(i, RandomizationTool.get_random_string(20, ascii_letters=string.ascii_letters + string.digits))
+                    buffered_messages.append(msg)
+                    logger.info("Sending buffered message {}: {}".format(i + 1, msg))
+                    send_msg_to_server(msg, remote_server_ip, remote_server_engine)  # Don't verify receipt yet
+                    time.sleep(2)  # Small delay between messages
+
+            with allure.step("Wait for 1 minute during server downtime"):
+                logger.info("Waiting 60 seconds while server is down...")
+                time.sleep(60)
 
             with allure.step("Reconnect to the server"):
                 SonicMgmtContainer.restart_rsyslog(remote_server_engine)
+                time.sleep(30)  # Allow time for service to fully restart and process queued messages
+
+                # First verify server is working with a fresh message
+                fresh_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
+                send_msg_to_server(fresh_msg, remote_server_ip, remote_server_engine, verify_msg_received=True)
+                logger.info(" Server is working - fresh message delivered successfully")
+
+            with allure.step("Verify all buffered messages are delivered to remote server"):
+                # Give additional time for any queued messages to be processed
                 time.sleep(30)
+
+                delivered_count = 0
+                missing_count = 0
+                missing_messages = []
+
+                for i, msg in enumerate(buffered_messages):
+                    with allure.step("Verify buffered message {} was delivered: {}".format(i + 1, msg)):
+                        try:
+                            verify_msg_in_syslog_file(remote_server_engine, msg, should_find=True)
+                            logger.info(" Buffered message {} found: {}".format(i + 1, msg))
+                            delivered_count += 1
+                        except Exception as e:
+                            logger.error(" Buffered message {} NOT found: {} - Error: {}".format(i + 1, msg, e))
+                            missing_count += 1
+                            missing_messages.append(msg)
+
+                with allure.step("Summary of buffered message delivery"):
+                    logger.info(" Buffered Message Summary:")
+                    logger.info("   Delivered: {}/{}".format(delivered_count, len(buffered_messages)))
+                    logger.info("   Missing: {}/{}".format(missing_count, len(buffered_messages)))
+
+                    if missing_count > 0:
+                        # Show recent syslog for debugging
+                        with allure.step("Show recent syslog entries for debugging"):
+                            remote_server_engine.run_cmd('tail -50 /var/log/syslog')
+
+                        # FAIL the test as per requirement - all messages should be received
+                        error_msg = " BUFFERING TEST FAILED: {}/{} messages were not delivered after server restart.\n".format(
+                            missing_count, len(buffered_messages))
+                        error_msg += "Missing messages:\n"
+                        for msg in missing_messages:
+                            error_msg += "  - {}\n".format(msg)
+                        error_msg += "All messages sent during server downtime should be buffered and delivered when server comes back online."
+
+                        raise AssertionError(error_msg)
+                    else:
+                        logger.info(" SUCCESS: All buffered messages were successfully delivered!")
+
+            with allure.step("Final connectivity test"):
                 random_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
                 send_msg_to_server(random_msg, remote_server_ip, remote_server_engine, verify_msg_received=True)
 
@@ -656,7 +809,8 @@ def test_rsyslog_format(engines, test_api):
 
     finally:
         with allure.step("Cleanup syslog configurations"):
-            system.syslog.unset(apply=True)
+            system.syslog.servers.unset(apply=True)
+            system.syslog.format.unset(apply=True)
 
 
 @pytest.mark.disable_loganalyzer
@@ -1703,3 +1857,246 @@ def remove_mlnx_lab_suffix(hostname_string):
     """
     host_name_index = 0
     return hostname_string.split('.')[host_name_index]
+
+
+@retry(Exception, tries=3, delay=5, backoff=2)
+def send_message_after_rate_limit_reset(remote_server_ip, remote_server_engine, priority=SyslogSeverityLevels.INFO):
+    """
+    Send a message after rate limit interval reset with automatic retry.
+
+    Args:
+        remote_server_ip: IP address of the remote server
+        remote_server_engine: Engine object for the remote server
+        priority: Syslog priority level (default: INFO)
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If all retry attempts fail
+    """
+    test_message = "burst_test_message_after_interval"
+    send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
+                       priority=priority, verify_msg_received=True)
+    logger.info("Message sent successfully after interval reset")
+
+
+@pytest.mark.system
+@pytest.mark.syslog
+def test_syslog_logging_during_system_reboot(engines, random_api):
+    """
+    Test Objective:
+    Verify that system-generated logs are forwarded to remote syslog during cold reboot.
+
+    Test flow:
+    1. Configure remote syslog server
+    2. Perform reboot
+    3. Verify DUT reboot logs are present in remote syslog
+    4. Clean up
+    """
+    TestToolkit.tested_api = random_api
+    remote_server_engine = engines[NvosConst.SONIC_MGMT]
+    remote_server_ip = remote_server_engine.ip
+    system = System()
+
+    try:
+        with allure.step("Configure remote syslog server"):
+            system.syslog.servers.set_server(remote_server_ip, apply=True)
+
+        with allure.step("Perform reboot"):
+            system.reboot.action_reboot()
+
+            # Wait for system to come back online
+            max_wait = 300
+            wait_interval = 10
+            elapsed = 0
+
+            while elapsed < max_wait:
+                try:
+                    TestToolkit.engines.dut.run_cmd('echo "online"', timeout=10)
+                    break
+                except BaseException:
+                    time.sleep(wait_interval)
+                    elapsed += wait_interval
+            else:
+                raise Exception(f"System did not come back online within {max_wait} seconds")
+
+            # Allow time for logs to be forwarded
+            time.sleep(70)
+
+        with allure.step("Verify reboot logs are forwarded to remote syslog"):
+            # Get reboot-related logs from DUT
+            dut_logs = TestToolkit.engines.dut.run_cmd('grep -i "reboot\\|restart\\|boot" /var/log/syslog | tail -5')
+
+            if not dut_logs.strip():
+                logger.warning("No reboot logs found on DUT")
+                return
+
+            # Check if any DUT logs are present in remote syslog
+            matched = 0
+            for log_line in dut_logs.strip().split('\n'):
+                if not log_line.strip():
+                    continue
+
+                # Extract key part of message for searching
+                parts = log_line.split()
+                if len(parts) >= 4:
+                    search_text = ' '.join(parts[3:6])
+                    remote_result = remote_server_engine.run_cmd(f'grep -F "{search_text}" /var/log/syslog')
+                    if remote_result.strip():
+                        matched += 1
+                        logger.info(f"Found DUT log in remote syslog: {search_text}")
+
+            # Verify at least some logs were forwarded
+            if matched == 0:
+                raise AssertionError("No DUT cold reboot logs found in remote syslog - forwarding may not be working during cold reboot")
+            else:
+                logger.info(f"SUCCESS: {matched} cold reboot log entries forwarded to remote syslog")
+
+    finally:
+        with allure.step("Cleanup"):
+            system.syslog.servers.unset(apply=True)
+
+
+@pytest.mark.system
+@pytest.mark.syslog
+def test_syslog_buffering_during_mgmt_interface_downtime(engines, topology_obj, serial_engine, random_api):
+    """
+    Test syslog message buffering during complete management network downtime.
+    Uses the same configuration pattern as test_rsyslog_format and proper eth0 up/down pattern.
+
+    Test flow:
+    1. Configure remote syslog server using same pattern as rsyslog_format test
+    2. Send messages and verify they are received
+    3. Shutdown management interface (complete network isolation)
+    4. Send logger messages during interface downtime (should be buffered)
+    5. Bring management interface back up
+    6. Verify all buffered messages are received after interface recovery
+    """
+    TestToolkit.tested_api = random_api
+    remote_server_engine = engines[NvosConst.SONIC_MGMT]
+    remote_server_ip = remote_server_engine.ip
+    system = System()
+
+    # Get management interface dynamically
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    mgmt_port = Port(mgmt_port_name)
+
+    try:
+        normal_messages = []
+        buffered_messages = []
+
+        with allure.step("Configure remote syslog server {} and validate".format(remote_server_ip)):
+            system.syslog.servers.set_server(remote_server_ip, apply=True)
+            expected_server_dictionary = create_remote_server_dictionary(remote_server_ip)
+            expected_syslog_dictionary = create_syslog_output_dictionary(
+                server_dict={SyslogConsts.SERVER: expected_server_dictionary})
+            system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
+            system.syslog.servers.verify_show_servers_list([remote_server_ip])
+            system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(
+                expected_server_dictionary[remote_server_ip])
+
+        with allure.step("Step 1: Verify management interface is up and send normal messages"):
+            # Verify interface is up initially
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show()).get_returned_value()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+
+            # Verify connectivity
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+
+            # Send normal messages and verify immediate delivery
+            for i in range(3):
+                random_msg = RandomizationTool.get_random_string(25, ascii_letters=string.ascii_letters + string.digits)
+                normal_messages.append(random_msg)
+                full_msg = f"MGMT_BUFFERING_NORMAL_{random_msg}"
+
+                send_msg_to_server(full_msg, remote_server_ip, remote_server_engine, verify_msg_received=True)
+                logging.info(f" Verified normal message delivered: {full_msg}")
+
+            logging.info(f" All {len(normal_messages)} normal messages successfully delivered")
+
+        with allure.step("Step 2: Shutdown management interface {}".format(mgmt_port_name)):
+            # Use direct CLI commands via serial engine since Port wrapper doesn't work with serial engine
+            serial_engine.run_cmd(f'nv set interface {mgmt_port_name} link state down')
+            serial_engine.run_cmd('nv config apply -y')
+
+            # Verify interface is down and connectivity is lost
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+
+            # Verify interface state via serial engine
+            show_output = serial_engine.run_cmd(f'nv show interface {mgmt_port_name} link')
+            # Handle tuple return value from serial engine
+            output_str = show_output[0] if isinstance(show_output, tuple) else show_output
+            assert 'down' in output_str.lower(), f"Interface {mgmt_port_name} not showing as down: {output_str}"
+            logging.info(f" Management interface {mgmt_port_name} is down")
+
+        with allure.step("Step 3: Send messages during interface downtime (should be buffered)"):
+            for i in range(5):
+                random_msg = RandomizationTool.get_random_string(30, ascii_letters=string.ascii_letters + string.digits)
+                buffered_messages.append(random_msg)
+                full_msg = f"MGMT_BUFFERING_DOWNTIME_{random_msg}"
+
+                # Send message via serial engine during downtime
+                serial_engine.run_cmd(f'logger "{full_msg}"')
+                logging.info(f"Sent message during downtime (should be buffered): {full_msg}")
+                time.sleep(1)
+
+            # Wait for buffering period
+            time.sleep(15)
+            logging.info(f"Sent {len(buffered_messages)} messages during complete management network downtime")
+
+        with allure.step("Step 4: Bring management interface {} back up".format(mgmt_port_name)):
+            # Use direct CLI commands via serial engine
+            serial_engine.run_cmd(f'nv unset interface {mgmt_port_name} link state')
+            serial_engine.run_cmd('nv config apply -y')
+
+            # Verify interface is up and connectivity is restored
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+
+            # Verify interface state is back up (can now use regular engine since SSH is restored)
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                mgmt_port.interface.link.show()).get_returned_value()
+            Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
+                                                              field_name=IbInterfaceConsts.LINK_STATE,
+                                                              expected_value=NvosConsts.LINK_STATE_UP).verify_result()
+
+            # Wait for messages to be delivered
+            time.sleep(30)
+            logging.info(f" Management interface {mgmt_port_name} is back up")
+
+        with allure.step("Step 5: Verify all normal messages are still present"):
+            for msg in normal_messages:
+                full_msg = f"MGMT_BUFFERING_NORMAL_{msg}"
+                verify_msg_in_syslog_file(remote_server_engine, full_msg, should_find=True)
+                logging.info(f" Verified normal message still present: {full_msg}")
+
+        with allure.step("Step 6: Verify all buffered messages were delivered after recovery"):
+            for msg in buffered_messages:
+                full_msg = f"MGMT_BUFFERING_DOWNTIME_{msg}"
+                verify_msg_in_syslog_file(remote_server_engine, full_msg, should_find=True)
+                logging.info(f" Verified buffered message delivered: {full_msg}")
+
+            logging.info(f"✓ All {len(buffered_messages)} buffered messages successfully delivered after interface recovery")
+
+        with allure.step("Summary"):
+            total_messages = len(normal_messages) + len(buffered_messages)
+            logging.info(f" TEST PASSED: All {total_messages} messages delivered successfully")
+            logging.info(f"  - Normal messages (immediate delivery): {len(normal_messages)}")
+            logging.info(f"  - Buffered messages (delayed delivery): {len(buffered_messages)}")
+
+    finally:
+        with allure.step("Cleanup"):
+            # Ensure management interface is back up using direct CLI commands
+            try:
+                serial_engine.run_cmd(f'nv unset interface {mgmt_port_name} link state')
+                serial_engine.run_cmd('nv config apply -y')
+                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+                logging.info(f" Cleanup: Management interface {mgmt_port_name} restored")
+            except Exception as e:
+                logging.warning(f"Warning: Failed to restore interface in cleanup: {e}")
+
+            # Cleanup syslog configurations
+            system.syslog.servers.unset(apply=True)

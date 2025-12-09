@@ -736,8 +736,12 @@ def cluster_app_mngr_security_factory_reset_no_params_check():
                 for app_name in ClusterApps.ALL_APPS:
                     with allure.independent_step(app_name):
                         with allure.independent_step('Verify values in show restored to defaults'):
-                            verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
-                                                expect_encryption=Defaults.ENCRYPTION)
+                            if app_name == ClusterApps.NMX_TELEMETRY:
+                                verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                                    expect_encryption=Defaults.ENCRYPTION, expect_state=ENABLED)
+                            else:
+                                verify_manager_show(app_name, expect_cert=Defaults.CERT, expect_cacert=Defaults.CACERT,
+                                                    expect_encryption=Defaults.ENCRYPTION, expect_state=DISABLED)
                         with allure.independent_step('verify no manager client connection'):
 
                             verify_no_client_connection(app_name, certs[app_name], certs[app_name], True)

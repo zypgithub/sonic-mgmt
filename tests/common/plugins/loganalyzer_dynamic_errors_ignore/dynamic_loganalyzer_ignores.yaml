@@ -1345,7 +1345,7 @@
   - Affected_test_cases:
     - tests_nvos/system/test_system_documents.py::test_upload_document
     - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
-    - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload
+    - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload_and_delete
 
 - Errors_list:
   - ".*ERR mlnx-fw-upgrade.sh: FW (Query|Update) command.*"

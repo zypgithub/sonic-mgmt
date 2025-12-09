@@ -74,10 +74,11 @@ class TestCpuRamHddUsage:
         return total_size_in_mb
 
     @pytest.mark.parametrize('partition_usage', partitions_and_expected_usage)
-    def test_hdd_usage(self, engines, partition_usage, platform_params):
+    def test_hdd_usage(self, engines, partition_usage, platform_params, request):
         """
         This tests checks HDD usage in specific partition
         Test doing "df {partition}" and then check usage and compare with expected usage from test parameters
+        :param request: pytest build-in
         :param partition_usage: dictionary with partition name and expected usage: {'partition': '/', 'max_usage': 6000}
         """
         if partition_usage['partition'] == '/var/log/':
@@ -93,7 +94,7 @@ class TestCpuRamHddUsage:
 
         logger.info(f"\nChecking hdd_usage of {partition_dir} with max_usage of {partition_usage['max_usage']}\n")
         try:
-            do_hdd_usage_test(self.dut_engine, partition_usage)
+            do_hdd_usage_test(self.dut_engine, partition_usage, request.node.originalname)
         except AssertionError as ae:
             logger.info(f"Error while checking HDD usage of partition {partition_usage['partition']}, printing files above 1MB and depth of 3 in path")
             engines.dut.run_cmd(f"find {partition_usage['partition']} -maxdepth 3 -type f -size +1M -exec ls -lSh --block-size=M {{}} + ")

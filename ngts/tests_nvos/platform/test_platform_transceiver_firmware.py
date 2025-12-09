@@ -359,6 +359,11 @@ def check_counters(counters_before, counters_after):
     with allure.step("Verify that no keys are missing after action"):
         assert counters_before.keys() == counters_after.keys()
 
+    with allure.step(f"Validate {IbInterfaceConsts.LINK_STATS_LINK_DOWNED} counter increased by 1"):
+        assert counters_after[IbInterfaceConsts.LINK_STATS_LINK_DOWNED] == counters_before[IbInterfaceConsts.LINK_STATS_LINK_DOWNED] + 1
+        counters_before.pop(IbInterfaceConsts.LINK_STATS_LINK_DOWNED)
+        counters_after.pop(IbInterfaceConsts.LINK_STATS_LINK_DOWNED)
+
     with allure.step("Validate that none of the counters have changed by more than 20%"):
         for key, before_value in counters_before.items():
             if counters_before[key] and counters_after[key] - counters_before[key] > counters_before[key] * 0.2:

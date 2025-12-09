@@ -21,9 +21,12 @@ from ngts.tests_nvos.system.gnmi.constants import GnmiMode, GnmicErr
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import FWRecoveryConsts, NvosConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
+# Constants
+DEFAULT_GPU_TIMEOUT = 100  # GPU default timeout in seconds for non-standalone systems
 
 # Shared config templates
 FAE_RECOVERY_CONFIG_DICT = {
@@ -118,12 +121,16 @@ def test_fw_recovery_bad_flow(devices, engines, test_name, test_api):
         with allure.independent_step(f"Testing show non-existing attribute in phy-recovery"):
             phy_recovery_obj.show('non-existing', should_succeed=False)
 
-        with allure.independent_step(f"Testing bad arguments on interface {selected_port.port.name}"):
-            for field, case in FWRecoveryConsts.negative_test_cases.items():
-                bad_value = case["bad_value"]
-                expected_error = case["expected_error"]
-            with allure.step(f"Set {field} to bad value '{bad_value}'"):
-                phy_recovery_obj.set(field, bad_value, apply=True, ask_for_confirmation=True, expected_str=expected_error).verify_result(False)
+        with allure.independent_step(f"Testing bad-mode on interface {selected_port.port.name}"):
+            logger.info(f"Set {FWRecoveryConsts.SerdesEQ.MODE} to bad-mode")
+            phy_recovery_obj.set(FWRecoveryConsts.SerdesEQ.MODE, "bad-mode", apply=True, ask_for_confirmation=True,
+                                 expected_str="'bad-mode' is not one of").verify_result()
+
+        with allure.independent_step(f"Testing bad-timeout on interface {selected_port.port.name}"):
+            logger.info(f"Set {FWRecoveryConsts.SerdesEQ.TIMEOUT} to -1")
+            expected_str = "-1 is less than the minimum of 0" if is_bug_active(4631963) and test_api == ApiType.OPENAPI else "Valid range for serdes-eq-timeout is 0 - 2550"
+            phy_recovery_obj.set(FWRecoveryConsts.SerdesEQ.TIMEOUT, -1, apply=True, ask_for_confirmation=True,
+                                 expected_str=expected_str).verify_result()
 
 
 @pytest.mark.interface
@@ -186,12 +193,27 @@ def test_set_fae_fw_recovery_access_ports(engines, devices, random_api, standalo
 
 
 def _run_fae_mode_timeout_test(test_api, group_all_ports, devices, port_name, config, standalone_system=False, setup_name=None):
+    """
+    Test firmware recovery timeout behavior for both standalone and non-standalone systems.
+
+    In non-standalone systems, timeout values are negotiated between switch and GPU.
+    The system uses MAX(configured_timeout, gpu_default_timeout) due to GPU constraints
+    that enforce a minimum timeout of 100 seconds.
+
+    Args:
+        standalone_system: If True, configured timeouts are used directly.
+                          If False, timeouts are negotiated with GPU (MAX logic applies).
+    """
     TestToolkit.tested_api = test_api
 
     selected_port = Fae(port_name=port_name)
     all_ports = Fae(port_name=group_all_ports)
 
     validate_default_config(selected_port)
+
+    def _get_expected_timeout(configured_timeout, is_standalone):
+        """Calculate expected timeout based on system type and GPU negotiation."""
+        return configured_timeout if is_standalone else max(configured_timeout, DEFAULT_GPU_TIMEOUT)
 
     try:
         for mode in FWRecoveryConsts.MODES:
@@ -209,15 +231,26 @@ def _run_fae_mode_timeout_test(test_api, group_all_ports, devices, port_name, co
                         _validate_timeout(selected_port, config, higher_timeout)
 
                     lower_timeout = random.randint(1, 9) * 10
+
                     if standalone_system:
                         with allure.step(f"Update timeout to lower value ({lower_timeout}) locally — expect NO change"):
                             _apply_timeout(selected_port, config, lower_timeout)
+                            # Standalone: local changes don't propagate, keep higher timeout
                             _validate_timeout(selected_port, config, higher_timeout, verify_after_seconds=30)
+                    else:
+                        with allure.step(f"Update timeout to lower value ({lower_timeout}) locally — expect GPU default ({DEFAULT_GPU_TIMEOUT})"):
+                            _apply_timeout(selected_port, config, lower_timeout)
+                            reset_gpus_if_needed(setup_name)
+                            # Non-standalone: GPU negotiates, expects MAX(lower_timeout, GPU_default) = 100
+                            expected_timeout = max(lower_timeout, DEFAULT_GPU_TIMEOUT)
+                            _validate_timeout(selected_port, config, expected_timeout, verify_after_seconds=30)
 
                     with allure.step(f"Update timeout to lower value ({lower_timeout}) on all ports"):
                         _apply_timeout(all_ports, config, lower_timeout)
                         reset_gpus_if_needed(setup_name)
-                        _validate_timeout(selected_port, config, lower_timeout)
+                        # All ports change: calculate expected timeout for this scenario
+                        expected_timeout = _get_expected_timeout(lower_timeout, standalone_system)
+                        _validate_timeout(selected_port, config, expected_timeout)
                 else:
                     _apply_mode(all_ports, config, mode)
                     _verify_config(selected_port, config, mode)

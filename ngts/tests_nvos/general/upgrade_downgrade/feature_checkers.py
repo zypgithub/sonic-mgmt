@@ -115,6 +115,7 @@ from ngts.tests_nvos.general.security.rbac.helpers import verify_rbac_classes_in
 from ngts.tests_nvos.general.security.security_test_tools.constants import (
     AaaConsts,
     AddressingType,
+    AuthMedium,
     AuthMode,
     UserRole,
 )
@@ -658,6 +659,16 @@ def _check_api_mtls_spiffe_id_and_crl(
     yield  # upgrade to the target nvos
 
     try:
+        with allure.step("Make request via client application and see it fails"):
+            crl_validator.run_client(
+                setup.user1,
+                expect_success=False,
+                client_cert=client_cert,
+                client_cacert=server_cert,
+            )
+
+        crl_validator.unbind_crl()
+
         with allure.step("verify spiffe works after upgrade"):
             with allure.step("take new revision number for testing admin permissions"):
                 revision_num = get_tmp_revision_number_for_test_only(
@@ -758,6 +769,7 @@ def _check_nmx_controller_rbac(
             rbac_tool_nmx_c.run_app_client(dut_hostname, bad_rbac_user, client_cert_nmx_c, server_cert_nmx_c, expect_success=True)
 
         with allure.step("update rbac file and mode"):
+            rbac_tool_nmx_c.import_rbac_file(rbac_file_name, rbac_file_path)  # Need to import again after upgrade, as it was not applied
             rbac_tool_nmx_c.update_rbac_file(rbac_file_name)
             rbac_tool_nmx_c.update_rbac_mode(RbacConsts.RBAC_MODE_USERNAME_PASSWORD)
 
@@ -954,7 +966,7 @@ def _run_authentication_test(
         extra_setup_func: Optional extra setup function to call
         extra_cleanup_func: Optional extra cleanup function to call
     """
-    skip_auth_mediums = []
+    skip_auth_mediums = [AuthMedium.OPENAPI, AuthMedium.SCP]  # skip openapi and scp, as we have certificates configured
     test_flow = TestFlowType.GOOD_FLOW
     addressing_type = AddressingType.IPV4
     topology_obj = TestToolkit.topology_obj

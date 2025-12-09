@@ -15,8 +15,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.HostMethods import HostMethods
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, DatabaseConst
-from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_constants.constants_nvos import ImageConsts, SystemConsts, NvosConst, DatabaseConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import InterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli

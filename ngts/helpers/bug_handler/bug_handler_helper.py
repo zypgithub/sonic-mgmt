@@ -537,6 +537,7 @@ def get_tech_support_from_switch(bug_handler_params):
     tar_file_name = add_test_name_to_tar_file_path_on_switch(tar_file_path_on_switch, test_name)
     tar_file_path = os.path.join(dumps_folder, tar_file_name)
     duthost.fetch(src=tar_file_path_on_switch, dest=tar_file_path, flat=True)
+    _delete_techsupport(duthost, tar_file_path_on_switch)
     dumps_files.append(os.path.join(dumps_folder, tar_file_name))
     return dumps_files
 
@@ -593,6 +594,13 @@ def _generate_nvue_techsupport(duthost):
     dump_file = duthost.shell(cmd)["stdout_lines"][-2].split(' ')[-1]
     logger.info(f"action output is {dump_file}")
     return SystemConsts.TECHSUPPORT_FILES_PATH + dump_file
+
+
+def _delete_techsupport(duthost, tar_file_path):
+    logger.info(f"tech-support uploaded, remove from switch")
+    cmd = f"rm -f {tar_file_path}"
+    logger.info(f"Running {cmd}")
+    duthost.shell(cmd)
 
 
 def get_recommended_action_for_user(bug_handler_rc, bug_handler_decision, bug_handler_messages):

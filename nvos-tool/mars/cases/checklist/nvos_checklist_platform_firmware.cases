@@ -126,7 +126,7 @@
   </case>
 
   <case>
-    <name> test firmware insatll same version without using skip-version-check flag </name>
+    <name> test firmware install same version without using skip-version-check flag </name>
     <info> </info>
     <tout> 10800 </tout>
     <cmd>
@@ -137,7 +137,7 @@
   </case>
 
     <case>
-    <name> test firmware insatll same version while using skip-version-check flag </name>
+    <name> test firmware install same version while using skip-version-check flag </name>
     <info> </info>
     <tout> 10800 </tout>
     <cmd>

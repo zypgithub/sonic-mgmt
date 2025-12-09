@@ -258,7 +258,7 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                 logger.info("Wait for 2 seconds until partitions are updated")
                 time.sleep(2)
 
-                err_msg = "Valid range is 0 - 1024"
+                err_msg = "Valid range for mcast-limit is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
                 ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)

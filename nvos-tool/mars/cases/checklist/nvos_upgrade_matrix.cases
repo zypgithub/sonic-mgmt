@@ -19,7 +19,21 @@
     <info> </info>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/upgrade_downgrade/test_upgrade_downgrade_matrix.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals [[conf:extra_info.additional_options]] --upgrade-matrix-json [[conf:extra_info.upgrade_matrix_json]] --timeout 6000 \'"</static_args>
+          <static_args>
+            --setup_name [[conf:extra_info.setup_name]]
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/upgrade_downgrade/test_upgrade_downgrade_matrix.py
+            --raw_options "\'
+              --rootdir=/root/mars/workspace/sonic-mgmt/ngts
+              -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+              --log-level=INFO
+              --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+              --clean-alluredir
+              --alluredir=/tmp/allure-results
+              --upgrade-matrix-json=[[conf:extra_info.upgrade_matrix_json]]
+              --target_version=[[conf:extra_info.target_version]]
+              --showlocals [[conf:extra_info.additional_options]]
+            \'"
+          </static_args>
       </params>
     </cmd>
   </case>

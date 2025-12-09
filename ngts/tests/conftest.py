@@ -542,6 +542,8 @@ def compare_running_config(pre_running_config, cur_running_config,
     Each element in ignore_keys is a dot-separated path, e.g., "a.b.c", "a.*.c", "a.*.*.d", etc...
     * can be used as a wildcard to match any key.
     """
+    helper_remove_mgmt_id_from_dict(pre_running_config)
+    helper_remove_mgmt_id_from_dict(cur_running_config)
     key_path_str = '.'.join(current_key)
     for pattern in ignore_keys:
         if key_path_pattern_match(pattern, key_path_str):
@@ -577,3 +579,11 @@ def compare_running_config(pre_running_config, cur_running_config,
                 return True
         else:
             return False
+
+
+def helper_remove_mgmt_id_from_dict(config):
+    if not isinstance(config, dict):
+        return
+    if 'localhost' in config.keys() and 'ib_node_desc_base' in config['localhost'].keys():
+        if '-mgmt2' in config['localhost']['ib_node_desc_base']:
+            config['localhost']['ib_node_desc_base'] = config['localhost']['ib_node_desc_base'].replace("-mgmt2", "")

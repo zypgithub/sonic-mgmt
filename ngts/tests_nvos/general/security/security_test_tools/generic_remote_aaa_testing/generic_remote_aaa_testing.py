@@ -15,7 +15,10 @@ from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
 from ngts.nvos_tools.system.Server import ServerId
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AuthMedium, \
     AaaConsts, UserRole
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import *
+from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaConsts
+from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
+from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import ValidValues
+from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_testing_utils import \
     detach_config
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
@@ -420,6 +423,8 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
         with allure.step(f'Advance lower server to be top prioritized to: {next_prio}'):
             worse_server_resource = remote_aaa_obj.server.server_id[worse_server.hostname]
             worse_server.priority = next_prio
+            if remote_aaa_type == RemoteAaaType.LDAP:
+                remote_aaa_obj.set(LdapConsts.PORT, worse_server.port, dut_engine=item.active_remote_admin_engine).ignore_result()
             worse_server_resource.set(AaaConsts.PRIORITY, worse_server.priority, apply=True,
                                       dut_engine=item.active_remote_admin_engine).ignore_result()
             worse_server, best_server = best_server, worse_server

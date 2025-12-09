@@ -23,8 +23,7 @@ logger = logging.getLogger()
 
 @pytest.mark.gnmi
 @pytest.mark.timeout(6 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
+def test_gnmi_cli_interface_compare(engines, devices, random_api):
     """
     Compare CLI and GNMI interface outputs.
     Test flow:
@@ -33,7 +32,7 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
     3. Run 'nv show interface <port>', and get cli output.
     4. Compare CLI and GNMI outputs.
     """
-    TestToolkit.tested_api = test_api
+    TestToolkit.tested_api = random_api
     tested_ports = []
 
     with allure.step("Select link-up port"):
@@ -47,69 +46,58 @@ def test_gnmi_cli_interface_compare(engines, devices, test_api, capsys):
             tested_ports.append(port_name)
 
     with allure.step("Get GNMI client"):
-        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT,
-                            devices.dut.default_username, devices.dut.default_password,
-                            verify_tools_installed=True)
+        client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
+                            devices.dut.default_password, verify_tools_installed=True)
 
     with allure.step("Start interface comparing"):
         for port in tested_ports:
-            if port is not None:
-                port_instance = Port(port)
-                logger.info(f"Current port: {port}.")
+            port_instance = Port(port)
+            logger.info(f"Current port: {port}.")
 
-                with allure.step("Sleep for 2 mins"):
-                    time.sleep(120)
+            with allure.step("Sleep for 2 mins"):
+                time.sleep(120)
 
-                with allure.step("Start gnmi session and get output"):
-                    gnmi_prev_output_as_dict = {}
-                    logger.info("Pulling data every 1 seconds until we pull the latest data")
-                    gnmi_output_list = []
-                    for iteration in range(30):
-                        gnmi_out, gnmi_err = client.gnmic_subscribe_interface(mode=GnmiMode.ONCE, interface_name=port,
-                                                                              skip_cert_verify=True, wait_till_done=True,
-                                                                              interface_path='')
-                        verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_out, gnmi_err)
-                        gnmi_output_as_dict = parse_gnmi_output(gnmi_out)
-                        gnmi_output_list.append(gnmi_output_as_dict)
-                        if len(gnmi_prev_output_as_dict) == 0:
-                            gnmi_prev_output_as_dict = gnmi_output_as_dict
-                        if gnmi_output_as_dict != gnmi_prev_output_as_dict:
-                            break
-                        time.sleep(1)
-                    logger.info(f"Printing all gnmi outputs")
-                    with capsys.disabled():
-                        for item in gnmi_output_list:
-                            print(item, flush=True)
+            with allure.step("Start gnmi session and get output"):
+                gnmi_prev_output_as_dict = {}
+                logger.info("Pulling data every 1 seconds until we pull the latest data")
+                gnmi_output_list = []
+                for iteration in range(30):
+                    gnmi_out, gnmi_err = client.gnmic_subscribe_interface(mode=GnmiMode.ONCE, interface_name=port,
+                                                                          skip_cert_verify=True, wait_till_done=True,
+                                                                          interface_path='')
+                    verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_out, gnmi_err)
+                    gnmi_output_as_dict = parse_gnmi_output(gnmi_out)
+                    gnmi_output_list.append(gnmi_output_as_dict)
+                    if len(gnmi_prev_output_as_dict) == 0:
+                        gnmi_prev_output_as_dict = gnmi_output_as_dict
+                    if gnmi_output_as_dict != gnmi_prev_output_as_dict:
+                        break
+                    time.sleep(1)
 
-                with allure.step(f"Run 'nv show interface {port}' command and get CLI output"):
-                    cli_output = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
-                        port_instance.interface.show()).get_returned_value()
+            with allure.step(f"Run 'nv show interface {port}' command and get CLI output"):
+                cli_output = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                    port_instance.interface.link.show()).get_returned_value()
+                cli_output[IbInterfaceConsts.PHY_DIAG] = Tools.OutputParsingTool.parse_show_output_to_dict(
+                    port_instance.interface.link.phy_diag.show()).get_returned_value()
+                cli_output[IbInterfaceConsts.PHY_DETAIL] = Tools.OutputParsingTool.parse_show_output_to_dict(
+                    port_instance.interface.link.phy_detail.show()).get_returned_value()
 
-                with allure.step("Get interface attributes from db"):
-                    attributes_dict_mapping = {"in-bytes": "SAI_PORT_STAT_INFINIBAND_IF_IN_OCTETS_EXT",
-                                               "out-bytes": "SAI_PORT_STAT_INFINIBAND_IF_OUT_OCTETS_EXT",
-                                               "in-pkts": "SAI_PORT_STAT_INFINIBAND_IF_IN_PKTS_EXT",
-                                               "out-pkts": "SAI_PORT_STAT_INFINIBAND_IF_OUT_PKTS_EXT"}
-                    for attribute, value in attributes_dict_mapping.items():
-                        logger.info(f"Printing the value of {attribute} in DB")
-                        engines.dut.run_cmd(f"jq .{port} /etc/sonic/port_mapping.json | xargs -i -t sonic-db-cli COUNTERS_DB hget 'COUNTERS_PORT_NAME_MAP' {{}} | xargs -i -t sonic-db-cli COUNTERS_DB hget 'COUNTERS:{{}}' '{value}'")
+            with allure.step("Adjust CLI output to match GNMI output"):
+                adjusted_cli_output = adjust_cli_attributes_and_values(devices.dut.interface_attributes_mapping_dict,
+                                                                       cli_output)
 
-                with allure.step("Adjust CLI output to match GNMI output"):
-                    adjusted_cli_output = adjust_cli_attributes_and_values(devices.dut.interface_attributes_mapping_dict,
-                                                                           cli_output.get('link', {}))
-
-                with allure.step("Compare GNMI-CLI relevant attributes"):
-                    if len(adjusted_cli_output) == 0:
-                        logger.info("No interface attributes to compare")
-                    else:
-                        if is_bug_active(4566854):
-                            adjusted_cli_output.pop("time-since-last-clear-min", None)
-                        for attribute, value in adjusted_cli_output.items():
-                            with allure.independent_step(f"Testing {attribute}"):
-                                assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
-                                gnmi_value = gnmi_output_as_dict[attribute]
-                                if (gnmi_value != value) and not handle_numeric_values(gnmi_value, value):
-                                    logger.warning(f"Output mismatch. CLI={value}, GNMI={gnmi_output_as_dict[attribute]}")
+            with allure.step("Compare GNMI-CLI relevant attributes"):
+                if len(adjusted_cli_output) == 0:
+                    logger.info("No interface attributes to compare")
+                else:
+                    if is_bug_active(4566854):
+                        adjusted_cli_output.pop("time-since-last-clear-min", None)
+                    for attribute, value in adjusted_cli_output.items():
+                        gnmi_value = gnmi_output_as_dict[attribute]
+                        with allure.independent_step(f"Testing {attribute}"):
+                            logger.info(f"CLI value = {value}, gnmi value = {gnmi_value}")
+                            assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
+                            assert (str(gnmi_value).lower() == str(value).lower()) or handle_numeric_values(gnmi_value, value), f"Output mismatch"
 
 
 def select_single_port_name(requested_ports_state=None):
@@ -138,7 +126,7 @@ def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):
             for inner_attribute, inner_value in value.items():
                 if inner_attribute in attributes_mapping_dict.keys():
                     res[attributes_mapping_dict[inner_attribute]] = adjust_cli_values(inner_attribute, inner_value)
-                elif attribute in ["phy-diag", "phy-detail"]:
+                elif attribute in [IbInterfaceConsts.PHY_DIAG, IbInterfaceConsts.PHY_DETAIL]:
                     res[inner_attribute] = inner_value if inner_value is not None else "N/A"
         else:
             if attribute in attributes_mapping_dict.keys():
@@ -147,14 +135,7 @@ def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):
 
 
 def adjust_speed(value):
-    res = 'SPEED_UNKNOWN'
-    if value == 'xdr':
-        res = 'SPEED_XDR'
-    elif value == 'ndr':
-        res = 'SPEED_NDR'
-    elif value != '':
-        res = value.replace('G', '')
-    return res
+    return 'SPEED_UNKNOWN' if value == '' else value.replace('G', '')
 
 
 def adjust_supported_speeds(value):

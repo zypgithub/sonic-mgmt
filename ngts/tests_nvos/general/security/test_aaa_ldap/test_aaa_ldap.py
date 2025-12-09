@@ -250,8 +250,8 @@ def test_ldap_priority(test_flow, test_api, engines, topology_obj, request):
         3. advance the lowest prioritized server to be most prioritized
         4. repeat steps 2-3 until reach priority 8 (max)
     """
-    server1 = LdapServers.PHYSICAL_SERVER.copy()
-    server2 = random.choice(list(LdapServers.DOCKER_SERVERS.values())).copy()
+    server1 = LdapServers.PHYSICAL_SERVER.copy(deep=True)
+    server2 = random.choice(list(LdapServersP3.LDAP3_SERVERS.values())).copy(deep=True)
 
     generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.LDAP,
                               remote_aaa_obj=System().aaa.ldap, server1=server1, server2=server2)

@@ -62,6 +62,7 @@ def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standa
             if app_status != 'ok':
                 ClusterTools.stop_app(cluster, app)
                 ClusterTools.start_app(cluster, app, has_loopbox, standalone_system)
+                time.sleep(5)
             cluster.apps.app_name[app].loglevel.action_restore_cluster()
             ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
 

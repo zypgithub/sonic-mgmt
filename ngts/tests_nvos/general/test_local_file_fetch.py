@@ -31,10 +31,10 @@ def _cleanup_tmp_file(dut_engine: LinuxSshEngine, tmp_file_path: Path):
         dut_engine.run_cmd(f"rm -f {tmp_file_path}")
 
 
-def _cleanup_fetched_files(files_obj: Files, fetched_image_files: List[str]):
+def _cleanup_fetched_files(files_obj: Files, original_files: List[str], fetched_image_files: List[str]):
     with allure.step(f"Delete all Files at {files_obj.get_resource_path()} that have been fetch during the test and verify"):
         files_obj.delete_files(fetched_image_files)
-        files_obj.verify_show_files_output(unexpected_files=fetched_image_files)
+        files_obj.verify_show_files_output(expected_files=original_files, unexpected_files=fetched_image_files)
 
 
 @pytest.fixture(scope='session', params=[SYSTEM_IMAGE_FETCH, SYSTEM_CONFIG_FETCH, PLATFORM_FIRMWARE_FETCH])
@@ -58,8 +58,9 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
 @pytest.mark.general
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.parametrize('component_fetch_action, component_fetch_verify_action, file_fetch_path, dut_path, cleanup_obj', [
+@pytest.mark.parametrize('component_fetch_action, component_fetch_verify_action, file_fetch_path, dut_path, component_files_obj, cleanup_obj', [
     pytest.param(
+        random.choice(ApiType.ALL_TYPES),
         System().image.action_fetch,
         lambda files: partial(System().image.files.verify_show_files_output, expected_files=files),
         SYSTEM_IMAGE_FETCH,
@@ -68,6 +69,7 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
         id=SYSTEM_IMAGE_FETCH
     ),
     pytest.param(
+        ApiType.NVUE,
         System().config.action_fetch,
         lambda files: partial(System().config.files.verify_show_files_output, expected_files=files),
         SYSTEM_CONFIG_FETCH,
@@ -76,6 +78,7 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
         id=SYSTEM_CONFIG_FETCH
     ),
     pytest.param(
+        random.choice(ApiType.ALL_TYPES),
         getattr(Platform().firmware, firmware_components).action_fetch_firmware,
         lambda files: partial(getattr(Platform().firmware, firmware_components).files.verify_show_files_output, expected_files=files),
         PLATFORM_FIRMWARE_FETCH,
@@ -84,8 +87,8 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
         id=PLATFORM_FIRMWARE_FETCH
     )
 ], indirect=['file_fetch_path'])
-def test_local_file_fetch(engines: EnginesT, test_api, register_cleanup, file_fetch_path: Path,
-                          component_fetch_action: Callable, component_fetch_verify_action: Callable, dut_path: Path, cleanup_obj: Files):
+def test_local_file_fetch(engines: EnginesT, test_api: ApiType, register_cleanup, file_fetch_path: Path,
+                          component_fetch_action: Callable, component_fetch_verify_action: Callable, dut_path: Path, component_files_obj: Files, cleanup_obj: Files):
     """
     Test that verifies local file fetch functionality for system images, configuration files, and platform firmware.
     The test copies a file to the DUT's /tmp directory, fetches it using the appropriate component action,
@@ -99,6 +102,7 @@ def test_local_file_fetch(engines: EnginesT, test_api, register_cleanup, file_fe
     with allure.step("Prep Test"):
         TestToolkit.tested_api = test_api
         fetched_file_name = file_fetch_path.name
+        original_files: List[str] = component_files_obj.get_files().keys()
     with allure.step(f"Copy file {file_fetch_path} to {NvosConst.PATH_TO_TMP_ON_DUT}"):
         original_file_hash = get_file_hash(engines.sonic_mgmt, str(file_fetch_path))
         assert original_file_hash, f"Failed to get file hash for {file_fetch_path}"
@@ -113,7 +117,7 @@ def test_local_file_fetch(engines: EnginesT, test_api, register_cleanup, file_fe
         file_url = generate_file_location_uri(str(dut_tmp_file_path))
         component_fetch_action(file_url)
         component_fetch_verify_action([fetched_file_name])()
-        register_cleanup(partial(_cleanup_fetched_files, cleanup_obj, [fetched_file_name]))
+        register_cleanup(partial(_cleanup_fetched_files, component_files_obj, original_files, cleanup_obj, [fetched_file_name]))
     with allure.step(f"Verify fetched file {fetched_file_name} from {dut_path} integrity"):
         assert fetched_file_name in engines.dut.run_cmd(f'ls {dut_path}'), f"Failed to fetch {fetched_file_name}"
         dut_file_path = Path(dut_path) / fetched_file_name

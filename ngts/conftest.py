@@ -89,7 +89,6 @@ def pytest_collection(session: pytest.Session):
 
     platform = json.loads(devinfo).get('platform')
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_PLATFORM_TYPE, platform)
-
     if is_deploy_run():
         # Required for prevent SSH attempts into DUT at the beginning of deploy image test(in case when device in ONIE)
         branch = 'master'
@@ -922,6 +921,86 @@ def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
 
         request.addfinalizer(wrapped_fn)
     return _register
+
+
+@pytest.fixture
+def unregister_cleanup(request: pytest.FixtureRequest):
+    """
+    Fixture for removing a finalizer from the request
+    :param request: pytest builtin
+    :return: function for removing a finalizer
+
+    Usage:
+    ```python
+    def my_cleanup():
+        ...
+
+    def test_my_test(register_cleanup, unregister_cleanup):
+        # do something
+        register_cleanup(my_cleanup)
+        # do something
+        unregister_cleanup(my_cleanup)
+        # do something
+    ```
+    """
+    def _unregister_cleanup(cleanup_func):
+        try:
+            request.session._setupstate.stack[request.node][0].remove(cleanup_func)
+        except ValueError:  # the function pointer is not registered in the stack
+            pass
+    return _unregister_cleanup
+
+
+@pytest.fixture
+def register_cleanup(request: pytest.FixtureRequest) -> CleanUpT:
+    """
+    Fixture for registering cleanup functions
+    :param request: pytest builtin
+    :return: function for registering cleanup
+
+    Usage:
+    ```python
+    def my_cleanup():
+        print("cleanup")
+
+    def test_my_test():
+        # do something
+        register_cleanup(my_cleanup)
+        # do something
+    ```
+    for more advanced usage, consider using the `partial` function
+
+    Example:
+    ```python
+    from functools import partial
+
+    def my_cleanup(engines):
+        print("cleanup")
+
+    def test_my_test():
+        # do something
+        register_cleanup(partial(my_cleanup, engines))
+        # do something
+    ```
+    """
+    def _register(fn):
+        # Wrap the cleanup function with an allure step
+        def wrapped_fn():
+            with allure.step("Cleanup stage"):
+                fn()
+
+        request.addfinalizer(wrapped_fn)
+    return _register
+
+
+@pytest.fixture(scope='session')
+def skynet(request):
+    """
+    Method for get skynet value from pytest arguments
+    :param request: pytest builtin
+    :return: True or False, if run is skynet type
+    """
+    return request.config.getoption('--skynet')
 
 
 @pytest.fixture

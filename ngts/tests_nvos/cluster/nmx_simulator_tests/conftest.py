@@ -49,9 +49,11 @@ def check_device_type_for_partition(devices, standalone_system):
 
 @pytest.fixture(scope="session", autouse=True)
 def start_sdn_maintenance_state_simulation(engines, setup_name):
-    ClusterSimulation.start_sdn_cluster_simulation(engines, setup_name)
-    yield
-    ClusterSimulation.end_of_sdn_cluster_simulation(engines, setup_name)
+    try:
+        ClusterSimulation.start_sdn_cluster_simulation(engines, setup_name)
+        yield
+    finally:
+        ClusterSimulation.end_of_sdn_cluster_simulation(engines, setup_name)
 
 
 @pytest.fixture(scope="function", autouse=True)

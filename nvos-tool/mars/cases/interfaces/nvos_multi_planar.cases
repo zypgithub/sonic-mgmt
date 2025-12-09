@@ -31,6 +31,7 @@
       </condition>
     </ignore>
   </case>
+
   <case>
     <name> split aggregated port test </name>
     <info> </info>
@@ -48,6 +49,7 @@
       </condition>
     </ignore>
   </case>
+
   <case>
     <name> nvl5 port test </name>
     <info> </info>
@@ -98,6 +100,54 @@
         <value>[juliet]</value>
       </condition>
     </ignore>
+  </case>
+
+  <case>
+    <name> KR Configs </name>
+    <info> </info>
+    <cmd>
+      <params>
+        <static_args>
+          --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_kr_configs.py
+          --raw_options "\'
+            --rootdir=/root/mars/workspace/sonic-mgmt/ngts
+            -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+            -k \"not test_kr_cli_hidden_non_nvlink\"
+            --log-level=INFO
+            --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+            --clean-alluredir
+            --alluredir=/tmp/allure-results
+            --showlocals [[conf:extra_info.additional_options]]
+            --timeout 1200
+          \'"
+        </static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> PLR Config </name>
+    <info> </info>
+    <cmd>
+      <params>
+        <static_args>
+          --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/test_plr_configs.py
+          --raw_options "\'
+            --rootdir=/root/mars/workspace/sonic-mgmt/ngts
+            -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+            -k "not test_feature_plr_cli_hidden_non_nvlink"
+            --log-level=INFO
+            --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+            --clean-alluredir
+            --alluredir=/tmp/allure-results
+            --showlocals [[conf:extra_info.additional_options]]
+            --timeout 600
+          \'"
+        </static_args>
+      </params>
+    </cmd>
   </case>
 
 </CASEDEF>

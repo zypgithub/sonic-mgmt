@@ -22,6 +22,7 @@ class NvosConsts:
 
 class NvlInterfaceConsts:
     NVL_PORT_TYPE = "nvl"
+    ACP_PORT_TYPE = "acp"
 
 
 class InterfaceConsts:
@@ -39,6 +40,9 @@ class IbInterfaceConsts:
     DHCP_SET_HOSTNAME = 'set-hostname'
     TYPE = "type"
     LINK = "link"
+    PHY_DIAG = "phy-diag"
+    PHY_DETAIL = "phy-detail"
+    IP = "ip"
     IPV4 = "ipv4"
     IPV6 = "ipv6"
     IFINDEX = "ifindex"
@@ -68,6 +72,7 @@ class IbInterfaceConsts:
     LINK_DIAGNOSTICS_NEGOTIATION_FAILURE_PORT = {'2': {'status': 'Negotiation failure'}}
     LINK_DIAGNOSTICS_SIGNAL_NOT_DETECTED = {'57': {'status': 'signal not detected'}}
     LINK_BREAKOUT = "breakout"
+    LINK_STATS_LINK_DOWNED = "link-downed"
     LINK_IB_SPEED = "ib-speed"
     LINK_SUPPORTED_IB_SPEEDS = "supported-ib-speed"
     LINK_SPEED = "speed"

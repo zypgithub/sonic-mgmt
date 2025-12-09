@@ -97,9 +97,12 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
+        with allure.step("health issue will be reported after 150 seconds"):
+            time.sleep(150)
+
         with allure.step("check health status is not ok"):
-            with allure.step("health issue will be reported after 180 seconds"):
-                time.sleep(180)
+            with allure.step("health issue will be reported after 120 seconds"):
+                time.sleep(120)
 
             _check_disk_issue_with_retry(system, no_disk_issue=False)
 
@@ -190,7 +193,7 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     df_output = _get_df_output(engines.dut)
     path = '/host/nos-images/'
     file_name = 'new_file'
-    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.01 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
+    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.05 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
 
     try:
         engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))

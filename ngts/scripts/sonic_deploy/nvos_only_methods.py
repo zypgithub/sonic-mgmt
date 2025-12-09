@@ -170,7 +170,7 @@ class NvosInstallationSteps:
                 system.image.action_uninstall(engine=dut_engine, verify_res=False)
 
     @staticmethod
-    def verify_config_after_upgrade(config_file_path, dut_engine):
+    def verify_config_after_upgrade(config_file_path, dut_engine, normalize_config: bool = True):
         dicts_diff = None
         with allure.step('Get actual configuration'):
             actual_config = OutputParsingTool.parse_json_str_to_dictionary(
@@ -180,8 +180,13 @@ class NvosInstallationSteps:
             # safe load my yml file - [{"header":...}, {"set":...}]
             with open(config_file_path, 'r') as file:
                 expected_config = yaml.safe_load(file)
+                logger.debug(f"expected_config file:\n {expected_config}")
                 expected_config = [item for item in expected_config if 'set' in item][0]
-            normalized_expected_config = NvosInstallationSteps.normalize_config(expected_config)
+            if normalize_config:
+                normalized_expected_config = NvosInstallationSteps.normalize_config(expected_config)
+            else:
+                normalized_expected_config = expected_config
+
         with allure.step('Check differences between expected and actual configurations'):
             logger.info(f'config before upgrade (expected):\n{normalized_expected_config}')
             logger.info(f'config after upgrade (actual):\n{actual_config}')

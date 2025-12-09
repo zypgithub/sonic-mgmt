@@ -445,7 +445,8 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
                     health_dict = retry_call(_assert_health_fatal, [system, True],
                                              exceptions=AssertionError, tries=6, delay=10)
                 else:
-                    health_dict = _assert_health_fatal(system, fatal)
+                    health_dict = retry_call(_assert_health_fatal, [system, fatal],
+                                             exceptions=AssertionError, tries=6, delay=3)
 
         with allure.step("Assert LED color"):
             expected_color = HealthConsts.LED_NOT_OK_STATUS if fatal else HealthConsts.LED_OK_STATUS

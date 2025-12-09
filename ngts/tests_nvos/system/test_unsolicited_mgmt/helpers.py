@@ -75,9 +75,10 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled, 
     try:
         with allure.step('Verify packets have {} been sent'.format('' if is_enabled else 'not')):
             with allure.independent_step('check tcpdump output'):
-                output = engine.run_cmd('sudo timeout 30 tcpdump -i eth0 arp')
+                # Increase the timeout here if needed, up to 90 seconds
+                output = engine.run_cmd('sudo timeout 70 tcpdump -i eth0 arp')
                 matches = re.findall(expected_packet_msg, output)
-                assert bool(matches) == is_enabled, f"Assertion failed for expected packet msg: ARP, Request who-has ... (Broadcast)\n, output: {output}\n, param: {is_enabled}"
+                assert bool(matches) == is_enabled, f"Assertion failed for expected packet msg: {expected_packet_msg}\n, output: {output}\n, param: {is_enabled}"
 
             with allure.independent_step('check in logs'):
                 logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog')

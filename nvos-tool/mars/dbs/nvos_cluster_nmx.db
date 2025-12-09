@@ -45,6 +45,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nmx_cluster.cases </cases>
 	</test>
     <test>
+        <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/single_aperture.cases </cases>
+    </test>
+    <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/sdn_maintenance_state.cases </cases>
 	</test>
     <test>

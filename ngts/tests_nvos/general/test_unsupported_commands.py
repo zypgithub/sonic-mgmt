@@ -2,11 +2,12 @@ import logging
 
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.ngts_types import EnginesT, DevicesT
 
 logger = logging.getLogger()
 
 
-def test_unsupported_commands(engines, devices):
+def test_unsupported_commands(engines: EnginesT, devices: DevicesT):
     """
     Make sure there are no unsupported commands available on system
     (run unsupported commands and expect an error)

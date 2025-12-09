@@ -1,10 +1,5 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_show_nvl5_interface_commands:
-  skip:
-    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4100265"
-    conditions:
-      - https://redmine.mellanox.com/issues/4100265
 
 tests_nvos/general/security/certificate/test_cert_cacert_mgmt.py::test_certs_mgmt_reboot_case:
   skip:
@@ -356,15 +351,6 @@ tests_nvos/system/test_system_factory_reset.py:
       - "'marlin' in testbed"
       - https://redmine.mellanox.com/issues/3484447
 
-
-tests_nvos/platform/test_platform_environment_leakage.py:
-  skip:
-    reason: "Testcase skipped on juliet systems due to RM issue: https://redmine.mellanox.com/issues/4264703"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet' in testbed"
-      - https://redmine.mellanox.com/issues/4264703
-
 tests_nvos/system/test_system_profile_change.py::test_system_profile_redis_db_crash:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/3554789"
@@ -478,11 +464,11 @@ tests_nvos/platform/test_platform_environment.py::test_show_platform_environment
 
 tests_nvos/platform/test_platform_firmware.py::test_show_platform_firmware:
   skip:
-    reason: "Testcase skipped on non gorilla systems due to RM issue: https://redmine.mellanox.com/issues/3956092"
+    reason: "Testcase skipped on juliet systems due to RM issue: https://redmine.mellanox.com/issues/4578549"
     conditions_logical_operator: and
     conditions:
-      - "'gorilla' not in testbed and 'juliet' not in testbed"
-      - https://redmine.mellanox.com/issues/3956092
+      - "'juliet' in testbed"
+      - https://redmine.mellanox.com/issues/4578549
 
 tests_nvos/cluster/test_nmx_package.py:
   skip:
@@ -600,12 +586,6 @@ tests_nvos/fae/test_read_eeprom.py::test_show_eeprom_bmc:
     conditions:
       - https://redmine.mellanox.com/issues/4158816
 
-tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4146744"
-    conditions:
-      - https://redmine.mellanox.com/issues/4146744
-
 tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
@@ -630,24 +610,12 @@ tests_nvos/fae/test_asic_error_injection.py::test_asic_error_injection:
     conditions:
       - "'juliet' in testbed"
 
-tests_nvos/platform/test_platform_environment.py::test_show_platform_environment:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4259913"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet' in testbed"
-      - https://redmine.mellanox.com/issues/4259913
-
-tests_nvos/platform/test_platform_environment_voltage.py::test_show_platform_environment_voltage:
-  skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4259913"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet' in testbed"
-      - https://redmine.mellanox.com/issues/4259913
-
 tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_traffic:
   skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
+    conditions:
+      - https://redmine.mellanox.com/issues/4276503
+
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4549805"
     conditions:
       - https://redmine.mellanox.com/issues/4549805
@@ -687,6 +655,160 @@ tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4412532"
     conditions:
       - https://redmine.mellanox.com/issues/4412532
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_hidden_non_nvlink:
+  skip:
+    reason: "Testcase skipped on Juliet systems, "
+    conditions:
+      - "'juliet' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_flow:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_config_removal:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_invalid_kr_mode_rejected:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_interface_range_sequential_actions:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_link_transition_timing:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+
+ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached:
+  skip:
+    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-148' not in testbed"
+      - "'juliet-126' not in testbed"
+tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_hidden_non_nvlink:
+  skip:
+    reason: "Testcase skipped on NVSwitchs systems"
+    conditions:
+      - "'juliet' in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_visible_nvlink:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_configurable_plr_modes:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_config_removal:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_invalid_plr_mode_rejected:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_link_transition_timing:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_interface_range_sequential_actions:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_visible_nvlink:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_configurable_plr_modes:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_config_removal:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_invalid_plr_mode_rejected:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_link_transition_timing:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/interfaces/test_plr_configs.py::test_feature_interface_range_sequential_actions:
+  skip:
+    reason: "Testcase skipped on non NVSwitchs systems"
+    conditions:
+      - "'juliet' not in testbed"
+
+tests_nvos/checklist/test_bmc_install.py:
+  skip:
+    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
+      - "'juliet-160' in testbed"
+      - "'juliet-195' in testbed"
+
+tests_nvos/checklist/test_firmware_install_same_version.py:
+  skip:
+    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
+
+tests_nvos/platform/test_platform_staged_boot.py:
+  skip:
+    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet-146' in testbed"
 
 tests_nvos/interfaces/test_ib_interface_phy_diag.py::test_unintentional_link_down_counter:
   skip:

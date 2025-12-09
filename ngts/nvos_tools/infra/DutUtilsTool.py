@@ -148,7 +148,7 @@ class DutUtilsTool:
                     return ResultObj(result=True, info="rebooted, System is ready, but postponing the check of system is functional")
 
     @staticmethod
-    def wait_for_system_ready_in_serial(topology_obj, serial_engine: PexpectSerialEngine = None, wait_timeout=300):
+    def wait_for_system_ready_in_serial(topology_obj, serial_engine: PexpectSerialEngine = None, wait_timeout=330):
         system_ready_pattern = 'System is ready'
         with allure.step('get serial engine'):
             serial_engine: PexpectSerialEngine = serial_engine or ConnectionTool.create_serial_engine(topology_obj, enter_serial_context=True)

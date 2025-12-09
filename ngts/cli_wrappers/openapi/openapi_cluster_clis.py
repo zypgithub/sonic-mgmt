@@ -209,3 +209,8 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
         return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
                                                    engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_update_sdn_trays_maintenance_state(engine, path, tray_id='', maintenance_state=''):
+        # For OpenAPI, tray_id needs to be added to the path as a suffix
+        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, suffix=tray_id, param_name=ClusterConsts.MAINTENANCE_STATE, param_value=maintenance_state)

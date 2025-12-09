@@ -49,11 +49,63 @@ def fetch_and_install(component, package_path, package_name, inventory_file, ans
         # RM and CUDA does not need downloading the packages.
         if package_path.startswith("http") and ("cuda" not in component):
             with allure.step(f"Downloading package - {package_path} For Component {component}"):
-                download_package = f"""curl -s -w "%{{http_code}}" -o /tmp/{package_name} -u "{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}" "{package_path}" | grep -q "^200$" && echo "Download successful" || echo "Download failed" """
-                logger.info(f"Running curl command {download_package}")
-                output = run_ssh_command(download_package, ansible_machine, username, password)
-                logger.info(f"{output}")
-                assert "Download successful" in output, f"Curl command failed - {download_package}"
+                # ROBUST DOWNLOAD IMPLEMENTATION
+                # Previous curl command was flaky due to:
+                # 1. Not following redirects (Artifactory often returns 302 to S3)
+                # 2. Only checking HTTP code, not curl exit status
+                # 3. No protection against partial downloads
+                # 4. No built-in retry for network hiccups
+                #
+                # New approach:
+                # - Downloads to .part file first, only moves on complete success
+                # - Follows redirects (-L) and fails fast on HTTP errors (-f)
+                # - Built-in curl retry (3x) + app-level retry (3x) = up to 9 total attempts
+                # - Proper timeouts to prevent hanging
+                # - Checks both curl exit code AND HTTP status for reliable error detection
+                download_package = f"""
+url="{package_path}"
+out="/tmp/{package_name}"
+temp_out="/tmp/{package_name}.part"
+
+# Remove any existing partial file
+rm -f "$temp_out"
+
+# Robust curl with built-in retry, redirect following, and proper error handling
+code=$(curl -fL -sS \\
+  --retry 3 --retry-delay 2 --retry-all-errors \\
+  --connect-timeout 15 --max-time 1800 \\
+  -u "{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}" \\
+  -o "$temp_out" -w '%{{http_code}}' "$url")
+rc=$?
+
+if [ $rc -eq 0 ] && [ "$code" = "200" ]; then
+  mv "$temp_out" "$out"
+  echo "Download successful"
+else
+  rm -f "$temp_out"
+  echo "Download failed (curl_rc=$rc http_code=$code)"
+fi
+"""
+                logger.info(f"Running robust curl command for {package_name}")
+
+                # Application-level retry (in addition to curl's built-in retry)
+                download_successful = False
+                for attempt in range(1, 4):  # Reduced to 3 since curl has its own retry
+                    logger.info(f"Download attempt {attempt}/3")
+                    output = run_ssh_command(download_package, ansible_machine, username, password)
+                    logger.info(f"Attempt {attempt} output: {output}")
+
+                    if "Download successful" in output:
+                        logger.info(f"Download successful on attempt {attempt}")
+                        download_successful = True
+                        break
+                    else:
+                        logger.warning(f"Download failed on attempt {attempt}: {output}")
+                        if attempt < 3:
+                            logger.info("Waiting 10 seconds before retry...")
+                            time.sleep(10)
+
+                assert download_successful, f"Curl command failed after 3 attempts with built-in retries - {package_name}"
 
             logger.info("Verify package is downloaded successfully")
             package_download_full_path = f"/tmp/{package_name}"

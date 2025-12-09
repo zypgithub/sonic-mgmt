@@ -46,7 +46,6 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
 def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script):
     image_type = "--nos-image" if ".bin" in target_version else "--simulator-image"
     cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version} "
-
     output = server_engine.run_cmd(cmd)
 
     time.sleep(5)

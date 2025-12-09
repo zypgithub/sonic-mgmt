@@ -7,7 +7,7 @@ from retry.api import retry_call
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, EventConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts, EventConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active

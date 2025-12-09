@@ -391,7 +391,7 @@ class BaseSwitch(BaseDevice):
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',
                           'sdk_dump_ext_dev1_amber.hex.gz']
-        log_dump_files = ["auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "tc_log.gz", "wtmp.gz", "ztp.log.gz"]
         log_nginx_files = ["access.log.gz", "error.log.gz"]

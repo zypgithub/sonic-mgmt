@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import inspect
 import logging
 import random
@@ -792,9 +794,24 @@ def disabled_access_ports(func):
     return wrapper
 
 
-def summarize_ports(ports_list):
+def summarize_ports(ports_list: list[str]) -> str:
+    """
+    Summarize a list of ports into a single string.
+    e.g. ['acp1', 'acp2', 'acp3'] -> 'acp1-3'
+    e.g. ['acp1', 'acp2', 'acp3', 'acp5'] -> 'acp1,acp2,acp3,acp5'
+
+    Args:
+        ports_list: The list of ports to summarize.
+
+    Returns:
+        A summarized port range string.
+        e.g. 'acp1-3'
+        e.g. 'acp1,acp2,acp3,acp5'
+    """
     if not ports_list:
         return ''
+    if len(ports_list) == 1:
+        return ports_list[0]
 
     # Extract the prefix and numbers from the port names
     pattern = re.compile(r'([^\d]+)(\d+)')

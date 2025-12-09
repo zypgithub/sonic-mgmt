@@ -2,7 +2,6 @@ import logging
 import re
 
 from datetime import datetime, timedelta
-
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, NvosConst, ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -24,6 +23,16 @@ class TechSupport(BaseComponent):
         self.files = Files(self)
         self.file_name = ""
 
+    def action_upload(self, upload_path, file_name):
+        with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload, TestToolkit.engines.dut,
+                                                   self.get_resource_path(), file_name, upload_path)
+
+    def action_delete(self, file_name):
+        with allure.step("Delete tech-support: {}".format(file_name)):
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_delete, TestToolkit.engines.dut,
+                                                   self.get_resource_path(), file_name)
+
     def action_generate(self, engine="", option="", since_time="", test_name='', verify_size=False):
         """
         in the future the command will be nv action generate system tech-support (without files)
@@ -38,7 +47,7 @@ class TechSupport(BaseComponent):
 
             cmd_out, duration = OperationTime.save_duration('generate tech-support', option, test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_generate_techsupport, engine,
-                                                            self.get_resource_path(), option, since_time)
+                                                            self.get_resource_path().replace('/files', ' '), option, since_time)
             cmd_out.ignore_result()
             if 'failed' in cmd_out.info or 'error' in cmd_out.info:
                 return cmd_out.info, duration

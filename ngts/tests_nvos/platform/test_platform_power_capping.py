@@ -31,7 +31,6 @@ def cleanup_profiles(engines):
     yield
     platform = NvCommand().platform
     fae = NvCommand().fae
-
     with allure.step('return to default config after test'):
         NvueGeneralCli.detach_config(engines.dut)
         platform.power_capping.unset_active_profile(apply=True).verify_result()
@@ -329,33 +328,32 @@ def test_power_capping(engines):
 
 def get_random_value(attribute, valid=True):
     """
-    Returns a valid or invalid random value for the given attribute.
+    Returns a random valid value for the given power capping attribute.
 
-    CLI limitations due to https://redmine.mellanox.com/issues/4450070:
-    - power-allocation-1/2: [300 - 65535]
-    - max-integral-1/2: [0-65535] (uint16)
-    - All other attributes: [0-255] (uint8)
+    Uses PowerCappingConsts.ATTRIBUTE_RANGES dictionary for clean lookup.
 
-    @param attribute: The attribute to get a random value for.
-    @param valid: Whether to return a valid or invalid value.
-    @return: A random value for the given attribute.
+    SAI firmware constraints based on observed hardware default profiles:
+    - Profile 1: power=575/575/475, kp=25, ki=7, kd=0, max_integral=2250, avg=2, pid=2
+    - Profile 2: power=450/575/380, kp=50, ki=25, kd=0, max_integral=585, avg=20, pid=4
+
+    @param attribute: The attribute name to generate a value for
+    @param valid: If True, returns valid value; if False, returns invalid value (for negative testing)
+    @return: Random integer within the attribute's valid range
     """
-    # Power allocation attributes have range [300 - 65535]
-    if attribute in PowerCappingConsts.POWER_ALLOCATION_ATTRIBUTES:
-        if valid:
-            return random.randint(PowerCappingConsts.POWER_ALLOCATION_MIN, PowerCappingConsts.POWER_ALLOCATION_MAX)
-        else:
-            # Invalid values: below 300 or above 65535
-            return random.choice([random.randint(0, PowerCappingConsts.POWER_ALLOCATION_MIN - 1),
-                                  random.randint(PowerCappingConsts.POWER_ALLOCATION_MAX + 1, 100000)])
+    if attribute not in PowerCappingConsts.ATTRIBUTE_RANGES:
+        logger.warning(f"Attribute '{attribute}' not found in ATTRIBUTE_RANGES, using default uint8 range")
+        return random.randint(0, 255) if valid else random.randint(256, 1000)
 
-    # Max integral attributes have range [0-65535] (uint16)
-    elif attribute in PowerCappingConsts.MAX_INTEGRAL_ATTRIBUTES:
-        if valid:
-            return random.randint(PowerCappingConsts.MAX_INTEGRAL_MIN, PowerCappingConsts.MAX_INTEGRAL_MAX)
-        else:
-            # Invalid values: above 65535
-            return random.randint(PowerCappingConsts.MAX_INTEGRAL_MAX + 1, 100000)
+    range_spec = PowerCappingConsts.ATTRIBUTE_RANGES[attribute]
+
+    if valid:
+        return random.randint(range_spec['low'], range_spec['high'])
+    else:
+        # For invalid values, return either below low or above high
+        return random.choice([
+            random.randint(0, range_spec['low'] - 1) if range_spec['low'] > 0 else -1,
+            random.randint(range_spec['high'] + 1, range_spec['high'] * 2 + 1000)
+        ])
 
     # All other attributes have range [0-255] (uint8)
     else:

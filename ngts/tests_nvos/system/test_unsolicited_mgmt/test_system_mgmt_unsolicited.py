@@ -101,7 +101,7 @@ def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
-def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
+def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices, serial_engine):
     """
     @summary:
         in this function we want to check the shutdown of mgmt interface while unsolicited feature is enabled
@@ -111,17 +111,17 @@ def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices):
             2. check logs
     """
     with allure.step("shutdown a management interface and verify logs"):
-        config_management_interface_verify_logs(engine=engines.dut, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=ipv4_eth0_expected_logs)
+        config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=ipv4_eth0_expected_logs)
 
     with allure.step("activate a management interface and verify logs"):
-        config_management_interface_verify_logs(engine=engines.dut, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=ipv4_eth1_expected_logs)
+        config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=ipv4_eth1_expected_logs)
 
 
 @pytest.mark.check_log_size
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
-def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices):
+def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices, serial_engine):
     """
     @summary:
         in this function we want to check the shutdown of mgmt interface while unsolicited feature is disabled
@@ -142,10 +142,10 @@ def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices):
 
     try:
         with allure.step("shutdown a management interface and verify logs"):
-            config_management_interface_verify_logs(engine=engines.dut, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=feature_disabled_logs)
+            config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=feature_disabled_logs)
 
         with allure.step("activate a management interface and verify logs"):
-            config_management_interface_verify_logs(engine=engines.dut, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=feature_disabled_logs)
+            config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=feature_disabled_logs)
     finally:
         with allure.step("enable mgmt unsolicited feature"):
             fae.system.mgmt_unsolicited.set(op_param_name=SystemConsts.STATE, op_param_value=NvosConst.ENABLED, apply=True)

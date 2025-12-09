@@ -146,3 +146,24 @@ class NvueClusterCli(NvueBaseCli):
         cmd = f"nv action delete {path}"
         logging.info(f"Running '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    def action_update_sdn_trays_maintenance_state(engine, path, tray_id='', maintenance_state=''):
+        param_value = f"{tray_id} {ClusterConsts.MAINTENANCE_STATE} {maintenance_state}"
+        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+
+    @staticmethod
+    @check_output
+    def action_import_rbac_file(engine, resource_path, remote_url):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f"nv action import {path} {remote_url}"
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_delete_rbac_file(engine, resource_path):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f"nv action delete {path}"
+        logging.info(f"Running '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)

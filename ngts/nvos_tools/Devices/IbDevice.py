@@ -428,21 +428,25 @@ class IbSwitch(BaseSwitch):
         }
         self.module_offset = None  # Should be overridden in child if used for module mapping
         self.expected_operation_durations = {}
-        self.unsupported_commands_list = ["nv show platform environment leakage",
-                                          "nv show platform firmware BMC",
-                                          "nv show platform firmware FPGA",
-                                          "nv show platform firmware EROT",
-                                          "nv show platform firmware EROT-ASIC1",
-                                          "nv show platform firmware EROT-ASIC2",
-                                          "nv show platform firmware EROT-BMC",
-                                          "nv show platform firmware EROT-CPU",
-                                          "nv show platform firmware EROT-FPGA",
-                                          "nv show platform boot-policy",
-                                          "nv show platform cable-cartridge",
-                                          "nv show platform chassis-location",
-                                          "nv show cluster",
-                                          "nv show sdn",
-                                          "nv show fae interface {port} link link-training"]
+        self.unsupported_commands_list = [
+            "nv show platform environment leakage",
+            "nv show platform firmware BMC",
+            "nv show platform firmware FPGA",
+            "nv show platform firmware EROT",
+            "nv show platform firmware EROT-ASIC1",
+            "nv show platform firmware EROT-ASIC2",
+            "nv show platform firmware EROT-BMC",
+            "nv show platform firmware EROT-CPU",
+            "nv show platform firmware EROT-FPGA",
+            "nv show platform boot-policy",
+            "nv show platform cable-cartridge",
+            "nv show platform chassis-location",
+            "nv show system cli",
+            "nv show cluster",
+            "nv show sdn",
+            "nv sh fae interface swA10p1 link link-training",
+            "nv show interface swA10p1 link plr",
+        ]
 
         self.memory_size: float = 15.0
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI]
@@ -1386,6 +1390,7 @@ class JulietSwitch(NvLinkSwitch):
         self.power_cycle_type = 'juliet-power-cycle'
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/juliet_versions.json"
         self.valid_ports_count = 72
+        self.nmx_simulation_gpu_count = 72
         self.number_of_transceivers = 72
         self.cpld_amount = 4
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
@@ -1401,6 +1406,7 @@ class JulietSwitch(NvLinkSwitch):
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
         self.memory_speed = 2400  # in MT/s
+        self.show_platform_chassis_location_standalone_values = ChassisLocationConsts.EXPECTED_STANDALONE_DICT
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -1477,7 +1483,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.asic_type = NvosConst.NVL5
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
-        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl telemetry, gnmi aggregation, syslog aggregation, redfish_aggregation', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl, gnmi, syslog, bmc', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
             'nmx-controller': {
                 **{  # Unpack
@@ -1508,7 +1514,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                     "certificate": "",
                     "crl": "",
                     "encryption": "disabled",
-                    "state": "disabled"
+                    "state": "enabled"
                 },
                 "rbac": {
                     "rbac-file": "",
@@ -1689,6 +1695,7 @@ class JulietAriel(JulietTTMSwitch):
                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
                                       'acp71', 'acp72']
 
+        self.show_platform_chassis_location_standalone_values.update({ChassisLocationConsts.TOPO_ID: ChassisLocationConsts.OBERON_36})  # https://redmine.mellanox.com/issues/4275347
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
 
     def _init_platform_lists(self):
@@ -1743,6 +1750,7 @@ class JulietArielPS(JulietTTMSwitch):
                                       'acp65', 'acp66', 'acp67', 'acp68', 'acp69', 'acp70',
                                       'acp71', 'acp72']
 
+        self.show_platform_chassis_location_standalone_values.update({ChassisLocationConsts.TOPO_ID: ChassisLocationConsts.OBERON_36})  # https://redmine.mellanox.com/issues/4275347
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
 
     def _init_temperature(self):
@@ -1870,10 +1878,11 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         self.stats_temperature_header_num_of_lines = 17
         self.cpld_amount = 3
         self._extend_firmware_by_cpld_amount()
+        self.memory_speed = 2667  # in MT/s (GB300 uses 2667, only GB200 uses 2400)
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
-        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
         self.constants = self.constants._replace(log_dump_files=log_dump_files)

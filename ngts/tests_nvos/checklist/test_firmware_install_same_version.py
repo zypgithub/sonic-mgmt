@@ -144,7 +144,7 @@ def test_firmware_install_invalid_version(devices, test_api, test_name):
         platform_component.files.delete_files(files_to_delete=files)
 
     with allure.step('Install deleted firmware file'):
-        path, filename, version_name = FWComponentsTool.get_fw_component_version_previous(component)
+        path, filename, version_name = BmcTool.get_fw_component_version_previous(component)
         result = BmcTool.install_fw_image_without_reboot(platform_component=platform_component,
                                                          test_name=test_name,
                                                          filename=filename).verify_result(False)
@@ -161,7 +161,7 @@ def install_same_firmware_version(test_name, component, platform_component, skip
     """
     try:
         with allure.step("Fetch and install current firmware version on component"):
-            path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component)
+            path, filename, version_name = BmcTool.get_fw_component_version_latest(component)
             with allure.step(f"Verify current fw version on {component} is {version_name}"):
                 if component == 'cpld':
                     BmcTool.verify_cpld_versions(version_name)

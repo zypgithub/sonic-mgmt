@@ -5,9 +5,10 @@ from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_tes
 from ngts.tests_nvos.skynet.constants import TacacsSkynetServer
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_constants.constants_nvos import NvosConst, OutputFormat
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
+
 
 logger = logging.getLogger()
 
@@ -22,8 +23,9 @@ def test_configure_skynet_envrionemnt(topology_obj, engines, devices, test_api, 
         2. on Juliet machines) start cluster functionality
     """
     TestToolkit.tested_api = test_api
+    switch_type = devices.dut.switch_class
     with allure.step(f'fetching environment details'):
-        if isinstance(devices.dut, JulietSwitch):
+        if switch_type == NvosConst.JULIET_SWITCH:
             skynet_config_obj = SkynetJulietConfig
             switch_type = "juliet"
         else:

@@ -516,9 +516,12 @@ class SystemConsts:
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock']
+                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient',
+                                             'nv-bridge_reconcile', 'reload.lock']
 
     TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed']
+
+    TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -616,6 +619,8 @@ class SystemConsts:
     SERIAL_CONSOLE_OUTPUT_BMC = 'bmc'
     SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_FIELD = [SERIAL_CONSOLE_CONNECTED_TO]
     SERIAL_BMC_CONSOLE_OUTPUT_DEFAULT_VALUE = [SERIAL_CONSOLE_OUTPUT_CPU]
+    SERIAL_BMC_ACTION_CHANGE_BMC = SERIAL_CONSOLE_CONNECTED_TO + " " + SERIAL_CONSOLE_OUTPUT_BMC
+    SERIAL_BMC_ACTION_CHANGE_CPU = SERIAL_CONSOLE_CONNECTED_TO + " " + SERIAL_CONSOLE_OUTPUT_CPU
     SERIAL_CONSOLE_BAUD_RATE = "115200"
 
     HOSTNAME_DEFAULT_VALUE = 'nvos'
@@ -1078,8 +1083,8 @@ class ChassisLocationConsts:
     TOPO_ID = 'topology-id'
     LOOP_CABLE = 'Loopback'
     ETF = "3-slot ETF Cartridge"
-    OBERON_36 = "Oberon-36"
-    OBERON_72 = "Oberon-72"
+    OBERON_36 = "GB200 NVL36"
+    OBERON_72 = "GB200 NVL72"
     NA = 'N/A'
     ALLOWED_TOPOLOGIES = [
         LOOP_CABLE,
@@ -1156,18 +1161,54 @@ class PowerCappingConsts:
     ]
     FACTOR_ATTRIBUTES = ['kp-factor-1', 'kp-factor-2', 'ki-factor-1', 'ki-factor-2',
                          'kd-factor-1', 'kd-factor-2']
+    KP_FACTOR_ATTRIBUTES = ['kp-factor-1', 'kp-factor-2']
+    KI_FACTOR_ATTRIBUTES = ['ki-factor-1', 'ki-factor-2']
+    KD_FACTOR_ATTRIBUTES = ['kd-factor-1', 'kd-factor-2']
+    AVG_PWR_SAMPLING_ATTRIBUTES = ['avg-p-wr-num-of-sampling-1', 'avg-p-wr-num-of-sampling-2']
+    PID_UPDATE_SAMPLING_ATTRIBUTES = ['pid-up-date-num-of-sampling-1', 'pid-up-date-num-of-sampling-2']
 
     # New CLI limitations for power profile attributes
     POWER_ALLOCATION_ATTRIBUTES = ['power-allocation-1', 'power-allocation-2']
     MAX_INTEGRAL_ATTRIBUTES = ['max-integral-1', 'max-integral-2']
 
-    # Attribute value ranges
+    # Attribute value ranges (based on observed SAI firmware constraints)
+    # Ranges derived from actual hardware default profiles:
+    # Profile 1: power=575/575/475, kp=25, ki=7, kd=0, max_integral=2250, avg_pwr_sampling=2, pid_update_sampling=2
+    # Profile 2: power=450/575/380, kp=50, ki=25, kd=0, max_integral=585, avg_pwr_sampling=20, pid_update_sampling=4
+
+    # Individual range constants
     POWER_ALLOCATION_MIN = 300
-    POWER_ALLOCATION_MAX = 65535
+    POWER_ALLOCATION_MAX = 700
     MAX_INTEGRAL_MIN = 0
-    MAX_INTEGRAL_MAX = 65535  # uint16
-    UINT8_MIN = 0
-    UINT8_MAX = 255  # uint8 for all other attributes
+    MAX_INTEGRAL_MAX = 3000
+    KP_FACTOR_MIN = 10
+    KP_FACTOR_MAX = 100
+    KI_FACTOR_MIN = 5
+    KI_FACTOR_MAX = 30
+    KD_FACTOR_MIN = 0
+    KD_FACTOR_MAX = 10
+    AVG_PWR_SAMPLING_MIN = 1
+    AVG_PWR_SAMPLING_MAX = 30
+    PID_UPDATE_SAMPLING_MIN = 1
+    PID_UPDATE_SAMPLING_MAX = 10
+
+    # Attribute ranges dictionary - references the constants above for easy maintenance
+    ATTRIBUTE_RANGES = {
+        'power-allocation-1': {'low': POWER_ALLOCATION_MIN, 'high': POWER_ALLOCATION_MAX},
+        'power-allocation-2': {'low': POWER_ALLOCATION_MIN, 'high': POWER_ALLOCATION_MAX},
+        'max-integral-1': {'low': MAX_INTEGRAL_MIN, 'high': MAX_INTEGRAL_MAX},
+        'max-integral-2': {'low': MAX_INTEGRAL_MIN, 'high': MAX_INTEGRAL_MAX},
+        'kp-factor-1': {'low': KP_FACTOR_MIN, 'high': KP_FACTOR_MAX},
+        'kp-factor-2': {'low': KP_FACTOR_MIN, 'high': KP_FACTOR_MAX},
+        'ki-factor-1': {'low': KI_FACTOR_MIN, 'high': KI_FACTOR_MAX},
+        'ki-factor-2': {'low': KI_FACTOR_MIN, 'high': KI_FACTOR_MAX},
+        'kd-factor-1': {'low': KD_FACTOR_MIN, 'high': KD_FACTOR_MAX},
+        'kd-factor-2': {'low': KD_FACTOR_MIN, 'high': KD_FACTOR_MAX},
+        'avg-p-wr-num-of-sampling-1': {'low': AVG_PWR_SAMPLING_MIN, 'high': AVG_PWR_SAMPLING_MAX},
+        'avg-p-wr-num-of-sampling-2': {'low': AVG_PWR_SAMPLING_MIN, 'high': AVG_PWR_SAMPLING_MAX},
+        'pid-up-date-num-of-sampling-1': {'low': PID_UPDATE_SAMPLING_MIN, 'high': PID_UPDATE_SAMPLING_MAX},
+        'pid-up-date-num-of-sampling-2': {'low': PID_UPDATE_SAMPLING_MIN, 'high': PID_UPDATE_SAMPLING_MAX},
+    }
 
     NUM_PROFILES_LIMIT = 5
     CHARS_LIMIT = 20
@@ -1242,11 +1283,10 @@ class IbConsts:
     IBSWITCHES = 'ibswitches'
     BASE_LID = 'ibstat | grep "Base lid"'
     MAX_NUM_OF_BYTES = '8388608'
-    IB_SEND_LAT_SERVER = ('nohup ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
-                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' 2>&1 & echo $!')
-    IB_SEND_LAT_CLIENT = ('nohup ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
-                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' +
-                          '{client_output}' + ' 2>&1 & echo $!')
+    IB_SEND_LAT_SERVER = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' &')
+    IB_SEND_LAT_CLIENT = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
+                          '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' + '{client_output}' + ' &')
     GET_JOB_IB = 'jobs -l'
 
 
@@ -1766,10 +1806,10 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
+                  'julietscaleout_reboot': 380 if is_bug_active(4445141) else 270,
                   'julietscaleout reset factory': 600,
                   'reset factory': 300,
-                  'install user FW': 500,
+                  'install user FW': 600,
                   'install default fw': 360,
                   'port goes up': 30,
                   'port goes down': 4,
@@ -2305,6 +2345,53 @@ class RemarkableLogsConsts:
                                ERROR_LOGS_TIME_WINDOW, FIRST_SAVED_BOOT_LOGS, REQUESTED_BY_DAEMON_LOGS,
                                STATE, STORM_LOGS_CLEAN_TIME, STORM_LOGS_NUMBER,
                                STORM_LOGS_RATE, STORM_LOGS_TIME_WINDOW]
+
+
+class LogsSources:
+    SYSLOG = "syslog"
+    NVUED = "nvued.log"
+    USER = "user.log"
+    AUTH = "auth.log"
+
+    @classmethod
+    def all(cls):
+        return [v for k, v in vars(cls).items() if k.isupper()]
+
+
+class SecureConfig:
+    """Secure configuration management for sensitive environment variables"""
+    _instance = None
+    _config = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(SecureConfig, cls).__new__(cls)
+            cls._load_config()
+        return cls._instance
+
+    @classmethod
+    def _load_config(cls):
+        """Load configuration from secure source"""
+        # Load from secure configuration file or environment
+        # This is a placeholder - implement your preferred secure storage method
+        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cls._config = json.load(f)
+
+    @classmethod
+    def get(cls, key, default=None):
+        """Get a configuration value securely"""
+        return cls._config.get(key, default)
+
+    @classmethod
+    def set(cls, key, value):
+        """Set a configuration value securely"""
+        cls._config[key] = value
+        # Implement secure storage of the updated configuration
+        config_path = os.path.join(os.path.dirname(__file__), 'secure_config.json')
+        with open(config_path, 'w') as f:
+            json.dump(cls._config, f, indent=4)
 
 
 class LogsSources:

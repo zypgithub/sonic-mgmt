@@ -340,7 +340,7 @@ def test_interface_xdr_slow_speed_trunk_ports(engines, devices, random_api, setu
                                         standalone_system, summarized_switch_ports, prefix='sw')
 
 
-def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, standalone_system,
+def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, standalone_system: bool,
                                         group_all_ports: str, prefix: str):
     """
     Configure xdr slow speed on all trunk / access ports

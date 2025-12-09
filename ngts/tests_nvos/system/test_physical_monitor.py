@@ -1,8 +1,9 @@
 import pytest
+import logging
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Union, Iterable, Dict
-import time
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import EventConsts

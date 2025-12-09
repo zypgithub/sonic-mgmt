@@ -71,8 +71,9 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 
 @pytest.mark.general
 @pytest.mark.tech_support
+@pytest.mark.skynet
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_techsupport_expected_files(engines, devices, test_name):
+def test_techsupport_expected_files(engines, devices, test_name, skynet):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     and measure how long it takes
@@ -85,6 +86,9 @@ def test_techsupport_expected_files(engines, devices, test_name):
         4. Verify obscurity of config files
         5. verify files' names of techsupport using expected_files_dict
         6. verify files' sizes of techsupport using expected_files_dict
+
+    note - some steps will not happen (cleanup of cluster and tacacs config) on skynet type of runs
+    as such setups already has those configs applied
     """
 
     LDAP_SECRET: str = 'ldap_pass'
@@ -107,7 +111,8 @@ def test_techsupport_expected_files(engines, devices, test_name):
         'tacacs': {
             'secret': TACACS_SECRET,
             'pattern': r"tacacs.+\s+[\"\']*secret[^:]*:\s[\"\']*([^\"\'\s]+)",
-            'set_nv_cmd': lambda: system.aaa.tacacs.set(op_param_name='secret', op_param_value=TACACS_SECRET).verify_result()
+            'set_nv_cmd': lambda: system.aaa.tacacs.set(op_param_name='secret',
+                                                        op_param_value=TACACS_SECRET).verify_result()
         },
         'ntp_key': {
             'secret': NtpConsts.KEY_VALUE,
@@ -123,6 +128,14 @@ def test_techsupport_expected_files(engines, devices, test_name):
             'set_nv_cmd': lambda: system.snmp_server.set(SystemConsts.SNMP_READONLY_COMMUNITY, IssuConsts.SNMP_READ_ONLY_COMMUNITY).verify_result()
         }
     }
+    if not skynet:
+        config_file_secret_dict.update(
+            {'tacacs': {
+                'secret': TACACS_SECRET,
+                'pattern': r"tacacs.+\s+[\"\']*secret[^:]*:\s[\"\']*([^\"\'\s]+)",
+                'set_nv_cmd': lambda: system.aaa.tacacs.set(op_param_name='secret', op_param_value=TACACS_SECRET).verify_result()
+            }
+            })
 
     """
     Verify that sensitive information in config files is properly obscured.
@@ -225,9 +238,9 @@ def test_techsupport_expected_files(engines, devices, test_name):
                     if expected_files_dict[folder]:  # skip empty folders if files are not expected for a specific system
                         files_list = system.techsupport.get_techsupport_empty_files(engines.dut, tech_folder=folder)
                         with allure.independent_step(f'validate files sizes for {folder}'):
-                            verify_techsupport_files_sizes(files_list, folder)
+                            verify_techsupport_files_sizes(files_list, folder, skynet)
     finally:
-        if devices.dut.has_nmx:
+        if devices.dut.has_nmx and not skynet:
             Cluster().unset(apply=True)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
         system.techsupport.cleanup(engines.dut)
@@ -303,13 +316,15 @@ def verify_techsupport_files_names(files_list, expected_files):
     ValidationTool.validate_subset_in_superset(expected_files_set, actual_files_set).verify_result()
 
 
-def verify_techsupport_files_sizes(files_list, folder):
+def verify_techsupport_files_sizes(files_list, folder, skynet=False):
     if folder == 'dump':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE]
     elif folder == 'etc':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE]
     elif folder == 'cluster':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
+    elif folder == 'hw-mgmt' and skynet:
+        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE]
 
     assert len(files_list) == 0, f"the following files are empty {files_list}"
 

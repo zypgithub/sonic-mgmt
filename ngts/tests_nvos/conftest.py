@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 import requests_cache
 import re
 
+import requests_cache
 import pexpect
 import pytest
 from dotted_dict import DottedDict

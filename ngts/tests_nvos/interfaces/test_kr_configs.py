@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Callable, Tuple, Optional, Union, Dict, List
 from functools import partial
 import dataclasses
@@ -12,13 +14,16 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers import redmine_helpers
+from ngts.tools.test_utils import pytest_utils
 from ngts.tests_nvos.cluster import cluster_tools
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.ngts_types import EnginesT
 
-from ngts.tools.test_utils import pytest_utils
+from . import helpers
+
+pytestmark = pytest.mark.usefixtures("enable_cluster_for_mini_oberon", "has_active_access_ports")
 
 
 @dataclasses.dataclass
@@ -87,140 +92,26 @@ KR_MODES_MAPPER: Dict[str, KrAttribute] = {
 
 
 @pytest.fixture(scope='module', autouse=True)
-def is_mini_oberon(standalone_system: bool, setup_name: str, engines: EnginesT):
-    ''' pytest fixture to set the IS_STANDALONE_SYSTEM global variable '''
-    # this fixture will get the global variables to keep the test code clean
-    global IS_STANDALONE_SYSTEM, SETUP_NAME
-
-    IS_STANDALONE_SYSTEM = standalone_system
-    SETUP_NAME = setup_name
-
-    if not IS_STANDALONE_SYSTEM:
-        try:
-            Tools.RandomizationTool.select_random_ports(
-                requested_ports_state=NvosConsts.LINK_STATE_UP,
-                num_of_ports_to_select=5,
-                dut_engine=engines.dut,
-                interface_type='acp',
-            ).get_returned_value()
-        except AssertionError:
-            logger.warning("Failed to select 5 up acp ports, will try to reboot the GPUs")
-            cluster_tools.ClusterTools.reboot_compute_nodes_gpus(SETUP_NAME)
-            randome_acp_port = _get_random_port(engines.dut)
-            Port.wait_for_port_state(randome_acp_port, NvosConsts.LINK_STATE_UP)
+def cleanup_kr_config(access_ports: Port):
     yield
-
-    if not IS_STANDALONE_SYSTEM:
-        with allure.step('Unset KR config on port acp-72'):
-            Fae(port_name='acp-72').interface.link.kr.unset(apply=True)
-        with allure.step("Reboot the GPUs"):
-            cluster_tools.ClusterTools.reboot_compute_nodes_gpus(SETUP_NAME)
-
-
-@pytest.fixture(autouse=True)
-def has_active_access_ports(request: pytest.FixtureRequest, standalone_system: bool, has_loopbox: bool):
-    """ check if a system doesn't have active access ports, skip the test """
-    to_be_ignored = ['test_kr_cli_hidden_non_nvlink']
-    if request.node.name not in to_be_ignored and standalone_system and not has_loopbox:
-        pytest.skip(reason="System doesn't have active access ports, skipping the test")
-
-
-@pytest.fixture(scope='module', autouse=True)
-def access_ports(devices):
-    if not hasattr(devices.dut, 'nvl_access_ports_list'):  # IB devices don't have this attribute
-        yield
-        return
-    # Extract numeric indices from ACP port names by removing 'acp' prefix
-    port_indices = [int(port_name.replace('acp', '')) for port_name in devices.dut.nvl_access_ports_list]
-    min_port, max_port = min(port_indices), max(port_indices)
-    yield Port(f'acp{min_port}-{max_port}', '', '')
-
-
-def _get_random_port(dut_engines: EnginesT, /, *,
-                     port_type: str = NvlInterfaceConsts.NVL_PORT_TYPE,
-                     ports_state: str = NvosConsts.LINK_STATE_UP,
-                     interface_type: str = 'acp') -> Port:
-    ''' get a random nvl access port from the system '''
-    with allure.step(f'Get random {port_type!r} port'):
-        return Tools.RandomizationTool.select_random_port(
-            requested_ports_type=port_type,
-            requested_ports_state=ports_state,
-            interface_type=interface_type,
-            dut_engine=dut_engines,
-        ).get_returned_value()
-
-
-def _get_random_ports(dut_engines: EnginesT, /, *, num_of_ports_to_select: int = 5) -> Tuple[Port, List[Port]]:
-    ''' get a random range of nvl access ports from the system '''
-    with allure.step(f'Get random {num_of_ports_to_select} NVL ports'):
-        ports: List[Port] = Tools.RandomizationTool.select_random_ports(
-            requested_ports_type=NvlInterfaceConsts.NVL_PORT_TYPE,
-            requested_ports_state=NvosConsts.LINK_STATE_UP,
-            num_of_ports_to_select=num_of_ports_to_select,
-            interface_type='acp',
-            dut_engine=dut_engines,
-        ).get_returned_value()
-
-    port_range_names = cluster_tools.summarize_ports([p.name for p in ports])
-    return Port(port_range_names, '', ''), ports
-
-
-def _reboot_gpus() -> None:
-    ''' reboot the GPUs and validate that the cluster is enabled only if it's NOT a standalone system '''
-    if not IS_STANDALONE_SYSTEM:  # like mini-oberon
-        logger.info("rebooting the GPUs")
-        cluster_tools.ClusterTools.reboot_compute_nodes_gpus(SETUP_NAME)
+    Fae(port_name=access_ports.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True)
+    helpers.reboot_gpus()
 
 
 def _cleanup(port: Port):
     with allure.step(f"Unset KR config on port {port.name}"):
         Fae(port_name=port.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True)
 
-    if not IS_STANDALONE_SYSTEM:  # like mini-oberon
-        with allure.step("Reboot the GPUs"):
-            cluster_tools.ClusterTools.reboot_compute_nodes_gpus(SETUP_NAME)
+    helpers.reboot_gpus()
 
 
-@pytest.mark.timeout(2 * MINUTE, func_only=True)
-def test_kr_cli_hidden_non_nvlink(engines: EnginesT):
-    """
-    Verify that the KR CLI is not displayed on non-NVLink interfaces.
-
-    Test Steps:
-        1. Get a random non-NVLink interface port
-        2. Run the command: nv fae show fae interface <non-nvlink-interface-id> link link-training
-        3. Verify the command fails as expected (KR is not supported)
-
-    Expected Outcome:
-        No KR configuration information appears, command fails with proper error
-    """
-    errors = []
-
-    with allure.step('Get non-NVLink ports'):
-        ports: str = engines.dut.run_cmd('nv show interface -o json | jq \'.[].type\' | sort -u | grep -vw nvl | sed \'s/"//g\'')
-    for port_type in ports.splitlines():
-        logger.info(f"Testing port type: {port_type}")
-        port = _get_random_port(engines.dut, port_type=port_type, ports_state=None)
-        logger.info(f"Selected port: {port.name}")
-        with allure.step(f'Attempt to show KR on non-NVLink port {port.name!r}'):
-            try:
-                Fae(port_name=port.name).interface.link.kr.show(should_succeed=False)
-                logger.info(f"asking for KR on port {port.name!r} show error as expected")
-            except AssertionError as e:
-                logger.error(f"Expected AssertionError on port {port.name}: {str(e)}")
-                logger.exception(e)
-                errors.append(str(e))
-
-    assert not errors, "Errors:\n\t%s" % "\n\t".join(errors)
-
-
-def _configure_port_randomly(port: Port) -> Dict[str, str]:
+def _configure_port_randomly(port: Port) -> dict[str, str]:
     expected_kr_config = {'xdr-c2c-algo': 'enable-lt'}
     with allure.step(f"Set random KR config on port {port.name}"):
         expected_kr_config['kr-algo'] = (rand_kr_mode := KR_MODES_MAPPER['kr-algo'].random_value)
         logger.info(f"Setting kr-algo to {rand_kr_mode}")
         Fae(port_name=port.name).interface.link.kr.set('kr-algo', rand_kr_mode).verify_result()
-        logger.info(f"Setting xdr-c2c-algo to enable-lt")
+        logger.info("Setting xdr-c2c-algo to enable-lt")
 
         for kr_attr in (i for i in KR_MODES_MAPPER if i not in ('kr-algo', 'xdr-c2c-algo')):
             expected_kr_config[kr_attr] = (kr_attr_value := KR_MODES_MAPPER[kr_attr].random_value)
@@ -230,14 +121,14 @@ def _configure_port_randomly(port: Port) -> Dict[str, str]:
         with allure.step('Apply KR config changes'):
             Fae(port_name=port.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).verify_result()
 
-        _reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
+        helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
 
     return expected_kr_config
 
 
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_kr_cli_flow(engines: EnginesT, register_cleanup: CleanUpT, access_ports: Port, request: pytest.FixtureRequest):
-    port = _get_random_port(engines.dut)
+    port = helpers.get_random_port(engines.dut)
 
     with allure.step(f'show kr config on port: {port.name}'):
         str_result: str = Fae(port_name=port.name).interface.link.kr.show(output_format=None)
@@ -260,7 +151,7 @@ def test_kr_cli_flow(engines: EnginesT, register_cleanup: CleanUpT, access_ports
         tries = 25 if redmine_helpers.is_bug_active('4427436') else None
         with pytest_utils.temporary_xfail_mark(request,
                                                reason="The auto negotiation is not supported yet.",
-                                               condition=not IS_STANDALONE_SYSTEM):
+                                               condition=helpers.ctx.has_gpus):
             Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
 
     with allure.step('Get KR config'):
@@ -288,14 +179,14 @@ def test_config_removal(engines: EnginesT, register_cleanup: CleanUpT):
     Expected Outcome:
         The explicit configuration is removed, and the system falls back to the default KR configuration
     """
-    port = _get_random_port(engines.dut)
+    port = helpers.get_random_port(engines.dut)
     logger.info(f"Selected NVLink port: {port.name}")
 
     kr_config: KrConfigT = Fae(port_name=port.name).interface.link.kr.parse_show()
 
     with allure.step('Unset KR mode'):
         Fae(port_name=port.name).interface.link.kr.unset(apply=True, ask_for_confirmation=True).get_returned_value()
-        _reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
+        helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         with allure.step('Wait for port to be up'):
             Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP)
 
@@ -318,7 +209,7 @@ def test_invalid_kr_mode_rejected(engines: EnginesT):
         The CLI returns an error indicating that "invalid_mode" is not a supported KR mode,
         and the configuration is not applied
     """
-    port = _get_random_port(engines.dut)
+    port = helpers.get_random_port(engines.dut)
     logger.info(f"Selected NVLink port: {port.name}")
 
     with allure.step('Attempt to set invalid KR mode'):
@@ -347,7 +238,7 @@ def test_interface_range_sequential_actions(engines: EnginesT, register_cleanup:
         All selected interfaces should be configured with the new KR mode
         and return to UP state successfully
     """
-    ports_range, ports = _get_random_ports(engines.dut, num_of_ports_to_select=5)
+    ports_range, ports = helpers.get_random_ports(engines.dut, num_of_ports_to_select=5)
     logger.info(f"Selected port range: {ports_range.name}")
     logger.info(f"Individual ports: {[p.name for p in ports]}")
 
@@ -369,7 +260,7 @@ def test_interface_range_sequential_actions(engines: EnginesT, register_cleanup:
                 tries = 25 if redmine_helpers.is_bug_active('4427436') else None
                 with pytest_utils.temporary_xfail_mark(request,
                                                        reason="The auto negotiation is not supported yet.",
-                                                       condition=not IS_STANDALONE_SYSTEM):
+                                                       condition=helpers.ctx.has_gpus):
                     port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
                 # check that the expected_kr_config is NOT a subset of the current_kr_cfg
                 if not expected_kr_config.items() <= (current_kr_cfg := Fae(port_name=port.name).interface.link.kr.parse_show()).items():
@@ -396,7 +287,7 @@ def test_link_transition_timing(engines: EnginesT, register_cleanup: CleanUpT, a
         The interface goes down within 10 seconds and comes back up within 20 seconds
     """
 
-    port = _get_random_port(engines.dut)
+    port = helpers.get_random_port(engines.dut)
     logger.info(f"Selected NVLink port: {port.name}")
 
     register_cleanup(partial(_cleanup, access_ports))
@@ -424,7 +315,7 @@ def test_link_transition_timing(engines: EnginesT, register_cleanup: CleanUpT, a
             Fae(port_name=access_ports.name).interface.link.kr.set('ber-window', ber_window).get_returned_value()
             Fae(port_name=access_ports.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
 
-        _reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
+        helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         time.sleep(5)
 
         with allure.step('Wait for port to go up'):
@@ -433,7 +324,7 @@ def test_link_transition_timing(engines: EnginesT, register_cleanup: CleanUpT, a
                 tries = 25 if redmine_helpers.is_bug_active('4427436') else None
                 with pytest_utils.temporary_xfail_mark(request,
                                                        reason="The auto negotiation is not supported yet.",
-                                                       condition=not IS_STANDALONE_SYSTEM):
+                                                       condition=helpers.ctx.has_gpus):
                     Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
             end_time = time.perf_counter()
             elapsed_time = end_time - start_time
@@ -459,7 +350,7 @@ def test_error_ber_target_not_reached(engines: EnginesT, register_cleanup: Clean
         4. Monitor the BER until it reaches the target
     """
 
-    # port = _get_random_port(engines.dut)
+    # port = helpers.get_random_port(engines.dut)
     port = Port('acp1', '', '')
     logger.info(f"Selected NVLink port: {port.name}")
 
@@ -472,7 +363,7 @@ def test_error_ber_target_not_reached(engines: EnginesT, register_cleanup: Clean
         Fae(port_name=access_ports.name).interface.link.kr.set('num-iterations', KR_MODES_MAPPER['num-iterations'].max_value).get_returned_value()
         Fae(port_name=access_ports.name).interface.link.kr.set('ber-window', KR_MODES_MAPPER['ber-window'].max_value).get_returned_value()
         Fae(port_name=access_ports.name).interface.link.kr.set('xdr-c2c-algo', 'enable-lt', apply=True, ask_for_confirmation=True).get_returned_value()
-        _reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
+        helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
         time.sleep(5)
 
         start_time = time.perf_counter()
@@ -480,7 +371,7 @@ def test_error_ber_target_not_reached(engines: EnginesT, register_cleanup: Clean
             tries = 25 if redmine_helpers.is_bug_active('4427436') else None
             with pytest_utils.temporary_xfail_mark(request,
                                                    reason="The auto negotiation is not supported yet.",
-                                                   condition=not IS_STANDALONE_SYSTEM):
+                                                   condition=helpers.ctx.has_gpus):
                 Port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP, tries=tries)
 
         end_time = time.perf_counter()

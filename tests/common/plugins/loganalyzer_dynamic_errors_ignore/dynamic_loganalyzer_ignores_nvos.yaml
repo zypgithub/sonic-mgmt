@@ -997,7 +997,15 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_documents.py::test_upload_document
         - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_upload
-        - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload
+        - tests_nvos/system/test_techsupport_commands.py::test_techsupport_upload_and_delete
+
+# NVOS : Errors which should be ignored in tests nvl5 ports
+- Errors_list:
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
 
 # NVOS : Errors which should be ignored in tests nvl5 ports
 - Errors_list:
@@ -1446,7 +1454,6 @@
 
 # NVOS
 - Errors_list:
-    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*WARNING pmon#psud: PSU absence warning: PSU \d is not present.*'

@@ -2,7 +2,6 @@ import copy
 import logging
 import pytest
 
-from ngts.nvos_tools.Devices.IbDevice import JulietAriel
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -35,4 +34,4 @@ def test_show_platform_chassis_location(engines, test_api, devices, has_loopbox,
             ValidationTool.validate_output_of_show(output_dict, devices.dut.show_platform_chassis_location_output).verify_result()
     else:
         with allure.step("verifying output for standalone switch"):
-            ValidationTool.compare_dictionaries(output_dict, ChassisLocationConsts.EXPECTED_STANDALONE_DICT).verify_result()
+            ValidationTool.compare_dictionaries(output_dict, devices.dut.show_platform_chassis_location_standalone_values).verify_result()
