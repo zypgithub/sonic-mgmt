@@ -25,8 +25,7 @@ logger = logging.getLogger(__name__)
 pytestmark = [
     pytest.mark.topology('t0'),  # Only run on T0 testbed
     pytest.mark.disable_loganalyzer,  # Disable automatic loganalyzer, since we use it for the test
-    pytest.mark.device_type('physical'),
-    pytest.mark.asic('cisco-8000')  # Only run on Cisco-8000 ASICs that support INNER_SRC_MAC_REWRITE_ACTION
+    pytest.mark.device_type('physical')
 ]
 
 # Test configuration constants

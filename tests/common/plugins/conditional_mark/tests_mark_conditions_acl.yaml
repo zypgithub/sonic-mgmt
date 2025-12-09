@@ -1164,3 +1164,11 @@ acl/test_acl.py::TestIncrementalAcl::test_udp_source_ip_match_dropped[ipv6-egres
     conditions:
       - "platform in ['armhf-nokia_ixs7215_52x-r0']"
       - https://github.com/sonic-net/sonic-mgmt/issues/8639
+
+acl/test_src_mac_rewrite.py:
+  skip:
+    reason: "Only run on Cisco-8000 or Mellanox SN4280 that support INNER_SRC_MAC_REWRITE_ACTION"
+    conditions_logical_operator: or
+    conditions:
+    - "asic_type not in ['cisco-8000', 'mellanox']"
+    - "asic_type in ['mellanox'] and 'sn4280' not in platform"
