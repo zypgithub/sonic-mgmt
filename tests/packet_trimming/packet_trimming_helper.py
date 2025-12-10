@@ -24,7 +24,9 @@ from tests.packet_trimming.constants import (DEFAULT_SRC_PORT, DEFAULT_DST_PORT,
                                              SRV6_INNER_SRC_IP, SRV6_INNER_DST_IP, DEFAULT_QUEUE_SCHEDULER_CONFIG,
                                              SRV6_UNIFORM_MODE, SRV6_OUTER_SRC_IPV6, SRV6_INNER_SRC_IPV6, ECN,
                                              SRV6_INNER_DST_IPV6, SRV6_UN, ASYM_PORT_1_DSCP, ASYM_PORT_2_DSCP,
-                                             SCHEDULER_TYPE, SCHEDULER_WEIGHT, SCHEDULER_PIR)
+                                             SCHEDULER_TYPE, SCHEDULER_WEIGHT, SCHEDULER_PIR, MIRROR_SESSION_NAME,
+                                             MIRROR_SESSION_SRC_IP, MIRROR_SESSION_DST_IP, MIRROR_SESSION_DSCP,
+                                             MIRROR_SESSION_TTL, MIRROR_SESSION_QUEUE)
 from tests.packet_trimming.packet_trimming_config import PacketTrimmingConfig
 
 logger = logging.getLogger(__name__)
@@ -2886,3 +2888,35 @@ def verify_queue_and_port_trim_counter_consistency(duthost, port):
     # Verify the consistency
     pytest_assert(total_queue_trim_packets == port_trim_packets and total_queue_trim_packets > 0,
                   f"Total trim packets on all queues for port {port} is not equal to the port level")
+
+
+def configure_port_mirror_session(duthost):
+    """
+    Configure an ERSPAN mirror session on the DUT.
+    """
+    logger.info(f"Configuring ERSPAN mirror session")
+
+    cmd = f"sudo config mirror_session erspan add {MIRROR_SESSION_NAME} {MIRROR_SESSION_SRC_IP} {MIRROR_SESSION_DST_IP} {MIRROR_SESSION_DSCP} {MIRROR_SESSION_TTL} {MIRROR_SESSION_QUEUE}"
+    duthost.shell(cmd)
+    logger.info(f"Successfully configured mirror session: {MIRROR_SESSION_NAME}")
+
+    # Verify mirror session is created
+    result = duthost.shell("show mirror_session")
+    pytest_assert(MIRROR_SESSION_NAME in result['stdout'],
+                  f"Mirror session {MIRROR_SESSION_NAME} was not created successfully")
+
+
+def remove_port_mirror_session(duthost):
+    """
+    Remove the ERSPAN mirror session from the DUT.
+    """
+    logger.info(f"Removing mirror session: {MIRROR_SESSION_NAME}")
+
+    cmd = f"sudo config mirror_session remove {MIRROR_SESSION_NAME}"
+    duthost.shell(cmd)
+    logger.info(f"Successfully removed mirror session: {MIRROR_SESSION_NAME}")
+
+    # Verify mirror session is removed
+    result = duthost.shell("show mirror_session")
+    pytest_assert(MIRROR_SESSION_NAME not in result['stdout'],
+                  f"Mirror session {MIRROR_SESSION_NAME} was not removed successfully")
