@@ -44,7 +44,7 @@ class IpV6(BaseComponent):
         """
         try:
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             addresses_show = self.address.show(dut_engine=dut_engine)
 
@@ -116,7 +116,7 @@ class IpV6(BaseComponent):
         """
         try:
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             autoconf_data = self.autoconf.show(dut_engine=dut_engine)
             return autoconf_data == 'enabled'

@@ -41,7 +41,7 @@ def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION
     - Check if there is enough space
     - Do cleanup, Unmount and remove temp dirs
     """
-    switch: ProxySshEngine = TestToolkit.engines.dut
+    switch: ProxySshEngine = TestToolkit.get_engine()
 
     disk_tool = DiskTool(switch, partition_name)
     partitions = None

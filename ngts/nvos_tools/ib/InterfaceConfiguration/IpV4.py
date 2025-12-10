@@ -45,7 +45,7 @@ class IpV4(BaseComponent):
         """
         try:
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             addresses_show = self.address.show(dut_engine=dut_engine)
             addresses_dict = OutputParsingTool.parse_json_str_to_dictionary(addresses_show).get_returned_value()

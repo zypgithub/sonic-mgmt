@@ -49,6 +49,6 @@ class SpdmComponent(BaseComponent):
 
     def action_generate(self, nonce=None, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action generate for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_generate_spdm_measurements, engine,
                                                    self.get_resource_path(), nonce)

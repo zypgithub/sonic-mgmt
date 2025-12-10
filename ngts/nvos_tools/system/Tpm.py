@@ -13,12 +13,12 @@ class Tpm(BaseComponent):
 
     def action_generate_quote(self, pcrs='', nonce='', algorithm='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action generate for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_generate_tpm_quote, engine,
                                                    self.get_resource_path(), pcrs, nonce, algorithm)
 
     def action_upload(self, file_name: str, remote_url: str, expected_str='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action upload for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_upload_tpm_file, expected_str,
                                                                 engine, self.get_resource_path(), file_name, remote_url)

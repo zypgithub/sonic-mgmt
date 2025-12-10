@@ -15,7 +15,7 @@ class FactoryDefault(BaseComponent):
         super().__init__(parent=parent_obj, api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli}, path='/factory-default')
 
     def action_reset(self, engine=None, param=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Execute Sdn factory reset'):
             return SendCommandTool.execute_command(self._cli_wrapper.action_reset,
                                                    engine,

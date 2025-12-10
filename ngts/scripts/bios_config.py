@@ -27,22 +27,24 @@ def configure_bios(topology_obj):
     """
     TestToolkit.tested_api = 'NVUE'
     dut_engine = None
+    last_used_player = None
     nvue_cli_obj = NvueGeneralCli(engine=None, device=None)
     try:
         for host in topology_obj.players:
             if host in PlayersAliases.duts_list:
+                last_used_player = host
                 dut_ip = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get(
                     'ip address', '')
                 switch_type = topology_obj.players[host]['attributes'].noga_query_data['attributes']['Specific'].get(
                     'switch type', '')
                 dut_engine = topology_obj.players[host]['engine']
                 bios_obj = BiosFactory.create_bios(switch_type, topology_obj, dut_engine, nvue_cli_obj, dut_ip)
-                NvueGeneralCli(TestToolkit.engines.dut).remote_reboot_nvue(topology_obj)
+                NvueGeneralCli(TestToolkit.get_engine(host)).remote_reboot_nvue(topology_obj)
                 bios_obj.config_flow()
 
     except Exception as err:
         logger.info("BIOS configuration failed on error and will now remote reboot machine:\n{}".format(err))
-        NvueGeneralCli(TestToolkit.engines.dut).remote_reboot_nvue(topology_obj)
+        NvueGeneralCli(TestToolkit.get_engine(last_used_player)).remote_reboot_nvue(topology_obj)
         raise AssertionError(err)
     finally:
         if dut_engine:

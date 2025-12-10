@@ -11,6 +11,6 @@ class Oiak(BaseComponent):
 
     def action_import_tpm_oiak(self, data='', remote_url='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action generate for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_import_tpm_oiak, engine,
                                                    self.get_resource_path(), data, remote_url)

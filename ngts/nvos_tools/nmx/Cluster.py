@@ -26,6 +26,6 @@ class Cluster(BaseComponent):
 
     def action_update_chassis_id(self, mapping_id: int = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()} with chassis-id {mapping_id}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_chassis_id, engine,
                                                    self.get_resource_path(), mapping_id)

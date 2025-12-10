@@ -23,8 +23,9 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         params = {
             "state": "start",
         }
+
         return OpenApiCommandHelper.execute_action(ActionType.CLEAR, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def show_interface(engine, port_name, interface_hierarchy="", fae_param="", output_format=OutputFormat.json):
@@ -38,8 +39,9 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         :return: output str
         """
         resource_path = interface_hierarchy.replace(' ', '/')
+
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, OpenApiReqType.GET,
-                                                   engine.ip,
+                                                   engine.ip, engine.open_api_port,
                                                    '/{fae}interface{interface_id}{resource_path}'.format(
                                                        fae=fae_param + "/" if fae_param else '',
                                                        interface_id="/" + port_name if port_name else '',
@@ -58,13 +60,14 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         }
 
         return OpenApiCommandHelper.execute_action(ActionType.CLEAR, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def filter(engine, filter_name, value):
         params = f'?filter={filter_name}%3d{value}' if filter_name else ''
+
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, OpenApiReqType.GET,
-                                                   engine.ip, '/interface', params)
+                                                   engine.ip, engine.open_api_port, '/interface', params)
 
     @staticmethod
     def action_renew_dhcp_client(engine, resource_path):
@@ -77,5 +80,6 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         params = {
             "state": "start",
         }
+
         return OpenApiCommandHelper.execute_action(ActionType.RENEW, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)

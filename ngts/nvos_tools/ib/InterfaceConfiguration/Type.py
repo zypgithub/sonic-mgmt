@@ -23,7 +23,7 @@ class Type(ConfigurationBase):
         :return:
         """
         if not engine:
-            engine = TestToolkit.engines.dut
+            engine = TestToolkit.get_engine()
 
         if renew_show_cmd_output:
             TestToolkit.update_port_output_dictionary(self.port_obj, engine)

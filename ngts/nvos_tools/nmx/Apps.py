@@ -41,14 +41,14 @@ class ClusterApp(BaseComponent):
         self.app_name = app_name
 
     def action_start_cluster_app(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Start App'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_start_cluster_app,
                                                                 "App has been successfully started", engine,
                                                                 self.get_resource_path())
 
     def action_stop_cluster_app(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Stop App'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_stop_cluster_app,
                                                                 "App has been successfully stopped", engine,

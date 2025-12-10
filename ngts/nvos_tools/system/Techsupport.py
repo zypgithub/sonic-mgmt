@@ -40,10 +40,10 @@ class TechSupport(BaseComponent):
             update self._resource_path in the init method
             remove self.get_resource_path().replace('/files', ' ') in this method
         """
-        switch_type = TestToolkit.devices.dut.switch_type
+        device = TestToolkit.get_device()
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
 
             cmd_out, duration = OperationTime.save_duration('generate tech-support', option, test_name, SendCommandTool.execute_command,
                                                             self.api_obj[TestToolkit.tested_api].action_generate_techsupport, engine,
@@ -53,7 +53,7 @@ class TechSupport(BaseComponent):
                 return cmd_out.info, duration
 
             # Parse the techsupport folder name based on device type
-            if TestToolkit.devices.dut.is_eth():
+            if device.is_eth():
                 self.parse_eth_techsupport_folder_name(cmd_out)
                 tech_support_folder = CumulusConsts.TECHSUPPORT_FILES_PATH + self.file_name
             else:
@@ -66,7 +66,7 @@ class TechSupport(BaseComponent):
                     # Round output to MB by -m flag and trim white spaces with column to receive int like output
                     output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
                     size_in_MB = int(output.split(" ")[0])
-                    size_limit = TestToolkit.devices.dut.constants.techsupport_size_limit_mb
+                    size_limit = device.constants.techsupport_size_limit_mb
                     assert size_in_MB < size_limit, f"{tech_support_folder} size ({size_in_MB}MB)" \
                         f" should be less than {size_limit}MB"
 
@@ -74,7 +74,8 @@ class TechSupport(BaseComponent):
 
     def action_upload(self, upload_path, file_name):
         with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload, TestToolkit.engines.dut,
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload,
+                                                   TestToolkit.get_engine(),
                                                    path=self.get_resource_path() + "/files", file_name=file_name, url=upload_path)
 
     def parse_ib_techsupport_folder_name(self, techsupport_res):

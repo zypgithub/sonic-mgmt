@@ -119,8 +119,8 @@ class System(BaseComponent):
         Examples for `flags`: 'force' ; 'force immediate' ; ['force', 'immediate'] ; ''
         """
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
-            engine = engine or TestToolkit.engines.dut
-            device = device or TestToolkit.devices.dut
+            engine = engine or TestToolkit.get_engine()
+            device = device or TestToolkit.get_device()
 
             start_time = time.time()
             result = self.action(ActionConsts.REBOOT, flags=flags, engine=engine, device=device,
@@ -156,7 +156,7 @@ class Events(BaseComponent):
             logging.info("Show system event --last/--recent")
             if TestToolkit.tested_api == ApiType.OPENAPI:
                 return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show,
-                                                       TestToolkit.engines.dut, self.get_resource_path(),
+                                                       TestToolkit.get_engine(), self.get_resource_path(),
                                                        query_param_api + events_count_api).get_returned_value()
             else:
                 return system.events.show(query_param_nvue + events_count_nvue)
@@ -178,7 +178,7 @@ class Documentation(BaseComponent):
         with allure.step("Upload {file} to '{path}".format(file=file_name, path=upload_path)):
             logging.info("Upload {file} to '{path}".format(file=file_name, path=upload_path))
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload,
-                                                   TestToolkit.engines.dut, self.get_resource_path(),
+                                                   TestToolkit.get_engine(), self.get_resource_path(),
                                                    'files ' + file_name, upload_path)
 
 
@@ -206,9 +206,9 @@ class FactoryDefault(BaseComponent):
         with allure.step("Execute factory reset {}".format(param)):
             logging.info("Execute factory reset {}".format(param))
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             from ngts.tests_nvos.system.factory_reset.helpers import KEEP_ONLY_FILES
             # can't import at top of file due to circular import
@@ -259,7 +259,7 @@ class DateTime(BaseComponent):
                 params = {'clock-date': clock_date, 'clock-time': clock_time}
 
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_change,
-                                                   TestToolkit.engines.dut, rsrc_path, params)
+                                                   TestToolkit.get_engine(), rsrc_path, params)
 
 
 class WebServerAPI(BaseComponent):

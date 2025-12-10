@@ -164,7 +164,7 @@ class InterfaceConfigurationTool:
             selected_port.interface.link.show()).get_returned_value()
 
         current_speed_value = current_link_dict[IbInterfaceConsts.LINK_SPEED]
-        device = TestToolkit.devices.dut
+        device = TestToolkit.get_device()
         supported_speeds = device.supported_nvl_speeds if hasattr(device, 'supported_nvl_speeds') else []
 
         logger.info(f"Current speed value of port '{port_name}' is: {current_speed_value}")
@@ -204,7 +204,7 @@ class InterfaceConfigurationTool:
                                              apply=True, ask_for_confirmation=True).verify_result()
 
             # Save configuration to make speed change persistent
-            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(TestToolkit.engines.dut)
+            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(TestToolkit.get_engine())
 
             # Verify the speed is configured
             verify_dict = parser_func(selected_port.interface.link.show()).get_returned_value()

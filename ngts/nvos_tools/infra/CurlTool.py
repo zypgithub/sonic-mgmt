@@ -87,7 +87,7 @@ class CurlTool:
 
     def run_redfish_command(self, rest_op: str, data: str = '', username: str = '',
                             password: str = '', path: str = '', dut_engine=None):
-        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.engines.dut
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.get_engine()
         with allure.step('compose the curl command'):
             username = username or self.username
             password = password or self.password
@@ -113,7 +113,7 @@ class CurlTool:
         Returns:
             bool: True if BMC becomes available within timeout, False otherwise
         """
-        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.engines.dut
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.get_engine()
         username = username or self.username
         password = password or self.password
 

@@ -35,10 +35,11 @@ class OpenApiBaseCli(BaseCli):
         data = {'state': 'start', 'parameters': params}
 
         logger.info(f'Sending "{action_str}" to {resource_path} with {params=}')
+
         try:
             output = OpenApiCommandHelper.execute_action(OpenApiBaseCli._action_key(action_str), engine.engine.username,
-                                                         engine.engine.password, engine.ip, url, data,
-                                                         expected_output)
+                                                         engine.engine.password, engine.ip, engine.open_api_port, url,
+                                                         data, expected_output)
         except requests.exceptions.RequestException as e:
             result = ResultObj(False,
                                info=(f'Possible connection loss: {ExceptionTool.format_exception(e)}.\n'
@@ -55,23 +56,26 @@ class OpenApiBaseCli(BaseCli):
     def show(engine, resource_path, op_param="", output_format=OutputFormat.json, check_engine_connectivity: bool = True):
         logging.info("Running GET method on dut using openApi for {}".format(resource_path))
         dut_engine = engine.engine if check_engine_connectivity else engine
-        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
-                                                   OpenApiReqType.GET, engine.ip, resource_path, op_param)
+
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password, OpenApiReqType.GET,
+                                                   engine.ip, engine.open_api_port, resource_path, op_param)
 
     @staticmethod
     def set(engine, resource_path, op_param_name="", op_param_value="", check_engine_connectivity: bool = True):
         logging.info("Running PATCH method on dut using openApi for {}".format(resource_path))
         dut_engine = engine.engine if check_engine_connectivity else engine
-        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
-                                                   OpenApiReqType.PATCH, engine.ip, resource_path, op_param_name,
+
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password, OpenApiReqType.PATCH,
+                                                   engine.ip, engine.open_api_port, resource_path, op_param_name,
                                                    op_param_value)
 
     @staticmethod
     def unset(engine, resource_path, op_param="", check_engine_connectivity: bool = True):
         logging.info("Running DELETE method on dut using openApi for {}".format(resource_path))
         dut_engine = engine.engine if check_engine_connectivity else engine
-        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password,
-                                                   OpenApiReqType.DELETE, engine.ip, resource_path, op_param, None)
+
+        return OpenApiCommandHelper.execute_script(dut_engine.username, dut_engine.password, OpenApiReqType.DELETE,
+                                                   engine.ip, engine.open_api_port, resource_path, op_param, None)
 
     @staticmethod
     def _resource_path_to_rest_path(resource_path: str, suffix=''):
@@ -107,9 +111,10 @@ class OpenApiBaseCli(BaseCli):
         if not expected_output and (action_type == 'reboot' or expect_reboot):
             # Temporary workaround before refactoring action()
             expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES
-        result = OpenApiCommandHelper.execute_action(
-            OpenApiBaseCli._action_key(action_type), engine.engine.username, engine.engine.password, engine.ip,
-            url, data, expected_output)
+
+        result = OpenApiCommandHelper.execute_action(OpenApiBaseCli._action_key(action_type), engine.engine.username,
+                                                     engine.engine.password, engine.ip, engine.open_api_port, url, data,
+                                                     expected_output)
 
         if deny_reboot:
             return result

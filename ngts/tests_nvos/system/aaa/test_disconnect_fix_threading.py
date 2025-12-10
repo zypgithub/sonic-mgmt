@@ -336,7 +336,8 @@ def disconnect_user_open_api(engines, disconnect_user, disconnect_pass, user_to_
     """
     params = {"state": "start"}
     path = f'/system/aaa/user/{user_to_disconnect}' if user_to_disconnect else '/system/aaa/user'
-    response = OpenApiCommandHelper.execute_action(ActionType.DISCONNECT, disconnect_user, disconnect_pass, engines.dut.ip, path, params=params)
+    response = OpenApiCommandHelper.execute_action(ActionType.DISCONNECT, disconnect_user, disconnect_pass,
+                                                   engines.dut.ip, engines.dut.open_api_port, path, params=params)
     return response
 
 

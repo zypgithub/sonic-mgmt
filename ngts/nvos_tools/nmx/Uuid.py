@@ -28,14 +28,14 @@ class UuidVal(BaseComponent):
         super().__init__(parent=parent, path=f'/{uuid_value}')
 
     def action_update_partition(self, engine=None, reroute_param=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Update partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
                                                                 "has been successfully updated", engine,
                                                                 self.get_resource_path(), reroute_param)
 
     def action_restore_partition(self, engine=None, reroute_param=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Restore partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_partition,
                                                                 "has been successfully restored", engine,

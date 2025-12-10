@@ -100,14 +100,14 @@ class BmcTool:
 
     @staticmethod
     def _get_fw_component_version_info(component_name, version):
-        device = TestToolkit.devices.dut
+        device = TestToolkit.get_device()
         fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not BmcTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
                     BmcTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
-            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.get_engine()) else PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
             path = component_image_info['path']
             # Derive filename from path if not explicitly provided (e.g., for CPLD components)
@@ -116,14 +116,14 @@ class BmcTool:
 
     @staticmethod
     def get_fw_component_version_dict(component_name, version):
-        device = TestToolkit.devices.dut
+        device = TestToolkit.get_device()
         fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not BmcTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
                     BmcTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
-            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.get_engine()) else PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
             return component_image_info
 

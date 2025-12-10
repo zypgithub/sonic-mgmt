@@ -19,10 +19,10 @@ class Files(BaseComponent):
         self.file_name: Dict[str, File] = DefaultDict(lambda file_name: File(self, filename=file_name))
 
     def show_log_files(self, log_type='', param='', exit_cmd='', expected_str='', dut_engine=None):
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         with allure.step('Execute show for log file'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.show_log,
-                                                                expected_str, TestToolkit.engines.dut, log_type,
+                                                                expected_str, TestToolkit.get_engine(), log_type,
                                                                 param, exit_cmd).get_returned_value()
 
     def get_files(self, dut_engine=None):
@@ -67,7 +67,7 @@ class File(BaseComponent):
         self.file_name = filename
 
     def show_file(self, exit_cmd='', dut_engine=None) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         with allure.step(f'Execute show for file and exit cmd {exit_cmd}'):
             return SendCommandTool.execute_command(self._cli_wrapper.show_file, engine, self.file_name,
                                                    exit_cmd).get_returned_value()
@@ -110,8 +110,8 @@ class File(BaseComponent):
     def _action_file_install(self, with_reboot: bool, expected_str="", force=True, dut_engine=None, device=None, recovery_engine=None, topology_obj=None, param_value='',
                              should_succeed=True, system_is_ready_timeout=None, track_boot_intervals=False, deny_reboot=False, press_y=False, skip_version_check=False) -> ResultObj:
 
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
-        device = device if device else TestToolkit.devices.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
+        device = device if device else TestToolkit.get_device()
         topology_obj = topology_obj or TestToolkit.topology_obj
         resource_path = self.get_resource_path()
         params = []

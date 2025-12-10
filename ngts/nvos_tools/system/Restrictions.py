@@ -23,4 +23,4 @@ class Restrictions(BaseComponent):
                 params = f'user {user_to_clear}' if user_to_clear else ''
 
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_clear,
-                                                   TestToolkit.engines.dut, rsrc_path, params)
+                                                   TestToolkit.get_engine(), rsrc_path, params)

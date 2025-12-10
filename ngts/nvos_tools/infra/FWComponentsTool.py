@@ -47,14 +47,14 @@ class FWComponentsTool:
                 if part_number in non_encrypted_fpga_pns:
                     encrypted_fpga = ''
                 component_name = f'{component_name}{encrypted_fpga}'
-        device = TestToolkit.devices.dut
+        device = TestToolkit.get_device()
         fw_path = device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not FWComponentsTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
                     FWComponentsTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = FWComponentsTool.PLATFORM_COMPONENTS_DICT
-            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.get_engine()) else PRODUCTION
             # if device is juliet-160 or juliet-195, we need to use the production version
             device_name = TestToolkit.topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
             if device_name in ["juliet-160", "juliet-195"]:
@@ -67,14 +67,14 @@ class FWComponentsTool:
 
     @staticmethod
     def get_fw_component_version_dict(component_name, version):
-        device = TestToolkit.devices.dut
+        device = TestToolkit.get_device()
         fw_path = device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not FWComponentsTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
                     FWComponentsTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = FWComponentsTool.PLATFORM_COMPONENTS_DICT
-            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
+            provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.get_engine()) else PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
             return component_image_info
 

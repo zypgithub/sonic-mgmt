@@ -27,7 +27,7 @@ class Counters(BaseComponent):
         :return: ResultObj
         """
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
 
         # Get port name from parent Interface
         port_name = self.parent_obj.port_obj.name

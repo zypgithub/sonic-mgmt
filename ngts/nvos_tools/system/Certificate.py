@@ -28,13 +28,13 @@ class CertId(BaseComponent):
     def action_import(self, data=None, passphrase=None, uri_bundle=None, uri_private_key=None, uri_public_key=None,
                       dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_import_certificate, engine,
                                                    self.get_resource_path(), data, passphrase, uri_bundle,
                                                    uri_private_key, uri_public_key)
 
     def action_delete(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_delete_certificate, engine,
                                                    self.get_resource_path())

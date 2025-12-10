@@ -33,13 +33,13 @@ class RbacFile(BaseComponent):
         self.rbac_id = rbac_id
 
     def action_import(self, import_path: str, dut_engine=None, should_succeed: bool = True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Import file {resource_path} from '{import_path}'"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_import_rbac_file, engine=engine, resource_path=resource_path, remote_url=import_path)
 
     def action_delete(self, dut_engine=None, should_succeed: bool = True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Delete file: {resource_path} with name: {self.rbac_id}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_delete_rbac_file, engine, resource_path)
@@ -58,9 +58,9 @@ class RbacAppFile(BaseComponent):
     def __init__(self, parent=None):
         super().__init__(parent=parent, path='/file', api={ApiType.NVUE: NvueClusterCli, ApiType.OPENAPI: OpenApiClusterCli})
 
-    def action_update(self, file_name: str, dut_engine=None, should_succeed: bool = True) -> bool:
+    def action_update(self, file_name: str, dut_engine=None, should_succeed: bool = True):
         """nv action update cluster apps <app-name> rbac file <rbac-id>"""
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Update cluster app RBAC file: {resource_path}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
@@ -68,7 +68,7 @@ class RbacAppFile(BaseComponent):
 
     def action_restore(self, dut_engine=None, should_succeed: bool = True) -> bool:
         """nv action restore cluster apps <app-name> rbac file"""
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         restore_path = self.get_resource_path()
         with allure.step(f"Restore cluster app RBAC file settings for app: {restore_path}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,
@@ -81,7 +81,7 @@ class RbacAppMode(BaseComponent):
 
     def action_update(self, mode: str, dut_engine=None, should_succeed: bool = True) -> bool:
         """nv action update cluster apps <app-name> rbac mode <mode>"""
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Update cluster app RBAC mode to '{mode}': {resource_path}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
@@ -89,7 +89,7 @@ class RbacAppMode(BaseComponent):
 
     def action_restore(self, dut_engine=None, should_succeed: bool = True) -> bool:
         """nv action restore cluster apps <app-name> rbac mode"""
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Restore cluster app RBAC mode: {resource_path}"):
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,

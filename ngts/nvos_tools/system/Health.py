@@ -36,7 +36,8 @@ class History(BaseComponent):
         with allure.step('Execute nv show system health history {param} and exit cmd {exit_cmd}'.format(param=param,
                                                                                                         exit_cmd=exit_cmd)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].show_health_report,
-                                                   TestToolkit.engines.dut, self.get_resource_path(), param, exit_cmd).get_returned_value()
+                                                   TestToolkit.get_engine(), self.get_resource_path(), param,
+                                                   exit_cmd).get_returned_value()
 
     def show_health_report_file(self, file=HealthConsts.HEALTH_FIRST_FILE, exit_cmd='q'):
         return self.show(param="files {}".format(file), exit_cmd=exit_cmd)

@@ -2,11 +2,11 @@ import logging
 import math
 import re
 from datetime import datetime
+from typing import Any, Optional
 
 import pytest
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
 from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, CumulusConsts
 from ngts.nvos_tools.infra import ExceptionTool
@@ -27,6 +27,7 @@ class TestToolkit:
     topology_obj = None
     dut_eth0_ip = ""
     is_dut_eth = None
+    active_dut: str = 'dut'
 
     @staticmethod
     def update_tested_ports(tested_ports):
@@ -35,8 +36,37 @@ class TestToolkit:
             TestToolkit.tested_ports = tested_ports
 
     @staticmethod
-    def update_open_api_port(port_num):
-        OpenApiCommandHelper.update_open_api_port(port_num)
+    def set_active_dut(dut_name: str) -> None:
+        """
+        Set the active DUT for operations.
+
+        :param dut_name: Name of the DUT to set as active (e.g., 'dut', 'dut2', 'dut3')
+        """
+        with allure.step(f"Set active DUT to {dut_name}"):
+            logging.info(f"Active DUT changed from '{TestToolkit.active_dut}' to '{dut_name}'")
+            TestToolkit.active_dut = dut_name
+
+    @staticmethod
+    def get_engine(dut_name: Optional[str] = None) -> Any:
+        """
+        Get engine for specified DUT or active DUT.
+
+        :param dut_name: Name of the DUT. If None, uses the active DUT.
+        :return: Engine object for the specified DUT
+        :raises AttributeError: If the specified DUT does not exist
+        """
+        return getattr(TestToolkit.engines, dut_name or TestToolkit.active_dut)
+
+    @staticmethod
+    def get_device(dut_name: Optional[str] = None) -> Any:
+        """
+        Get device for specified DUT or active DUT.
+
+        :param dut_name: Name of the DUT. If None, uses the active DUT.
+        :return: Device object for the specified DUT
+        :raises AttributeError: If the specified DUT does not exist
+        """
+        return getattr(TestToolkit.devices, dut_name or TestToolkit.active_dut)
 
     @staticmethod
     def update_topology_obj(topology_obj):
@@ -67,7 +97,7 @@ class TestToolkit:
     def update_port_output_dictionary(port_obj, engine=None):
         with allure.step("Run 'show' command and update output dictionary"):
             logging.info("Run 'show' command and update output dictionary")
-            port_obj.update_output_dictionary(engine if engine else TestToolkit.engines.dut)
+            port_obj.update_output_dictionary(engine or TestToolkit.get_engine())
 
     @staticmethod
     def date_time_string_to_datetime_obj(date_time_str):
@@ -115,10 +145,10 @@ class TestToolkit:
 
     @staticmethod
     def get_version_num(version):
-        if not re.match(TestToolkit.devices.dut.full_version_pattern, version):
+        if not re.match(TestToolkit.get_device().full_version_pattern, version):
             return ''
 
-        match = re.search(TestToolkit.devices.dut.version_number_pattern, version)
+        match = re.search(TestToolkit.get_device().version_number_pattern, version)
         version_number = match.group()
         return version_number
 
@@ -133,7 +163,7 @@ class TestToolkit:
             from 'nvos-25.02.1320-014' to  'nvos-25-02-1400'
             from 'nvos-25.02.5930' to 'nvos-25-02-6000'
         """
-        if not re.match(TestToolkit.devices.dut.full_version_pattern, version):
+        if not re.match(TestToolkit.get_device().full_version_pattern, version):
             return ''
 
         pattern = r'(\d+)(?:-(\d+))?$'
@@ -236,7 +266,7 @@ class TestToolkit:
             if not dut_device and not TestToolkit.devices:
                 TestToolkit.is_dut_eth = False
             else:
-                dut_device = dut_device or TestToolkit.devices.dut
+                dut_device = dut_device or TestToolkit.get_device()
                 TestToolkit.is_dut_eth = (dut_device.switch_type == CumulusConsts.ETH_SWITCH_TYPE)
         return TestToolkit.is_dut_eth
 

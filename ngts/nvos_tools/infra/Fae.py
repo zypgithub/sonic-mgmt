@@ -109,7 +109,7 @@ class SonicCli(BaseComponent):
     def action_general(self, action_str):
         return SendCommandTool.execute_command(
             self.api_obj[TestToolkit.tested_api].action_general_with_expected_disconnect,
-            TestToolkit.engines.dut, action_str, self.get_resource_path())
+            TestToolkit.get_engine(), action_str, self.get_resource_path())
 
 
 class FaePlatform(BaseComponent):
@@ -151,7 +151,7 @@ class FaeFirmware(BaseComponent):
         with allure.step("installing bios firmware from {action_type}".format(action_type=bios_image_path)):
             return SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_install_fae_bios_firmware,
-                TestToolkit.engines.dut, bios_image_path, self.get_resource_path(), device, topology_obj)
+                TestToolkit.get_engine(), bios_image_path, self.get_resource_path(), device, topology_obj)
 
     def create_erot_components(self, switch):
         """This method queries the switch for available ERoT components."""
@@ -200,7 +200,7 @@ class FaeCpldComponent(FaePlatformComponent):
                 with allure.step("Waiting for reboot to finish"):
                     logger.info(f"Waiting 30 seconds to make sure reboot has started")
                     time.sleep(30)
-                    engine = TestToolkit.engines.dut
+                    engine = TestToolkit.get_engine()
                     engine.disconnect()
                     check_port_status_till_alive(True, engine.ip, engine.ssh_port)
                     return DutUtilsTool.wait_for_nvos_to_become_functional(engine)

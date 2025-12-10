@@ -18,14 +18,14 @@ class Loglevel(BaseComponent):
                          path='/log-level')
 
     def action_update_cluster_log_level(self, engine=None, level=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Update Log Level'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_cluster_log_level,
                                                                 "App log level has been successfully updated", engine,
                                                                 self.get_resource_path(), level)
 
     def action_restore_cluster(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Restore Log Level'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_cluster,
                                                                 "has been successfully restored", engine,

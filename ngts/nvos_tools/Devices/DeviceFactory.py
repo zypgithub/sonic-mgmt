@@ -1,6 +1,8 @@
 import logging
 
 from dotted_dict import DottedDict
+
+from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.Devices.EthDevice import Mlx2410Switch, Mlx4600Switch, Mlx4600cSwitch, Mlx4700Switch, \
     Mlx5600Switch, \
     Mlx5400Switch, Mlx4410Switch, Mlx3750sxSwitch, Mlx3700csSwitch, Mlx3700cSwitch, Mlx3420Switch, Mlx2700Switch, \
@@ -96,8 +98,14 @@ class DeviceFactory:
 
     @staticmethod
     def create_devices_object(topology_obj):
+        """
+        Create device objects for all DUTs in the topology.
+
+        :param topology_obj: Topology object containing player information
+        :return: DottedDict with device objects keyed by DUT name (dut, dut2, etc.)
+        """
         device_objects = DottedDict()
-        dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
-            'switch_type']
-        device_objects.dut = DeviceFactory.create_device(dut_name)
+        for player_name, player in filter_objects(topology_obj.players, host_type="dut", engine_type="ssh").items():
+            dev_name = player['attributes'].noga_query_data['attributes']['Specific']['switch_type']
+            device_objects[player_name] = DeviceFactory.create_device(dev_name)
         return device_objects

@@ -452,7 +452,7 @@ class NVUECliCoverage:
                 logging.info("TestToolkit.branch not available, using original version detection")
 
             # Always detect build_id using original logic
-            if TestToolkit.devices.dut.switch_type == CumulusConsts.ETH_SWITCH_TYPE:
+            if TestToolkit.get_device().switch_type == CumulusConsts.ETH_SWITCH_TYPE:
                 cls.build_id = OutputParsingTool.parse_json_str_to_dictionary(System().show()).get_returned_value()['build']
                 # Only set sw_version from build_id if TestToolkit.branch is not available
                 if not TestToolkit.branch:
@@ -484,7 +484,7 @@ class NVUECliCoverage:
                 cls.department = department
                 cls.nvue_dir = nvue_dir
                 cls.nvue_full_list_dir = os.path.join(nvue_dir, 'full_command_lists')
-                cls.engine = TestToolkit.engines.dut
+                cls.engine = TestToolkit.get_engine()
                 if not cls.swversion:  # only init it once per session
                     cls.update_version_details()
                 if not cls.system_type:  # only init it once per session

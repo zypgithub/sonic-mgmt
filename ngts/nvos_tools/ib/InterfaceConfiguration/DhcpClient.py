@@ -38,8 +38,7 @@ class DhcpClient(BaseComponent):
         :return: ResultObj
         """
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
-
+            dut_engine = TestToolkit.get_engine()
         try:
             result_obj = SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_renew_dhcp_client,

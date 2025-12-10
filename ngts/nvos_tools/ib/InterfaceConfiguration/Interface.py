@@ -115,7 +115,7 @@ class Interface(BaseComponent):
             logging.info("Clear counters for all interfaces")
 
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
             result_obj = SendCommandTool.execute_command(cli_wrapper.action_clear_counters, engine, self.mgmt_path, fae_param)
 
@@ -124,7 +124,7 @@ class Interface(BaseComponent):
     def action_clear_counter_for_interface(self, dut_engine=None, interface_name="", fae_param="", expected_str="Cleared counters successfully"):
         with allure.step("Clear counters for interface {}".format(interface_name)):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
             cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
             result_obj = SendCommandTool.execute_command_expected_str(
                 cli_wrapper.clear_stats, expected_str, dut_engine, interface_name, fae_param)
@@ -134,7 +134,7 @@ class Interface(BaseComponent):
     def filter(self, dut_engine=None, filter_name="", value=""):
         with allure.step(f"filter using {filter_name}={value}"):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
             cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
             result_obj = SendCommandTool.execute_command_expected_str(
                 cli_wrapper.filter, "", dut_engine, filter_name, value)
@@ -143,7 +143,7 @@ class Interface(BaseComponent):
     def filter(self, dut_engine=None, filter_name="", value=""):
         with allure.step(f"filter using {filter_name}={value}"):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
             cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
             result_obj = SendCommandTool.execute_command_expected_str(
                 cli_wrapper.filter, "", dut_engine, filter_name, value)

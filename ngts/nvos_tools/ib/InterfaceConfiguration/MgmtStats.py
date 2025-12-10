@@ -13,7 +13,7 @@ class MgmtStats(BaseComponent):
         Clears interface counters
         """
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
 
         with allure.step('Clear stats for {port_name}'.format(port_name=self.parent_obj.parent_obj.parent_obj.name)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].clear_stats,
