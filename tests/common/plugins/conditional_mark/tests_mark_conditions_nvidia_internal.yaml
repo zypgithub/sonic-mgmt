@@ -27,6 +27,10 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
     conditions:
     - "https://redmine.mellanox.com/issues/3971501 and 'r-leopard-56' in testbed"
     - "https://redmine.mellanox.com/issues/3969985 and 'sn5' in platform"
+  skip:
+    reason: "bobcat does not support warm-reboot"
+    conditions:
+    - "'sn4280' in platform"
 
 tests/nightly/runtime/test_runtime.py:
   skip:
