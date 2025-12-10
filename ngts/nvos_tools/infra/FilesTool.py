@@ -90,6 +90,12 @@ class FilesTool:
         return int(output) if output.isdigit() else -1
 
     @staticmethod
+    def fw_file_read(engine, file, fw_file_directory):
+        cmd = "sudo cat " + fw_file_directory + "/" + file
+        read_val = engine.run_cmd(cmd)
+        return read_val
+
+    @staticmethod
     def create_file_with_content(engine, file_name, file_type, content):
         """
         Create a file with content and upload to the DUT machine.

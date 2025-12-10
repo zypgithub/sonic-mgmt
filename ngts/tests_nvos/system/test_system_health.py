@@ -424,10 +424,12 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
     for key in show_output:
         if re.search("^FAN.*", key):
             no_of_fans += 1
-    fan_ids = random.sample([i for i in range(1, no_of_fans)], 2)
+    fan_ids = random.sample([i for i in range(1, no_of_fans)], 3)
+    stable_fan = fan_ids.pop()  # Choose(and remove from list) a fan which remains stable during the test
     logger.info("Chosen fans : {}".format(fan_ids))
     fan_info = dict()
     fan_fault_events = [FansConsts.FAN_SPEED_OUT_OF_RANGE, "is " + FansConsts.FAN_NOT_WORKING]
+    fan_speed_fixed = False
 
     if loganalyzer:
         for key, value in loganalyzer.items():
@@ -456,8 +458,11 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
                            exceptions=AssertionError, tries=24, delay=5)
 
         with allure.step("Simulate fix fan speed fault for chosen fans:{}".format(fan_ids)):
+            # Get the stable fan speed value
+            stable_fan_speed = HWSimulator.fan_fw_file_value_get(engines.dut, thermal_directory, stable_fan)
             for fan_id in fan_ids:
-                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, stable_fan_speed)
+            fan_speed_fixed = True
 
         with allure.step("Validate system clear event for speed fault for chosen fans:{}".format(fan_ids)):
             for fan_id in fan_ids:
@@ -466,10 +471,12 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
                 retry_call(validate_system_event, [system, latest_event_id, clear_events_to_search],
                            exceptions=AssertionError, tries=24, delay=5)
     finally:
-        time.sleep(1)
-        with allure.step("Fix the fan speed fault"):
-            for fan_id in fan_ids:
-                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
+        time.sleep(2)
+        if not fan_speed_fixed:
+            with allure.step("Fix the fan speed fault"):
+                stable_fan_speed = HWSimulator.fan_fw_file_value_get(engines.dut, thermal_directory, stable_fan)
+                for fan_id in fan_ids:
+                    HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, stable_fan_speed)
 
 
 @pytest.mark.disable_loganalyzer

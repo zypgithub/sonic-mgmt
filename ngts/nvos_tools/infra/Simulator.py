@@ -5,11 +5,22 @@ import time
 import re
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, FansConsts
+from ngts.nvos_tools.infra.FilesTool import FilesTool
 
 logger = logging.getLogger()
 
 
 class HWSimulator:
+
+    @staticmethod
+    def fan_fw_file_value_get(engine, thermal_directory, fan_id):
+        if not fan_id:
+            logger.info("No fan specified, skip")
+            return
+        with allure.step("Read fw file".format(fan_id)):
+            file = "fan{}_speed_get".format(fan_id)
+            fw_file_val = FilesTool.fw_file_read(engine, file, thermal_directory)
+            return fw_file_val
 
     @staticmethod
     def simulate_health_issue_change_fw_file(engine, new_val, file, thermal_directory):

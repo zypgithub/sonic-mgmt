@@ -39,12 +39,12 @@ def test_techsupport_show(engines, test_name, random_api, devices, serial_log_an
         with serial_analyzer.stage("Generate tech-support 1"):
             folder, duration = system.techsupport.action_generate(test_name=test_name, verify_size=True)
 
-        OperationTime.verify_operation_time(duration, operation, devices.dut.techsupport_threshold).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file1 = system.techsupport.file_name
         with serial_analyzer.stage("Generate tech-support 2"):
             folder, duration = system.techsupport.action_generate(verify_size=True)
 
-        OperationTime.verify_operation_time(duration, operation, devices.dut.techsupport_threshold).verify_result()
+        OperationTime.verify_operation_time(duration, operation, devices.dut.expected_operation_durations[operation]).verify_result()
         file2 = system.techsupport.file_name
         output_dictionary_after_actions = list(Tools.OutputParsingTool.parse_show_files_to_dict(
             system.techsupport.files.show()).get_returned_value().values())
