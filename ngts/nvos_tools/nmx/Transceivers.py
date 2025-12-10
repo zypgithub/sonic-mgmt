@@ -27,13 +27,13 @@ class Transceiver(BaseComponent):
         self.name = transceiver_id
 
     def action_update_maintenance_state(self, maintenance_state='', expected_err_msgs=(), engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Update transceiver maintenance state'):
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_sdn_transceiver_maintenance_state,
                                                    engine, self.get_resource_path(), maintenance_state, exempted_err_msgs=expected_err_msgs)
 
     def action_restore_maintenance_state(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Restore transceiver maintenance state'):
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_sdn_transceiver_maintenance_state,
                                                    engine, self.get_resource_path())

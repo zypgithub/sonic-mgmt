@@ -25,7 +25,7 @@ class Partition(BaseComponent):
             lambda partition_id: PartitionId(parent=self, partition_id=partition_id))
 
     def action_delete_partition(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Delete partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_delete,
                                                                 "successfully deleted", engine,
@@ -39,28 +39,28 @@ class PartitionId(BaseComponent):
         self.uuid = Uuid(self)
 
     def action_create_partition_id(self, name, resiliency_mode, mcast_limit, uuid='', location='', engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Create partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_create_partition,
                                                                 "successfully created", engine,
                                                                 self.get_resource_path(), name, resiliency_mode, mcast_limit, uuid, location)
 
     def action_update_partition(self, engine=None, reroute=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Update partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_partition,
                                                                 "successfully updated", engine,
                                                                 self.get_resource_path(), reroute)
 
     def action_restore_partition(self, engine=None, no_reroute=''):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Restore partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_partition,
                                                                 "Action succeeded", engine,
                                                                 self.get_resource_path(), no_reroute)
 
     def action_delete_partition(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Delete partition'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_delete,
                                                                 "successfully deleted", engine,

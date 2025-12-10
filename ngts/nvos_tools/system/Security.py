@@ -24,7 +24,7 @@ class Security(BaseComponent):
 
     def action_change_sed_password(self, new_password: str, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action change sed pass for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             params = f"sed-password {new_password}"
             if TestToolkit.tested_api == ApiType.OPENAPI:
                 params = {"sed-password": new_password}

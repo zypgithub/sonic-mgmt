@@ -26,12 +26,12 @@ class CrlId(BaseComponent):
 
     def action_import(self, data=None, uri=None, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action import for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_import_ca_certificate, engine,
                                                    self.get_resource_path(), data, uri)
 
     def action_delete(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action delete for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_delete_certificate, engine,
                                                    self.get_resource_path())

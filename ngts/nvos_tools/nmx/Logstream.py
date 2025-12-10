@@ -19,14 +19,14 @@ class Logstream(BaseComponent):
 
     def action_update_cluster_log_stream(self, engine=None, stream='',
                                          expected_str="App log stream has been successfully updated"):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Update Log stream'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_update_cluster_log_stream,
                                                                 expected_str, engine,
                                                                 self.get_resource_path(), stream)
 
     def action_restore_cluster_log_stream(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Restore Log stream'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_restore_cluster_log_stream,
                                                                 "App log stream has been successfully restored", engine,

@@ -8,6 +8,7 @@ import re
 
 from datetime import datetime
 from ngts.constants.constants import InfraConst, PytestConst
+from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
 from ngts.nvos_constants.constants_nvos import NvosConst
 
@@ -85,15 +86,14 @@ def create_nvos_result_dir(setup_name, session_id, suffix_path_name, topology_ob
     result_path = '/'.join(
         [InfraConst.NVOS_REGRESSION_SHARED_RESULTS_DIR, setup_name, session_id, suffix_path_name])
     create_folder(result_path)
-    dump_path = '/'.join([NvosConst.MARS_DUMPS_FOLDER, setup_name, session_id, suffix_path_name])
-    folder = pathlib.Path(dump_path)
-    if session_id == 'manual_run' and not folder.exists():
-        sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
-        sonic_mgmt_engine.run_cmd(f"sudo mkdir -p {folder} && sudo chmod 777 {folder} ")
-        return f"Created and set permissions for {folder}"
+    dump_path = pathlib.Path(NvosConst.MARS_DUMPS_FOLDER) / setup_name / session_id / suffix_path_name
+    if session_id == 'manual_run' and not dump_path.exists():
+        run_process_on_host(f'sudo mkdir -p {dump_path}', validate=True)
+        run_process_on_host(f'sudo chmod 777 {dump_path}', validate=True)
+        return str(dump_path)
     else:
         create_folder(dump_path)
-    return dump_path
+    return str(dump_path)
 
 
 def create_sonic_result_dir(setup_name, session_id, suffix_path_name):

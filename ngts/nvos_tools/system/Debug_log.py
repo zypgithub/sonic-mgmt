@@ -21,15 +21,15 @@ class DebugLog(BaseComponent):
                                                                                                    param=param,
                                                                                                    exit_cmd=exit_cmd)):
             return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
-                                                                expected_str, TestToolkit.engines.dut, log_type,
+                                                                expected_str, TestToolkit.get_engine(), log_type,
                                                                 param, exit_cmd).get_returned_value()
 
     def write_to_log(self):
         with allure.step('Write content to debug-logs'):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_write_to_debug_logs,
-                                                   TestToolkit.engines.dut).get_returned_value()
+                                                   TestToolkit.get_engine()).get_returned_value()
 
     def rotate_logs(self):
         with allure.step('Rotate debug-logs'):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_rotate_debug_logs,
-                                                   TestToolkit.engines.dut).get_returned_value()
+                                                   TestToolkit.get_engine()).get_returned_value()

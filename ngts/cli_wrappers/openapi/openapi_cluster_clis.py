@@ -48,7 +48,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_restore_cluster(engine, resource_path, param_name='', param_val=''):
@@ -61,7 +61,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_generate(engine, resource_path):
@@ -105,7 +105,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
             params["parameters"]["location"] = location
 
         return OpenApiCommandHelper.execute_action(ActionType.CREATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_restore_partition(engine, resource_path, reroute_param=''):
@@ -119,8 +119,9 @@ class OpenApiClusterCli(OpenApiBaseCli):
         # Add optional parameters if provided
         if reroute_param:
             params["parameters"][reroute_param] = True
+
         return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_update_partition(engine, resource_path, reroute_param=''):
@@ -134,8 +135,9 @@ class OpenApiClusterCli(OpenApiBaseCli):
         # Add optional parameters if provided
         if reroute_param:
             params["parameters"][reroute_param] = True
+
         return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_update_cluster_manager_property(engine, resource_path, param_name='', param_val=''):
@@ -146,8 +148,9 @@ class OpenApiClusterCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.UPDATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_restore_cluster_manager_property(engine, resource_path):
@@ -157,8 +160,9 @@ class OpenApiClusterCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": {}
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.RESTORE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_reset(engine, resource_path, param=''):
@@ -173,7 +177,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_update_sdn_transceiver_maintenance_state(engine, path, maintenance_state=''):
@@ -197,7 +201,7 @@ class OpenApiClusterCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_delete_rbac_file(engine, resource_path):
@@ -207,8 +211,9 @@ class OpenApiClusterCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": {}
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_update_sdn_trays_maintenance_state(engine, path, tray_id='', maintenance_state=''):

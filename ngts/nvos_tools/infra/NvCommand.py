@@ -1,13 +1,14 @@
-import pytest
+from typing import Dict
 
 from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.DefaultDict import DefaultDict
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
-from typing import Dict
 
 
 class NvCommand:
@@ -32,3 +33,5 @@ class NvCommand:
         self.platform = Platform()
         self.port: Dict[str, Port] = DefaultDict(lambda port: Port(name=port))
         self.system = System()
+        self.cluster = Cluster()
+        self.sdn = Sdn()

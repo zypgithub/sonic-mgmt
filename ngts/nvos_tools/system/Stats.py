@@ -14,7 +14,7 @@ class Stats(BaseComponent):
 
     def action_general(self, action_str, dut_engine=None):
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
         with allure.step("Run system stats action '{action_type}'".format(action_type=action_str)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_general,
                                                    dut_engine, action_str, self.get_resource_path())
@@ -39,4 +39,4 @@ class StatsCategoryName(BaseComponent):
     def action_general(self, action_str):
         with allure.step("Run system stats category action '{action_type}'".format(action_type=action_str)):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_general,
-                                                   TestToolkit.engines.dut, action_str, self.get_resource_path())
+                                                   TestToolkit.get_engine(), action_str, self.get_resource_path())

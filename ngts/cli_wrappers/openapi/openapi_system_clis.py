@@ -37,8 +37,10 @@ class OpenApiSystemCli(OpenApiBaseCli):
                         "parameters": {"remote-url": op_param}
                     }
             }
+
         return OpenApiCommandHelper.execute_action(action_type, engine.engine.username, engine.engine.password,
-                                                   engine.ip, action_component_str, params[action_type])
+                                                   engine.ip, engine.open_api_port, action_component_str,
+                                                   params[action_type])
 
     @staticmethod
     def action_general(engine, action_str, resource_path):
@@ -64,8 +66,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                         "state": "start",
                     }
             }
+
         return OpenApiCommandHelper.execute_action(action_type, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params[action_type])
+                                                   engine.ip, engine.open_api_port, resource_path, params[action_type])
 
     @staticmethod
     def action_general_with_expected_disconnect(engine, action_str, resource_path):
@@ -91,8 +94,10 @@ class OpenApiSystemCli(OpenApiBaseCli):
                         "state": "start",
                     }
             }
+
         output = OpenApiCommandHelper.execute_action(action_type, engine.engine.username, engine.engine.password,
-                                                     engine.ip, resource_path, params[action_type])
+                                                     engine.ip, engine.open_api_port, resource_path,
+                                                     params[action_type])
         engine.disconnect()
         return output
 
@@ -109,7 +114,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_delete(engine, resource_path, file_name):
@@ -121,8 +126,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                     'file-name': file_name,
                 }
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_generate_tpm_quote(engine, resource_path, pcrs='', nonce='', algorithm=''):
@@ -135,8 +141,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_generate_spdm_measurements(engine, resource_path, nonce=None):
@@ -149,8 +156,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.GENERATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_import_tpm_oiak(engine, resource_path, data='', remote_url=''):
@@ -162,8 +170,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_upload_tpm_file(engine, resource_path, file_name, remote_url):
@@ -176,8 +185,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                     'remote-url': remote_url
                 }
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.UPLOAD, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_upload(engine, path, file_name, url):
@@ -189,8 +199,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                     'remote-url': url
                 }
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.UPLOAD, engine.engine.username, engine.engine.password,
-                                                   engine.ip, path + "/" + file_name, params)
+                                                   engine.ip, engine.open_api_port, path + "/" + file_name, params)
 
     @staticmethod
     def action_reset(engine, device, comp, param, topology_obj=None, system_is_ready_timeout=None, check_system_is_functional=True):
@@ -209,7 +220,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             params["parameters"]["keep"] = param
 
         result = OpenApiCommandHelper.execute_action(ActionType.RESET, engine.engine.username, engine.engine.password,
-                                                     engine.ip, "/system/{}".format(comp), params,
+                                                     engine.ip, engine.open_api_port, "/system/{}".format(comp), params,
                                                      SystemConsts.REBOOT_RESPONSE_MESSAGES)
 
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
@@ -227,8 +238,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
             {
                 "state": "start",
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.ROTATE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_reboot(engine, device, resource_path, op_param="", reboot_params=None):
@@ -251,8 +263,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
         if parameters_dict:
             params.update({"parameters": parameters_dict})
+
         result = OpenApiCommandHelper.execute_action(ActionType.REBOOT, engine.engine.username, engine.engine.password,
-                                                     engine.ip, resource_path, params,
+                                                     engine.ip, engine.open_api_port, resource_path, params,
                                                      SystemConsts.REBOOT_RESPONSE_MESSAGES)
         if any(msg in result for msg in SystemConsts.REBOOT_RESPONSE_MESSAGES):
             logger.info("Waiting for switch shutdown after reload command")
@@ -276,7 +289,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.CHANGE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_run(engine, device, resource_path, params_dict=None):
@@ -289,7 +302,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.RUN, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_erase(engine, device, resource_path, params_dict=None):
@@ -302,13 +315,15 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.ERASE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def show_health_report(engine, resource_path, param='', exit_cmd=""):
         logging.info("Running GET method on dut using openApi for {}".format(param))
+
         response = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password,
-                                                       OpenApiReqType.GET, engine.ip, resource_path, param)
+                                                       OpenApiReqType.GET, engine.ip, engine.open_api_port,
+                                                       resource_path, param)
         res = OutputParsingTool.parse_json_str_to_dictionary(response).get_returned_value()
         if (files := res.get('files')) and (health_history := files.get('health_history')) and (path := health_history.get('path')):
             res = engine.run_cmd(f'cat "{path}"')
@@ -331,7 +346,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.CLEAR, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_profile_change(engine, device, resource_path, params_dict=None, should_wait_till_system_ready=True):
@@ -345,7 +360,7 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         result = OpenApiCommandHelper.execute_action(ActionType.CHANGE, engine.engine.username, engine.engine.password,
-                                                     engine.ip, resource_path, params)
+                                                     engine.ip, engine.open_api_port, resource_path, params)
 
         if "System will be rebooted" in result:
             logger.info("Waiting for switch shutdown after reload command")
@@ -368,8 +383,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_import_ca_certificate(engine, resource_path, data=None, uri=None, external: bool = False):
@@ -383,8 +399,9 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": parameters
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.IMPORT, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_delete_certificate(engine, resource_path):
@@ -394,5 +411,6 @@ class OpenApiSystemCli(OpenApiBaseCli):
                 "state": "start",
                 "parameters": {}
             }
+
         return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+                                                   engine.ip, engine.open_api_port, resource_path, params)

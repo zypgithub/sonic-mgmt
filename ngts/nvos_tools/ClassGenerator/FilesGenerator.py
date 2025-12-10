@@ -95,7 +95,7 @@ def add_method(method_name, py_class_file, resource_path):
     py_class_file.write('{resource_path}\'.format(resource_path=self.get_resource_path())):\n')
 
     cmd_line = 'SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].{method_name}, ' \
-               'TestToolkit.engines.dut, \n' \
+               'TestToolkit.get_engine(), \n' \
                '                                                   ' \
                'self.get_resource_path(), op_param).get_returned_value()'.format(
                    method_name=method_name)
@@ -235,8 +235,8 @@ def add_openapi_method(openapi_cli_file, method_str, method):
 
     run_cmd = "        return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, " \
               "\n                                                   " \
-              "{method}, engine.ip, resource_path, {str_param})".format(method=openapi_type,
-                                                                        str_param='op_param_name, op_param_value' if method == OpenApiReqType.PATCH else 'op_param')
+              "{method}, engine.ip, engine.open_api_port, resource_path, {str_param})".format(method=openapi_type,
+                                                                                              str_param='op_param_name, op_param_value' if method == OpenApiReqType.PATCH else 'op_param')
     openapi_cli_file.write('{}\n\n'.format(run_cmd))
 
 

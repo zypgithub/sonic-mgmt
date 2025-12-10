@@ -32,7 +32,7 @@ class FileType(BaseComponent):
 
     def action_generate_sdn(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action generate for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_generate, engine,
                                                    self.get_resource_path())
 
@@ -41,6 +41,6 @@ class FileType(BaseComponent):
 
     def action_install_sdn(self, file, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action install for {self.get_resource_path()}'):
-            engine = dut_engine if dut_engine else TestToolkit.engines.dut
+            engine = dut_engine if dut_engine else TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_install, engine,
                                                    self.get_resource_path(), file)

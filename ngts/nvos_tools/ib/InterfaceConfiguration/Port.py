@@ -116,7 +116,7 @@ class Port(BaseComponent):
         """
         with allure.step('Search for ports that meet provided requirements'):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             logging.info("get_list_of_ports - Searching for relevant ports")
             output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
@@ -167,7 +167,7 @@ class Port(BaseComponent):
         with allure.step('Execute "show" command and create the output dictionary for {port_name}'.format(
                 port_name=self.name)):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             logging.info("Updating output dictionary of '{port_name}'".format(port_name=self.name))
             self.show_output_dictionary = OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -185,7 +185,7 @@ class Port(BaseComponent):
         """
         with allure.step('Execute show interface for {port_names}'.format(port_names=port_names)):
             if not dut_engine:
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             logging.info("Executing show interface for {port_names}".format(port_names=port_names))
             return Port.api_obj[TestToolkit.tested_api].show_interface(engine=dut_engine,

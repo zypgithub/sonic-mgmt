@@ -4,7 +4,6 @@ import time
 import pexpect
 import pytest
 
-import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -16,13 +15,47 @@ from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.SshCmdBuilder import SshPassCmdBuilder
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.conftest import security_cleanup
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthConsts
 from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import set_local_users
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import generate_strong_password, recover_dut_with_remote_reboot
 
 logger = logging.getLogger(__name__)
+
+
+def security_cleanup(ssh_session: PexpectTool) -> bool:
+    success = False
+    if not ssh_session or not isinstance(ssh_session, PexpectTool):
+        return success
+    with allure.step('Security cleanup'):
+        with allure.step('check session still connected to switch'):
+            session_is_live = False
+            ssh_session.sendline('nv show system')
+
+            while True:
+                try:
+                    i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=15)
+                    if i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and ('product-name' in ssh_session.last_output):
+                        session_is_live = True
+                        logging.info("Session is live")
+                        break
+
+                except pexpect.exceptions.TIMEOUT:
+                    logging.info("No more output detected due to timeout.")
+                    break
+
+        if session_is_live:
+            with allure.step('unset authentication config to allow local connection'):
+                cmds = TestToolkit.devices.dut.aaa_cleanup_cmds
+                expect_timeout = 60
+                ssh_session.sendline(' ; '.join(cmds))
+                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=expect_timeout,
+                                       raise_exception_for_timeout=False)
+                assert i != PexpectTool.TIMEOUT, f'security cleanup failed: expect prompt after apply failed: exceeded expect timeout: {expect_timeout} seconds'
+                success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
+                    msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
+    return success
 
 
 @pytest.fixture()

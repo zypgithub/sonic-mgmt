@@ -16,7 +16,7 @@ class Config(BaseComponent):
 
     def action_export(self, file_name, expected_str="", dut_engine=None):
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
         with allure.step('Trying to export the applied configuration to {}'.format(file_name)):
             return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].action_export,
                                                                 expected_str, dut_engine,

@@ -43,10 +43,10 @@ class User(BaseComponent):
 
     def create_new_user_connection(self, username=None, password=None, role=None, engine=None):
         username, password = self.set_new_user(username, password, role, engine, True)
-        return ConnectionTool.create_ssh_conn(TestToolkit.engines.dut.ip, username, password).get_returned_value()
+        return ConnectionTool.create_ssh_conn(TestToolkit.get_engine().ip, username, password).get_returned_value()
 
     def action_disconnect(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Disconnect all users'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_disconnect,
                                                                 "Action succeeded", engine,
@@ -92,7 +92,7 @@ class UserId(BaseComponent):
         self.spiffe_id = SpiffeId(self)
 
     def action_disconnect(self, engine=None):
-        engine = engine if engine else TestToolkit.engines.dut
+        engine = engine if engine else TestToolkit.get_engine()
         with allure.step('Disconnect all users'):
             return SendCommandTool.execute_command_expected_str(self._cli_wrapper.action_disconnect,
                                                                 "Action succeeded", engine,

@@ -25,8 +25,10 @@ class OpenApiGeneralCli:
         :param engine: ssh engine object
         """
         logging.info("Execute config apply using OpenApi")
+
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'APPLY', engine.ip,
-                                                   'system/config/apply', client_certs_after_apply=client_certs_after_apply)
+                                                   engine.open_api_port, 'system/config/apply',
+                                                   client_certs_after_apply=client_certs_after_apply)
 
     @staticmethod
     def save_config(engine):
@@ -35,9 +37,11 @@ class OpenApiGeneralCli:
         :param engine: ssh engine object
         """
         logging.info("Execute config save using OpenApi")
+
         resource_path = '/revision/applied'
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'PATCH', engine.ip,
-                                                   resource_path=resource_path, op_param_name="state", op_param_value="save")
+                                                   engine.open_api_port, resource_path=resource_path,
+                                                   op_param_name="state", op_param_value="save")
 
     @staticmethod
     def show_config(engine, revision='applied', output_type='json', param=''):
@@ -49,9 +53,11 @@ class OpenApiGeneralCli:
         :param param: --all/ ''
         """
         logging.info("Execute config show using OpenApi")
+
         resource_path = '/?rev={revision}&filled=False'.format(revision=revision)
         res = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'GET', engine.ip,
-                                                  resource_path=resource_path, op_param_name=param)
+                                                  engine.open_api_port, resource_path=resource_path,
+                                                  op_param_name=param)
 
         if output_type == 'json':
             return json.dumps(res)
@@ -81,9 +87,10 @@ class OpenApiGeneralCli:
         """
         # TODO:
         logging.info("Execute config diff using OpenApi")
+
         resource_path = '/?rev={revision_2}&filled=False&diff={revision_1}'.format(revision_2=revision_2, revision_1=revision_1)
         res = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'GET', engine.ip,
-                                                  resource_path=resource_path)
+                                                  engine.open_api_port, resource_path=resource_path)
 
         if output_type == 'json':
             return json.dumps(res)

@@ -1,7 +1,8 @@
 import logging
 import os
 import time
-from typing import Tuple, Dict, Union, Iterable
+
+from typing import Dict, Iterable, Tuple, Union
 
 from infra.tools.validations.traffic_validations.port_check.port_checker import validate_port_in_expected_state
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
@@ -16,7 +17,6 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tools.test_utils import allure_utils as allure
-
 
 logger = logging.getLogger()
 
@@ -71,7 +71,7 @@ class BaseComponent:
     def show(self, op_param="", output_format=OutputFormat.json, dut_engine=None, should_succeed=True,
              rev=ConfState.OPERATIONAL, exempted_err_msgs=None, if_returned_value=True, check_engine_connectivity: bool = True):
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
 
         with allure.step('Execute show for {}'.format(self.get_resource_path())):
             op_param = self.update_param(op_param, rev)
@@ -89,7 +89,7 @@ class BaseComponent:
     def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None,
              client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True):
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
 
         result_obj = SendCommandTool.execute_command_expected_str(self._cli_wrapper.set,
                                                                   expected_str, dut_engine,
@@ -107,7 +107,7 @@ class BaseComponent:
     def set(self, op_param_name="", op_param_value={}, expected_str='', apply=False, ask_for_confirmation=False,
             dut_engine=None, client_certs_after_apply: CertInfo = None, check_engine_connectivity: bool = True) -> 'ResultObj':
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
         with allure.step('Execute set for {resource_path}'.format(resource_path=self.get_resource_path())):
             if op_param_name:
                 if TestToolkit.tested_api == ApiType.OPENAPI and self._api_to_use != ApiType.NVUE:
@@ -144,7 +144,7 @@ class BaseComponent:
 
     def unset(self, op_param="", expected_str="", apply=False, ask_for_confirmation=False, dut_engine=None, check_engine_connectivity: bool = True):
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step('Execute unset {op_param} for {resource_path}'.format(op_param=op_param,
                                                                                resource_path=resource_path)):
@@ -179,8 +179,8 @@ class BaseComponent:
         --> OPENAPI:    /fae/platform/firmware/cpld
                         {"@fetch": {"state": "start", "parameters": {"remote-url": "scp://..."}}}
         """
-        dut_engine = dut_engine or TestToolkit.engines.dut
-        dut_device = dut_device or TestToolkit.devices.dut
+        dut_engine = dut_engine or TestToolkit.get_engine()
+        dut_device = dut_device or TestToolkit.get_device()
         topology_obj = topology_obj or (TestToolkit.topology_obj if TestToolkit else None)
         resource_path = self.get_resource_path()
         with allure.step(f"Execute action {action} for {resource_path}"):
@@ -232,9 +232,9 @@ class BaseComponent:
         :param device: BaseDevice. If None, the DUT is used.
         """
         additional_params = additional_params or {}
-        engine = engine or TestToolkit.engines.dut
+        engine = engine or TestToolkit.get_engine()
         try:
-            device = device or TestToolkit.devices.dut
+            device = device or TestToolkit.get_device()
         except BaseException:
             pass
 

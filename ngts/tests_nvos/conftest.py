@@ -22,8 +22,8 @@ from retry import retry
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.exceptions.setup_issue import SetupIssue
-from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
@@ -45,7 +45,6 @@ from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -257,13 +256,15 @@ def engines(topology_obj, devices, request, is_ipv6):
 
     engines_data = DottedDict()
 
-    engines_data.dut = topology_obj.players['dut']['engine']
+    # Setup engines for all DUT players (dut, dut2, dut3, etc.)
+    for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
+        engine = player['engine']
+        engines_data[player_name] = engine
+        if not is_ipv6 and hasattr(devices, player_name):
+            device = devices[player_name]
+            update_engine_dut_mgmt_port(topology_obj, engine, device)
+            logger.info(f'Updated engine management port for {player_name}')
 
-    if not is_ipv6:
-        update_engine_dut_mgmt_port(topology_obj, engines_data.dut, devices.dut)
-
-    if "dut2" in topology_obj.players:
-        engines_data.dut2 = topology_obj.players['dut2']['engine']
     # ha and hb are the traffic dockers
     if "ha" in topology_obj.players:
         engines_data.ha = topology_obj.players['ha']['engine']
@@ -519,10 +520,22 @@ def devices(topology_obj):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def update_open_api_port(devices, topology_obj):
-    topology_conn = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.']
-    open_api_port = topology_conn.get('OPEN_API_PORT', devices.dut.open_api_port)
-    TestToolkit.update_open_api_port(open_api_port)
+def update_open_api_port(topology_obj, devices, engines):
+    """
+    Update OpenAPI port for all DUTs in the topology.
+
+    :param topology_obj: Topology object containing player information
+    :param devices: Device objects for all DUTs
+    :param engines: Engine objects for all DUTs
+    """
+    # Update OpenAPI port for each DUT player in topology
+    for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
+        player_attrs = player['attributes']
+        topology_conn = player_attrs.noga_query_data['attributes']['Topology Conn.']
+        device = devices[player_name]
+        open_api_port = topology_conn.get('OPEN_API_PORT', device.open_api_port)
+        device.open_api_port = open_api_port
+        engines[player_name].open_api_port = open_api_port
 
 
 @pytest.fixture
@@ -689,39 +702,6 @@ def interfaces(topology_obj):
     return interfaces_data
 
 
-def security_cleanup(ssh_session: PexpectTool) -> bool:
-    success = False
-    if not ssh_session or not isinstance(ssh_session, PexpectTool):
-        return success
-    with allure.step('Security cleanup'):
-        with allure.step('check session still connected to switch'):
-            session_is_live = False
-            ssh_session.sendline('nv show system')
-
-            while True:
-                try:
-                    i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=15)
-                    if i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and ('product-name' in ssh_session.last_output):
-                        session_is_live = True
-                        logging.info("Session is live")
-                        break
-
-                except pexpect.exceptions.TIMEOUT:
-                    logging.info("No more output detected due to timeout.")
-                    break
-
-        if session_is_live:
-            with allure.step('unset authentication config to allow local connection'):
-                cmds = TestToolkit.devices.dut.aaa_cleanup_cmds
-                expect_timeout = 60
-                ssh_session.sendline(' ; '.join(cmds))
-                i = ssh_session.expect(DefaultConnectionValues.DEFAULT_PROMPTS, timeout=expect_timeout, raise_exception_for_timeout=False)
-                assert i != PexpectTool.TIMEOUT, f'security cleanup failed: expect prompt after apply failed: exceeded expect timeout: {expect_timeout} seconds'
-                success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
-                    msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
-    return success
-
-
 def clear_security_config(item):
     with allure.step("Clear security config"):
         TestToolkit.update_apis(ApiType.NVUE)
@@ -734,8 +714,8 @@ def clear_security_config(item):
                 logging.info('Test configured aaa authentication. find remote admin user to use')
                 remote_admin = [user for user in active_aaa_server.users if user.role == 'admin'][0]
                 logging.info(f'Create engine with remote user: {remote_admin.username}')
-                remote_admin_engine = ProxySshEngine(device_type=TestToolkit.engines.dut.device_type,
-                                                     ip=TestToolkit.engines.dut.ip,
+                remote_admin_engine = ProxySshEngine(device_type=TestToolkit.get_engine().device_type,
+                                                     ip=TestToolkit.get_engine().ip,
                                                      username=remote_admin.username,
                                                      password=remote_admin.password)
 
@@ -754,7 +734,7 @@ def clear_security_config(item):
         #     logging.info('Remove LDAP users home directories')
         #     remote_usernames = [user.username for user in active_aaa_server.users]
         #     for username in remote_usernames:
-        #         TestToolkit.engines.dut.run_cmd(f'sudo rm -rf /home/{username}')
+        #         TestToolKit.get_engine().run_cmd(f'sudo rm -rf /home/{username}')
 
 
 @pytest.fixture(scope="session")
@@ -769,7 +749,9 @@ def default_config_yml_path(engines, devices, root_dir):
 
 def pytest_exception_interact(report):
     logging.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
-    TestToolkit.devices.dut.handle_exception(TestToolkit.engines.dut)
+    for dev_name, device in filter_objects(TestToolkit.devices, host_type='dut', engine_type='ssh').items():
+        engine = TestToolkit.get_engine(dev_name)
+        device.handle_exception(engine)
 
 
 @pytest.fixture(scope="function")
@@ -1289,7 +1271,6 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
 
     # ----- TEARDOWN PHASE: detect LA failure after a passed test -----
     elif call.when == "teardown":
-        call_result: pytest.TestReport | None
         if not (call_result := getattr(item, "_test_call_result", None)):
             return
 

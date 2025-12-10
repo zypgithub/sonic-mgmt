@@ -33,7 +33,7 @@ class DebugInfoComponent(BaseComponent):
         """
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
 
         cmd_info, duration = OperationTime.save_duration(
             f'generate {self.component_name}', name, test_name,

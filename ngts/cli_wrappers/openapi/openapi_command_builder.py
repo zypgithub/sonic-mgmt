@@ -32,14 +32,16 @@ class RequestData:
     resource_path = ''
     param_name = None
     param_value = None
+    open_api_port = None
 
-    def __init__(self, user_name, password, endpoint_ip, resource_path, param_name, param_value):
+    def __init__(self, user_name, password, endpoint_ip, resource_path, param_name, param_value, open_api_port):
         self.user_name = user_name
         self.password = password
         self.endpoint_ip = endpoint_ip
         self.resource_path = resource_path
         self.param_name = param_name
         self.param_value = param_value
+        self.open_api_port = open_api_port
 
 
 class OpenApiRequest:
@@ -87,7 +89,8 @@ class OpenApiRequest:
     @staticmethod
     def _get_endpoint_url(request_data):
         server_addr = OpenApiRequest.client_certs.dn if OpenApiRequest.client_certs else request_data.endpoint_ip
-        return ENDPOINT_URL_TEMPLATE.format(ip=server_addr, port_num=OpenApiRequest.port_num)
+        port = request_data.open_api_port
+        return ENDPOINT_URL_TEMPLATE.format(ip=server_addr, port_num=port)
 
     @staticmethod
     def _get_http_auth(request_data):
@@ -483,23 +486,19 @@ class OpenApiCommandHelper:
                   OpenApiReqType.APPLY: OpenApiRequest.apply_nvue_changeset}
 
     @staticmethod
-    def update_open_api_port(port_num):
-        OpenApiRequest.port_num = port_num
-        logging.info(f"OpenApi port number updated to {port_num}")
-
-    @staticmethod
-    def execute_script(user_name, password, req_type, dut_ip, resource_path, op_param_name='', op_param_value='', client_certs_after_apply: CertInfo = None):
+    def execute_script(user_name, password, req_type, dut_ip, port, resource_path, op_param_name='', op_param_value='',
+                       client_certs_after_apply: CertInfo = None):
         requests_cache.uninstall_cache()
         logger.info("Uninstalled requests cache")
-        request_data = RequestData(user_name, password, dut_ip, resource_path, op_param_name, op_param_value)
+        request_data = RequestData(user_name, password, dut_ip, resource_path, op_param_name, op_param_value, port)
         if req_type == OpenApiReqType.APPLY:
             return OpenApiRequest.apply_nvue_changeset(request_data, op_param_name, client_certs_after_apply=client_certs_after_apply)
         else:
             return OpenApiCommandHelper.req_method[req_type](request_data, op_param_name)
 
     @staticmethod
-    def execute_action(action_type, user_name, password, dut_ip, resource_path, params, expected_str=''):
+    def execute_action(action_type, user_name, password, dut_ip, port, resource_path, params, expected_str=''):
         requests_cache.uninstall_cache()
         logger.info("Uninstalled requests cache")
-        request_data = RequestData(user_name, password, dut_ip, resource_path.strip(), action_type, params)
+        request_data = RequestData(user_name, password, dut_ip, resource_path.strip(), action_type, params, port)
         return OpenApiCommandHelper.req_method[OpenApiReqType.ACTION](request_data, expected_str)

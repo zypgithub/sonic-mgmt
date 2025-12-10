@@ -39,10 +39,10 @@ class RandomizationTool:
         :return: Port object in returned_value of ResultObject
         """
         if not dut_engine:
-            dut_engine = TestToolkit.engines.dut
+            dut_engine = TestToolkit.get_engine()
 
         if not requested_ports_type:
-            requested_ports_type = (TestToolkit.devices.dut.switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
+            requested_ports_type = (TestToolkit.get_device().switch_type or IbInterfaceConsts.IB_PORT_TYPE).lower()
 
         result_obj = RandomizationTool.select_random_ports(dut_engine=dut_engine,
                                                            requested_ports_state=requested_ports_state,
@@ -72,7 +72,7 @@ class RandomizationTool:
                 num_of_ports_to_select=num_of_ports_to_select)):
             if not dut_engine:
                 logging.info('Using engine object which updated in TestToolkit')
-                dut_engine = TestToolkit.engines.dut
+                dut_engine = TestToolkit.get_engine()
 
             if not requested_ports_type:
                 if not dut_device and TestToolkit.devices:
@@ -144,7 +144,7 @@ class RandomizationTool:
 
     @staticmethod
     def get_random_traffic_port(engine: Optional[ProxySshEngine] = None) -> ResultObj:
-        engine = engine or TestToolkit.engines.dut
+        engine = engine or TestToolkit.get_engine()
         list_of_ports = [Port(port_name, "", "") for port_name in Configurations.traffic_ports.get(engine.ip)]
         return RandomizationTool.select_random_values(list_of_ports, None, 1)
 
@@ -350,7 +350,7 @@ class RandomizationTool:
     @staticmethod
     def select_random_asics(dut_device=None, forbidden_values=None, how_many=1) -> ResultObj:
         """Returns a list of distinct numbers between 1 and asic_amount."""
-        asic_amount = (dut_device or TestToolkit.devices.dut).asic_amount
+        asic_amount = (dut_device or TestToolkit.get_device()).asic_amount
         return RandomizationTool.select_random_values(list(range(1, asic_amount + 1)), forbidden_values, how_many)
 
     @staticmethod

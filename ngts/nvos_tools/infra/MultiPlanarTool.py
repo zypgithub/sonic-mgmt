@@ -96,7 +96,7 @@ class MultiPlanarTool:
     def select_random_plane_ports(fae_aggregated_port, num_of_planes_to_return, num_of_planes_on_port=None, device=None
                                   ) -> List[Fae]:
         if num_of_planes_on_port is None:
-            num_of_planes_on_port = (device or TestToolkit.devices.dut).num_of_plane_ports
+            num_of_planes_on_port = (device or TestToolkit.get_device()).num_of_plane_ports
         with allure.step(f"Choose {num_of_planes_to_return} random plane ports (of the aggregated port)"):
             plane_num = random.sample(range(1, num_of_planes_on_port + 1), num_of_planes_to_return)
             result = [Fae(port_name=f"{fae_aggregated_port.port.name}pl{p}") for p in plane_num]

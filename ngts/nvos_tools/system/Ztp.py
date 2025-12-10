@@ -14,9 +14,9 @@ class Ztp(BaseComponent):
     def action_run_ztp(self, engine=None, device=None, params_dict={}, reboot_expected=False):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
@@ -25,16 +25,16 @@ class Ztp(BaseComponent):
 
             TestToolkit.add_loganalyzer_marker(engine, marker)
             if reboot_expected:
-                DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut)
+                DutUtilsTool.wait_on_system_reboot(TestToolkit.get_engine())
                 DutUtilsTool.wait_for_nvos_to_become_functional(engine)
             return res
 
     def action_abort_ztp(self, engine=None, device=None, params_dict={}):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
@@ -46,9 +46,9 @@ class Ztp(BaseComponent):
     def action_run_ztp_url(self, engine=None, device=None, params_dict={}, url=''):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp_url, engine, device,
@@ -59,9 +59,9 @@ class Ztp(BaseComponent):
     def action_enable_ztp(self, engine=None, device=None, params_dict={}):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 
@@ -73,9 +73,9 @@ class Ztp(BaseComponent):
     def action_disable_ztp(self, engine=None, device=None, params_dict={}):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 

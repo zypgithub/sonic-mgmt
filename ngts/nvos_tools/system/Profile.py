@@ -12,9 +12,9 @@ class Profile(BaseComponent):
     def action_profile_change(self, engine=None, device=None, params_dict={}):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
-                engine = TestToolkit.engines.dut
+                engine = TestToolkit.get_engine()
             if not device:
-                device = TestToolkit.devices.dut
+                device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
 

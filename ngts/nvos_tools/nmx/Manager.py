@@ -15,14 +15,14 @@ class Manager(BaseComponent):
 
     def action_update(self, state: str = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             res = SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
                                                   self.get_resource_path(), 'state', state)
             return res
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,
                                                    self.get_resource_path())
 
@@ -34,13 +34,13 @@ class CertificateComponent(BaseComponent):
 
     def action_update(self, cert_id='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
                                                    self.get_resource_path(), f'{"ca" if self.is_ca else ""}cert-id', cert_id)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,
                                                    self.get_resource_path())
 
@@ -51,13 +51,13 @@ class Encryption(BaseComponent):
 
     def action_update(self, mode='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
                                                    self.get_resource_path(), 'mode', mode)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,
                                                    self.get_resource_path())
 
@@ -68,12 +68,12 @@ class Crl(BaseComponent):
 
     def action_update(self, crl_id='', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_update_cluster_manager_property, engine,
                                                    self.get_resource_path(), 'crl-id', crl_id)
 
     def action_restore(self, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action restore for {self.get_resource_path()}'):
-            engine = dut_engine or TestToolkit.engines.dut
+            engine = dut_engine or TestToolkit.get_engine()
             return SendCommandTool.execute_command(self._cli_wrapper.action_restore_cluster_manager_property, engine,
                                                    self.get_resource_path())

@@ -29,7 +29,7 @@ class BaseLog(BaseComponent):
             resource_path = self.get_resource_path()
             return SendCommandTool.execute_command(
                 self.api_obj[TestToolkit.tested_api].action_rotate_logs,
-                TestToolkit.engines.dut,
+                TestToolkit.get_engine(),
                 resource_path
             ).get_returned_value()
 
@@ -42,7 +42,7 @@ class Log(BaseLog):
     def write_to_log(self):
         with allure.step('Write content to logs'):
             return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_write_to_logs,
-                                                   TestToolkit.engines.dut).get_returned_value()
+                                                   TestToolkit.get_engine()).get_returned_value()
 
     def verify_expected_logs(self, logs_to_find, logs_source=LogsSources.SYSLOG, engine=None, only_latest_log=False):
         """
@@ -54,7 +54,7 @@ class Log(BaseLog):
         """
 
         if not engine:
-            engine = TestToolkit.engines.dut
+            engine = TestToolkit.get_engine()
 
         with allure.step('Verify expected logs'):
 
@@ -138,7 +138,7 @@ class File(BaseComponent):
         with allure.step('Show logs'):
             resource_path = self.get_resource_path()
             return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
-                                                                expected_str, TestToolkit.engines.dut, resource_path,
+                                                                expected_str, TestToolkit.get_engine(), resource_path,
                                                                 param, exit_cmd).get_returned_value()
 
 
@@ -148,7 +148,7 @@ class FileId(BaseComponent):
         self.filename = file_id
 
     def action_upload(self, upload_path, expected_str="", dut_engine=None, should_succeed=True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Upload file {resource_path} to '{upload_path}'"):
             return SendCommandTool.execute_command_expected_str(
@@ -157,7 +157,7 @@ class FileId(BaseComponent):
                 param_name='remote-url', param_value=upload_path).get_returned_value(should_succeed)
 
     def action_delete(self, expected_str="", dut_engine=None, should_succeed=True) -> bool:
-        engine = dut_engine if dut_engine else TestToolkit.engines.dut
+        engine = dut_engine if dut_engine else TestToolkit.get_engine()
         resource_path = self.get_resource_path()
         with allure.step(f"Delete file: {resource_path}"):
             return SendCommandTool.execute_command_expected_str(
