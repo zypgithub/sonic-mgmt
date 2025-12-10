@@ -40,6 +40,7 @@ from mlxlib.common import trace
 logger = trace.set_logger()
 
 SONIC_SESSION_FACTS_PREFIX = "sonic_session_facts:"
+DEFAULT_RPC_PORT = 18812
 
 
 class SonicAddSessionInfo(SessionAddInfo):
@@ -104,14 +105,17 @@ class SonicAddSessionInfo(SessionAddInfo):
         """
         print("Run SonicAddSessionInfo.get_dynamic_info")
 
-        machines_players = self.conf_obj.get_active_players()
-        print("machine_players={0}".format(str(machines_players)))
+        topo_api = TopologyAPI(self.conf_obj.setup_info['topology_file'])
+        topo_hosts = topo_api.get_all_hosts()
+        sonic_mgmt_host = next((host for host in topo_hosts if topo_api.get_object_attribute(host, 'ID') == 'SONIC_MGMT'), None)
+        if sonic_mgmt_host is None:
+            print('Failed to find the SONIC_MGMT player in topology file.')
+            rc = 1
+            output = {}
+            return rc, output
+        sonic_mgmt_ip = topo_api.get_object_attribute(sonic_mgmt_host, 'BASE_IP')
+        sonic_mgmt_rpc_port = int(topo_api.get_object_attribute(sonic_mgmt_host, 'RPC_PORT') or DEFAULT_RPC_PORT)
 
-        if isinstance(machines_players, list):
-            machine = machines_players[0]
-        else:
-            machine = machines_players
-        print("machine={0}".format(str(machine)))
         remote_workspace = '/root/mars/workspace'
         if not remote_workspace:
             logger.error("'sonic_mgmt_workspace' must be defined in extra_info section of setup conf")
@@ -132,8 +136,9 @@ class SonicAddSessionInfo(SessionAddInfo):
                                SETUP_NAME=setup_name, SONIC_SESSION_FACTS_PREFIX=SONIC_SESSION_FACTS_PREFIX,
                                NGTS_SCRIPT_PATH=ngts_script_path)
         print("script_cmd={0}".format(script_cmd))
+        print("SONIC_MGMT IP={0}, RPC_PORT={1}".format(sonic_mgmt_ip, sonic_mgmt_rpc_port))
         try:
-            conn = RemoteRPC(machine)
+            conn = RemoteRPC(server_name=sonic_mgmt_ip, port=sonic_mgmt_rpc_port)
             conn.import_module("os")
             conn.import_module("mlxlib.common.execute")
 
