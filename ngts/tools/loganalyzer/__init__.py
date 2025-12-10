@@ -40,6 +40,29 @@ def pytest_cmdline_main(config):
     config.option.ansible_host_pattern = 'stub_string'
 
 
+def _filter_duthosts_for_loganalyzer(duthosts, request):
+    """
+    Args:
+        duthosts (list[str]): list of dut hostnames, e.g. ['dut', 'dut-b', 'left_tg', 'right_tg', 'dpu0', 'dpu1', ...]
+        request (pytest.FixtureRequest): pytest request object
+
+    Returns:
+        list[str]: list of dut hostnames for loganalyzer, e.g. ['dut', 'dut-b', 'left_tg', 'right_tg']
+    """
+    # by default, filter out all dpus hosts
+    hosts_without_dpus = set([dut for dut in duthosts if 'dpu' not in dut])
+    hosts_list = list(hosts_without_dpus)
+    # unless include pattern is provided
+    marker = request.node.get_closest_marker("loganalyzer_hosts") if request and hasattr(request, 'node') else None
+    if marker and hasattr(marker, 'kwargs') and marker.kwargs.get('include'):
+        pattern = marker.kwargs['include']
+        included_hosts = set([dut for dut in duthosts if pattern in dut])
+        logging.info(f"Including '{pattern}' from loganalyzer: {included_hosts}")
+        hosts_list = list(hosts_without_dpus | included_hosts)
+    logging.info(f"Hosts list for loganalyzer: {hosts_list}")
+    return hosts_list
+
+
 @pytest.fixture(scope="session")
 def duthosts(ansible_adhoc, topology_obj, request):
     """
@@ -50,8 +73,8 @@ def duthosts(ansible_adhoc, topology_obj, request):
     :return: list of ansible engines
     """
     ansible_engines_list = []
-
-    for dut in PlayersAliases.duts_list:
+    duthosts = _filter_duthosts_for_loganalyzer(PlayersAliases.duts_list, request)
+    for dut in duthosts:
         dut_info = topology_obj.players.get(dut)
 
         if dut_info:
