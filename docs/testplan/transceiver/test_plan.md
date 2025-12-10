@@ -124,8 +124,318 @@ These tests do not require traffic and are standalone, designed to run on a Devi
 
     ```python
     {
-        "dut_name_1": {
-            "port_1": {
+      "name": "eeprom_readability",
+      "module": "tests/transceiver/eeprom/test_eeprom_basic.py",
+      "function": "test_eeprom_pages"
+    }
+  ],
+  "dom": [
+    {
+      "name": "dom_basic",
+      "module": "tests/transceiver/dom/test_dom_basic.py",
+      "function": "test_dom_read"
+    }
+  ]
+}
+```
+
+**Execution behavior:**
+
+1. Run immediately before each category's main tests (after attribute resolution and optional validation)
+2. Only the current category's list is loaded and executed; other categories' lists are deferred
+3. Execution order within each category array is preserved
+4. Duplicate tests (same module+function) are executed only once per category
+5. If the file or category key is absent, no prerequisites run for that category
+
+**Common prerequisite test examples:**
+
+- Verify transceiver presence on the port
+- Verify port speed in CONFIG_DB matches expected speed per dut_info.json
+- Ensure RS FEC is configured if applicable
+- Validate active firmware version matches the expected gold firmware
+- Confirm I2C communication functionality via `sfputil`
+- Verify link operational status (link-up state)
+- Ensure critical system processes (`xcvrd`, `pmon`, `syncd`, `orchagent`) are running
+
+#### 1. DUT Info Files
+
+> 📊 **Visual Guide**: See the [File Organization Diagram](diagrams/file_organization.md) for a visual overview of the file structure and relationships.
+
+Transceiver metadata is organized into per-DUT files located in the `ansible/files/transceiver/inventory/dut_info/` directory. Each file is named after its corresponding DUT hostname (e.g., `sonic-device-01.json`) and contains port-specific transceiver configurations for that device.
+
+Additionally, a shared `normalization_mappings.json` file in the `ansible/files/transceiver/inventory/` directory provides vendor name and part number normalization rules used across all DUTs.
+
+Each per-DUT file supports multiple port specification formats for flexibility and efficiency:
+
+Example of `dut_info/sonic-device-01.json`:
+
+```json
+{
+  "Ethernet0:7": {
+    "vendor_name": "ACME Corp.",
+    "vendor_pn": "QSFP-2X100G-AOC-15M",
+    "vendor_sn": "serial_number_001",
+    "vendor_date": "vendor_date_code",
+    "vendor_oui": "vendor_oui",
+    "vendor_rev": "revision_number",
+    "hardware_rev": "hardware_revision_number"
+  },
+  "Ethernet0": {"transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0x1-0x1"},
+  "Ethernet1": {"transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0x2-0x2"},
+  "Ethernet2": {"transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0x4-0x4"},
+  "Ethernet3": {"transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0x8-0x8"},
+  "Ethernet4": {"transceiver_configuration": "AOC-100-QSFPDD-2x100G_100G_SIDE-0x10-0x10"},
+  "Ethernet5": {"transceiver_configuration": "AOC-100-QSFPDD-2x100G_100G_SIDE-0x20-0x20"},
+  "Ethernet6": {"transceiver_configuration": "AOC-100-QSFPDD-2x100G_100G_SIDE-0x40-0x40"},
+  "Ethernet16,Ethernet20,Ethernet24": {
+    "vendor_name": "Example & Co",
+    "vendor_pn": "SFP-1000BASE-LX",
+    "transceiver_configuration": "LR-1-SFP-1G_STRAIGHT-0x01-0x01"
+  },
+  "Ethernet28:33,Ethernet36,Ethernet40:45": {
+    "vendor_name": "Vendor/Inc",
+    "vendor_pn": "QSFP-100G-AOC-10M",
+    "transceiver_configuration": "AOC-100-QSFP-100G_STRAIGHT-0x0F-0x0F"
+  }
+}
+```
+
+##### Normalization Mappings File
+
+**File location:** `ansible/files/transceiver/inventory/normalization_mappings.json`
+
+**Purpose:** Provides a centralized, shared mapping for normalizing vendor names and part numbers across all DUTs.
+
+**Structure:**
+
+- `vendor_names`: Dictionary mapping raw vendor names to their normalized forms using the normalization rules described in the [CMIS CDB Firmware Binary Management](#141-cmis-cdb-firmware-binary-management) section.
+- `part_numbers`: Dictionary mapping raw part numbers to their normalized forms using the normalization rules described in the [CMIS CDB Firmware Binary Management](#141-cmis-cdb-firmware-binary-management) section.
+
+Example of `normalization_mappings.json`:
+
+```json
+{
+  "vendor_names": {
+    "ACME Corp.": "ACME_CORP",
+    "Example & Co": "EXAMPLE_CO",
+    "Vendor/Inc": "VENDOR_INC",
+    "Tech-Solutions Ltd.": "TECH_SOLUTIONS_LTD"
+  },
+  "part_numbers": {
+    "QSFP-100G-AOC-15M": "QSFP-100G-AOC-GENERIC_2_ENDM",
+    "QSFP-100G-AOC-10M": "QSFP-100G-AOC-GENERIC_2_ENDM",
+    "QSFP-100G-AOC-3M": "QSFP-100G-AOC-GENERIC_1_ENDM",
+    "QSFP-100G-AOC-25M": "QSFP-100G-AOC-GENERIC_2_ENDM",
+    "QSFP-2X100G-AOC-15M": "QSFP-2X100G-AOC-GENERIC_2_ENDM",
+    "QSFP-2X100G-AOC-10M": "QSFP-2X100G-AOC-GENERIC_2_ENDM",
+    "SFP-1000BASE-LX": "SFP-1000BASE-LX",
+    "DAC-400G-5M": "DAC-400G-GENERIC_1_ENDM"
+  }
+}
+```
+
+##### Per-DUT File Structure
+
+**File location:** `ansible/files/transceiver/inventory/dut_info/<dut_hostname>.json`
+
+**Naming convention:** Each file must be named exactly as the DUT's hostname (e.g., `sonic-device-01.json`, `lab-switch-05.json`).
+
+**Discovery:** The framework automatically discovers and loads the appropriate DUT file based on the current testbed's DUT hostname.
+
+##### Per-Port Fields
+
+**Mandatory Fields:**
+
+- `vendor_name`: The name of the vendor as specified in the transceiver's EEPROM.
+- `vendor_pn`: The vendor part number as specified in the transceiver's EEPROM.
+- `transceiver_configuration`: The transceiver configuration name following the format defined in the **Transceiver Configuration Format** section below. The DEPLOYMENT component of this field is used to reference deployment configurations in the per-category attribute files.
+
+**Optional Fields:**
+
+- `vendor_sn`: The vendor serial number.
+- `vendor_date`: The vendor date code.
+- `vendor_oui`: The vendor OUI.
+- `vendor_rev`: The vendor revision number.
+- `hardware_rev`: The hardware revision number.
+
+##### Field Handling Rules
+
+- **Normalized values are derived automatically**: The framework will look up `vendor_name` and `vendor_pn` in the `normalization_mappings.json` file to get the corresponding normalized values.
+- **Default normalization**: If no mapping is found in `normalization_mappings.json`, the normalized value defaults to the original value.
+- **Cable length normalization**: For modules such as **AOC cables** (or any module whose part number includes a cable length), it is **mandatory** to provide a mapping in `normalization_mappings.json` `part_numbers` section following the cable length normalization rules.
+- **Port expansion processing**: Range and list specifications are expanded to individual ports before attribute processing.
+- **Overlapping port specifications**: Multiple port specifications can target the same port. Later specifications override attributes from earlier ones, enabling efficient configuration patterns like defining shared attributes in ranges and port-specific attributes individually.
+- **Deferred mandatory field validation**: Mandatory fields are validated after all applicable port specifications have been merged for each port, allowing flexible configuration where some fields come from ranges and others from individual port entries.
+- **Transceiver configuration format**: The `transceiver_configuration` field uses a mandatory 6-component naming format to fully describe a transceiver's deployment characteristics:
+
+    **Format (Mandatory)**: `{TYPE}-{SPEED}-{FORM_FACTOR}-{DEPLOYMENT}-{MEDIA_LANE_MASK}-{HOST_LANE_MASK}`
+
+    **Note**: The hyphen (`-`) character acts as a delimiter between each component, enabling straightforward parsing by splitting the configuration string on this delimiter.
+
+    **Component Definitions:**
+
+**Physical Port Based Components** (determined by the physical transceiver module):
+
+- **TYPE**: Cable/optics  type - AOC, AEC, LPO, LRO, TRO, CPO, DAC, DR, FR, LR, ZR, Backplane
+- **SPEED**: Total aggregate speed in Gbps (e.g., 1, 10, 25, 100, 200, 400, 800, 1600)
+- **FORM_FACTOR**: Physical form factor - CPO, OSFP, QSFPDD, QSFP, SFP
+- **DEPLOYMENT**: Traffic deployment pattern describing how the speed is distributed (this list is expected to grow in future). This component serves as a means to combine similar attributes for a particular deployment pattern together in test attribute JSON files, grouping required attributes irrespective of the transceiver or platform vendor:
+  - `2x100G_200G_SIDE` - 200G side of a 2x100G breakout cable
+  - `2x100G_100G_SIDE` - 100G side of a 2x100G breakout cable
+  - `4x100G_400G_SIDE` - 400G side of a 4x100G breakout cable
+  - `4x100G_100G_SIDE` - 100G side of a 4x100G breakout cable
+  - `2x200G_400G_SIDE` - 400G side of a 2x200G breakout cable
+  - `2x200G_200G_SIDE` - 200G side of a 2x200G breakout cable
+  - `4x200G_800G_SIDE` - 800G side of a 4x200G breakout cable
+  - `4x200G_200G_SIDE` - 200G side of a 4x200G breakout cable
+  - `8x100G_800G_SIDE` - 800G side of an 8x100G breakout cable
+  - `8x100G_100G_SIDE` - 100G side of an 8x100G breakout cable
+  - `400G_STRAIGHT` - 400G total as single port (no breakout)
+  - `800G_STRAIGHT` - 800G total as single port (no breakout)
+  - `1G_STRAIGHT` - 1G total as single port
+
+**Logical Port Based Components** (specific to individual logical interfaces):
+
+- **MEDIA_LANE_MASK**: Hexadecimal bitmask indicating which media/optical lanes are used (e.g., 0x01, 0x0F, 0xFF)
+- **HOST_LANE_MASK**: Hexadecimal bitmask indicating which host/electrical lanes are used (e.g., 0x01, 0x0F, 0xFF)
+
+**Configuration Examples:**
+
+- `AOC-200-QSFPDD-2x100G_200G_SIDE-0xF-0xF` - Active Optical Cable, 200G speed, QSFP-DD form factor, 200G side of 2x100G deployment, 4 media lanes (0-3), 4 host lanes (0-3)
+- `AOC-100-QSFPDD-2x100G_100G_SIDE-0xF-0xF` - Active Optical Cable, 100G speed, QSFP-DD form factor, 100G side of 2x100G deployment, 4 media lanes (0-3), 4 host lanes (0-3)
+- `LR-1-SFP-1G_STRAIGHT-0x01-0x01` - LR specification, 1G total, SFP form factor, straight deployment, 1 media lane, 1 host lane
+- `DAC-400-OSFP-400G_STRAIGHT-0x0F-0x0F` - Direct Attach Cable, 400G total, OSFP form factor, straight deployment, 4 media lanes (0-3), 4 host lanes (0-3)
+- `DR-800-OSFP-4x200G_800G_SIDE-0xFF-0xFF` - DR specification, 800G speed, OSFP form factor, 800G side of 4x200G deployment, 8 media lanes (all), 8 host lanes (all)
+- `DR-200-OSFP-4x200G_200G_SIDE-0xFF-0xFF` - DR specification, 200G speed, OSFP form factor, 200G side of 4x200G deployment, 8 media lanes (all), 8 host lanes (all)
+
+**Purpose**: This standardized format enables:
+
+- Automatic parsing of transceiver characteristics for test frameworks
+- Deployment pattern grouping for shared attribute configurations
+- Clear identification of lane usage and deployment topology
+
+##### Port Specification Formats
+
+The framework supports multiple flexible port specification formats to reduce configuration overhead:
+
+1. **Individual Port**: `"Ethernet0"` - Single port specification
+2. **Range**: `"Ethernet4:13"` - Continuous range from Ethernet4 to Ethernet12 (exclusive of 13, following Python slice convention)
+3. **Range with Step**: `"Ethernet0:97:4"` - Range with step size (Ethernet0, Ethernet4, Ethernet8, ..., Ethernet96)
+4. **List**: `"Ethernet16,Ethernet20,Ethernet24"` - Comma-separated list of specific ports without spaces
+5. **Mixed**: `"Ethernet28:33,Ethernet36,Ethernet40:45"` - Combination of ranges and individual ports
+
+**Requirements:**
+
+- Port numbering must follow SONiC logical port naming convention (e.g., Ethernet0, Ethernet4, Ethernet8...)
+- Range format follows Python slice convention (start:stop where stop is exclusive)
+- Step size must be > 0 for range with step format
+
+##### Framework Implementation Requirements
+
+The test framework must implement the following core components to process per-DUT files and create a comprehensive `port_attributes_dict` dictionary. All parsed data is stored in `port_attributes_dict["EthernetXX"]["BASE_ATTRIBUTES"]` as the foundation for test operations.
+More details on the `port_attributes_dict` structure and usage are provided in the Test Category Attribute Files section.
+
+**File Discovery and Loading:**
+
+1. **Load Normalization Mappings**: Parse `normalization_mappings.json` once at framework initialization.
+2. **Discover DUT File**: Determine current DUT hostname from testbed configuration.
+3. **Load DUT Data**: Open and parse `dut_info/<dut_hostname>.json`.
+4. **Error Handling**: Provide clear error messages if:
+   - `normalization_mappings.json` is missing or invalid
+   - DUT file for current hostname is not found
+   - JSON parsing fails
+
+###### 1. Port Expansion Processing
+
+**Purpose**: Handle various port specification formats and expand them into individual port names.
+
+**Processing Algorithm**:
+
+1. **Parse Port Specifications**: Identify range, list, and individual port formats
+2. **Expand to Individual Ports**: Convert all specifications to individual port names  
+3. **Merge Overlapping Attributes**: Collect all attributes for each port, with later port specifications overriding earlier ones
+4. **Deferred Validation**: Validate mandatory fields after all applicable port specifications have been merged
+5. **Generate Final Dictionary**: Create the standard per-port attribute dictionary
+
+###### 2. Transceiver Configuration String Parsing
+
+**Purpose**: Extract all components from the `transceiver_configuration` string during base attributes initialization phase.
+
+**Requirements**:
+
+- Parse the mandatory 6-component format: `{TYPE}-{SPEED}-{FORM_FACTOR}-{DEPLOYMENT}-{MEDIA_LANE_MASK}-{HOST_LANE_MASK}`
+- Store all parsed components in `BASE_ATTRIBUTES` for easy access by all test categories
+- Handle error cases (invalid format, missing components)
+
+**Implementation Example**:
+
+```python
+    def parse_transceiver_configuration(config_string):
+        """
+        Parse transceiver configuration string into individual components.
+        Format: {TYPE}-{SPEED}-{FORM_FACTOR}-{DEPLOYMENT}-{MEDIA_LANE_MASK}-{HOST_LANE_MASK}
+        Example: "AOC-200-QSFPDD-2x100G_200G_SIDE-0xFF-0xFF"
+        Returns: dictionary with all parsed components
+        """
+        if not config_string:
+            return {}
+        
+        parts = config_string.split('-')
+        if len(parts) != 6:
+            raise ValueError("Invalid transceiver configuration format: {}".format(config_string))
+
+        type_name, speed, form_factor, deployment, media_mask, host_mask = parts
+
+        # Parse lane counts from hexadecimal masks
+        media_lane_count = bin(int(media_mask, 16)).count('1')
+        host_lane_count = bin(int(host_mask, 16)).count('1')
+
+        return {
+            'cable_type': type_name,
+            'speed_gbps': int(speed),
+            'form_factor': form_factor,
+            'deployment': deployment,
+            'media_lane_mask': media_mask,
+            'host_lane_mask': host_mask,
+            'media_lane_count': media_lane_count,
+            'host_lane_count': host_lane_count
+        }
+```
+
+###### 3. Dictionary Management
+
+**Purpose**: Create and maintain the comprehensive port attributes dictionary that serves as the source of truth for test cases.
+
+**Requirements**:
+
+- Load `normalization_mappings.json` for vendor/PN normalization lookup
+- Parse per-DUT file (`dut_info/<dut_hostname>.json`) and store data in `port_attributes_dict["EthernetXX"]["BASE_ATTRIBUTES"]` for the current DUT
+- Support overlapping port specifications by merging attributes per port (later specs override earlier ones)
+- Validate mandatory fields only after all applicable port specifications have been processed and merged
+- Include all mandatory and optional fields, along with normalized values and parsed configuration components
+- Implement proper error handling and validation
+
+Example of a dictionary created by parsing the above file:
+
+```python
+    {
+        "Ethernet0": {
+            "BASE_ATTRIBUTES": {
+                "vendor_name": "ACME Corp.",
+                "normalized_vendor_name": "ACME_CORP",  # looked up from normalization_mappings.json
+                "vendor_pn": "QSFP-2X100G-AOC-15M",
+                "normalized_vendor_pn": "QSFP-2X100G-AOC-GENERIC_2_ENDM",  # looked up from normalization_mappings.json
+                "transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0xFF-0xFF",  # single string configuration
+                # Parsed components from transceiver_configuration
+                "cable_type": "AOC",                    # extracted from TYPE
+                "speed_gbps": 200,                      # extracted from SPEED
+                "form_factor": "QSFPDD",                # extracted from FORM_FACTOR
+                "deployment": "2x100G_200G_SIDE",       # extracted from DEPLOYMENT
+                "media_lane_mask": "0xFF",              # extracted from MEDIA_LANE_MASK
+                "host_lane_mask": "0xFF",               # extracted from HOST_LANE_MASK
+                "media_lane_count": 8,                  # derived from media_lane_mask
+                "host_lane_count": 8,                   # derived from host_lane_mask
+                "vendor_sn": "serial_number_001",
                 "vendor_date": "vendor_date_code",
                 "vendor_oui": "vendor_oui",
                 "vendor_rev": "revision_number",
