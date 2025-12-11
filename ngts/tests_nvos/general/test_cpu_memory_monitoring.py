@@ -22,6 +22,7 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tests_nvos.conftest import devices
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -535,7 +536,14 @@ def verify_gnmic_events(engines, devices, events, docker, resource):
         for event_id in [high_usage_event_id, normal_usage_event_id]:
             out, err, _ = client.gnmic_subscribe_system_event(event_id=event_id, skip_cert_verify=True,
                                                               keep_session_alive=False)
-            json_object = json.loads(out)
+            # WA: Extract valid JSON from output (may contain extra text after termination)
+            # bug: https://redmine.mellanox.com/issues/4782619
+            if is_bug_active(4782619):
+                json_start = out.find('{')
+                json_end = out.rfind('}') + 1
+                json_object = json.loads(out[json_start:json_end])
+            else:
+                json_object = json.loads(out)
             with allure.independent_step("Check which docker caused the event"):
                 event_docker = get_gnmic_attribute(json_object, "resource")
                 assert event_docker == docker, f"Docker caused event is {event_docker} and not {docker}"

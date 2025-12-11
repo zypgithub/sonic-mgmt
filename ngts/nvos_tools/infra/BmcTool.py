@@ -109,7 +109,10 @@ class BmcTool:
             platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
             provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.engines.dut) else PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
-            return component_image_info['path'], component_image_info['filename'], component_image_info['version_name']
+            path = component_image_info['path']
+            # Derive filename from path if not explicitly provided (e.g., for CPLD components)
+            filename = component_image_info.get('filename') or path.rsplit('/', 1)[-1]
+            return path, filename, component_image_info['version_name']
 
     @staticmethod
     def get_fw_component_version_dict(component_name, version):

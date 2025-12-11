@@ -259,7 +259,8 @@ class IpTool:
             try:
                 # Use the new lease structure instead of deprecated 'has-lease' property
                 mgmt_port = NvCommand().port['eth0']
-                lease_output = mgmt_port.interface.ipv6.dhcp_client.lease.show(dut_engine=engine)
+                lease_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    mgmt_port.interface.ipv6.dhcp_client.lease.show(dut_engine=engine)).get_returned_value()
 
                 # Check if lease information is available
                 if lease_output is not None and lease_output != {}:

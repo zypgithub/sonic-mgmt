@@ -78,9 +78,9 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
                 cli_output = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                     port_instance.interface.link.show()).get_returned_value()
                 cli_output[IbInterfaceConsts.PHY_DIAG] = Tools.OutputParsingTool.parse_show_output_to_dict(
-                    port_instance.interface.link.phy_diag.show()).get_returned_value()
+                    port_instance.interface.link.phy.detail.show()).get_returned_value()
                 cli_output[IbInterfaceConsts.PHY_DETAIL] = Tools.OutputParsingTool.parse_show_output_to_dict(
-                    port_instance.interface.link.phy_detail.show()).get_returned_value()
+                    port_instance.interface.link.phy.health.show()).get_returned_value()
 
             with allure.step("Adjust CLI output to match GNMI output"):
                 adjusted_cli_output = adjust_cli_attributes_and_values(devices.dut.interface_attributes_mapping_dict,

@@ -54,7 +54,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib_interfaces
-def test_show_phy_diag(engines, test_api, output_format):
+def test_show_phy_detail(engines, test_api, output_format):
     """Checks that `nv show interface <port> link phy detail` returns non-empty output in a valid format."""
     selected_port = RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     output = selected_port.interface.link.phy.detail.show(output_format=output_format)
@@ -337,8 +337,8 @@ def get_phy_detail(port):
 
 def get_counters(port: Port) -> Tuple[int, int]:
     """Runs nv show interface <port> link phy detail, and returns the intentional & unintentional link-down counters"""
-    phy_diag_output = get_phy_detail(port)
-    return int(phy_diag_output[INTENTIONAL_LINK_DOWN_EVENTS]), int(phy_diag_output[UNINTENTIONAL_LINK_DOWN_EVENTS])
+    phy_detail_output = get_phy_detail(port)
+    return int(phy_detail_output[INTENTIONAL_LINK_DOWN_EVENTS]), int(phy_detail_output[UNINTENTIONAL_LINK_DOWN_EVENTS])
 
 
 def assert_reason_for_plane(plane_port: Port, code: int, all_planes_previous_codes: Dict):

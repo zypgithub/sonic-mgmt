@@ -132,7 +132,7 @@ class File(BaseComponent):
             return SendCommandTool.execute_command_expected_str(
                 self._cli_wrapper.action_deprecated, expected_str,
                 engine, device, action_type='install', resource_path=resource_path,
-                param_name='force' if force else no_force, param_value=param_value,
+                param_name=params, param_value=param_value_list,
                 expect_reboot=with_reboot, recovery_engine=recovery_engine, deny_reboot=deny_reboot,
                 topology_obj=topology_obj, track_boot_intervals=track_boot_intervals, press_y=press_y,
                 should_succeed=should_succeed, system_is_ready_timeout=system_is_ready_timeout,

@@ -56,24 +56,25 @@ def test_set_system_dns_server(engines, test_api):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.parametrize('dns_server_id', SystemConsts.DNS_SERVER_LIST)
-def test_set_system_dns_functionality(engines, test_api, base_version, dns_server_id):
+@pytest.mark.parametrize('dns_server_type', SystemConsts.DNS_SERVER_IDS.keys())
+def test_set_system_dns_functionality(engines, test_api, target_version, dns_server_type):
     """
     Run set system dns server command and verify in show command
         1. Attempt a file fetch from a build server and verify it is successful
         2. Verify contents of resolv.conf file that it does not have <ip> listed as DNS server
-        3. Run ‘nv set system dns server <ip> and verify command is completed successfully
+        3. Run 'nv set system dns server <ip>' and verify command is completed successfully
         4. Verify contents of resolv.conf file that it have <ip> listed as DNS server
         5. Attempt a file fetch from a build server and verify it is not successful
 
     """
     TestToolkit.tested_api = test_api
     system = System()
+    dns_server_id = SystemConsts.DNS_SERVER_IDS[dns_server_type]
     try:
         verify_dns_in_resolv_file(engines, [dns_server_id], is_present=False)
 
-        with allure.step("Fetch an image {}".format(base_version)):
-            system.image.action_fetch(path=base_version)
+        with allure.step("Fetch an image {}".format(target_version)):
+            system.image.action_fetch(path=target_version)
 
         with allure.step('Run set system dns server <server-id>command and apply config'):
             system.dns.set(SystemConsts.DNS_SERVER, dns_server_id,
@@ -82,7 +83,7 @@ def test_set_system_dns_functionality(engines, test_api, base_version, dns_serve
         verify_dns_in_resolv_file(engines, [dns_server_id])
 
         with allure.step("Attempt fetching the image which should fail"):
-            system.image.action_fetch(path=base_version, expected_output='Failed to create file').verify_result(False)
+            system.image.action_fetch(path=target_version, expected_output='Failed to create file').verify_result(False)
 
     finally:
         clear_system_dns(system, engines)

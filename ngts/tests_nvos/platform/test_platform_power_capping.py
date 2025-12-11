@@ -355,14 +355,6 @@ def get_random_value(attribute, valid=True):
             random.randint(range_spec['high'] + 1, range_spec['high'] * 2 + 1000)
         ])
 
-    # All other attributes have range [0-255] (uint8)
-    else:
-        if valid:
-            return random.randint(PowerCappingConsts.UINT8_MIN, PowerCappingConsts.UINT8_MAX)
-        else:
-            # Invalid values: above 255
-            return random.randint(PowerCappingConsts.UINT8_MAX + 1, 1000)
-
 
 def set_new_profile(fae, profile_id, attributes=PowerCappingConsts.ATTRIBUTES):
     """
