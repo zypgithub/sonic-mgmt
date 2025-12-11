@@ -711,10 +711,13 @@ def configure_validate_dscp_acl_value(engines, devices, acl_type, protocol, soni
         mgmt_port_name = 'eth0'
         mgmt_port = Port(mgmt_port_name)
         rule_id_1 = '1'
-        random_dscp_value, random_dscp_value_hex = list(get_dscp_hexadecimal_dict("supported_dec").keys())[0], \
-            list(get_dscp_hexadecimal_dict("supported_dec").values())[0]
-        rule_configuration_dict = {AclConsts.DEST_IP: 'ANY',
-                                   AclConsts.IP_PROTOCOL: protocol, AclConsts.DSCP_SET_ACTION: random_dscp_value}
+        # Call get_dscp_hexadecimal_dict ONCE to ensure key and value match!
+        dscp_dict = get_dscp_hexadecimal_dict("supported_dec")
+        random_dscp_value = list(dscp_dict.keys())[0]
+        random_dscp_value_hex = list(dscp_dict.values())[0]
+        rule_configuration_dict = {AclConsts.IP_PROTOCOL: protocol,
+                                   AclConsts.DSCP_SET_ACTION: random_dscp_value}
+        logger.info(f"🔧 Configuring simple ACL rule: protocol={protocol}, DSCP={random_dscp_value} (TOS={random_dscp_value_hex})")
         acl_id = "ACL_OUTBOUND_DSCP"
         config_acl_with_rule_attached_to_interface(engines.dut, acl_id,
                                                    acl_type, rule_id_1,
@@ -724,39 +727,57 @@ def configure_validate_dscp_acl_value(engines, devices, acl_type, protocol, soni
         acl_obj = Acl()
         output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id_1)
         ValidationTool.verify_field_value_in_output(output, AclConsts.DSCP, random_dscp_value).verify_result()
+
+    with allure.step("Check ACL counters before ping"):
+        rule_packets_before = get_rule_packets(mgmt_port, acl_id, rule_id_1, rule_direction=AclConsts.OUTBOUND)
+
+    # Start tcpdump in background on sonic_mgmt
+    with allure.step("Start tcpdump in background to capture ICMP packets"):
+        tcpdump_output_file = "/tmp/tcpdump_dscp_test.txt"
+        if acl_type == IpConsts.IPV4:
+            # Filter for ICMP between switch and sonic_mgmt
+            tcpdump_cmd = f"timeout 30 sudo tcpdump -i eth0 -n -vv 'icmp and host {sonic_ip}' -c 30 > {tcpdump_output_file} 2>&1"
+        else:
+            # Filter for ICMPv6 between switch and sonic_mgmt (avoid neighbor discovery noise)
+            tcpdump_cmd = f"timeout 30 sudo tcpdump -i eth0 -n -vv 'icmp6 and host {sonic_ip}' -c 30 > {tcpdump_output_file} 2>&1"
+
+        engines.sonic_mgmt.run_cmd(f"nohup {tcpdump_cmd} &")
+        time.sleep(2)  # Give tcpdump time to start
+
     try:
-        with allure.step("Create a separate process to run tcpdump and validate option tos in packets"):
-            tcpdump_process = Process(target=run_tcpdump_validate_option_dscp,
-                                      args=(engines.sonic_mgmt, acl_type, random_dscp_value_hex))
-            tcpdump_process.start()
         with allure.step("Ping to sonic mgmt ip to initiate packet transfers"):
             ping_from_switch(engines.dut, sonic_ip, mgmt_port_name, count=20).verify_result()
+
+        time.sleep(3)  # Wait for tcpdump to finish capturing
+
     finally:
-        with allure.step("Combine with tcpdump process to finish gracefully"):
-            tcpdump_process.join()
-            assert tcpdump_process.exitcode == 0, "DSCP tos value not found in dhcp packets"
+        with allure.step("Check ACL counters after ping"):
+            rule_packets_after = get_rule_packets(mgmt_port, acl_id, rule_id_1, rule_direction=AclConsts.OUTBOUND)
+            packets_matched = int(rule_packets_after.get(rule_id_1, 0)) - int(rule_packets_before.get(rule_id_1, 0))
+            assert packets_matched > 0, f"ACL rule matched {packets_matched} packets, expected > 0"
+
+        with allure.step("Validate DSCP marking in tcpdump output"):
+            tcpdump_output = engines.sonic_mgmt.run_cmd(f"cat {tcpdump_output_file} 2>/dev/null || echo 'No tcpdump output'")
+
+            # Extract TOS values from full tcpdump output
+            import re
+            if acl_type == IpConsts.IPV4:
+                tos_values = set(re.findall(r'tos\s+(0x[0-9a-fA-F]+)', tcpdump_output))
+            else:
+                tos_values = set(re.findall(r'class\s+(0x[0-9a-fA-F]+)', tcpdump_output))
+
+            # Cleanup
+            engines.sonic_mgmt.run_cmd(f"rm -f {tcpdump_output_file}")
+
+            # Validate expected TOS value is present
+            assert random_dscp_value_hex in tos_values, \
+                f"Expected TOS {random_dscp_value_hex} (DSCP {random_dscp_value}) not found. Found: {tos_values}"
 
         with allure.step("Unset dscp option to check CLI command"):
             acl_obj.acl_id[acl_id].rule.rule_id[rule_id_1].action.dscp.unset(apply=True)
             output = OutputParsingTool.parse_dscp_value_from_acl(engines, acl_obj, acl_id, rule_id_1)
             with allure.step("Verify DSCP field in ACL is removed after unset"):
                 ValidationTool.verify_field_exist_in_json_output(output, AclConsts.DSCP, should_be_found=False)
-
-
-def run_tcpdump_validate_option_dscp(dut, acl_type, regex):
-    with allure.step('Run tcpdump and validate option dscp'):
-        retry_call(validate_dscp_option_tcpdump, [dut, acl_type, regex],
-                   exceptions=AssertionError, tries=5, delay=1)
-
-
-def validate_dscp_option_tcpdump(dut, acl_type, regex):
-    if acl_type == IpConsts.IPV4:
-        command = f"sudo tcpdump -n -vv -c 200 | grep 'tos {regex}'"
-    else:
-        command = f"sudo tcpdump -n -vv -c 200 | grep 'class {regex}'"
-    tcpdump_output = dut.run_cmd(command)
-    assert tcpdump_output, "DSCP TOS value not present in packets"
-    logger.info(f"DSCP TOS value - {regex} present in tcpdump")
 
 
 def sleep():
