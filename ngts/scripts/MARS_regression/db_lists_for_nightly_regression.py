@@ -19,6 +19,7 @@ COMMUNITY_SET1_TEST_GROUP_MAP = {
     'community/snmp.db': PLATFORM_AGNOSTIC_GROUP1,
     'community/wjh.db': PLATFORM_AGNOSTIC_GROUP2,
     'community/packet_trimming.db': PLATFORM_DEPENDENT,
+    'community/high_frequency_telemetry.db': PLATFORM_DEPENDENT,
     'community/warm_reboot.db': PLATFORM_DEPENDENT,
     'community/span.db': PLATFORM_DEPENDENT,
     'community/fast_reboot.db': PLATFORM_DEPENDENT,
