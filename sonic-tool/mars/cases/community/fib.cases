@@ -12,7 +12,7 @@
         <Case>
             <tags> FIB </tags>
             <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
-            <tout> 55555 </tout>
+            <tout> 555555 </tout>
         </Case>
     </global>
 
