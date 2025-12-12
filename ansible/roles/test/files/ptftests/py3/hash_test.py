@@ -238,6 +238,7 @@ class HashTest(BaseTest):
                 hash_key=hash_key, src_port=src_port, dst_port_lists=dst_port_lists)
         assert received
         logging.info("Received packet at " + str(matched_port))
+        self.dataplane.flush()
         time.sleep(0.02)
         return (matched_port, received)
 
