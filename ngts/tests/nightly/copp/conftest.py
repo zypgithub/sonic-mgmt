@@ -21,6 +21,7 @@ def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_nam
     :param topology_obj: topology object fixture
     """
     logger.info('Starting CoPP Common configuration')
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json /etc/sonic/config_db.json.bak")
 
     with allure.step('Check that link in UP state'):
         retry_call(cli_objects.dut.interface.check_ports_status,
@@ -46,9 +47,9 @@ def copp_configuration(topology_obj, engines, interfaces, cli_objects, setup_nam
     IpConfigTemplate.cleanup(topology_obj, ip_config_dict)
     cli_objects.ha.general.start_service('lldpad')
 
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
-
-    logger.info('CoPP Common cleanup completed')
+    logger.info("restore config db")
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json.bak /etc/sonic/config_db.json")
+    cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
 
 
 @pytest.fixture(scope='session', autouse=True)

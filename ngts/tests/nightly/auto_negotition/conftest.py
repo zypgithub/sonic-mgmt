@@ -18,11 +18,13 @@ def auto_neg_configuration(topology_obj, setup_name, engines, cli_objects, platf
     Pytest fixture which will clean all fec configuration leftover from the dut
 
     """
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json /etc/sonic/config_db.json.bak")
 
     yield
 
     logger.info('Starting Auto Neg configuration cleanup')
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json.bak /etc/sonic/config_db.json")
+    cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
 
     logger.info('Auto Neg cleanup completed')
 
