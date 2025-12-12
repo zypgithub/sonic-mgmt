@@ -51,7 +51,7 @@ class TestEcmpCalcBase:
 
         with allure.step(f'send packet to verify packets are sent out from egress port {egress_ports[0]}'):
             packet_info = load_packet_json(packet_json_file_name)["packet_info"]
-            send_packet_number = 2
+            send_packet_number = 200
             host_name, receive_port = get_host_name_and_receive_port_as_egress_port(
                 self.interfaces, egress_ports[0])
             traffic_filter = f" src {packet['outer_sip']} and dst {packet['outer_dip']}"
