@@ -26,7 +26,7 @@ from tests.packet_trimming.constants import (DEFAULT_SRC_PORT, DEFAULT_DST_PORT,
                                              SRV6_INNER_DST_IPV6, SRV6_UN, ASYM_PORT_1_DSCP, ASYM_PORT_2_DSCP,
                                              SCHEDULER_TYPE, SCHEDULER_WEIGHT, SCHEDULER_PIR, MIRROR_SESSION_NAME,
                                              MIRROR_SESSION_SRC_IP, MIRROR_SESSION_DST_IP, MIRROR_SESSION_DSCP,
-                                             MIRROR_SESSION_TTL, MIRROR_SESSION_QUEUE)
+                                             MIRROR_SESSION_TTL, MIRROR_SESSION_QUEUE, SCHEDULER_CIR)
 from tests.packet_trimming.packet_trimming_config import PacketTrimmingConfig
 
 logger = logging.getLogger(__name__)
@@ -290,6 +290,7 @@ def get_scheduler_oid_by_attributes(duthost, **kwargs):
             - type: Scheduler type (e.g., "DWRR", "STRICT")
             - weight: Scheduling weight (e.g., 15)
             - pir: Peak Information Rate (e.g., 1)
+            - cir: Committed Information Rate (e.g., 1)
 
     Returns:
         str: OID of the matched scheduler, or None if not found
@@ -298,7 +299,8 @@ def get_scheduler_oid_by_attributes(duthost, **kwargs):
     param_to_sai_attr = {
         'type': 'SAI_SCHEDULER_ATTR_SCHEDULING_TYPE',
         'weight': 'SAI_SCHEDULER_ATTR_SCHEDULING_WEIGHT',
-        'pir': 'SAI_SCHEDULER_ATTR_MAX_BANDWIDTH_RATE'
+        'pir': 'SAI_SCHEDULER_ATTR_MAX_BANDWIDTH_RATE',
+        'cir': 'SAI_SCHEDULER_ATTR_MIN_BANDWIDTH_RATE'
     }
 
     # Mapping for type values
@@ -394,7 +396,7 @@ def create_blocking_scheduler(duthost):
         # Create blocking scheduler
         cmd_create = (
             f'sonic-db-cli CONFIG_DB hset "SCHEDULER|{BLOCK_DATA_PLANE_SCHEDULER_NAME}" '
-            f'"type" {SCHEDULER_TYPE} "weight" {SCHEDULER_WEIGHT} "pir" {SCHEDULER_PIR}'
+            f'"type" {SCHEDULER_TYPE} "weight" {SCHEDULER_WEIGHT} "pir" {SCHEDULER_PIR} "cir" {SCHEDULER_CIR}'
         )
         duthost.shell(cmd_create)
         logger.info(f"Successfully created blocking scheduler: {BLOCK_DATA_PLANE_SCHEDULER_NAME}")
@@ -520,7 +522,7 @@ def disable_egress_data_plane(duthost, dut_port, queue):
 
     # Get the blocking scheduler OID from ASIC_DB
     scheduler_oid = get_scheduler_oid_by_attributes(duthost, type=SCHEDULER_TYPE,
-                                                    weight=SCHEDULER_WEIGHT, pir=SCHEDULER_PIR)
+                                                    weight=SCHEDULER_WEIGHT, pir=SCHEDULER_PIR, cir=SCHEDULER_CIR)
     pytest_assert(scheduler_oid, "Failed to find blocking scheduler OID in ASIC_DB")
 
     # Wait for the blocking scheduler configuration to take effect in ASIC_DB
