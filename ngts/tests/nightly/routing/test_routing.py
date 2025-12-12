@@ -124,8 +124,8 @@ class TestRouting:
         regexp_neigh = fr'.*BGP neighbor is {self.hb_dut_1_ip}, remote AS 501, local AS 500'
         #   BGP state = Established, up for 01:19:00
         regexp_status = r'.*BGP state = Established, up for'
-        #   2 accepted prefixes
-        regexp_prefixes = r'.*\d+ accepted prefixes'
+        #   2 accepted, 4 sent prefixes
+        regexp_prefixes = r'.*\d+ accepted,.*\d+ sent prefixes.*'
         # Foreign host: 20.0.0.2, Foreign port: 179
         regexp_peer_info = fr'.*Foreign\shost:\s{self.hb_dut_1_ip},\sForeign\sport:\s\d+'
         assert re.search(regexp_neigh, show_ip_bgp_neighbors_output), 'Not all info about BGP peer available, check log'
