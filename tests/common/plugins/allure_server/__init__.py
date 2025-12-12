@@ -376,7 +376,8 @@ class AllureServer:
         url = self.base_url + '/send-results?project_id=' + self.project_id
         logger.info('Sending allure results to allure server')
         start_time = time.time()
-        response = requests.post(url, json=data, headers=self.http_headers, verify=SSL_VERIFICATION)
+        response = requests.post(url, json=data, headers=self.http_headers, verify=SSL_VERIFICATION,
+                                 timeout=300)
         diff_time = time.time() - start_time
         logger.info("uploading allure results takes {}".format(diff_time))
         if response.status_code != 200:
