@@ -1056,9 +1056,20 @@ def extend_log_analyzer_match_regex(loganalyzer):
     Extend the loganalyzer match_regex list and ignore_regex list.
     """
     if loganalyzer:
+        simplex_bidi_pattern = r"(?i)(NVL_(?:SIMPLEX|BIDI)\w*|\b(?:simplx|simplex|bidir|bidi|bidirectional)\b)"
+        nvme_timeout_patterns = [
+            r"(?i)nvme\s+nvme\d+:\s*I/O\s+\d+\s+QID\s+\d+\s+timeout,\s*aborting",
+            r"(?i)Device not ready; aborting reset, CSTS=0x1",
+            r"(?i)I/O\s+\d+\s+QID\s+\d+\s+timeout,\s*reset controller",
+        ]
         for hostname in loganalyzer.keys():
             loganalyzer[hostname].ignore_regex.extend(list(pytest.dynamic_ignore_set))
-            loganalyzer[hostname].match_regex.extend(["\\.*\\s+WARNING\\s+\\.*", "\\.*\\s+segfault\\s+\\.*"])
+            loganalyzer[hostname].match_regex.extend([
+                "\\.*\\s+WARNING\\s+\\.*",
+                "\\.*\\s+segfault\\s+\\.*",
+                simplex_bidi_pattern,
+                *nvme_timeout_patterns,
+            ])
 
 
 @pytest.fixture(scope='session', autouse=True)
