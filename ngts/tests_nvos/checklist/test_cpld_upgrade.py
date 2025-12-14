@@ -10,7 +10,7 @@ from infra.tools.validations.traffic_validations.port_check.port_checker import 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.platform.Platform import Platform
@@ -95,8 +95,8 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
         with allure.step(f"Installing BURN image {burn_filename}"):
             result, _ = OperationTime.save_duration(
                 "install CPLD (BURN)", '', test_cpld_upgrade.__name__,
-                platform.firmware.cpld.files.file_name[burn_filename].action_install,
-                reboot_params=False, force=False)
+                platform.firmware.cpld.files.file_name[burn_filename].action_file_install,
+                dut_engine=engines.dut, force=False)
             result.verify_result()
 
             with allure.step(f"verify operation time for install cpld {burn_filename!r} (duration: {result.duration})"):
@@ -105,8 +105,8 @@ def _firmware_install_test(devices, platform: Platform, image_details, engines, 
             if has_refresh_image:
                 try:
                     with allure.step(f"Installing REFRESH image (and rebooting) {refresh_filename}"):
-                        result_obj = platform.firmware.cpld.files.file_name[refresh_filename].action_install(
-                            reboot_params=RebootParams(topology_obj=topology_obj))
+                        result_obj = platform.firmware.cpld.files.file_name[refresh_filename].action_file_install_with_reboot(
+                            device=devices.dut, topology_obj=topology_obj)
                         result_obj.verify_result()
 
                 except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
