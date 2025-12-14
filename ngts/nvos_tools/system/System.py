@@ -85,6 +85,9 @@ class System(BaseComponent):
         self.memory = BaseComponent(self, path='/memory')
         self.cpu = BaseComponent(self, path='/cpu')
         self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
+        self.cpu_debug_config = BaseComponent(self, path='/cpu-debug-config')
+        self.bmc_debug_config = BaseComponent(self, path='/bmc-debug-config')
+        self.nv_bridge = BaseComponent(self, path='/nv-bridge')
         self.control_plane = ControlPlane(self)
 
     @staticmethod

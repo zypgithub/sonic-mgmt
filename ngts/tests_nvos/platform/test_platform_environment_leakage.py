@@ -67,8 +67,7 @@ def test_platform_environment_bmc_leakage(engines, nv_command, devices):
                     .get_returned_value()
                 ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
                                               HealthConsts.LED_NOT_OK_STATUS).verify_result()
-                history_line = nv_command.system.health.history.search_line(line_to_search=random_selected_leakage)
-                assert random_selected_leakage in history_line, 'Cant find leakage in health history'
+                retry_validate_health_history(nv_command, random_selected_leakage)
 
             with allure.step("Return leakage status to default"):
                 _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_OK)
@@ -129,6 +128,12 @@ def _link_back_sysfs_files(engines, leakage, leakage_folder_name):
 @retry(Exception, tries=2, delay=1)
 def retry_validate_health_fix_or_issue(system, status):
     system.validate_health_status(status)
+
+
+@retry(Exception, tries=2, delay=1)
+def retry_validate_health_history(nv_command, random_selected_leakage):
+    history_line = nv_command.system.health.history.search_line(line_to_search=random_selected_leakage)
+    assert random_selected_leakage in history_line, 'Cant find leakage in health history'
 
 
 def convert_string(input_string):

@@ -13,19 +13,17 @@ from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 
 @pytest.fixture(scope='session')
 def available_spdm_components(devices, setup_name):
-    out = OutputParsingTool.parse_json_str_to_dictionary(System().security.spdm.show()).get_returned_value()
-    available_components_names = []
-    for component_name in SpdmConsts.components:
-        certificates_out = out[component_name][SpdmComponentFields.CERTIFICATES]
-        component_is_available = SpdmConsts.Component.Certificates.CERT_STRING in certificates_out and certificates_out[
-            SpdmConsts.Component.Certificates.ID] != NA
-        if component_is_available:
-            available_components_names.append(component_name)
-        logging.info(f'component "{component_name}" is {"" if component_is_available else "not "}available!')
-    return available_components_names
+    """
+    Get expected SPDM components (ERoTs, MCU, etc.) from device definition.
+    Single source of truth - device model defines what should exist.
+    """
+    # Use device definition as authoritative source (consistent with cluster refactoring)
+    available_components = devices.dut.get_spdm_components(setup_name)
 
-    # dut_device: BaseDevice = devices.dut
-    # return dut_device.get_available_erot_names(setup_name)
+    for component in available_components:
+        logging.info(f'SPDM component "{component}" expected on this device')
+
+    return available_components
 
 
 already_remote_rebooted = False

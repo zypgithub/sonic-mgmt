@@ -17,11 +17,14 @@ logger = logging.getLogger()
 @pytest.mark.skynet
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_chipsim_ci
-def test_mgmt_show_interface(engines):
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_mgmt_show_interface(engines, test_api):
     """
     Run show interface eth0 command and verify the required fields are exist
     command: nv show interface eth0 link
     """
+    TestToolkit.tested_api = test_api
 
     mgmt_port = Port()
     with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
@@ -36,7 +39,9 @@ def test_mgmt_show_interface(engines):
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.nvos_chipsim_ci
-def test_mgmt_show_interface_link(engines):
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_mgmt_show_interface_link(engines, test_api):
     """
     Run show interface eth0 link command and verify the required fields are exist
     only show cmds
@@ -44,7 +49,7 @@ def test_mgmt_show_interface_link(engines):
     command1: nv show interface eth0 link state
     command2: nv show interface eth0 link stats
     """
-
+    TestToolkit.tested_api = test_api
     mgmt_port = Port()
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
@@ -60,11 +65,14 @@ def test_mgmt_show_interface_link(engines):
 @pytest.mark.ib
 @pytest.mark.simx
 @pytest.mark.skynet
-def test_ib_show_interface_stats(engines):
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_ib_show_interface_stats(engines, test_api):
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
     """
+    TestToolkit.tested_api = test_api
     mgmt_port = Port()
 
     with allure.step('Run show command on selected port and verify that each field has an appropriate '
@@ -80,7 +88,9 @@ def test_ib_show_interface_stats(engines):
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.nvos_chipsim_ci
-def test_ib_show_interface_ip(engines):
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_ib_show_interface_ip(engines, test_api):
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
@@ -90,20 +100,22 @@ def test_ib_show_interface_ip(engines):
     2. Run 'nv show interface <name> link stats' on selected port
     3. Verify the required fields are presented in the output
     """
+    TestToolkit.tested_api = test_api
     mgmt_port = Port()
 
-    with allure.step('Run show command on selected port and verify that each field has an appropriate '
+    with allure.step('IPV4 - Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
         output_dictionary_ipv4 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ipv4.show()).get_returned_value()
 
-        output_dictionary_ipv6 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+        validate_ip_fields(output_dictionary, ipv4=True)
+
+    with allure.step('IPV6 - Run show command on selected port and verify that each field has an appropriate '
+                     'value according to the state of the port'):
+        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ipv6.show()).get_returned_value()
 
-        # Merge both dictionaries to get all fields
-        output_dictionary = {**output_dictionary_ipv4, **output_dictionary_ipv6}
-
-        validate_ip_fields(output_dictionary)
+        validate_ip_fields(output_dictionary, ipv4=False)
 
 
 def check_dhcp(mgmt_port, ipv4=True):
@@ -133,7 +145,8 @@ def check_dhcp(mgmt_port, ipv4=True):
 @pytest.mark.skynet
 @pytest.mark.interfaces
 @pytest.mark.nvos_chipsim_ci
-def test_show_interface_ip_dhcp(engines):
+@pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
+def test_show_interface_ip_dhcp(engines, test_api):
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface eth ip dhcp_client (and dhcp_client6)
@@ -145,6 +158,7 @@ def test_show_interface_ip_dhcp(engines):
     4. Run 'nv show interface eth0 ip dhcp_client6'
     5. Verify the required fields are presented in the output and set to default
     """
+    TestToolkit.tested_api = test_api
     mgmt_port = Port('eth0')
 
     check_dhcp(mgmt_port=mgmt_port, ipv4=True)  # test ipv4
@@ -158,7 +172,10 @@ def validate_interface_fields(output_dictionary):
                           IbInterfaceConsts.LINK,
                           IbInterfaceConsts.IFINDEX,
                           IbInterfaceConsts.IPV4,
-                          IbInterfaceConsts.IPV6]
+                          IbInterfaceConsts.IPV6,
+                          IbInterfaceConsts.VRF,
+                          IbInterfaceConsts.LINK_STATS,
+                          IbInterfaceConsts.LLDP]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
@@ -169,7 +186,8 @@ def validate_link_fields(output_dictionary):
                           IbInterfaceConsts.LINK_SPEED,
                           IbInterfaceConsts.LINK_MAC,
                           IbInterfaceConsts.LINK_DUPLEX,
-                          IbInterfaceConsts.LINK_STATE]
+                          IbInterfaceConsts.LINK_STATE,
+                          IbInterfaceConsts.LINK_AUTO_NEGOTIATE]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
@@ -188,15 +206,17 @@ def validate_stats_fields(output_dictionary):
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
-def validate_ip_fields(output_dictionary):
+def validate_ip_fields(output_dictionary, ipv4=True):
     with allure.step('Check that all expected fields under eth ip field exist in the output'):
         logging.info('Check that all expected fields under eth ip field exist in the output')
-        # Note: Both IPv4 and IPv6 use 'dhcp-client' field name (no separate dhcp-client6)
-        # When merged, we get: address, dhcp-client, arp-timeout (from IPv4), autoconf (from IPv6)
-        field_to_check = [IbInterfaceConsts.IP_ADDRESS,
-                          IbInterfaceConsts.IP_DHCP,
-                          IpConsts.ARP_TIMEOUT,
-                          IpConsts.AUTOCONF]
+        if ipv4:
+            field_to_check = [IbInterfaceConsts.IP_DHCP,
+                              IbInterfaceConsts.ARPTIMEOUT,
+                              IbInterfaceConsts.IP_ADDRESS,
+                              IbInterfaceConsts.IP_GATEWAY]
+        else:
+            field_to_check = [IbInterfaceConsts.IP_DHCP,
+                              IbInterfaceConsts.AUTOCONFIG]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
 
 
@@ -206,62 +226,3 @@ def verify_mac_address(expected_mac: str,
 
         mac_address = output_dictionary[IbInterfaceConsts.LINK_MAC]
         assert mac_address == expected_mac, f"MAC address mismatch. Expected: {expected_mac}, Actual: {mac_address}"
-
-
-# ------------ Open API tests -----------------
-
-@pytest.mark.cumulus
-@pytest.mark.openapi
-@pytest.mark.ib
-@pytest.mark.simx
-@pytest.mark.skynet
-@pytest.mark.ib_interfaces
-@pytest.mark.nvos_chipsim_ci
-@pytest.mark.nvos_ci
-def test_mgmt_show_interface_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_mgmt_show_interface(engines)
-
-
-@pytest.mark.cumulus
-@pytest.mark.openapi
-@pytest.mark.ib
-@pytest.mark.simx
-@pytest.mark.skynet
-@pytest.mark.nvos_chipsim_ci
-def test_mgmt_show_interface_link_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_mgmt_show_interface_link(engines)
-
-
-@pytest.mark.cumulus
-@pytest.mark.openapi
-@pytest.mark.ib
-@pytest.mark.simx
-@pytest.mark.skynet
-@pytest.mark.nvos_chipsim_ci
-def test_ib_show_interface_stats_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_show_interface_stats(engines)
-
-
-@pytest.mark.cumulus
-@pytest.mark.openapi
-@pytest.mark.ib
-@pytest.mark.simx
-@pytest.mark.nvos_chipsim_ci
-def test_ib_show_interface_ip_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_ib_show_interface_ip(engines)
-
-
-@pytest.mark.cumulus
-@pytest.mark.openapi
-@pytest.mark.ib
-@pytest.mark.simx
-@pytest.mark.interfaces
-@pytest.mark.skynet
-@pytest.mark.nvos_chipsim_ci
-def test_show_interface_ip_dhcp_openapi(engines):
-    TestToolkit.tested_api = ApiType.OPENAPI
-    test_show_interface_ip_dhcp(engines)

@@ -376,6 +376,8 @@ def test_acl_ipv6(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
 
 
 @pytest.mark.acl
+@pytest.mark.air
+@pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_acl_loopback(engines, test_api):
     """
@@ -400,6 +402,8 @@ def test_acl_loopback(engines, test_api):
 
 
 @pytest.mark.acl
+@pytest.mark.air
+@pytest.mark.simx
 def test_show_acl_commands(devices, engines, random_api, topology_obj):
     """
     Validate acl show commands.
@@ -550,6 +554,8 @@ def wait_till_acl_applied(mgmt_port, acl_id):
 
 
 @pytest.mark.acl
+@pytest.mark.air
+@pytest.mark.simx
 def test_inbound_outbound_counters(engines, random_api, topology_obj):
     """
     Validate inbound outbound counters.
@@ -810,6 +816,9 @@ def test_acl_match_ip_state(engines, test_api, topology_obj):
     1. config ACL with a match ip state rule
     2. send packet
     3. validate counter increased
+
+    Note: Testing 'new' state only as 'invalid' and 'established' states are difficult
+    to reliably test in control-plane ACLs without proper TCP handshake setup.
     """
     TestToolkit.tested_api = test_api
     acl_id = "AA_TEST_ACL_IP_STATE"
@@ -1670,6 +1679,16 @@ def get_dscp_hexadecimal_dict(option):
         return (random.choice(enum_list))
     else:
         logger.info("please provide valid option")
+
+
+@pytest.mark.acl
+@pytest.mark.air
+@pytest.mark.simx
+def test_default_acl(engines, devices, nvcommand):
+    default_acl_list = [AclConsts.ACL_MGMT_INBOUND_CP_DEFAULT, AclConsts.ACL_MGMT_INBOUND_DEFAULT]
+
+    with allure.step("Verify default ACL"):
+        nvcommand.interface.acl.acl_id[default_acl_list[0]].show().get_returned_value()
 
 
 @pytest.mark.acl

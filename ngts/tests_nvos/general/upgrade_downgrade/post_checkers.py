@@ -73,12 +73,12 @@ def _check_ipv6(engines: EnginesT, devices: DevicesT, **kwargs) -> None:
     with allure.step("Check IPv6 connectivity"):
         with allure.step("Check DHCP Client6 has lease"):
             port = Port(devices.dut.mgmt_ports[0])
-            dhcp_client6 = port.interface.ip.dhcp_client6.parse_show()
-            assert "yes" == dhcp_client6['has-lease'], "DHCP Client6 has no lease"
+            dhcp_client = port.interface.ipv6.dhcp_client.parse_show()
+            assert "yes" == dhcp_client['has-lease'], "DHCP Client6 has no lease"
 
         with allure.step("Check IPv6 address"):
             ipv6_add = None
-            for addr in port.interface.ip.address.parse_show():
+            for addr in port.interface.ipv6.address.parse_show():
                 if "::" in addr:
                     ipv6_add = addr.split("/")[0]
                     break

@@ -11,7 +11,6 @@ import time
 import json
 from email.mime.text import MIMEText
 
-import requests_cache
 import re
 
 import requests_cache
@@ -65,6 +64,7 @@ from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.ngts_types import EnginesT
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.AirTool import get_internal_ip_for_oob_server
 
 logger = logging.getLogger()
 
@@ -248,6 +248,8 @@ def engines(topology_obj, devices, request, is_ipv6):
     if not is_ipv6:
         update_engine_dut_mgmt_port(topology_obj, engines_data.dut, devices.dut)
 
+    if "dut2" in topology_obj.players:
+        engines_data.dut2 = topology_obj.players['dut2']['engine']
     # ha and hb are the traffic dockers
     if "ha" in topology_obj.players:
         engines_data.ha = topology_obj.players['ha']['engine']
@@ -268,6 +270,10 @@ def engines(topology_obj, devices, request, is_ipv6):
         engines_data.server = topology_obj.players['server']['engine']
     if "sonic-mgmt" in topology_obj.players:
         engines_data.sonic_mgmt = topology_obj.players['sonic-mgmt']['engine']
+
+    if "oob-mgmt-server" in topology_obj.players:
+        engines_data.oob_mgmt_server = topology_obj.players['oob-mgmt-server']['engine']
+        engines_data.oob_mgmt_server.ip = get_internal_ip_for_oob_server(engines_data.oob_mgmt_server)
 
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)

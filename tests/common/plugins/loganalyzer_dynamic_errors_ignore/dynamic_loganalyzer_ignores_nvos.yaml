@@ -1005,7 +1005,7 @@
     - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
   Conditions:
     - Affected_test_cases:
-        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+        - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_negative
 
 # NVOS : Errors which should be ignored in tests nvl5 ports
 - Errors_list:
@@ -1013,15 +1013,7 @@
     - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
   Conditions:
     - Affected_test_cases:
-        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
-
-# NVOS : Errors which should be ignored in tests nvl5 ports
-- Errors_list:
-    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
-    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+        - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_negative
 
 - Errors_list:
     - ".*ERR sonic-ztp\\[\\d+\\]: Exception \\[Expecting ',' delimiter: line \\d+ column \\d+ \\(char \\d+\\)] encountered while verifying '\\/etc\\/sonic\\/config_db\\.json'.*"
@@ -1454,6 +1446,7 @@
 
 # NVOS
 - Errors_list:
+    - '.*ERR health-statsd#health_history: FAN\d\/\d: is not working.*'
     - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
     - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
     - '.*WARNING pmon#psud: PSU absence warning: PSU \d is not present.*'
@@ -1668,14 +1661,14 @@
     - '.*not support op_vls 15 max vl is 8.*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_port_configuration
+      - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_port_configuration
 
 # NVOS
 - Errors_list:
     - '.*interface (\w+) speed (\d+G) is not part of the supported speeds \(supported speeds: \[200000, 400000\], preset: nvl\).*'
   Conditions:
     - Affected_test_cases:
-      - tests_nvos/interfaces/nvl5_port/test_nvl5_port.py::test_nvl5_negative
+      - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_negative
 
 # NVOS
 - Errors_list:
@@ -2204,4 +2197,20 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led
+
+- Errors_list:
+    - '.*\[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c\[\d+\]- get_dispatch_attribs_handler: Failed Get #\d, OPER_PORT_FEC_MODE, key:PORT.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_cluster_state.py::test_cluster_state
+
+
+- Errors_list:
+    - '.*asic_debug_config.*validate nvos version failed.*'
+    - '.*asic_debug_config_run: Asic debug configuration script.*failed.*'
+    - '.*Failed to start asic-debug-config.service - ASIC debug config service.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_negative
+
 # --------------------------------------------------

@@ -1,13 +1,14 @@
 import re
-import time
 import pytest
 import sys
 import logging
 
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.helpers.general_helpers import get_absolute_devts_path
 from pathlib import Path
 
-sys.path.append('/devts/tests/skynet')
+devts_p = Path(get_absolute_devts_path() or '/devts')
+sys.path.append(str(devts_p / 'tests' / 'skynet'))
 from system.test_cpu_ram_hdd_usage import do_cpu_usage_test, do_ram_usage_test, do_hdd_usage_test, \
     do_ssd_endurance_test  # noqa
 

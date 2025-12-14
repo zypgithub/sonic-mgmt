@@ -13,7 +13,7 @@ from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbCons
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, PhyRecoveryConsts
 from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -22,8 +22,9 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA, FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
@@ -49,6 +50,7 @@ class IbSwitch(BaseSwitch):
         self.default_username = os.environ["NVU_SWITCH_USER"]
         self.prev_default_password = os.environ["NVU_SWITCH_PASSWORD"]
         self._init_ib_speeds()
+        self._init_interfaces_ib_lanes()
         self._init_eth0_speeds()
         self._init_eth0_duplex()
         self.init_documents_consts()
@@ -149,9 +151,27 @@ class IbSwitch(BaseSwitch):
             print(f"SCP command failed - error output: {ex}")
             return ""
 
+    @staticmethod
+    def check_fec_capability():
+        platform = Platform()
+        platform_output = OutputParsingTool.parse_json_str_to_dictionary(platform.show()).get_returned_value()
+        asic_model = platform_output['asic-model']
+        if "NVLink-6" in asic_model:
+            # Platform is FEC capable
+            return True
+        else:
+            # Platform is FEC incapable
+            return False
+
     def _init_ib_speeds(self):
         self.invalid_ib_speeds = {'qdr': '40G'}
         self.supported_ib_speeds = ('hdr', 'edr', 'fdr', 'sdr', 'ndr')
+        # Note: FNM speeds set in subclasses that have FNM ports
+
+    def _init_interfaces_ib_lanes(self):
+        """Initialize lane configurations for IB ports. Override in subclasses for FNM-specific lanes."""
+        self.supported_lanes = '4X'  # Default for regular IB ports
+        # Note: FNM lanes set in subclasses that have FNM ports
 
     def _init_eth0_speeds(self):
         self.supported_eth0_speeds = ['100M', '1G']
@@ -531,16 +551,14 @@ class IbSwitch(BaseSwitch):
             IbInterfaceConsts.LINK_STATS_OUT_ERRORS: GnmiConstants.OUT_ERRORS,
             IbInterfaceConsts.LINK_STATS_IN_SYMBOL_ERRORS: GnmiConstants.SYMBOL_ERROR_COUNTER,
             IbInterfaceConsts.LINK_STATS_OUT_WAIT: GnmiConstants.XMIT_WAIT,
-            IbInterfaceConsts.LINK_STATS_QNT3[0]: GnmiConstants.LINK_ERROR_RECOVERY,
-            IbInterfaceConsts.LINK_STATS_QNT3[1]: GnmiConstants.LINK_DOWNED,
-            IbInterfaceConsts.LINK_STATS_QNT3[2]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[3]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[4]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[5]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
-            IbInterfaceConsts.LINK_STATS_QNT3[6]: GnmiConstants.QP1_DROPPED,
-            IbInterfaceConsts.LINK_STATS_QNT3[7]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
-            # IbInterfaceConsts.LINK_STATS_QNT3[8]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
-            # IbInterfaceConsts.LINK_STATS_QNT3[9]: '', #TODO: check if attributes exist in gnmi output in different names, otherwise delete
+            # QTM3 top-level fields
+            IbInterfaceConsts.LINK_STATS_QNT3_TOP_LEVEL[0]: GnmiConstants.PORT_BUFFER_OVERRUN_ERRORS,
+            # QTM3 fields under 'link' dictionary
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[0]: GnmiConstants.LINK_ERROR_RECOVERY,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[1]: GnmiConstants.RCV_REMOTE_PHY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[2]: GnmiConstants.RCV_SWITCH_RELAY_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[3]: GnmiConstants.RCV_CONSTRAINTS_ERRORS,
+            IbInterfaceConsts.LINK_STATS_QNT3_UNDER_LINK[4]: GnmiConstants.LOCAL_LINK_INTEGRITY_ERRORS,
             IbInterfaceConsts.LINK_PLR_RCV_CODES_ERRORS: GnmiConstants.LINK_PLR_RCV_CODE_ERRORS,
             IbInterfaceConsts.LINK_STATS_UNICAST_IN_PKTS: GnmiConstants.IN_UNICAST_PKTS,
             IbInterfaceConsts.LINK_STATS_UNICAST_OUT_PKTS: GnmiConstants.OUT_UNICAST_PKTS,
@@ -856,7 +874,14 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_ib_speeds(self):
         super()._init_ib_speeds()
-        self.supported_ib_speeds = ("xdr",)
+        self.supported_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')  # BlackMamba supports all speeds including XDR
+        self.supported_fnm_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')  # BlackMamba FNM also supports XDR
+        self.supported_internal_fnm_ib_speeds = ('sdr', 'hdr')  # Internal FNM has fewer speeds
+
+    def _init_interfaces_ib_lanes(self):
+        super()._init_interfaces_ib_lanes()
+        self.supported_fnm_lanes = '4X'  # BlackMamba regular FNM
+        self.supported_internal_fnm_lanes = '1X'  # BlackMamba internal FNM
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr.yml'
@@ -1062,6 +1087,9 @@ class CrocodileSwitch(IbSwitch):
         self.core_count = 4
         self.split_ports_supported = True
         self.asic_type = NvosConst.QTM3
+        self.supported_lanes = '4X'  # Crocodile regular IB ports
+        self.supported_fnm_lanes = '1X,2X'  # Crocodile regular FNM
+        self.supported_internal_fnm_lanes = '1X,2X'  # Crocodile internal FNM (same as regular FNM)
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-nvidia_qm3400-r0")
         self.show_platform_output.update({
             PlatformConsts.SYSTEM_TYPE: ExpectedString(regex="(QM3400|Q3200_RA)"),
@@ -1134,6 +1162,17 @@ class CrocodileSwitch(IbSwitch):
     def _init_eth0_speeds(self):
         super()._init_eth0_speeds()
         self.supported_eth0_speeds += ['10M']
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_ib_speeds = ('sdr', 'hdr', 'ndr', 'xdr')  # Crocodile supports XDR
+        self.supported_fnm_ib_speeds = ('sdr', 'hdr', 'ndr')  # Crocodile FNM (no XDR)
+        self.supported_internal_fnm_ib_speeds = ('sdr', 'hdr')  # Crocodile internal FNM
+
+    def _init_interfaces_ib_lanes(self):
+        super()._init_interfaces_ib_lanes()
+        self.supported_fnm_lanes = '1X,2X'  # Crocodile FNM
+        self.supported_internal_fnm_lanes = '1X,2X'  # Crocodile internal FNM
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
         return 'nvos_config_xdr_crocodile.yml'
@@ -1260,6 +1299,15 @@ class NvLinkSwitch(IbSwitch):
         super()._init_interface_lists()
         self.mgmt_ports = ['eth0', 'eth1']
 
+    def _init_ib_speeds(self):
+        # NVL doesn't use IB speeds, but has FNM with different speed format
+        self.supported_fnm_speeds = ['10G', '200G']  # Juliet FNM speeds (NVL format)
+
+    def _init_interfaces_ib_lanes(self):
+        self.supported_lanes = '2X'  # Juliet NVL ports
+        self.supported_fnm_lanes = '2X'  # Juliet regular FNM
+        self.supported_internal_fnm_lanes = '2X'  # Juliet internal FNM
+
     def _init_interface_attributes_mapping_dict(self):
         super()._init_interface_attributes_mapping_dict()
         self.interface_attributes_mapping_dict.update({
@@ -1282,6 +1330,18 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show system profile",
                                           "nv show ib ibdiagnet"]
         self.mgmt_ports = ['eth0', 'eth1']
+        self.default_phy_recovery_counters = {
+            PhyRecoveryConsts.UNINTENTIONAL_LINK_DOWN_EVENTS: 0,
+            PhyRecoveryConsts.TOTAL_SUCCESSFUL_RECOVERY_EVENTS: 0,
+            PhyRecoveryConsts.SUCCESSFUL_RECOVERY_EVENTS: 0,
+            PhyRecoveryConsts.INTENTIONAL_LINK_DOWN_EVENTS: 0,
+            PhyRecoveryConsts.TIME_SINCE_LAST_RECOVERY: 0,
+            PhyRecoveryConsts.TIME_BETWEEN_LAST_TWO_RECOVERIES: 0,
+            PhyRecoveryConsts.TIME_IN_LAST_LOGIC_RECOVERY_EVENT: 0,
+            PhyRecoveryConsts.TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT: 0,
+            PhyRecoveryConsts.LAST_LOGIC_RECOVERY_ATTEMPTS: 0,
+            PhyRecoveryConsts.LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0
+        }
 
         self.memory_size: float = 15.0
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
@@ -1305,7 +1365,12 @@ class JulietSwitch(NvLinkSwitch):
         super()._init_constants()
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.mgmt_ports = ['eth0', 'eth1']
-
+        self.components_list = [FW_COMPONENT_CPLD,
+                                FW_COMPONENT_BMC,
+                                FW_COMPONENT_FPGA,
+                                FW_COMPONENT_BIOS,
+                                FW_COMPONENT_EROT]
+        self.supported_nvl_speeds = ['200G', '400G']
         self.category_list = ['temperature', 'cpu', 'disk', 'fan', 'mgmt-interface', 'voltage']
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
@@ -1334,23 +1399,32 @@ class JulietSwitch(NvLinkSwitch):
         self.show_platform_chassis_location_output = {
             ChassisLocationConsts.TRAY_ID: ExpectedString(range_min=-1, range_max=18),
             ChassisLocationConsts.SLOT_NUM: ExpectedString(range_min=0, range_max=28),
-            ChassisLocationConsts.CHAS_SN: ExpectedString(regex="^\\d+$"),
+            ChassisLocationConsts.CHAS_SN: ExpectedString(regex="^\\d+$|^999WWYY123456$"),
             ChassisLocationConsts.TOPO_ID: ExpectedString(regex=f"^({'|'.join(ChassisLocationConsts.ALLOWED_TOPOLOGIES)})$")
         }
         self.show_platform_cable_cartridge_output = {
             CableCartridgeConsts.KEY_TRAY_ID: ExpectedString(range_min=-1, range_max=18),
             CableCartridgeConsts.KEY_SLOT_ID: ExpectedString(range_min=0, range_max=28),
-            CableCartridgeConsts.KEY_SERIAL: ExpectedString(regex="^\\d+$"),
+            CableCartridgeConsts.KEY_SERIAL: ExpectedString(regex="^\\d+$|^999WWYY123456$"),
             CableCartridgeConsts.KEY_PART_NUMBER: ExpectedString(regex=f"^({'|'.join(CableCartridgeConsts.ALLOWED_PART_NUMBERS)})$"),
             CableCartridgeConsts.KEY_MANUFACTURING_DATE: ExpectedString(regex="^(0[1-9]|1[0-2])/([0-2][0-9]|3[0-1])/\\d{2} - ([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9])$")
         }
-        cluster_files = ['conf', 'nmx-controller', 'nmx-telemetry']
+        cluster_files = ['conf', ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_TELEMETRY]
         self.constants = self.constants._replace(cluster_files=cluster_files)
         bmc_dump_files = ['bmc_debug_log_dump.tar.xz']
         self.constants = self.constants._replace(bmc_dump_files=bmc_dump_files)
         self.constants.dump_files.append('BMCeeprom')
         self.constants.dump_files.remove('hdparm')
-        self.constants.log_nmx_files.extend(['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'])
+
+        # Define log files per cluster app (these are app-specific)
+        self.cluster_log_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'],
+            ClusterConsts.NMX_TELEMETRY: []  # TBD: Add telemetry-specific logs when identified
+        }
+        # Backward compatibility: extend generic log_nmx_files with all app logs
+        for app_logs in self.cluster_log_files_by_app.values():
+            if app_logs:  # Only extend if list is not empty
+                self.constants.log_nmx_files.extend(app_logs)
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "fan.csv.gz",
                             "mgmt-interface.csv.gz", "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
@@ -1376,6 +1450,24 @@ class JulietSwitch(NvLinkSwitch):
                 'filename': 'cec1736-apfw-0000012.fwpkg',
                 'version_name': '0ACTV_00.00.018d',
                 'date': '08/21/2024'})
+
+        # SDN Configuration edit commands for Juliet (both FM and SM configs)
+        self.sdn_fm_config_edits = [
+            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file} && \\",
+            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file} && \\",
+            "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file} && \\",
+            "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
+        ]
+        # SM config edits for Juliet (only when has_loopbox)
+        self.sdn_sm_config_edits = [
+            "# Ensure nvlink_enable=FALSE",
+            "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file} && \\",
+            "sudo grep -q '^nvlink_enable' {file} || echo 'nvlink_enable FALSE' | sudo tee -a {file}",
+            "# Comment plugin_name grpc_mgr",
+            "sudo sed -i '/^[ ]*plugin_name[ ]\\+grpc_mgr/s/^/#/' {file}",
+            "# Comment plugin_options -grpc_mgr",
+            "sudo sed -i '/^[ ]*plugin_options[ ]\\+-grpc_mgr[ ]\\+--config_file[ ]\\+/s/^/#/' {file}"
+        ]
 
         self.reboot_reason_dict = {
             RebootConsts.HALT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
@@ -1428,7 +1520,7 @@ class JulietSwitch(NvLinkSwitch):
     def _init_fae_lists(self):
         super()._init_fae_lists()
         self.fae_eeprom_values = {
-            "BMC": {"Manufacturer": "NVIDIA", "Model": None, "PartNumber": ExpectedString(r"[-\d]+"),
+            "BMC": {"Manufacturer": "NVIDIA", "Model": None, "PartNumber": ExpectedString(r"[-\dA-Z]+"),
                     "SerialNumber": ExpectedString.number_and_string(""), "State": "Enabled"}
         }
 
@@ -1457,7 +1549,11 @@ class JulietSwitch(NvLinkSwitch):
         self.timeout_system_is_ready = 20 * MINUTE
         self.timeout_reboot_to_grub_menu = 5 * MINUTE
 
-    def get_available_erot_names(self, setup_name: str) -> List[str]:
+    def get_spdm_components(self, setup_name: str) -> List[str]:
+        """
+        Get available SPDM components for this device type (setup-specific for Juliet).
+        SPDM components include: ERoTs (BMC, CPU, FPGA, NVSwitch), MCU, etc.
+        """
         available_erots_per_juliet_number: Dict[str, List[str]] = {
             '68': [SPDMComponents.BMC],
             '121': SPDMComponents.ALL_SUPPORTED_COMPONENTS,
@@ -1468,8 +1564,9 @@ class JulietSwitch(NvLinkSwitch):
             if setup_name.endswith(juliet_num):
                 logging.info(f'available ERoTs for {setup_name} - {available_erots}')
                 return available_erots
-        logging.info(f'no available ERoTs found for {setup_name}')
-        return []
+        # Default: Standard Juliet systems have all SPDM components
+        logging.info(f'Using default (all) SPDM components for {setup_name}')
+        return SPDMComponents.ALL_SUPPORTED_COMPONENTS
 
 
 # -------------------------- JulietScaleout Switch ----------------------------
@@ -1485,7 +1582,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app_nmx_telemetry = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-telemetry', 'app-ver': None, 'capabilities': 'nvl, gnmi, syslog, bmc', 'components-ver': None, 'reason': '', 'status': 'ok'}
         self.cluster_app = {
-            'nmx-controller': {
+            ClusterConsts.NMX_CONTROLLER: {
                 **{  # Unpack
                     key: value
                     for key, value in self.cluster_app_nmx_controller.items()
@@ -1503,7 +1600,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                     "rbac-mode": ""
                 }
             },
-            'nmx-telemetry': {
+            ClusterConsts.NMX_TELEMETRY: {
                 **{
                     key: value
                     for key, value in self.cluster_app_nmx_telemetry.items()
@@ -1527,10 +1624,28 @@ class JulietScaleoutSwitch(JulietSwitch):
         #     'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in []}
         # }
         self.cluster_app_installed = {
-            'nmx-controller': {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
-            'nmx-telemetry': {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
+            ClusterConsts.NMX_CONTROLLER: {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
+            ClusterConsts.NMX_TELEMETRY: {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
         }
         # self.cluster_app = {'nmx-controller': self.cluster_app_nmx_controller, 'nmx-telemetry': self.cluster_app_nmx_telemetry}
+
+        # Cluster apps configuration - Juliet has both controller and telemetry
+        self.expected_cluster_apps = ClusterConsts.INITIAL_EXPECTED_APPS
+        self.cluster_config_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES,
+            ClusterConsts.NMX_TELEMETRY: ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES
+        }
+        self.cluster_state_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_STATE_FILE_TYPES,
+            ClusterConsts.NMX_TELEMETRY: ClusterConsts.NMX_TELEMETRY_STATE_FILE_TYPES
+        }
+        # Tech-support: directory path and expected log files per app
+        self.cluster_techsupport_dirs_by_app = {
+            ClusterConsts.NMX_CONTROLLER: f'log/nmx/{ClusterConsts.NMX_CONTROLLER_PREFIX}',
+            ClusterConsts.NMX_TELEMETRY: f'log/nmx/{ClusterConsts.NMX_TELEMETRY_PREFIX}'
+        }
+        # Note: cluster_log_files_by_app inherited from JulietSwitch parent
+
         self.core_count = 8
         self.reboot_type = 'julietscaleout_reboot'
         self.reset_factory = 'julietscaleout reset factory'
@@ -1596,7 +1711,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = ['fnm1', 'fnm2']
         self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
         self.nvl_port = ['sw1p1s1']
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '400G'
@@ -1806,7 +1921,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = ['fnm1', 'fnm2']
         self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
         self.nvl_port = ['sw1p1s1']
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '400G'
@@ -2031,7 +2146,7 @@ class JulietNonScaleoutSwitchNoNCI(JulietNonScaleoutSwitch):
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = ['fnm1', 'fnm2']
         self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma1p1']
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
         self.nvl_port = ['sw1p1s1']
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '400G'
@@ -2109,12 +2224,65 @@ class JulietNonScaleoutSwitchNoNCI5600(JulietNonScaleoutSwitchNoNCI):
 class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
     def __init__(self, asic_amount=4):
-        super().__init__(asic_amount=4)
+        super().__init__(asic_amount=asic_amount)
+
+    def get_spdm_components(self, setup_name: str) -> List[str]:
+        """
+        Get available SPDM components for this device type.
+        Rosalind/Surrogate systems: BMC, CPU (no FPGA, no NVSwitch)
+        """
+        logging.info(f'Rosalind/Surrogate available ERoTs: BMC and CPU only')
+        return [SPDMComponents.BMC, SPDMComponents.CPU]
+
+    def _init_dockers(self):
+        """Override docker list for Rosalind/Surrogate platforms - uses gnmi-server instead of nv-gnmi/nv-umf."""
+        super()._init_dockers()
+        # Remove legacy dockers that don't exist on Rosalind/Surrogate
+        if 'nv-gnmi' in self.available_dockers:
+            self.available_dockers.remove('nv-gnmi')
+        if 'nv-umf' in self.available_dockers:
+            self.available_dockers.remove('nv-umf')
+        # Add the actual docker used on Rosalind/Surrogate platforms
+        if 'gnmi-server' not in self.available_dockers:
+            self.available_dockers.append('gnmi-server')
 
     def _init_constants(self):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
+        self.supported_nvl_speeds = ['200G', '400G']
         self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
+        # Override mst device names for Rosalind Surrogate (4 ASICs) to mt54008 devices
+        self.mst_dev_name = tuple(f'/dev/mst/mt54008_pciconf{i}' for i in range(self.asic_amount))
+        self.sma_amount = 2
+        self.sma_components = list(f"{PlatformConsts.FW_SMA}{i if i else ''}" for i in range(0, self.sma_amount + 1))
+        self._extend_firmware_by_sma_amount()
+        # Rosalind/Surrogate platforms have nvbridge capability - update only the controller definition
+        self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, nvbridge, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
+        # Rebuild cluster_app dictionaries with updated nmx_controller (inherits telemetry from parent)
+        self.cluster_app = {
+            ClusterConsts.NMX_CONTROLLER: {
+                **{key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
+                'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "disabled"},
+                "rbac": {"rbac-file": "", "rbac-mode": ""}
+            },
+            ClusterConsts.NMX_TELEMETRY: {
+                **{key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in []},
+                'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "enabled"},
+                "rbac": {"rbac-file": "", "rbac-mode": ""}
+            }
+        }
+        self.cluster_app_installed = {
+            ClusterConsts.NMX_CONTROLLER: {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
+            ClusterConsts.NMX_TELEMETRY: {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
+        }
+
+        # Note: expected_cluster_apps, cluster_config_files_by_app, cluster_state_files_by_app
+        # are inherited from JulietScaleoutSwitch parent (both apps) - no need to redefine
+        self.components_list = [FW_COMPONENT_CPLD,
+                                FW_COMPONENT_BMC,
+                                FW_COMPONENT_SMA,
+                                FW_COMPONENT_BIOS,
+                                FW_COMPONENT_EROT]
         self.category_disabled_dict = {
             self.category_list[0]: self.category_default_disabled_dict,
             self.category_list[1]: self.category_default_disabled_dict,
@@ -2130,207 +2298,83 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.category_list[4]: self.category_default_dict
         }
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/surrogate_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6150_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N6150_LD",
+            PlatformConsts.SYSTEM_TYPE: "N6150_LD",
             "asic-model": self.asic_type,
         })
         self.cpld_amount = 2
         self._extend_firmware_by_cpld_amount()
+        self.memory_speed = 2667  # in MT/s (Rosalind/Surrogate use 2667, not 2400)
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
-        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
-        log_dump_files = ["audit.log.gz", "auth.log.gz", "btmp.gz", "cron.log.gz",
+        self.constants.erots.clear()
+        self.constants.erots.extend([PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME])
+        self.constants.firmware.remove(PlatformConsts.FW_FPGA)
+        log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
-        self.constants = self.constants._replace(log_dump_files=log_dump_files)
+        self.constants = self.constants._replace(log_dump_files=log_dump_files, techsupport_size_limit_mb=135)
         self.voltage_sensors = [
-            "PDB+PwrConv1+Vol+In+1",
-            "PDB+PwrConv1+Vol+Out+1",
-            "PDB+PwrConv1+Curr+In+1",
-            "PDB-PwrConv1+Curr+Out+1",
-            "PDB+PwrConv2+Vol+In+1",
-            "PDB+PwrConv2+Vol+Out+1",
-            "PDB+PwrConv2+Curr+In+1",
-            "PDB-PwrConv2+Curr+Out+1",
-            "PDB+HSC+VinDC+Volt+In",
-            "PDB+HSC+VinDC+Volt+Out",
-            "PDB+HSC+VinDC+Curr+In",
-            "PDB+HSC+VinDC+Pwr+In",
-            "PMIC-1+PVIN1_VDD_ASIC1+Vol+In+1",
-            "PMIC-1+ASIC1_VDD+Vol+Out+1",
-            "PMIC-1+PVIN1_VDD_ASIC1+Pwr+In+1",
-            "PMIC-1+ASIC1_VDD+Pwr+Out+1",
-            "PMIC-1+PVIN1_VDD_ASIC1+Curr+In+1",
-            "PMIC-1+ASIC1_VDD+Curr+Out+1",
-            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
-            "PMIC-2+ASIC1_AVDD_PL0+Vol+Out+1",
-            "PMIC-2+ASIC1_DVDD_PL0+Vol+Out+2",
-            "PMIC-2+PVIN1_AVDD_ASIC1+Pwr+In+1",
-            "PMIC-2+PVIN1_DVDD_ASIC1+Pwr+In+2",
-            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+1",
-            "PMIC-2+ASIC1_AVDD_PL0+Pwr+Out+2",
-            "PMIC-2+PVIN1_AVDD_DVDD_ASIC1+Curr+In+1",
-            "PMIC-2+PVIN1_DVDD_ASIC1+Curr+In+2",
-            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+1",
-            "PMIC-2+ASIC1_AVDD_PL0+Curr+Out+2",
-            "PMIC-3+PVIN1_AVDD_DVDD_ASIC1+Vol+In+1",
-            "PMIC-3+ASIC1_AVDD_PL1+Vol+Out+1",
-            "PMIC-3+ASIC1_DVDD_PL1+Vol+Out+2",
-            "PMIC-3+PVIN1_AVDD_ASIC1+Pwr+In+1",
-            "PMIC-3+PVIN1_DVDD_ASIC1+Pwr+In+2",
-            "PMIC-3+ASIC1_AVDD_PL1+Pwr+Out+1",
-            "PMIC-3+ASIC1_DVDD_PL1+Pwr+Out+2",
-            "PMIC-3+PVIN1_AVDD_ASIC1+Curr+In+1",
-            "PMIC-3+PVIN1_DVDD_ASIC1+Curr+In+2",
-            "PMIC-3+ASIC1_AVDD_PL1+Curr+Out+1",
-            "PMIC-3+ASIC1_DVDD_PL1+Curr+Out+2",
-            "PMIC-4+PVIN1_AVCC_HVDD_ASIC1+Vol+In+1",
-            "PMIC-4+ASIC1_AVCC_PL0_PL1+Vol+Out+1",
-            "PMIC-4+ASIC1_HVDD_PL0_PL1+Vol+Out+2",
-            "PMIC-4+PVIN1_AVCC_ASIC1+Pwr+In+1",
-            "PMIC-4+PVIN1_HVDD_ASIC1+Pwr+In+2",
-            "PMIC-4+ASIC1_AVCC_PL0_PL1+Pwr+Out+1",
-            "PMIC-4+ASIC1_HVDD_PL0_PL1+Pwr+Out+2",
-            "PMIC-4+PVIN1_AVCC_ASIC1+Curr+In+1",
-            "PMIC-4+PVIN1_HVDD_ASIC1+Curr+In+2",
-            "PMIC-4+ASIC1_AVCC_PL0_PL1+Curr+Out+1",
-            "PMIC-4+ASIC1_HVDD_PL0_PL1+Curr+Out+2",
-            "PMIC-5+PVIN1_VDD_ASIC2+Vol+In+1",
-            "PMIC-5+ASIC2_VDD+Vol+Out+1",
-            "PMIC-5+PVIN1_VDD_ASIC2+Pwr+In+1",
-            "PMIC-5+ASIC2_VDD+Pwr+Out+1",
-            "PMIC-5+PVIN1_VDD_ASIC2+Curr+In+1",
-            "PMIC-5+ASIC2_VDD+Curr+Out+1",
-            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
-            "PMIC-6+ASIC2_AVDD_PL0+Vol+Out+1",
-            "PMIC-6+ASIC2_DVDD_PL0+Vol+Out+2",
-            "PMIC-6+PVIN1_AVDD_ASIC2+Pwr+In+1",
-            "PMIC-6+PVIN1_DVDD_ASIC2+Pwr+In+2",
-            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+1",
-            "PMIC-6+ASIC2_AVDD_PL0+Pwr+Out+2",
-            "PMIC-6+PVIN1_AVDD_DVDD_ASIC2+Curr+In+1",
-            "PMIC-6+PVIN1_DVDD_ASIC2+Curr+In+2",
-            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+1",
-            "PMIC-6+ASIC2_AVDD_PL0+Curr+Out+2",
-            "PMIC-7+PVIN1_AVDD_DVDD_ASIC2+Vol+In+1",
-            "PMIC-7+ASIC2_AVDD_PL1+Vol+Out+1",
-            "PMIC-7+ASIC2_DVDD_PL1+Vol+Out+2",
-            "PMIC-7+PVIN1_AVDD_ASIC2+Pwr+In+1",
-            "PMIC-7+PVIN1_DVDD_ASIC2+Pwr+In+2",
-            "PMIC-7+ASIC2_AVDD_PL1+Pwr+Out+1",
-            "PMIC-7+ASIC2_DVDD_PL1+Pwr+Out+2",
-            "PMIC-7+PVIN1_AVDD_ASIC2+Curr+In+1",
-            "PMIC-7+PVIN1_DVDD_ASIC2+Curr+In+2",
-            "PMIC-7+ASIC2_AVDD_PL1+Curr+Out+1",
-            "PMIC-7+ASIC2_DVDD_PL1+Curr+Out+2",
-            "PMIC-8+PVIN1_AVCC_HVDD_ASIC2+Vol+In+1",
-            "PMIC-8+ASIC2_AVCC_PL0_PL1+Vol+Out+1",
-            "PMIC-8+ASIC2_HVDD_PL0_PL1+Vol+Out+2",
-            "PMIC-8+PVIN1_AVCC_ASIC2+Pwr+In+1",
-            "PMIC-8+PVIN1_HVDD_ASIC2+Pwr+In+2",
-            "PMIC-8+ASIC2_AVCC_PL0_PL1+Pwr+Out+1",
-            "PMIC-8+ASIC2_HVDD_PL0_PL1+Pwr+Out+2",
-            "PMIC-8+PVIN1_AVCC_ASIC2+Curr+In+1",
-            "PMIC-8+PVIN1_HVDD_ASIC2+Curr+In+2",
-            "PMIC-8+ASIC2_AVCC_PL0_PL1+Curr+Out+1",
-            "PMIC-8+ASIC2_HVDD_PL0_PL1+Curr+Out+2",
-            "PMIC-9+PVIN1_VDD_ASIC3+Vol+In+1",
-            "PMIC-9+ASIC3_VDD+Vol+Out+1",
-            "PMIC-9+PVIN1_VDD_ASIC3+Pwr+In+1",
-            "PMIC-9+ASIC3_VDD+Pwr+Out+1",
-            "PMIC-9+PVIN1_VDD_ASIC3+Curr+In+1",
-            "PMIC-9+ASIC3_VDD+Curr+Out+1",
-            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
-            "PMIC-10+ASIC3_AVDD_PL0+Vol+Out+1",
-            "PMIC-10+ASIC3_DVDD_PL0+Vol+Out+2",
-            "PMIC-10+PVIN1_AVDD_ASIC3+Pwr+In+1",
-            "PMIC-10+PVIN1_DVDD_ASIC3+Pwr+In+2",
-            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+1",
-            "PMIC-10+ASIC3_AVDD_PL0+Pwr+Out+2",
-            "PMIC-10+PVIN1_AVDD_DVDD_ASIC3+Curr+In+1",
-            "PMIC-10+PVIN1_DVDD_ASIC3+Curr+In+2",
-            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+1",
-            "PMIC-10+ASIC3_AVDD_PL0+Curr+Out+2",
-            "PMIC-11+PVIN1_AVDD_DVDD_ASIC3+Vol+In+1",
-            "PMIC-11+ASIC3_AVDD_PL1+Vol+Out+1",
-            "PMIC-11+ASIC3_DVDD_PL1+Vol+Out+2",
-            "PMIC-11+PVIN1_AVDD_ASIC3+Pwr+In+1",
-            "PMIC-11+PVIN1_DVDD_ASIC3+Pwr+In+2",
-            "PMIC-11+ASIC3_AVDD_PL1+Pwr+Out+1",
-            "PMIC-11+ASIC3_DVDD_PL1+Pwr+Out+2",
-            "PMIC-11+PVIN1_AVDD_ASIC3+Curr+In+1",
-            "PMIC-11+PVIN1_DVDD_ASIC3+Curr+In+2",
-            "PMIC-11+ASIC3_AVDD_PL1+Curr+Out+1",
-            "PMIC-11+ASIC3_DVDD_PL1+Curr+Out+2",
-            "PMIC-12+PVIN1_AVCC_HVDD_ASIC3+Vol+In+1",
-            "PMIC-12+ASIC3_AVCC_PL0_PL1+Vol+Out+1",
-            "PMIC-12+ASIC3_HVDD_PL0_PL1+Vol+Out+2",
-            "PMIC-12+PVIN1_AVCC_ASIC3+Pwr+In+1",
-            "PMIC-12+PVIN1_HVDD_ASIC3+Pwr+In+2",
-            "PMIC-12+ASIC3_AVCC_PL0_PL1+Pwr+Out+1",
-            "PMIC-12+ASIC3_HVDD_PL0_PL1+Pwr+Out+2",
-            "PMIC-12+PVIN1_AVCC_ASIC3+Curr+In+1",
-            "PMIC-12+PVIN1_HVDD_ASIC3+Curr+In+2",
-            "PMIC-12+ASIC3_AVCC_PL0_PL1+Curr+Out+1",
-            "PMIC-12+ASIC3_HVDD_PL0_PL1+Curr+Out+2",
-            "PMIC-13+PVIN1_VDD_ASIC4+Vol+In+1",
-            "PMIC-13+ASIC4_VDD+Vol+Out+1",
-            "PMIC-13+PVIN1_VDD_ASIC4+Pwr+In+1",
-            "PMIC-13+ASIC4_VDD+Pwr+Out+1",
-            "PMIC-13+PVIN1_VDD_ASIC4+Curr+In+1",
-            "PMIC-13+ASIC4_VDD+Curr+Out+1",
-            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
-            "PMIC-14+ASIC4_AVDD_PL0+Vol+Out+1",
-            "PMIC-14+ASIC4_DVDD_PL0+Vol+Out+2",
-            "PMIC-14+PVIN1_AVDD_ASIC4+Pwr+In+1",
-            "PMIC-14+PVIN1_DVDD_ASIC4+Pwr+In+2",
-            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+1",
-            "PMIC-14+ASIC4_AVDD_PL0+Pwr+Out+2",
-            "PMIC-14+PVIN1_AVDD_DVDD_ASIC4+Curr+In+1",
-            "PMIC-14+PVIN1_DVDD_ASIC4+Curr+In+2",
-            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+1",
-            "PMIC-14+ASIC4_AVDD_PL0+Curr+Out+2",
-            "PMIC-15+PVIN1_AVDD_DVDD_ASIC4+Vol+In+1",
-            "PMIC-15+ASIC4_AVDD_PL1+Vol+Out+1",
-            "PMIC-15+ASIC4_DVDD_PL1+Vol+Out+2",
-            "PMIC-15+PVIN1_AVDD_ASIC4+Pwr+In+1",
-            "PMIC-15+PVIN1_DVDD_ASIC4+Pwr+In+2",
-            "PMIC-15+ASIC4_AVDD_PL1+Pwr+Out+1",
-            "PMIC-15+ASIC4_DVDD_PL1+Pwr+Out+2",
-            "PMIC-15+PVIN1_AVDD_ASIC4+Curr+In+1",
-            "PMIC-15+PVIN1_DVDD_ASIC4+Curr+In+2",
-            "PMIC-15+ASIC4_AVDD_PL1+Curr+Out+1",
-            "PMIC-15+ASIC4_DVDD_PL1+Curr+Out+2",
-            "PMIC-16+PVIN1_AVCC_HVDD_ASIC4+Vol+In+1",
-            "PMIC-16+ASIC4_AVCC_PL0_PL1+Vol+Out+1",
-            "PMIC-16+ASIC4_HVDD_PL0_PL1+Vol+Out+2",
-            "PMIC-16+PVIN1_AVCC_ASIC4+Pwr+In+1",
-            "PMIC-16+PVIN1_HVDD_ASIC4+Pwr+In+2",
-            "PMIC-16+ASIC4_AVCC_PL0_PL1+Pwr+Out+1",
-            "PMIC-16+ASIC4_HVDD_PL0_PL1+Pwr+Out+2",
-            "PMIC-16+PVIN1_AVCC_ASIC4+Curr+In+1",
-            "PMIC-16+PVIN1_HVDD_ASIC4+Curr+In+2",
-            "PMIC-16+ASIC4_AVCC_PL0_PL1+Curr+Out+1",
-            "PMIC-16+ASIC4_HVDD_PL0_PL1+Curr+Out+2",
-            "PMIC-17+12V_MAIN+Vol+In+1",
-            "PMIC-17+CPU+Vol+Out+1",
-            "PMIC-17+SOC+Vol+Out+2",
-            "PMIC-17+12V_MAIN+Pwr+In+1",
-            "PMIC-17+CEX_VDD+Pwr+Out+1",
-            "PMIC-17+12V_MAIN+Curr+In+1",
-            "PMIC-17+CPU+Curr+Out+1",
-            "PMIC-17+SOC+Curr+Out+2",
-            "PMIC-18+COMEX_VDD_MEM+Vol+In+1",
-            "PMIC-18+COMEX_VDD_MEM+Vol+Out+1",
-            "PMIC-18+COMEX_VDD_MEM+Pwr+In+1",
-            "PMIC-18+COMEX_VDD_MEM+Pwr+Out+1",
-            "PMIC-18+COMEX_VDD_MEM+Curr+In+1",
-            "PMIC-18+COMEX_VDD_MEM+Curr+Out+1"
+            "PDB-1-Conv-In-1",
+            "PDB-1-Conv-Out-1",
+            "PDB-2-Conv-In-1",
+            "PDB-2-Conv-Out-1",
+            "HSC-VinDC-In",
+            "HSC-VinDC-Out",
+            "PMIC-1-ASIC1-VDD-Out-1",
+            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
+            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
+            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
+            "PMIC-5-ASIC2-VDD-Out-1",
+            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
+            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
+            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
+            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
+            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
+            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
+            "PMIC-9-ASIC3-VDD-Out-1",
+            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
+            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
+            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
+            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
+            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
+            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
+            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
+            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
+            "PMIC-13-ASIC4-VDD-Out-1",
+            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
+            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
+            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
+            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
+            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
+            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
+            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
+            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
+            "PMIC-17-12V-MAIN-In-1",
+            "PMIC-17-CPU-Out-1",
+            "PMIC-17-SOC-Out-2",
+            "PMIC-18-COMEX-VDD-MEM-In-1",
+            "PMIC-18-COMEX-VDD-MEM-Out-1"
         ]
 
         self.leakage_sensors_count = 2
@@ -2359,50 +2403,42 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
             'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
             'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
-            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144',
-            'acp145', 'acp146', 'acp147', 'acp148', 'acp149', 'acp150',
-            'acp151', 'acp152', 'acp153', 'acp154', 'acp155', 'acp156',
-            'acp157', 'acp158', 'acp159', 'acp160', 'acp161', 'acp162',
-            'acp163', 'acp164', 'acp165', 'acp166', 'acp167', 'acp168',
-            'acp169', 'acp170', 'acp171', 'acp172', 'acp173', 'acp174',
-            'acp175', 'acp176', 'acp177', 'acp178', 'acp179', 'acp180',
-            'acp181', 'acp182', 'acp183', 'acp184', 'acp185', 'acp186',
-            'acp187', 'acp188', 'acp189', 'acp190', 'acp191', 'acp192',
-            'acp193', 'acp194', 'acp195', 'acp196', 'acp197', 'acp198',
-            'acp199', 'acp200', 'acp201', 'acp202', 'acp203', 'acp204',
-            'acp205', 'acp206', 'acp207', 'acp208', 'acp209', 'acp210',
-            'acp211', 'acp212', 'acp213', 'acp214', 'acp215', 'acp216',
-            'acp217', 'acp218', 'acp219', 'acp220', 'acp221', 'acp222',
-            'acp223', 'acp224', 'acp225', 'acp226', 'acp227', 'acp228',
-            'acp229', 'acp230', 'acp231', 'acp232', 'acp233', 'acp234',
-            'acp235', 'acp236', 'acp237', 'acp238', 'acp239', 'acp240',
-            'acp241', 'acp242', 'acp243', 'acp244', 'acp245', 'acp246',
-            'acp247', 'acp248', 'acp249', 'acp250', 'acp251', 'acp252',
-            'acp253', 'acp254', 'acp255', 'acp256', 'acp257', 'acp258',
-            'acp259', 'acp260', 'acp261', 'acp262', 'acp263', 'acp264',
-            'acp265', 'acp266', 'acp267', 'acp268', 'acp269', 'acp270',
-            'acp271', 'acp272', 'acp273', 'acp274', 'acp275', 'acp276',
-            'acp277', 'acp278', 'acp279', 'acp280', 'acp281', 'acp282',
-            'acp283', 'acp284', 'acp285', 'acp286', 'acp287', 'acp288'
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144'
         ]
         self.network_ports = ['eth0', 'eth1', 'lo']
         self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
         self.nvl_fnm_ports = []
         self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
-        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
-        self.nvl_port = ['sw1p1s1']
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
+        self.nvl_port = ['acp1']
 
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '375G'
-        self.fnm_link_speed = '100G'
-        self.fnm_fae_link_speed = '100G'
+        self.fnm_link_speed = '200G'
+        self.fnm_fae_link_speed = '200G'
         self.nvl_port_type = 'nvl'
         self.num_of_cartridges = 4
+        self.requires_tpm_pass = True
+        self.default_phy_recovery_counters.update({
+            PhyRecoveryConsts.LAST_RS_FEC_UNCORRECTABLE_DURING_RECOVERY: 0,
+            PhyRecoveryConsts.TOTAL_RS_FEC_UNCORRECTABLE_DURING_RECOVERY: 0,
+            PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_TIME: 0,
+            PhyRecoveryConsts.TOTAL_SUCCESSFUL_RECOVERY_TIME: 0,
+            PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS: 0
+        })
+        self.unsupported_commands_list = ["nv show platform ps-redundancy",
+                                          "nv show platform environment psu",
+                                          "nv show system profile",
+                                          "nv show sdn transceivers"]
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled
         self.fan_list = []
         self.fan_led_list = []
+
+    def _init_services(self):
+        super()._init_services()
+        self.available_services.remove('hw-management-tc.service')  # TC is relevant for systems with FANs, Rosalind does not have FANs.
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -2417,34 +2453,49 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
     def _init_temperature(self):
         super()._init_temperature()
         self.temperature_sensors = [
-            "PDB+PwrConv1+Temp",
-            "PDB+PwrConv2+Temp",
-            "PDB+HSC+VinDC+Temp",
-            "PMIC-17+Temp+1",
-            "PMIC-18+Temp+1",
-            "SSD+Temp"
+            "ASIC1",
+            "ASIC2",
+            "ASIC3",
+            "ASIC4",
+            "CPU-Pack-Temp",
+            "Drive-Temp",
+            "HSC-VinDC-Temp",
+            "PDB-Conv-1-Temp",
+            "PDB-Conv-2-Temp",
+            "PMIC-1-Temp",
+            "PMIC-2-Temp",
+            "PMIC-3-Temp",
+            "PMIC-4-Temp",
+            "PMIC-5-Temp",
+            "PMIC-6-Temp",
+            "PMIC-7-Temp",
+            "PMIC-8-Temp",
+            "PMIC-9-Temp",
+            "PMIC-10-Temp",
+            "PMIC-11-Temp",
+            "PMIC-12-Temp",
+            "PMIC-13-Temp",
+            "PMIC-14-Temp",
+            "PMIC-15-Temp",
+            "PMIC-16-Temp",
+            "PMIC-17-Temp",
+            "PMIC-18-Temp",
+            "SODIMM-1-Temp",
+            "SODIMM-2-Temp"
         ]
 
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        return 'nvos_config_nvl6.yml'
 
-# -------------------------- RosalindSims Switch ----------------------------
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        self.supported_fnm_speeds = ['200G']  # Rosalind internal FNM only
 
+    def _init_interfaces_ib_lanes(self):
+        self.supported_lanes = '2X'  # Rosalind regular NVL ports (simplex + duplex)
+        self.supported_internal_fnm_lanes = '1X,2X'  # Rosalind internal FNM
 
-class RosalindSimx(RosalindSurrogateSwitch):
-
-    def __init__(self):
-        super().__init__(asic_amount=1)
-
-    def _init_constants(self):
-        super()._init_constants()
-        self.asic_type = NvosConst.NVL6
-        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
-            "x86_64-nvidia_n6100_ld-r0")
-        self.show_platform_output.update({
-            "product-name": "N6100_LD",
-            "asic-model": self.asic_type,
-        })
-
-# -------------------------- RosalindChipless Switch ----------------------------
+# -------------------------- Rosalind Switch ----------------------------
 
 
 class RosalindChipless(RosalindSurrogateSwitch):
@@ -2536,31 +2587,347 @@ class RosalindChipless(RosalindSurrogateSwitch):
 
 class RosalindSwitch(RosalindSurrogateSwitch):
 
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=asic_amount)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL6
+        self.supported_nvl_speeds = ['200G', '400G', '360G', '328G']  # Rosalind supports all speeds
+        # Note: Rosalind has no regular FNM (nvl_fnm_ports is empty), only internal FNM
+
+        # IMPORTANT: Real Rosalind (not surrogate) has ONLY nmx-controller, NO nmx-telemetry
+        # Override parent (RosalindSurrogateSwitch) which has both apps
+        self.cluster_app = {
+            ClusterConsts.NMX_CONTROLLER: {
+                **{key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
+                'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "disabled"},
+                "rbac": {"rbac-file": "", "rbac-mode": ""}
+            }
+        }
+        self.cluster_app_installed = {
+            ClusterConsts.NMX_CONTROLLER: {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']}
+        }
+        self.expected_cluster_apps = [ClusterConsts.NMX_CONTROLLER]
+        self.cluster_config_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES
+        }
+        self.cluster_state_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_STATE_FILE_TYPES
+        }
+        # Override cluster_files to only include controller (no telemetry for real Rosalind)
+        cluster_files = ['conf', ClusterConsts.NMX_CONTROLLER]
+        self.constants = self.constants._replace(cluster_files=cluster_files)
+        # Tech-support: Rosalind only has controller logs
+        self.cluster_techsupport_dirs_by_app = {
+            ClusterConsts.NMX_CONTROLLER: f'log/nmx/{ClusterConsts.NMX_CONTROLLER_PREFIX}'
+        }
+        # Override log files to only include controller (remove telemetry)
+        self.cluster_log_files_by_app = {
+            ClusterConsts.NMX_CONTROLLER: ['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz']
+        }
+        # Update constants.log_nmx_files to match (for backward compatibility)
+        # Clear inherited value and rebuild from all apps in cluster_log_files_by_app
+        self.constants.log_nmx_files.clear()
+        for app_logs in self.cluster_log_files_by_app.values():
+            if app_logs:  # Only extend if list is not empty
+                self.constants.log_nmx_files.extend(app_logs)
+
+        # SDN Configuration edit commands for Rosalind
+        # Rosalind does NOT edit FM config (no fm_config_edits needed)
+        self.sdn_fm_config_edits = None  # Rosalind doesn't modify FM config
+        # Rosalind ONLY edits SM config (and only when cluster is enabled, not loopbox-dependent)
+        self.sdn_sm_config_edits = [
+            "# Ensure nvlink_enable=FALSE",
+            "sudo sed -i 's/^nvlink_enable .*/nvlink_enable FALSE/' {file}",
+            "# Comment plugin_name grpc_mgr",
+            "sudo sed -i '/^plugin_name grpc_mgr/s/^/#/' {file}",
+            "# Comment plugin_options -grpc_mgr",
+            "sudo sed -i '/^plugin_options -grpc_mgr.*/s/^/#/' {file}"
+        ]
+        # Rosalind requires explicit cluster setup before SM config generation (pre-cluster config)
+        # Flag to indicate this device needs pre-cluster setup
+        self.sdn_needs_pre_cluster_setup = True
+
+        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0100_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6100_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N6100_LD",
+            "asic-model": self.asic_type,
+        })
+
+        self.nvl_access_ports_list = [
+            'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
+            'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
+            'acp13', 'acp14', 'acp15', 'acp16', 'acp17', 'acp18',
+            'acp19', 'acp20', 'acp21', 'acp22', 'acp23', 'acp24',
+            'acp25', 'acp26', 'acp27', 'acp28', 'acp29', 'acp30',
+            'acp31', 'acp32', 'acp33', 'acp34', 'acp35', 'acp36',
+            'acp37', 'acp38', 'acp39', 'acp40', 'acp41', 'acp42',
+            'acp43', 'acp44', 'acp45', 'acp46', 'acp47', 'acp48',
+            'acp49', 'acp50', 'acp51', 'acp52', 'acp53', 'acp54',
+            'acp55', 'acp56', 'acp57', 'acp58', 'acp59', 'acp60',
+            'acp61', 'acp62', 'acp63', 'acp64', 'acp65', 'acp66',
+            'acp67', 'acp68', 'acp69', 'acp70', 'acp71', 'acp72',
+            'acp73', 'acp74', 'acp75', 'acp76', 'acp77', 'acp78',
+            'acp79', 'acp80', 'acp81', 'acp82', 'acp83', 'acp84',
+            'acp85', 'acp86', 'acp87', 'acp88', 'acp89', 'acp90',
+            'acp91', 'acp92', 'acp93', 'acp94', 'acp95', 'acp96',
+            'acp97', 'acp98', 'acp99', 'acp100', 'acp101', 'acp102',
+            'acp103', 'acp104', 'acp105', 'acp106', 'acp107', 'acp108',
+            'acp109', 'acp110', 'acp111', 'acp112', 'acp113', 'acp114',
+            'acp115', 'acp116', 'acp117', 'acp118', 'acp119', 'acp120',
+            'acp121', 'acp122', 'acp123', 'acp124', 'acp125', 'acp126',
+            'acp127', 'acp128', 'acp129', 'acp130', 'acp131', 'acp132',
+            'acp133', 'acp134', 'acp135', 'acp136', 'acp137', 'acp138',
+            'acp139', 'acp140', 'acp141', 'acp142', 'acp143', 'acp144',
+            'acp145', 'acp146', 'acp147', 'acp148', 'acp149', 'acp150',
+            'acp151', 'acp152', 'acp153', 'acp154', 'acp155', 'acp156',
+            'acp157', 'acp158', 'acp159', 'acp160', 'acp161', 'acp162',
+            'acp163', 'acp164', 'acp165', 'acp166', 'acp167', 'acp168',
+            'acp169', 'acp170', 'acp171', 'acp172', 'acp173', 'acp174',
+            'acp175', 'acp176', 'acp177', 'acp178', 'acp179', 'acp180',
+            'acp181', 'acp182', 'acp183', 'acp184', 'acp185', 'acp186',
+            'acp187', 'acp188', 'acp189', 'acp190', 'acp191', 'acp192',
+            'acp193', 'acp194', 'acp195', 'acp196', 'acp197', 'acp198',
+            'acp199', 'acp200', 'acp201', 'acp202', 'acp203', 'acp204',
+            'acp205', 'acp206', 'acp207', 'acp208', 'acp209', 'acp210',
+            'acp211', 'acp212', 'acp213', 'acp214', 'acp215', 'acp216',
+            'acp217', 'acp218', 'acp219', 'acp220', 'acp221', 'acp222',
+            'acp223', 'acp224', 'acp225', 'acp226', 'acp227', 'acp228',
+            'acp229', 'acp230', 'acp231', 'acp232', 'acp233', 'acp234',
+            'acp235', 'acp236', 'acp237', 'acp238', 'acp239', 'acp240',
+            'acp241', 'acp242', 'acp243', 'acp244', 'acp245', 'acp246',
+            'acp247', 'acp248', 'acp249', 'acp250', 'acp251', 'acp252',
+            'acp253', 'acp254', 'acp255', 'acp256', 'acp257', 'acp258',
+            'acp259', 'acp260', 'acp261', 'acp262', 'acp263', 'acp264',
+            'acp265', 'acp266', 'acp267', 'acp268', 'acp269', 'acp270',
+            'acp271', 'acp272', 'acp273', 'acp274', 'acp275', 'acp276',
+            'acp277', 'acp278', 'acp279', 'acp280', 'acp281', 'acp282',
+            'acp283', 'acp284', 'acp285', 'acp286', 'acp287', 'acp288'
+        ]
+        self.network_ports = ['eth0', 'eth1', 'lo']
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = []
+        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1",
+                                       "fnma3p2"]
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+        self.requires_tpm_pass = True
+        # These attributes should be only on QTM4
+        self.default_phy_recovery_attributes = {
+            PhyRecoveryConsts.LINK_DOWN_TIMEOUT: 0,
+            PhyRecoveryConsts.RECOVERY_SUPPORTED: 'true',
+            PhyRecoveryConsts.RECOVERY_NEGATIVE_TYPE: 'auto',
+            PhyRecoveryConsts.RECOVERY_ENTRY_REASON: 'Received_TS1',
+            PhyRecoveryConsts.STEP_1: {
+                PhyRecoveryConsts.PRESENT_MODE: 'auto',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: 0,
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: 0,
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: 0,
+                PhyRecoveryConsts.STATE_60_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_61_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_62_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: 0
+            },
+            PhyRecoveryConsts.STEP_2: {
+                PhyRecoveryConsts.PRESENT_MODE: 'auto',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: 0,
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: 0,
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: 0,
+                PhyRecoveryConsts.STATE_60_TO_LINKUP_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_60_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_61_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_62_TIMEOUT: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: 0,
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: 0
+            }
+        }
+
+    def setup_cluster_for_sdn_config(self, cluster, engines):
+        """
+        Rosalind-specific: Setup cluster before generating SDN configs.
+        This method sets the cluster node primary server and enables the cluster.
+        Note: Cleanup is handled by the disabled_access_ports decorator (cluster.unset).
+        """
+        from ngts.nvos_constants.constants_nvos import SystemConsts
+        from ngts.tools.test_utils import allure_utils as allure
+        import logging
+
+        logger = logging.getLogger()
+
+        with allure.step("Set cluster node primary server"):
+            logger.info(f"Setting cluster node primary server to {SystemConsts.NV_BRIDGE_NODE_IP}")
+            cluster.set(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                        op_param_value=SystemConsts.NV_BRIDGE_NODE_IP,
+                        apply=True)
+
+    def wa_restart_nv_bridge_after_sm_config(self, cluster, engines):
+        """
+        Rosalind-specific workaround for Bug SW #4731969.
+        After loading SM config on Rosalind, restart nv-bridge to recover connections.
+        This should be called after SM config is installed.
+        """
+        from ngts.tools.test_utils import allure_utils as allure
+        from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+        import logging
+
+        logger = logging.getLogger()
+
+        # Only apply workaround if bug is active
+        if is_bug_active(4731969):
+            with allure.step("WA for Bug 4731969: Restart nv-bridge after SM config"):
+                logger.info("Stopping nmx-controller app")
+                cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
+
+                logger.info("Restarting nv-bridge container")
+                engines.dut.run_cmd("sudo systemctl restart nv-bridge")
+
+                logger.info("Starting nmx-controller app")
+                cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
+        else:
+            logger.info("Bug 4731969 is not active, skipping nv-bridge restart workaround")
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        # Rosalind has only internal FNM (no regular FNM)
+        self.supported_fnm_speeds = ['200G']  # Internal FNM only
+
+    def _init_interfaces_ib_lanes(self):
+        self.supported_lanes = '1X,2X'  # Rosalind regular NVL ports (simplex + duplex)
+        self.supported_internal_fnm_lanes = '1X,2X'  # Rosalind internal FNM
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+
+# -------------------------- RosalindSimx Switch ----------------------------
+
+
+class RosalindSimx(RosalindSwitch):
+
     def __init__(self):
         super().__init__(asic_amount=4)
 
     def _init_constants(self):
         super()._init_constants()
         self.asic_type = NvosConst.NVL6
-
-        # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
-        # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6100_ld-r0")
         self.show_platform_output.update({
             "product-name": "N6100_LD",
             "asic-model": self.asic_type,
         })
-        self.cpld_amount = 2
-        self._extend_firmware_by_cpld_amount()
-        self.constants.erots.extend([PlatformConsts.EROT_CPU_PATH_NAME])
 
-    def _init_platform_lists(self):
-        super()._init_platform_lists()
-        self.platform_environment_fan_values = {}
-        self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="920-9K42W-00L6-GS0")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "ASIC1",
+            "ASIC2",
+            "ASIC3",
+            "ASIC4",
+            "CPU-Pack-Temp",
+            "Drive-Temp",
+            "HSC-VinDC-Temp",
+            "PDB-Conv-1-Temp",
+            "PDB-Conv-2-Temp",
+            "PMIC-1-Temp",
+            "PMIC-2-Temp",
+            "PMIC-3-Temp",
+            "PMIC-4-Temp",
+            "PMIC-5-Temp",
+            "PMIC-6-Temp",
+            "PMIC-7-Temp",
+            "PMIC-8-Temp",
+            "PMIC-9-Temp",
+            "PMIC-10-Temp",
+            "PMIC-11-Temp",
+            "PMIC-12-Temp",
+            "PMIC-13-Temp",
+            "PMIC-14-Temp",
+            "PMIC-15-Temp",
+            "PMIC-16-Temp",
+            "PMIC-17-Temp",
+            "PMIC-18-Temp"
+        ]
+
+        self.voltage_sensors = [
+            "PDB-HSC-Volt-In",
+            "PDB-HSC-Volt-Out",
+            "PDB-PwrConv1-In-1",
+            "PDB-PwrConv1-Out-1",
+            "PDB-PwrConv2-In-1",
+            "PDB-PwrConv2-Out-1",
+            "PMIC-1-ASIC1-VDD-Out-1",
+            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
+            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
+            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
+            "PMIC-5-ASIC2-VDD-Out-1",
+            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
+            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
+            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
+            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
+            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
+            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
+            "PMIC-9-ASIC3-VDD-Out-1",
+            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
+            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
+            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
+            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
+            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
+            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
+            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
+            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
+            "PMIC-13-ASIC4-VDD-Out-1",
+            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
+            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
+            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
+            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
+            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
+            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
+            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
+            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
+            "PMIC-17-12V-MAIN-In-1",
+            "PMIC-17-CPU-Out-1",
+            "PMIC-17-SOC-Out-2",
+            "PMIC-18-COMEX-VDD-MEM-In-1",
+            "PMIC-18-COMEX-VDD-MEM-Out-1"
+        ]
 
 
 # -------------------------- Caiman Switch ----------------------------

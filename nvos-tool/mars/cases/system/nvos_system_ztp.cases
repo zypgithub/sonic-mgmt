@@ -97,7 +97,7 @@
   </case>
   <case>
     <name> System ztp nmx negative </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -108,7 +108,7 @@
   </case>
   <case>
     <name> System ztp nmx positive </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -119,7 +119,7 @@
   </case>
   <case>
     <name> System ztp hashed password </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -130,23 +130,12 @@
   </case>
   <case>
     <name> System ztp fetch asic debug config </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
       <params>
           <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_ztp.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_ztp_fetch_asic_debug_config --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
-      </params>
-    </cmd>
-  </case>
-  <case>
-    <name> System ztp hashed password </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet]</value> </condition></ignore>
-    <info></info>
-    <tout> 10800 </tout>
-    <cmd>
-      <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_ztp.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_ztp_hashed_password --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
       </params>
     </cmd>
   </case>

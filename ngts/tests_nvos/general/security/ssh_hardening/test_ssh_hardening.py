@@ -2,7 +2,7 @@ import pytest
 
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tests_nvos.general.security.constants import SSN_OPTIONS
-from ssh_hardening_test_utils import *
+from ngts.tests_nvos.general.security.ssh_hardening.ssh_hardening_test_utils import *
 
 
 @pytest.mark.cumulus

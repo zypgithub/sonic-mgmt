@@ -3,7 +3,6 @@ import logging
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from .DhcpClient import DhcpClient
 
@@ -48,36 +47,64 @@ class IpV6(BaseComponent):
                 dut_engine = TestToolkit.engines.dut
 
             addresses_show = self.address.show(dut_engine=dut_engine)
-            addresses_dict = OutputParsingTool.parse_json_str_to_dictionary(addresses_show).get_returned_value()
-            addresses = list(addresses_dict.keys())
-            logger.info(f"IPv6 addresses found: {addresses}")
-            return addresses
+
+            # Handle string (JSON string) - parse it to dict
+            if isinstance(addresses_show, str):
+                import json
+                try:
+                    addresses_show = json.loads(addresses_show)
+                except json.JSONDecodeError as e:
+                    logger.warning(f"Failed to parse IPv6 address JSON string: {e}")
+                    return []
+
+            if isinstance(addresses_show, dict):
+                return list(addresses_show.keys())
+            elif isinstance(addresses_show, list):
+                return addresses_show
+
+            return []
 
         except Exception as e:
-            logger.info(f"Error getting IPv6 addresses: {e}")
+            logger.warning(f"Error getting IPv6 addresses: {e}")
             return []
 
     def get_primary_ip_address(self, dut_engine=None):
         """
         Get the primary IPv6 address for the interface
+        Filters out localhost (::1) and link-local (fe80::) addresses
 
         :param dut_engine: DUT engine to use
         :return: str primary IP address or None
         """
         try:
             addresses = self.get_ip_addresses(dut_engine)
+
             if addresses:
-                # Return the first address, removing any prefix
+                # Filter to find a global unicast address (not localhost, not link-local)
+                for addr in addresses:
+                    addr_clean = addr.split('/')[0] if '/' in addr else addr
+                    # Skip localhost (::1) and link-local (fe80::) addresses
+                    if addr_clean != '::1' and not addr_clean.lower().startswith('fe80:'):
+                        # Prefer addresses with at least 32 characters (full IPv6 addresses)
+                        if len(addr_clean) >= 32:
+                            return addr_clean
+
+                # If no global address found, return first non-localhost address
+                for addr in addresses:
+                    addr_clean = addr.split('/')[0] if '/' in addr else addr
+                    if addr_clean != '::1':
+                        return addr_clean
+
+                # Last resort: return the first address
                 primary_addr = addresses[0]
                 if '/' in primary_addr:
-                    primary_addr = primary_addr.split('/')[0]
-                logger.info(f"Primary IPv6 address: {primary_addr}")
+                    return primary_addr.split('/')[0]
                 return primary_addr
-            logger.info("No IPv6 addresses found")
+
             return None
 
         except Exception as e:
-            logger.info(f"Error getting primary IPv6 address: {e}")
+            logger.warning(f"Error getting primary IPv6 address: {e}")
             return None
 
     def is_autoconf_enabled(self, dut_engine=None):

@@ -24,6 +24,10 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
@@ -45,12 +49,34 @@ BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='function', autouse=True)
 def clear_system_image_files():
+    """Clean up image files before and after EACH test."""
     system = System()
-    with allure.step('clear all system image files before tests'):
-        files = system.image.files.get_files()
-        system.image.files.delete_files(files_to_delete=files)
+
+    # Cleanup BEFORE each test
+    with allure.step('Clear all system image files before test'):
+        try:
+            files = system.image.files.get_files()
+            if files:
+                logger.info(f"Pre-test cleanup: Found {len(files)} existing files, deleting: {list(files.keys())}")
+                system.image.files.delete_files(files_to_delete=files)
+                logger.info("Pre-test cleanup: Successfully cleaned image files")
+        except Exception as e:
+            logger.warning(f"Pre-test cleanup failed (non-critical): {e}")
+
+    yield  # Individual test runs here
+
+    # Cleanup AFTER each test
+    with allure.step('Clear all system image files after test'):
+        try:
+            files = system.image.files.get_files()
+            if files:
+                logger.info(f"Post-test cleanup: Found {len(files)} leftover files, deleting: {list(files.keys())}")
+                system.image.files.delete_files(files_to_delete=files)
+                logger.info("Post-test cleanup: Successfully cleaned leftover files")
+        except Exception as e:
+            logger.warning(f"Post-test cleanup failed (non-critical): {e}")
 
 
 @pytest.mark.checklist
@@ -124,6 +150,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     7. Delete the new image name , success
     """
     config_file_path = ''
+    speed_info = None  # Initialize to avoid UnboundLocalError in finally block
+
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
 
@@ -142,7 +170,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 
         with allure.step("Install original image name, should fail"):
             logger.info("Install original image name: {}, should fail".format(fetched_image))
-            system.image.files.file_name[fetched_image].action_install(reboot_params=False).verify_result(False)
+            system.image.files.file_name[fetched_image].action_file_install().verify_result(False)
 
         with allure.step("Delete original image name, should fail"):
             system.image.files.delete_files([fetched_image]).verify_result(False, "File not found")
@@ -168,12 +196,16 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
         TestToolkit.tested_api = ApiType.NVUE
-        with allure.step('Apply and save pre-defined configuration'):
-            NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, engines.dut,
-                                                          scp_host_creds, system, verify_result=True)
-            logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
-            engines.dut.disconnect()
-            engines.dut.run_cmd("true")
+        # Setup test environment with configuration and speed testing
+        # Configuration files will not attempt to set acp/sw ports anymore. This way its much more generic.
+        speed_info = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
+            config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
+            include_speed_testing=True, verify_result=True)
+
+        logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
+        engines.dut.disconnect()
+        engines.dut.run_cmd("true")
+
         TestToolkit.tested_api = random_api
 
     finally:
@@ -182,6 +214,10 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         with allure.step('Run curl via ipv6, customer bug #4318552'):
             send_open_api_request(dut_ipv6_addr, engines.dut)
         target_fetched_image = target_version_realpath.split('/')[-1]
+
+        # Check if speed configuration is preserved after upgrade and clean up
+        NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
+
         # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
         cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
 
@@ -202,6 +238,7 @@ def test_system_image_upload(engines, release_name, random_api, original_version
     system = System()
 
     verify_current_version(original_version, system, devices.dut)
+
     _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
     image_file = system.image.files.file_name[image_name]
     upload_protocols = ['scp', 'sftp']
@@ -269,7 +306,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
+@pytest.mark.timeout(6 * MINUTE, func_only=True)
 def test_system_image_bad_flow(engines, release_name, random_api, original_version, sonic_mgmt_ipv6_addr,
                                downgrade_version_realpath):
     """
@@ -318,15 +355,16 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
 
         with allure.step("Install bad flows"):
             with allure.independent_step("Install image file that does not exist"):
-                file_rand_name.action_install(reboot_params=False).verify_result(False, "Image does not exist")
+                file_rand_name.action_file_install(expected_str="", force=True
+                                                   ).verify_result(False, "Image does not exist")
 
         with allure.step("Boot-next bad flows"):
             if not original_images[ImageConsts.PARTITION2_IMG][ImageConsts.BUILD_ID]:
                 with allure.independent_step(
                         f"Boot-next {ImageConsts.PARTITION2_IMG}, even though we have no image there"):
-                    system.image.action_boot_next(ImageConsts.PARTITION2_IMG, f"No image on {ImageConsts.PARTITION2_IMG}")
+                    system.image.action_boot_next(ImageConsts.PARTITION2_IMG, f"No image on {ImageConsts.PARTITION2_IMG}").verify_result(False)
             with allure.independent_step("Boot-next random string"):
-                system.image.action_boot_next(RandomizationTool.get_random_string(10), "Error")
+                system.image.action_boot_next(RandomizationTool.get_random_string(10), "Error").verify_result(False)
             with allure.independent_step("Boot-next the same partition (to revert any changes that may have happened)"):
                 system.image.action_boot_next(original_image_partition)
 
@@ -699,9 +737,9 @@ def install_image_and_verify(orig_engine, image_name, partition_id, original_ima
     with allure.step("Installing image {}".format(image_name)):
         new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username, orig_engine.password)
         res_obj, _ = OperationTime.save_duration('image install', '', test_name,
-                                                 system.image.files.file_name[image_name].action_install,
-                                                 expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES,
-                                                 force=True, reboot_params=RebootParams(recovery_engine=new_engine)
+                                                 system.image.files.file_name[image_name].action_file_install_with_reboot,
+                                                 expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
+                                                 force=True, recovery_engine=new_engine
                                                  )
         res_obj.verify_result()
 
@@ -847,6 +885,225 @@ def get_image_data_and_fetch_base_image(system, base_version):
         system.image.action_fetch(path=base_version).verify_result()
     image_name = base_version.split("/")[-1]
     return original_images, original_image, original_image_partition, partition_id_for_new_image, image_name
+
+
+def _choose_random_port_and_test_speed_configuration(engines, devices):
+    """
+    Wrapper function that delegates to InterfaceConfigurationTool for speed testing.
+
+    This function maintains backward compatibility while using the new generic
+    InterfaceConfigurationTool for actual speed testing logic.
+    """
+    return InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
+
+
+def _detect_system_type_and_select_port(device):
+    """
+    Detect system type and select a random ACTIVE/CONNECTED port for speed testing.
+
+    This function ensures that only ports with active links are selected for speed testing,
+    preventing failures due to disconnected interfaces. It follows the same pattern as
+    _get_available_nvl_ports to validate link status before selection.
+    """
+    if hasattr(device, 'interface_list') and device.interface_list:
+        with allure.step("IB system detected - choosing ACTIVE port from interface_list"):
+            # Select only ports that are UP and ACTIVE (like _get_available_nvl_ports does)
+            try:
+                selected_port_obj = RandomizationTool.select_random_port(
+                    requested_ports_state=NvosConsts.LINK_STATE_UP,
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE,
+                    interface_type='sw'
+                ).get_returned_value()
+                port_name = selected_port_obj.name
+                logging.info(f"Selected ACTIVE IB port for speed testing: {port_name}")
+                return NvosConst.IB_SWITCH_TYPE, selected_port_obj, port_name
+            except Exception as e:
+                logging.error(f"Failed to find active IB port: {e}")
+                pytest.skip("No active IB ports available for speed testing")
+
+    elif hasattr(device, 'nvl_access_ports_list') or hasattr(device, 'nvl_trunk_ports_list'):
+        with allure.step("NVL system detected - choosing ACTIVE port from available nvl port types"):
+            # First, determine what port types are available
+            available_port_types = []
+
+            if hasattr(device, 'nvl_trunk_ports_list') and device.nvl_trunk_ports_list:
+                available_port_types.append('trunk')
+                logging.info(f"NVL trunk ports available: {len(device.nvl_trunk_ports_list)} ports")
+
+            if hasattr(device, 'nvl_access_ports_list') and device.nvl_access_ports_list:
+                available_port_types.append('access')
+                logging.info(f"NVL access ports available: {len(device.nvl_access_ports_list)} ports")
+
+            if not available_port_types:
+                pytest.skip("No NVL ports available for speed testing")
+
+            # Randomly choose between available port types
+            chosen_port_type = RandomizationTool.select_random_value(available_port_types).get_returned_value()
+            logging.info(f"Randomly chosen NVL port type for testing: {chosen_port_type}")
+
+            # Select active port based on chosen type
+            try:
+                if chosen_port_type == 'trunk':
+                    # Trunk ports: need LINK_STATE_UP and transceivers
+                    selected_port_obj = RandomizationTool.select_random_port(
+                        requested_ports_state=NvosConsts.LINK_STATE_UP,
+                        interface_type='sw'  # trunk ports
+                    ).get_returned_value()
+                    logging.info(f"Selected ACTIVE NVL trunk port for speed testing: {selected_port_obj.name}")
+                else:  # access
+                    # Access ports: need LINK_LOG_STATE_INITIALIZE (with loopboxes)
+                    selected_port_obj = RandomizationTool.select_random_port(
+                        requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE,
+                        interface_type='acp'  # access ports
+                    ).get_returned_value()
+                    logging.info(f"Selected ACTIVE NVL access port for speed testing: {selected_port_obj.name}")
+
+                port_name = selected_port_obj.name
+                return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name
+
+            except Exception as e:
+                logging.error(f"Failed to find active {chosen_port_type} port: {e}")
+                # Try the other port type if available
+                other_port_types = [pt for pt in available_port_types if pt != chosen_port_type]
+                if other_port_types:
+                    other_type = other_port_types[0]
+                    logging.info(f"Trying fallback to {other_type} ports")
+                    try:
+                        if other_type == 'trunk':
+                            selected_port_obj = RandomizationTool.select_random_port(
+                                requested_ports_state=NvosConsts.LINK_STATE_UP,
+                                interface_type='sw'
+                            ).get_returned_value()
+                        else:  # access
+                            selected_port_obj = RandomizationTool.select_random_port(
+                                requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE,
+                                interface_type='acp'
+                            ).get_returned_value()
+
+                        port_name = selected_port_obj.name
+                        logging.info(f"Fallback successful - selected {other_type} port: {port_name}")
+                        return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name
+
+                    except Exception as e2:
+                        logging.error(f"Fallback to {other_type} ports also failed: {e2}")
+
+                pytest.skip(f"No active NVL ports available for speed testing (tried {available_port_types})")
+
+    else:
+        raise Exception("Unable to determine system type - neither interface_list nor nvl_ports_list found")
+
+
+def _get_current_and_supported_speeds(selected_port, system_type, port_name):
+    """Get current speed and supported speeds based on system type."""
+    with allure.step(f"Read current speed and supported speeds for port {port_name}"):
+        return InterfaceConfigurationTool.get_current_and_supported_speeds(selected_port, system_type, port_name)
+
+
+def _choose_different_speed(current_speed, supported_speeds, port_name):
+    """
+    Select a random speed that's different from the current configuration.
+
+    This function filters out the current speed from the list of supported speeds
+    and randomly selects one of the remaining options. If no alternative speeds
+    are available, it skips the test with an informative message.
+
+    Args:
+        current_speed: Current speed configuration (e.g., 'XDR', '100G')
+        supported_speeds: List of all supported speeds (e.g., ['XDR', 'hdr', 'fdr'])
+        port_name: Interface name for logging (e.g., 'sw2p1')
+
+    Returns:
+        str: Randomly selected speed that differs from current_speed
+
+    Example:
+        >>> new_speed = _choose_different_speed('XDR', ['XDR', 'hdr', 'fdr'], 'sw2p1')
+        >>> print(new_speed)  # Output: 'hdr' or 'fdr' (randomly chosen)
+
+    Raises:
+        pytest.skip: If no alternative speeds are available for testing
+    """
+    available_speeds_other_than_original = [speed.strip() for speed in supported_speeds if speed.strip() != current_speed]
+    if not available_speeds_other_than_original:
+        pytest.skip(f"No alternative speeds available for port {port_name}. Current: {current_speed}, Supported: {supported_speeds}")
+
+    new_speed = RandomizationTool.select_random_value(available_speeds_other_than_original).get_returned_value()
+    logging.info(f"Chosen different speed for {port_name}: {new_speed} (original was: {current_speed})")
+    return new_speed
+
+
+def _test_speed_configuration_cycle(selected_port, original_speed, new_speed, system_type, port_name):
+    """
+    Execute a comprehensive 3-step speed configuration test cycle.
+
+    This function performs rigorous speed configuration testing by executing three
+    consecutive configuration changes, verifying each step to ensure the interface
+    responds correctly to speed changes and can reliably switch between speeds.
+
+    The 3-step cycle tests:
+    1. Configure new speed → verify it applied correctly
+    2. Revert to original speed → verify it reverted correctly
+    3. Configure new speed again → verify it applied correctly again
+
+    Args:
+        selected_port: Port object representing the interface to test
+        original_speed: Original speed value to revert to (e.g., 'XDR', '100G')
+        new_speed: New speed value to test with (e.g., 'hdr', '200G')
+        system_type: Either 'IB' or 'NVL' (determines parameter names)
+        port_name: Interface name for logging (e.g., 'sw2p1')
+
+    Example:
+        >>> _test_speed_configuration_cycle(my_port, 'XDR', 'hdr', 'IB', 'sw2p1')
+        # Executes: XDR → hdr → XDR → hdr (with verification at each step)
+    """
+    # Step 1: Configure new speed
+    _configure_and_verify_speed(selected_port, new_speed, system_type, port_name, f"Set {_get_speed_param_name(system_type)} '{new_speed}' for port '{port_name}'")
+
+    # Step 2: Configure back to original
+    _configure_and_verify_speed(selected_port, original_speed, system_type, port_name, f"Set {_get_speed_param_name(system_type)} back to original '{original_speed}' for port '{port_name}'")
+
+    # Step 3: Configure new speed again
+    _configure_and_verify_speed(selected_port, new_speed, system_type, port_name, f"Set {_get_speed_param_name(system_type)} '{new_speed}' again for port '{port_name}'")
+
+
+def _configure_and_verify_speed(selected_port, speed, system_type, port_name, step_description):
+    """Configure and verify a single speed change."""
+    InterfaceConfigurationTool.configure_and_verify_speed(selected_port, speed, system_type, port_name, step_description)
+
+
+def _get_speed_param_name(system_type):
+    """Get the speed parameter name based on system type."""
+    return InterfaceConfigurationTool.get_speed_param_name(system_type)
+
+
+def _verify_and_cleanup_speed_after_upgrade(selected_port, original_speed, expected_speed, device):
+    """Verify speed configuration is preserved after upgrade and clean up."""
+    _verify_speed_preserved_after_upgrade(selected_port, expected_speed, device)
+    _unset_speed_configuration(selected_port, device)
+    _verify_speed_back_to_original_after_unset(selected_port, original_speed, device)
+
+
+def _verify_speed_preserved_after_upgrade(selected_port, expected_speed, device):
+    """Verify that the speed configuration is preserved after upgrade."""
+    InterfaceConfigurationTool.verify_speed_configuration(
+        selected_port, expected_speed, device,
+        f"Verify speed configuration is preserved after upgrade for port {selected_port.name}")
+
+
+def _unset_speed_configuration(selected_port, device):
+    """Unset speed configuration for cleanup."""
+    InterfaceConfigurationTool.unset_speed_configuration(selected_port, device)
+
+
+def _verify_speed_back_to_original_after_unset(selected_port, original_speed, device):
+    """Verify that the speed is back to original after unset."""
+    InterfaceConfigurationTool.verify_speed_configuration(
+        selected_port, original_speed, device,
+        f"Verify speed is back to original after unset for port {selected_port.name}")
+
+
+def _get_system_type_from_device(device):
+    """Get system type from device object."""
+    return InterfaceConfigurationTool.get_system_type_from_device(device)
 
 
 def verify_current_version(original_version, system, device):

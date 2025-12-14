@@ -3,6 +3,7 @@ import logging
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterSimulation, ClusterTools
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.Devices.IbDevice import JulietScaleoutSwitch, JulietNonScaleoutSwitch, JulietSwitch
 
@@ -60,4 +61,4 @@ def start_sdn_maintenance_state_simulation(engines, setup_name):
 def enable_cluster_and_wait_nmx_controller_status(setup_name):
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, setup_name)
-    ClusterTools.wait_until_app_expected_status(cluster, 'nmx-controller', 'ok')
+    ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok')

@@ -73,19 +73,20 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         ClusterTools.start_cluster(cluster, setup_name, output_format)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-        config_files_paths = get_current_config_files_paths(sdn)
+        config_files_paths = get_current_config_files_paths(sdn, devices)
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
         with allure.step("Change initial content"):
-            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
+            for file_type in config_files_paths.keys():
                 edit_cmd = ClusterConsts.CONFIG_FILES_CHANGE[file_type].format(file_path=config_files_paths[file_type])
                 engines.dut.run_cmd(edit_cmd)
 
         with allure.step("Install modified configurations"):
-            for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
+            for file_type in config_files_paths.keys():
+                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                 file_name = config_files_paths[file_type].split('/')[-1]
-                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[file_name].action_install(reboot_params=False, force=False)
+                sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file_name].action_file_install(force=False)
 
         with allure.step("Running sdn factory reset"):
             sdn.factory_default.action_reset(param='force')
@@ -94,11 +95,11 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
             time.sleep(1)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
-        verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format)
+        verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format)
 
         with allure.step("Reboot and verify configuration not changed"):
             result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
-            verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format)
+            verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format)
 
     finally:
         current_time = get_current_time(engines)
@@ -108,23 +109,29 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
             OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
 
 
-def verify_current_config_equals_given_config(sdn, engines, initial_config_contents, output_format):
+def verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format):
+    """
+    Verify current config equals given config for all apps on this device.
+    Uses device-specific app configuration to handle different device types.
+    """
     errors_list = []
     with allure.step("Verify config files content restored to initial"):
-        for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
-            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=output_format),
-                                                                 output_format=output_format).get_returned_value()
-            current_installed_config_path = output[installed_file]['path']
-            current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
-            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[installed_file].action_delete().verify_result()
-            if file_type == 'chassis_mapping' and is_bug_active(4222718):
-                continue
-            initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
-            current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
-            if initial_config_set != current_config_set:
-                errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {initial_config_set}\nCurrent: {current_config_set}")
+        for app in devices.dut.expected_cluster_apps:
+            app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
+            for file_type in app_config_files:
+                output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
+                installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=output_format),
+                                                                     output_format=output_format).get_returned_value()
+                current_installed_config_path = output[installed_file]['path']
+                current_config_content = engines.dut.run_cmd("sudo cat {}".format(current_installed_config_path))
+                sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[installed_file].action_delete().verify_result()
+                if file_type == 'chassis_mapping' and is_bug_active(4222718):
+                    continue
+                initial_config_set = set(line.strip() for line in initial_config_contents[file_type].strip().split('\n') if line.strip())
+                current_config_set = set(line.strip() for line in current_config_content.strip().split('\n') if line.strip())
+                if initial_config_set != current_config_set:
+                    errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {initial_config_set}\nCurrent: {current_config_set}")
         assert not errors_list, "\n\n".join(errors_list)
 
 
@@ -135,14 +142,20 @@ def execute_reset_factory(engines, system, operation, flag, current_time):
     return result_obj.duration
 
 
-def get_current_config_files_paths(sdn):
+def get_current_config_files_paths(sdn, devices):
+    """
+    Get current config file paths for all apps on this device.
+    Uses device-specific app configuration to handle different device types.
+    """
     files_dict = {}
     with allure.step("Fetch & Generate config files"):
-        for file_type in ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES:
-            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn()
-            installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
-            output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                 output_format=OutputFormat.json).get_returned_value()
-            current_installed_config_path = output[installed_file]['path']
-            files_dict[file_type] = current_installed_config_path
+        for app in devices.dut.expected_cluster_apps:
+            app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
+            for file_type in app_config_files:
+                output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
+                installed_file = ClusterTools.get_generated_file_name(output.returned_value, 'config')
+                output = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                                                                     output_format=OutputFormat.json).get_returned_value()
+                current_installed_config_path = output[installed_file]['path']
+                files_dict[file_type] = current_installed_config_path
     return files_dict

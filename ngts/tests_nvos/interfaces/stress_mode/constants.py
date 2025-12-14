@@ -22,8 +22,8 @@ class StressModeConsts:
     STATE_DISABLED = "disabled"
 
     # Syslog Messages
-    SYSLOG_STRESS_MODE_STARTED = "Stress Mode successfully enabled"
-    SYSLOG_STRESS_MODE_STOPPED = "Stress Mode successfully disabled"
+    SYSLOG_STRESS_MODE_STARTED = "Stress Mode: successfully enabled"
+    SYSLOG_STRESS_MODE_STOPPED = "Stress Mode: successfully disabled"
 
 
 class FlexCounterConsts:

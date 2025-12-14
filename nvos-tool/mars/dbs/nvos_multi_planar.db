@@ -45,7 +45,7 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_multi_planar.cases </cases>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_fw_recovery.cases </cases>
-		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_phy_recovery.cases </cases>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
 </DBDEF>

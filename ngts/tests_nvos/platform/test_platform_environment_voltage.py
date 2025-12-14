@@ -18,6 +18,7 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.nvos_chipsim_ci
+@pytest.mark.air
 @pytest.mark.timeout(2 * MINUTE, func_only=True)
 def test_show_platform_environment_voltage(engines, devices):
     """

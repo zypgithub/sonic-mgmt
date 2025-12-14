@@ -180,6 +180,19 @@ class OpenApiSystemCli(OpenApiBaseCli):
                                                    engine.ip, resource_path, params)
 
     @staticmethod
+    def action_upload(engine, path, file_name, url):
+        logging.info("Running action: 'upload' on dut using OpenApi")
+        params = \
+            {
+                "state": "start",
+                "parameters": {
+                    'remote-url': url
+                }
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.UPLOAD, engine.engine.username, engine.engine.password,
+                                                   engine.ip, path + "/" + file_name, params)
+
+    @staticmethod
     def action_reset(engine, device, comp, param, topology_obj=None, system_is_ready_timeout=None, check_system_is_functional=True):
         logging.info("Running action: reset system {} on dut using OpenApi".format(comp))
         if 'keep' in param:  # OpenApi has keep as parameter, so should remove it from string 4 chars + space.

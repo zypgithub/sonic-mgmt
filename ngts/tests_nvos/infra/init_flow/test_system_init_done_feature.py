@@ -176,9 +176,6 @@ def connect_before_ssh(topology_obj, engine):
             serial = SerialConsoleTool.get_serial_console_session(topology_obj)
         with allure.step('exit existing login'):
             SerialConsoleTool.exit_existing_login(serial)
-        with allure.step('wait for prompt'):
-            serial.serial_engine.expect(
-                [DefaultConnectionValues.SERIAL_CONNECTION_CONTEXT] + DefaultConnectionValues.DEFAULT_PROMPTS
-            )
+
         SerialConsoleTool.login_nos(serial_engine=serial, username=engine.username, password=engine.password, start_login_tries=10, handle_change_password_prompt=False)
         return serial

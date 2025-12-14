@@ -16,9 +16,6 @@
       sw2p1:
         link:
           mtu: 1024
-      sw2p1,sw32p1:
-        link:
-          ib-speed: hdr
       sw2p1,sw32p1,sw3p2:
         type: ib
       sw3p2:

@@ -4,10 +4,10 @@ from typing import Union, Dict, Tuple, List
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts, NvosConst
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, PhyDetailConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
@@ -15,7 +15,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.tests_nvos.interfaces.nvl5_port.helpers import skip_if_no_trunk_links
+from ngts.tests_nvos.interfaces.nvl_port.helpers import skip_if_no_trunk_links
 from ngts.tools.test_utils import allure_utils as allure
 
 LOCAL = 'local'
@@ -60,6 +60,44 @@ def test_show_phy_detail(engines, test_api, output_format):
     output = selected_port.interface.link.phy.detail.show(output_format=output_format)
     d = OutputParsingTool.parse_show_output_to_dict(output, output_format).get_returned_value()
     assert len(d) > 1
+
+
+@pytest.mark.ib_interfaces
+def test_phy_detail_attribute_types(engines, devices, test_api):
+    """
+    Verify attribute types in 'nv show interface <port> link phy detail' output match ASIC generation.
+
+    Test flow:
+    1. Determine ASIC generation (QTM3 or QTM4+)
+    2. Select a random port (any state - works on Juliet NVL and Crocodile IB ports)
+    3. Run 'nv show interface <port> link phy detail'
+    4. Verify each attribute's type matches expected type for the ASIC generation
+
+    Note: QTM3 group includes both QTM3 and NVL5 chip types
+    """
+    with allure.step("Determine ASIC generation and expected attribute types"):
+        asic_type = getattr(devices.dut, 'asic_type', 'unknown')
+        is_qtm3 = asic_type in [NvosConst.QTM3, NvosConst.NVL5]
+        expected_types = PhyDetailConsts.ATTR_TYPES_QTM3 if is_qtm3 else PhyDetailConsts.ATTR_TYPES_QTM4_AND_NEWER
+        asic_gen = "QTM3 (includes NVL5)" if is_qtm3 else "QTM4 and newer"
+        logger.info(f"ASIC type: {asic_type}, Generation: {asic_gen}")
+
+    with allure.step("Select random port"):
+        selected_port = RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+        logger.info(f"Selected port: {selected_port.name}")
+
+    with allure.step(f"Run 'nv show interface {selected_port.name} link phy detail'"):
+        output = selected_port.interface.link.phy.detail.show()
+        phy_detail_output = OutputParsingTool.parse_show_output_to_dict(output).get_returned_value()
+        logger.info(f"PHY detail output has {len(phy_detail_output)} fields")
+
+    with allure.step("Verify attribute types"):
+        validate_phy_attribute_types(phy_detail_output, expected_types, is_qtm3, asic_gen)
+
+    # For QTM4+ ASICs, verify certain attributes should NOT exist at all
+    if not is_qtm3:
+        with allure.step("Verify QTM4+ non-existent attributes are absent"):
+            validate_qtm4_non_existent_attributes(phy_detail_output, asic_gen)
 
 
 @pytest.mark.ib_interfaces
@@ -445,3 +483,116 @@ def get_loopback_plane_ports(engine, setup_name, num_of_planes=1, forbidden_tran
         local_port = Port(local_port)
         allure.attach("Selected ports", f"{local_port=}, {local_planes=}, {remote_port=}, {remote_planes=}")
         return local_port, local_planes, remote_port, remote_planes
+
+
+def validate_qtm4_non_existent_attributes(phy_detail_output: Dict, asic_gen: str):
+    """
+    Validate that certain attributes do NOT exist on QTM4+ ASICs.
+    Collects ALL violations before failing.
+
+    :param phy_detail_output: Parsed output from 'nv show interface <port> link phy detail'
+    :param asic_gen: Human-readable ASIC generation string for error messages
+    """
+    violations = []
+
+    for attr_name in PhyDetailConsts.QTM4_NON_EXISTENT_ATTRS:
+        if attr_name in phy_detail_output:
+            violations.append((attr_name, phy_detail_output[attr_name]))
+            logger.error(f"  ✗ Attribute '{attr_name}' should NOT exist on {asic_gen}, but found value: '{phy_detail_output[attr_name]}'")
+        else:
+            logger.info(f"  ✓ Attribute '{attr_name}' correctly absent on {asic_gen}")
+
+    if violations:
+        error_msg = (
+            f"\n{'=' * 80}\n"
+            f"ATTRIBUTES SHOULD NOT EXIST ON QTM4+!\n"
+            f"{'=' * 80}\n"
+            f"ASIC Generation: {asic_gen}\n"
+            f"Found {len(violations)} attribute(s) that should NOT be present:\n"
+        )
+        for attr_name, value in violations:
+            error_msg += f"  - '{attr_name}': {value}\n"
+        error_msg += (
+            f"\nThese attributes should NOT exist at all on QTM4 and newer ASICs\n"
+            f"{'=' * 80}\n"
+        )
+        assert False, error_msg
+
+
+def validate_phy_attribute_types(phy_detail_output: Dict, expected_types: Dict, is_qtm3: bool, asic_gen: str):
+    """
+    Validate that PHY detail attributes have the expected types.
+
+    :param phy_detail_output: Parsed output from 'nv show interface <port> link phy detail'
+    :param expected_types: Dictionary mapping attribute names to expected types
+    :param is_qtm3: True if ASIC is QTM3 generation (includes NVL5)
+    :param asic_gen: Human-readable ASIC generation string for error messages
+    """
+    for attr_name, expected_type in expected_types.items():
+        with allure.step(f"Validate '{attr_name}' type"):
+            if attr_name not in phy_detail_output:
+                logger.warning(f"Attribute '{attr_name}' not found in output. Available: {list(phy_detail_output.keys())}")
+                continue
+
+            value = phy_detail_output[attr_name]
+            actual_type = determine_attribute_type(str(value))
+
+            logger.info(f"  {attr_name}: value='{value}', detected_type={actual_type}, expected={expected_type}")
+
+            if actual_type != expected_type:
+                error_msg = (
+                    f"\n{'=' * 80}\n"
+                    f"TYPE MISMATCH DETECTED!\n"
+                    f"{'=' * 80}\n"
+                    f"Attribute: '{attr_name}'\n"
+                    f"ASIC Generation: {asic_gen}\n"
+                    f"Value: '{value}'\n"
+                    f"Expected Type: {expected_type}\n"
+                    f"Actual Type:   {actual_type}\n"
+                    f"{'=' * 80}\n"
+                )
+                logger.error(error_msg)
+                assert False, error_msg
+
+
+def determine_attribute_type(value: str) -> str:
+    """
+    Determine attribute type from value format.
+
+    Type patterns:
+    - sai_u32_list_t: "count:val1:val2..." e.g. "1:3825206960" or "2:100:200"
+    - sai_s32_list_t: list with negative values e.g. "2:-100:200" or null/None values
+    - sai_uint32_t: single integer > 255, e.g. "256" or "1000"
+    - sai_uint8_t: single integer 0-255, e.g. "42" or "0"
+
+    Returns:
+        str: The determined type (sai_u32_list_t, sai_s32_list_t, sai_uint32_t, or sai_uint8_t)
+    """
+    value = value.strip()
+
+    # Check for list format: "count:value1:value2:..."
+    if ":" in value:
+        parts = value.split(":")
+        # First part must be a count (integer)
+        if len(parts) >= 2 and parts[0].isdigit():
+            # Check if any value in the list is negative or not a valid u32
+            for val in parts[1:]:
+                try:
+                    if int(val) < 0:
+                        return "sai_s32_list_t"
+                except ValueError:
+                    # If we can't convert to int (e.g., "null"), it's s32 list
+                    return "sai_s32_list_t"
+            return "sai_u32_list_t"
+
+    # Single numeric value - check range to determine uint8 vs uint32
+    try:
+        num = int(value)
+        if 0 <= num <= 255:
+            return "sai_uint8_t"
+        else:
+            return "sai_uint32_t"
+    except ValueError:
+        # Non-numeric value, default to uint32
+        logger.warning(f"Non-numeric value '{value}', defaulting to sai_uint32_t")
+        return "sai_uint32_t"

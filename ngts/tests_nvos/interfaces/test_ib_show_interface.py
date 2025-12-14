@@ -32,6 +32,7 @@ logger = logging.getLogger()
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_ci
 @pytest.mark.ib
+@pytest.mark.air
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_ib_show_interface(engines, devices, test_api):
     """
@@ -219,6 +220,7 @@ def test_ib_show_interface_name_link(engines, devices, test_api):
 
 
 @pytest.mark.ib_interfaces
+@pytest.mark.air
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_ib_show_interface_name_stats(engines, devices, test_api):
     """
@@ -639,6 +641,8 @@ def extract_non_dict_keys(output_dict):
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_ci
 @pytest.mark.ib
+@pytest.mark.air
+@pytest.mark.simx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_ib_interface_counters_cli_structure(engines, devices, test_api):
     """
@@ -660,16 +664,53 @@ def test_ib_interface_counters_cli_structure(engines, devices, test_api):
     """
     TestToolkit.tested_api = test_api
 
-    with allure.step('Select a random IB port'):
-        try:
-            selected_port = Tools.RandomizationTool.select_random_port(
-                requested_ports_type=IbInterfaceConsts.IB_PORT_TYPE
-            ).get_returned_value()
-        except Exception:
-            pytest.skip("Device does not have any IB interfaces")
+    if devices.dut.switch_type == NvosConst.IB_SWITCH_TYPE:
+        verify_ib_interface_counters_cli_structure_ib(devices)
+    else:
+        verify_ib_interface_counters_cli_structure_nvl(devices)
+
+
+def verify_ib_interface_counters_cli_structure_nvl(devices):
+    with allure.step('Select a random port'):
+        selected_port = Tools.RandomizationTool.select_random_port(
+            requested_ports_type=NvlInterfaceConsts.NVL_PORT_TYPE).get_returned_value()
 
         TestToolkit.update_tested_ports([selected_port])
-        logger.info(f"Selected IB port: {selected_port.name}")
+        logger.info(f"Selected NVL port: {selected_port.name}")
+
+    with allure.step('Verify NVL interface counters'):
+        counters_output = selected_port.interface.counters.show()
+        counters_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(counters_output).get_returned_value()
+        logger.info(f"Counters output: {counters_dict}")
+
+        expectations = [
+            (NvlInterfaceConsts.NVL, True),
+            (IbInterfaceConsts.IB_PORT_TYPE, False),
+            (IbInterfaceConsts.LINK, True)]
+
+        for key, should_exist in expectations:
+            is_present = key in counters_dict
+            presence_text = "present" if should_exist else "NOT be present"
+            assert is_present == should_exist, \
+                f"Expected '{key}' option to {presence_text} under counters, but got: {counters_dict}"
+
+    with allure.step('Verify NVL interface counters link'):
+        counters_output = selected_port.interface.counters.link.show()
+        counters_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(counters_output).get_returned_value()
+        ValidationTool.verify_field_exist_in_json_output(counters_dict, IbInterfaceConsts.NVL_COUNTERS_LINK_FIELDS).verify_result()
+
+    with allure.step('Verify NVL interface counters nvl'):
+        selected_port.interface.counters.nvl.errors.show().get_returned_value()
+        selected_port.interface.counters.nvl.drops.show().get_returned_value()
+
+
+def verify_ib_interface_counters_cli_structure_ib(devices):
+    with allure.step('Select a random port'):
+        selected_port = Tools.RandomizationTool.select_random_port(
+            requested_ports_type=IbInterfaceConsts.IB_PORT_TYPE).get_returned_value()
+
+        TestToolkit.update_tested_ports([selected_port])
+        logger.info(f"Selected {devices.dut.switch_type} port: {selected_port.name}")
 
     with allure.step('Verify interface type is "ib"'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(

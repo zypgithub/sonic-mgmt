@@ -22,10 +22,12 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations, RegressionConfigurations
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from retry import retry

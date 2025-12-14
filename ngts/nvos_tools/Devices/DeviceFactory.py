@@ -66,6 +66,7 @@ class DeviceFactory:
             'N6150_LD - RosalindSurrogate': RosalindSurrogateSwitch,
             'N6100_LD - RosalindChipless': RosalindChipless,
             'N6100_LD_simx - Rosalind': RosalindSimx,
+            "N6100_LD_simx - Rosalind_SA": RosalindSimx
         }
 
     @staticmethod

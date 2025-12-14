@@ -10,7 +10,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_constants.constants_nvos import IssuConsts, NtpConsts, SystemConsts, OutputFormat
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
@@ -72,8 +72,9 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 @pytest.mark.general
 @pytest.mark.tech_support
 @pytest.mark.skynet
+@disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_techsupport_expected_files(engines, devices, test_name, skynet):
+def test_techsupport_expected_files(engines, devices, test_name, skynet, has_loopbox, standalone_system, setup_name):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     and measure how long it takes
@@ -149,7 +150,6 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet):
 
     system = System()
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
-                           'sai_sdk_dump0': devices.dut.constants.sdk_dump_files,
                            'log': devices.dut.constants.log_dump_files,
                            'log/audit': devices.dut.constants.audit_files,
                            'log/nginx': devices.dut.constants.log_nginx_files,
@@ -157,12 +157,34 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet):
                            'hw-mgmt': devices.dut.constants.hw_mgmt_files,
                            'etc': devices.dut.constants.etc_files}
 
+    # Add SDK dump validation for each ASIC (multi-ASIC systems have multiple directories)
+    # For multi-ASIC: sai_sdk_dump0 uses dev1, sai_sdk_dump1 uses dev2, etc.
+    if hasattr(devices.dut, 'asic_amount'):
+        from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+        for asic_num in range(devices.dut.asic_amount):
+            expected_files_dict[f'sai_sdk_dump{asic_num}'] = BaseSwitch.get_sdk_dump_files_for_asic(
+                asic_num, devices.dut.constants.sdk_dump_files_template)
+
     if is_bug_active(4303918) and isinstance(devices.dut, CrocodileSwitch):
         expected_files_dict["dump"].remove("hdparm")
 
-    if devices.dut.has_nmx:
+    # Dynamically add tech-support directories for cluster apps (if device has any)
+    if hasattr(devices.dut, 'expected_cluster_apps') and devices.dut.expected_cluster_apps:
+        techsupport_dirs = getattr(devices.dut, 'cluster_techsupport_dirs_by_app', {})
+        log_files_by_app = getattr(devices.dut, 'cluster_log_files_by_app', {})
+
+        if techsupport_dirs and isinstance(techsupport_dirs, dict):
+            for app in devices.dut.expected_cluster_apps:
+                if app in techsupport_dirs:
+                    log_dir = techsupport_dirs[app]
+                    if log_dir:  # Ensure log_dir is not None or empty
+                        # Get app-specific log files (not generic!)
+                        app_log_files = log_files_by_app.get(app, None)
+                        if app_log_files:  # Ensure not None and not empty list
+                            expected_files_dict[log_dir] = app_log_files
+
+        # Add cluster config/state files directory if defined
         cluster_files = getattr(devices.dut.constants, 'cluster_files', None)
-        expected_files_dict['log/nmx/nmx-c'] = devices.dut.constants.log_nmx_files
         if cluster_files:
             expected_files_dict['cluster'] = cluster_files
 
@@ -228,7 +250,11 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet):
 
         with allure.step("validate each expected file name and size"):
             with allure.independent_step('validate files names'):
-                techsupport_files_dict['sai_sdk_dump0'] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict['sai_sdk_dump0'])
+                # Clean timestamps from SDK dump file names for all ASICs
+                for folder_key in techsupport_files_dict.keys():
+                    if folder_key.startswith('sai_sdk_dump'):
+                        techsupport_files_dict[folder_key] = system.techsupport.clean_timestamp_techsupport_sdk_files_names(techsupport_files_dict[folder_key])
+
                 for folder, files in techsupport_files_dict.items():
                     with allure.independent_step(f'validate files names for {folder}'):
                         verify_techsupport_files_names(files, expected_files_dict[folder])
@@ -324,7 +350,7 @@ def verify_techsupport_files_sizes(files_list, folder, skynet=False):
     elif folder == 'cluster':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
     elif folder == 'hw-mgmt' and skynet:
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE]
 
     assert len(files_list) == 0, f"the following files are empty {files_list}"
 

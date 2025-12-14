@@ -14,7 +14,7 @@
       aaa:
         authentication:
           failthrough: enabled
-          order: tacacs,local
+          order: [tacacs, local]
           restrictions:
             fail-delay: 0
             lockout-state: disabled

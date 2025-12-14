@@ -65,6 +65,8 @@ def start_components_update(_args):
         components_to_update.append(Defaults.SMA_NAME)
 
     components: List[Component] = []
+    missing_path_errors = []
+
     for component_name in components_to_update:
         required_version = None
 
@@ -81,12 +83,19 @@ def start_components_update(_args):
         install_path = install_path.strip()  # Make sure there are no extra spaces in the path
 
         if not verify_install_path(install_path):
-            print(f"{component_name} path does not exist {install_path}")
-            raise FileNotFoundError(install_path)
+            error_msg = f"{component_name}: path does not exist - {install_path}"
+            print(f"WARNING: {error_msg}")
+            missing_path_errors.append(error_msg)
+            continue  # Skip this component but continue with others
 
         component = _create_bmc_component(component_name, version=required_version, install_path=install_path,
                                           rf_api=rf_api)
         components.append(component)
+
+    # If no valid components found, fail early
+    if not components:
+        error_summary = "No valid components found to install. All paths were missing:\\n" + "\\n".join(missing_path_errors)
+        raise FileNotFoundError(error_summary)
 
     component_manager = ComponentManager(components)
 
@@ -104,8 +113,11 @@ def start_components_update(_args):
 
     component_manager.print_installed_versions()
 
-    if update_errors:
-        error_summary = "The following component updates encountered errors:\\n" + "\\n".join(update_errors)
+    # Collect all errors (missing paths + update errors)
+    all_errors = missing_path_errors + update_errors
+
+    if all_errors:
+        error_summary = "The following errors occurred during component alignment:\\n" + "\\n".join(all_errors)
         raise Exception(error_summary)
 
 

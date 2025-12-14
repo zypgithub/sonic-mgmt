@@ -148,6 +148,10 @@ class ValidationTool:
         :param should_be_equal: True if the value of field_name should be equal to expected_value. False - otherwise
         :return:
         """
+        if isinstance(expected_value, dict):
+            for field, value in expected_value.items():
+                return ValidationTool.verify_field_value_in_output(output_dictionary[field_name], field, value, should_be_equal)
+
         with allure.step('Verify the value of {field} is {no}equal to {expected} as expected'.format(
                 field=field_name, expected=expected_value, no="" if should_be_equal else "not ")):
             result_obj = ResultObj(result=True, info="", issue_type=IssueType.PossibleBug)
@@ -588,3 +592,17 @@ class ValidationTool:
     def assert_expected_value(expected, actual, description=''):
         """Assert that expected value equals actual value."""
         assert expected == actual, f'{description} wrong value: {expected=}, {actual=}'
+
+    @staticmethod
+    def verify_fec_config_in_auto_output(show_auto_output, expected_value, should_be_equal=True):
+        link_output = show_auto_output.splitlines()
+        fec_conf_applied = ""
+        for config_line in link_output:
+            if "fec" in config_line:
+                fec_conf = config_line.strip().split()
+                fec_conf_applied = fec_conf[-1]
+                break
+        if should_be_equal:
+            assert fec_conf_applied == expected_value, f"Fec mode is {fec_conf_applied} instead of {expected_value}"
+        else:
+            assert fec_conf_applied != expected_value, f"Fec mode must not be {expected_value}"

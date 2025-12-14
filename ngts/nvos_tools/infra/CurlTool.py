@@ -125,7 +125,8 @@ class CurlTool:
                 try:
                     self._log(f"Attempt {attempt}: Checking BMC availability")
 
-                    curl_cmd = (f"curl -k -m 10 -s -w '\\n' -u {username}:{password} "
+                    # Removed -s flag from the curl - it means silent fail and breaks automation.
+                    curl_cmd = (f"curl -k -w '\\n' -u {username}:{password} "
                                 f"https://{self.server_host}/redfish/v1/Managers/BMC_0")
 
                     output = dut_engine.run_cmd(curl_cmd)

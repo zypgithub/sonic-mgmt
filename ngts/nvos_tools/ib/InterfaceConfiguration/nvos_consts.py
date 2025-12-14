@@ -42,9 +42,12 @@ class IbInterfaceConsts:
     LINK = "link"
     PHY_DIAG = "phy-diag"
     PHY_DETAIL = "phy-detail"
+    NVL = "nvl"
     IP = "ip"
     IPV4 = "ipv4"
     IPV6 = "ipv6"
+    VRF = "vrf"
+    LLDP = "lldp"
     IFINDEX = "ifindex"
     LINK_LOGICAL_PORT_STATE = "logical-state"
     LINK_LOGICAL_PORT_STATE_ACTIVE = 'Active'
@@ -195,6 +198,8 @@ class IbInterfaceConsts:
 
     # IB counters expected fields list (defined at end to reference constants defined above)
     IB_COUNTERS_EXPECTED_OPTIONS = [COUNTERS_ERRORS, COUNTERS_DROPS, COUNTERS_FAST_RECOVERY]
+    NVL_COUNTERS_FIELDS = [LINK, NVL]
+    NVL_COUNTERS_LINK_FIELDS = [COUNTERS_ERRORS, COUNTERS_DROPS]
 
     # Non-IB interfaces forbidden options (should not have these sub-options under counters)
     # Note: 'nvl' is from NvlInterfaceConsts.NVL_PORT_TYPE, included as string to avoid cross-class reference
@@ -207,29 +212,80 @@ class AutoNegotiateConsts:
         DISABLED = 'disabled'
 
 
-class FWRecoveryConsts:
-    # Define constants for recovery event fields
+class PhyRecoveryConsts:
+    STEP_1 = "step-1"
+    STEP_2 = "step-2"
+
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    FW_DEFAULT = 'fw-default'
+
+    # NVL6 attributes
+    LINK_DOWN_TIMEOUT = 'link-down-timeout'
+    RECOVERY_SUPPORTED = 'recovery-supported'
+    RECOVERY_STATUS = 'recovery-status'
+    RECOVERY_NEGATIVE_TYPE = 'recovery-neg-type'
+    RECOVERY_ENTRY_REASON = 'recovery-entry-reason'
+    PRESENT_MODE = 'preset-mode'
+    PEQ_NUMBER_OF_RETRY_PRESET1 = 'peq-number-of-retry-preset1'
+    PEQ_NUMBER_OF_RETRY_PRESET2 = 'peq-number-of-retry-preset2'
+    PEQ_NUMBER_OF_RETRY_PRESET3 = 'peq-number-of-retry-preset3'
+    STATE_60_TIMEOUT = 'state-60-timeout'
+    STATE_61_TIMEOUT = 'state-61-timeout'
+    STATE_62_TIMEOUT = 'state-62-timeout'
+    STATE_65_TO_66_TIME_PRESET1 = 'state-65-to-66-time-preset1'
+    STATE_65_TO_66_TIME_PRESET2 = 'state-65-to-66-time-preset2'
+    STATE_65_TO_66_TIME_PRESET3 = 'state-65-to-66-time-preset3'
+    STATE_66_TO_67_TIME_PRESET1 = 'state-66-to-67-time-preset1'
+    STATE_66_TO_67_TIME_PRESET2 = 'state-66-to-67-time-preset2'
+    STATE_66_TO_67_TIME_PRESET3 = 'state-66-to-67-time-preset3'
+    STATE_67_TO_68_TIME_PRESET1 = 'state-67-to-68-time-preset1'
+    STATE_67_TO_68_TIME_PRESET2 = 'state-67-to-68-time-preset2'
+    STATE_67_TO_68_TIME_PRESET3 = 'state-67-to-68-time-preset3'
+    STATE_60_TO_LINKUP_TIMEOUT = 'state-60-to-linkup-timeout'
+    UNINTENTIONAL_LINK_DOWN_EVENTS = 'unintentional-link-down-events'
+    INTENTIONAL_LINK_DOWN_EVENTS = 'intentional-link-down-events'
     TOTAL_SUCCESSFUL_RECOVERY_EVENTS = 'total-successful-recovery-events'
+    SUCCESSFUL_RECOVERY_EVENTS = 'successful-recovery-events'
     TIME_IN_LAST_LOGIC_RECOVERY_EVENT = 'time-in-last-logic-recovery-event'
     TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT = 'time-in-last-serdes-eq-recovery-event'
     TIME_SINCE_LAST_RECOVERY = 'time-since-last-recovery'
     LAST_LOGIC_RECOVERY_ATTEMPTS = 'last-logic-recovery-attempts'
     LAST_SERDES_EQ_RECOVERY_ATTEMPTS = 'last-serdes-eq-recovery-attempts'
     TIME_BETWEEN_LAST_TWO_RECOVERIES = 'time-between-last-two-recoveries'
+    LAST_RS_FEC_UNCORRECTABLE_DURING_RECOVERY = 'last-rs-fec-uncorrectable-during-recovery'
+    TOTAL_RS_FEC_UNCORRECTABLE_DURING_RECOVERY = 'total-rs-fec-uncorrectable-during-recovery'
+    LAST_SUCCESSFUL_RECOVERY_TIME = 'last-successful-recovery-time'
+    TOTAL_SUCCESSFUL_RECOVERY_TIME = 'total-successful-recovery-time'
+    LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS = 'last-successful-recovery-step-attempts'
 
-    ENABLED = 'enabled'
-    DISABLED = 'disabled'
-    FW_DEFAULT = 'fw-default'
+    immutable_attributes = [
+        RECOVERY_SUPPORTED,
+        RECOVERY_ENTRY_REASON
+    ]
 
-    # Default expected values
-    DEFAULT_FW_RECOVERY_COUNTERS = {
-        TOTAL_SUCCESSFUL_RECOVERY_EVENTS: 0,
-        TIME_IN_LAST_LOGIC_RECOVERY_EVENT: 0,
-        TIME_IN_LAST_SERDES_EQ_RECOVERY_EVENT: 0,
-        TIME_SINCE_LAST_RECOVERY: 0,
-        LAST_LOGIC_RECOVERY_ATTEMPTS: 0,
-        LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0,
-        TIME_BETWEEN_LAST_TWO_RECOVERIES: 0,
+    phy_recovery_attributes_options = {
+        LINK_DOWN_TIMEOUT: list(range(0, 65536)),
+        RECOVERY_STATUS: [ENABLED, DISABLED],
+        RECOVERY_NEGATIVE_TYPE: ['auto', 'force-peer', 'ignore-negotiation'],
+        PRESENT_MODE: ['auto', 'peq-only', 'cdr-toggle', 'full-duplex',
+                       'logic-lock-only', 'skip-step'],
+        PEQ_NUMBER_OF_RETRY_PRESET1: list(range(0, 32)),
+        PEQ_NUMBER_OF_RETRY_PRESET2: list(range(0, 32)),
+        PEQ_NUMBER_OF_RETRY_PRESET3: list(range(0, 32)),
+        STATE_60_TIMEOUT: list(range(0, 65536)),
+        STATE_61_TIMEOUT: list(range(0, 65536)),
+        STATE_62_TIMEOUT: list(range(0, 65536)),
+        STATE_65_TO_66_TIME_PRESET1: list(range(0, 65536)),
+        STATE_65_TO_66_TIME_PRESET2: list(range(0, 65536)),
+        STATE_65_TO_66_TIME_PRESET3: list(range(0, 65536)),
+        STATE_66_TO_67_TIME_PRESET1: list(range(0, 65536)),
+        STATE_66_TO_67_TIME_PRESET2: list(range(0, 65536)),
+        STATE_66_TO_67_TIME_PRESET3: list(range(0, 65536)),
+        STATE_67_TO_68_TIME_PRESET1: list(range(0, 65536)),
+        STATE_67_TO_68_TIME_PRESET2: list(range(0, 65536)),
+        STATE_67_TO_68_TIME_PRESET3: list(range(0, 65536)),
+        STATE_60_TO_LINKUP_TIMEOUT: list(range(0, 65536)),
     }
 
     class SerdesEQMode(Enum):
@@ -257,26 +313,7 @@ class FWRecoveryConsts:
         SerdesEQ.TIMEOUT: str(0),
     }
 
-    MODES = ['disabled', 'fw-default', 'enabled']
-
-    negative_test_cases = {
-        SerdesEQ.MODE: {
-            "bad_value": "bad-mode",
-            "expected_error": "'bad-mode' is not one of"
-        },
-        SerdesEQ.TIMEOUT: {
-            "bad_value": "-1",
-            "expected_error": "'-1' is not of type 'integer'"
-        },
-        LogicRelock.MODE: {
-            "bad_value": "bad-mode",
-            "expected_error": "'bad-mode' is not one of"
-        },
-        LogicRelock.TIMEOUT: {
-            "bad_value": "100000",
-            "expected_error": "logic-relock-timeout must match one of the following:"
-        }
-    }
+    MODES = [ENABLED, DISABLED, FW_DEFAULT]
 
 
 class DataBaseNames:
@@ -317,3 +354,38 @@ class PhyHealthConsts:
 
     # List of expected fields in each lane
     EXPECTED_LANE_FIELDS = [PHY_RAW_ERRORS, LANE_RAW_BER]
+
+
+class PhyDetailConsts:
+    """Constants for phy detail attribute types per ASIC generation."""
+
+    # PHY detail attribute types for QTM3 ASICs (includes NVL5)
+    ATTR_TYPES_QTM3 = {
+        'pd-link-width-enabled': 'sai_uint8_t',
+        'pd-link-speed-enabled': 'sai_u32_list_t',
+        'phy-hst-link-width-enabled': 'sai_uint8_t',
+        'phy-hst-link-speed-enabled': 'sai_u32_list_t',
+        'phy-manager-link-width-enabled': 'sai_uint32_t',
+        'phy-manager-link-proto-enabled': 'sai_u32_list_t',
+        'core-to-phy-link-width-enabled': 'sai_uint32_t',
+        'core-to-phy-link-proto-enabled': 'sai_u32_list_t',
+        'cable-proto-cap-ext': 'sai_s32_list_t',
+    }
+
+    # PHY detail attribute types for QTM4 and newer ASICs
+    ATTR_TYPES_QTM4_AND_NEWER = {
+        'pd-link-width-enabled': 'sai_uint8_t',
+        'pd-link-speed-enabled': 'sai_uint32_t',
+        'phy-hst-link-width-enabled': 'sai_uint8_t',
+        'phy-hst-link-speed-enabled': 'sai_uint32_t',
+        'phy-manager-link-width-enabled': 'sai_uint8_t',
+        'phy-manager-link-proto-enabled': 'sai_uint32_t',
+        'core-to-phy-link-width-enabled': 'sai_uint8_t',
+        'core-to-phy-link-proto-enabled': 'sai_uint32_t',
+        'cable-proto-cap-ext': 'sai_uint32_t',
+    }
+
+    # Attributes that should NOT exist at all on QTM4+ ASICs
+    QTM4_NON_EXISTENT_ATTRS = ['pd-link-width-enabled', 'phy-manager-link-width-enabled',
+                               'core-to-phy-link-width-enabled', 'cable-proto-cap-ext',
+                               'phy-hst-link-width-enabled', 'phy-hst-link-speed-enabled']

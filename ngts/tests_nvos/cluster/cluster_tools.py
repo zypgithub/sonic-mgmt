@@ -36,7 +36,7 @@ class ClusterTools:
     @staticmethod
     def stop_start_app(cluster, engines, devices, has_loopbox, setup_name, standalone_system):
         with allure.step("Stop/Start apps"):
-            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 with allure.step(f"Validate app {app} is up"):
                     ClusterTools.reboot_compute_nodes_gpus(setup_name)
                     ClusterTools.verify_app_is_up(engines, app)
@@ -82,13 +82,22 @@ class ClusterTools:
             return ResultObj(result=True)
 
     @staticmethod
-    def get_filtered_state_files(standalone_system=False):
+    def get_filtered_state_files(devices, standalone_system=False):
         """
-        Get state files filtered based on system type.
+        Get state files filtered based on device's actual apps.
         In standalone systems, topology files are excluded.
+
+        :param devices: devices fixture containing dut with cluster apps info
+        :param standalone_system: whether this is a standalone system
+        :return: list of state file types for this device
         """
-        return [f for f in ClusterConsts.CONTROLLER_AND_TELEMETRY_STATE_FILES
-                if not (standalone_system and f == 'topology')]
+        state_file_types = []
+        for app in devices.dut.expected_cluster_apps:
+            app_state_files = devices.dut.cluster_state_files_by_app.get(app, [])
+            state_file_types.extend(app_state_files)
+
+        # Filter out topology for standalone systems
+        return [f for f in state_file_types if not (standalone_system and f == 'topology')]
 
     @staticmethod
     def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True):
@@ -221,12 +230,19 @@ class ClusterTools:
 
     @staticmethod
     def verify_interface_up(devices, has_loopbox, setup_name):
+        # Build list of interface types to check based on what actually exists
+        interface_types = []
+
         if setup_name in Configurations.non_standalone_systems:
+            # Non-standalone systems: only check access ports
             interface_types = ['acp']
-        elif setup_name not in Configurations.non_standalone_systems and has_loopbox:
-            interface_types = ['fnm', 'acp']
-        else:
-            interface_types = []
+        elif has_loopbox:
+            # Loopbox systems: check FNM and access ports (if they exist)
+            # Check if device actually has regular FNM ports (not just internal FNM)
+            if hasattr(devices.dut, 'nvl_fnm_ports') and devices.dut.nvl_fnm_ports:
+                interface_types.append('fnm')
+            interface_types.append('acp')
+
         for interface_type in interface_types:
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_ACTIVE, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
@@ -283,7 +299,7 @@ class ClusterTools:
     @staticmethod
     def verify_apps_running(engines, devices, cluster, expected_state, output_format, standalone_system, has_loopbox):
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
-            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=output_format),
                     output_format=output_format).get_returned_value()
@@ -346,6 +362,23 @@ class ClusterTools:
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
         return files_dict
+
+    @staticmethod
+    def get_all_apps_config_files_paths(sdn, devices):
+        """
+        Get config files paths for all cluster apps on this device type.
+        Handles dynamic app lists (Juliet/Surrogate: both apps, Rosalind: controller only)
+
+        :param sdn: Sdn object
+        :param devices: devices fixture containing dut with expected_cluster_apps
+        :return: dict of {file_type: file_path} for all apps combined
+        """
+        config_files_paths = {}
+        for app in devices.dut.expected_cluster_apps:
+            app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
+            app_files_paths = ClusterTools.get_current_config_files_paths(sdn, app, app_config_files)
+            config_files_paths.update(app_files_paths)
+        return config_files_paths
 
     @staticmethod
     def get_generated_file_name(output, file_type):
@@ -541,18 +574,26 @@ class ClusterTools:
                         break
 
     @staticmethod
-    def verify_sdn_config_files_deleted(sdn):
+    def verify_sdn_config_files_deleted(sdn, devices):
         with allure.step("Running nv show sdn config app <app> type <type> files and make sure files are deleted"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
-                files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
-                                                                    output_format=OutputFormat.json).get_returned_value()
+            # Only check file types for apps that exist on this device
+            for app in devices.dut.expected_cluster_apps:
+                app_config_files = devices.dut.cluster_config_files_by_app.get(app, [])
+                for file_type in app_config_files:
+                    files = OutputParsingTool.parse_show_output_to_dict(sdn.config.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
+                                                                        output_format=OutputFormat.json).get_returned_value()
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def verify_sdn_state_files_deleted(sdn, standalone_system=False):
+    def verify_sdn_state_files_deleted(sdn, standalone_system=False, devices=None):
         with allure.step("Running nv show sdn state app <app> type <type> files and make sure files are deleted"):
-            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            # If devices provided, use dynamic state files; otherwise fall back to empty list
+            if devices and hasattr(devices.dut, 'expected_cluster_apps'):
+                state_files = ClusterTools.get_filtered_state_files(devices, standalone_system)
+            else:
+                # Device doesn't have cluster attributes - skip verification
+                state_files = []
+
             for file_type in state_files:
                 app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                 files = OutputParsingTool.parse_show_output_to_dict(sdn.state.apps.app_name[app].type.file_type[file_type].files.show(output_format=OutputFormat.json),
@@ -576,38 +617,41 @@ class ClusterTools:
         engines.dut.run_cmd("\n".join(edit_commands).replace("{file}", path))
 
     @staticmethod
-    def edit_fm_config(sdn, engines, get_generated_file_info):
+    def edit_fm_config(sdn, engines, devices, get_generated_file_info):
+        """
+        Edit FM config based on device-specific requirements.
+        Returns None if device doesn't require FM config edits (e.g., Rosalind).
+        """
+        # Check if device has FM config edits defined
+        if not hasattr(devices.dut, 'sdn_fm_config_edits') or devices.dut.sdn_fm_config_edits is None:
+            logger.info(f"Device {devices.dut.__class__.__name__} does not require FM config edits. Skipping.")
+            return None
+
         fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
         fm_generated_file_name, fm_path = get_generated_file_info(fm_config)
         fm_original_content = engines.dut.run_cmd(f"cat {fm_path}")
-        logger.info("Adjusting fm_config file.")
-        ClusterTools().edit_config_file(fm_path, [
-            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file} && \\",
-            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file} && \\",
-            "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file} && \\",
-            "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
-        ], engines)
+        logger.info(f"Adjusting fm_config file for {devices.dut.__class__.__name__}.")
+        ClusterTools().edit_config_file(fm_path, devices.dut.sdn_fm_config_edits, engines)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
             fm_generated_file_name].action_install(reboot_params=False, force=False)
         return fm_config, fm_generated_file_name, fm_path, fm_original_content
 
     @staticmethod
-    def edit_sm_config(sdn, engines, get_generated_file_info):
+    def edit_sm_config(sdn, engines, devices, get_generated_file_info):
+        """
+        Edit SM config based on device-specific requirements.
+        Returns None if device doesn't have SM config edits defined.
+        """
+        # Check if device has SM config edits defined
+        if not hasattr(devices.dut, 'sdn_sm_config_edits') or devices.dut.sdn_sm_config_edits is None:
+            logger.info(f"Device {devices.dut.__class__.__name__} does not have SM config edits defined. Skipping.")
+            return None
+
         sm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[1]
         sm_generated_file_name, sm_path = get_generated_file_info(sm_config)
         sm_original_content = engines.dut.run_cmd(f"cat {sm_path}")
-        logger.info("Adjusting sm_config file.")
-        ClusterTools().edit_config_file(sm_path, [
-            "# Ensure nvlink_enable=FALSE",
-            "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file} && \\",
-            "sudo grep -q '^nvlink_enable' {file} || echo 'nvlink_enable FALSE' | sudo tee -a {file}",
-
-            "# Comment plugin_name grpc_mgr",
-            "sudo sed -i '/^[ ]*plugin_name[ ]\\+grpc_mgr/s/^/#/' {file}",
-
-            "# Comment plugin_options -grpc_mgr",
-            "sudo sed -i '/^[ ]*plugin_options[ ]\\+-grpc_mgr[ ]\\+--config_file[ ]\\+/s/^/#/' {file}"
-        ], engines)
+        logger.info(f"Adjusting sm_config file for {devices.dut.__class__.__name__}.")
+        ClusterTools().edit_config_file(sm_path, devices.dut.sdn_sm_config_edits, engines)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
             sm_generated_file_name].action_install(reboot_params=False, force=False)
         return sm_config, sm_generated_file_name, sm_path, sm_original_content
@@ -628,12 +672,44 @@ class ClusterTools:
 
         output_format = OutputFormat.json
 
-        fm_config, fm_generated_file_name, fm_path, fm_original_content = ClusterTools().edit_fm_config(sdn, engines,
-                                                                                                        get_generated_file_info)
+        # Device-specific: Run pre-cluster setup if needed (e.g., Rosalind)
+        if hasattr(devices.dut, 'sdn_needs_pre_cluster_setup') and devices.dut.sdn_needs_pre_cluster_setup:
+            with allure.step(f"Device {devices.dut.__class__.__name__} requires pre-cluster setup"):
+                # Call device-specific setup method
+                devices.dut.setup_cluster_for_sdn_config(cluster, engines)
+                logger.info("Waiting for nmx-controller to be up after cluster setup")
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
-        if has_loopbox:
-            sm_config, sm_generated_file_name, sm_path, sm_original_content = ClusterTools().edit_sm_config(sdn, engines,
-                                                                                                            get_generated_file_info)
+        # Edit FM config (device-specific, may return None for devices like Rosalind)
+        fm_result = ClusterTools().edit_fm_config(sdn, engines, devices, get_generated_file_info)
+        if fm_result:
+            fm_config, fm_generated_file_name, fm_path, fm_original_content = fm_result
+        else:
+            fm_config = fm_generated_file_name = fm_path = fm_original_content = None
+
+        # Edit SM config based on device requirements
+        # SM config is ONLY edited when: standalone=True AND has_loopbox=True
+        # If NOT standalone: DO NOT touch SM config
+        should_edit_sm = False
+        if standalone_system and has_loopbox:
+            should_edit_sm = True
+            logger.info(f"Device {devices.dut.__class__.__name__} is standalone with loopbox - editing SM config.")
+        # non-standalone system, has cable-cartridge, and therefor does not needs changes in sm_config
+        else:
+            logger.info(f"Device {devices.dut.__class__.__name__} - skipping SM config edit (standalone={standalone_system}, has_loopbox={has_loopbox}).")
+
+        if should_edit_sm:
+            sm_result = ClusterTools().edit_sm_config(sdn, engines, devices, get_generated_file_info)
+            if sm_result:
+                sm_config, sm_generated_file_name, sm_path, sm_original_content = sm_result
+
+                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4731969)
+                if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
+                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
+            else:
+                sm_config = sm_generated_file_name = sm_path = sm_original_content = None
+        else:
+            sm_config = sm_generated_file_name = sm_path = sm_original_content = None
 
         ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
         ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
@@ -645,20 +721,25 @@ class ClusterTools:
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
 
-        if "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
+        # Restore FM config if it was edited
+        if fm_path and "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
             engines.dut.run_cmd(f"echo '{fm_original_content}' | sudo tee {fm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
                 fm_generated_file_name].action_install(reboot_params=False, force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
                 fm_generated_file_name].action_delete().verify_result()
 
-        if has_loopbox and "Exists" in engines.dut.run_cmd(
+        # Restore SM config if it was edited
+        if sm_path and "Exists" in engines.dut.run_cmd(
                 f'test -e {sm_path} && echo "Exists" || echo "Does not exist"'):
             engines.dut.run_cmd(f"echo '{sm_original_content}' | sudo tee {sm_path} > /dev/null")
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
                 sm_generated_file_name].action_install(reboot_params=False, force=False)
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[sm_config].files.file_name[
                 sm_generated_file_name].action_delete().verify_result()
+
+        # Note: No need to cleanup pre-cluster setup (e.g., cluster node primary server)
+        # The disabled_access_ports decorator already does cluster.unset(apply=True) which cleans everything
 
     @staticmethod
     def get_generated_sdn_file(output, file_type):

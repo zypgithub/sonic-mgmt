@@ -34,13 +34,13 @@ def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standa
             logger.info("Setting cluster state to enabled")
             ClusterTools.start_cluster(cluster, setup_name, output_format)
         with allure.step("Validate initial log level"):
-            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
 
         if not is_bug_active(4266900):
             TestToolkit.tested_api = 'NVUE'
             with allure.step("Set log level to undefined log level"):
-                for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+                for app in devices.dut.expected_cluster_apps:
                     output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
                     assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
                     ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
@@ -48,13 +48,13 @@ def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standa
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
-            for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level=log_level)
                 ClusterTools.verify_log_level(log_level, app, output_format, cluster)
 
     finally:
         TestToolkit.tested_api = 'NVUE'
-        for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        for app in devices.dut.expected_cluster_apps:
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
@@ -92,14 +92,14 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
         while time.time() - start_time < timeout:
             with allure.step("Choose random log level, and set cluster app log level to"):
                 log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
-                for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+                for app in devices.dut.expected_cluster_apps:
                     result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.app_name[app].loglevel.action_update_cluster_log_level, level=log_level)
                     OperationTime.verify_operation_time(duration, 'cluster update log level').verify_result()
                     ClusterTools.verify_log_level(log_level, app, output_format, cluster)
     finally:
         if installed_packages:
             StressResourcesTool.delete_packages(engines, installed_packages)
-        for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        for app in devices.dut.expected_cluster_apps:
             with allure.step("Make sure apps are still running"):
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.running.show(output_format=OutputFormat.json),

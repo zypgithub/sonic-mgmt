@@ -22,6 +22,9 @@ from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
+
+# NOTE: Local constants deprecated - use devices.dut.expected_cluster_apps instead
+# These are kept temporarily for backward compatibility
 NMX_CONTROLLER = 'nmx-controller'
 NMX_TELEMETRY = 'nmx-telemetry'
 INITIAL_EXPECTED_APPS = [NMX_CONTROLLER, NMX_TELEMETRY]
@@ -45,10 +48,11 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
         app_names = list(output.keys())
 
         with allure.step("Verify initial existing apps"):
-            assert set(app_names) == set(INITIAL_EXPECTED_APPS), f"Expected apps:{INITIAL_EXPECTED_APPS} Actual apps:{app_names}"
+            assert set(app_names) == set(devices.dut.expected_cluster_apps), f"Expected apps:{devices.dut.expected_cluster_apps} Actual apps:{app_names}"
 
         with allure.step("Verify 'nv show cluster apps' output"):
-            ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
+            if NMX_TELEMETRY in devices.dut.expected_cluster_apps:
+                ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
             cluster_app_nmx_controller = devices.dut.cluster_app_nmx_controller.copy()
             if is_bug_active(4207869) and standalone_system:
                 cluster_app_nmx_controller['status'] = ExpectedString(regex=".*")
@@ -70,7 +74,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
             verify_apps_attributes(output)
 
         with allure.step("Running 'nv show cluster apps <app-name>' command and parsing output"):
-            for app in INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 output = OutputParsingTool.parse_show_output_to_dict(
                     cluster.apps.app_name[app].show(output_format=OutputFormat.json),
                     output_format=OutputFormat.json).get_returned_value()
@@ -88,20 +92,20 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.installed.show(output_format=output_format),
                 output_format=output_format).get_returned_value()
-            for app in INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 ValidationTool.validate_output_of_show(output[app], devices.dut.cluster_app_installed[app]).verify_result()
 
         with allure.step("Running 'nv show cluster apps running' command and verifying output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.apps.running.show(output_format=OutputFormat.json),
                 output_format=OutputFormat.json).get_returned_value()
-            for app in INITIAL_EXPECTED_APPS:
+            for app in devices.dut.expected_cluster_apps:
                 if app == NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                     continue
                 app_status = output[app]['status']
                 assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
             logger.info("Make sure there are no extra Unexpected apps")
-            assert len(INITIAL_EXPECTED_APPS) == len(output), f"Expected apps {INITIAL_EXPECTED_APPS}, actual apps: {output}"
+            assert len(devices.dut.expected_cluster_apps) == len(output), f"Expected apps {devices.dut.expected_cluster_apps}, actual apps: {output}"
 
         # TestToolkit.tested_api = random_api
 
@@ -190,7 +194,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
             output_format=output_format).get_returned_value()
         assert output == {}, f"Expected to get empty output, but instead received {output}"
 
-    for app in INITIAL_EXPECTED_APPS:
+    for app in devices.dut.expected_cluster_apps:
         with allure.step(f"Running 'nv show cluster apps {app}' command and parsing output"):
             output = cluster.apps.app_name[app].show(output_format=OutputFormat.json, should_succeed=False)
             assert INVALID_SHOW_EXPECTED_OUTPUT[test_api] in output, f"Expected {INVALID_SHOW_EXPECTED_OUTPUT[test_api]}, but instead received {output} "
@@ -211,7 +215,7 @@ def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
 
     TestToolkit.tested_api = test_api
     with allure.step("Start/Stop apps"):
-        for app in INITIAL_EXPECTED_APPS:
+        for app in devices.dut.expected_cluster_apps:
             with allure.step(f"Start app {app} and validate action fails"):
                 output = cluster.apps.app_name[app].action_start_cluster_app().get_returned_value(False)
                 assert CLUSTER_IS_NOT_ENABLED_MESSAGE in output, f"Expected output to contain {CLUSTER_IS_NOT_ENABLED_MESSAGE}, actual output {output}"

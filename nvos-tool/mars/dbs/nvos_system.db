@@ -112,7 +112,7 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_power_button.cases </cases>
-		<ignore><condition> <key>dut_type:(None)</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+		<ignore><condition> <key>dut_type:(None)</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_fae_remarkable_logs.cases </cases>
@@ -122,5 +122,8 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_asic_debug_config.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/system/nvos_system_cpu_bmc_debug_config.cases </cases>
 	</test>
 </DBDEF>

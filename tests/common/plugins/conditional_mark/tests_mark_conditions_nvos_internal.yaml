@@ -1,5 +1,10 @@
 ########################## NVOS IGNORE START ##########################
 
+tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_show_nvl_interface_commands:
+  skip:
+    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4100265"
+    conditions:
+      - https://redmine.mellanox.com/issues/4100265
 
 tests_nvos/general/security/certificate/test_cert_cacert_mgmt.py::test_certs_mgmt_reboot_case:
   skip:
@@ -44,7 +49,7 @@ tests_nvos/general/security/bmc:
   skip:
     reason: "BMC tests should run only on Juliet"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_bad_connection:
   skip:
@@ -170,7 +175,7 @@ tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160, juliet-146 and juliet-195 due to hardware issues"
     conditions_logical_operator: or
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
       - "'juliet-195' in testbed"
@@ -180,16 +185,16 @@ tests_nvos/checklist/test_bios_manual_update.py:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow. Also skipped on juliet-160, juliet-146 due to hardware issues"
     conditions_logical_operator: or
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
       - "'juliet-195' in testbed"
 
-tests_nvos/interfaces/nvl5_port/test_nvl5_port.py:
+tests_nvos/interfaces/nvl_port/test_nvl_port.py:
   skip:
     reason: "Testcase skipped on XDR systems"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/system/test_techsupport_feature.py::test_techsupport_expected_files:
   skip:
@@ -223,7 +228,7 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_mapping_table:
   skip:
@@ -263,7 +268,7 @@ tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.p
   skip:
     reason: "BMC ERoT Attestation tests should run only on Juliet"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_cert.py::test_gnmi_delete_cert_in_use_by_gnmi:
   skip:
@@ -515,10 +520,61 @@ tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_stat
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
     reason: "Testcase skipped on Juliet or Rosalind systems, feature is pruned in Juliet"
-    conditions_logical_operator: or
     conditions:
-      - "'juliet' in testbed"
-      - "'rosalind' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed"
+
+tests_nvos/fae/test_debug_token.py::test_debug_token_upload_good_flow:
+  skip:
+    reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4704437 and #4682596"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed or 'surrogate' in testbed"
+      - https://redmine.mellanox.com/issues/4704437
+      - https://redmine.mellanox.com/issues/4682596
+
+tests_nvos/fae/test_debug_token.py::test_debug_token_upload_bad_flow:
+  skip:
+    reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4704437 and #4682596"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed or 'surrogate' in testbed"
+      - https://redmine.mellanox.com/issues/4704437
+      - https://redmine.mellanox.com/issues/4682596
+
+tests_nvos/fae/test_debug_token.py::test_debug_info_generate_mulitple:
+  skip:
+    reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4704437 and #4682596"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed or 'surrogate' in testbed"
+      - https://redmine.mellanox.com/issues/4704437
+      - https://redmine.mellanox.com/issues/4682596
+
+tests_nvos/fae/test_debug_token.py::test_debug_info_rename_good_flow:
+  skip:
+    reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4704437 and #4682596"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed or 'surrogate' in testbed"
+      - https://redmine.mellanox.com/issues/4704437
+      - https://redmine.mellanox.com/issues/4682596
+
+tests_nvos/fae/test_debug_token.py::test_debug_info_rename_bad_flow:
+  skip:
+    reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4704437 and #4682596"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed or 'surrogate' in testbed"
+      - https://redmine.mellanox.com/issues/4704437
+      - https://redmine.mellanox.com/issues/4682596
+
+tests_nvos/general/test_kernel_crash.py:
+  skip:
+    reason: "Testcase skipped on black mamba dgx system due to RM issue: https://redmine.mellanox.com/issues/4583761"
+    conditions_logical_operator: and
+    conditions:
+      - "'mamba-dgx' in testbed"
+      - https://redmine.mellanox.com/issues/4583761
 
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
   skip:
@@ -586,6 +642,30 @@ tests_nvos/fae/test_read_eeprom.py::test_show_eeprom_bmc:
     conditions:
       - https://redmine.mellanox.com/issues/4158816
 
+tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow:
+  skip:
+    reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed"
+      - https://redmine.mellanox.com/issues/4742847
+
+tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_root_password_while_bmc_down:
+  skip:
+    reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed"
+      - https://redmine.mellanox.com/issues/4742847
+
+tests_nvos/platform/test_recover_from_bmc_reset.py::test_recover_from_bmc_reset:
+  skip:
+    reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind' in testbed"
+      - https://redmine.mellanox.com/issues/4742847
+
 tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
@@ -615,10 +695,6 @@ tests_nvos/system/issu/test_system_issu.py::test_system_issu_positive_flow_with_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4276503"
     conditions:
       - https://redmine.mellanox.com/issues/4276503
-
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4549805"
-    conditions:
-      - https://redmine.mellanox.com/issues/4549805
 
 tests_nvos/system/test_system_health.py::test_ignore_health_issue:
   skip:
@@ -655,160 +731,6 @@ tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4412532"
     conditions:
       - https://redmine.mellanox.com/issues/4412532
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_hidden_non_nvlink:
-  skip:
-    reason: "Testcase skipped on Juliet systems, "
-    conditions:
-      - "'juliet' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_flow:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_config_removal:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_invalid_kr_mode_rejected:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_interface_range_sequential_actions:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_link_transition_timing:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-
-ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached:
-  skip:
-    reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
-    conditions_logical_operator: and
-    conditions:
-      - "'juliet-148' not in testbed"
-      - "'juliet-126' not in testbed"
-tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_hidden_non_nvlink:
-  skip:
-    reason: "Testcase skipped on NVSwitchs systems"
-    conditions:
-      - "'juliet' in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_visible_nvlink:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_configurable_plr_modes:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_config_removal:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_invalid_plr_mode_rejected:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_link_transition_timing:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_interface_range_sequential_actions:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_plr_cli_visible_nvlink:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_configurable_plr_modes:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_config_removal:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_invalid_plr_mode_rejected:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_link_transition_timing:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/interfaces/test_plr_configs.py::test_feature_interface_range_sequential_actions:
-  skip:
-    reason: "Testcase skipped on non NVSwitchs systems"
-    conditions:
-      - "'juliet' not in testbed"
-
-tests_nvos/checklist/test_bmc_install.py:
-  skip:
-    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet-146' in testbed"
-      - "'juliet-160' in testbed"
-      - "'juliet-195' in testbed"
-
-tests_nvos/checklist/test_firmware_install_same_version.py:
-  skip:
-    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet-146' in testbed"
-
-tests_nvos/platform/test_platform_staged_boot.py:
-  skip:
-    reason: "Systems have hardware issues - erot rel-prod instead of rel-init"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet-146' in testbed"
 
 tests_nvos/interfaces/test_ib_interface_phy_detail.py::test_unintentional_link_down_counter:
   skip:
@@ -883,14 +805,6 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
-ngts/tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
-  skip:
-    reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
-    conditions_logical_operator: or
-    conditions:
-      - "'juliet-146' in testbed"
-      - "'juliet-160' in testbed"
-
 ngts/tests_nvos/checklist/test_bmc_install.py:
   skip:
     reason: "Systems have firmware issues - erot rel-prod instead of rel-init"
@@ -935,5 +849,37 @@ tests_nvos/platform/test_platform_staged_boot.py:
     conditions_logical_operator: or
     conditions:
       - "'juliet-146' in testbed"
+
+tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_phy_recovery_attributes:
+  skip:
+    reason: "Feature in not fully supported, remove ignore once support is applied. (If Rosalind-Surrogate: test will not be supported for QTM3)"
+    conditions:
+      - "'rosalind' in testbed"
+
+tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_access_ports:
+  skip:
+    reason: "Feature is not supported on NVL6-SIMX"
+    conditions:
+      - "'rosalind-simx' in testbed"
+
+tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_default_fields_values:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
+    conditions:
+      - https://redmine.mellanox.com/issues/4718752
+
+tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_counters_updates:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
+    conditions:
+      - https://redmine.mellanox.com/issues/4718752
+
+tests_nvos/platform/test_platform_staged_boot.py::test_show_set_platform_boot_policy:
+  skip:
+    reason: "BMC IPv6 Not Available in This Setup"
+    conditions_logical_operator: and
+    conditions:
+      - "'rosalind-eb1-10' in testbed"
+      - https://redmine.mellanox.com/issues/4784658
 
 ########################## NVOS IGNORE END ##########################

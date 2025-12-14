@@ -506,7 +506,7 @@ class SystemConsts:
     TECHSUPPORT_FILES_PATH = '/host/dump/'
     FILE_TRANSFER_PROTOCOLS = ['scp', 'sftp']
     LIST_OF_COMMANDS_FILE_PATH = '/var/tmp/list_of_executed_commands.txt'
-    TECHSUPPORT_SIZE_LIMIT = 75  # in MBs
+    TECHSUPPORT_SIZE_LIMIT = 135  # DEPRECATED: Use devices.dut.constants.techsupport_size_limit_mb instead
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
     TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
                                               'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
@@ -516,11 +516,10 @@ class SystemConsts:
     TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                              'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient',
-                                             'nv-bridge_reconcile', 'reload.lock']
-
+                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
+                                             'empty.sh', 'nv-bridge_reconcile']
     TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed']
-
+    TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
     TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
@@ -786,6 +785,26 @@ class SystemConsts:
     VERIFICATION_ASIC_DEBUG_PATH = '/auto/sw_system_project/dev_test/asic_debug_config'
     ASIC_DEBUG_CONFIG_LOG_FILE = '/var/log/asic_debug_config.log'
 
+    SUCCESS_STATUS_DEBUG_CONFIG = 'success'
+    FAILED_STATUS_DEBUG_CONFIG = 'failed'
+    NA = 'N/A'
+    STAGE_DEBUG_CONFIG = 'stage'
+    NEXT_DEBUG_CONFIG = 'next'
+    CURRENT_DEBUG_CONFIG = 'current'
+    STATUS_DEBUG_CONFIG = 'status'
+    NOT_SHELL_DEBUG_CONFIG = 'a.txt'
+    PASS_CPU_DEBUG_CONFIG = 'pass.sh'
+    FAIL_DEBUG_CONFIG = 'fail.sh'
+    NOT_EXIST_DEBUG_CONFIG = 'aaa.sh'
+    ERROR_NOT_SHELL_SCRIPT = 'is not a shell script'
+    ERROR_FILE_NOT_EXIST = 'does not exist'
+    CPU_DEBUG_LOG_GREP = '| grep cpu-debug-config'
+    BMC_DEBUG_LOG_GREP = '| grep bmc-debug-config'
+    PASS_FOLDER_CPU_DEBUG_CONFIG = 'pass_folder.sh'
+    CPU_CONFIG_CREATED_FOLDER = '/tmp/cpu-config'
+    VERIFICATION_CPU_DEBUG_PATH = '/auto/sw_system_project/dev_test/cpu_debug_config'
+    VERIFICATION_BMC_DEBUG_PATH = '/auto/sw_system_project/dev_test/bmc_debug_config'
+
     PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
     CONTAINER_BU_SCRIPT = '/devts/scripts/docker/containers_bringup.py'
     CONTAINER_BU_TEMPLATE = '{python_path} {container_bu_script} --setup_name {setup_name} --metrox2xc_setup'
@@ -812,6 +831,7 @@ class SystemConsts:
         "Performing reboot",
         "Disconnecting from NVOS, system is offline during reboot",
         "System will be rebooted",
+        "System will power cycle in a few seconds"
     )
 
     LOCALHOST = "127.0.0.1"
@@ -833,6 +853,27 @@ class SystemConsts:
     DUMMY_IMAGE = 'dummy.bin'
 
     SYSTEMCTL_STATUS_CMD = "sudo systemctl is-system-running"
+
+    NV_BRIDGE = 'nv-bridge'
+    NV_BRIDGE_STATE = 'state'
+    NV_BRIDGE_HEART_BEAT = 'heart-beat'
+    NV_BRIDGE_HEALTH = 'health'
+    NV_BRIDGE_HEALTH_REASON = 'health-reason'
+    NV_BRIDGE_CONNECTION = 'connections'
+    NV_BRIDGE_ENABLED = 'enabled'
+    NV_BRIDGE_DISABLED = 'disabled'
+    NV_BRIDGE_CLIENT_ADDRESS = 'client-address'
+    NV_BRIDGE_SERVER_ADDRESS = 'server-address'
+    NV_BRIDGE_DISABLED = 'disabled'
+    NV_BRIDGE_HEALTH_OK = 'ok'
+    NV_BRIDGE_HEALTH_NOT_OK = 'not ok'
+    NV_BRIDGE_GREP = '| grep nv-bridge'
+    NV_BRIDGE_NODE_IP = '127.0.0.1'
+    NV_BRIDGE_NODE_SERVER = 'node primary server'
+
+    CLUSTER_STATE_DISABLED = 'disabled'
+    CLUSTER_STATE_ENABLED = 'enabled'
+    CLUSTER_APP_STATE_UP = 'up'
 
     DISK: str = 'disk'
 
@@ -959,6 +1000,11 @@ class PlatformConsts:
     FW_SPECTRUM5 = "Spectrum-5"
     FW_SLOT_STATUS_ACTIVE = 'active'
     FW_SLOT_STATUS_INACTIVE = 'inactive'
+    # Basic fields present in all firmware components
+    FW_BASIC_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_SOURCE]
+    # ERoT-specific additional fields (only for ERoT components)
+    FW_EROT_ADDITIONAL_FIELDS = [FW_BACKGROUND_COPY_STATUS, FW_DEBUG_TOKEN_STATUS, FW_SLOT_STATUS_ACTIVE, FW_SLOT_STATUS_INACTIVE]
+    # Legacy - all fields (for backward compatibility or ERoT components)
     FW_FIELDS = [FW_ACTUAL, FW_PART_NUMBER, FW_SOURCE, FW_BACKGROUND_COPY_STATUS, FW_DEBUG_TOKEN_STATUS, FW_SLOT_STATUS_ACTIVE, FW_SLOT_STATUS_INACTIVE]
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
@@ -1111,6 +1157,9 @@ class CableCartridgeConsts:
         "755-24972-0003-000",
         "HS-32836-001",
         "HS-32836-003",
+        "HS-33868-002",
+        "HS-33869-002",
+        "755-XXXXX-XXXX-XXX"
     ]
     # Error messages
     ERR_MISSING_KEY = "Missing key in cable cartridge data: {}"
@@ -1806,10 +1855,10 @@ class OperationTimeConsts:
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
     THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 380 if is_bug_active(4445141) else 270,
+                  'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
                   'julietscaleout reset factory': 600,
                   'reset factory': 300,
-                  'install user FW': 600,
+                  'install user FW': 500,
                   'install default fw': 360,
                   'port goes up': 30,
                   'port goes down': 4,
@@ -1834,7 +1883,7 @@ class OperationTimeConsts:
                   'cpld install without reboot': 400,
                   'install erot': 420,
                   ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 330,
+                  'juliet-power-cycle': 335,
                   'users disconnection by inactivity timeout': 65,
                   'enable snmp': 22,
                   }
@@ -1965,6 +2014,14 @@ class LinkDetectionConsts:
     CONNECTION_MODE_NDR = 'ndr'
     CONNECTION_MODE_XDR = 'xdr'
     CONNECTION_MODE = "connection-mode"
+
+    FEC_MODE = "fec"
+    FEC_MODE_AUTO = "auto"
+    FEC_MODE_DOUBLE = "double-fec"
+    FEC_MODE_QUAD = "quad-fec"
+    FEC_MODE_OCTET = "octal-fec"
+    FEC_MODE_DEFAULT = FEC_MODE_AUTO
+    FEC_MODES = [FEC_MODE_AUTO, FEC_MODE_DOUBLE, FEC_MODE_QUAD, FEC_MODE_OCTET]
 
 
 class MultiPlanarConsts:

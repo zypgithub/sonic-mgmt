@@ -237,17 +237,19 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
             with allure.step('Validate show tech-support command format'):
                 show_output = system.techsupport.files.show()
                 output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-                assert SystemConsts.LATEST_KEY in output_dict, \
-                    f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {output_dict.keys()}"
-                latest_file = output_dict.pop(SystemConsts.LATEST_KEY)[SystemConsts.PATH_KEY]
-                output_dict = {key: value[SystemConsts.PATH_KEY] for key, value in output_dict.items()}
-                assert latest_file == find_latest_key(output_dict), (
+                # Extract 'files' dict from the response
+                files_dict = output_dict.get('files', {})
+                assert SystemConsts.LATEST_KEY in files_dict, \
+                    f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {files_dict.keys()}"
+                latest_file = files_dict.pop(SystemConsts.LATEST_KEY)[SystemConsts.PATH_KEY]
+                files_dict = {key: value[SystemConsts.PATH_KEY] for key, value in files_dict.items()}
+                assert latest_file == find_latest_key(files_dict), (
                     f"Output of show tech-support contains a file marked 'latest', but that file either doesn't exist or is not"
                     f" really the latest file. File is {latest_file}."
                 )
-                assert list(output_dict.keys()) == [full_path.replace(SystemConsts.TECHSUPPORT_FILES_PATH, '')
-                                                    for full_path in output_dict.values()], \
-                    f"Output of show tech-support has mismatch between keys (file names) and full-paths: {output_dict.items()}"
+                assert list(files_dict.keys()) == [full_path.replace(SystemConsts.TECHSUPPORT_FILES_PATH, '')
+                                                   for full_path in files_dict.values()], \
+                    f"Output of show tech-support has mismatch between keys (file names) and full-paths: {files_dict.items()}"
 
     for file_name in files_names:
         system.techsupport.files.file_name[file_name].action_delete()

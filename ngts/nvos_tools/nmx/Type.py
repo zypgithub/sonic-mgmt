@@ -37,7 +37,7 @@ class FileType(BaseComponent):
                                                    self.get_resource_path())
 
     def action_fetch_sdn(self, url, dut_engine=None) -> ResultObj:
-        return self.action_fetch(url, '', dut_engine)
+        return self.action_fetch(url, None, dut_engine)
 
     def action_install_sdn(self, file, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action install for {self.get_resource_path()}'):

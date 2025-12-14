@@ -66,10 +66,16 @@ class TechSupport(BaseComponent):
                     # Round output to MB by -m flag and trim white spaces with column to receive int like output
                     output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
                     size_in_MB = int(output.split(" ")[0])
-                    assert size_in_MB < SystemConsts.TECHSUPPORT_SIZE_LIMIT, f"{tech_support_folder} size ({size_in_MB}MB)" \
-                        f" should be less than {SystemConsts.TECHSUPPORT_SIZE_LIMIT}MB"
+                    size_limit = TestToolkit.devices.dut.constants.techsupport_size_limit_mb
+                    assert size_in_MB < size_limit, f"{tech_support_folder} size ({size_in_MB}MB)" \
+                        f" should be less than {size_limit}MB"
 
             return tech_support_folder, duration
+
+    def action_upload(self, upload_path, file_name):
+        with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_upload, TestToolkit.engines.dut,
+                                                   path=self.get_resource_path() + "/files", file_name=file_name, url=upload_path)
 
     def parse_ib_techsupport_folder_name(self, techsupport_res):
         techsupport_res_list = techsupport_res.returned_value.split('\n')

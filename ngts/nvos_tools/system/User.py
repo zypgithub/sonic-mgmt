@@ -36,7 +36,8 @@ class User(BaseComponent):
 
         if role:
             self.user_id[username].set('role', role, dut_engine=engine).verify_result()
-        self.user_id[username].set('password', password, dut_engine=engine, apply=apply).verify_result()
+        self.user_id[username].set('password', password, dut_engine=engine, apply=apply,
+                                   ask_for_confirmation=True).verify_result()
 
         return username, password
 

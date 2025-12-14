@@ -42,3 +42,4 @@ pyopenssl
 ecdsa
 textfsm
 cbor2
+air-sdk

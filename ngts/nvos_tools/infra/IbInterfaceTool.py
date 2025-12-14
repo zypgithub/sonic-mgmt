@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from ngts.constants.constants import InfraConst
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, RosalindSimx
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
@@ -14,6 +14,8 @@ from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -143,6 +145,159 @@ class IbInterfaceTool:
             # Juliet ports 10-18 belong to ASIC B and their label_port numbering restarts at 1
             port_number -= 9
         return get_log_port(table_output, port_number, lane_bmap)
+
+    @staticmethod
+    def configure_rosalind_simx_loopback(engines, devices):
+        """
+        Configure RosalindSimx using MLOOP workaround to enable link simulation.
+
+        This utility function performs the following configuration sequence:
+        1. Sets all access ports to down state
+        2. Enables mloop-workaround feature
+        3. Sets all access ports back to up state
+        4. Saves configuration for persistence across reboots
+
+        Args:
+            engines: Engine objects containing DUT connection
+            devices: Device objects containing device configuration
+
+        Returns:
+            bool: True if configuration was successful, False if skipped
+
+        Example:
+            >>> success = IbInterfaceTool.configure_rosalind_simx_loopback(engines, devices)
+            >>> if success:
+            ...     logger.info("RosalindSimx MLOOP workaround configured successfully")
+        """
+        # Check if this is a RosalindSimx device
+        if not isinstance(devices.dut, RosalindSimx):
+            logger.info("Not a RosalindSimx device, skipping MLOOP workaround configuration")
+            return False
+
+        logger.info("RosalindSimx detected, configuring MLOOP workaround")
+
+        with allure.step("RosalindSimx MLOOP Workaround Configuration"):
+            # Get access ports list and create range string
+            access_ports = devices.dut.nvl_access_ports_list
+            if not access_ports:
+                logger.warning("No access ports found, skipping RosalindSimx configuration")
+                return False
+
+            # Create port range string (e.g., "acp1-144")
+            port_range = summarize_switch_ports(access_ports)
+            logger.info(f"Access ports range: {port_range}")
+
+            # Step 1: Bring ports down
+            with allure.step(f"Set {port_range} interfaces to down state"):
+                engines.dut.run_cmd(f'nv set interface {port_range} link state down')
+                engines.dut.run_cmd('nv config apply')
+                logger.info(f"Set {port_range} to down state")
+
+            # Step 2: Enable MLOOP workaround
+            with allure.step("Enable MLOOP workaround"):
+                fae = Fae()
+                fae.system.mloop.state.set(
+                    op_param_name='enabled',
+                    apply=False,
+                    ask_for_confirmation=True
+                ).verify_result()
+                logger.info("MLOOP workaround enabled")
+
+            # Step 3: Bring ports up
+            with allure.step(f"Set {port_range} interfaces to up state"):
+                engines.dut.run_cmd(f'nv set interface {port_range} link state up')
+                engines.dut.run_cmd('nv config apply')
+                logger.info(f"Set {port_range} to up state")
+
+            # Step 4: Save config for persistence across reboots
+            with allure.step("Save configuration"):
+                engines.dut.run_cmd('nv config save')
+                logger.info("Configuration saved")
+
+            with allure.step("Final stabilization wait - 1 minute"):
+                logger.info("Waiting 1 minute for system stabilization...")
+                time.sleep(60)
+                logger.info("RosalindSimx loopback configuration completed")
+
+            logger.info("RosalindSimx MLOOP workaround configuration completed")
+
+        return True
+
+    @staticmethod
+    def verify_rosalind_simx_links_up(devices, max_retries=2, retry_wait_minutes=3):
+        """
+        Verify that RosalindSimx links are actually up after configuration.
+
+        This function attempts to find any port that is in UP state. It will try different
+        interface types (acp, sw) based on what's available on the device.
+
+        Args:
+            devices: Device objects containing device configuration
+            max_retries: Number of additional retries if no links found (default: 1)
+            retry_wait_minutes: Minutes to wait between retries (default: 3)
+
+        Returns:
+            bool: True if at least one link is found up, False if all attempts fail
+
+        Example:
+            >>> success = IbInterfaceTool.verify_rosalind_simx_links_up(devices)
+            >>> if not success:
+            ...     logger.warning("No UP links found on device")
+        """
+        if not isinstance(devices.dut, RosalindSimx):
+            logger.info("Not a RosalindSimx device, skipping link verification")
+            return True
+
+        with allure.step("Verify RosalindSimx links are up"):
+            for attempt in range(max_retries + 1):
+                attempt_num = attempt + 1
+                logger.info(f"Link verification attempt {attempt_num}/{max_retries + 1}")
+
+                # Try to find any up port using different interface types
+                interface_types_to_try = []
+
+                # Check what's available and build priority list
+                if hasattr(devices.dut, 'nvl_access_ports_list') and devices.dut.nvl_access_ports_list:
+                    interface_types_to_try.append('acp')
+                if hasattr(devices.dut, 'nvl_trunk_ports_list') and devices.dut.nvl_trunk_ports_list:
+                    interface_types_to_try.append('sw')
+
+                if not interface_types_to_try:
+                    logger.warning("No NVL ports found on device, skipping link verification")
+                    return True
+
+                # Try each interface type
+                for interface_type in interface_types_to_try:
+                    try:
+                        with allure.step(f"Checking {interface_type} ports for UP state"):
+                            logger.info(f"Attempting to find UP {interface_type} port")
+
+                            # Try to get any port that is UP
+                            up_port = Tools.RandomizationTool.select_random_port(
+                                requested_ports_state="up",
+                                interface_type=interface_type
+                            ).get_returned_value()
+
+                            if up_port:
+                                logger.info(f"Found UP port: {up_port.name} (type: {interface_type})")
+                                return True
+
+                    except Exception as e:
+                        logger.info(f"No UP {interface_type} ports found: {e}")
+                        continue
+
+                # If we reach here, no UP ports were found in this attempt
+                if attempt < max_retries:
+                    with allure.step(f"No UP links found, waiting {retry_wait_minutes} minutes before retry"):
+                        logger.warning(f"No UP links found on attempt {attempt_num}. "
+                                       f"Waiting {retry_wait_minutes} minutes before retry {attempt_num + 1}")
+                        time.sleep(retry_wait_minutes * 60)  # Convert minutes to seconds
+                else:
+                    # Final attempt failed
+                    logger.error(f"No UP links found after {max_retries + 1} attempts.")
+                    return False
+
+        return False
 
     @staticmethod
     def get_connected_transceivers_dict(engine, transceivers_list):

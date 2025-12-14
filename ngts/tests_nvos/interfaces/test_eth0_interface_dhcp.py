@@ -312,7 +312,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
             validate_interface_ip_address(switch_ip, output_dictionary, True)
 
         with allure.step('Negative validation for {0} ip'.format(mgmt_port_name)):
-            res = mgmt_port.interface.ip.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
+            res = mgmt_port.interface.ipv4.address.set(op_param_name='aa', apply=False, ask_for_confirmation=True)
             res.ignore_result()
             assert not res.result or "is not a" in res.returned_value, \
                 "The operation succeeded while it is expected to fail"
@@ -837,18 +837,18 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
     try:
         with allure.step('Run show command on mgmt port and verify default description'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ip.show()).get_returned_value()
+                mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
             switch_ip = [ip for ip in output_dictionary['address'].keys() if engines.dut.ip in ip][0]
         with allure.step('Disable dhcp, check mgmt port unreachable'):
-            mgmt_port.interface.ip.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
             with allure.step('Check port status, should be down'):
                 check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             with allure.step('Verify no static ip'):
-                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ip.show(dut_engine=serial_engine)).get_returned_value()
+                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ipv4.show(dut_engine=serial_engine)).get_returned_value()
                 assert switch_ip not in output['address'].keys(), f"Static ip {switch_ip} found in interface ip address show"
         with allure.step('Set static ip'):
-            mgmt_port.interface.ip.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv4.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
             with allure.step('Verify static ip'):
                 serial_engine.serial_engine.sendline(f"nv show interface {mgmt_port_name}")
                 serial_engine.serial_engine.expect(switch_ip, timeout=120)
@@ -869,13 +869,13 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
                 assert output, f"Mgmt port {mgmt_port_name} not found in interface lldp show"
     finally:
         with allure.step('Unset ipv4 and dhcp and check port reachable'):
-            mgmt_port.interface.ip.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            mgmt_port.interface.ipv4.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
             with allure.step('Check port status and verify default description'):
                 check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
                 if is_bug_active(4569345):
                     time.sleep(2)
                 output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                    mgmt_port.interface.ip.show()).get_returned_value()
+                    mgmt_port.interface.ipv4.show()).get_returned_value()
                 validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
 
 

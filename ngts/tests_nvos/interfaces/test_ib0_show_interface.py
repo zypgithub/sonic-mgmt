@@ -129,3 +129,33 @@ def validate_ip_fields(output_dictionary):
         logging.info('Check that all expected fields under eth ip field exist in the output')
         field_to_check = [IbInterfaceConsts.IP_ADDRESS]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, field_to_check).verify_result()
+
+
+# ------------ Open API tests -----------------
+
+@pytest.mark.openapi
+@pytest.mark.ib
+def test_ib0_show_interface_openapi(engines):
+    TestToolkit.tested_api = ApiType.OPENAPI
+    test_ib0_show_interface(engines)
+
+
+@pytest.mark.openapi
+@pytest.mark.ib
+def test_ib0_show_interface_link_openapi(engines):
+    TestToolkit.tested_api = ApiType.OPENAPI
+    test_ib0_show_interface_link(engines)
+
+
+@pytest.mark.openapi
+@pytest.mark.ib
+def test_ib0_show_interface_stats_openapi(engines):
+    TestToolkit.tested_api = ApiType.OPENAPI
+    test_ib0_show_interface_stats(engines)
+
+
+@pytest.mark.openapi
+@pytest.mark.ib
+def test_ib0_show_interface_ip_openapi(engines):
+    TestToolkit.tested_api = ApiType.OPENAPI
+    test_ib0_show_interface_ip(engines)

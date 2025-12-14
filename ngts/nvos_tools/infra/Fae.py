@@ -214,8 +214,9 @@ class FaeSystem(BaseComponent):
         self.control = BaseComponent(self, path='/control')
         self.dockers = BaseComponent(self, path='/control/dockers')
         self.resource_limit = BaseComponent(self, path='/control/dockers/resource-limit')
-        self.cpo = BaseComponent(self, path='/cpo')
         self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
+        self.mloop = Mloop(self)
+        self.cpo = BaseComponent(self, path='/cpo')
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
@@ -226,3 +227,20 @@ class FaeLog(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/log')
         self.remarkable_logs = BaseComponent(self, path='/remarkable-logs')
+
+
+class Mloop(BaseComponent):
+    """
+    Represents fae/system/mloop subtree.
+
+    MLOOP workaround is required for running NVOS with MLOOP configuration.
+    Must be enabled AFTER ports are brought down and BEFORE bringing them up.
+
+    Usage:
+        nv set fae system mloop state [enabled|disabled]
+        nv show fae system mloop
+    """
+
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/mloop')
+        self.state = BaseComponent(self, path='/state')

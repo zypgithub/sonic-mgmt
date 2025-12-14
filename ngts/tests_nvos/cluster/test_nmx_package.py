@@ -42,10 +42,10 @@ def clear_cluster_package_files():
 
 
 @pytest.fixture(scope='session', autouse=True)
-def enable_cluster_and_stop_apps(setup_name):
+def enable_cluster_and_stop_apps(setup_name, devices):
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
-    for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+    for app in devices.dut.expected_cluster_apps:
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
 
 
@@ -58,7 +58,7 @@ def install_apps_if_needed(devices):
     if not output:
         # Load versions from JSON file
         versions_data = load_nmx_versions_from_json(devices)
-        for app in ClusterConsts.INITIAL_EXPECTED_APPS:
+        for app in devices.dut.expected_cluster_apps:
             default_path = versions_data['burn_path'][app]
             default_version = versions_data['burn_version_names'][app]
             filename = fetch_and_verify_package(fae, app, default_path)
@@ -90,7 +90,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_neede
        a. Revert all applications to their default versions.
     """
     TestToolkit.tested_api = test_api
-    apps = ClusterConsts.INITIAL_EXPECTED_APPS
+    apps = devices.dut.expected_cluster_apps
 
     try:
         if install_apps_if_needed:
@@ -211,7 +211,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     TestToolkit.tested_api = test_api
     fae = Fae(None)
     nmx_package = fae.cluster.package
-    app_to_test = random.choice(ClusterConsts.INITIAL_EXPECTED_APPS)
+    app_to_test = random.choice(devices.dut.expected_cluster_apps)
     _, default_version = get_data_from_path(engines, ClusterConsts.INITIAL_APPS_PATH, app_to_test)
 
     # Load versions from JSON file

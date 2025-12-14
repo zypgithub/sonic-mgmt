@@ -94,7 +94,7 @@
         <condition>
           <key>dut_type</key>
           <op> not in </op>
-          <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+          <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value>
         </condition>
       </ignore>
     </case>
@@ -123,7 +123,7 @@
         <condition>
           <key>dut_type</key>
           <op> not in </op>
-          <value>[juliet, rosalind-surrogate, rosalind-chipless]</value>
+          <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value>
         </condition>
       </ignore>
     </case>

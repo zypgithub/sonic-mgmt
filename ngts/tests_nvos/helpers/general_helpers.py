@@ -1,13 +1,21 @@
 import logging
+import sys
+import pathlib
 import random
 import re
 import shlex
 import string
 import subprocess
-from typing import List, Union
+from typing import List, Union, Optional
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.ResultObj import ResultObj
+
+
+def get_absolute_devts_path() -> Optional[str]:
+    for path in sys.path:
+        if pathlib.Path(path).stem == 'devts':
+            return path
 
 
 def verify_hidden_cmd_args_in_history(dut_engine: LinuxSshEngine, num_lines: int, cmd_prefix, interesting_args, forbidden_patterns: List[str] = []):

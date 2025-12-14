@@ -1,12 +1,13 @@
-from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_constants.constants_nvos import OutputFormat, LinkDetectionConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.system.factory_reset.helpers import *
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 
-@disabled_access_ports
+# @disabled_access_ports
 def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_port, pre_health_status, machine_type,
                                        not_apply_port, system, init_cluster_status, has_loopbox, devices, setup_name, standalone_system):
     with allure.step('update timezone'):
@@ -14,6 +15,7 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
     if machine_type != 'MQM9520':
         with allure.step("Validate health status and report"):
             validate_health_status_report(system, pre_health_status)
+
     with allure.step("Verify description has been deleted"):
         validate_port_description(engines.dut, apply_and_save_port, "")
         validate_port_description(engines.dut, just_apply_port, "")
@@ -43,3 +45,11 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
                 # Enable cluster and validate its enabled.
                 state = ClusterTools.check_cluster_state(cluster, output_format=OutputFormat.json)
                 assert state == init_cluster_status, f"State is {state} instead of {init_cluster_status}"
+
+    if devices.dut.check_fec_capability():
+        tested_api = TestToolkit.tested_api
+        TestToolkit.tested_api = ApiType.NVUE
+        with allure.step("Verify fec mode is set to {}".format(LinkDetectionConsts.FEC_MODE_DEFAULT)):
+            link_output = apply_and_save_port.interface.link.show(output_format="auto")
+            ValidationTool.verify_fec_config_in_auto_output(link_output, LinkDetectionConsts.FEC_MODE_DEFAULT)
+        TestToolkit.tested_api = tested_api

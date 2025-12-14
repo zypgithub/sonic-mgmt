@@ -51,6 +51,7 @@ from typing import Callable, Dict, Generator, List, Optional, Union
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.ngts_types import DevicesT, EnginesT
 from ngts.nvos_constants.constants_nvos import (
+    ApiType,
     ClusterApps,
     ClusterConsts,
     RbacConsts,
@@ -152,6 +153,8 @@ from ngts.tools.test_utils.nvos_general_utils import (
     wait_for_ldap_nvued_restart_workaround,
 )
 from ngts.tools.test_utils.switch_recovery import generate_strong_password
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
+from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 
 from .helpers import Result, SystemPackage
 
@@ -1076,6 +1079,40 @@ def _prepare_local_admin_user(engines, devices) -> UserInfo:
         raise RuntimeError(f"User creation failed: {e}")
 
 
+@_requires_compatibility(minimal_version="25.02.2100")
+def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: SystemPackage, target: SystemPackage, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify that interface speed configuration is preserved across upgrade.
+
+    Test flow:
+        1. Configure speed on a random port (before upgrade)
+        2. Perform upgrade
+        3. Verify speed configuration preserved after upgrade
+        4. Cleanup speed testing configuration
+
+    Note: This replaces the speed testing from the deprecated test_downgrade_upgrade
+    in test_system_image.py
+    """
+    speed_info = None
+
+    with allure.step("Configure and test interface speeds"):
+        try:
+            speed_info = InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
+
+            if speed_info:
+                logger.info(f"Speed testing configured successfully on port: {speed_info[0].name}")
+        except Exception as e:
+            logger.warning(f"Speed testing setup failed, will skip this checker: {e}")
+            raise Skipped(f"Speed testing setup failed: {e}")
+
+    yield  # Perform upgrade
+
+    # Verify and cleanup after upgrade
+    with allure.step("Verify speed configuration preserved and cleanup"):
+        if speed_info:
+            NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
+
+
 # the checker must be called e.g. test_rbac
 _CHECKERS: List[CheckerFn] = [
     _check_nmx_cert,
@@ -1087,6 +1124,7 @@ _CHECKERS: List[CheckerFn] = [
     _check_api_mtls_spiffe_id_and_crl,
     _check_nmx_controller_rbac,
     _check_nmx_telemetry_rbac,
+    _check_speed_configuration,
 ]
 
 _CHECKERS.append(random.choice([_check_tacacs_auth, _check_radius_auth, _check_ldap_auth]))  # This is intended to be random, as two AAA checkers can't run together

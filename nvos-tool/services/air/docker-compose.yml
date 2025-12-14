@@ -1,0 +1,54 @@
+version: "3.9"
+
+services:
+  tacacs:
+    image: tacacs:${VERSION:-0.1.0}
+    container_name: tacacs
+    command: ["/usr/sbin/tac_plus", "-G", "-C", "/etc/tacacs+/tac_plus.conf"]
+    ports:
+      - "49:49"
+    networks:
+      - lab
+    restart: unless-stopped
+
+  gnmi-client:
+    image: gnmi-client:${VERSION:-0.1.0}
+    container_name: gnmi-client
+    entrypoint: ["/bin/bash"]  
+    environment:
+      - PATH=/app:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    command: ["-c", "sleep infinity"]
+    pull_policy: never
+    restart: unless-stopped
+    networks: ["lab"]   
+
+#  ntp-server:
+#    image: ntp-server:${VERSION:-0.1.0}
+#    container_name: ntp-server
+#    pull_policy: never
+#    restart: unless-stopped
+#    network_mode: "host"    
+#    healthcheck:
+#      test: ["CMD", "chronyc", "tracking"]
+#      interval: 20s
+#      timeout: 3s
+#      retries: 5
+
+  #ztp-server:
+#    image: ztp-server:${VERSION:-0.1.0}
+#    container_name: ztp-server
+#    pull_policy: never
+#    restart: unless-stopped
+#    network_mode: "host"     
+#    cap_add:
+#      - NET_ADMIN
+#      - NET_RAW
+#    volumes:
+#      - ./services/ztp-server/ztp/tftp:/var/lib/tftpboot
+#      - ./services/ztp-server/ztp/www:/usr/share/nginx/html:ro
+ #     - ./services/ztp-server/dnsmasq.conf:/etc/dnsmasq.d/ztp.conf:ro
+#      - ./services/ztp-server/nginx.conf:/etc/nginx/nginx.conf:ro
+#
+networks:
+  lab:
+    driver: bridge

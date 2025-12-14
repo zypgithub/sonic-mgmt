@@ -1,11 +1,14 @@
 import logging
 import os
+import re
 import shutil
 import time
 import copy
 import yaml
 
+import allure
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.constants.constants import LinuxConsts, SerialLoggerConst
 from ngts.nvos_constants.constants_nvos import PlatformConsts
@@ -192,7 +195,8 @@ class NvosInstallationSteps:
             logger.info(f'config after upgrade (actual):\n{actual_config}')
             exceptions = {"secret": "*", "password": "*", "readonly-community": None}
             dicts_diff = ValidationTool.get_dictionaries_diff(normalized_expected_config, actual_config, exceptions=exceptions)
-            logger.info(f'configs diff:\n{dicts_diff}')
+            logger.info(f'configs diff (full):\n{dicts_diff}')
+
             upgrade_status_file_path_dut = UPGRADE_STATUS_FILE_PATH
             if not dicts_diff:
                 dut_engine.run_cmd(f'echo "{UPGRADE_STATUS_SUCCESS_MSG}" > {upgrade_status_file_path_dut}')
@@ -323,3 +327,98 @@ class NvosInstallationSteps:
             return old_config
 
         return normalized_config
+
+    @staticmethod
+    def setup_test_environment_with_config_and_speed(config_filename, config_file_path, engines, devices,
+                                                     system, scp_host_creds, dut_engine=None,
+                                                     include_speed_testing=True, verify_result=True):
+        """
+        Generic test environment setup that applies configuration and optionally performs speed testing.
+
+        This function provides a standardized way to set up test environments across multiple tests.
+        It handles both configuration file application and optional interface speed testing in the
+        correct sequence, eliminating code duplication across different test files.
+
+        The function performs:
+        1. Apply and save the provided configuration file
+        2. Optionally perform comprehensive speed configuration testing (if enabled)
+        3. Return speed testing information for later cleanup (if performed)
+
+        Args:
+            config_filename: Name of the configuration file
+            config_file_path: Path to the configuration file
+            engines: Test engines object containing connection information
+            devices: Test devices object containing device configuration
+            system: System object for configuration operations
+            scp_host_creds: SCP credentials for file transfer
+            dut_engine: DUT engine (optional, defaults to engines.dut)
+            include_speed_testing: Whether to perform speed testing (default: True)
+            verify_result: Whether to verify configuration operations (default: True)
+
+        Returns:
+            tuple or None: If speed testing performed, returns (Port, original_speed, new_speed, supported_speeds)
+                          If speed testing skipped, returns None
+
+        Example:
+            >>> speed_info = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
+            ...     'my_config.yaml', '/path/to/config', engines, devices, system, creds)
+            >>> if speed_info:
+            ...     port, orig, new, supported = speed_info
+            ...     print(f"Speed testing on {port.name}: {orig} -> {new}")
+        """
+        # Use provided dut_engine or default to engines.dut
+        dut_engine = dut_engine or engines.dut
+
+        # Step 1: Apply and save configuration
+        with allure.step('Apply and save pre-defined configuration'):
+            NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
+                                                          scp_host_creds, system, verify_result=verify_result)
+
+        # Step 2: Optionally perform speed testing
+        if include_speed_testing:
+            with allure.step('Configure and test interface speeds'):
+                return InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
+
+        return None
+
+    @staticmethod
+    def cleanup_speed_testing_if_performed(speed_info, device):
+        """
+        Generic cleanup function for speed testing that can be used across multiple tests.
+
+        This function provides a standardized way to clean up speed testing configurations
+        across different test files. It safely handles cases where speed testing was not
+        performed (speed_info is None) and provides proper error handling for cleanup operations.
+
+        Note: This function is primarily for test_system_image.py. Other tests like ISSU
+        may handle speed cleanup internally before config verification.
+
+        The function performs:
+        1. Check if speed testing was actually performed
+        2. If performed, verify speed configuration is preserved after operations
+        3. Unset the speed configuration to clean up
+        4. Verify speed returns to original state
+
+        Args:
+            speed_info: Tuple from setup_test_environment_with_config_and_speed or None
+                       Format: (Port, original_speed, new_speed, supported_speeds)
+            device: Device object for speed operations
+
+        Example:
+            >>> # At end of test_system_image
+            >>> NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
+        """
+        if speed_info:
+            try:
+                selected_port, original_speed, new_speed, supported_speeds = speed_info
+
+                # Import here to avoid circular imports
+                from ngts.tests_nvos.system.test_system_image import _verify_and_cleanup_speed_after_upgrade
+                _verify_and_cleanup_speed_after_upgrade(selected_port, original_speed, new_speed, device)
+
+                logger.info(f"Speed testing cleanup completed successfully for port {selected_port.name}")
+            except Exception as e:
+                logger.error(f"Speed verification and cleanup failed: {e}")
+                raise
+        else:
+            logger.info("No speed testing was performed - skipping post-upgrade verification")

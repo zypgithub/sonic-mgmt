@@ -15,9 +15,9 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
+KB_PER_INTERFACE_SHOW = 3000
 
 
-@pytest.mark.check_disk_usage(expect=60000)
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.ssh_config
 @pytest.mark.system
@@ -28,12 +28,19 @@ def test_parallel_cli_commands(engines, devices):
         2. Run mpstat -p ALL and save result as <memory_mpstat_output_before_testing>
         3. create <max_sessions> - 3 sessions
         4. Run mpstat -p ALL and save result as <memory_mpstat_output_after_connections>
-        5. create 5 commands lists. save as cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5
-        6. run all sessions in parallel s.t. each session will select randomly one ofe the 5 lists and save all memory and CPU outputs
+        5. create 4 commands lists. save as cmds_list1, cmds_list2, cmds_list3, cmds_list4
+        6. run all sessions in parallel s.t. each session will randomly select one of the 4 lists on each iteration
+           and track how many times each list was picked
         7. verify that memory and CPU outputs fall within the expected intervals
 
     """
     system = System()
+
+    with allure.step("Get initial disk stats"):
+        field_to_read = 'kB_wrtn'
+        initial_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+        device = next((devices for devices in initial_output.keys() if not devices.startswith('loop')), None)
+        initial_kb = int(initial_output[device][field_to_read])
 
     with allure.step('Show ssh and verify default values'):
         ssh_output = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
@@ -59,13 +66,12 @@ def test_parallel_cli_commands(engines, devices):
     with allure.step(f'save memory and cpu after {max_sessions} connections'):
         memory_mpstat_output_after_connections = run_memory_mpstat_commands(engines.dut)
 
-    with allure.step('Create 5 lists of commands'):
+    with allure.step('Create 4 lists of commands'):
         cmds_list1 = ['nv show system -o json']
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
         cmds_list3 = ['nv show ib device -o json']
         cmds_list4 = ['nv show platform firmware -o json']
-        cmds_list5 = ['nv show interface -o json']
-        command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
+        command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4]
         keep_running_event = threading.Event()
         keep_running_event.set()
 
@@ -75,8 +81,11 @@ def test_parallel_cli_commands(engines, devices):
                 futures = []
                 future_mem_cpu = executor.submit(memory_cpu_run, sessions[-1], keep_running_event)
                 futures.append(future_mem_cpu)
+
+                session_futures = []
                 for i in range(max_sessions - 1):
                     future = executor.submit(run_session, sessions[i], command_lists, keep_running_event)
+                    session_futures.append(future)
                     futures.append(future)
 
                 with allure.step("run all threads for 2 minutes"):
@@ -84,6 +93,31 @@ def test_parallel_cli_commands(engines, devices):
                     keep_running_event.clear()
 
                 memory_mpstat_output_during_testing = future_mem_cpu.result()
+                total_pick_counts = [0] * len(command_lists)
+                for future in session_futures:
+                    pick_counts = future.result()
+                    for i in range(len(pick_counts)):
+                        total_pick_counts[i] += pick_counts[i]
+
+                logger.info(f"Command list pick counts: {total_pick_counts}")
+                with allure.step(f"Command list selection distribution: {total_pick_counts}"):
+                    pass
+
+                with allure.step("Check disk usage based on pick counts"):
+                    final_output = OutputParsingTool.run_iostat_and_parse(engines.dut)
+                    final_kb = int(final_output[device][field_to_read])
+                    delta_kb = (final_kb - initial_kb)
+                    expected_kb = total_pick_counts[2] * KB_PER_INTERFACE_SHOW
+
+                    allure.attach('Disk usage analysis',
+                                  f'Initial: {initial_kb}KB\n'
+                                  f'Final: {final_kb}KB\n'
+                                  f'Test added: {delta_kb}KB\n'
+                                  f'cmds_list3 picks: {total_pick_counts[2]}\n'
+                                  f'Expected threshold: {expected_kb}KB')
+
+                    logger.info(f"Disk usage: delta={delta_kb}KB, expected<={expected_kb}KB")
+                    assert delta_kb <= expected_kb, f"Wrote {delta_kb}KB (max {expected_kb}KB allowed based on {total_pick_counts[2]} cmds_list3 executions)"
 
     finally:
         with allure.step(f'save memory and cpu after closing {max_sessions} connections'):
@@ -103,14 +137,20 @@ def run_session(session, commands_list, keep_running_event):
     :param keep_running_event:
     :param session:
     :param commands_list:
-    :return:
+    :return: list of counts for how many times each command list was picked
     """
-    commands = random.choice(commands_list)
-    with allure.step(f"This session will execute the following list of commands: {commands}."):
-        while keep_running_event.is_set():
+    pick_counts = [0] * len(commands_list)
+
+    while keep_running_event.is_set():
+        list_index = random.randint(0, len(commands_list) - 1)
+        commands = commands_list[list_index]
+        pick_counts[list_index] += 1
+
+        with allure.step(f"Running command list {list_index + 1}: {commands}"):
             for cmd in commands:
                 session.run_cmd(cmd)
                 time.sleep(7)
+    return pick_counts
 
 
 def memory_cpu_run(session, keep_running_event):

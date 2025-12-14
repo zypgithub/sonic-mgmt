@@ -41,22 +41,19 @@ def replace_two_ip_addresses(engine):
 
     with allure.step("replace eth0 ip with eth1 ip"):
         with allure.step("get current ip addresses for both mgmt ports"):
-            eth0_gateway = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ip.gateway.show()).verify_result()))
-            eth0_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ip.address.show()).verify_result()))
-            eth1_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth1_port.interface.ip.address.show()).verify_result()))
+            eth0_gateway = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ipv4.gateway.show()).verify_result()))
+            eth0_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth0_port.interface.ipv4.address.show()).verify_result()))
+            eth1_ip = next(iter(OutputParsingTool.parse_json_str_to_dictionary(eth1_port.interface.ipv4.address.show()).verify_result()))
 
         with allure.step("set and apply the replacement ips"):
-            eth0_port.interface.ip.address.unset(op_param=eth0_ip)
-            eth1_port.interface.ip.address.set(op_param_name=eth0_ip)
-            eth1_port.interface.ip.address.unset(op_param=eth1_ip)
-            eth0_port.interface.ip.address.set(op_param_name=eth1_ip)
-            eth0_port.interface.ip.gateway.set(op_param_name=eth0_gateway)
-            eth1_port.interface.ip.gateway.set(op_param_name=eth0_gateway)
+            eth0_port.interface.ipv4.address.unset(op_param=eth0_ip)
+            eth1_port.interface.ipv4.address.set(op_param_name=eth0_ip)
+            eth1_port.interface.ipv4.address.unset(op_param=eth1_ip)
+            eth0_port.interface.ipv4.address.set(op_param_name=eth1_ip)
+            eth0_port.interface.ipv4.gateway.set(op_param_name=eth0_gateway)
+            eth1_port.interface.ipv4.gateway.set(op_param_name=eth0_gateway)
 
             NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
-
-        with allure.step("sleep 3 second"):
-            time.sleep(3)
 
     return eth0_gateway, eth0_ip, eth1_ip
 

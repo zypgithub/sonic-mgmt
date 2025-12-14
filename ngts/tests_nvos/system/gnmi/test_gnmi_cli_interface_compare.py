@@ -1,11 +1,9 @@
 import pytest
 import logging
-import random
 import time
 import re
 
-from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts, PhyHealthConsts, PhyRecoveryConsts
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -77,10 +75,8 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
             with allure.step(f"Run 'nv show interface {port}' command and get CLI output"):
                 cli_output = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                     port_instance.interface.link.show()).get_returned_value()
-                cli_output[IbInterfaceConsts.PHY_DIAG] = Tools.OutputParsingTool.parse_show_output_to_dict(
-                    port_instance.interface.link.phy.detail.show()).get_returned_value()
                 cli_output[IbInterfaceConsts.PHY_DETAIL] = Tools.OutputParsingTool.parse_show_output_to_dict(
-                    port_instance.interface.link.phy.health.show()).get_returned_value()
+                    port_instance.interface.link.phy.detail.show()).get_returned_value()
 
             with allure.step("Adjust CLI output to match GNMI output"):
                 adjusted_cli_output = adjust_cli_attributes_and_values(devices.dut.interface_attributes_mapping_dict,
@@ -90,8 +86,14 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
                 if len(adjusted_cli_output) == 0:
                     logger.info("No interface attributes to compare")
                 else:
+                    if is_bug_active(4692220):
+                        adjusted_cli_output.pop(PhyRecoveryConsts.LAST_RS_FEC_UNCORRECTABLE_DURING_RECOVERY, None)
+                        adjusted_cli_output.pop(PhyRecoveryConsts.TOTAL_RS_FEC_UNCORRECTABLE_DURING_RECOVERY, None)
+                        adjusted_cli_output.pop(PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_TIME, None)
+                        adjusted_cli_output.pop(PhyRecoveryConsts.TOTAL_SUCCESSFUL_RECOVERY_TIME, None)
+                        adjusted_cli_output.pop(PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS, None)
                     if is_bug_active(4566854):
-                        adjusted_cli_output.pop("time-since-last-clear-min", None)
+                        adjusted_cli_output.pop(PhyHealthConsts.TIME_SINCE_LAST_CLEAR_MIN, None)
                     for attribute, value in adjusted_cli_output.items():
                         gnmi_value = gnmi_output_as_dict[attribute]
                         with allure.independent_step(f"Testing {attribute}"):
@@ -156,6 +158,10 @@ def adjust_physical_state(value):
     return 'LINK_UP' if value == IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP else value.upper()
 
 
+def adjust_supported_lanes(value):
+    return value.replace(',', '_')
+
+
 # Mapping cli-attributes to their corresponding adjustment functions
 attribute_adjustments = {
     IbInterfaceConsts.LINK_SPEED: adjust_speed,
@@ -166,6 +172,7 @@ attribute_adjustments = {
     IbInterfaceConsts.LINK_LOGICAL_PORT_STATE: adjust_logical_state,
     IbInterfaceConsts.DHCP_STATE: adjust_logical_state,
     IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE: adjust_physical_state,
+    IbInterfaceConsts.LINK_SUPPORTED_LANES: adjust_supported_lanes
 }
 
 

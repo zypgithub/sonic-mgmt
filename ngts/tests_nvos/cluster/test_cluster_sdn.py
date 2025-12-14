@@ -46,17 +46,18 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
         initial_configs_paths_to_restore = {}
         uploaded_files = []
         initial_configuration_restored = False
-        path_to_config = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
-        config_file_name = {config_type: '' for config_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES}
 
     try:
 
         logger.info("Setting cluster state to enabled")
         ClusterTools.start_cluster(cluster, setup_name, output_format)
 
-        controller_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES)
-        telemetry_config_files_paths = ClusterTools.get_current_config_files_paths(sdn, ClusterConsts.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_CONFIG_FILE_TYPES)
-        config_files_paths = dict(list(controller_config_files_paths.items()) + list(telemetry_config_files_paths.items()))
+        # Get config files paths for all apps that exist on this device type
+        config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)
+
+        # Initialize dicts with ONLY file types that exist on this device
+        path_to_config = {config_type: '' for config_type in config_files_paths.keys()}
+        config_file_name = {config_type: '' for config_type in config_files_paths.keys()}
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
@@ -84,14 +85,15 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
 
         with allure.step("Fetch & Generate config files"):
             for _ in range(2):
-                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                # Only iterate over file types that actually exist on this device
+                for file_type in config_files_paths.keys():
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
                     output = sdn.config.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
 
         with allure.step("Generate state files"):
             for _ in range(2):
-                state_files = ClusterTools.get_filtered_state_files(standalone_system)
+                state_files = ClusterTools.get_filtered_state_files(devices, standalone_system)
                 for file_type in state_files:
                     app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                     output = sdn.state.apps.app_name[app].type.file_type[file_type].action_generate_sdn()
@@ -100,7 +102,8 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
                     all_state_files_paths[file_type] = [item['path'] for item in output.values()]
 
         with allure.step("Install config file"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+            # Only iterate over file types that actually exist on this device
+            for file_type in config_files_paths.keys():
                 app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                 sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(path_to_config[file_type])
                 sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[config_file_name[file_type]].action_install(reboot_params=False, force=False)
@@ -119,7 +122,8 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
                     assert set(current_config_content.split('\n')) != set((initial_config_contents[file_type]).split('\n')), f"Current content has not changed, still same as in init state. init: {initial_config_contents[file_type]}, \ncurrent{current_config_content}"
 
         with allure.step("Install initial configurations"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+            # Only iterate over file types that were actually saved
+            for file_type in initial_configs_paths_to_restore.keys():
                 app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                 sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
                 conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
@@ -128,15 +132,16 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
         initial_configuration_restored = True
 
         with allure.step("Delete state/config Files"):
-            for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+            # Only iterate over file types that were actually generated
+            for file_type in all_config_files_paths.keys():
                 if all_config_files_paths[file_type]:
                     for file in all_config_files_paths[file_type]:
                         app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
                         sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-            state_files = ClusterTools.get_filtered_state_files(standalone_system)
+            state_files = ClusterTools.get_filtered_state_files(devices, standalone_system)
             for file_type in state_files:
-                if all_state_files_paths[file_type]:
+                if file_type in all_state_files_paths and all_state_files_paths[file_type]:
                     for file in all_state_files_paths[file_type]:
                         app = ClusterConsts.MAP_STATE_FILE_TYPE_TO_APP[file_type]
                         file = file.split('/')[-1]
@@ -146,8 +151,8 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
                 engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
             # INSTEAD OF THE ABOVE, YOU CAN USE THE FOLLOWING: sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.delete_files() and provide with a files list
             # Make sure all files are deleted.
-            ClusterTools.verify_sdn_config_files_deleted(sdn)
-            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system)
+            ClusterTools.verify_sdn_config_files_deleted(sdn, devices)
+            ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices)
             verify_all_files_are_deleted(engines, all_state_files_paths)
             verify_all_files_are_deleted(engines, all_config_files_paths)
 
@@ -156,7 +161,8 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
     finally:
         if not initial_configuration_restored:
             with allure.step("Install initial configurations"):
-                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
+                # Only iterate over file types that were actually saved
+                for file_type in initial_configs_paths_to_restore.keys():
                     app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                     sdn.config.apps.app_name[app].type.file_type[file_type].action_fetch_sdn(initial_configs_paths_to_restore[file_type])
                     conf_file_name = initial_configs_paths_to_restore[file_type].split('/')[-1]
@@ -164,13 +170,14 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
 
         if not config_files_deleted:
             with allure.step("Delete state/config Files"):
-                for file_type in ClusterConsts.CONTROLLER_AND_TELEMETRY_CONFIG_FILES:
-                    if (file_type in all_config_files_paths) and all_config_files_paths[file_type]:
+                # Only iterate over file types that were actually generated
+                for file_type in all_config_files_paths.keys():
+                    if all_config_files_paths[file_type]:
                         for file in all_config_files_paths[file_type]:
                             app = ClusterConsts.MAP_CONFIG_FILE_TYPE_TO_APP[file_type]
                             file = file.split('/')[-1]
                             sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file].action_delete()
-                state_files = ClusterTools.get_filtered_state_files(standalone_system)
+                state_files = ClusterTools.get_filtered_state_files(devices, standalone_system)
                 for file_type in state_files:
                     if (file_type in all_state_files_paths) and all_state_files_paths[file_type]:
                         for file in all_state_files_paths[file_type]:

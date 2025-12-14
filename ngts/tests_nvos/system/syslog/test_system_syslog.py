@@ -39,8 +39,10 @@ INVALID_CONFIG = "Config invalid"
 
 @pytest.mark.system
 @pytest.mark.syslog
+@pytest.mark.simx
+@pytest.mark.air
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_hostname(engines, test_api):
+def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, test_api):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -53,8 +55,7 @@ def test_rsyslog_positive_minimal_flow_by_hostname(engines, test_api):
     5. Cleanup
     """
     TestToolkit.tested_api = test_api
-    remote_server_engine = engines[NvosConst.SONIC_MGMT]
-    remote_server_hostname = get_hostname_from_ip(remote_server_engine.ip)
+    remote_server_engine, remote_server_hostname = _get_server_info(is_air, engines)
     positive_minimal_flow(remote_server_engine, remote_server_hostname)
 
 
@@ -279,7 +280,8 @@ def test_rsyslog_configurations(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-def test_rsyslog_server_severity_levels(engines, loganalyzer, random_api):
+@pytest.mark.air
+def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api):
     """
     Will validate all the severity options:  debug, info, notice, warning, error, critical, alert, emerg, none.
     Will configure the severity level, validate it in the show command and validate that the server catch the relevant
@@ -296,7 +298,7 @@ def test_rsyslog_server_severity_levels(engines, loganalyzer, random_api):
     * Cleanup
     """
     TestToolkit.tested_api = random_api
-    remote_server_engine = engines[NvosConst.SONIC_MGMT]
+    remote_server_engine, _ = _get_server_info(is_air, engines)
     remote_server_ip = remote_server_engine.ip
     system = System()
 
@@ -1463,7 +1465,7 @@ def test_syslog_rate_limit_burst(random_api):
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     selector_id = "burst_rate_limit_selector"
-    interval = 60
+    interval = 80
     burst = 10
 
     try:
@@ -1473,7 +1475,7 @@ def test_syslog_rate_limit_burst(random_api):
             system.syslog.selectors.selectors_dict[selector_id].set_severity(SyslogSeverityLevels.INFO, apply=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, selector_id, apply=True)
 
-        with allure.step("Configure rate limit with interval=60 and burst=10"):
+        with allure.step(f"Configure rate limit with interval={interval} and burst={burst}"):
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_interval(interval, apply=True)
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_burst(burst, apply=True)
             expected_selector = {
@@ -1667,6 +1669,7 @@ def send_msg_to_server(msg, server_name, server_engine, protocol=None, priority=
         TestToolkit.engines.dut.run_cmd('tail -10 /var/log/syslog')
         output = ''
 
+        time.sleep(2)
         if verify_msg_received:
             with allure.step("Verify server {} received the msg".format(server_name)):
                 output = verify_msg_in_syslog_file(server_engine, msg, should_find=True)
@@ -2100,3 +2103,32 @@ def test_syslog_buffering_during_mgmt_interface_downtime(engines, topology_obj, 
 
             # Cleanup syslog configurations
             system.syslog.servers.unset(apply=True)
+
+
+def _get_server_info(is_air, engines):
+    if is_air:
+        remote_server_engine = engines.oob_mgmt_server
+        remote_server_hostname = engines.oob_mgmt_server.ip
+    else:
+        remote_server_engine = engines[NvosConst.SONIC_MGMT]
+        remote_server_hostname = get_hostname_from_ip(remote_server_engine.ip)
+    return remote_server_engine, remote_server_hostname
+
+
+def configure_oob_server_for_syslog(oob_mgmt_server):
+    try:
+        with allure.step("Configure OOB server for syslog"):
+            oob_mgmt_server.run_cmd('sudo systemctl enable rsyslog')
+            oob_mgmt_server.run_cmd('sudo systemctl start rsyslog')
+            oob_mgmt_server.run_cmd('sudo chmod 666 /var/log/syslog')
+    except Exception as err:
+        oob_mgmt_server.run_cmd('sudo systemctl stop rsyslog')
+        oob_mgmt_server.run_cmd('sudo chmod 644 /var/log/syslog')
+        logging.error(f"Failed to configure OOB server for syslog: {err}")
+        raise err
+
+
+@pytest.fixture(scope='session', autouse=True)
+def configure_oob_server(engines, is_air):
+    if is_air:
+        configure_oob_server_for_syslog(engines.oob_mgmt_server)

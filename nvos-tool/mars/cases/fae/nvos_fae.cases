@@ -27,7 +27,7 @@
 
   <case>
     <name> NVOS - FAE ASIC error-injection </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
     <info> </info>
     <cmd>
       <params>

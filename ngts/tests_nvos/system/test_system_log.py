@@ -708,7 +708,9 @@ def test_log_idle(engines):
         eth_port_list = [Port(interface_name) for interface_name in re.findall(r'eth\d+', interface.show())]
         for port in eth_port_list:
             port.interface.ipv4.action_renew_dhcp_client().verify_result()
+            time.sleep(3)  # Allow interface lock to be released before IPv6 renewal
             port.interface.ipv6.action_renew_dhcp_client().verify_result()
+            time.sleep(3)  # Allow interface lock to be released before next interface
         time.sleep(60)
 
     with allure.step("Rotate the log"):

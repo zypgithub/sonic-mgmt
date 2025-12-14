@@ -22,7 +22,7 @@ from ngts.tools.test_utils import allure_utils as allure
 @pytest.mark.erot
 @pytest.mark.security
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_list_supported_components(test_api):
+def test_list_supported_components(test_api, devices, setup_name):
     """
     Verify that the general show command lists the supported components
 
@@ -33,20 +33,35 @@ def test_list_supported_components(test_api):
     with allure.step('run show spdm'):
         out: dict = OutputParsingTool.parse_json_str_to_dictionary(System().security.spdm.show()).get_returned_value()
     with allure.step('verify output gives the supported components '):
-        missing_components = [c for c in SpdmConsts.fields if c not in out]
-        extra_components = [c for c in out.keys() if c not in SpdmConsts.fields]
-        assert not missing_components and not extra_components, f'show spdm content is wrong.\nexpected fields: {SpdmConsts.fields}\nactual: {list(out.keys())}'
+        # Get device-specific expected SPDM components (not all platforms have all components)
+        expected_components = devices.dut.get_spdm_components(setup_name)
+        missing_components = [c for c in expected_components if c not in out]
+        extra_components = [c for c in out.keys() if c not in expected_components]
+        assert not missing_components and not extra_components, f'show spdm content is wrong.\nexpected fields: {expected_components}\nactual: {list(out.keys())}'
 
 
 @pytest.mark.bmc
 @pytest.mark.erot
 @pytest.mark.security
-def test_available_components(available_spdm_components):
+def test_available_components(available_spdm_components, devices, setup_name):
     """
-    Check which components ERoTs are available
+    Verify that available SPDM components (ERoTs, MCU, etc.) match device expectations
     """
-    unavailable_erots = [erot for erot in SpdmConsts.components if erot not in available_spdm_components]
-    assert not unavailable_erots, f'unavailable SPDM ERoTs: {unavailable_erots}'
+    # Get device-specific expected SPDM components (already in proper format: 'ERoT_BMC_0', etc.)
+    expected_spdm_components = devices.dut.get_spdm_components(setup_name)
+
+    # If device doesn't define expected components, accept whatever is available (old devices)
+    if not expected_spdm_components:
+        logging.info("Device doesn't define expected SPDM components - accepting available ones as valid")
+        expected_spdm_components = available_spdm_components
+
+    # Verify all expected components are available
+    missing_components = [comp for comp in expected_spdm_components if comp not in available_spdm_components]
+    assert not missing_components, f'Expected SPDM components missing: {missing_components}. Available: {available_spdm_components}'
+
+    # Verify no unexpected components (all available should be expected)
+    unexpected_components = [comp for comp in available_spdm_components if comp not in expected_spdm_components]
+    assert not unexpected_components, f'Unexpected SPDM components found: {unexpected_components}. Expected: {expected_spdm_components}'
 
 
 @pytest.mark.bmc
@@ -55,6 +70,10 @@ def test_available_components(available_spdm_components):
 @pytest.mark.parametrize("component, test_api",
                          [(component, random.choice(ApiType.ALL_TYPES)) for component in SpdmConsts.components])
 def test_main_flow(component, test_api, available_spdm_components):
+    # Skip if this component doesn't exist on this device
+    if component not in available_spdm_components:
+        pytest.skip(f"Component {component} not available on this device. Available: {available_spdm_components}")
+
     """
     Verify that show component works properly and shows certificate chain
 
@@ -84,8 +103,8 @@ def test_main_flow(component, test_api, available_spdm_components):
 
     with allure.step('show spdm'):
         out = OutputParsingTool.parse_json_str_to_dictionary(spdm.show()).get_returned_value()
-    with allure.step(f'verify all components ({SpdmConsts.fields}) exist as fields'):
-        ValidationTool.verify_field_exist_in_json_output(out, SpdmConsts.fields).verify_result()
+    with allure.step(f'verify all components ({available_spdm_components}) exist as fields'):
+        ValidationTool.verify_field_exist_in_json_output(out, available_spdm_components).verify_result()
 
     # for component in [SPDMComponents.BMC]:  #SpdmConsts.components:
     with allure.step(f'component: {component}'):

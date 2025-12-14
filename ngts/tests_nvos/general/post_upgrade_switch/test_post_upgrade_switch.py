@@ -44,7 +44,12 @@ def check_install_and_upgrade_steps_intervals(devices):
 
     with allure.step('verify install/upgrade intervals against defined limits'):
         for (start_key, end_key), limit in intervals_limit.items():
-            if InstallStepsTimer.get_timestamp(start_key) and InstallStepsTimer.get_timestamp(start_key):
+            if InstallStepsTimer.get_timestamp(start_key) and InstallStepsTimer.get_timestamp(end_key):
+                # Skip validation if no expected duration is defined for this device
+                if limit is None:
+                    logging.warning(f"No expected duration defined for {start_key} to {end_key} on device {devices.dut.__class__.__name__}. Skipping validation.")
+                    continue
+
                 with allure.independent_step(f'verify: from "{start_key}" to "{end_key}" <= {limit} seconds'):
                     interval = InstallStepsTimer.calculate_interval(start_key, end_key)
                     logging.info(f'actual interval: from "{start_key}" to "{end_key}" - {interval} seconds')

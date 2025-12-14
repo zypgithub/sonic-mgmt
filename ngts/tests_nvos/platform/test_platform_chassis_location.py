@@ -1,6 +1,7 @@
 import copy
 import logging
 import pytest
+import re
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -31,6 +32,8 @@ def test_show_platform_chassis_location(engines, test_api, devices, has_loopbox,
     output_dict = OutputParsingTool.parse_show_output_to_dict(platform.chassis_location.show()).get_returned_value()
     if has_loopbox or not standalone_system:
         with allure.step("verifying output for non-standalone switch"):
+            if re.match(r"^\d+$", output_dict[ChassisLocationConsts.CHAS_SN]):
+                assert int(output_dict[ChassisLocationConsts.CHAS_SN]) != 0, "chassis_sn can't be zero"
             ValidationTool.validate_output_of_show(output_dict, devices.dut.show_platform_chassis_location_output).verify_result()
     else:
         with allure.step("verifying output for standalone switch"):

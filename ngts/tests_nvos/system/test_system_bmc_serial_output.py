@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.bmc
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_system_bmc_serial_output(engines, devices, serial_engine, topology_obj, test_api):
     """
     Test flow:

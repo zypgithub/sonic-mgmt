@@ -147,7 +147,11 @@ class BaseDevice(ABC):
     def get_ib_ports_num(self):
         pass
 
-    def get_available_erot_names(self, setup_name: str) -> List[str]:
+    def get_spdm_components(self, setup_name: str) -> List[str]:
+        """
+        Get available SPDM components (ERoTs, MCU, etc.) for this device type.
+        Override in subclasses to define device-specific SPDM components.
+        """
         return []
 
     def update_mgmt_port(self, name, ip):
@@ -321,10 +325,31 @@ class BaseAppliance(BaseDevice):
 class BaseSwitch(BaseDevice):
     __metaclass__ = ABCMeta
 
-    Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'firmware',
+    Constants = namedtuple('Constants', ['system', 'dump_files', 'sdk_dump_files', 'sdk_dump_files_template', 'firmware',
                                          'log_dump_files', 'log_nginx_files', 'log_nmx_files', 'stats_dump_files',
                                          'hw_mgmt_files', 'audit_files', 'etc_files', 'cluster_files', 'bmc_dump_files', 'erots',
-                                         'kdump_files'])
+                                         'kdump_files', 'techsupport_size_limit_mb'])
+
+    @staticmethod
+    def get_sdk_dump_files_for_asic(asic_num, sdk_dump_files_template):
+        """
+        Generate SDK dump file list for a specific ASIC.
+
+        For multi-ASIC systems, SDK dump files contain device identifiers:
+        - ASIC 0 (sai_sdk_dump0) → dev1
+        - ASIC 1 (sai_sdk_dump1) → dev2
+        - ASIC 2 (sai_sdk_dump2) → dev3
+        - ASIC 3 (sai_sdk_dump3) → dev4
+
+        Args:
+            asic_num: ASIC number (0, 1, 2, 3, ...)
+            sdk_dump_files_template: Base template list with dev1 placeholders
+
+        Returns:
+            List of SDK dump files with correct dev{N} identifiers
+        """
+        dev_num = asic_num + 1
+        return [filename.replace('dev1', f'dev{dev_num}') for filename in sdk_dump_files_template]
     CpldImageConsts = namedtuple('CpldImageConsts', ('burn_image_path', 'refresh_image_path', 'version_names'))
     SsdImageConsts = namedtuple('SsdImageConsts', ('file', 'current_version', 'alternate_version'))
     BiosImagesConsts = namedtuple('BiosImagesConsts', ('current_version', 'alternate_version'))
@@ -391,6 +416,9 @@ class BaseSwitch(BaseDevice):
                           'sai_sdk_dump.json.gz', 'sdk_dump_ext_dev1_cr_space_1.udmp.gz',
                           'sdk_dump_ext_dev1_cr_space_3.udmp.gz', 'sdk_dump_ext_dev1_driver.txt.gz',
                           'sdk_dump_ext_dev1_amber.hex.gz']
+
+        # Base SDK dump files template (dev1 is the template, will be replaced per ASIC)
+        sdk_dump_files_template = sdk_dump_files
         log_dump_files = ["auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "tc_log.gz", "wtmp.gz", "ztp.log.gz"]
@@ -409,9 +437,10 @@ class BaseSwitch(BaseDevice):
 
         firmware = [PlatformConsts.FW_ASIC, PlatformConsts.FW_BIOS, PlatformConsts.FW_SSD]
         erots = []
-        self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, firmware, log_dump_files,
+        techsupport_size_limit_mb = 75  # Default for older systems (pre-Surrogate)
+        self.constants = BaseSwitch.Constants(system_dic, dump_files, sdk_dump_files, sdk_dump_files_template, firmware, log_dump_files,
                                               log_nginx_files, log_nmx_files, stats_dump_files, hw_mgmt_files, audit_files, etc_files, cluster_files,
-                                              bmc_dump_files, erots, kdump_files)
+                                              bmc_dump_files, erots, kdump_files, techsupport_size_limit_mb)
 
         self.current_bios_version_name = ""
         self.current_bios_version_path = ""

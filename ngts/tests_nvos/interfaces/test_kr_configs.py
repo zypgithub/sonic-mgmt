@@ -20,10 +20,21 @@ from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.ngts_types import EnginesT
+# TODO: remove this once KR feature is supported on all systems
+from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.ngts_types import DevicesT
 
 from . import helpers
 
 pytestmark = pytest.mark.usefixtures("enable_cluster_for_mini_oberon", "has_active_access_ports")
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_if_kr_not_supported(devices: DevicesT):
+    if isinstance(devices.dut, RosalindSurrogateSwitch) and is_redmine_issue_active([4726843])[0]:
+        pytest.skip(reason="KR feature is not supported on this system")
+    yield
 
 
 @dataclasses.dataclass

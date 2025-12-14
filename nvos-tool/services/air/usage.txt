@@ -1,0 +1,27 @@
+Build new dockers:
+> docker build -t ntp-server:${VERSION}  services/ntp-server
+> docker build -t ztp-server:${VERSION}  services/ztp-server
+> docker build -t gnmi-client:${VERSION} services/gnmi-client
+> docker build -t tacacs:${VERSION} services/air/tacacs
+
+
+Create bundle tarball:
+> scripts/build_bundle.sh ${VERSION}
+
+
+Use on any server:
+> scp bundle-${VERSION}.tgz user@server-ip:/tmp/
+
+> ssh to server
+> sudo mkdir -p /opt/infra && cd /opt/infra
+> sudo tar xzf /tmp/bundle-${VERSION}.tgz
+> cd bundle-${VERSION}
+> sudo ./load_and_up.sh images-${VERSION}.tar    
+
+to check:
+> sudo docker compose ps           # or nerdctl compose ps
+> sudo docker compose logs ntp-server --no-log-prefix | tail -n 50
+
+Example:
+> sudo docker exec -it gnmi-client bash
+> gnmic -a 192.168.200.3 --port 9339 --skip-verify subscribe --path "components/component[name=cpu]" --target nvos -u admin -p admin --mode once --format flat

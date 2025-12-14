@@ -242,7 +242,7 @@ def get_topology_from_noga(session, slow_cli=False, override_type=False, force_u
                                                                                  override_type=override_type)
         return session.config.topology_obj
     except BaseException as ex:
-        logger.error("Failed to get topology from noga")
+        logger.error("Failed to get topology: %s", ex)
         raise ex
 
 

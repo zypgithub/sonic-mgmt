@@ -1,0 +1,196 @@
+import pytest
+import logging
+import time  # TODO: Remove when XDR workaround is removed
+from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
+from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.Devices.IbDevice import RosalindSimx, RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
+from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
+
+logger = logging.getLogger()
+
+
+@pytest.fixture(scope='module', autouse=True)
+@pytest.mark.timeout(20 * MINUTE, func_only=True)  # 20 minutes - setup typically takes 7-15 minutes
+def rosalind_simx_setup(engines, devices):
+    """
+    RosalindSimx specific setup configuration that runs once per test module (.py file).
+
+    This fixture performs the following configuration for RosalindSimx systems:
+    1. Sets all access ports to down state
+    2. Configures mlxreg loopback settings on all access ports
+    3. Sets all access ports back to up state
+    4. Waits for 1 minute for stabilization
+
+    Note: 20 minute timeout allows for variability in setup time (typically 7-15 minutes).
+    Individual tests still have 900s timeout from MARS configuration.
+    """
+    # Skip setup if bug 4681425 is active (SIMX instability with loopback config)
+    if is_bug_active(4681425):
+        logger.warning("Bug 4681425 is active - skipping RosalindSimx loopback setup, tests will run without it")
+        yield
+        return
+
+    # Check if this is a RosalindSimx device
+    if not isinstance(devices.dut, RosalindSimx):
+        logger.info("Not a RosalindSimx device, skipping special configuration")
+        yield
+        return
+
+    # Use the reusable utility function for RosalindSimx loopback configuration
+    config_success = IbInterfaceTool.configure_rosalind_simx_loopback(engines, devices)
+    if not config_success:
+        pytest.fail("RosalindSimx loopback configuration failed - cannot run tests")
+
+    logger.info("RosalindSimx loopback configuration completed successfully")
+
+    # Verify that links are actually up
+    verification_success = IbInterfaceTool.verify_rosalind_simx_links_up(devices, max_retries=2, retry_wait_minutes=3)
+    if not verification_success:
+        pytest.fail("RosalindSimx link verification failed - no ports found UP")
+
+    logger.info("RosalindSimx link verification successful")
+
+    yield  # ALL tests in module execute here
+
+    # Cleanup: Disable MLOOP workaround and bring ports down after all tests complete
+    if config_success:
+        logger.info("Cleaning up: Bringing ports down and disabling MLOOP workaround")
+        try:
+            # Get port range (same as setup)
+            access_ports = devices.dut.nvl_access_ports_list
+            if access_ports:
+                port_range = summarize_switch_ports(access_ports)
+
+                # Bring ports down first
+                with allure.step(f"Set {port_range} interfaces to down state"):
+                    engines.dut.run_cmd(f'nv set interface {port_range} link state down')
+                    engines.dut.run_cmd('nv config apply')
+                    logger.info(f"Set {port_range} to down state")
+
+            # Disable MLOOP
+            fae = Fae()
+            fae.system.mloop.state.set(
+                op_param_name='disabled',
+                apply=True,
+                ask_for_confirmation=True
+            ).verify_result()
+            logger.info("MLOOP workaround disabled")
+
+            # Bring ports back UP to restore initial state
+            if access_ports:
+                with allure.step(f"Set {port_range} interfaces back to up state"):
+                    engines.dut.run_cmd(f'nv set interface {port_range} link state up')
+                    engines.dut.run_cmd('nv config apply')
+                    logger.info(f"Set {port_range} to up state")
+
+            # Save configuration
+            engines.dut.run_cmd('nv config save')
+            logger.info("System restored to initial state: ports UP, MLOOP disabled, config saved")
+        except Exception as e:
+            logger.warning(f"Failed during cleanup: {e}")
+
+
+# TODO: XDR Workaround Fixture - Currently DISABLED
+# This fixture is a temporary workaround for XDR speed issues on RosalindSwitch
+# To ENABLE this fixture: Change autouse=False to autouse=True below
+# To DISABLE this fixture: Change autouse=True to autouse=False below
+@pytest.fixture(scope='module', autouse=False)  # DISABLED - change to autouse=True to enable
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
+def xdr_wa_rosalind(engines, devices):
+    """
+    TODO: TEMPORARY WORKAROUND - Remove this entire fixture when XDR speed issues are fixed
+
+    XDR workaround for Rosalind systems - applies 200G speed to all access ports.
+
+    This fixture runs once per test module and performs:
+    1. Sets all access ports speed to 200G (links come up automatically)
+    2. Saves configuration
+    3. Waits for 1 minute for system stabilization
+
+    Cleanup restores default speed configuration.
+
+    Note: Only runs on RosalindSwitch (not RosalindSimx).
+    """
+    # TODO: This entire fixture is a temporary workaround and should be removed
+    # Only run on RosalindSwitch (not RosalindSimx)
+    if not isinstance(devices.dut, RosalindSwitch):
+        logger.info("Not a RosalindSwitch device, skipping XDR workaround")
+        yield
+        return
+
+    logger.info("RosalindSwitch detected - applying XDR 200G speed workaround (TEMPORARY WA)")
+
+    # Get access ports list and create range string
+    access_ports = devices.dut.nvl_access_ports_list
+    if not access_ports:
+        logger.warning("No access ports found, skipping XDR workaround")
+        yield
+        return
+
+    port_range = summarize_switch_ports(access_ports)
+    logger.info(f"Access ports range: {port_range}")
+
+    config_success = False
+    try:
+        # Step 1: Set speed to 200G (links will come up automatically)
+        with allure.step(f"Set {port_range} speed to 200G"):
+            engines.dut.run_cmd(f'nv set interface {port_range} link speed 200G')
+            engines.dut.run_cmd('nv -y config apply', timeout=5000)  # 5 minutes timeout
+            logger.info(f"Set {port_range} speed to 200G")
+
+        # Step 2: Save configuration
+        with allure.step("Save configuration"):
+            engines.dut.run_cmd('nv config save')
+            logger.info("Configuration saved")
+
+        # Step 3: Wait for system stabilization
+        with allure.step("Wait 1 minute for system stabilization"):
+            logger.info("Waiting 1 minute for system stabilization...")
+            time.sleep(60)
+            logger.info("XDR 200G workaround applied successfully - links should be up")
+
+        config_success = True
+
+    except Exception as e:
+        logger.error(f"Failed to apply XDR workaround: {e}")
+        pytest.fail(f"XDR workaround configuration failed: {e}")
+
+    yield  # ALL tests in module execute here
+
+    # TODO: Cleanup for temporary workaround - remove when fixture is removed
+    # Cleanup: Restore default speed
+    if config_success:
+        logger.info("Cleanup: Restoring default speed configuration (XDR WA cleanup)")
+        try:
+            with allure.step(f"Unset speed on {port_range} to restore default"):
+                engines.dut.run_cmd(f'nv unset interface {port_range} link speed')
+                engines.dut.run_cmd('nv -y config apply', timeout=5000)  # 5 minutes timeout
+                logger.info(f"Unset speed on {port_range}")
+
+            # Save configuration
+            engines.dut.run_cmd('nv config save')
+            logger.info("System restored: default speed configuration saved")
+        except Exception as e:
+            logger.warning(f"Failed during cleanup: {e}")
+
+
+@pytest.fixture(scope='session', autouse=True)
+def install_and_uninstall_platform_file(engines, devices):
+    """
+    install/uninstall xdr simulation on switch.
+    """
+    system = System(devices_dut=devices.dut)
+
+    with allure.step("install xdr simulation on switch"):
+        MultiPlanarTool.override_platform_file(system, engines, devices, MultiPlanarConsts.NVL_SIMULATION_FILE)
+
+    yield
+
+    with allure.step("uninstall xdr simulation on switch"):
+        MultiPlanarTool.override_platform_file(system, engines, devices, MultiPlanarConsts.ORIGIN_FILE)

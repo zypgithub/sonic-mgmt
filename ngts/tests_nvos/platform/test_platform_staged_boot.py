@@ -44,6 +44,7 @@ def test_show_set_platform_boot_policy(engines, devices, topology_obj, output_fo
 
     with allure.step("get BMC ip address"):
         ip_addresses = BmcTool.get_bmc_ip_addresses(engines, topology_obj)
+        assert ip_addresses["IPv6"], "BMC IPv6 address is not found"
         get_ip_addresses = random.choice(list(ip_addresses.keys()))
         patch_ip_addresses = next(ip_add for ip_add in ip_addresses if ip_add != get_ip_addresses)
 

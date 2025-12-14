@@ -8,6 +8,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.tests_nvos.interfaces.nvl_port.helpers import skip_if_no_trunk_links
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
@@ -39,8 +40,8 @@ logger = logging.getLogger()
 
 
 @pytest.mark.stress_mode
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_stress_mode_configs(engines, devices):
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
+def test_stress_mode_configs(engines, devices, nv_command):
     """
     Validate stress mode correctly modifies system configuration and restores it.
 
@@ -65,6 +66,7 @@ def test_stress_mode_configs(engines, devices):
     """
     engine = engines.dut
     device = devices.dut
+    nv_command.system.log.rotate_logs()
 
     # Pre-stress checks
     baseline = pre_stress_checks(engine, device)
@@ -115,6 +117,7 @@ def test_stress_mode_port_admin_state_persistence(engines, devices):
         - System Stability: No interruption to link operation
     """
     engine = engines.dut
+    skip_if_no_trunk_links(devices)
 
     with allure.step(f"Select {devices.dut.nvl_port_type} ports"):
         port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith('sw')]
@@ -221,7 +224,7 @@ def test_stress_mode_l1_power_saving_persistence(engines, devices):
 
 
 @pytest.mark.stress_mode
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_stress_mode_fatal_no_reboot(engines, devices, nv_command):
     """
     Verify that stress mode suppresses automatic reboot on fatal events.

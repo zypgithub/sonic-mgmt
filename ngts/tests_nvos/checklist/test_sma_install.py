@@ -36,6 +36,10 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
         4. Fetches and installs sma current_version
         5. Verifies correct versioning for installed fw package.
     """
+    # Skip test if device has no SMA components (e.g., RosalindSwitch hardware)
+    if not devices.dut.sma_components or devices.dut.sma_amount == 0:
+        pytest.skip(f"Device {devices.dut.__class__.__name__} has no SMA components - skipping SMA install test")
+
     device = devices.dut
     with allure.step('Check whether device has BMC'):
         bmc_older_version_path = getattr(device, 'bmc_older_version_path', None)

@@ -156,40 +156,39 @@ class Interface(BaseComponent):
 
     def get_ipv6_address(self):
         """
-        Get IPv6 address for the interface
-        Returns the first IPv6 address found (without prefix)
-
-        :return: str IPv6 address or None
+        Get the IPv6 address for the interface
+        Uses the new ipv6 structure
         """
         try:
-            # Try using the new ipv6 structure first
+            # Use the new ipv6 structure
             ipv6_addr = self.ipv6.get_primary_ip_address()
             if ipv6_addr:
                 return ipv6_addr
+        except Exception as e:
+            logger.warning(f"Error getting IPv6 address using new structure, trying legacy method: {e}")
 
-            # Fallback to parsing the show output for backward compatibility
+        # Fallback: parse full interface show output
+        try:
             output = OutputParsingTool.parse_show_interface_output_to_dictionary(self.show()).get_returned_value()
             assert output, "show mgmt interface output is empty"
 
-            # Try new structure: ipv6 -> address
-            if 'ipv6' in output and 'address' in output['ipv6']:
-                addresses = output['ipv6']['address'].keys()
-                for address in addresses:
-                    if ":" in address:
-                        return address.split("/")[0]
+            # Get addresses from new ipv6 structure
+            if 'ipv6' not in output or 'address' not in output['ipv6']:
+                logger.warning(f"No IPv6 address information found in show output")
+                return None
 
-            # Try old structure: ip -> address (for backward compatibility)
-            if 'ip' in output and 'address' in output['ip']:
-                addresses = output['ip']['address'].keys()
-                for address in addresses:
-                    if ":" in address and len(address) >= 32:
-                        return address.split("/")[0]
+            addresses = output['ipv6']['address'].keys()
 
-            logger.warning(f"No IPv6 address found for interface {self.port_obj.name if hasattr(self, 'port_obj') else 'unknown'}")
+            for address in addresses:
+                addr_clean = address.split("/")[0] if "/" in address else address
+                # Skip localhost and link-local addresses
+                if ":" in addr_clean and addr_clean != "::1" and not addr_clean.lower().startswith("fe80:"):
+                    if len(addr_clean) >= 32:
+                        return addr_clean
+
             return None
-
-        except Exception as e:
-            logger.error(f"Error getting IPv6 address: {e}")
+        except Exception as fallback_error:
+            logger.error(f"Failed to get IPv6 address: {fallback_error}")
             return None
 
 

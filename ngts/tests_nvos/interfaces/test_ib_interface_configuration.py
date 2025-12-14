@@ -6,7 +6,9 @@ import pytest
 from retry import retry
 
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -138,13 +140,15 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
         current_speed_value = current_link_dict[IbInterfaceConsts.LINK_SPEED]
         origin_ib_speed_value = current_link_dict[IbInterfaceConsts.LINK_IB_SPEED]
         current_lanes_value = current_link_dict[IbInterfaceConsts.LINK_LANES]
+        original_supported_ib_speeds = current_link_dict[IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS].split(',')
         logging.info("Current speed value of port '{}' is: {}".format(selected_port.name, current_speed_value))
         logging.info("Current ib-speed value of port '{}' is: {}".format(selected_port.name, origin_ib_speed_value))
         logging.info("Current lanes value of port '{}' is: {}".format(selected_port.name, current_lanes_value))
+        logging.info("Original supported-ib-speeds: {}".format(original_supported_ib_speeds))
         verify_speed_values(devices, selected_port)
 
     with allure.step("Get supported ib-speeds"):
-        supported_ib_speeds = current_link_dict[IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS].split(',')
+        supported_ib_speeds = [s.strip() for s in original_supported_ib_speeds]
         logging.info("Supported ib-speeds: {}".format(supported_ib_speeds))
 
         '''with allure.step("Verify the traffic passes successfully"):
@@ -169,9 +173,34 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
             Tools.ValidationTool.compare_values(current_ib_speed_value, selected_ib_speed_value, True).verify_result()
             verify_speed_values(devices, selected_port)
 
-        with allure.step("Get supported ib-speeds"):
-            supported_ib_speeds = current_link_dict[IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS]
-            logging.info("Supported ib-speeds: {}".format(supported_ib_speeds))
+        with allure.step("Verify supported-ib-speeds behavior"):
+            # EXPECTED BEHAVIOR: When you configure a speed, the supported-ib-speeds field will
+            # dynamically update to show only speeds up to what you configured (not higher speeds)
+            # Example: If you config 'ndr' (400G), supported-ib-speeds won't show 'xdr' (800G)
+
+            # Get current supported speeds
+            current_supported_ib_speeds_str = current_link_dict[IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS]
+            current_supported_ib_speeds = [s.strip() for s in current_supported_ib_speeds_str.split(',')]
+            logging.info("Current supported-ib-speeds: {}".format(current_supported_ib_speeds))
+
+            # Check if configured a LOWER speed - verify supported-ib-speeds limited
+            selected_speed_value = _get_ib_speed_numeric_value(selected_ib_speed_value)
+            origin_speed_value = _get_ib_speed_numeric_value(origin_ib_speed_value)
+
+            if selected_speed_value < origin_speed_value:
+                with allure.step(f"Verify supported-ib-speeds limited to {selected_ib_speed_value} and below"):
+                    violations = []
+                    for speed in current_supported_ib_speeds:
+                        speed_value = _get_ib_speed_numeric_value(speed)
+                        if speed_value > selected_speed_value:
+                            violations.append(speed)
+
+                    assert not violations, (
+                        f"After configuring ib-speed to {selected_ib_speed_value}, the following HIGHER speeds "
+                        f"should NOT appear in supported-ib-speeds: {violations}. "
+                        f"Expected: only speeds ≤ {selected_ib_speed_value}"
+                    )
+                    logger.info(f"✓ Confirmed: After lowering ib-speed to {selected_ib_speed_value}, supported speeds correctly limited")
 
         '''with allure.step('Verify traffic'):
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, True).verify_result()'''
@@ -261,6 +290,15 @@ def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, tes
         logging.info("Current lanes value of port '{}' is: {}".format(selected_port.name, current_lanes))
         logging.info("Current supported-lanes value of port '{}' is: {}".format(selected_port.name,
                                                                                 current_supported_lanes))
+
+        # Validate supported-lanes matches device configuration
+        if hasattr(devices.dut, 'supported_lanes'):
+            expected_supported_lanes = devices.dut.supported_lanes
+            assert current_supported_lanes == expected_supported_lanes, (
+                f"Expected supported-lanes '{expected_supported_lanes}' from device config, "
+                f"but got '{current_supported_lanes}'"
+            )
+            logger.info(f"✓ Validated: supported-lanes = {current_supported_lanes} (matches device config)")
 
     with allure.step("Select a random lanes for port {}".format(selected_port.name)):
         selected_lanes = Tools.RandomizationTool.select_random_value(IbInterfaceConsts.SUPPORTED_LANES,
@@ -419,6 +457,41 @@ def round_string_number_with_positivity_check(value, name):
     return res
 
 
+def _get_ib_speed_numeric_value(ib_speed):
+    """Convert IB speed string (e.g., 'xdr', 'ndr') to numeric value in Gbps"""
+    speed_str = IbInterfaceConsts.SPEED_LIST.get(ib_speed, '0G')
+    return int(speed_str.replace('G', ''))
+
+
+def _validate_ib_fnm_port(port_name, port_obj, expected_speeds, expected_lanes, port_type="FNM"):
+    """Validate supported-ib-speeds and lanes for FNM port"""
+    output = OutputParsingTool.parse_json_str_to_dictionary(port_obj.interface.link.show()).get_returned_value()
+
+    # Validate speeds
+    speeds_str = output.get(IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS)
+    if speeds_str:
+        speeds = [s.strip() for s in speeds_str.split(',')]
+        logger.info(f"{port_type} port {port_name} supported-ib-speeds: {speeds}")
+        Tools.ValidationTool.compare_values(set(speeds), expected_speeds).verify_result()
+
+        # Validate lanes
+        lanes_str = output.get(IbInterfaceConsts.LINK_SUPPORTED_LANES)
+        if lanes_str and expected_lanes:
+            if lanes_str != expected_lanes:
+                error_msg = (
+                    f"{port_type} port {port_name} supported-lanes mismatch!\n"
+                    f"Expected: '{expected_lanes}'\n"
+                    f"Actual:   '{lanes_str}'"
+                )
+                logger.error(error_msg)
+                assert False, error_msg
+            logger.info(f"✓ Validated {port_type} port {port_name}: speeds={set(speeds)}, lanes={lanes_str}")
+        elif lanes_str:
+            logger.info(f"{port_type} port {port_name} supported-lanes: {lanes_str} (no validation)")
+    else:
+        logger.warning(f"No supported-ib-speeds found for {port_type} port {port_name}")
+
+
 @retry(Exception, tries=12, delay=20)
 def wait_for_port_to_become_active(port_obj):
     with allure.step("Waiting for port {} to become active".format(port_obj.name)):
@@ -429,3 +502,90 @@ def wait_for_port_to_become_active(port_obj):
         assert logical_state == "Active" and "up" in state.keys(), \
             "The logical state of interface {} is not 'Active'".format(port_obj.name)
         sleep(PORT_UPDATE_SLEEP_TIME)
+
+
+@pytest.mark.ib_interfaces
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+def test_ib_supported_speeds_validation(engines, devices, test_api):
+    """
+    Validate supported-ib-speeds field matches expected device supported IB speeds
+
+    Test runs on ALL IB switches (Crocodile, BlackMamba, etc.)
+
+    Test flow:
+    1. Select a random IB port (any state - supported speeds visible always)
+    2. Get supported-ib-speeds from show output
+    3. Validate against devices.dut.supported_ib_speeds
+    """
+    TestToolkit.tested_api = test_api
+
+    with allure.step("Select random IB port (any state)"):
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+        logger.info(f"Selected port for supported IB speeds validation: {selected_port.name} (state-independent test)")
+
+    with allure.step("Get and validate supported-ib-speeds"):
+        current_link_dict = OutputParsingTool.parse_json_str_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+
+        displayed_ib_speeds_str = current_link_dict.get(IbInterfaceConsts.LINK_SUPPORTED_IB_SPEEDS)
+        if not displayed_ib_speeds_str:
+            pytest.skip(f"No supported-ib-speeds found in output for {selected_port.name}")
+
+        displayed_ib_speeds = [s.strip() for s in displayed_ib_speeds_str.split(',')]
+        logger.info(f"Displayed supported-ib-speeds: {displayed_ib_speeds}")
+
+        # Validate against device configuration
+        if not hasattr(devices.dut, 'supported_ib_speeds'):
+            pytest.skip("No supported_ib_speeds defined in device")
+
+        expected_ib_speeds = list(devices.dut.supported_ib_speeds)
+        logger.info(f"Expected supported-ib-speeds: {expected_ib_speeds}")
+
+        # Validate they match
+        displayed_set = set(displayed_ib_speeds)
+        expected_set = set(expected_ib_speeds)
+
+        if displayed_set != expected_set:
+            missing = expected_set - displayed_set
+            extra = displayed_set - expected_set
+            error_msg = (
+                f"\n{'=' * 80}\n"
+                f"SUPPORTED-IB-SPEEDS MISMATCH!\n"
+                f"{'=' * 80}\n"
+                f"Port: {selected_port.name}\n"
+                f"Displayed: {sorted(displayed_ib_speeds)}\n"
+                f"Expected:  {sorted(expected_ib_speeds)}\n"
+            )
+            if extra:
+                error_msg += f"Extra speeds (in output, not in device config): {sorted(extra)}\n"
+            if missing:
+                error_msg += f"Missing speeds (in device config, not in output): {sorted(missing)}\n"
+            error_msg += f"{'=' * 80}\n"
+            logger.error(error_msg)
+            assert False, error_msg
+
+        logger.info(f"✓ Validated supported-ib-speeds match device configuration")
+
+    # Test FNM ports
+    with allure.step("Validate FNM ports (if available)"):
+        if hasattr(devices.dut, 'fnm_port_list') and devices.dut.fnm_port_list:
+            fnm_port_name = Tools.RandomizationTool.select_random_value(devices.dut.fnm_port_list).get_returned_value()
+            fnm_speeds = set(devices.dut.supported_fnm_ib_speeds) if hasattr(devices.dut, 'supported_fnm_ib_speeds') else expected_set
+            fnm_lanes = getattr(devices.dut, 'supported_fnm_lanes', None)
+            logger.info(f"FNM validation - speeds: {fnm_speeds}, lanes: {fnm_lanes}")
+            _validate_ib_fnm_port(fnm_port_name, Port(fnm_port_name), fnm_speeds, fnm_lanes, "FNM")
+        else:
+            logger.info("No FNM ports available, skipping")
+
+    # Test internal FNM ports
+    with allure.step("Validate internal FNM ports (if available)"):
+        if hasattr(devices.dut, 'interface_active_internal_fnm_ports') and devices.dut.interface_active_internal_fnm_ports:
+            internal_fnm_list = list(devices.dut.interface_active_internal_fnm_ports)
+            internal_fnm_port_name = Tools.RandomizationTool.select_random_value(internal_fnm_list).get_returned_value()
+            # Internal FNM may have different speeds than regular FNM
+            internal_fnm_speeds = set(devices.dut.supported_internal_fnm_ib_speeds) if hasattr(devices.dut, 'supported_internal_fnm_ib_speeds') else set(devices.dut.supported_fnm_ib_speeds) if hasattr(devices.dut, 'supported_fnm_ib_speeds') else expected_set
+            internal_fnm_lanes = getattr(devices.dut, 'supported_internal_fnm_lanes', None)
+            logger.info(f"Internal FNM validation - speeds: {internal_fnm_speeds}, lanes: {internal_fnm_lanes}")
+            _validate_ib_fnm_port(internal_fnm_port_name, Fae(port_name=internal_fnm_port_name), internal_fnm_speeds, internal_fnm_lanes, "Internal FNM")
+        else:
+            logger.info("No internal FNM ports available, skipping")

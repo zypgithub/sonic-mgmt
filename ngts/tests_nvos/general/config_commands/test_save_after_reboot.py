@@ -3,15 +3,17 @@ import time
 
 import pytest
 from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_constants.constants_nvos import FastRecoveryConsts, ActionConsts, HealthConsts
+from ngts.nvos_constants.constants_nvos import FastRecoveryConsts, LinkDetectionConsts, ActionConsts, HealthConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, ApiType, AclConsts, IpConsts, EventConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
@@ -136,6 +138,14 @@ def test_save_reboot(engines, devices):
         with allure.step('set hostname to be {hostname} - with apply'.format(hostname=new_hostname_value)):
             system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=True, ask_for_confirmation=True)
 
+        fec_capable = devices.dut.check_fec_capability()
+        if fec_capable:
+            selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
+            fec_mode = LinkDetectionConsts.FEC_MODE_DOUBLE
+            with allure.step("Set the fec mode to {} for the selected port {}".format(fec_mode, selected_port.name)):
+                selected_port.interface.link.set(op_param_name=LinkDetectionConsts.FEC_MODE, op_param_value=fec_mode).\
+                    verify_result()
+
         with allure.step("Update the health component unhealthy counters"):
             system.health.component.action(ActionConsts.CLEAR)
             HWSimulator.create_health_component_error_fan(devices, engines)
@@ -145,7 +155,7 @@ def test_save_reboot(engines, devices):
 
         with allure.step('Run set system dns server ipv6 command and apply config'):
             system.dns.set(op_param_name=SystemConsts.DNS_SERVER, op_param_value=SystemConsts.DNS_SERVER_IDS["ipv6"],
-                           apply=True, dut_engine=engines.dut).verify_result()
+                           apply=True, dut_engine=engines.dut, ask_for_confirmation='y').verify_result()
 
         try:
             eth0_port = Port('eth0')
@@ -174,6 +184,13 @@ def test_save_reboot(engines, devices):
                 system.message.set(op_param_name=SystemConsts.POST_LOGIN_MESSAGE,
                                    op_param_value=f'"Post login test msg"',
                                    apply=True, dut_engine=engines.dut).verify_result()
+
+            if fec_capable:
+                # Platform is FEC capable
+                fec_mode_2 = LinkDetectionConsts.FEC_MODE_QUAD
+                with allure.step("Set the fec mode to {} for the selected port {}".format(fec_mode_2, selected_port.name)):
+                    selected_port.interface.link.set(op_param_name=LinkDetectionConsts.FEC_MODE,
+                                                     op_param_value=fec_mode_2).verify_result()
 
             with allure.step('Run nv action reboot system'):
                 system.action_reboot(send_user_confirmation='y').verify_result()
@@ -269,6 +286,15 @@ def test_save_reboot(engines, devices):
                         "Protocol is {} instead of {}".format(output_dict["protocol"], ClusterConsts.PROTOCOL_RSYSLOG)
                     assert output_dict["remote-url"] == url_show, \
                         "Remote-url is {} instead of {}".format(output_dict["remote-url"], url_show)
+
+            if fec_capable:
+                # Platform is FEC capable
+                fec_mode = LinkDetectionConsts.FEC_MODE_DOUBLE
+                with allure.step("Verify fec mode is {} which was configured before config save".format(fec_mode)):
+                    link_dict = OutputParsingTool.parse_json_str_to_dictionary(selected_port.interface.link.show()). \
+                        get_returned_value()
+                    ValidationTool.verify_field_value_in_output(link_dict, LinkDetectionConsts.FEC_MODE,
+                                                                fec_mode).verify_result()
 
         finally:
             with allure.step('Cleanup - Clear system health component unhealthy information'):

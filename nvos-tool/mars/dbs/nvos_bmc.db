@@ -44,4 +44,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/bmc/nvos_bmc.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_long_press_reset_factory.cases </cases>
+	</test>
 </DBDEF>

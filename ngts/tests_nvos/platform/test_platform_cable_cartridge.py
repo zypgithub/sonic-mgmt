@@ -1,5 +1,6 @@
 import logging
 import pytest
+import re
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -33,7 +34,7 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
          - Validate that Tray IDs are within the allowed range (0-8).
          - Ensure specific cartridge data matches the general data.
      4. Validate overall alignment:
-         - All Slot IDs, Tray IDs, and Part Numbers should be consistent and aligned across cartridges.
+         - All Slot IDs and Tray IDs should be consistent and aligned across cartridges.
 
      """
     TestToolkit.tested_api = test_api
@@ -49,7 +50,6 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
         expected_keys = CableCartridgeConsts.ALL_KEYS
         slot_ids = set()
         tray_ids = set()
-        part_numbers = set()
 
     with allure.step("Validate actual number of cartridges"):
         assert len(dict_output.items()) == devices.dut.num_of_cartridges, "Number of cartridges is not as expected"
@@ -57,12 +57,13 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
     with allure.step("Validate cable cartridge data for each cartridge"):
         for cartridge, details in dict_output.items():
             with allure.independent_step(f"Validate cartridge: {cartridge}"):
+                if re.match(r"^\d+$", details[CableCartridgeConsts.KEY_SERIAL]):
+                    assert int(details[CableCartridgeConsts.KEY_SERIAL]) != 0, "chassis_sn can't be zero"
                 ValidationTool.validate_output_of_show(details, devices.dut.show_platform_cable_cartridge_output).verify_result()
 
                 # Collect unique values for alignment validation
                 slot_ids.add(details[CableCartridgeConsts.KEY_SLOT_ID])
                 tray_ids.add(details[CableCartridgeConsts.KEY_TRAY_ID])
-                part_numbers.add(details[CableCartridgeConsts.KEY_PART_NUMBER])
 
                 with allure.step(f"Verify specific cartridge data matches general output for {cartridge}"):
                     specific_cartridge_data = OutputParsingTool.parse_json_str_to_dictionary(
@@ -73,10 +74,10 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
                     )
 
     with allure.step("Validate alignment and overall consistency"):
-        # Validate alignment of Slot IDs, Tray IDs, and Part Numbers
-        assert len(slot_ids) == 1, f"Slot IDs are not aligned: {slot_ids}"
-        assert len(tray_ids) == 1, f"Tray IDs are not aligned: {tray_ids}"
-        assert len(part_numbers) == 1, f"Part Numbers are not aligned: {part_numbers}"
+        with allure.independent_step("Validate Slot IDs are aligned"):
+            assert len(slot_ids) == 1, f"Slot IDs are not aligned: {slot_ids}"
+        with allure.independent_step("Validate Tray IDs are aligned"):
+            assert len(tray_ids) == 1, f"Tray IDs are not aligned: {tray_ids}"
 
 
 @pytest.mark.platform

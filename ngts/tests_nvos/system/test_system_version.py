@@ -25,6 +25,20 @@ def test_show_system_version(test_api, engines, devices, nv_command):
     """
     TestToolkit.tested_api = test_api
 
+    version_output, version_image_output = _verify_system_show_version_sanity(devices, nv_command)
+
+    with allure.step(f"Verify product-release is equal to build-id"):
+        product_release = version_output[SystemConsts.VERSION_PRODUCT_RELEASE]
+        build_id = version_image_output[SystemConsts.VERSION_BUILD_ID]
+        assert product_release in build_id, f"Product release '{product_release}' not found in build-id '{build_id}'"
+
+
+@pytest.mark.nvos_chipsim_ci
+def test_show_system_version_sanity(devices, nv_command):
+    _verify_system_show_version_sanity(devices, nv_command)
+
+
+def _verify_system_show_version_sanity(devices, nv_command):
     with allure.step('Run show system command and verify that each field has a value'):
         version_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.version.show()).get_returned_value()
 
@@ -34,11 +48,7 @@ def test_show_system_version(test_api, engines, devices, nv_command):
         ValidationTool.verify_all_fields_value_exist_in_output_dictionary(
             version_output, nv_command.system.get_expected_fields(devices.dut, 'version')).verify_result()
 
-        product_release = version_output[SystemConsts.VERSION_PRODUCT_RELEASE]
-        build_id = version_image_output[SystemConsts.VERSION_BUILD_ID]
-
-    with allure.step(f"Verify product-release is equal to build-id"):
-        assert product_release in build_id, f"Product release '{product_release}' not found in build-id '{build_id}'"
+        return version_output, version_image_output
 
 
 @pytest.mark.nvos_chipsim_ci

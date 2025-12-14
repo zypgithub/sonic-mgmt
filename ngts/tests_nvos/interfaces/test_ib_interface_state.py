@@ -21,6 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.check_log_size
 @pytest.mark.check_disk_usage
 @pytest.mark.ib_interfaces
+@pytest.mark.air
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_ib_interface_state(test_name, test_api):
     """
