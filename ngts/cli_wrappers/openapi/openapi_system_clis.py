@@ -389,4 +389,17 @@ class OpenApiSystemCli(OpenApiBaseCli):
             }
 
         return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, engine.open_api_port, resource_path, params)
+                                                   engine.ip, resource_path, params)
+
+    @staticmethod
+    def action_upload_platform_certificate(engine, resource_path, remote_url):
+        """
+        Upload platform certificate to a remote server.
+
+        Command: nv action upload system security platform-certificate <url>
+        """
+        logging.info(f"Run action upload platform-certificate to: {remote_url}")
+        params = {"state": "start", "parameters": {"remote-url": remote_url}}
+        return OpenApiCommandHelper.execute_action(
+            ActionType.UPLOAD, engine.engine.username, engine.engine.password, engine.ip, resource_path, params
+        )

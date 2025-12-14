@@ -110,6 +110,9 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
 	</test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
 	</test>
     <test>

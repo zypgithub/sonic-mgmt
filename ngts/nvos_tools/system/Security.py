@@ -7,6 +7,7 @@ from ngts.nvos_tools.system.CaCertificate import CaCertificate
 from ngts.nvos_tools.system.Certificate import Certificate
 from ngts.nvos_tools.system.Crl import Crl
 from ngts.nvos_tools.system.PasswordHardening import PasswordHardening
+from ngts.nvos_tools.system.PlatformCertificate import PlatformCertificate
 from ngts.nvos_tools.system.Spdm import Spdm
 from ngts.nvos_tools.system.Tpm import Tpm
 from ngts.tools.test_utils import allure_utils as allure
@@ -21,6 +22,7 @@ class Security(BaseComponent):
         self.ca_certificate = CaCertificate(self)
         self.tpm = Tpm(self)
         self.spdm = Spdm(self)
+        self.platform_certificate = PlatformCertificate(self)
 
     def action_change_sed_password(self, new_password: str, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action change sed pass for {self.get_resource_path()}'):

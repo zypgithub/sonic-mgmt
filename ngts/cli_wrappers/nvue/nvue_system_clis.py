@@ -364,3 +364,16 @@ class NvueSystemCli(NvueBaseCli):
         cmd = f'nv action delete {path}'
         logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_upload_platform_certificate(engine, resource_path, remote_url):
+        """
+        Upload platform certificate to a remote server.
+
+        Command: nv action upload system security platform-certificate <url>
+        """
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action upload {path} {remote_url}'
+        logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
