@@ -25,17 +25,9 @@ expected_traffic_loss_dict = {'fast-reboot': {'data': 30, 'control': 90},
                               }
 
 
-def get_simx_validation_type(platform):
-    validation_types = simx_validation_types.copy()
-    if platform in RebootTestConstants.SIMX_PLATFORMS_SUPPORT_ISSU_CONFIGURATION_ONLY:
-        validation_types.append('warm-reboot')
-    return random.choice(validation_types)
-
-
 @pytest.fixture()
 def validation_type(platform_params, is_simx, reboot_type):
-    platform = platform_params.platform
-    supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform)
+    supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform_params.platform)
     validation_type = random.choice(supported_reboot_reload_list)
 
     if reboot_type:
@@ -49,7 +41,7 @@ def validation_type(platform_params, is_simx, reboot_type):
         validation_type = reboot_type
 
     if is_simx:
-        validation_type = get_simx_validation_type(platform)
+        validation_type = random.choice(simx_validation_types)
         expected_traffic_loss_dict[validation_type]['data'] = 360  # Update SIMX downtime due to SW limitations
         expected_traffic_loss_dict[validation_type]['control'] = 360
 
@@ -128,7 +120,8 @@ class RebootReload:
         with allure.step('Starting background validation for data plane traffic'):
             data_plane_checker = self.start_data_plane_validation(validation_type, allowed_data_loss_time)
 
-        self.cli_object.general.reboot_reload_flow(r_type=validation_type, topology_obj=self.topology_obj, ports_list=self.dut_host_ifaces_list, wait_after_ping=0)
+        self.cli_object.general.reboot_reload_flow(r_type=validation_type, topology_obj=self.topology_obj,
+                                                   ports_list=self.dut_host_ifaces_list, wait_after_ping=0)
 
         try:
             with allure.step('Checking control plane traffic loss'):
@@ -157,11 +150,7 @@ class RebootReload:
 
         # Step below required - to check that PortChannel0001 iface are UP
         with allure.step('Checking that possible to ping PortChannel iface 30.0.0.1'):
-            if self.is_simx and validation_type == 'warm-reboot':
-                ping_val_num_tries = 120
-            else:
-                ping_val_num_tries = 12
-            self.resolve_arp_static_route(ping_val_num_tries)
+            self.resolve_arp_static_route()
 
         try:
             total_tests_number = len(request.session.items)
@@ -187,11 +176,11 @@ class RebootReload:
             data = {'total_ports': total_ports, 'active_ports': active_ports}
             json.dump(data, if_status_obj)
 
-    def resolve_arp_static_route(self, tries=12):
+    def resolve_arp_static_route(self):
         validation = {'sender': 'ha', 'args': {'interface': 'bond0', 'count': 3, 'dst': self.dut_port_channel_ip}}
         ping_checker = PingChecker(self.topology_obj.players, validation)
         logger.info('Sending 3 ping packets to {}'.format(self.dut_port_channel_ip))
-        retry_call(ping_checker.run_validation, fargs=[], tries=tries, delay=10, logger=logger)
+        retry_call(ping_checker.run_validation, fargs=[], tries=12, delay=10, logger=logger)
 
     def start_control_plane_validation(self, validation_type, allowed_control_loss_time):
         validation_control_plane = {'sender': 'ha',
