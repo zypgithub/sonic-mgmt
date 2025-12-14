@@ -456,8 +456,8 @@ r-bison-06,Ethernet501,r-bison-07,Ethernet501,100000,2602,Access,on
 r-bison-06,Ethernet502,r-bison-07,Ethernet502,100000,2603,Access,on
 r-bison-06,Ethernet503,r-bison-07,Ethernet503,100000,2604,Access,on
 
-r-bison-06,Ethernet512,r-bison-07,Ethernet512,25000,2605,Access,on
-r-bison-06,Ethernet520,r-bison-07,Ethernet520,25000,2606,Access,on
+r-bison-06,Ethernet512,r-bison-07,Ethernet512,10000,2605,Access,on
+r-bison-06,Ethernet520,r-bison-07,Ethernet520,10000,2606,Access,on
 
 r-bison-06,Ethernet504,r-moose-06,Ethernet32,100000,2607,Access,on
 r-bison-06,Ethernet505,r-moose-06,Ethernet33,100000,2608,Access,on

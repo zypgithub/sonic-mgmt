@@ -504,8 +504,8 @@ r-bison-22,Ethernet501,r-bison-23,Ethernet501,100000,511,Access,on
 r-bison-22,Ethernet502,r-bison-23,Ethernet502,100000,512,Access,on
 r-bison-22,Ethernet503,r-bison-23,Ethernet503,100000,513,Access,on
 
-r-bison-22,Ethernet512,r-bison-23,Ethernet512,25000,514,Access,off
-r-bison-22,Ethernet520,r-bison-23,Ethernet520,25000,515,Access,off
+r-bison-22,Ethernet512,r-bison-23,Ethernet512,10000,514,Access,off
+r-bison-22,Ethernet520,r-bison-23,Ethernet520,10000,515,Access,off
 
 r-bison-22,Ethernet504,r-moose-06,Ethernet112,100000,2,Access,off
 r-bison-22,Ethernet505,r-moose-06,Ethernet113,100000,3,Access,off
