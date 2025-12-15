@@ -1,0 +1,103 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_1:
+    eos:
+      children:
+        vms_1:
+    servers:
+      vars:
+        topologies:
+          - t0
+          - t0-isolated-d32u32s2
+
+      children:
+        server_1:
+
+vm_host_1:
+  hosts:
+    {{setup_name.upper()}}-HYPERVISOR:
+      ansible_host: {{setup_name}}-hypervisor
+
+vms_1:
+  hosts:
+    VM0001:
+      ansible_host: 192.168.200.101
+    VM0002:
+      ansible_host: 192.168.200.102
+    VM0003:
+      ansible_host: 192.168.200.103
+    VM0004:
+      ansible_host: 192.168.200.104
+    VM0005:
+      ansible_host: 192.168.200.105
+    VM0006:
+      ansible_host: 192.168.200.106
+    VM0007:
+      ansible_host: 192.168.200.107
+    VM0008:
+      ansible_host: 192.168.200.108
+    VM0009:
+      ansible_host: 192.168.200.109
+    VM0010:
+      ansible_host: 192.168.200.110
+    VM0011:
+      ansible_host: 192.168.200.111
+    VM0012:
+      ansible_host: 192.168.200.112
+    VM0013:
+      ansible_host: 192.168.200.113
+    VM0014:
+      ansible_host: 192.168.200.114
+    VM0015:
+      ansible_host: 192.168.200.115
+    VM0016:
+      ansible_host: 192.168.200.116
+    VM0017:
+      ansible_host: 192.168.200.117
+    VM0018:
+      ansible_host: 192.168.200.118
+    VM0019:
+      ansible_host: 192.168.200.119
+    VM0020:
+      ansible_host: 192.168.200.120
+    VM0021:
+      ansible_host: 192.168.200.121
+    VM0022:
+      ansible_host: 192.168.200.122
+    VM0023:
+      ansible_host: 192.168.200.123
+    VM0024:
+      ansible_host: 192.168.200.124
+    VM0025:
+      ansible_host: 192.168.200.125
+    VM0026:
+      ansible_host: 192.168.200.126
+    VM0027:
+      ansible_host: 192.168.200.127
+    VM0028:
+      ansible_host: 192.168.200.128
+    VM0029:
+      ansible_host: 192.168.200.129
+    VM0030:
+      ansible_host: 192.168.200.130
+    VM0031:
+      ansible_host: 192.168.200.131
+    VM0032:
+      ansible_host: 192.168.200.132
+    VM0033:
+      ansible_host: 192.168.200.133
+    VM0034:
+      ansible_host: 192.168.200.134
+    VM0035:
+      ansible_host: 192.168.200.135
+    VM0036:
+      ansible_host: 192.168.200.136
+
+server_1:
+  children:
+    vm_host_1:
+    vms_1:
+  vars:
+    host_var_file: host_vars/{{setup_name.upper()}}-HYPERVISOR.yml

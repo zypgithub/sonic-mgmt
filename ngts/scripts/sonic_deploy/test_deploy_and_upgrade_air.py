@@ -11,32 +11,42 @@ from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
+from ngts.helpers.run_process_on_host import wait_until_background_procs_done
+from ngts.scripts.sonic_deploy.simx_community_helper import generate_air_community_files
 
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Deploy and upgrade image - Air')
-def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy_only_target, setup_name,
-                                platform_params, reboot_after_install, fw_pkg_path, recover_by_reboot, reboot,
-                                additional_apps, workspace_path, chip_type, custom_config_db_air_path):
+def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy_only_target, setup_name, base_version,
+                                platform_params, reboot_after_install, fw_pkg_path, recover_by_reboot, reboot, port_number,
+                                additional_apps, workspace_path, chip_type, custom_config_db_air_path, destination_hwsku):
     try:
         with allure.step('Collecting setup info'):
             setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
             setup_info['setup_name'] = setup_name
             dut = setup_info['duts'][0]
-
-            with allure.step('prepare versions paths/urls'):
-                cli_type = setup_info["duts"][0]["cli_type"]
-                _, target_version = get_real_paths(None, target_version, cli_type)
+        cli_obj = setup_info['duts'][0]['cli_obj']
+        if isinstance(cli_obj, SonicGeneralCliDefault) and is_community(sonic_topo):
+            generate_air_community_files(setup_name=setup_name, topology=topology_obj, hwsku=destination_hwsku, platform_params=platform_params)
+            threads_dict = {}
+            sonic_cli = SonicGeneralCliDefault(engine=dut['engine'], cli_obj=cli_obj, dut_alias=dut['dut_alias'])
+            with allure.step('Pre installation steps'):
+                SonicInstallationSteps.pre_installation_steps(sonic_topo, neighbor_type='ceos',
+                                                              base_version=base_version, target_version=None, setup_info=setup_info, port_number=port_number, is_simx=True,
+                                                              threads_dict=threads_dict, destination_hwsku=destination_hwsku, is_performance=False, is_air=True)
+            sonic_cli.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut['dut_alias'], threads_dict)
+            wait_until_background_procs_done(threads_dict)
 
         with allure.step('Post installation steps'):
-            cli_obj = setup_info['duts'][0]['cli_obj']
             if isinstance(cli_obj, NvueGeneralCli):
                 DutUtilsTool.wait_for_nvos_to_become_functional(dut['engine'])
                 set_base_configurations(dut_engine=dut['engine'], apply=True)
             elif isinstance(cli_obj, SonicGeneralCliDefault):
+                apply_base_config = True if sonic_topo == 'ptf-any' else False
                 SonicInstallationSteps.post_installation_steps(topology_obj=topology_obj, sonic_topo=sonic_topo,
                                                                recover_by_reboot=recover_by_reboot, setup_name=setup_name,
-                                                               platform_params=platform_params, apply_base_config=True,
+                                                               platform_params=platform_params, apply_base_config=apply_base_config,
                                                                target_version=target_version, is_shutdown_bgp=True,
                                                                reboot_after_install=reboot_after_install,
                                                                deploy_only_target=deploy_only_target,

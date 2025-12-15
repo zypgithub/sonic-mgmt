@@ -63,7 +63,7 @@ class SonicInstallationSteps:
     @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
-            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False):
+            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False, is_air=False):
         """
         Pre-installation steps for SONIC
         :param sonic_topo: the topo for SONiC testing, for example: t0, t1, t1-lag, ptf32
@@ -86,7 +86,7 @@ class SonicInstallationSteps:
             SonicInstallationSteps.pre_installation_steps_ha(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, threads_dict, destination_hwsku)
         elif is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
-            SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku)
+            SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku, is_air)
             # Get ptf docker tag
             ptf_tag = SonicInstallationSteps.get_ptf_tag_sonic(base_version, target_version)
             dut_names = []
@@ -152,13 +152,13 @@ class SonicInstallationSteps:
         if (not is_dualtor_topo(sonic_topo) and 'bobcat' not in dut_name and "r-moose-01" != dut_name and
                 "mtvr-moose-04" != dut_name and "r-leopard-01" != dut_name and "r-leopard-58" != dut_name and
                 'r-tigon-04' != dut_name and "mtvr-moose-13" != dut_name and "mtvr-moose-14" != dut_name and
-                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and not setup_name.endswith('-ha')):
+                "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and not setup_name.endswith('-ha')):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
                                            exec_path=ansible_path)
 
     @staticmethod
-    def copy_csv_inventory_lab(setup_name, destination_hwsku):
+    def copy_csv_inventory_lab(setup_name, destination_hwsku, is_air=False):
         base_path = os.path.dirname(os.path.realpath(__file__))
         common_csv_file_path = os.path.join(base_path, "../../../ansible/files/")
         setup_csv_file_path = os.path.join(common_csv_file_path, f"hwsku_vars/{setup_name}/*.csv")
@@ -188,8 +188,16 @@ class SonicInstallationSteps:
             logger.info(f"Copy {setup_name} - {destination_hwsku} related veos file to override the common veos file")
             os.system(f"cp -f {setup_hwsku_veos_path} {common_inventory_lab_path}")
 
+        if is_air:
+            air_setup_testbed_yaml_path = os.path.join(common_csv_file_path, f"hwsku_vars/{setup_name}/{destination_hwsku}/testbed.yaml")
+            if os.path.exists(air_setup_testbed_yaml_path):
+                logger.info(f"Copy {setup_name} - {destination_hwsku} related testbed.yaml file to override the common testbed.yaml file")
+                os.system(f"cp -f {air_setup_testbed_yaml_path} {common_inventory_lab_path}")
+            else:
+                raise ValueError(f"testbed.yaml file not found for {setup_name} - {destination_hwsku}")
+
     @staticmethod
-    def override_hwsku_files(setup_info, destination_hwsku):
+    def override_hwsku_files(setup_info, destination_hwsku, is_air=False):
         """
         Copy the csv/inventory/lab files under folder setup_name and folder hwsku to override the common files
         """
@@ -199,7 +207,7 @@ class SonicInstallationSteps:
                                                           destination_hwsku)
         else:
             # Single DUT and HA setup
-            SonicInstallationSteps.copy_csv_inventory_lab(setup_name, destination_hwsku)
+            SonicInstallationSteps.copy_csv_inventory_lab(setup_name, destination_hwsku, is_air)
 
     @staticmethod
     def start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx):
@@ -543,6 +551,9 @@ class SonicInstallationSteps:
         if "mtvr-gaur-02" in setup_name or "mtvr-gaur-03" in setup_name:
             hwskus = ['Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
             need_gen_mingraph = True
+        if "air-6600" in setup_name:
+            hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600']
+            need_gen_mingraph = True
 
         for hwsku in hwskus:
             if os.path.exists(f'{sonic_mgmt_hwsku_path}/{hwsku}'):
@@ -612,6 +623,12 @@ class SonicInstallationSteps:
                     deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                       recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
                                       cli_objs=[general_cli_obj], deploy_dpu=deploy_dpu)
+                    if deploy_dpu:
+                        dut['engine'].run_cmd('sudo config save -y')
+                    if is_air:
+                        logger.info(f"Restarting determine-reboot-cause service on AIR platform {dut['dut_name']}")
+                        general_cli_obj.cli_obj.general.restart_determine_reboot_cause()
+            logger.info("Deploying DASH API")
             with allure.step('Apply DNS servers configuration'):
                 logger.info("Applying DNS servers configuration")
                 for dut in setup_info['duts']:

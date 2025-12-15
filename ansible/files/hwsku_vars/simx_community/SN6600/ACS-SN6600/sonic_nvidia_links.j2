@@ -1,0 +1,7 @@
+StartDevice,StartPort,EndDevice,EndPort,BandWidth,VlanID,VlanMode,AutoNeg
+{%- for idx in range(0, 508+1, 4) if idx not in [508, 512, 520] %}
+{{ setup_name }}-dut,Ethernet{{ idx }},{{ setup_name }}-fanout,Ethernet{{ idx }},400000,{{ 10 + (idx//4)*4 }},Access,off
+{%- endfor %}
+{{ setup_name }}-dut,Ethernet512,{{ setup_name }}-fanout,Ethernet512,25000,518,Access,on
+{{ setup_name }}-dut,Ethernet520,{{ setup_name }}-fanout,Ethernet520,25000,522,Access,on
+{{ setup_name }}-fanout,Ethernet508,{{ setup_name }}-hypervisor,eth1,400000,10-522,Trunk,off

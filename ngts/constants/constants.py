@@ -1262,6 +1262,7 @@ class PlayersAliases:
     Aliases_list = ['sl']
     SL = 'sl'
     duts_list = ['dut', 'dut-b', 'left_tg', 'right_tg', 'dpu0', 'dpu1', 'dpu2', 'dpu3']
+    fanouts_list = ['fanout']
 
 
 class NvosCliTypes:
@@ -1729,5 +1730,18 @@ class FanoutVersionConsts:
 
 class SerialConsts:
     PLATFORM_SERIAL_NUM_MAP = {
-        "x86_64-nvidia_sn6600_simx-r0": "MT25116050YD"
+        "x86_64-nvidia_sn6600_simx-r0": "MT25116050YD",
+        "x86_64-nvidia_sn5640_simx-r0": "MT25116050YD"
     }
+
+
+class SimxCommunityConsts:
+    PTF_IP = "192.168.200.11"
+    SERVER_DOCKER_IP = "172.17.0.1"
+    ANSIBLE_DIR = os.path.join(MarsConstants.SONIC_MGMT_DIR, "ansible")
+    ANSIBLE_HWSKU_VARS_PATH = os.path.join(ANSIBLE_DIR, "files", "hwsku_vars")
+    SIMX_COMMUNITY_FILES_PATH = os.path.join(ANSIBLE_HWSKU_VARS_PATH, "simx_community")
+    COMMON_FILES_PATH = os.path.join(SIMX_COMMUNITY_FILES_PATH, "files")
+    HYPERVISOR_FILE_NAME = "HYPERVISOR.j2"
+    HOST_VARS_PATH = os.path.join(ANSIBLE_DIR, "host_vars")
+    FILES_TO_TEMPLATE = {'sonic_nvidia_devices.j2', 'sonic_nvidia_links.j2', 'fanout_port_config.ini', 'lab.j2', 'testbed.j2', 'inventory.j2'}
