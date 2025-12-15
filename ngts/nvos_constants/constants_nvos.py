@@ -15,6 +15,7 @@ class DatabaseConst:
     COUNTERS_DB_NAME = "COUNTERS_DB"
     CONFIG_DB_NAME = "CONFIG_DB"
     STATE_DB_NAME = "STATE_DB"
+    EVENT_DB_NAME = "EVENT_DB"
 
     APPL_DB_ID = 0
     ASIC_DB_ID = 1

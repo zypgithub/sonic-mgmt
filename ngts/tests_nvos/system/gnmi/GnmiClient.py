@@ -86,10 +86,10 @@ class GnmiClient:
     def gnmic_subscribe_interface(self, mode: str, interface_name: str, username: str = '', password: str = '',
                                   skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                   cmd_time=None, wait_till_done: bool = False, interface_path: str = None) -> Tuple[str, str]:
-        out, err, _ = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
-                                                          cacert,
-                                                          debug_mode, cmd_time, False, wait_till_done,
-                                                          interface_path)
+        out, err, duration_sec, _ = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
+                                                                        cacert,
+                                                                        debug_mode, cmd_time, False, wait_till_done,
+                                                                        interface_path)
         return out, err
 
     def gnmic_subscribe_interface_and_keep_session_alive(self, mode: str, interface_name: str, username: str = '',
@@ -97,9 +97,9 @@ class GnmiClient:
                                                          skip_cert_verify: bool = False, cacert='',
                                                          debug_mode: bool = True) -> subprocess.Popen:
 
-        _, _, process = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
-                                                            cacert,
-                                                            debug_mode, None, True)
+        _, _, _, process = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
+                                                               cacert,
+                                                               debug_mode, None, True)
         return process
 
     def gnmic_subscribe_interface_speed_and_keep_session_alive(self, mode: str, interface_name: str, username: str = '',
@@ -107,33 +107,33 @@ class GnmiClient:
                                                                skip_cert_verify: bool = False, cacert='',
                                                                debug_mode: bool = True) -> subprocess.Popen:
 
-        _, _, process = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
-                                                            cacert, debug_mode, None, True,
-                                                            False, 'infiniband/state/speed')
+        _, _, _, process = self._run_gnmic_subscribe_interface(mode, interface_name, username, password, skip_cert_verify,
+                                                               cacert, debug_mode, None, True,
+                                                               False, 'infiniband/state/speed')
         return process
 
     def gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                       skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                       cmd_time=None, keep_session_alive: bool = True,
                                       wait_till_done: bool = False) -> Tuple[str, str, subprocess.Popen]:
-        out, err, sub_proc = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
-                                                                     debug_mode, cmd_time, keep_session_alive,
-                                                                     wait_till_done)
+        out, err, duration_sec, sub_proc = self._run_gnmic_subscribe_system_events(mode, username, password, skip_cert_verify, cacert,
+                                                                                   debug_mode, cmd_time, keep_session_alive,
+                                                                                   wait_till_done)
         return out, err, sub_proc
 
     def gnmic_subscribe_system_event(self, event_id: str, username: str = '', password: str = '',
                                      skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                      cmd_time=None, keep_session_alive: bool = True,
                                      wait_till_done: bool = False) -> Tuple[str, str, subprocess.Popen]:
-        out, err, sub_proc = self._run_gnmic_subscribe_system_event(event_id, username, password, skip_cert_verify, cacert,
-                                                                    debug_mode, cmd_time, keep_session_alive, wait_till_done)
+        out, err, duration_sec, sub_proc = self._run_gnmic_subscribe_system_event(event_id, username, password, skip_cert_verify, cacert,
+                                                                                  debug_mode, cmd_time, keep_session_alive, wait_till_done)
         return out, err, sub_proc
 
     def gnmic_capabilities(self, username: str = '', password: str = '', skip_cert_verify: bool = False, cacert='',
                            debug_mode: bool = True, cmd_time=None, wait_till_done: bool = False) -> Tuple[str, str]:
         capabilities_op = "capabilities"
-        out, err, _ = self._run_gnmic_op(capabilities_op, skip_cert_verify, cacert, debug_mode, cmd_time, username,
-                                         password, wait_till_done=wait_till_done)
+        out, err, duration_sec, _ = self._run_gnmic_op(capabilities_op, skip_cert_verify, cacert, debug_mode, cmd_time, username,
+                                                       password, wait_till_done=wait_till_done)
         return out, err
 
     def close_session_and_get_out_and_err(self, process: subprocess.Popen, delay=0) -> Tuple[str, str]:
@@ -150,27 +150,30 @@ class GnmiClient:
                                        skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                        cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False,
                                        interface_path: str = None) -> \
-            Tuple[str, str, subprocess.Popen]:
+            Tuple[str, str, float, subprocess.Popen]:
         path = 'state/description' if interface_path is None else interface_path
-        return self.gnmic_subscribe(f'interfaces/interface[name={interface_name}]', path, mode, True,
-                                    username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
-                                    keep_session_alive, wait_till_done)
+        out, err, duration, proc = self.gnmic_subscribe(f'interfaces/interface[name={interface_name}]', path, mode, True,
+                                                        username, password, skip_cert_verify, cacert, debug_mode, cmd_time,
+                                                        keep_session_alive, wait_till_done)
+        return out, err, duration, proc
 
     def _run_gnmic_subscribe_system_events(self, mode: str, username: str = '', password: str = '',
                                            skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                            cmd_time=None, keep_session_alive: bool = False,
                                            wait_till_done: bool = False) -> \
-            Tuple[str, str, subprocess.Popen]:
-        return self.gnmic_subscribe('system-events', '', mode, False, username, password, skip_cert_verify, cacert,
-                                    debug_mode, cmd_time, keep_session_alive, wait_till_done)
+            Tuple[str, str, float, subprocess.Popen]:
+        out, err, duration, proc = self.gnmic_subscribe('system-events', '', mode, False, username, password, skip_cert_verify, cacert,
+                                                        debug_mode, cmd_time, keep_session_alive, wait_till_done)
+        return out, err, duration, proc
 
     def _run_gnmic_subscribe_system_event(self, event_id: str, username: str = '', password: str = '',
                                           skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                                           cmd_time=None, keep_session_alive: bool = False,
                                           wait_till_done: bool = False) -> \
-            Tuple[str, str, subprocess.Popen]:
-        return self.gnmic_subscribe(f'system-events/system-event[event-id={event_id}]', '', 'once', False, username, password, skip_cert_verify, cacert,
-                                    debug_mode, cmd_time, keep_session_alive, wait_till_done)
+            Tuple[str, str, float, subprocess.Popen]:
+        out, err, duration, proc = self.gnmic_subscribe(f'system-events/system-event[event-id={event_id}]', '', 'once', False, username, password, skip_cert_verify, cacert,
+                                                        debug_mode, cmd_time, keep_session_alive, wait_till_done)
+        return out, err, duration, proc
 
     def _run_gnmic_op(self, gnmi_op: str, skip_cert_verify: bool, cacert: str, debug_mode: bool, cmd_time,
                       username: str = '', password: str = '', keep_session_alive: bool = False,
@@ -191,7 +194,12 @@ class GnmiClient:
             gnmic_cmd = (f"gnmic -a {self.server_host} --port {self.server_port} {cert_flag} "
                          f"-u {username} -p {password} {gnmi_op}") + (" -d" if debug_mode else "")
         with allure.step('run gnmic command in process'):
-            return self.cmd_runner.run_cmd_in_process(gnmic_cmd, keep_session_alive, wait_till_done, cmd_time)
+            start_time = time.time()
+            out, err, proc = self.cmd_runner.run_cmd_in_process(gnmic_cmd, keep_session_alive, wait_till_done, cmd_time)
+            duration_sec = time.time() - start_time
+            if keep_session_alive:
+                return out, err, duration_sec, proc
+            return out, err, duration_sec, None
 
     def _run_grpcurl_op(self, grpcurl_op: str, is_insecure: bool, cacert: str, cmd_time, username: str = '',
                         password: str = '', keep_session_alive: bool = False) -> Tuple[
