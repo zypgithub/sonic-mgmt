@@ -141,6 +141,10 @@ def test_no_logging_flood_on_port_state_change(engines, devices, nv_command):
             logger.info(f"Port {port_name} DOWN operation generated {down_write_count} write messages")
 
             with allure.step(f"Assert write count ({down_write_count}) is within acceptable threshold"):
+                assert down_write_count > 0, (
+                    f"Port DOWN operation generated 0 write messages. "
+                    f"Expected at least 1 message - check if grep pattern is matching correctly."
+                )
                 assert down_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
                     f"Port DOWN operation generated {down_write_count} write messages, "
                     f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
@@ -158,6 +162,10 @@ def test_no_logging_flood_on_port_state_change(engines, devices, nv_command):
             logger.info(f"Port {port_name} UP operation generated {up_write_count} write messages")
 
             with allure.step(f"Assert write count ({up_write_count}) is within acceptable threshold"):
+                assert up_write_count > 0, (
+                    f"Port UP operation generated 0 write messages. "
+                    f"Expected at least 1 message - check if grep pattern is matching correctly."
+                )
                 assert up_write_count <= MAX_WRITE_MESSAGES_PER_OPERATION, (
                     f"Port UP operation generated {up_write_count} write messages, "
                     f"exceeding threshold of {MAX_WRITE_MESSAGES_PER_OPERATION}. "
@@ -170,10 +178,11 @@ def test_no_logging_flood_on_port_state_change(engines, devices, nv_command):
 
 def _count_port_write_messages(engine, port_name: str, device) -> int:
     """
-    Counts the number of "write <port> to system db" messages in syslog for the specified port.
+    Counts the number of portsyncmgrd "Handling op SET key <port>" messages in syslog for the specified port.
 
-    Uses grep to search syslog for the specific pattern that indicates a write operation to system db.
-    Uses the device-specific port-to-Infiniband conversion method.
+    Uses grep to search syslog for the specific pattern that indicates a SET operation to the port.
+    Uses the device-specific port-to-Infiniband conversion method to get the base Infiniband port name,
+    which matches all planes (e.g., Infiniband260 matches Infiniband260pl1, pl2, pl3, pl4).
 
     Args:
         engine: The device engine to execute commands on
@@ -190,14 +199,25 @@ def _count_port_write_messages(engine, port_name: str, device) -> int:
         logger.warning(f"Device does not have convert_port_to_infiniband method, using port name as-is")
         ib_port_name = port_name
 
-    # Search pattern: "portsyncmgrd: write <port_name> to system db"
-    # Using '|| echo "0"' ensures we always get a numeric result even if grep finds nothing
-    grep_command = f'grep -c "write {ib_port_name} to system db" /var/log/syslog || echo "0"'
+    # Search pattern: "portsyncmgrd: Handling op SET key <port_name>" in syslog
+    # Note: We use the base port name (e.g., Infiniband260) to match all planes (pl1, pl2, pl3, pl4)
+    # Note: grep -c returns exit code 1 when no matches found, so we use '|| true' to avoid command failure
+    # and take only the first line of output (the count)
+    grep_count_command = f'grep -c "Handling op SET key {ib_port_name}" /var/log/syslog || true'
+    grep_messages_command = f'grep "Handling op SET key {ib_port_name}" /var/log/syslog | head -20 || true'
 
     try:
-        result = engine.run_cmd(grep_command)
-        count = int(result.strip())
-        logger.info(f"Found {count} write messages for port {ib_port_name} (original: {port_name})")
+        result = engine.run_cmd(grep_count_command)
+        # Take only the first line in case of multiple outputs, default to 0 if empty
+        first_line = result.strip().split('\n')[0] if result.strip() else '0'
+        count = int(first_line) if first_line.isdigit() else 0
+        logger.info(f"Found {count} 'Handling op SET key' messages for port {ib_port_name} (original: {port_name})")
+
+        # Log the actual messages found (limited to first 20 to avoid log flood)
+        if count > 0:
+            messages = engine.run_cmd(grep_messages_command)
+            logger.info(f"SET key messages for port {ib_port_name} (first 20):\n{messages}")
+
         return count
     except (ValueError, AttributeError) as e:
         logger.error(f"Failed to parse write message count: {e}, result: {result}")

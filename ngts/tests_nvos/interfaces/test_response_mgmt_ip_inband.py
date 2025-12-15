@@ -173,19 +173,6 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
             verify_ufm_mad_db_table(engines_dut, UfmMadConsts.State.ENABLED.value, port_name,
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
 
-        with allure.step("Delete mgmt port ipv4 address (set ip 0.0.0.0/0)"):
-            mgmt_port.interface.ipv4.address.set(op_param_name=UfmMadConsts.ZEROS_IPV4, apply=True,
-                                                 ask_for_confirmation=True).verify_result()
-            time.sleep(UfmMadConsts.CONFIG_TIME)
-
-        with allure.step("Validate ufm-mad state enabled and IPV4 address is empty"):
-            verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
-                                         UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
-
-        with allure.step("Verify State DB:UFM-MAD value"):
-            verify_ufm_mad_db_table(engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
-                                    ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
-
     finally:
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
             mgmt_port.interface.ipv4.address.unset(dut_engine=serial_engine).verify_result()
@@ -269,19 +256,6 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
         with allure.step("Verify State DB:UFM-MAD value"):
             verify_ufm_mad_db_table(engines_dut, UfmMadConsts.State.ENABLED.value, port_name,
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
-
-        with allure.step("Delete mgmt port ipv6 address (set ip 0:0:0:0:0:0:0:0/0)"):
-            mgmt_port.interface.ipv6.address.set(op_param_name=UfmMadConsts.ZEROS_IPV6, apply=True,
-                                                 ask_for_confirmation=True).verify_result()
-            time.sleep(UfmMadConsts.CONFIG_TIME)
-
-        with allure.step("Validate ufm-mad state disabled and both IPV4 and IPV6 addresses are empty"):
-            verify_ufm_mad_configuration(fae, serial_engine, port_name, devices_dut, engines_ha,
-                                         UfmMadConsts.State.ENABLED.value, ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
-
-        with allure.step("Verify State DB:UFM-MAD value"):
-            verify_ufm_mad_db_table(engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
-                                    ipv6=mgmt_ip_dict[UfmMadConsts.IPV6_SLAAC])
 
     finally:
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):

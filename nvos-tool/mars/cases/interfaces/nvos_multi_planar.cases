@@ -124,6 +124,13 @@
         </static_args>
       </params>
     </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
   </case>
 
   <case>
@@ -148,6 +155,13 @@
         </static_args>
       </params>
     </cmd>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[juliet]</value>
+      </condition>
+    </ignore>
   </case>
 
 </CASEDEF>

@@ -109,7 +109,6 @@ def test_techsupport_since_invalid_date(engines, random_api):
         2. validate Invalid date in the output
     """
     system = System(None)
-    TestToolkit.tested_api = random_api
     invalid_date_syntax = '20206610'
     with allure.step('Validating the generate command failed because '
                      'of Invalid date {invalid_date_syntax}'.format(invalid_date_syntax=invalid_date_syntax)):
@@ -127,7 +126,59 @@ def test_techsupport_since_invalid_date(engines, random_api):
 
 @pytest.mark.system
 @pytest.mark.tech_support
-def test_techsupport_upload_and_delete(engines):
+@pytest.mark.cumulus
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
+def test_techsupport_delete(engines, random_api, devices):
+    """
+    Run nv show system tech-support files command and verify the required fields are exist
+    command: nv show system tech-support files
+
+    Test flow:
+        1. run nv action generate system tech-support save as <first_file>
+        2. run nv action generate system tech-support save as <second_file>
+        3. run nv action delete system techsupport file <first_file>
+        4. verify "File delete successfully" message
+        5. run nv show system techsupport files
+        6. verify <second_file> still exist and <first_file> has been deleted
+        7. run nv action delete system techsupport file <first_file>
+        8. File not found: <first_file>
+    """
+    system = System(None)
+
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_delete_success_message
+    with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
+
+        with allure.step('Generate two tech-support files'):
+            first_file, duration = system.techsupport.action_generate()
+            system.techsupport.files.show()
+            second_file, duration = system.techsupport.action_generate()
+            system.techsupport.files.show()
+
+        with allure.step('Delete the first created tech-support file'):
+            system.techsupport.files.file_name[first_file.replace(path, '')].action_delete().verify_result(expected_value=success_message)
+
+            output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
+                system.techsupport.files.show()).get_returned_value().values())
+
+            with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
+                assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(first_file)
+                assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
+
+        with allure.step('Delete non exist tech-support file {}'.format(first_file)):
+            system.techsupport.files.file_name[first_file.replace(path, '')].action_delete().verify_result(should_succeed=False,
+                                                                                                           expected_value="File not found")
+
+        with allure.step('Delete the second created tech-support file'):
+            system.techsupport.files.file_name[second_file.replace(path, '')].action_delete().verify_result()
+
+
+@pytest.mark.system
+@pytest.mark.tech_support
+@pytest.mark.cumulus
+@pytest.mark.parametrize('protocol', SystemConsts.FILE_TRANSFER_PROTOCOLS)
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
+def test_techsupport_upload(engines, random_api, devices, protocol):
     """
     Test flow:
         1. upload non exist tech-support file
@@ -144,28 +195,25 @@ def test_techsupport_upload_and_delete(engines):
     :return:
     """
     system = System(None)
-    with allure.step('generate valid and invalid urls'):
-        player = engines['sonic_mgmt']
-        invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
-        invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = 'scp://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
+    path = devices.dut.techsupport_files_path
+    success_message = devices.dut.techsupport_upload_success_message
+
+    # Use helper function to create upload URLs based on device type
+    invalid_url_1, invalid_url_2, upload_path, target_engine = _create_upload_urls(engines, devices, protocol)
 
     with allure.step('Try to upload non exist tech-support file'):
-        output = system.techsupport.action_upload(file_name='nonexist', upload_path=upload_path)
-        assert "File not found: nonexist" in output.get_info(False), "we can not upload a non exist file!"
+        system.techsupport.files.file_name['nonexist'].action_upload(upload_path=upload_path).verify_result(False, expected_value="File not found: nonexist")
 
     with allure.step('Generate tech-support file'):
-        first_file, _ = system.techsupport.action_generate()
-        first_file_name = first_file.replace('/host/dump/', '')
+        tech_file, duration = system.techsupport.action_generate()
+        tech_file = tech_file.replace(path, '')
 
-    with allure.step('try to upload techsupport {} to {} - Positive Flow'.format(first_file_name, upload_path)):
-        output = system.techsupport.action_upload(upload_path, first_file_name).verify_result()
-        with allure.step('verify the upload message'):
-            assert "File upload successfully" in output, "Failed to upload the techsupport file"
+    with allure.step('try to upload techsupport {} to {} - Positive Flow'.format(tech_file, upload_path)):
+        system.techsupport.files.file_name[tech_file].action_upload(upload_path).verify_result(expected_value=success_message)
 
         with allure.step('verify the uploaded file exist in target path'):
-            output = player.run_cmd('ls /tmp/')
-            assert first_file_name in output
+            output = target_engine.run_cmd('ls /tmp/')
+            assert tech_file in output
 
     with allure.step('try to upload techsupport to invalid url - url is not in the right format'):
         system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_1).verify_result(False, expected_value=devices.dut.techsupport_file_not_found_message)
@@ -173,32 +221,7 @@ def test_techsupport_upload_and_delete(engines):
     with allure.step('try to upload ibdiagnet to invalid url - using non supported transfer protocol'):
         system.techsupport.files.file_name['nonexist'].action_upload(upload_path=invalid_url_2).verify_result(False, expected_value=devices.dut.techsupport_file_not_found_message)
 
-    # system.techsupport.action_delete(system.techsupport.file_name)
-
-    success_message = 'File delete successfully'
-    with allure.step('Run action delete system tech-support and verify that each results updated as expected'):
-        with allure.step('Generate tech-support file'):
-            second_file, _ = system.techsupport.action_generate()
-
-        with allure.step('Delete the first created tech-support file'):
-            output = system.techsupport.action_delete(first_file.replace('/host/dump/', '')).get_returned_value()
-
-        assert success_message in output, 'failed to delete'
-        output_dictionary_after_delete = list(Tools.OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.show()).get_returned_value().values())
-
-        with allure.step('Check {} has been deleted and {} still exist'.format(first_file, second_file)):
-            assert first_file not in output_dictionary_after_delete, "{} still exist even after deleting it".format(
-                first_file)
-            assert second_file in output_dictionary_after_delete, "{} does not exist".format(second_file)
-
-        with allure.step(f"Delete {second_file.replace('/host/dump/', '')}"):
-            system.techsupport.action_delete(second_file.replace('/host/dump/', ''))
-
-        with allure.step('Delete non exist tech-support file {}'.format(first_file)):
-            res_obj = system.techsupport.action_delete(first_file.replace('/host/dump/', ''))
-            res_obj.verify_result(should_succeed=False)
-            assert 'Action failed with the following issue:' in res_obj.info, "Can not delete non exist file!"
+    system.techsupport.files.file_name[tech_file].action_delete()
 
 
 @pytest.mark.system

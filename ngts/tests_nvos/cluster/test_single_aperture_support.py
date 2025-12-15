@@ -1,7 +1,6 @@
 import logging
 import pytest
 
-from ngts.tests_nvos.interfaces.nvl5_port.helpers import allure_step
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.nmx.Sdn import Sdn
@@ -127,7 +126,7 @@ def test_error_flow_single_aperture_support(test_api, get_chassis_info):
             output_format=output_format).get_returned_value()
         assert cluster_output['state'] == 'enabled', f"Cluster state is {cluster_output['state']}, expected enabled"
 
-    with allure_step("Verify bad flow commands for single aperture support"):
+    with allure.step("Verify bad flow commands for single aperture support"):
         with allure.independent_step("Attempt with non-existent slot (999)"):
             sdn.trays.action_update_maintenance_state(tray_id='999').verify_result(should_succeed=False, expected_value=ERR_NMX_RESOURCE_BAD)
 
