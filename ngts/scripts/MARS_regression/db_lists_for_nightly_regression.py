@@ -82,9 +82,8 @@ TEST_GROUP_MAP = {
 
 CONTROL_PLANE_TESTS_MAP = {
     'community': {'setups': ['r-leopard-01_setup', 'mtvr-leopard-01_setup', 'r-panther-02_setup'], 'tests': ['community/mgmtvrf.db', 'community/system.db']},
-    # community/ipv6_mgmt.db is covered by r-panther-02 setup.
-    # The r-lionfish-13 setup server has issue with ipv6 connectivity to dut so no need to run it.
-    # 'canonical': {'setups': ['sonic_lionfish_r-lionfish-13'], 'tests': ['community/ipv6_mgmt.db']}
+    # community/ipv6_mgmt.db is covered by r-panther-02 setup. No need to run it on any canonical setups.
+    'canonical': {'setups': [], 'tests': ['community/ipv6_mgmt.db']}
 }
 
 
