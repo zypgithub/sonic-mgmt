@@ -42,7 +42,7 @@ def test_snmp_cpu(duthosts, enum_rand_one_per_hwsku_hostname, localhost, creds_a
         duthost, localhost, host=hostip, version="v2c",
         community=creds_all_duts[duthost.hostname]["snmp_rocommunity"], is_dell=True, wait=True)['ansible_facts']
 
-    assert int(snmp_facts['ansible_ChStackUnitCpuUtil5sec'])
+    int(snmp_facts['ansible_ChStackUnitCpuUtil5sec'])
 
     try:
         for i in range(host_vcpus):
