@@ -1,6 +1,6 @@
 import pytest
 import time
-
+import logging
 from ngts.nvos_constants.constants_nvos import ApiType, DatabaseConst, IpConsts, UfmMadConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
@@ -13,6 +13,9 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.interface
@@ -97,21 +100,22 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
     Validate configuring management port ipv4 address in several cases
 
     Test flow:
-    1. Choose mgmt port (eth0|eth1) and get its addresses
-    2. Disable ufm-mad feature
-    3. Update mgmt port ipv4 address (static ip)
-    4. Validate ufm-mad state disabled and IP address is empty
-    5. Verify State DB:UFM-MAD value
-    6. Enable feature
-    7. Validate ufm-mad state enabled and IP static address is configured
-    8. Verify State DB:UFM-MAD value
-    9. Update mgmt port ipv4 address when ufm-mad state is enabled
-    10. Validate ufm-mad state enabled and IP address is configured
-    11. Verify State DB:UFM-MAD value
-    12. Delete mgmt port ipv4 address (set ip 0.0.0.0/0)
-    13. Validate ufm-mad state disabled and IPV4 address is empty
-    14. Verify State DB:UFM-MAD value
-    15. Set to default mgmt port address and ufm-mad feature state
+    1. Choose mgmt port (eth0|eth1) and read its IPv4/IPv6 addresses
+    2. Verify UFM-MAD is enabled and both addresses are advertised
+    3. Disable UFM-MAD
+    4. Configure a static IPv4 address on the mgmt port
+    5. Verify UFM-MAD is disabled and advertised IPv4/IPv6 are empty
+    6. Verify State DB table reflects "disabled + empty addresses"
+    7. Enable UFM-MAD (set state ENABLED)
+    8. Verify UFM-MAD is enabled and the configured IPs are advertised (static IPv4 + IPv6 SLAAC)
+    9. Verify State DB table reflects "enabled + addresses present"
+    10. Unset the static IPv4 address while UFM-MAD is enabled (revert IPv4 to the original mgmt IP)
+    11. Verify UFM-MAD stays enabled and IPv4/IPv6 match the current/original mgmt IP values
+    12. Verify State DB table reflects the updated IPv4 address
+    13. Disable the IPv4 DHCP client (UFM-MAD remains enabled)
+    14. Verify IPv4 is NOT advertised while IPv6 remains advertised
+    15. Verify State DB table reflects "enabled + IPv4 empty + IPv6 present"
+    16. Restore defaults (mgmt port address and UFM-MAD state)
     """
     TestToolkit.tested_api = test_api
     engines_dut = engines.dut
@@ -173,7 +177,12 @@ def test_configure_mgmt_port_ipv4(engines, devices, topology_obj, prepare_traffi
             verify_ufm_mad_db_table(engines_dut, UfmMadConsts.State.ENABLED.value, port_name,
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
 
+        dhcp_disable_test_steps("IPv4", mgmt_port.interface.ipv4, serial_engine, port_name, devices_dut, engines_ha, mgmt_ip_dict, fae)
     finally:
+        with allure.step("Re-enable DHCP client for IPv4"):
+            mgmt_port.interface.ipv4.dhcp_client.unset(apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            time.sleep(UfmMadConsts.CONFIG_TIME)  # for the next test - wait for the DHCP client to be disabled.
+
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
             mgmt_port.interface.ipv4.address.unset(dut_engine=serial_engine).verify_result()
             fae.ib.ufm_mad.unset(op_param=UfmMadConsts.STATE, apply=True, dut_engine=serial_engine).verify_result()
@@ -186,21 +195,21 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
     Validate configuring management port ipv6 address in several cases
 
     Test flow:
-    1. Choose mgmt port (eth0|eth1) and get its addresses
-    2. Disable ufm-mad feature
-    3. Update mgmt port ipv6 address (static ip)
-    4. Validate ufm-mad state disabled and IP address is empty
-    5. Verify State DB:UFM-MAD value
-    6. Enable feature
-    7. Validate ufm-mad state enabled and IP static address is configured
-    8. Verify State DB:UFM-MAD value
-    9. Update mgmt port ipv6 address when ufm-mad state is enabled
-    10. Validate ufm-mad state enabled and IP address is configured
-    11. Verify State DB:UFM-MAD value
-    12. Delete mgmt port ipv6 address (set ip 0:0:0:0:0:0:0:0/0)
-    13. Validate ufm-mad state disabled and both IPV4 and IPV6 addresses are empty
-    14. Verify State DB:UFM-MAD value
-    15. Set to default mgmt port address and ufm-mad feature state
+    1. Choose mgmt port (eth0|eth1) and read its IPv4/IPv6 addresses
+    2. Disable UFM-MAD
+    3. Configure a static IPv6 address on the mgmt port
+    4. Verify UFM-MAD is disabled and advertised IPv4/IPv6 are empty
+    5. Verify State DB table reflects "disabled + empty addresses"
+    6. Enable UFM-MAD (set state ENABLED)
+    7. Verify UFM-MAD is enabled and the configured IPv6 (static) is advertised
+    8. Verify State DB table reflects "enabled + IPv6 present"
+    9. Unset the static IPv6 address while UFM-MAD is enabled (revert IPv6 to the original mgmt IP)
+    10. Verify UFM-MAD stays enabled and IPv4/IPv6 match the current/original mgmt IP values
+    11. Verify State DB table reflects the updated IPv4/IPv6 addresses
+    12. Disable the IPv6 DHCP client (UFM-MAD remains enabled)
+    13. Verify IPv6 is NOT advertised while IPv4 remains advertised
+    14. Verify State DB table reflects "enabled + IPv6 empty + IPv4 present"
+    15. Restore defaults (mgmt port address and UFM-MAD state)
     """
     TestToolkit.tested_api = test_api
     engines_dut = engines.dut
@@ -257,10 +266,15 @@ def test_configure_mgmt_port_ipv6(engines, devices, topology_obj, prepare_traffi
             verify_ufm_mad_db_table(engines_dut, UfmMadConsts.State.ENABLED.value, port_name,
                                     mgmt_ip_dict[UfmMadConsts.IPV4], mgmt_ip_dict[UfmMadConsts.IPV6])
 
+        dhcp_disable_test_steps("IPv6", mgmt_port.interface.ipv6, serial_engine, port_name, devices_dut, engines_ha, mgmt_ip_dict, fae)
     finally:
+        with allure.step("Re-enable DHCP client for IPv6"):
+            mgmt_port.interface.ipv6.dhcp_client.unset(apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            time.sleep(UfmMadConsts.CONFIG_TIME)
+
         with allure.step("Set to default mgmt port address and ufm-mad feature state"):
-            mgmt_port.interface.ipv6.address.unset(dut_engine=serial_engine).verify_result()
-            fae.ib.ufm_mad.unset(op_param=UfmMadConsts.STATE, apply=True, dut_engine=serial_engine).verify_result()
+            mgmt_port.interface.ipv6.address.unset(apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
+            fae.ib.ufm_mad.unset(op_param=UfmMadConsts.STATE, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
 
 
 @pytest.mark.interface
@@ -356,8 +370,6 @@ def test_fae_invalid_commands(test_api):
         Fae().ib.ufm_mad.set(op_param_name=UfmMadConsts.STATE, op_param_value='invalid_state',
                              apply=True).verify_result(should_succeed=False)
 
-
-# ----------------------------------------------
 
 def choose_mgmt_port(dut_engine, devices):
     port_name = RandomizationTool.select_random_value(devices.mgmt_ports).get_returned_value()
@@ -608,3 +620,71 @@ def parse_ibsni_register(ibsni_value, port_name):
         if len(ips_dict) == UfmMadConsts.NUMBER_OF_ADDRESSES_IN_MAD_RESPONSE:
             break
     return ips_dict
+
+
+def dhcp_disable_test_steps(ip_version, ipv_obj, serial_engine, port_name, devices_dut, engines_ha, mgmt_ip_dict, fae):
+    """
+    Tests that disabling DHCP client for one IP family removes that IP from UFM-MAD
+    while preserving the other IP family's address.
+
+    Args:
+        ip_version: "IPv4" or "IPv6" - the IP family whose DHCP client we're disabling
+        ipv_obj: The interface.ipv4 or interface.ipv6 object to operate on
+        serial_engine: Engine to run commands (serial port since SSH may be lost)
+        port_name: Management port name (eth0 or eth1)
+        devices_dut: Device under test object
+        engines_ha: HA engines for MAD requests
+        mgmt_ip_dict: Dictionary containing original management IP addresses
+        fae: Fae object for UFM-MAD operations
+
+    Test Flow:
+        1. Disable DHCP client for the specified IP family
+        2. Verify UFM-MAD shows the disabled family's IP as empty, other family unchanged
+        3. Verify State DB reflects the same expectations
+        4. Negative test: verify wrong expectations would fail
+    """
+    # Build expectations based on which IP family we're testing
+    if ip_version == "IPv6":
+        # Disabling IPv6 DHCP: IPv6 becomes empty, IPv4 stays
+        expected_ipv4 = mgmt_ip_dict[UfmMadConsts.IPV4]
+        expected_ipv6 = ""
+        # For negative test (opposite of expected)
+        wrong_ipv4 = ""
+        wrong_ipv6 = mgmt_ip_dict[UfmMadConsts.IPV6]
+    else:  # IPv4
+        # Disabling IPv4 DHCP: IPv4 becomes empty, IPv6 stays
+        expected_ipv4 = ""
+        expected_ipv6 = mgmt_ip_dict[UfmMadConsts.IPV6]
+        # For negative test (opposite of expected)
+        wrong_ipv4 = mgmt_ip_dict[UfmMadConsts.IPV4]
+        wrong_ipv6 = ""
+
+    with allure.step(f"Disable DHCP client for {ip_version}"):
+        ipv_obj.dhcp_client.set(
+            op_param_name=UfmMadConsts.STATE, op_param_value=UfmMadConsts.State.DISABLED.value,
+            apply=True, dut_engine=serial_engine, ask_for_confirmation=True
+        ).verify_result()
+        time.sleep(UfmMadConsts.CONFIG_TIME)
+
+    with allure.step(f"Verify UFM-MAD: {ip_version} is NOT advertised, other IP family unchanged"):
+        verify_ufm_mad_configuration(
+            fae=fae, dut_engine=serial_engine, port_name=port_name,
+            devices_dut=devices_dut, engines_ha=engines_ha,
+            state=UfmMadConsts.State.ENABLED.value,
+            ipv4=expected_ipv4, ipv6=expected_ipv6
+        )
+
+    with allure.step("Verify State DB:UFM-MAD reflects correct advertised addresses"):
+        verify_ufm_mad_db_table(
+            engine=serial_engine, state=UfmMadConsts.State.ENABLED.value, port_name=port_name,
+            ipv4=expected_ipv4, ipv6=expected_ipv6
+        )
+
+    with allure.step("Negative test: verify wrong IP expectations would fail"):
+        with pytest.raises(AssertionError):
+            verify_ufm_mad_db_table(
+                engine=serial_engine, state=UfmMadConsts.State.ENABLED.value,
+                port_name=port_name,
+                ipv4=wrong_ipv4,
+                ipv6=wrong_ipv6,
+            )
