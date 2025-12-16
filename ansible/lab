@@ -218,6 +218,7 @@ mamba-dgx-130      ansible_host=10.7.145.130 ansible_hostv6="" sonic_version=v2 
 mamba-dgx-1294      ansible_host=10.220.12.94 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 taipan-190      ansible_host=10.7.145.190 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3451-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 taipan-104      ansible_host=10.7.145.104 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3450-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+taipan-e2e-temp      ansible_host=10.7.145.34 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3450-LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-06      ansible_host=10.245.21.54 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-05      ansible_host=10.245.23.5 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 mtvr-q3400-04      ansible_host=10.245.21.52 ansible_hostv6="" sonic_version=v2 hwsku="ACS-QM3000" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
