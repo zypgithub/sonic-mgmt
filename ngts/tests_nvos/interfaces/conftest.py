@@ -42,7 +42,7 @@ def access_ports(devices: DevicesT):
     # Extract numeric indices from ACP port names by removing 'acp' prefix
     port_indices = [
         int(port_name.replace(NvlInterfaceConsts.ACP_PORT_TYPE, ''))
-        for port_name in devices.dut.nvl5_access_ports_list
+        for port_name in devices.dut.nvl_access_ports_list
     ]
     min_port, max_port = min(port_indices), max(port_indices)
     yield Port(f'{NvlInterfaceConsts.ACP_PORT_TYPE}{min_port}-{max_port}', '', '')

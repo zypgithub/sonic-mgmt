@@ -55,7 +55,7 @@ def _cleanup(port: Port):
 
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, register_cleanup, unregister_cleanup):
-    last_acp_port_name = max(devices.dut.nvl5_access_ports_list, key=lambda p: int(p.replace(NvlInterfaceConsts.ACP_PORT_TYPE, '')))
+    last_acp_port_name = max(devices.dut.nvl_access_ports_list, key=lambda p: int(p.replace(NvlInterfaceConsts.ACP_PORT_TYPE, '')))
     port = Port(last_acp_port_name)
     logger.info(f"Selected NVLink port: {port.name}")
 
