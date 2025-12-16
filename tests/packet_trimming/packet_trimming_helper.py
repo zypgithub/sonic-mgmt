@@ -26,7 +26,8 @@ from tests.packet_trimming.constants import (DEFAULT_SRC_PORT, DEFAULT_DST_PORT,
                                              SRV6_INNER_DST_IPV6, SRV6_UN, ASYM_PORT_1_DSCP, ASYM_PORT_2_DSCP,
                                              SCHEDULER_TYPE, SCHEDULER_WEIGHT, SCHEDULER_PIR, MIRROR_SESSION_NAME,
                                              MIRROR_SESSION_SRC_IP, MIRROR_SESSION_DST_IP, MIRROR_SESSION_DSCP,
-                                             MIRROR_SESSION_TTL, MIRROR_SESSION_QUEUE, SCHEDULER_CIR)
+                                             MIRROR_SESSION_TTL, MIRROR_SESSION_GRE, MIRROR_SESSION_QUEUE,
+                                             SCHEDULER_CIR)
 from tests.packet_trimming.packet_trimming_config import PacketTrimmingConfig
 
 logger = logging.getLogger(__name__)
@@ -499,10 +500,12 @@ def validate_scheduler_apply_to_queue_in_asic_db(duthost, scheduler_oid, expecte
 
     # Validate count matches expected
     if count == expected_count:
-        logger.debug(f"ASIC_DB scheduler validation successful: OID {scheduler_oid} found in {count} scheduler groups (matches expected)")
+        logger.debug(f"ASIC_DB scheduler validation successful: "
+                     f"OID {scheduler_oid} found in {count} scheduler groups (matches expected)")
         return True
     else:
-        logger.debug(f"ASIC_DB scheduler validation failed: OID {scheduler_oid} found in {count} scheduler groups (expected {expected_count})")
+        logger.debug(f"ASIC_DB scheduler validation failed: "
+                     f"OID {scheduler_oid} found in {count} scheduler groups (expected {expected_count})")
         return False
 
 
@@ -550,8 +553,10 @@ def disable_egress_data_plane(duthost, dut_port, queue):
     # Wait for the blocking scheduler configuration to take effect in ASIC_DB
     # Expected count should increase by 1 after applying scheduler to specific queue
     expected_count = current_count + 1
-    pytest_assert(wait_until(60, 5, 0, validate_scheduler_apply_to_queue_in_asic_db, duthost, scheduler_oid, expected_count),
-                  f"Scheduler OID {scheduler_oid} validation in ASIC_DB failed for port {dut_port} queue {queue} (expected count: {expected_count})")
+    pytest_assert(wait_until(60, 5, 0, validate_scheduler_apply_to_queue_in_asic_db, duthost, scheduler_oid,
+                             expected_count),
+                  f"Scheduler OID {scheduler_oid} validation in ASIC_DB failed for port {dut_port} "
+                  f"queue {queue} (expected count: {expected_count})")
 
     logger.info(f"Successfully applied blocking scheduler to port {dut_port} queue {queue}")
 
@@ -2920,9 +2925,11 @@ def configure_port_mirror_session(duthost):
     """
     Configure an ERSPAN mirror session on the DUT.
     """
-    logger.info(f"Configuring ERSPAN mirror session")
+    logger.info("Configuring ERSPAN mirror session")
 
-    cmd = f"sudo config mirror_session erspan add {MIRROR_SESSION_NAME} {MIRROR_SESSION_SRC_IP} {MIRROR_SESSION_DST_IP} {MIRROR_SESSION_DSCP} {MIRROR_SESSION_TTL} {MIRROR_SESSION_QUEUE}"
+    cmd = (f"sudo config mirror_session erspan add {MIRROR_SESSION_NAME} {MIRROR_SESSION_SRC_IP} "
+           f"{MIRROR_SESSION_DST_IP} {MIRROR_SESSION_DSCP} {MIRROR_SESSION_TTL} {MIRROR_SESSION_GRE} "
+           f"{MIRROR_SESSION_QUEUE}")
     duthost.shell(cmd)
     logger.info(f"Successfully configured mirror session: {MIRROR_SESSION_NAME}")
 
