@@ -57,7 +57,7 @@ def get_bughandler_instance(kwargs: dict) -> BugHandler:
     return NoOpBugHandler()
 
 def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyzer_bug_metadata, testbed,
-                               bug_handler_action, log_errors_dir_path=None, is_serial_log=False):
+                               bug_handler_action, log_errors_dir_path=None, is_serial_log=False, logger=None):
     """
     Call bug handler on all log errors and return a list of dictionaries with results and a list of the LA errors caught
     :param cli_type: i.e, Sonic
@@ -67,6 +67,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
     :param log_analyzer_bug_metadata: dictionary with info that we want to add to log analyzer bug
     :param testbed: testbed
     :param bug_handler_action: dictionary include if need to create or update the RM issue when err msg found.
+    :param logger: logger instance to use for logging (optional, defaults to module logger)
     :return: A tuple of two values. The first value is a list of dictionaries with results for each optional bug:
     i.e., ['test_name': 'test_lags_scale',
             'results':
@@ -79,6 +80,9 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
      i.e., ['May 12 06:57:50.560887 r-tigon-04 ERR admin: This is An Error #1',
      'May 12 06:57:50.857573 r-tigon-04 ERR admin: Some Error #2']
     """
+    # Use passed logger or fall back to module logger
+    if logger is None:
+        logger = logging.getLogger()
 
     with allure.step("Log Analyzer bug handler"):
         la_errors = []
@@ -194,10 +198,14 @@ def skip_bug_handler(duthost, request, logger=logger):
 
 def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
                              only_check=False, is_serial_log=False,
-                             is_test_function_failed=False, logger=logger):
+                             is_test_function_failed=False, logger=None):
     """
     If the run_log_analyzer_bug_handler is True, run this function to handle the err msg detected in the loganalyzer
     """
+    # Use passed logger or fall back to module logger
+    if logger is None:
+        logger = logging.getLogger()
+    
     test_name = re.sub(r'[\\/\'"<>|]', '_', request.node.name)
     la_rm_issues = request.session.config.cache.get(BugHandlerConst.LA_RM_ISSUES_DICT, dict())
     test_id = request.node.nodeid
@@ -240,7 +248,7 @@ def log_analyzer_bug_handler(duthost, request, log_errors_dir_path=None,
         bug_handler_dict.update(get_nvue_additional_info(duthost, request))
     log_analyzer_res, la_error_messages = handle_log_analyzer_errors(cli_type, log_analyzer_handler_info['branch'], test_name, duthost,
                                                   bug_handler_dict, setup_name, bug_handler_actions,
-                                                  log_errors_dir_path, is_serial_log)
+                                                  log_errors_dir_path, is_serial_log, logger=logger)
     logger.info(f"Log Analyzer result: {json.dumps(log_analyzer_res, indent=2)}")
     error_msg = ''
     ci_mode = bug_handler_actions.get('ci_mode', False)
@@ -646,6 +654,7 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
     # and parent process does not read from the pipe.
     bh_logger = logging.getLogger("bh_logger")
     bh_logger.handlers = []
+    bh_logger.setLevel(logging.INFO)
     bh_logger.addHandler(file_handler)
     try:
         analyzer = analyzers[node.hostname]
@@ -657,6 +666,7 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
         else:
             log_analyzer_bug_handler(duthost, request, is_test_function_failed=_is_test_function_failed(request), logger=bh_logger)
     finally:
+        bh_logger.info("Bug handler processing finished")
         if file_handler:
             bh_logger.removeHandler(file_handler)
             file_handler.close()
