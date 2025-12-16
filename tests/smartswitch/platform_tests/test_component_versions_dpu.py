@@ -182,6 +182,8 @@ def test_dpu_component_versions(readme_versions, dpu_component_table, dpuhosts):
 
                 # Test 1: Check if compilation version matches the README version
                 readme_version = readme_versions[component]
+                if component == 'BFSOC':
+                    readme_version = readme_version.split(':')[-1]
                 assert compilation_version == readme_version, \
                     f"Compilation version for {component} in component table ({compilation_version}) " \
                     f"doesn't match README version ({readme_version})"
