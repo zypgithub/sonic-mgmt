@@ -4540,6 +4540,12 @@ route/test_duplicate_route.py::test_duplicate_routes:
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20231"
 
+route/test_duplicate_route.py::test_duplicate_routes:
+  xfail:
+    reason: "xfail due to GH issue https://github.com/sonic-net/sonic-mgmt/issues/20231"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20231"
+
 route/test_duplicate_route.py::test_duplicate_routes[4:
   skip:
     reason: "Skip for IPv6-only topologies"
