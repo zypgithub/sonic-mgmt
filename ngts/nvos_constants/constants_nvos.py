@@ -858,6 +858,7 @@ class SystemConsts:
     NV_BRIDGE_STATE = 'state'
     NV_BRIDGE_HEART_BEAT = 'heart-beat'
     NV_BRIDGE_HEALTH = 'health'
+    Node = 'node'
     NV_BRIDGE_HEALTH_REASON = 'health-reason'
     NV_BRIDGE_CONNECTION = 'connections'
     NV_BRIDGE_ENABLED = 'enabled'
