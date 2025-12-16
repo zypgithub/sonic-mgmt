@@ -4,5 +4,5 @@ r-leopard-92,10.210.26.92/22,Mellanox-SN4700-V64,FanoutLeaf,,sonic
 r-leopard-93,10.210.26.93/22,Mellanox-SN4700-V64,DevSonic,,sonic
 r-leopard-94,10.210.26.94/22,Mellanox-SN4700-V64,FanoutLeaf,,sonic
 r-sonic-22,10.215.216.1,TestServ,Server,,
-pdu-10-208-2-11,10.208.2.11,EMERSON,Pdu,snmp,
+pdu-10-208-2-11,10.208.2.11,Emerson,Pdu,snmp,
 rcon-sws-3-5,10.208.0.44,,ConsoleServer,ssh,sonic
