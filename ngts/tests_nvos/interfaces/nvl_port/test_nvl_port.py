@@ -68,7 +68,7 @@ def test_nvl_internal_fnm_ports(devices):
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.nvl_ci
-def test_nvl_fnm_ports_up(devices):
+def test_nvl_fnm_ports_up(devices, has_loopbox, standalone_system):
     """
     Validate that all regular FNM ports on NVL systems are UP by default.
 
@@ -78,6 +78,8 @@ def test_nvl_fnm_ports_up(devices):
     Note: This is different from internal FNM ports (fnma0p1, fnma0p2, etc.)
     which are checked by test_nvl_internal_fnm_ports.
     """
+    if not has_loopbox and standalone_system:
+        pytest.skip("No loopbox and standalone system will have fnm ports down by default - skipping FNM ports test")
     if not hasattr(devices.dut, 'nvl_fnm_ports') or not devices.dut.nvl_fnm_ports:
         pytest.skip("No nvl_fnm_ports defined for this device (only internal FNM or standalone)")
 
