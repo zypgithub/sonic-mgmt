@@ -63,7 +63,8 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, r
 
     out_of_range_p, out_of_range_sw, reversed_range, undefined_range = create_invalid_ranges(selected_ports[0].name)
     error_msg1 = 'does not exist'
-    error_msg2 = "Error: Invalid Command: action clear interface"
+    # Both NVUE and OpenAPI now return the same error format for invalid ranges
+    error_msg2 = ("Error: Invalid Command: action clear interface", "is not a 'interface-name'")
 
     with allure.step("Create Interface"):
         interface = Interface(parent_obj=None)
