@@ -385,6 +385,16 @@ def standalone_system(setup_name):
 
 
 @pytest.fixture(scope='session')
+def doca_traffic_system(setup_name):
+    """
+    Method to check if system is a doca traffic system.
+    :param setup_name: the setup name
+    :return: if setup is a doca traffic system or not
+    """
+    return setup_name in Configurations.doca_traffic_systems
+
+
+@pytest.fixture(scope='session')
 def wrong_shunt_resistor_system(setup_name):
     """
     Method to check if system has loopbox.

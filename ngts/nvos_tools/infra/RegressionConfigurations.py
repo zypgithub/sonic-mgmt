@@ -56,6 +56,8 @@ class Configurations:
 
     non_standalone_systems = ['NVOS_juliet_10_7_148_148']
 
+    doca_traffic_systems = ['NVOS_taipan_10_7_145_34']
+
     systems_with_wrong_shunt_resistor = ['NVOS_juliet_10_7_148_128', 'NVOS_juliet_10_7_148_144']
 
     compute_nodes_per_system = {

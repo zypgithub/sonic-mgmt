@@ -542,13 +542,13 @@ def tst_all_pwh_confs(request):
 
 
 @pytest.fixture
-def start_sm(engines, devices, traffic_available):
+def start_sm(engines, devices, traffic_available, doca_traffic_system):
     """
     Starts OpenSM
     """
     if traffic_available:
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
-        result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
+        result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar, use_doca_opensm=doca_traffic_system)
         if not result.result:
             with allure.step('open_sm failed to start (possibly due to #4088479), attempting to recover'):
                 with allure.step('Rebooting all traffic VMs'):
@@ -569,7 +569,7 @@ def start_sm(engines, devices, traffic_available):
                     time.sleep(5)
 
                 with allure.step('Retrying to start open_sm'):
-                    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar).verify_result()
+                    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar, use_doca_opensm=doca_traffic_system).verify_result()
     else:
         raise SetupIssue("Traffic is not available on this setup")
 

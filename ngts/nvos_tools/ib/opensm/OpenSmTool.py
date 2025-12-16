@@ -13,7 +13,9 @@ from retry import retry
 
 logger = logging.getLogger()
 
-OPEN_SM_PATH = "/opt/ufm/opensm/sbin/opensm"
+OPEN_SM_PATH = "/opt/ufm/opensm/sbin/opensm"  # UFM opensm (used for multiplanar)
+DOCA_OPEN_SM_PATH = "opensm"  # Doca opensm - executed directly via Doca, not through UFM
+SM_MASTER_OPEN_SM_PATH = "/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm"  # SM Master path
 OPEN_SM_CFG_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/issu/opensm.cfg"
 MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 
@@ -21,15 +23,15 @@ MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 class OpenSmTool:
 
     @staticmethod
-    def start_open_sm(engines=None, multiplanar=False):
-        return OpenSmTool.start_open_sm_on_server(engines, multiplanar)
+    def start_open_sm(engines=None, multiplanar=False, use_doca_opensm=False):
+        return OpenSmTool.start_open_sm_on_server(engines, multiplanar, use_doca_opensm)
 
     @staticmethod
     def stop_open_sm(engines=None):
         return OpenSmTool.stop_open_sm_on_server(engines)
 
     @staticmethod
-    def start_open_sm_on_server(engines, multiplanar=False):
+    def start_open_sm_on_server(engines, multiplanar=False, use_doca_opensm=False):
         """
         Start open sm if it's not running
         """
@@ -63,9 +65,15 @@ class OpenSmTool:
                     engines.hfnm.run_cmd(
                         f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
 
-                opensm_path = '/opt/ufm/opensm/sbin/opensm'
+            # Determine the opensm path
+            # For doca traffic systems, use Doca opensm directly instead of UFM opensm
+            if use_doca_opensm:
+                logging.info("Using Doca opensm (doca traffic system)")
+                opensm_path = DOCA_OPEN_SM_PATH
+            elif multiplanar:
+                opensm_path = OPEN_SM_PATH
             else:
-                opensm_path = '/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm'
+                opensm_path = SM_MASTER_OPEN_SM_PATH
 
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
@@ -78,7 +86,7 @@ class OpenSmTool:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
         with (allure.step("Start OpenSM")):
-            engines.hfnm.run_cmd(f"{OPEN_SM_PATH} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
+            engines.hfnm.run_cmd(f"{opensm_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
