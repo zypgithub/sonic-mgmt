@@ -274,7 +274,7 @@ def test_cold_reboot_dpus(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
 
 
 def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
-                            platform_api_conn, num_dpu_modules):  # noqa: F811, E501
+                            localhost, platform_api_conn, num_dpu_modules):  # noqa: F811, E501
     """
     Test to cold reboot the switch in the DUT.
     Steps:
@@ -286,6 +286,7 @@ def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname
         duthosts: DUT hosts object
         dpuhosts: DPU hosts object
         enum_rand_one_per_hwsku_hostname: Randomized DUT hostname
+        localhost: Localhost object
         platform_api_conn: Platform API connection object
         num_dpu_modules: Number of DPU modules to verify
     """
@@ -295,7 +296,7 @@ def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname
     ip_address_list, dpu_on_list, dpu_off_list = pre_test_check(duthost, platform_api_conn, num_dpu_modules)
 
     logging.info("Starting switch reboot...")
-    perform_reboot(duthost, REBOOT_TYPE_COLD, None)
+    reboot(duthost, localhost, reboot_type=REBOOT_TYPE_COLD)
 
     logging.info("Executing post switch reboot dpu check")
     if is_mellanox_devices(duthost.facts['hwsku']):
