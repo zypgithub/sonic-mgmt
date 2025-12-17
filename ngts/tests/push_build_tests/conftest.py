@@ -19,7 +19,7 @@ from ngts.config_templates.doroce_config_template import DoroceConfigTemplate
 from ngts.constants.constants import SonicConst
 from ngts.constants.constants import SflowConsts
 from ngts.helpers import sflow_helper
-from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, app_cleanup
+from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, app_cleanup, get_app_repository
 from ngts.constants.constants import P4SamplingEntryConsts
 from ngts.scripts.install_app_extension.install_app_extensions import install_all_supported_app_extensions
 from ngts.conftest import update_topology_with_cli_class
@@ -42,10 +42,10 @@ logger = logging.getLogger()
 ROCEV2_ACL_COUNTER_PATH = os.path.join(FRR_CONFIG_FOLDER, "L3/rocev2_acl_counter")
 
 
-def get_test_app_ext_info(cli_obj):
+def get_test_app_ext_info(cli_obj, is_air):
     is_support_app_ext = cli_obj.app_ext.verify_version_support_app_ext()
     app_name = APP_INFO["name"]
-    app_repository_name = APP_INFO["repository"]
+    app_repository_name = get_app_repository(is_air)
     version = APP_INFO["shut_down"]["version"]
     return is_support_app_ext, app_name, version, app_repository_name
 
@@ -105,7 +105,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
     # Check if app_ext supported and get app name, repo, version
     base_sonic_branch = sonic_branch
     shared_params.app_ext_is_app_ext_supported, app_name, version, app_repository_name = \
-        get_test_app_ext_info(cli_objects.dut)
+        get_test_app_ext_info(cli_objects.dut, is_air)
     if run_config_only or full_flow_run:
         if upgrade_params.is_upgrade_required:
             with allure.step('Installing base version from ONIE'):
@@ -126,7 +126,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
 
             with allure.step('Check that APP Extension supported on base version'):
                 shared_params.app_ext_is_app_ext_supported, app_name, version, app_repository_name = \
-                    get_test_app_ext_info(cli_objects.dut)
+                    get_test_app_ext_info(cli_objects.dut, is_air)
 
         if is_evpn_support(base_sonic_branch):
             with allure.step('Setting "docker_routing_config_mode": "split" in config_db.json'):

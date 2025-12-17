@@ -3,21 +3,22 @@ import logging
 import allure
 
 from ngts.tests.nightly.app_extension.app_extension_helper import \
-    verify_add_app_to_repo, verify_app_container_up_and_repo_status_installed, APP_INFO, app_cleanup
+    verify_add_app_to_repo, verify_app_container_up_and_repo_status_installed, APP_INFO, app_cleanup, \
+    get_app_repository
 from ngts.constants.constants import InfraConst
 
 logger = logging.getLogger()
 
 
 @pytest.fixture(scope='function', autouse=False)
-def add_app_into_repo(engines, cli_objects):
+def add_app_into_repo(engines, cli_objects, is_air):
     """
     :param engines: ssh engines fixture
 
     """
     dut_engine = engines.dut
     app_name = APP_INFO["name"]
-    app_repository_name = APP_INFO["repository"]
+    app_repository_name = get_app_repository(is_air)
     version = APP_INFO["normal1"]["version"]
     app_cleanup(dut_engine, cli_objects.dut, app_name)
     cli_objects.dut.app_ext.add_repository(app_name, app_repository_name, version=version)

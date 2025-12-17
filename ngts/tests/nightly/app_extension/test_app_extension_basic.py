@@ -5,14 +5,15 @@ import json
 
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_repository_list_format, \
     verify_add_app_to_repo, extract_version_info, get_non_semver_version_info, \
-    verify_changelog_same_to_manifest, APP_INFO, verify_app_container_up_and_repo_status_installed, app_cleanup
+    verify_changelog_same_to_manifest, APP_INFO, verify_app_container_up_and_repo_status_installed, app_cleanup, \
+    get_app_repository
 
 logger = logging.getLogger()
 
 
 @pytest.mark.app_ext
 @allure.title('Test repo management')
-def test_repo_management(engines, cli_objects):
+def test_repo_management(engines, cli_objects, is_air):
     """
     This test case will check the functionality of package repository management
     Firstly, verify sonic-package-manager list, output is as follows:
@@ -35,7 +36,7 @@ def test_repo_management(engines, cli_objects):
     """
     dut_engine = engines.dut
     app_name = APP_INFO["name"]
-    app_repository_name = APP_INFO["repository"]
+    app_repository_name = get_app_repository(is_air)
 
     try:
 

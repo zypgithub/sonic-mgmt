@@ -55,5 +55,6 @@ REBOOT_TYPES = {
 }
 
 DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
+AIR_DOCKER_REGISTRY = "harbor-mts.nvidia.com"
 
 DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"

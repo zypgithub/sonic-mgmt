@@ -25,7 +25,6 @@ def test_app_upgrade(cli_objects, pre_install_app, upgrade_type):
     dut_engine, _ = pre_install_app
     app_name = APP_INFO["name"]
     version = APP_INFO["normal2"]["version"]
-    app_repo = APP_INFO["repository"]
     try:
         with allure.step("Upgrade app {} with version {}".format(app_name, version)):
             if upgrade_type == "repo":

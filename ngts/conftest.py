@@ -31,7 +31,7 @@ from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_top
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
-from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO
+from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, get_app_repository
 from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag, add_fixture_name, \
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
@@ -767,11 +767,11 @@ def upgrade_params(base_version, target_version, wjh_deb_url):
 
 
 @pytest.fixture(scope="session")
-def shared_params():
+def shared_params(is_air):
     shared_dict = DottedDict()
     shared_dict.app_ext_is_app_ext_supported = False
     shared_dict.app_ext_app_name = APP_INFO["name"]
-    shared_dict.app_ext_app_repository_name = APP_INFO["repository"]
+    shared_dict.app_ext_app_repository_name = get_app_repository(is_air)
     shared_dict.app_ext_version = APP_INFO["shut_down"]["version"]
 
     return shared_dict

@@ -4,8 +4,8 @@ import logging
 import pytest
 
 from ngts.tests.nightly.app_extension.app_extension_helper import \
-    verify_app_container_up_and_repo_status_installed, uninstall_app_with_force_and_remove_app_from_repo,\
-    verify_app_container_status_none, gen_app_tarball, APP_INFO
+    verify_app_container_up_and_repo_status_installed, uninstall_app_with_force_and_remove_app_from_repo, \
+    verify_app_container_status_none, gen_app_tarball, APP_INFO, get_app_repository
 
 logger = logging.getLogger()
 
@@ -129,7 +129,7 @@ def test_app_install_with_force_skip_dependency_check(engines, cli_objects, add_
 
 @pytest.mark.app_ext
 @allure.title('Install app from tarball')
-def test_app_install_from_tarball(engines, cli_objects, add_app_into_repo):
+def test_app_install_from_tarball(engines, cli_objects, add_app_into_repo, is_air):
     """
     This test is to install app from tarball
     Firstly prepare a app tarball by docker pull and docker save -o
@@ -139,7 +139,7 @@ def test_app_install_from_tarball(engines, cli_objects, add_app_into_repo):
     dut_engine = engines.dut
     app_name = APP_INFO["name"]
     version = APP_INFO["normal1"]["version"]
-    app_repo = APP_INFO["repository"]
+    app_repo = get_app_repository(is_air)
 
     try:
         with allure.step("Install app {}:{} from tarball".format(app_name, version)):

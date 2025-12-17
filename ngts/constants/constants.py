@@ -1232,6 +1232,7 @@ class MarsConstants:
     }
 
     DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
+    AIR_DOCKER_REGISTRY = "harbor-mts.nvidia.com"
 
     DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 
@@ -1244,10 +1245,8 @@ class MarsConstants:
 
 class AppExtensionInstallationConstants:
     WJH_APP_NAME = 'what-just-happened'
-    WJH_REPOSITORY = '{}/sonic-wjh/docker-wjh'.format(MarsConstants.DOCKER_REGISTRY)
     LC_MANAGER = 'line-card-manager'
     DOAI = 'doai'
-    LC_MANAGER_REPOSITORY = '{}/sonic-lc-manager/line-card-manager'.format(MarsConstants.DOCKER_REGISTRY)
     APPLICATION_LIST = [
         P4SamplingConsts.APP_NAME,
         WJH_APP_NAME,

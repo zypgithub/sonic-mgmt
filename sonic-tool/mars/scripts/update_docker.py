@@ -347,7 +347,8 @@ def get_test_server_device(args, topo):
 
 def main():
     args = _parse_args()
-    registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
+    docker_registry = constants.AIR_DOCKER_REGISTRY if args.air_setup else constants.DOCKER_REGISTRY
+    registry_url = '{}/sonic'.format(docker_registry)
     logger.info("Default registry_url=%s" % registry_url)
     if args.registry_url:
         registry_url = args.registry_url
