@@ -866,13 +866,14 @@ def duthosts_ipv6_mgmt_only(duthosts, backup_and_restore_config_db_on_duts):
 
 
 @pytest.fixture(scope="module")
-def duthost_mgmt_ip(duthost):
+def duthost_mgmt_ip(duthosts, enum_rand_one_per_hwsku_hostname):
     """
     Gets the management IP address (v4 or v6) on eth0.
     Defaults to IPv4 on a dual stack configuration.
     """
     # For SmartSwitch DPU, the exposed mgmt IP is the switch mgmt IP with a NAT port
     # And it's IPv4 only
+    duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     if duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_dpu"):
         return {"mgmt_ip": duthost.mgmt_ip, "version": "v4"}
 
