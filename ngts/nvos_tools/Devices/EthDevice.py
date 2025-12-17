@@ -1,16 +1,24 @@
+import allure
 import logging
 import os
 from typing import List
 
+from packaging.version import Version
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, FansConsts, PlatformConsts, CumulusConsts, OperationTimeConsts, SystemConsts, ApiType
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ExpectedString
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils.nvos_config_utils import clear_cl_conf
 
 logger = logging.getLogger()
+
+# Version threshold for new authentication order format
+AUTH_ORDER_CHANGE_VERSION = '5.15.0'
 
 
 class EthSwitch(BaseSwitch):
@@ -45,15 +53,17 @@ class EthSwitch(BaseSwitch):
         return default_conf
 
     def show_setup_versions(self, dut_engine: LinuxSshEngine = None):
-        outputs = {
-            'system version': dut_engine.run_cmd('nv show system version'),
-            'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
-        }
-        res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
-        return '\n'.join(res)
+        with allure.step('Show setup versions'):
+            outputs = {
+                'system version': dut_engine.run_cmd('nv show system version'),
+                'platform firmware': dut_engine.run_cmd('nv show platform firmware'),
+            }
+            res = [f'{title.upper()}:\n{output}\n' for title, output in outputs.items()]
+            return '\n'.join(res)
 
     def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
-        clear_cl_conf(dut_engine, markers, self)
+        with allure.step('Clear config'):
+            clear_cl_conf(dut_engine, markers, self)
 
     def _init_constants(self):
         super()._init_constants()
@@ -102,10 +112,12 @@ class EthSwitch(BaseSwitch):
         })
 
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):
-        return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)
+        with allure.step('Wait for OS to become functional'):
+            return DutUtilsTool.wait_for_cumulus_to_become_functional(engine)
 
     def reload_device(self, engine, cmd_set, validate=False):
-        engine.run_cmd_set(cmd_set, validate=False)
+        with allure.step('Reload device'):
+            engine.run_cmd_set(cmd_set, validate=False)
 
     def get_mgmt_ports(self) -> List[str]:
         return self.mgmt_ports
@@ -173,10 +185,84 @@ class EthSwitch(BaseSwitch):
                                'kex-strict-s-v00@openssh.com', 'ecdh-sha2-nistp256',
                                'curve25519-sha256', 'ecdh-sha2-nistp384', 'diffie-hellman-group14-sha256',
                                'sntrup761x25519-sha512@openssh.com', 'diffie-hellman-group16-sha512']
-        self.aaa_cleanup_cmds = [
-            'nv unset system aaa authentication-order',
-            'nv config apply -y'
-        ]
+        # Use object-based cleanup instead of raw CLI commands
+        self.aaa_cleanup_function = self._cleanup_aaa_configuration
+
+    def _should_use_new_format(self, dut_engine=None):
+        """
+        Determine if we should use the new authentication order format
+        based on Cumulus Linux version (>= 5.15.0).
+
+        Args:
+            dut_engine: Optional SSH engine to use for version retrieval.
+
+        Returns:
+            bool: True if version >= 5.15.0, False otherwise
+        """
+        logger.info('EthDevice: Checking if should use new authentication order format...')
+
+        try:
+            current_version = self._get_system_version(dut_engine)
+            if not current_version:
+                logger.info('EthDevice: No version found, using LEGACY format')
+                return False
+
+            with allure.step(f'Deciding authentication order format for version {current_version}'):
+                # Use Version utility to check if version >= AUTH_ORDER_CHANGE_VERSION
+                if current_version and Version(current_version) >= Version(AUTH_ORDER_CHANGE_VERSION):
+                    logger.info(f'EthDevice: ✓ Version {current_version} >= {AUTH_ORDER_CHANGE_VERSION} - Using NEW format')
+                    return True
+                else:
+                    logger.info(f'EthDevice: Version {current_version} < {AUTH_ORDER_CHANGE_VERSION} - Using LEGACY format')
+                    return False
+
+        except Exception as e:
+            logger.exception(f'EthDevice: Exception during version check - using LEGACY format: {e}')
+            return False
+
+    def _get_system_version(self, dut_engine=None):
+        """
+        Extract version from system using nv show system version command.
+
+        Returns:
+            str: The product-release version string (e.g., '5.16.0') or None if not found
+        """
+        with allure.step('Extracting version from system version info'):
+            engine = dut_engine or (TestToolkit.engines.dut if hasattr(TestToolkit, 'engines') and TestToolkit.engines else None)
+
+            logger.info('EthDevice: Retrieving system version via nv show system version...')
+            system = System(force_api=ApiType.NVUE)
+            version_info = OutputParsingTool.parse_json_str_to_dictionary(
+                system.version.show(dut_engine=engine)
+            ).get_returned_value()
+
+            current_version = version_info.get(SystemConsts.VERSION_PRODUCT_RELEASE, "")
+            logger.info(f'EthDevice: Current product-release version: {current_version}')
+
+            if not current_version:
+                logger.info('EthDevice: No product-release version found')
+                return None
+
+            return current_version
+
+    def _cleanup_aaa_configuration(self):
+        """
+        Version-aware AAA cleanup using proper object-based configuration
+        """
+        with allure.step('Cleanup AAA configuration'):
+            try:
+                logger.info('Cleaning up AAA configuration using version-aware method')
+                system = System(force_api=ApiType.NVUE)
+
+                # Use the new version-aware unset method
+                system.aaa.authentication.unset_authentication_order(apply=True, ask_for_confirmation='-y').verify_result(should_succeed=True)
+
+            except Exception as e:
+                logger.warning(f'Error during object-based AAA cleanup, falling back to CLI: {e}')
+                # Fallback to raw CLI commands if needed
+                engine = TestToolkit.engines.dut
+                engine.run_cmd('nv unset system aaa authentication', validate=False)
+                engine.run_cmd('nv config apply -y', validate=False)
 
     def _init_password_hardening_lists(self):
         self.aaa_admin_role = 'nvue-admin'
@@ -201,20 +287,23 @@ class EthSwitch(BaseSwitch):
         super()._init_dockers()
 
     def setup_base_aaa_config(self, dut_engine: LinuxSshEngine):
-        dut_engine.run_cmd('nv set system config apply ignore "/etc/hosts"')
-        dut_engine.run_cmd("nv set system aaa role admin class nvapply")
-        dut_engine.run_cmd("nv set system aaa role admin class sudo")
-        dut_engine.run_cmd("nv set system aaa role monitor class nvshow")
-        dut_engine.run_cmd("nv config apply --assume-yes")
+        with allure.step('Setup base AAA config'):
+            dut_engine.run_cmd('nv set system config apply ignore "/etc/hosts"')
+            dut_engine.run_cmd("nv set system aaa role admin class nvapply")
+            dut_engine.run_cmd("nv set system aaa role admin class sudo")
+            dut_engine.run_cmd("nv set system aaa role monitor class nvshow")
+            dut_engine.run_cmd("nv config apply --assume-yes")
 
     def cleanup_base_aaa_config(self, dut_engine: LinuxSshEngine):
-        dut_engine.run_cmd('nv unset system config apply ignore "/etc/hosts"')
-        dut_engine.run_cmd("nv unset system aaa role admin")
-        dut_engine.run_cmd("nv unset system aaa role monitor")
-        dut_engine.run_cmd("nv config apply --assume-yes")
+        with allure.step('Cleanup base AAA config'):
+            dut_engine.run_cmd('nv unset system config apply ignore "/etc/hosts"')
+            dut_engine.run_cmd("nv unset system aaa role admin")
+            dut_engine.run_cmd("nv unset system aaa role monitor")
+            dut_engine.run_cmd("nv config apply --assume-yes")
 
     def bypass_password_on_sudo_commands(self, dut_engine: LinuxSshEngine):
-        dut_engine.run_cmd(f"echo '{dut_engine.password}' | sudo -S echo")
+        with allure.step('Bypass password on sudo commands'):
+            dut_engine.run_cmd(f"echo '{dut_engine.password}' | sudo -S echo")
 
 # -------------------------- Mlx3700 Anaconda Switch ----------------------------
 

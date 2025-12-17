@@ -1,14 +1,22 @@
+import logging
 import time
+import json
+import subprocess
 from datetime import datetime
 from typing import List
 
 import pytz
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.nvos_constants.constants_nvos import TestFlowType
+from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, TestFlowType
+from ngts.nvos_tools.acl.acl import Acl
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AaaServerManager import \
     AaaAccountingLogsFileContent, AaaServerManager
@@ -17,6 +25,22 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaa
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode
+from ngts.constants.constants import GnmiConsts
+
+logger = logging.getLogger(__name__)
+
+
+_cached_system = None
+
+
+def _get_system():
+    """Get a cached System object configured for NVUE API. Creates once, reuses thereafter."""
+    global _cached_system
+    if _cached_system is None:
+        _cached_system = System(force_api=ApiType.NVUE)
+    return _cached_system
 
 
 def check_nslcd_service(engines):
@@ -30,18 +54,19 @@ def check_nslcd_service(engines):
     with allure.step('Check nslcd service status'):
         output = engines.dut.run_cmd_after_cmd([status_cmd, exit_cmd])
         if 'Active: failed' in output:
-            logging.info('Service nslcd failed')
+            logger.info('Service nslcd failed')
             with allure.step('Restart nslcd service'):
                 engines.dut.run_cmd(restart_cmd)
             with allure.step('Check nslcd service status again'):
                 output = engines.dut.run_cmd([status_cmd, exit_cmd])
-                logging.info(f'Service nslcd is active: {"Active: active (running)" in output}')
+                logger.info(f'Service nslcd is active: {"Active: active (running)" in output}')
 
 
 def sleep_before_auth(sleep_time: int = 3):
-    wait_time_before_auth_test = sleep_time
-    logging.info(f'Wait {wait_time_before_auth_test} seconds')
-    time.sleep(wait_time_before_auth_test)
+    with allure.step(f'Wait {sleep_time} seconds before auth'):
+        wait_time_before_auth_test = sleep_time
+        logger.info(f'Wait {wait_time_before_auth_test} seconds')
+        time.sleep(wait_time_before_auth_test)
 
 
 def verify_auth_with_medium(medium, user: UserInfo, expect_login_success: bool, verify_authorization: bool, engines,
@@ -132,7 +157,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                         check_accounting(time_at_server, switch_hostname, user.username, accounting_server_mngrs,
                                          expect_accounting_logs)
 
-            logging.info('\n')
+            logger.info('\n')
 
 
 def verify_auth_mediums(test_flow: str, engines, topology_obj,
@@ -217,10 +242,11 @@ def verify_users_auth(engines, topology_obj, users: List[UserInfo], expect_login
     @param verify_authorization: Whether to verify also authorization or not (authentication test only)
     @param skip_auth_mediums: auth mediums to skip from the test (optional)
     """
-    expect_login_success = [True] * len(users) if not expect_login_success else expect_login_success
+    with allure.step('Verify users auth'):
+        expect_login_success = [True] * len(users) if not expect_login_success else expect_login_success
 
-    for i, user in enumerate(users):
-        verify_user_auth(engines, topology_obj, user, expect_login_success[i], verify_authorization, skip_auth_mediums)
+        for i, user in enumerate(users):
+            verify_user_auth(engines, topology_obj, user, expect_login_success[i], verify_authorization, skip_auth_mediums)
 
 
 def validate_users_authorization_and_role(engines, users, login_should_succeed=True, check_nslcd_if_login_failed=False):
@@ -242,7 +268,7 @@ def validate_users_authorization_and_role(engines, users, login_should_succeed=T
                     new_engine.run_cmd('')
                     # engines.dut.update_credentials(username=username, password=password)
                 except Exception:
-                    logging.info("Got an exception - can not connect to switch")
+                    logger.info("Got an exception - can not connect to switch")
                     if check_nslcd_if_login_failed:
                         check_nslcd_service(engines)
                     assert not login_should_succeed, 'Login fail, expect success'
@@ -257,11 +283,11 @@ def validate_users_authorization_and_role(engines, users, login_should_succeed=T
                         new_engine.run_cmd('sudo stat /var/log/audit.log')
 
             with allure.step("Running show command - expect: success"):
-                system = System(None)
+                system = _get_system()
                 try:
                     system.version.show(dut_engine=new_engine)
                 except Exception as ex:
-                    logging.info("Got an exception - can not run show command")
+                    logger.info("Got an exception - can not run show command")
                     raise ex
 
             is_admin = role == SystemConsts.DEFAULT_USER_ADMIN
@@ -274,40 +300,15 @@ def validate_users_authorization_and_role(engines, users, login_should_succeed=T
                 system.message.unset(op_param=SystemConsts.PRE_LOGIN_MESSAGE, apply=is_admin,
                                      dut_engine=new_engine).verify_result(should_succeed=is_admin)
 
-    # for user_info in users:
-    #     username = user_info[AaaConsts.USERNAME]
-    #     password = user_info[AaaConsts.PASSWORD]
-    #     role = user_info[AaaConsts.ROLE]
-    #
-    #     with allure.step(f'Verify authentication {username}'):
-    #         authenticator = SshAuthenticator(username, password, engines.dut.ip)
-    #         login_succeeded, _ = authenticator.attempt_login_success(logout_if_succeeded=False)
-    #         assert login_succeeded == login_should_succeed, \
-    #             f'User {username} could {"" if login_succeeded else "not "}login'
-    #
-    #     if login_should_succeed:
-    #         with allure.step(f'Verify role of {username}: {role}'):
-    #             with allure.step(f'Verify user {username} can make show command'):
-    #                 _, _, output = authenticator.send_cmd(AuthConsts.SHOW_COMMAND, AuthConsts.SWITCH_PROMPT_PATTERN)
-    #                 assert AuthConsts.PERMISSION_ERROR not in output, \
-    #                     f'User {username} do not have permission to run "{AuthConsts.SHOW_COMMAND}"'
-    #
-    #             can_set = role == AaaConsts.ADMIN
-    #             with allure.step(f'Verify user {username} can {"" if can_set else "not "}make set command'):
-    #                 _, _, output = authenticator.send_cmd(AuthConsts.SET_COMMAND, AuthConsts.SWITCH_PROMPT_PATTERN)
-    #                 cond = AuthConsts.PERMISSION_ERROR not in output if can_set else AuthConsts.PERMISSION_ERROR in output
-    #                 assert cond, f'User {username} do not have permission to run "{AuthConsts.SET_COMMAND}"'
-    #
-    #     del authenticator
-
 
 def find_server_admin_user(server_info):
-    admin_user = None
-    for user in server_info[AuthConsts.USERS]:
-        if user[AaaConsts.ROLE] == AaaConsts.ADMIN:
-            admin_user = user
-    assert admin_user, "Couldn't find admin user, check server configuration"
-    return admin_user
+    with allure.step('Find server admin user'):
+        admin_user = None
+        for user in server_info[AuthConsts.USERS]:
+            if user[AaaConsts.ROLE] == AaaConsts.ADMIN:
+                admin_user = user
+        assert admin_user, "Couldn't find admin user, check server configuration"
+        return admin_user
 
 
 def restore_original_engine_credentials(engines, devices):
@@ -315,9 +316,10 @@ def restore_original_engine_credentials(engines, devices):
     @summary:
         in this fixture we will restore default credentials to dut engine
     """
-    logging.info("Restoring default credentials, and logging in to switch")
-    engines.dut.update_credentials(username=devices.dut.default_username,
-                                   password=devices.dut.default_password)
+    with allure.step('Restore original engine credentials'):
+        logger.info("Restoring default credentials, and logging in to switch")
+        engines.dut.update_credentials(username=devices.dut.default_username,
+                                       password=devices.dut.default_password)
 
 
 def validate_authentication_fail_with_credentials(engines, username, password):
@@ -351,15 +353,15 @@ def configure_authentication(engines, devices, order=None, failthrough=None, fal
     dut_engine = engines.dut if not dut_engine else dut_engine
 
     with allure.step('Configure authentication settings'):
-        auth_obj = System().aaa.authentication
+        auth_obj = _get_system().aaa.authentication
         if order:
-            logging.info(f'Set authentication order: {order}')
+            logger.info(f'Set authentication order: {order}')
             auth_obj.set(AuthConsts.ORDER, order, dut_engine=dut_engine).verify_result()
         if failthrough:
-            logging.info(f'Set authentication failthrough: {failthrough}')
+            logger.info(f'Set authentication failthrough: {failthrough}')
             auth_obj.set(AuthConsts.FAILTHROUGH, failthrough, dut_engine=dut_engine).verify_result()
         # if fallback:
-        #     logging.info(f'Set authentication fallback: {fallback}')
+        #     logger.info(f'Set authentication fallback: {fallback}')
         #     auth_obj.set(AuthConsts.FALLBACK, fallback).verify_result()
 
     if apply:
@@ -378,17 +380,17 @@ def user_lists_difference(users_a, users_b):
         * Difference (like sets difference): A - B = all elements of A that are not in B.
         * Here, the elements are users (dictionaries {username: str, password: str, role: <admin, monitor>}),
             then the result will be all users of A, that don't have the same username as any user of B.
-    @param users_a: users list A
+        @param users_a: users list A
     @param users_b: users list B
     @return: list of the difference.
     """
     with allure.step('Get users lists difference'):
         a_usernames = [user[AaaConsts.USERNAME] for user in users_a]
         b_usernames = [user[AaaConsts.USERNAME] for user in users_b]
-        logging.info(f'A: {a_usernames}\nB: {b_usernames}')
+        logger.info(f'A: {a_usernames}\nB: {b_usernames}')
 
         usernames_diff = list(set(a_usernames) - set(b_usernames))
-        logging.info(f'Diff: {usernames_diff}')
+        logger.info(f'Diff: {usernames_diff}')
 
         return [user for user in users_a if user[AaaConsts.USERNAME] in usernames_diff]
 
@@ -403,10 +405,10 @@ def mutual_users(users_a, users_b):
     with allure.step('Get mutual users list'):
         a_usernames = [user[AaaConsts.USERNAME] for user in users_a]
         b_usernames = [user[AaaConsts.USERNAME] for user in users_b]
-        logging.info(f'A: {a_usernames}\nB: {b_usernames}')
+        logger.info(f'A: {a_usernames}\nB: {b_usernames}')
 
         mutual_usernames = list(set(a_usernames).intersection(set(b_usernames)))
-        logging.info(f'Mutual users: {mutual_usernames}')
+        logger.info(f'Mutual users: {mutual_usernames}')
 
         return [user for user in users_a if user[AaaConsts.USERNAME] in mutual_usernames]
 
@@ -435,10 +437,10 @@ def set_local_users(engines, users, apply=False):
                 password = user[AaaConsts.PASSWORD]
                 role = user[AaaConsts.ROLE]
             with allure.step(f'Set user "{username}" with role: {role}'):
-                user_obj = System(force_api=ApiType.NVUE).aaa.user.user_id[username]
-                logging.info(f'Set user: {username} , password: {password}')
+                user_obj = _get_system().aaa.user.user_id[username]
+                logger.info(f'Set user: {username} , password: {password}')
                 user_obj.set(AaaConsts.PASSWORD, password).verify_result()
-                logging.info(f'Set user: {username} , role: {role}')
+                logger.info(f'Set user: {username} , role: {role}')
                 user_obj.set(AaaConsts.ROLE, role).verify_result()
 
     if apply:
@@ -477,3 +479,888 @@ def check_ldap_user_groups_with_id(engine: ProxySshEngine, username: str, groupn
                                   f'violating groups: {violating_groups}\n'
                                   f'cmd: {cmd}\n'
                                   f'full output: {output}')
+
+
+# ==================== FIPS Mode Management Functions ====================
+
+FIPS_KEX_ALGOS = {
+    "diffie-hellman-group16-sha512",
+    "diffie-hellman-group18-sha512",
+    "diffie-hellman-group14-sha256"
+}
+
+FIPS_PUBKEY_ALGOS = {
+    "ecdsa-sha2-nistp256-cert-v01@openssh.com",
+    "ecdsa-sha2-nistp384-cert-v01@openssh.com",
+    "ecdsa-sha2-nistp521-cert-v01@openssh.com",
+    "rsa-sha2-512-cert-v01@openssh.com",
+    "rsa-sha2-256-cert-v01@openssh.com",
+    "rsa-sha2-512",
+    "rsa-sha2-256",
+    "ecdsa-sha2-nistp256",
+    "ecdsa-sha2-nistp384",
+    "ecdsa-sha2-nistp521"
+}
+
+
+def configure_ssh_server_fips_algorithms(engines):
+    """Configure SSH server algorithms required for FIPS mode"""
+    with allure.step('Configure SSH server algorithms'):
+        system = _get_system()
+
+        # Check current configuration
+        current_config = OutputParsingTool.parse_json_str_to_dictionary(system.ssh_server.show()).get_returned_value()
+        current_kex = current_config.get("kex-algorithms", [])
+        current_pubkey = current_config.get("pubkey-accepted-algorithms", [])
+
+        # Check if current configuration matches desired configuration (ignoring order)
+        kex_match = set(current_kex) == FIPS_KEX_ALGOS
+        pubkey_match = set(current_pubkey) == FIPS_PUBKEY_ALGOS
+
+        # Only apply if different
+        if not kex_match or not pubkey_match:
+            logger.info("SSH algorithms need update for FIPS compliance")
+            # Create space-separated strings from sets
+            kex_algos = " ".join(FIPS_KEX_ALGOS)
+            pubkey_algos = " ".join(FIPS_PUBKEY_ALGOS)
+
+            system.ssh_server.set("kex-algorithms", kex_algos)
+            system.ssh_server.set("pubkey-accepted-algorithms", pubkey_algos)
+            NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
+        else:
+            logger.info("SSH algorithms already configured for FIPS compliance")
+
+
+def _apply_config_with_expected_disconnect(engine, operation_name="operation"):
+    """
+    Apply config when we expect the session to disconnect (e.g., reboot, FIPS mode changes).
+    Uses send_command with short timeout and catches expected exceptions.
+    """
+    with allure.step(f'Apply config with expected disconnect ({operation_name})'):
+        try:
+            # Save original timeout
+            original_timeout = engine.engine.timeout if hasattr(engine.engine, 'timeout') else None
+
+            # Set short timeout for expected disconnect
+            if hasattr(engine.engine, 'timeout'):
+                engine.engine.timeout = 5
+
+            # Use netmiko's send_command directly
+            output = engine.engine.send_command(
+                'nv config apply -y',
+                expect_string=r'(cumulus@.*:.*\$|applied)',  # Either prompt or success message
+                max_loops=50,
+                delay_factor=0.1
+            )
+            logger.info(f"Apply output: {output}")
+
+            # Restore original timeout
+            if original_timeout is not None and hasattr(engine.engine, 'timeout'):
+                engine.engine.timeout = original_timeout
+
+            return output
+        except Exception as e:
+            # Expected - connection will be lost during reboot/disconnect
+            logger.info(f"Apply interrupted as expected during {operation_name}: {type(e).__name__}: {e}")
+
+            # Restore original timeout even on exception
+            try:
+                if original_timeout is not None and hasattr(engine.engine, 'timeout'):
+                    engine.engine.timeout = original_timeout
+            except Exception:
+                pass
+
+            return "applied (disconnected as expected)"
+
+
+def get_fips_state(engines):
+    """
+    Get and parse current FIPS mode state.
+
+    Args:
+        engines: Test engines
+
+    Returns:
+        dict: Dictionary with 'operational', 'applied', and 'pending' keys (if exists)
+              Example: {'operational': 'enabled', 'applied': 'enabled', 'pending': 'disabled'}
+              Returns empty dict if parsing fails
+    """
+    with allure.step('Get FIPS state'):
+        try:
+            current_state = engines.dut.run_cmd("nv show system security fips")
+            logger.debug(f"Raw FIPS state output:\n{current_state}")
+
+            fips_state = {}
+            lines = current_state.split('\n')
+
+            for line in lines:
+                # Skip empty lines
+                if not line.strip():
+                    continue
+
+                # Check the data line that starts with "mode"
+                if line.strip().startswith('mode'):
+                    parts = line.split()
+                    # Format: mode  operational  applied  [pending]
+                    # Parts: [0]='mode', [1]=operational_value, [2]=applied_value, [3]=pending_value (optional)
+                    if len(parts) >= 3:
+                        fips_state['operational'] = parts[1]
+                        fips_state['applied'] = parts[2]
+                        if len(parts) >= 4:
+                            fips_state['pending'] = parts[3]
+                    break
+
+            logger.info(f"Parsed FIPS state: {fips_state}")
+            return fips_state
+
+        except Exception as e:
+            logger.warning(f"Failed to parse FIPS state: {e}")
+            return {}
+
+
+def switch_fips_mode(engines, on=True, should_reboot=True, expect_disconnect=False):
+    """
+    Switch FIPS mode on or off with optional reboot.
+
+    Args:
+        engines: Test engines
+        on: If True, enable FIPS mode. If False, disable FIPS mode.
+        should_reboot: If True, apply config and reboot. If False, only set FIPS mode without applying.
+    """
+    mode_str = 'enabled' if on else 'disabled'
+    action_str = 'Enable' if on else 'Disable'
+    step_name = f'{action_str} FIPS mode' + (' with reboot' if should_reboot else ' (no reboot)')
+
+    with allure.step(step_name):
+        try:
+            # Check if FIPS is already in desired state (check operational state)
+            fips_state = get_fips_state(engines)
+            current_operational = fips_state.get('operational', '')
+
+            if current_operational == mode_str:
+                logger.info(f"FIPS mode is already {mode_str} (operational)")
+                return
+
+            logger.info(f"FIPS mode not in desired state ({mode_str}). Current state: {fips_state}")
+
+            # Configure FIPS-compliant SSH algorithms before enabling FIPS
+            if on:
+                configure_ssh_server_fips_algorithms(engines)
+
+            # Set FIPS mode to desired state
+            engines.dut.run_cmd(f"nv set system security fips mode {mode_str}")
+
+            # Verify FIPS mode is in pending state before applying
+            with allure.step(f'Verify FIPS mode change to {mode_str} is pending'):
+                pending_state = get_fips_state(engines)
+                if pending_state.get('pending') != mode_str:
+                    logger.warning(f"FIPS mode may not be in pending state. State: {pending_state}")
+                else:
+                    logger.info(f"FIPS mode {action_str.lower()} is pending, ready to apply")
+
+            if expect_disconnect:
+                # Apply config without waiting for response (reboot will disconnect)
+                _apply_config_with_expected_disconnect(engines.dut, f"FIPS {action_str.lower()}")
+            else:
+                NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
+
+            # If should_reboot is False, stop here without applying
+            if not should_reboot:
+                logger.info(f"FIPS mode set to {mode_str} (pending) without applying - reboot skipped")
+                return
+
+            # Reboot and wait for system to come back
+            logger.info(f"FIPS mode {action_str.lower()} configuration applied, system should be rebooting...")
+            _reboot_and_wait_for_system(engines)
+
+            # Verify FIPS is in desired state after reboot
+            new_state = get_fips_state(engines)
+            if new_state.get('operational') != mode_str:
+                raise Exception(f"FIPS mode not {mode_str} after reboot. Current state: {new_state}")
+
+            logger.info(f"FIPS mode {mode_str} successfully after reboot")
+
+        except Exception as e:
+            logger.error(f"Failed to {action_str.lower()} FIPS mode: {str(e)}")
+            raise
+
+
+# Backward compatibility aliases
+def enable_fips_mode(engines, should_reboot=True, expect_disconnect=False):
+    """Enable FIPS mode (wrapper for switch_fips_mode)"""
+    return switch_fips_mode(engines, on=True, should_reboot=should_reboot, expect_disconnect=expect_disconnect)
+
+
+def disable_fips_mode(engines, should_reboot=True, expect_disconnect=False):
+    """Disable FIPS mode (wrapper for switch_fips_mode)"""
+    return switch_fips_mode(engines, on=False, should_reboot=should_reboot, expect_disconnect=expect_disconnect)
+
+
+def _reboot_and_wait_for_system(engines, reboot_timeout=300, system_ready_timeout=600):
+    """Reboot the system and wait for it to become functional"""
+
+    with allure.step('Reboot system and wait for it to become ready'):
+        try:
+            # Execute reboot command
+            with allure.step('Execute reboot command'):
+                engines.dut.run_cmd("sudo reboot", timeout=10)
+
+        except Exception as e:
+            # Expected - connection will be lost during reboot
+            logger.info(f"Connection lost during reboot (expected): {str(e)}")
+
+        # Wait for system to go down
+        with allure.step('Wait for system to go down'):
+            time.sleep(30)  # Give time for reboot to start
+            ping_till_alive(should_be_alive=False, destination_host=engines.dut.ip, tries=reboot_timeout)
+
+        # Wait for system to come back up
+        with allure.step('Wait for system to come back up'):
+            ping_till_alive(should_be_alive=True, destination_host=engines.dut.ip, tries=system_ready_timeout)
+
+        # Disconnect and reconnect to refresh connection
+        with allure.step('Reconnect to system'):
+            engines.dut.disconnect()
+            time.sleep(10)  # Wait a bit before reconnecting
+
+        # Wait for NVOS to become functional
+        with allure.step('Wait for NVOS to become functional'):
+            result = DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut)
+            if not result.result:
+                raise Exception(f"System not ready after reboot: {result.info}")
+
+        logger.info("System reboot completed and NVOS is functional")
+
+
+def is_fips_enabled(engines):
+    """Check if FIPS mode is currently enabled (operational state)"""
+    with allure.step('Check if FIPS is enabled'):
+        try:
+            fips_state = get_fips_state(engines)
+            return fips_state.get('operational', '') == 'enabled'
+        except Exception as e:
+            logger.warning(f"Failed to check FIPS status: {str(e)}")
+            return False
+
+
+def get_fips_status(engines):
+    """Get current FIPS mode status (parsed dictionary)"""
+    return get_fips_state(engines)
+
+
+def change_max_files(engines, max_files=65535):
+    """
+    Edit /etc/security/limits.conf to set maximum file descriptor limits for all users.
+    Also set the current session limits using ulimit.
+    """
+    with allure.step(f'Change max files limit to {max_files}'):
+        try:
+            # Create backup of original file
+            engines.dut.run_cmd("sudo cp /etc/security/limits.conf /etc/security/limits.conf.backup")
+
+            # Add new limits for all users
+            limits_entry = f"* soft nofile {max_files}\n* hard nofile {max_files}\n"
+
+            # Read file content using sudo cat
+            current_content = engines.dut.run_cmd("sudo cat /etc/security/limits.conf")
+
+            if limits_entry not in current_content:
+                # Append the new limits to the file
+                cmd = f'echo "{limits_entry}" | sudo tee -a /etc/security/limits.conf'
+                engines.dut.run_cmd(cmd)
+                logger.info(f"Limits entry added to /etc/security/limits.conf: {limits_entry}")
+
+            # Set current session limits using ulimit
+            engines.dut.run_cmd(f"ulimit -n {max_files}")  # Set soft limit
+            engines.dut.run_cmd(f"ulimit -Hn {max_files}")  # Set hard limit
+
+            return True
+        except Exception as e:
+            logger.error(f"Error setting file descriptor limits: {str(e)}")
+            # Restore backup if operation failed
+            engines.dut.run_cmd("sudo cp /etc/security/limits.conf.backup /etc/security/limits.conf")
+            return False
+
+
+def increase_pty_limit(engines, max_ptys=65535):
+    """
+    Increase the number of PTY devices available on the system.
+    """
+    with allure.step(f'Increase PTY limit to {max_ptys}'):
+        try:
+            # Check current PTY limit
+            current_limit = engines.dut.run_cmd("cat /proc/sys/kernel/pty/max").strip()
+            logger.info(f"Current PTY limit: {current_limit}")
+
+            # Increase the limit
+            engines.dut.run_cmd(f"echo {max_ptys} | sudo tee /proc/sys/kernel/pty/max")
+
+            # Verify the new limit
+            new_limit = engines.dut.run_cmd("cat /proc/sys/kernel/pty/max").strip()
+            logger.info(f"New PTY limit: {new_limit}")
+
+            # Make the change permanent by adding to sysctl.conf
+            sysctl_entry = f"kernel.pty.max = {max_ptys}"
+
+            # Read file content using sudo cat
+            current_content = engines.dut.run_cmd("sudo cat /etc/sysctl.conf")
+
+            if sysctl_entry not in current_content:
+                engines.dut.run_cmd(f'echo "{sysctl_entry}" | sudo tee -a /etc/sysctl.conf')
+                engines.dut.run_cmd("sudo sysctl -p")
+
+            return True
+        except Exception as e:
+            logger.error(f"Error increasing PTY limit: {str(e)}")
+            return False
+
+
+# =============================================================================
+# Log Management Functions
+# =============================================================================
+
+def rotate_logs(engines):
+    """
+    Reset/rotate the logs on the DUT.
+
+    This function triggers log rotation on the device, which is useful
+    for ensuring clean log state before running verification steps.
+
+    Args:
+        engines: The test engines object containing the DUT connection
+
+    Returns:
+        Result object from the log rotation operation
+
+    Example:
+        >>> rotate_logs(engines)
+        >>> # Now logs are clean for verification
+    """
+    with allure.step('Rotate logs'):
+        system = _get_system()
+        result = system.log.rotate_logs()
+        return result
+
+
+# =============================================================================
+# Service Management Functions
+# =============================================================================
+
+def run_nginx(engines):
+    """
+    Verify and start the nginx service on the DUT if not running.
+
+    This is needed for REST API/OpenAPI testing that requires nginx.
+
+    Args:
+        engines: The test engines object containing the DUT connection
+
+    Example:
+        >>> run_nginx(engines)
+        >>> # nginx is now running and ready for API requests
+    """
+    with allure.step('Verify Nginx runs before test'):
+        nginx_status = engines.dut.run_cmd('systemctl status nginx')
+        if 'active (running)' not in nginx_status:
+            engines.dut.run_cmd('sudo systemctl start nginx')
+            logger.info("Started nginx service")
+        else:
+            logger.info("Nginx already running")
+
+
+# =============================================================================
+# SSH Key Management Functions
+# =============================================================================
+
+def add_ssh_key_to_localhost(engines, username: str) -> bool:
+    """
+    Generate an SSH key pair on the DUT and copy it to localhost for passwordless authentication.
+
+    This function:
+    1. Generates an SSH key pair on the DUT if it doesn't exist
+    2. Copies the public key to localhost for the specified user
+    3. Sets appropriate permissions on the SSH directory and files
+
+    Args:
+        engines: The test engines object containing the DUT connection information
+        username: Username to add the SSH key for
+
+    Returns:
+        True if successful, False otherwise
+
+    Example:
+        >>> success = add_ssh_key_to_localhost(engines, "admin")
+        >>> if success:
+        ...     print("SSH key added successfully")
+    """
+    with allure.step(f'Add SSH key for user "{username}" to localhost'):
+        try:
+            # Check if .ssh directory exists, create if not
+            engines.dut.run_cmd(f'sudo mkdir -p /home/{username}/.ssh')
+            engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh')
+            engines.dut.run_cmd(f'sudo chmod 700 /home/{username}/.ssh')
+
+            # Check if key already exists
+            key_exists = engines.dut.run_cmd(
+                f'test -f /home/{username}/.ssh/id_rsa && echo "exists" || echo "not exists"'
+            )
+
+            if 'exists' not in key_exists:
+                # Generate SSH key pair
+                engines.dut.run_cmd(
+                    f'sudo -u {username} ssh-keygen -t rsa -b 2048 -f /home/{username}/.ssh/id_rsa -N ""'
+                )
+                engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh/id_rsa*')
+                engines.dut.run_cmd(f'sudo chmod 600 /home/{username}/.ssh/id_rsa')
+                engines.dut.run_cmd(f'sudo chmod 644 /home/{username}/.ssh/id_rsa.pub')
+
+            # Get the public key
+            public_key = engines.dut.run_cmd(f'cat /home/{username}/.ssh/id_rsa.pub')
+
+            # Add the key to localhost's authorized_keys (root)
+            engines.dut.run_cmd('sudo mkdir -p /root/.ssh')
+            engines.dut.run_cmd('sudo touch /root/.ssh/authorized_keys')
+            engines.dut.run_cmd('sudo chmod 700 /root/.ssh')
+            engines.dut.run_cmd('sudo chmod 600 /root/.ssh/authorized_keys')
+
+            # Check if key already in authorized_keys to avoid duplicates
+            key_check = engines.dut.run_cmd(
+                f'grep -F "{public_key.strip()}" /root/.ssh/authorized_keys || echo "not found"'
+            )
+
+            if 'not found' in key_check:
+                engines.dut.run_cmd(f'echo "{public_key}" | sudo tee -a /root/.ssh/authorized_keys')
+
+            # Also add to the user's own authorized_keys for self-connection
+            engines.dut.run_cmd(f'sudo touch /home/{username}/.ssh/authorized_keys')
+            engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh/authorized_keys')
+            engines.dut.run_cmd(f'sudo chmod 600 /home/{username}/.ssh/authorized_keys')
+
+            key_check = engines.dut.run_cmd(
+                f'grep -F "{public_key.strip()}" /home/{username}/.ssh/authorized_keys || echo "not found"'
+            )
+
+            if 'not found' in key_check:
+                engines.dut.run_cmd(f'echo "{public_key}" | sudo tee -a /home/{username}/.ssh/authorized_keys')
+
+            logger.info(f"SSH key for user {username} successfully added to localhost")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to add SSH key for user {username}: {str(e)}")
+            return False
+
+
+# =============================================================================
+# SSH Configuration Functions
+# =============================================================================
+
+def change_ssh_limits(engines, max_sessions: int = 100, max_unauthenticated: int = 500,
+                      throttle_percent: int = 30, throttle_start: int = 500,
+                      additional_ports: list = None):
+    """
+    Change the SSH session limits in the sshd_config.
+
+    Args:
+        engines: The test engines object
+        max_sessions: Maximum sessions per connection (default: 100)
+        max_unauthenticated: Maximum unauthenticated session count (default: 500)
+        throttle_percent: Throttle percent for unauthenticated (default: 30)
+        throttle_start: Throttle start for unauthenticated (default: 500)
+        additional_ports: List of additional ports to add (default: None)
+
+    Example:
+        >>> change_ssh_limits(engines, additional_ports=[40, 41])
+    """
+    with allure.step('Modifying SSH session limits'):
+        # Add ACL rules for additional ports
+        if additional_ports:
+            for idx, port in enumerate(additional_ports, start=6):
+                add_ssh_port_acl(engines, port, str(idx))
+
+        system = _get_system()
+        system.ssh_server.set("max-sessions-per-connection", max_sessions)
+        system.ssh_server.set("max-unauthenticated", f'"session-count" {max_unauthenticated}')
+        system.ssh_server.set("max-unauthenticated", f'"throttle-percent" {throttle_percent}')
+        system.ssh_server.set("max-unauthenticated", f'"throttle-start" {throttle_start}')
+
+        # Build port string
+        ports = "22"
+        if additional_ports:
+            ports = ",".join(["22"] + [str(p) for p in additional_ports])
+
+        system.ssh_server.set("port", ports, apply=True, ask_for_confirmation='-y')
+
+
+def add_ssh_port_acl(engines, port: int, rule_id: str):
+    """
+    Add an ACL rule to allow traffic on a new SSH port.
+
+    Args:
+        engines: The test engines object
+        port: The port to add to the ACL
+        rule_id: The rule ID for the ACL entry
+
+    Example:
+        >>> add_ssh_port_acl(engines, 40, '6')
+    """
+    with allure.step(f'Add SSH port {port} to ACL'):
+        acl = Acl()
+        acl_rule = acl.acl_id["acl-default-whitelist"].rule.rule_id[rule_id]
+        acl_rule.match.ip.set_protocol(AclConsts.TCP)
+        acl_rule.match.ip.tcp.set("dest-port", port)
+        acl_rule.match.ip.set("connection-state", "new")
+        acl_rule.match.ip.set("connection-state", "established")
+        acl_rule.action.set('permit', apply=True)
+
+# =============================================================================
+# VRF Configuration Functions
+# =============================================================================
+
+
+def configure_non_default_vrf(engines, vrf_name='RED', interface='swp1', ip_address='192.168.100.1/24'):
+    """
+    Configure a non-default VRF for testing multi-VRF connections.
+
+    Args:
+        engines: Test engines
+        vrf_name: Name of the VRF to create
+        interface: Interface to add to the VRF
+        ip_address: IP address to assign to the interface
+
+    Returns:
+        str: The VRF name for use with ip vrf exec commands
+    """
+    with allure.step(f'Configure non-default VRF "{vrf_name}"'):
+        # Create VRF using NVUE CLI commands
+        # Step 1: Create the VRF
+        engines.dut.run_cmd(f"nv set vrf {vrf_name}")
+        logger.info(f"Created VRF {vrf_name}")
+
+        # Step 2: Set interface type to swp (switch port)
+        engines.dut.run_cmd(f"nv set interface {interface} type swp")
+
+        # Step 3: Assign interface to VRF (correct syntax: NOT under 'ip')
+        engines.dut.run_cmd(f"nv set interface {interface} vrf {vrf_name}")
+        logger.info(f"Assigned interface {interface} to VRF {vrf_name}")
+
+        # Step 4: Set IP address on the interface
+        engines.dut.run_cmd(f"nv set interface {interface} ip address {ip_address}")
+        logger.info(f"Set IP address {ip_address} on interface {interface}")
+
+        # Step 5: Apply the NVUE configuration
+        NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
+        logger.info(f"Applied VRF configuration")
+
+        # Step 5b: Save the configuration to persist across reboots
+        # This is important because FIPS enable triggers a reboot
+        engines.dut.run_cmd("nv config save -y", validate=False)
+        logger.info(f"Saved VRF configuration to persist across reboots")
+
+        # Step 6: Verify VRF configuration
+        vrf_show_output = engines.dut.run_cmd(f"nv show vrf {vrf_name}", validate=False)
+        logger.info(f"VRF {vrf_name} configuration:\n{vrf_show_output}")
+
+        logger.info(f"Configured VRF {vrf_name} on {interface} with IP {ip_address}")
+        return vrf_name
+
+
+# =============================================================================
+# gNMI Configuration Functions
+# =============================================================================
+
+def ensure_gnmic_installed():
+    """
+    Ensure gnmic is installed on the local system (test runner).
+    """
+    with allure.step('Ensure gnmic is installed'):
+        # Check if gnmic is installed
+        try:
+            # Try to run gnmic version
+            subprocess.run("gnmic version", shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            logger.info("gnmic is already installed")
+            return
+        except Exception:
+            logger.info("gnmic not found or not working, attempting installation...")
+
+        try:
+            logger.info("Installing gnmic using installation script...")
+            # Use curl to install
+            # We pipe to sudo bash to ensure we have permissions to write to /usr/local/bin
+            install_cmd = "curl -sL https://get-gnmic.openconfig.net | sudo bash"
+            subprocess.run(install_cmd, shell=True, check=True)
+
+            logger.info("gnmic installed successfully")
+        except Exception as e:
+            logger.warning(f"Failed to install gnmic via script: {e}. Trying alternative method...")
+            try:
+                # Alternative method: download binary directly
+                logger.info("Downloading gnmic binary...")
+                subprocess.run("wget https://github.com/karimra/gnmic/releases/latest/download/gnmic-linux-amd64.tar.gz", shell=True, check=True)
+                subprocess.run("tar -xzf gnmic-linux-amd64.tar.gz", shell=True, check=True)
+                subprocess.run("sudo mv gnmic /usr/local/bin/", shell=True, check=True)
+                subprocess.run("rm gnmic-linux-amd64.tar.gz", shell=True, check=False)
+                logger.info("gnmic installed successfully via binary download")
+            except Exception as e2:
+                logger.error(f"Failed to install gnmic: {e2}")
+                raise Exception("Could not install gnmic required for test12")
+
+
+def get_gnmi_subscription_count(engines):
+    """
+    Get the number of active gNMI subscriptions.
+
+    Args:
+        engines: Test engines
+
+    Returns:
+        int: Number of active subscriptions
+    """
+    with allure.step('Get gNMI subscription count'):
+        system = _get_system()
+        try:
+            # Use system object to show status
+            # This executes 'nv show system gnmi-server status' (plus json format by default in NvueGeneralCli/BaseComponent)
+            output = system.gnmi_server.show("status", dut_engine=engines.dut)
+            logger.info(f"gNMI server status output: {output}")
+            # Parse JSON output
+            status = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
+            return status.get('total-active-subscriptions', 0)
+
+        except Exception as e:
+            logger.warning(f"Failed to get gNMI server status via object: {e}")
+            # Fallback to SS command if NVUE fails or output is invalid
+            tcp_output = engines.dut.run_cmd("ss -tn 'sport = :9339' | grep ESTAB || true")
+            return len([l for l in tcp_output.strip().split('\n') if 'ESTAB' in l]) if tcp_output.strip() else 0
+
+
+def verify_gnmi_connections_active(engines, expected_subscriptions=1):
+    """
+    Verify that gNMI subscriptions are active using 'nv show system gnmi-server status'.
+    """
+    with allure.step(f'Verify gNMI subscriptions are active (expected: {expected_subscriptions})'):
+        active_subscriptions = get_gnmi_subscription_count(engines)
+        logger.info(f"Found {active_subscriptions} active gNMI subscriptions")
+
+        assert active_subscriptions >= expected_subscriptions, \
+            f"Expected at least {expected_subscriptions} gNMI subscriptions, but found {active_subscriptions}"
+
+        return active_subscriptions
+
+
+def verify_gnmi_connections_closed(engines):
+    """
+    Verify that gNMI subscriptions are closed using 'nv show system gnmi-server status'.
+    """
+    with allure.step('Verify gNMI subscriptions are closed'):
+        active_subscriptions = get_gnmi_subscription_count(engines)
+        logger.info(f"Found {active_subscriptions} active gNMI subscriptions")
+
+        assert active_subscriptions == 0, \
+            f"Expected no gNMI subscriptions, but found {active_subscriptions} active subscriptions"
+
+
+def enable_gnmi_server_with_cert(engines, cert_name="gnmi-server-cert"):
+    """
+    Enable GNMI server with a self-signed certificate and nginx authenticator.
+
+    Args:
+        engines: Test engines
+        cert_name: Name for the certificate
+
+    Returns:
+        str: The certificate name used
+    """
+    with allure.step(f'Enable GNMI server with certificate "{cert_name}"'):
+        # gNMI requires TLS certificates - username/password alone won't work
+        # We need to import or generate a certificate first
+        system = _get_system()
+
+        logger.info("Setting up self-signed certificate for gNMI server")
+
+        # Create self-signed certificate using OpenSSL on the DUT
+        # Use user home directory and SCP to avoid file permission issues with nv action import
+        # which can fail with file:// scheme due to PrivateTmp or restricted permissions
+        username = engines.dut.username
+        password = engines.dut.password
+        cert_path = f"/home/{username}/gnmi-cert.pem"
+        key_path = f"/home/{username}/gnmi-key.pem"
+
+        # Clean up any previous files
+        engines.dut.run_cmd(f"rm -f {cert_path} {key_path}")
+
+        # Delete any existing certificate with the same name before importing
+        # This prevents "certificate already exists" errors
+        engines.dut.run_cmd(f"sudo nv action delete system security certificate {cert_name}", validate=False)
+
+        engines.dut.run_cmd(
+            f"openssl req -x509 -newkey rsa:4096 -keyout {key_path} "
+            f"-out {cert_path} -days 365 -nodes "
+            f"-subj '/CN={engines.dut.ip}/O=Test/C=US'"
+        )
+
+        # Ensure gNMI authentication service is running on port 54321
+        # This is required because gNMI Envoy proxy sends auth requests to localhost:54321
+        with allure.step('Configure Nginx authentication for gNMI'):
+            gnmi_auth_config = '''server {
+  listen localhost:54321;
+  server_tokens off;
+  auth_pam               "nvueapi";
+  auth_pam_service_name  "nvueapi";
+  location /authenticate {
+    allow ::1;
+    allow 127.0.0.1;
+    deny  all;
+    add_header Content-Length 0;
+    return 204 "";
+  }
+}'''
+            engines.dut.run_cmd(f"echo '{gnmi_auth_config}' | sudo tee /etc/nginx/auth/nginx_auth_gnmi.conf > /dev/null")
+            engines.dut.run_cmd("sudo systemctl restart nginx-authenticator")
+            time.sleep(2)  # Wait for nginx to restart
+            logger.info("gNMI authentication service configured on port 54321")
+
+        # Import the certificate into NVUE using SCP (pointing to localhost)
+        # This bypasses filesystem permission issues seen with file://
+        with allure.step('Import certificate to NVUE'):
+            import_cmd = (
+                f"sudo nv action import system security certificate {cert_name} "
+                f"uri-private-key 'scp://{username}:{password}@127.0.0.1:{key_path}' "
+                f"uri-public-key 'scp://{username}:{password}@127.0.0.1:{cert_path}'"
+            )
+            engines.dut.run_cmd(import_cmd)
+
+            # Clean up cert files
+            engines.dut.run_cmd(f"rm -f {cert_path} {key_path}")
+
+        # Bind certificate to gNMI server
+        with allure.step('Enable gNMI server in NVUE'):
+            system.gnmi_server.set('certificate', cert_name, dut_engine=engines.dut, apply=False)
+            system.gnmi_server.set('listening-address', '0.0.0.0', dut_engine=engines.dut, apply=False)
+            system.gnmi_server.set('port', 9339, dut_engine=engines.dut, apply=False)
+            system.gnmi_server.set('state', 'enabled', dut_engine=engines.dut, apply=False)
+
+            NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
+
+        # Wait for GNMI server to start
+        time.sleep(5)
+
+        # Verify gNMI server is listening
+        gnmi_status = engines.dut.run_cmd("ss -tlnp | grep 9339")
+        logger.info(f"GNMI server listening on port 9339: {gnmi_status}")
+
+        logger.info("GNMI server enabled with certificate")
+        return cert_name
+
+
+def create_gnmi_client(engines, user, password):
+    """
+    Create a GNMI client instance.
+
+    Args:
+        engines: Test engines
+        user: Username for GNMI connection
+        password: Password for GNMI connection
+
+    Returns:
+        GnmiClient: The initialized GNMI client
+    """
+    with allure.step(f'Create GNMI client for user "{user}"'):
+        gnmi_client = GnmiClient(
+            engines.dut.ip,
+            GnmiConsts.GNMI_DEFAULT_PORT,
+            user,
+            password,
+            cmd_time=30  # Longer timeout for streaming
+        )
+        return gnmi_client
+
+
+def create_gnmi_subscription(gnmi_client, user, streaming=True, path='/', prefix=''):
+    """
+    Create a GNMI subscription using an existing client.
+
+    Args:
+        gnmi_client: The GnmiClient instance
+        user: Username (for logging)
+        streaming: Whether to use streaming mode (default: True)
+        path: Path to subscribe to (default: '/')
+        prefix: Prefix for subscription (default: '')
+
+    Returns:
+        subprocess.Popen: The subscription process
+    """
+    mode_str = "streaming" if streaming else "once"
+    with allure.step(f'Start GNMI subscription ({mode_str} mode) for user "{user}"'):
+        mode = GnmiMode.STREAM if streaming else GnmiMode.ONCE
+
+        # Start GNMI subscription
+        # With skip_cert_verify=True, the client will skip certificate validation
+        # but still use TLS encryption and username/password authentication
+        _, _, gnmi_subscription_process = gnmi_client.gnmic_subscribe(
+            prefix=prefix,
+            path=path,
+            mode=mode,
+            flat=True,
+            skip_cert_verify=True,
+            keep_session_alive=streaming
+        )
+
+        # Give subscription time to establish
+        time.sleep(10)  # Increased wait time for connection to establish
+
+        # Check if the gnmic process is still running
+        if gnmi_subscription_process.poll() is not None:
+            # Process terminated - get error output
+            stdout, stderr = gnmi_subscription_process.communicate()
+            logger.error(f"gNMI subscription failed to start. stdout: {stdout}, stderr: {stderr}")
+            raise Exception(f"gNMI subscription process terminated immediately. Check gNMI server configuration.")
+
+        logger.info(f"GNMI subscription started for user {user}")
+        return gnmi_subscription_process
+
+
+def create_gnmi_subscription_session(engines, user, password, streaming=True):
+    """
+    Create a GNMI subscription session (Client + Subscription).
+    Wrapper that uses create_gnmi_client and create_gnmi_subscription.
+
+    Args:
+        engines: Test engines
+        user: Username for GNMI connection
+        password: Password for GNMI connection
+        streaming: Whether to use streaming mode (default: True)
+
+    Returns:
+        tuple: (gnmi_client, gnmi_subscription_process)
+    """
+    with allure.step('Create GNMI subscription session'):
+        gnmi_client = create_gnmi_client(engines, user, password)
+        gnmi_subscription_process = create_gnmi_subscription(gnmi_client, user, streaming=streaming)
+        return gnmi_client, gnmi_subscription_process
+
+
+def disable_gnmi_server_and_cleanup(engines, cert_name="gnmi-server-cert"):
+    """
+    Disable GNMI server and cleanup certificates.
+
+    Args:
+        engines: Test engines
+        cert_name: Name of the certificate to clean up
+    """
+    with allure.step('Cleanup: Disable GNMI server and delete certificate'):
+        try:
+            system = _get_system()
+            system.gnmi_server.set('state', 'disabled', dut_engine=engines.dut, apply=False)
+            system.gnmi_server.unset('certificate', dut_engine=engines.dut, apply=False).ignore_result()
+            NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
+
+            # Delete the certificate after disabling the gNMI server
+            engines.dut.run_cmd(f"sudo nv action delete system security certificate {cert_name}", validate=False)
+
+            # Remove the gNMI auth nginx config we added
+            engines.dut.run_cmd("sudo rm -f /etc/nginx/auth/nginx_auth_gnmi.conf", validate=False)
+            engines.dut.run_cmd("sudo systemctl restart nginx-authenticator", validate=False)
+            logger.info("GNMI server disabled and certificate deleted")
+        except Exception as e:
+            logger.debug(f"Cleanup failed: {e}")

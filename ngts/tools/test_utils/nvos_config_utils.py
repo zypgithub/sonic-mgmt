@@ -16,6 +16,37 @@ from ngts.tests_nvos.general.security.authentication_restrictions.constants impo
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import (
+    get_fips_state,
+    switch_fips_mode
+)
+
+
+def _should_use_new_auth_format(dut_engine):
+    """
+    Determine if we should use the new authentication order format
+    by delegating to the device's _should_use_new_format method.
+
+    Args:
+        dut_engine: SSH engine for the DUT
+
+    Returns:
+        bool: True if new format should be used, False for legacy format
+    """
+    with allure.step('Check if should use new auth format'):
+        if not TestToolkit.is_eth_dut():
+            return False  # NVOS devices use different format
+
+        try:
+            # Delegate to the device's _should_use_new_format method
+            if hasattr(TestToolkit, 'devices') and TestToolkit.devices and hasattr(TestToolkit.devices, 'dut'):
+                return TestToolkit.devices.dut._should_use_new_format(dut_engine)
+            else:
+                logging.warning('Cleanup: TestToolkit.devices.dut not available, using LEGACY format')
+                return False
+        except Exception as e:
+            logging.warning(f'Cleanup: Exception during format check - using LEGACY format: {e}')
+            return False
 
 
 def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE, apply=False, save_conf=False):
@@ -25,28 +56,29 @@ def set_base_configurations_cl(dut_engine, timezone=LinuxConsts.ETC_UTC_TIMEZONE
             - nvos post installation steps
             - nvos clear config (post test) function
     """
-    logging.info('Set base configurations')
-    orig_api = TestToolkit.tested_api
+    with allure.step('Set base configurations CL'):
+        logging.info('Set base configurations')
+        orig_api = TestToolkit.tested_api
 
-    try:
-        logging.info('Change tested api to NVUE')
-        TestToolkit.tested_api = ApiType.NVUE
+        try:
+            logging.info('Change tested api to NVUE')
+            TestToolkit.tested_api = ApiType.NVUE
 
-        logging.info(f'Set switch timezone: {timezone}')
-        system = System()
-        system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
-        system.api.set(SystemConsts.STATE, NvosConst.ENABLED, dut_engine=dut_engine).verify_result()
+            logging.info(f'Set switch timezone: {timezone}')
+            system = System()
+            system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.ETC_UTC_TIMEZONE, dut_engine=dut_engine).verify_result()
+            system.api.set(SystemConsts.STATE, NvosConst.ENABLED, dut_engine=dut_engine).verify_result()
 
-        if apply:
-            logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='--assume-yes')
+            if apply:
+                logging.info('Apply configurations')
+                NvueGeneralCli.apply_config(engine=dut_engine, option='--assume-yes')
 
-        if save_conf:
-            logging.info('Save configurations')
-            NvueGeneralCli.save_config(dut_engine)
-    finally:
-        logging.info(f'Change tested api back to {orig_api}')
-        TestToolkit.tested_api = orig_api
+            if save_conf:
+                logging.info('Save configurations')
+                NvueGeneralCli.save_config(dut_engine)
+        finally:
+            logging.info(f'Change tested api back to {orig_api}')
+            TestToolkit.tested_api = orig_api
 
 
 def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE, apply=False, save_conf=False):
@@ -56,35 +88,36 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
             - nvos post installation steps
             - nvos clear config (post test) function
     """
-    logging.info('Set base configurations')
-    orig_api = TestToolkit.tested_api
+    with allure.step('Set base configurations'):
+        logging.info('Set base configurations')
+        orig_api = TestToolkit.tested_api
 
-    try:
-        logging.info('Change tested api to NVUE')
-        TestToolkit.tested_api = ApiType.NVUE
+        try:
+            logging.info('Change tested api to NVUE')
+            TestToolkit.tested_api = ApiType.NVUE
 
-        logging.info(f'Set switch timezone: {timezone}')
-        system = System()
-        system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE, dut_engine=dut_engine).verify_result()
+            logging.info(f'Set switch timezone: {timezone}')
+            system = System()
+            system.datetime.set(ClockConsts.TIMEZONE, LinuxConsts.JERUSALEM_TIMEZONE, dut_engine=dut_engine).verify_result()
 
-        logging.info('Set authentication restrictions configurations')
-        system.aaa.authentication.restrictions.set(RestrictionsConsts.LOCKOUT_STATE,
-                                                   RestrictionsConsts.DISABLED, dut_engine=dut_engine).verify_result()
-        system.aaa.authentication.restrictions.set(RestrictionsConsts.FAIL_DELAY, 0,
-                                                   dut_engine=dut_engine).verify_result()
+            logging.info('Set authentication restrictions configurations')
+            system.aaa.authentication.restrictions.set(RestrictionsConsts.LOCKOUT_STATE,
+                                                       RestrictionsConsts.DISABLED, dut_engine=dut_engine).verify_result()
+            system.aaa.authentication.restrictions.set(RestrictionsConsts.FAIL_DELAY, 0,
+                                                       dut_engine=dut_engine).verify_result()
 
-        RegressionConfigurations.set_base_configurations(engine=dut_engine, apply=False)
+            RegressionConfigurations.set_base_configurations(engine=dut_engine, apply=False)
 
-        if apply:
-            logging.info('Apply configurations')
-            NvueGeneralCli.apply_config(engine=dut_engine, option='-y', verify_execution=True)
+            if apply:
+                logging.info('Apply configurations')
+                NvueGeneralCli.apply_config(engine=dut_engine, option='-y', verify_execution=True)
 
-        if save_conf:
-            logging.info('Save configurations')
-            NvueGeneralCli.save_config(dut_engine)
-    finally:
-        logging.info(f'Change tested api back to {orig_api}')
-        TestToolkit.tested_api = orig_api
+            if save_conf:
+                logging.info('Save configurations')
+                NvueGeneralCli.save_config(dut_engine)
+        finally:
+            logging.info(f'Change tested api back to {orig_api}')
+            TestToolkit.tested_api = orig_api
 
 
 def clear_conf(engine, device, config_yml, root_dir):
@@ -179,9 +212,51 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
                 logging.info("Execute interface unset commands")
                 dut_engine.run_cmd(unset_iface_cmd)
 
+            # Clean up non-default VRFs
+            if 'vrf' in diff_config.keys():
+                unset_vrf_cli = "nv unset vrf"
+                unset_vrf_cmd = ""
+                vrf_config = diff_config.get('vrf', {})
+                # Unset all non-default VRFs (exclude mgmt VRF which is default)
+                unset_vrf_cmd += " ".join([f"{unset_vrf_cli} {vrf_name}; " for vrf_name in
+                                          vrf_config.keys() if vrf_name.lower() not in ['mgmt', 'default']])
+
+                if unset_vrf_cmd:
+                    logging.info("Execute VRF unset commands")
+                    dut_engine.run_cmd(unset_vrf_cmd)
+
             should_wait_for_nvued_after_apply = False
 
             if NvosConst.SYSTEM in diff_config.keys():
+                # CRITICAL: Check if FIPS is enabled and handle it first
+                system_config = diff_config.get(NvosConst.SYSTEM, {})
+                has_security_changes = 'security' in system_config
+                has_aaa_changes = NvosConst.SYSTEM_AAA in system_config
+
+                if has_security_changes or has_aaa_changes:
+                    with allure.step("Check FIPS mode before cleanup"):
+                        try:
+                            # Create engines-like object for FIPS functions
+                            # The FIPS functions expect an engines object with .dut attribute
+                            class EnginesWrapper:
+                                def __init__(self, dut_engine):
+                                    self.dut = dut_engine
+
+                            engines_wrapper = EnginesWrapper(dut_engine)
+
+                            # Get current FIPS state using the shared function
+                            fips_state = get_fips_state(engines_wrapper)
+                            is_fips_enabled = fips_state.get('operational', '') == 'enabled'
+                            logging.info(f"Current FIPS state before cleanup: {fips_state}, is_enabled: {is_fips_enabled}")
+
+                            if is_fips_enabled:
+                                # Disable FIPS mode using the shared function
+                                logging.info("FIPS mode detected, disabling with reboot before AAA cleanup")
+                                switch_fips_mode(engines_wrapper, on=False, should_reboot=True)
+                                logging.info("FIPS disabled and system rebooted successfully")
+                        except Exception as e:
+                            logging.warning(f"Failed to check/disable FIPS mode during cleanup: {e}")
+
                 with allure.step("Unset each system 'set' command"):
                     unset_system_cli = "nv unset system"
                     should_wait_for_nvued_after_apply = NvosConst.SYSTEM_AAA in diff_config[
@@ -195,7 +270,6 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
 
                     unset_cli_cmd = ""
 
-                    system_config = diff_config.get(NvosConst.SYSTEM, {})
                     aaa_config = system_config.get(NvosConst.SYSTEM_AAA, {})
                     user_config = aaa_config.get(NvosConst.SYSTEM_AAA_USER, {})
 
@@ -215,20 +289,43 @@ def clear_cl_conf(dut_engine, markers=None, dut=None):
                             logging.info(f"killing user: {user}")
                             dut_engine.run_cmd(f'sudo pkill -9 -u {user}')
 
-                    # unset system aaa components
+                    # STEP 1: Unset authentication order FIRST (if it exists) and apply separately
+                    # This is critical for FIPS mode compatibility
+                    has_auth_order = (NvosConst.SYSTEM_AUTHENTICATION in aaa_config or
+                                      "authentication-order" in aaa_config)
+
+                    if has_auth_order:
+                        with allure.step("Unset authentication order FIRST (before other AAA components)"):
+                            auth_order_cmd = ""
+                            if _should_use_new_auth_format(dut_engine):
+                                # New format (>= 5.15.0): nv unset system aaa authentication
+                                auth_order_cmd = f"{unset_system_cli} {NvosConst.SYSTEM_AAA} {NvosConst.SYSTEM_AUTHENTICATION}"
+                            else:
+                                # Legacy format (< 5.15.0): nv unset system aaa authentication-order
+                                auth_order_cmd = f"{unset_system_cli} {NvosConst.SYSTEM_AAA} authentication-order"
+
+                            logging.info(f"Unsetting authentication order FIRST: {auth_order_cmd}")
+                            dut_engine.run_cmd(auth_order_cmd)
+
+                            # Apply auth order unset separately
+                            logging.info("Applying authentication order unset")
+                            NvueGeneralCli.apply_config(dut_engine, ask_for_confirmation=True)
+                            logging.info("Authentication order unset and applied successfully")
+
+                    # STEP 2: Now unset all other AAA components (except auth order which we already unset)
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {NvosConst.SYSTEM_AAA} {aaa_comp}; " for
                                                aaa_comp in aaa_config.keys() if
-                                               aaa_comp != "authentication-order" and
+                                               aaa_comp != "authentication-order" and  # Skip old format (already unset)
+                                               aaa_comp != NvosConst.SYSTEM_AUTHENTICATION and  # Skip new format (already unset)
                                                aaa_comp != NvosConst.SYSTEM_AAA_USER and
                                                aaa_comp != NvosConst.SYSTEM_AAA_CLASS and
                                                aaa_comp != NvosConst.SYSTEM_AAA_ROLE])
-                    unset_cli_cmd += f"{unset_system_cli} {NvosConst.SYSTEM_AAA} authentication-order;"
 
                     # unset other system components
                     unset_cli_cmd += " ".join([f"{unset_system_cli} {set_comp_name}; " for set_comp_name in
                                                system_config.keys() if set_comp_name != NvosConst.SYSTEM_AAA])
 
-                    logging.info("Execute system unset commands")
+                    logging.info("Execute remaining system unset commands")
                     dut_engine.run_cmd(unset_cli_cmd)
 
                 with allure.step("Set base configurations"):

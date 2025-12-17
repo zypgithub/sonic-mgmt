@@ -15,6 +15,7 @@ from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.constants import SecurityConsts
 from ngts.tools.test_utils.nvos_general_utils import get_version_info
+from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
 
@@ -129,6 +130,21 @@ class BaseDevice(ABC):
     def _init_password_hardening_lists(self):
         self.local_test_users = []
 
+    def _should_use_new_format(self, dut_engine=None):
+        """
+        Determines if the device should use new format/methods.
+        Default implementation returns False.
+        Override in subclasses to enable new format support.
+
+        Args:
+            dut_engine: Optional SSH engine to use for version checks.
+                       If None, implementations may use TestToolkit.engines.dut.
+
+        Returns:
+            bool: True if new format should be used, False otherwise.
+        """
+        return False
+
     def _init_boot_time_timeouts(self):
         self.timeout_system_is_ready = 5 * MINUTE
         self.timeout_reboot_to_grub_menu = 3 * MINUTE
@@ -194,64 +210,68 @@ class BaseDevice(ABC):
         :param dut_engine: ssh dut engine
         Return result_obj with True result if all tables exists, False and a relevant info if one or more tables are missing
         """
-        time.sleep(10)
-        result_obj = ResultObj(True, "")
-        for db_name, db_id in self.available_databases.items():
-            if db_name == DatabaseConst.STATE_DB_NAME:
-                continue
+        with allure.step('Verify databases'):
+            time.sleep(10)
+            result_obj = ResultObj(True, "")
+            for db_name, db_id in self.available_databases.items():
+                if db_name == DatabaseConst.STATE_DB_NAME:
+                    continue
 
-            for database_docker in self.available_tables.keys():
-                table_info = self.available_tables[database_docker][db_id]
-                for table_name, expected_entries in table_info.items():
-                    output = self.get_all_table_names_in_database(dut_engine, db_name, table_name,
-                                                                  database_docker=database_docker).returned_value
-                    if len(output) < expected_entries:
-                        result_obj.result = False
-                        result_obj.info += "Database docker: {database_docker} DB: {db_name}, Table: {table_name}. Table count mismatch, Expected: {expected} != Actual {actual}\n" \
-                            .format(database_docker=database_docker, db_name=db_name, table_name=table_name,
-                                    expected=str(expected_entries),
-                                    actual=str(len(output)))
+                for database_docker in self.available_tables.keys():
+                    table_info = self.available_tables[database_docker][db_id]
+                    for table_name, expected_entries in table_info.items():
+                        output = self.get_all_table_names_in_database(dut_engine, db_name, table_name,
+                                                                      database_docker=database_docker).returned_value
+                        if len(output) < expected_entries:
+                            result_obj.result = False
+                            result_obj.info += "Database docker: {database_docker} DB: {db_name}, Table: {table_name}. Table count mismatch, Expected: {expected} != Actual {actual}\n" \
+                                .format(database_docker=database_docker, db_name=db_name, table_name=table_name,
+                                        expected=str(expected_entries),
+                                        actual=str(len(output)))
 
-        return result_obj
+            return result_obj
 
     def verify_dockers(self, dut_engine, dockers_list=""):
         """
         Validate existing dockers
         """
-        result_obj = ResultObj(True, "")
-        cmd_output = dut_engine.run_cmd('docker ps --format \"table {{.Names}}\"')
-        list_of_dockers = dockers_list or self.available_dockers
-        for docker in list_of_dockers:
-            if docker not in cmd_output:
-                result_obj.result = False
-                result_obj.info += "{} docker is not active.\n".format(docker)
+        with allure.step('Verify dockers'):
+            result_obj = ResultObj(True, "")
+            cmd_output = dut_engine.run_cmd('docker ps --format \"table {{.Names}}\"')
+            list_of_dockers = dockers_list or self.available_dockers
+            for docker in list_of_dockers:
+                if docker not in cmd_output:
+                    result_obj.result = False
+                    result_obj.info += "{} docker is not active.\n".format(docker)
 
-        return result_obj
+            return result_obj
 
     def verify_services(self, dut_engine):
         """
         Validate expected dockers
         """
-        result_obj = ResultObj(True, "")
-        for service in self.available_services:
-            cmd_output = dut_engine.run_cmd('systemctl --type=service | grep -E "{}"'.format(service))
-            if NvosConst.SERVICE_STATUS_ACTIVE not in cmd_output:
+        with allure.step('Verify services'):
+            result_obj = ResultObj(True, "")
+            for service in self.available_services:
+                cmd_output = dut_engine.run_cmd('systemctl --type=service | grep -E "{}"'.format(service))
+                if NvosConst.SERVICE_STATUS_ACTIVE not in cmd_output:
+                    result_obj.result = False
+                    result_obj.info += "{} service is not active. {} \n".format(service, cmd_output)
+
+            temp_res = self.verify_nvue_service(dut_engine)
+            if not temp_res.result:
                 result_obj.result = False
-                result_obj.info += "{} service is not active. {} \n".format(service, cmd_output)
+                result_obj.info += temp_res.info
 
-        temp_res = self.verify_nvue_service(dut_engine)
-        if not temp_res.result:
-            result_obj.result = False
-            result_obj.info += temp_res.info
-
-        return result_obj
+            return result_obj
 
     def verify_nvue_service(self, dut_engine):
-        logging.info("Verify nvued service is active")
-        nvued_cmd_output = dut_engine.run_cmd_after_cmd(["sudo systemctl status nvued", 'q'])
-        if NvosConst.SERVICE_STATUS_ACTIVE not in nvued_cmd_output:
-            return ResultObj(False, "nvued service is not active. info: {}".format(nvued_cmd_output))
-        return ResultObj(True)
+        with allure.step('Verify nvue service'):
+            logging.info("Verify nvued service is active")
+            nvued_cmd_output = dut_engine.run_cmd_after_cmd(["sudo systemctl status nvued", 'q'])
+            if NvosConst.SERVICE_STATUS_ACTIVE not in nvued_cmd_output:
+                return ResultObj(False, "nvued service is not active. info: {}".format(nvued_cmd_output))
+            return ResultObj(True)
 
     def get_database_id(self, db_name):
         return self.available_databases[db_name]
@@ -263,18 +283,19 @@ class BaseDevice(ABC):
         :param table_name_substring: full or partial table name
         :return: any database table that includes the substring, if table_name_substring is none we will return all the tables
         """
-        result_obj = ResultObj(True, "")
-        # docker_exec_cmd = 'docker exec -it {database_docker} '.format(database_docker=database_docker) if database_docker else ''
-        output = DatabaseTool.sonic_db_run_get_keys_in_docker(
-            docker_name=database_docker if database_docker else '', engine=engine, asic="",
-            db_name=DatabaseConst.REDIS_DB_NUM_TO_NAME[self.get_database_id(database_name)],
-            grep_str=table_name_substring)
+        with allure.step('Get all table names in database'):
+            result_obj = ResultObj(True, "")
+            # docker_exec_cmd = 'docker exec -it {database_docker} '.format(database_docker=database_docker) if database_docker else ''
+            output = DatabaseTool.sonic_db_run_get_keys_in_docker(
+                docker_name=database_docker if database_docker else '', engine=engine, asic="",
+                db_name=DatabaseConst.REDIS_DB_NUM_TO_NAME[self.get_database_id(database_name)],
+                grep_str=table_name_substring)
 
-        # cmd = docker_exec_cmd + "redis-cli -n {database_name} keys * | grep {prefix}".format(
-        #    database_name=self.get_database_id(database_name), prefix=table_name_substring)
-        # output = engine.run_cmd(cmd)
-        result_obj.returned_value = output.splitlines()
-        return result_obj
+            # cmd = docker_exec_cmd + "redis-cli -n {database_name} keys * | grep {prefix}".format(
+            #    database_name=self.get_database_id(database_name), prefix=table_name_substring)
+            # output = engine.run_cmd(cmd)
+            result_obj.returned_value = output.splitlines()
+            return result_obj
 
     @abstractmethod
     def wait_for_os_to_become_functional(self, engine, find_prompt_tries=60, find_prompt_delay=10):

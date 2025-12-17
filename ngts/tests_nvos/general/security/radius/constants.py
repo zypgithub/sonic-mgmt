@@ -3,6 +3,7 @@ from ngts.tests_nvos.general.security.security_test_tools.constants import AaaCo
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RadiusServerInfo, \
     UsersPerAuthMedium
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.tests_nvos.general.security.security_test_tools.constants import CLAaaConsts
 
 
 class RadiusConsts:
@@ -127,6 +128,67 @@ class RadiusPhysicalServer:
         AddressingType.IPV4: SERVER_IPV4,
         # AddressingType.IPV6: SERVER_IPV6,
         # AddressingType.DN: SERVER_DN
+    }
+
+
+class CLRadiusPhysicalServer:
+    """Cumulus Linux RADIUS Physical Server - Updated for working RADIUS server"""
+    USERS = [
+        UserInfo(
+            username='clradiusadmin1',
+            password='clradiusadmin1',
+            role=AaaConsts.ADMIN
+        ),
+        UserInfo(
+            username='clradiusmonitor1',
+            password='clradiusmonitor1',
+            role=AaaConsts.MONITOR
+        ),
+        UserInfo(
+            username='clradiusadmin2',
+            password='clradiusadmin2',
+            role=AaaConsts.ADMIN
+        ),
+        UserInfo(
+            username='clradiusmonitor2',
+            password='clradiusmonitor2',
+            role=AaaConsts.MONITOR
+        ),
+    ]
+
+    users_per_medium: UsersPerAuthMedium = {
+        AuthMedium.SSH: {
+            UserRole.ADMIN: [UserInfo('clradiusadmin1', 'clradiusadmin1', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('clradiusmonitor1', 'clradiusmonitor1', UserRole.MONITOR)],
+        },
+        AuthMedium.OPENAPI: {
+            UserRole.ADMIN: [UserInfo('clradiusadmin1', 'clradiusadmin1', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('clradiusmonitor1', 'clradiusmonitor1', UserRole.MONITOR)],
+        },
+        AuthMedium.RCON: {
+            UserRole.ADMIN: [UserInfo('clradiusadmin1', 'clradiusadmin1', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('clradiusmonitor1', 'clradiusmonitor1', UserRole.MONITOR)],
+        },
+        AuthMedium.SCP: {
+            UserRole.ADMIN: [UserInfo('clradiusadmin1', 'clradiusadmin1', UserRole.ADMIN)],
+            UserRole.MONITOR: [UserInfo('clradiusmonitor1', 'clradiusmonitor1', UserRole.MONITOR)],
+        }
+    }
+
+    SERVER_IPV4 = RadiusServerInfo(
+        hostname=CLAaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
+        priority=1,
+        secret='testing123',
+        port=1812,
+        timeout=5,
+        auth_type=AaaConsts.PAP,
+        users=USERS,
+        ipv4_addr=CLAaaConsts.PHYSICAL_AAA_SERVER_IPV4_ADDR,
+        users_per_auth_medium=users_per_medium
+    )
+
+    SERVER_BY_ADDRESSING_TYPE = {
+        AddressingType.IPV4: SERVER_IPV4,
     }
 
 

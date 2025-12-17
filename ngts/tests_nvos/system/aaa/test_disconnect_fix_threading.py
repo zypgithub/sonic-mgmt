@@ -1,32 +1,47 @@
 import logging
 import pytest
 import time
-from ngts.nvos_constants.constants_nvos import AclConsts
-from ngts.nvos_constants.constants_nvos import ActionType, ApiType
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+
+from ngts.nvos_constants.constants_nvos import ActionType, ApiType, CumulusConsts, RbacConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
-from ngts.nvos_tools.system.Ssh import Ssh
-from ngts.nvos_tools.acl.acl import Acl
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import CumulusConsts, RbacConsts
-from netmiko.ssh_exception import NetmikoAuthenticationException
-from infra.tools.exceptions.test_issue import TestIssue
-import threading
-from collections import defaultdict
-import time
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiCommandHelper
-from ngts.nvos_constants.constants_nvos import OpenApiReqType
-from ngts.tests_nvos.general.security.radius.constants import RadiusPhysicalServer
+from ngts.tests_nvos.general.security.radius.constants import CLRadiusPhysicalServer
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+
+# Import shared utilities
+from ngts.nvos_tools.infra.SessionManager import SessionManager
+from ngts.nvos_tools.system.UserManager import (
+    create_user,
+    add_user_with_system_admin,
+    add_user_with_sudo,
+    get_all_users,
+    get_user_role
+)
+from ngts.tests_nvos.general.security.security_test_tools.aaa_server_config import (
+    configure_radius_server as config_radius_server_base,
+    set_authentication_order as set_radius_order,
+    unset_authentication_order as unset_radius_order
+)
+from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import (
+    change_max_files,
+    increase_pty_limit,
+    rotate_logs,
+    run_nginx,
+    add_ssh_key_to_localhost,
+    change_ssh_limits as change_ssh_limits_base,
+    add_ssh_port_acl
+)
 
 logger = logging.getLogger(__name__)
 
+# Constants
 NOT_LOGGED_IN_ERROR_MSG = "User %s is not logged in"
 NOT_EXIST_ERROR_MSG = "User %s is not Exists"
 FORBIDDEN_MESSAGE = "Forbidden: You don't have the permission to access the requested resource."
@@ -35,9 +50,9 @@ ACTION_ERROR_MSG = "action_error: Only users with sudo class or system-admin cla
 SESSIONS_DELAY = 0.5
 NEW_SSH_PORT1 = 40
 NEW_SSH_PORT2 = 41
-threads = []
-sessions_dict = defaultdict(list)
-sessions_dict_lock = threading.Lock()
+
+# Global session manager instance
+session_mgr = SessionManager()
 cli_common = None
 
 
@@ -55,8 +70,8 @@ def module_fixture(engines):
 
 
 @pytest.fixture(scope='function', autouse=False)
-def change_ssh():
-    change_ssh_limits()
+def change_ssh(engines):
+    change_ssh_limits(engines)
     yield
 
 
@@ -66,351 +81,31 @@ def func_fixture(engines):
     yield
 
     ResultObj._pop_all_instances()
-    threads.clear()
-    sessions_dict.clear()
+    session_mgr.clear()
 
 
-def rotate_logs(engines):
-    """
-    Reset the logs on the DUT.
-    args:
-        engines: The engines object
-    """
-    system = System(force_api=ApiType.NVUE)
-    result = system.log.rotate_logs()
-    return result
+# Provide direct access to sessions_dict from session_mgr
+sessions_dict = session_mgr.sessions_dict
 
 
-def resest_channels():
-    """
-    Reset the channels on the DUT.
-    """
-    all_sessions = []
-    for sessions in sessions_dict.values():
-        all_sessions.extend(sessions)
-    for session in all_sessions:
-        session.engine.read_channel()
-
-
-def change_ssh_limits():
-    """
-    Change the SSH session limits in the sshd_config file.
-
-    Args:
-        number: The number to set for MaxSessions and calculate MaxStartups values
-    """
-    with allure.step('Modifying SSH session limits'):
-        add_ssh_port(NEW_SSH_PORT1, '6')
-        add_ssh_port(NEW_SSH_PORT2, '7')
-        system = System(force_api=ApiType.NVUE)
-        system.ssh_server.set("max-sessions-per-connection", 100)
-        system.ssh_server.set("max-unauthenticated", f'"session-count" 500')
-        system.ssh_server.set("max-unauthenticated", f'"throttle-percent" 30')
-        system.ssh_server.set("max-unauthenticated", f'"throttle-start" 500')
-        system.ssh_server.set("port", f"22,{NEW_SSH_PORT1},{NEW_SSH_PORT2}", apply=True, ask_for_confirmation='-y')
-
-
-def add_ssh_port(port, rule_id):
-    """
-    Add a new SSH port to the sshd_config file.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        port: The port to add to the sshd_config file
-        rule_id: The rule ID to add to the sshd_config file
-    """
-    with allure.step('Add a new SSH port to the nv config'):
-        acl = Acl()
-        acl_rule = acl.acl_id["acl-default-whitelist"].rule.rule_id[rule_id]
-        acl_rule.match.ip.set_protocol(AclConsts.TCP)
-        acl_rule.match.ip.tcp.set("dest-port", port)
-        acl_rule.match.ip.set("connection-state", "new")
-        acl_rule.match.ip.set("connection-state", "established")
-        acl_rule.action.set('permit', apply=True)
+def change_ssh_limits(engines):
+    """Change the SSH session limits - using shared utility."""
+    change_ssh_limits_base(engines, additional_ports=[NEW_SSH_PORT1, NEW_SSH_PORT2])
 
 
 def check_error_message(response):
-    """
-    Check if the error message is in the response.
-    Args:
-        response: The response from the API
-    """
-    assert (ACTION_ERROR_MSG in response or FORBIDDEN_MESSAGE in response), f"Expected '{ACTION_ERROR_MSG}' or '{FORBIDDEN_MESSAGE}' error, got: {response}"
-
-
-def change_max_files(engines, max_files=65535):
-    """
-    Edit /etc/security/limits.conf to set maximum file descriptor limits for all users.
-    Also set the current session limits using ulimit.
-
-    Args:
-        max_files (int): Maximum number of file descriptors to set. Default is 65535.
-
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    try:
-        # Create backup of original file
-        engines.dut.run_cmd("sudo cp /etc/security/limits.conf /etc/security/limits.conf.backup")
-
-        # Add new limits for all users
-        limits_entry = f"* soft nofile {max_files}\n* hard nofile {max_files}\n"
-
-        if limits_entry not in cli_common.read_file('/etc/security/limits.conf', is_sudo=True):
-            # Append the new limits to the file
-            cmd = f'echo "{limits_entry}" | sudo tee -a /etc/security/limits.conf'
-            engines.dut.run_cmd(cmd)
-            logger.info(f"Limits entry added to /etc/security/limits.conf: {limits_entry}")
-
-        # Set current session limits using ulimit
-        engines.dut.run_cmd(f"ulimit -n {max_files}")  # Set soft limit
-        engines.dut.run_cmd(f"ulimit -Hn {max_files}")  # Set hard limit
-
-        # Verify the limits were set correctly
-        soft_limit = engines.dut.run_cmd("ulimit -n").strip()
-        hard_limit = engines.dut.run_cmd("ulimit -Hn").strip()
-        logger.info(f"Current file descriptor limits - Soft: {soft_limit}, Hard: {hard_limit}")
-
-        return True
-    except Exception as e:
-        logger.error(f"Error setting file descriptor limits: {str(e)}")
-        # Restore backup if operation failed
-        engines.dut.run_cmd("sudo cp /etc/security/limits.conf.backup /etc/security/limits.conf")
-        return False
-
-
-def increase_pty_limit(engines, max_ptys=65535):
-    """
-    Increase the number of PTY devices available on the system.
-
-    Args:
-        engines: The test engines object containing the DUT connection information
-        max_ptys (int): Maximum number of PTY devices to set. Default is 65535.
-
-    Returns:
-        bool: True if successful, False otherwise.
-    """
-    try:
-        # Check current PTY limit
-        current_limit = engines.dut.run_cmd("cat /proc/sys/kernel/pty/max").strip()
-        logger.info(f"Current PTY limit: {current_limit}")
-
-        # Increase the limit
-        engines.dut.run_cmd(f"echo {max_ptys} | sudo tee /proc/sys/kernel/pty/max")
-
-        # Verify the new limit
-        new_limit = engines.dut.run_cmd("cat /proc/sys/kernel/pty/max").strip()
-        logger.info(f"New PTY limit: {new_limit}")
-
-        # Make the change permanent by adding to sysctl.conf
-        sysctl_entry = f"kernel.pty.max = {max_ptys}"
-        if sysctl_entry not in cli_common.read_file('/etc/sysctl.conf', is_sudo=True):
-            engines.dut.run_cmd(f'echo "{sysctl_entry}" | sudo tee -a /etc/sysctl.conf')
-            engines.dut.run_cmd("sudo sysctl -p")
-
-        return True
-    except Exception as e:
-        logger.error(f"Error increasing PTY limit: {str(e)}")
-        return False
-
-
-def add_ssh_key_to_localhost(engines, username):
-    """
-    Generate an SSH key pair on the DUT and copy it to localhost for passwordless authentication.
-
-    This function:
-    1. Generates an SSH key pair on the DUT if it doesn't exist
-    2. Copies the public key to localhost for the specified user
-    3. Sets appropriate permissions on the SSH directory and files
-
-    Args:
-        engines: The test engines object containing the DUT connection information
-        username (str): Username to add the SSH key for
-        password (str, optional): Password for the user if needed for authentication
-
-    Returns:
-        bool: True if successful, False otherwise
-
-    Example:
-        >>> success = add_ssh_key_to_localhost(engines, "admin")
-        >>> if success:
-        >>>     print("SSH key added successfully")
-    """
-    with allure.step(f'Add SSH key for user "{username}" to localhost'):
-        try:
-            # Check if .ssh directory exists, create if not
-            engines.dut.run_cmd(f'sudo mkdir -p /home/{username}/.ssh')
-            engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh')
-            engines.dut.run_cmd(f'sudo chmod 700 /home/{username}/.ssh')
-
-            # Check if key already exists
-            key_exists = engines.dut.run_cmd(f'test -f /home/{username}/.ssh/id_rsa && echo "exists" || echo "not exists"')
-
-            if 'exists' not in key_exists:
-                # Generate SSH key pair
-                engines.dut.run_cmd(f'sudo -u {username} ssh-keygen -t rsa -b 2048 -f /home/{username}/.ssh/id_rsa -N ""')
-                engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh/id_rsa*')
-                engines.dut.run_cmd(f'sudo chmod 600 /home/{username}/.ssh/id_rsa')
-                engines.dut.run_cmd(f'sudo chmod 644 /home/{username}/.ssh/id_rsa.pub')
-
-            # Get the public key
-            public_key = engines.dut.run_cmd(f'cat /home/{username}/.ssh/id_rsa.pub')
-
-            # Add the key to localhost's authorized_keys
-            engines.dut.run_cmd(f'sudo mkdir -p /root/.ssh')
-            engines.dut.run_cmd(f'sudo touch /root/.ssh/authorized_keys')
-            engines.dut.run_cmd(f'sudo chmod 700 /root/.ssh')
-            engines.dut.run_cmd(f'sudo chmod 600 /root/.ssh/authorized_keys')
-
-            # Check if key already in authorized_keys to avoid duplicates
-            key_check = engines.dut.run_cmd(f'grep -F "{public_key.strip()}" /root/.ssh/authorized_keys || echo "not found"')
-
-            if 'not found' in key_check:
-                engines.dut.run_cmd(f'echo "{public_key}" | sudo tee -a /root/.ssh/authorized_keys')
-
-            # Also add to the user's own authorized_keys for self-connection
-            engines.dut.run_cmd(f'sudo touch /home/{username}/.ssh/authorized_keys')
-            engines.dut.run_cmd(f'sudo chown {username}:{username} /home/{username}/.ssh/authorized_keys')
-            engines.dut.run_cmd(f'sudo chmod 600 /home/{username}/.ssh/authorized_keys')
-
-            key_check = engines.dut.run_cmd(f'grep -F "{public_key.strip()}" /home/{username}/.ssh/authorized_keys || echo "not found"')
-
-            if 'not found' in key_check:
-                engines.dut.run_cmd(f'echo "{public_key}" | sudo tee -a /home/{username}/.ssh/authorized_keys')
-
-            logger.info(f"SSH key for user {username} successfully added to localhost")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to add SSH key for user {username}: {str(e)}")
-            return False
-
-
-def run_nginx(engines):
-    """
-    Run the nginx service on the DUT.
-    """
-    # Verify Nginx runs
-    with allure.step('Verify Nginx runs before test'):
-        nginx_status = engines.dut.run_cmd('systemctl status nginx')
-        if not 'active (running)' in nginx_status:
-            engines.dut.run_cmd('sudo systemctl start nginx')
-
-
-def create_user(system, username, password=None, apply=False):
-    """
-    Create a new user in the system with specified or randomly generated credentials.
-
-    This function creates a new user in the system using the AAA user management interface.
-    If no password is provided, a random password will be generated. The function can either
-    apply the changes immediately or defer the application based on the apply parameter.
-
-    Args:
-        system: System object that provides AAA user management functionality
-        username (str): The username to create
-        password (str, optional): Password for the user. If None, a random password will be generated
-        apply (bool, optional): Whether to apply the changes immediately. Defaults to True
-
-    Returns:
-        tuple: A tuple containing (username, password) where:
-            - username (str): The created username
-            - password (str): The password for the user (either provided or generated)
-
-    Example:
-        >>> system = System()
-        >>> username, password = create_user(system, "testuser")
-        >>> print(f"Created user {username} with password {password}")
-    """
-    with allure.step(f'Create user "{username}"'):
-        # Generate random password if not provided
-        if password is None:
-            username, password = system.aaa.user.set_new_user(username=username, apply=apply)
-        else:
-            username, _ = system.aaa.user.set_new_user(username=username, password=password, apply=apply)
-        return username, password
+    """Check if the error message is in the response."""
+    assert (ACTION_ERROR_MSG in response or FORBIDDEN_MESSAGE in response), \
+        f"Expected '{ACTION_ERROR_MSG}' or '{FORBIDDEN_MESSAGE}' error, got: {response}"
 
 
 def disconnect_user_open_api(engines, disconnect_user, disconnect_pass, user_to_disconnect=None):
-    """
-    Disconnect a user using the REST API.
-    """
+    """Disconnect a user using the REST API."""
     params = {"state": "start"}
     path = f'/system/aaa/user/{user_to_disconnect}' if user_to_disconnect else '/system/aaa/user'
     response = OpenApiCommandHelper.execute_action(ActionType.DISCONNECT, disconnect_user, disconnect_pass,
                                                    engines.dut.ip, engines.dut.open_api_port, path, params=params)
     return response
-
-
-def create_session(engines, user, password, port=22):
-    """
-    Create a single SSH session for a user with retry mechanism.
-
-    Args:
-        engines: The test engines object containing the DUT connection information
-        user (str): Username to create the session for
-        password (str): Password for the user
-
-    Returns:
-        ConnectionTool: An SSH session object for the specified user
-        port (int): Port to connect to
-    Example:
-        >>> session = create_session(engines, "admin", "password123")
-        >>> session.run_cmd("show version")
-    """
-    with allure.step(f'Create session for user "{user}"'):
-        max_retries = 5
-        retry_count = 0
-
-        while retry_count < max_retries:
-            try:
-                session_result = ConnectionTool.create_ssh_conn(engines.dut.ip, user, password, port, retry=False)
-                if session_result.result:
-                    session = session_result.get_returned_value()
-                    with sessions_dict_lock:
-                        sessions_dict[user].append(session)
-                    return session
-            except Exception as e:
-                retry_count += 1
-                if retry_count == max_retries:
-                    raise  # Re-raise the last exception if we've exhausted all retries
-                logger.warning(f"Authentication failed for user {user}, attempt {retry_count} of {max_retries} with error: {str(e)}")
-            time.sleep(1)  # Add a small delay between retries
-
-
-def create_session_thread(engines, user, password, port=22):
-    thread = threading.Thread(target=create_session, args=(engines, user, password, port))
-    threads.append(thread)
-    thread.start()
-
-
-def wait_for_sessions_threads():
-    for thread in threads:
-        thread.join()
-
-
-def create_sessions(engines, user, password, count, port=22, sleep=0):
-    """
-    Create multiple sessions for a user by calling create_session count times.
-
-    Args:
-        engines: The test engines object containing the DUT connection information
-        user (str): Username to create the sessions for
-        password (str): Password for the user
-        count (int): Number of sessions to create
-
-    Returns:
-        list: List of ConnectionTool objects representing the created SSH sessions
-
-    Example:
-        >>> sessions = create_sessions(engines, "admin", "password123", 3)
-        >>> for session in sessions:
-        ...     session.run_cmd("show version")
-    """
-    with allure.step(f'Create {count} sessions for user "{user}"'):
-        # Create sessions with a delay between them to avoid overwhelming the system
-        for i in range(count):
-            create_session_thread(engines, user, password, port)
-            time.sleep(sleep)
 
 
 def disconnect_user(session, user=None, force_foreground=False, validate=True, serial_engine=False, retry_run=True):
@@ -477,62 +172,6 @@ def disconnect_user_serial_connection(session, user=None, force_foreground=False
         logger.warning(f"Disconnecting user {user} caused: {str(e)}")
         result = str(e)
     return result
-
-
-def verify_sessions_disconnected(engines, user):
-    """
-    Verify that a user has no active sessions on the system.
-
-    This function checks the output of the 'who -u' command to ensure that
-    the specified user has no active sessions. It raises an assertion error
-    if the user is found to have any active sessions.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        user (str): Username to check for active sessions
-
-    Raises:
-        AssertionError: If the user is found to have any active sessions
-
-    Example:
-        >>> # Verify user has no active sessions
-        >>> verify_sessions_disconnected(engines, "user1")
-        >>> # If user has active sessions, this will raise an AssertionError
-        >>> verify_sessions_disconnected(engines, "user2")  # Raises: User user2 is still active
-    """
-    time.sleep(1)
-    with allure.step(f'Verify sessions disconnected for user "{user}"'):
-        current_sessions = cli_common.who('-u')
-        assert user not in current_sessions, f"User {user} is still active"
-
-
-def verify_sessions_active(engines, user, expected_num_sessions=1):
-    """
-    Verify that a user has active sessions on the system.
-
-    This function checks the output of the 'who -u' command to ensure that
-    the specified user has active sessions. It raises an assertion error
-    if the user is found to not have any active sessions.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        user (str): Username to check for active sessions
-        expected_num_sessions (int): Expected number of active sessions
-    Raises:
-        AssertionError: If the user is found to not have any active sessions
-
-    Example:
-        >>> # Verify user has active sessions
-        >>> verify_sessions_active(engines, "user1")
-        >>> # If user has no active sessions, this will raise an AssertionError
-        >>> verify_sessions_active(engines, "user2")  # Raises: User user2 is not active
-    """
-    with allure.step(f'Verify sessions active for user "{user}"'):
-        current_sessions = cli_common.who('-u')
-        if expected_num_sessions == 1:
-            assert user in current_sessions, f"User {user} is not active"
-        else:
-            assert current_sessions.count(user) == expected_num_sessions, f"User {user} is missing sessions"
 
 
 def verify_syslog_updated_successfully(engines, users, expected_msg_counts_for_users, action_disconnect_should_fail=False):
@@ -613,101 +252,8 @@ def verify_logs_updated_successfully_disconnect_all(engines, users, expected_msg
     return True
 
 
-def get_all_users(engines):
-    """
-    Get all users using the User API.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-
-    Returns:
-        list: List of usernames configured in the system
-    """
-    system = System(force_api=ApiType.NVUE)
-    users = list(system.aaa.user.parse_show(dut_engine=engines.dut).keys())
-    return users
-
-
-def get_user_role(engines, username: str):
-    """
-    Get the role of a specific user using the User API.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        username: The username to get the role for
-
-    Returns:
-        str: The role of the user
-    """
-    system = System(force_api=ApiType.NVUE)
-    user = system.aaa.user.user_id[username]
-    user_info = user.parse_show(dut_engine=engines.dut)
-    return user_info.get('role')
-
-
-def add_user_with_sudo(engines, username, password=None):
-    """
-    Add a new user with sudo permissions.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        username: The username to create
-        password: Optional password for the user. If not provided, a random password will be generated
-
-    Returns:
-        tuple: (username, password) - The username and password of the created user
-    """
-    with allure.step(f'Add user "{username}" with sudo permissions'):
-        system = System(force_api=ApiType.NVUE)
-
-        # Generate random password if not provided
-        if password is None:
-            username, password = system.aaa.user.set_new_user(username=username, apply=True)
-        else:
-            username, _ = system.aaa.user.set_new_user(username=username, password=password, apply=True)
-
-        # Add user to sudo group
-        engines.dut.run_cmd(f'sudo usermod -aG sudo {username}')
-
-        # Verify user was created and has sudo permissions
-        users = get_all_users(engines)
-        assert username in users, f"User {username} was not created"
-
-        # Verify sudo group membership
-        groups = engines.dut.run_cmd(f'groups {username}')
-        assert 'sudo' in groups, f"User {username} was not added to sudo group"
-
-        return username, password
-
-
-def add_user_with_system_admin(engines, username, password=None, apply=False):
-    """
-    Add a new user with system-admin permissions.
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        username: The username to create
-        password: Optional password for the user. If not provided, a random password will be generated
-
-    Returns:
-        tuple: (username, password) - The username and password of the created user
-    """
-    with allure.step(f'Add user "{username}" with system-admin permissions'):
-        system = System(force_api=ApiType.NVUE)
-
-        _user, _password = system.aaa.user.set_new_user(username=username,
-                                                        password=password,
-                                                        role=CumulusConsts.ROLE_SYSTEM_ADMIN,
-                                                        apply=apply)
-
-        if apply:
-            # Verify user was created and has system-admin role
-            users = get_all_users(engines)
-            assert username in users, f"User {username} was not created"
-            user_role = get_user_role(engines, username)
-            assert user_role == CumulusConsts.ROLE_SYSTEM_ADMIN, f"User {username} was not assigned system-admin role"
-
-        return _user, _password
+# Note: get_all_users, get_user_role, add_user_with_sudo, add_user_with_system_admin
+# are now imported from user_manager module at the top of the file
 
 
 def check_disconnection_messages(sessions):
@@ -722,43 +268,18 @@ def check_disconnection_messages(sessions):
 
 
 def verify_sessions_state(engines, users_sessions_should_be_closed=[], users_sessions_should_be_active=[]):
-    """
-    Verify the state of multiple user sessions in the system.
-
-    This function checks if specified sessions are either closed or active as expected.
-    It performs two types of verification:
-    1. For sessions that should be closed:
-       - Verifies the session object's is_closed flag is True
-       - Verifies the username is not present in the current active sessions
-    2. For sessions that should be active:
-       - Verifies the session object's is_closed flag is False
-       - Verifies the username is present in the current active sessions
-
-    Args:
-        engines: The test engines object containing the DUT connection
-        users_sessions_should_be_closed (list): List of session objects that should be closed
-        users_sessions_should_be_active (list): List of session objects that should be active
-
-    Raises:
-        AssertionError: If any session's state does not match the expected state
-
-    Example:
-        >>> verify_sessions_state(engines,
-        ...                      users_sessions_should_be_closed=[session1, session2],
-        ...                      users_sessions_should_be_active=[session3])
-    """
-    time.sleep(5)
-    current_sessions = cli_common.who('-u')
-    for session in users_sessions_should_be_closed:
-        assert session.username not in current_sessions, f"{session.username} session is still active"
-
-    for session in users_sessions_should_be_active:
-        assert session.username in current_sessions, f"{session.username} session is not active"
+    """Verify session states - wrapper for session_mgr.verify_sessions_state()"""
+    session_mgr.verify_sessions_state(
+        cli_common,
+        users_sessions_should_be_closed,
+        users_sessions_should_be_active
+    )
 
 
 @pytest.mark.system
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
+@pytest.mark.test_first
 def test01_user_disconnect(engines):
     """
     Test that users with sudo permissions as well as system_admin can disconnect users,
@@ -807,22 +328,22 @@ def test01_user_disconnect(engines):
 
     with allure.step('Create sessions for all users'):
         # Create sessions for all users
-        create_session_thread(engines, user1, pass1)
-        create_session_thread(engines, user4, pass4)
+        session_mgr.create_session_thread(engines, user1, pass1)
+        session_mgr.create_session_thread(engines, user4, pass4)
 
-        create_sessions(engines, user2, pass2, 3)
-        create_sessions(engines, user5, pass5, 3)
+        session_mgr.create_sessions(engines, user2, pass2, 3)
+        session_mgr.create_sessions(engines, user5, pass5, 3)
 
-        create_session_thread(engines, user3, pass3)
-        create_session_thread(engines, user6, pass6)
+        session_mgr.create_session_thread(engines, user3, pass3)
+        session_mgr.create_session_thread(engines, user6, pass6)
 
         # Create two sessions each for system_admin and super
-        create_sessions(engines, system_admin, system_admin_pass, 2)
-        create_sessions(engines, super_user, super_pass, 2)
+        session_mgr.create_sessions(engines, system_admin, system_admin_pass, 2)
+        session_mgr.create_sessions(engines, super_user, super_pass, 2)
 
         # Wait for all threads to complete and get the actual session objects
-        wait_for_sessions_threads()
-        resest_channels()
+        session_mgr.wait_for_sessions_threads()
+        session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -898,13 +419,13 @@ def test02_privileged_users_disconnect_thyself(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions using threading
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, regular_user, regular_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, regular_user, regular_pass)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
-    resest_channels()
+    session_mgr.wait_for_sessions_threads()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -957,19 +478,19 @@ def test03_system_admin_user_disconnect_all(engines):
         credentials.append((i, user, password))
     NvueGeneralCli.apply_config(engines.dut)
 
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Create sessions using threading
     for i, username, password in credentials:
-        create_sessions(engines, username, password, i)
+        session_mgr.create_sessions(engines, username, password, i)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     user_sessions = []
     for i, username, _ in credentials:
         user_sessions.extend(sessions_dict[username])
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1015,19 +536,19 @@ def test04_sudoer_user_disconnect_all(engines):
         credentials.append((i, user, password))
     NvueGeneralCli.apply_config(engines.dut)
 
-    create_session_thread(engines, sudo_user, sudo_pass)
+    session_mgr.create_session_thread(engines, sudo_user, sudo_pass)
 
     # Create sessions using threading
     for i, username, password in credentials:
-        create_sessions(engines, username, password, i)
+        session_mgr.create_sessions(engines, username, password, i)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     user_sessions = []
     for i, username, _ in credentials:
         user_sessions.extend(sessions_dict[username])
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1082,24 +603,24 @@ def test05_user_disconnect_onebyone(engines):
     NvueGeneralCli.apply_config(engines.dut)
 
     # Create sessions for system_admin and super using threading
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
 
     # Create sessions using threading
     for session_count, username, password in credentials:
         # Create 1 session for odd users, 2 sessions for even users
-        create_sessions(engines, username, password, session_count)
+        session_mgr.create_sessions(engines, username, password, session_count)
         time.sleep(SESSIONS_DELAY)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
     # Get all user sessions
     user_sessions = []
     for i, username, _ in credentials:
         user_sessions.extend(sessions_dict[username])
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1156,17 +677,17 @@ def test06_negative_unprivileged_disconnect(engines):
     system_admin, system_admin_pass = add_user_with_system_admin(engines, 'system_admin', apply=True)
 
     # Create sessions using threading
-    create_session_thread(engines, simple_user, simple_pass)
-    create_session_thread(engines, user1, pass1)
-    create_sessions(engines, user2, pass2, 2)
-    create_session_thread(engines, user3, pass3)
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, simple_user, simple_pass)
+    session_mgr.create_session_thread(engines, user1, pass1)
+    session_mgr.create_sessions(engines, user2, pass2, 2)
+    session_mgr.create_session_thread(engines, user3, pass3)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     simple_session = sessions_dict[simple_user][0]
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1249,22 +770,22 @@ def test07_new_priviliged_group_disconnect(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions using threading
-    create_session_thread(engines, user1, pass1)
-    create_session_thread(engines, user2, pass2)
-    create_sessions(engines, user3, pass3, 2)
-    create_session_thread(engines, basic_user, basic_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, user1, pass1)
+    session_mgr.create_session_thread(engines, user2, pass2)
+    session_mgr.create_sessions(engines, user3, pass3, 2)
+    session_mgr.create_session_thread(engines, basic_user, basic_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
 
     # Create i sessions for each simple user
     for i, (username, password) in enumerate([(simple1, simple_pass1), (simple2, simple_pass2), (simple3, simple_pass3)], 1):
-        create_sessions(engines, username, password, i)
+        session_mgr.create_sessions(engines, username, password, i)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     user1_session = sessions_dict[user1][0]
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1341,22 +862,22 @@ def test08_new_unprivileged_group_disconnect(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions using threading
-    create_session_thread(engines, user1, pass1)
-    create_session_thread(engines, user2, pass2)
-    create_sessions(engines, user3, pass3, 2)
-    create_session_thread(engines, basic_user, basic_pass)
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, user1, pass1)
+    session_mgr.create_session_thread(engines, user2, pass2)
+    session_mgr.create_sessions(engines, user3, pass3, 2)
+    session_mgr.create_session_thread(engines, basic_user, basic_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Create i sessions for each simple user
     for i, (username, password) in enumerate([(simple1, simple_pass1), (simple2, simple_pass2), (simple3, simple_pass3)], 1):
-        create_sessions(engines, username, password, i)
+        session_mgr.create_sessions(engines, username, password, i)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     user1_session = sessions_dict[user1][0]
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1413,15 +934,15 @@ def test09_negative_user_disconnect_not_exist_not_connected_irregular(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions using threading
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     super_session = sessions_dict[super_user][0]
     system_admin_session = sessions_dict[system_admin][0]
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1483,18 +1004,18 @@ def test10_disconnect_users_with_30_sessions(engines, change_ssh):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions using threading
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Create 30 sessions for each user using threading
     num_sessions = 30
-    create_sessions(engines, user1, pass1, num_sessions, port=NEW_SSH_PORT1, sleep=SESSIONS_DELAY)
-    create_sessions(engines, user2, pass2, num_sessions, port=NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
+    session_mgr.create_sessions(engines, user1, pass1, num_sessions, port=NEW_SSH_PORT1, sleep=SESSIONS_DELAY)
+    session_mgr.create_sessions(engines, user2, pass2, num_sessions, port=NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
     num_sessions1, num_sessions2 = len(sessions_dict[user1]), len(sessions_dict[user2])
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1503,8 +1024,8 @@ def test10_disconnect_users_with_30_sessions(engines, change_ssh):
     disconnect_user(sessions_dict[system_admin][0], user2)
 
     # Verify all sessions are closed
-    verify_sessions_disconnected(engines, user1)
-    verify_sessions_disconnected(engines, user2)
+    session_mgr.verify_sessions_disconnected(cli_common, user1)
+    session_mgr.verify_sessions_disconnected(cli_common, user2)
 
     verify_syslog_updated_successfully(engines, [user1, user2], [num_sessions1, num_sessions2])
 
@@ -1548,17 +1069,17 @@ def test11_system_admin_disconnect_14(engines, change_ssh):
 
     NvueGeneralCli.apply_config(engines.dut)
 
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Create sessions using threading
     for idx, (username, password, num_sessions) in enumerate(user_credentials):
-        create_sessions(engines, username, password, num_sessions, port=NEW_SSH_PORT1 if idx < num_users // 2 else NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
+        session_mgr.create_sessions(engines, username, password, num_sessions, port=NEW_SSH_PORT1 if idx < num_users // 2 else NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
         time.sleep(SESSIONS_DELAY)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1573,7 +1094,7 @@ def test11_system_admin_disconnect_14(engines, change_ssh):
         disconnect_user(sessions_dict[system_admin][0], username)
 
     for username, _, _ in user_credentials[:num_users // 2]:
-        verify_sessions_disconnected(engines, username)
+        session_mgr.verify_sessions_disconnected(cli_common, username)
 
     verify_logs_updated_successfully(engines, [user for user, _, _ in user_credentials[:num_users // 2]], [num_sessions for _, _, num_sessions in user_credentials[:num_users // 2]])
 
@@ -1581,7 +1102,7 @@ def test11_system_admin_disconnect_14(engines, change_ssh):
     disconnect_user(sessions_dict[system_admin][0], retry_run=False)
 
     for username, _, _ in user_credentials[num_users // 2:]:
-        verify_sessions_disconnected(engines, username)
+        session_mgr.verify_sessions_disconnected(cli_common, username)
 
     verify_logs_updated_successfully_disconnect_all(engines, [user for user, _, _ in user_credentials[num_users // 2:]] + [system_admin], [num_sessions for _, _, num_sessions in user_credentials[num_users // 2:]] + [1])
 
@@ -1611,7 +1132,7 @@ def test12_super_disconnect_14(engines, change_ssh):
 
     # Create super user
     super_user, super_pass = add_user_with_sudo(engines, 'super')
-    create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
 
     # Create 14 users with one/two sessions each using threading
     num_users = 14
@@ -1625,13 +1146,13 @@ def test12_super_disconnect_14(engines, change_ssh):
 
     # Create sessions using threading
     for idx, (username, password, num_sessions) in enumerate(user_credentials):
-        create_sessions(engines, username, password, num_sessions, port=NEW_SSH_PORT1 if idx < num_users // 2 else NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
+        session_mgr.create_sessions(engines, username, password, num_sessions, port=NEW_SSH_PORT1 if idx < num_users // 2 else NEW_SSH_PORT2, sleep=SESSIONS_DELAY)
         time.sleep(SESSIONS_DELAY)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1643,7 +1164,7 @@ def test12_super_disconnect_14(engines, change_ssh):
     # Disconnect first 20 users one by one
     for username, _, _ in user_credentials[:num_users // 2]:
         disconnect_user(sessions_dict[super_user][0], username)
-        verify_sessions_disconnected(engines, username)
+        session_mgr.verify_sessions_disconnected(cli_common, username)
 
     verify_syslog_updated_successfully(engines, [user for user, _, _ in user_credentials[:num_users // 2]], [num_sessions for _, _, num_sessions in user_credentials[:num_users // 2]])
 
@@ -1683,15 +1204,15 @@ def test13_edge_user_disconnect(engines):
     user2, pass2 = create_user(system, user2, apply=True)
 
     # Create sessions using threading
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, user1, pass1)
-    create_session_thread(engines, user2, pass2)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, user1, pass1)
+    session_mgr.create_session_thread(engines, user2, pass2)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1700,8 +1221,8 @@ def test13_edge_user_disconnect(engines):
     disconnect_user(sessions_dict[system_admin][0], user2)
 
     # Verify sessions are closed
-    verify_sessions_disconnected(engines, user1)
-    verify_sessions_disconnected(engines, user2)
+    session_mgr.verify_sessions_disconnected(cli_common, user1)
+    session_mgr.verify_sessions_disconnected(cli_common, user2)
 
     verify_syslog_updated_successfully(engines, [user1, user2], [1, 1])
 
@@ -1742,20 +1263,20 @@ def test14_disconnect_user_from_two_users(engines):
     super2, pass2 = add_user_with_sudo(engines, 'super2')
 
     # Create sessions using threading
-    create_session_thread(engines, super1, pass1)
-    create_session_thread(engines, super2, pass2)
-    create_session_thread(engines, target_user, target_pass)
+    session_mgr.create_session_thread(engines, super1, pass1)
+    session_mgr.create_session_thread(engines, super2, pass2)
+    session_mgr.create_session_thread(engines, target_user, target_pass)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
     # First disconnect should succeed
     disconnect_user(sessions_dict[super1][0], target_user)
-    verify_sessions_disconnected(engines, target_user)
+    session_mgr.verify_sessions_disconnected(cli_common, target_user)
 
     # Second disconnect should fail
     disconnect_result = disconnect_user(sessions_dict[super2][0], target_user)
@@ -1825,22 +1346,22 @@ def test15_rest_api_disconnect_users(engines):
     user4, pass4 = create_user(system, 'user4', apply=True)
 
     # Create sessions using threading
-    create_session_thread(engines, super_user, super_pass)
-    create_session_thread(engines, sudo_user, sudo_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, sudo_user, sudo_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
 
     # Create two sessions for user1 and user2
-    create_sessions(engines, user1, pass1, 2)
-    create_sessions(engines, user2, pass2, 2)
+    session_mgr.create_sessions(engines, user1, pass1, 2)
+    session_mgr.create_sessions(engines, user2, pass2, 2)
 
     # Create one session for user3 and user4
-    create_session_thread(engines, user3, pass3)
-    create_session_thread(engines, user4, pass4)
+    session_mgr.create_session_thread(engines, user3, pass3)
+    session_mgr.create_session_thread(engines, user4, pass4)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1848,22 +1369,22 @@ def test15_rest_api_disconnect_users(engines):
     with allure.step('Disconnect sudo_user using REST API'):
         # Disconnect sudo_user
         disconnect_user_open_api(engines, super_user, super_pass, sudo_user)
-        verify_sessions_disconnected(engines, sudo_user)
+        session_mgr.verify_sessions_disconnected(cli_common, sudo_user)
 
     with allure.step('Disconnect system_admin using REST API'):
         # Disconnect system_admin
         disconnect_user_open_api(engines, super_user, super_pass, system_admin)
-        verify_sessions_disconnected(engines, system_admin)
+        session_mgr.verify_sessions_disconnected(cli_common, system_admin)
 
     with allure.step('Disconnect user1 (two sessions) using REST API'):
         # Disconnect user1
         disconnect_user_open_api(engines, super_user, super_pass, user1)
-        verify_sessions_disconnected(engines, user1)
+        session_mgr.verify_sessions_disconnected(cli_common, user1)
 
     with allure.step('Disconnect user3 (single session) using REST API'):
         # Disconnect user3
         disconnect_user_open_api(engines, super_user, super_pass, user3)
-        verify_sessions_disconnected(engines, user3)
+        session_mgr.verify_sessions_disconnected(cli_common, user3)
 
     verify_logs_updated_successfully(engines, [user1, user3, sudo_user, system_admin], [2, 1, 1, 1])
 
@@ -1922,22 +1443,22 @@ def test16_system_admin_rest_api_disconnect_users(engines):
     user4, pass4 = create_user(system, 'user4', apply=True)
 
     # Create sessions using threading
-    create_session_thread(engines, system_admin1, system_admin1_pass)
-    create_session_thread(engines, system_admin2, system_admin2_pass)
-    create_session_thread(engines, sudo_user, sudo_pass)
+    session_mgr.create_session_thread(engines, system_admin1, system_admin1_pass)
+    session_mgr.create_session_thread(engines, system_admin2, system_admin2_pass)
+    session_mgr.create_session_thread(engines, sudo_user, sudo_pass)
 
     # Create two sessions for user1 and user2
-    create_sessions(engines, user1, pass1, 2)
-    create_sessions(engines, user2, pass2, 2)
+    session_mgr.create_sessions(engines, user1, pass1, 2)
+    session_mgr.create_sessions(engines, user2, pass2, 2)
 
     # Create one session for user3 and user4
-    create_session_thread(engines, user3, pass3)
-    create_session_thread(engines, user4, pass4)
+    session_mgr.create_session_thread(engines, user3, pass3)
+    session_mgr.create_session_thread(engines, user4, pass4)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -1945,22 +1466,22 @@ def test16_system_admin_rest_api_disconnect_users(engines):
     with allure.step('Disconnect system_admin2 using REST API'):
         # Disconnect system_admin2
         disconnect_user_open_api(engines, system_admin1, system_admin1_pass, system_admin2)
-        verify_sessions_disconnected(engines, system_admin2)
+        session_mgr.verify_sessions_disconnected(cli_common, system_admin2)
 
     with allure.step('Disconnect sudo_user using REST API'):
         # Disconnect sudo_user
         disconnect_user_open_api(engines, system_admin1, system_admin1_pass, sudo_user)
-        verify_sessions_disconnected(engines, sudo_user)
+        session_mgr.verify_sessions_disconnected(cli_common, sudo_user)
 
     with allure.step('Disconnect user1 (two sessions) using REST API'):
         # Disconnect user1
         disconnect_user_open_api(engines, system_admin1, system_admin1_pass, user1)
-        verify_sessions_disconnected(engines, user1)
+        session_mgr.verify_sessions_disconnected(cli_common, user1)
 
     with allure.step('Disconnect user3 (single session) using REST API'):
         # Disconnect user3
         disconnect_user_open_api(engines, system_admin1, system_admin1_pass, user3)
-        verify_sessions_disconnected(engines, user3)
+        session_mgr.verify_sessions_disconnected(cli_common, user3)
 
     with allure.step('Disconnect all users using OPEN API'):
         # Disconnect all users
@@ -2034,18 +1555,18 @@ def test17_role_based_disconnect_permissions(engines):
                                                                             apply=True)
 
     # Create sessions using threading
-    create_session_thread(engines, privilige_user, privilige_pass)
-    create_session_thread(engines, no_privilige_user, no_privilige_pass)
+    session_mgr.create_session_thread(engines, privilige_user, privilige_pass)
+    session_mgr.create_session_thread(engines, no_privilige_user, no_privilige_pass)
 
     # Create sessions using threading
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, sudo_user, sudo_pass)
-    create_session_thread(engines, simple_user, simple_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, sudo_user, sudo_pass)
+    session_mgr.create_session_thread(engines, simple_user, simple_pass)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -2054,45 +1575,45 @@ def test17_role_based_disconnect_permissions(engines):
         with allure.step(f'Attempt to disconnect {user} using simple_user and verify error'):
             response = disconnect_user_open_api(engines, simple_user, simple_pass, user)
             check_error_message(response)
-            verify_sessions_active(engines, user)
+            session_mgr.verify_sessions_active(cli_common, user)
 
     # Use REST API to attempt to disconnect all users using simple_user and verify the error
     with allure.step('Attempt to disconnect all users using simple_user and verify error'):
         response = disconnect_user_open_api(engines, simple_user, simple_pass)
         check_error_message(response)
-        verify_sessions_active(engines, simple_user)
+        session_mgr.verify_sessions_active(cli_common, simple_user)
 
     # Use REST API to disconnect system_admin from system_admin and verify the session is closed
     with allure.step('Disconnect system_admin from system_admin and verify session is closed'):
         disconnect_user_open_api(engines, system_admin, system_admin_pass, system_admin)
-        verify_sessions_disconnected(engines, system_admin)
+        session_mgr.verify_sessions_disconnected(cli_common, system_admin)
 
     # Use REST API to disconnect sudo_user from sudo_user and verify the session is closed
     with allure.step('Disconnect sudo_user from sudo_user and verify session is closed'):
         disconnect_user_open_api(engines, sudo_user, sudo_pass, sudo_user)
-        verify_sessions_disconnected(engines, sudo_user)
+        session_mgr.verify_sessions_disconnected(cli_common, sudo_user)
 
     # Use REST API to attempt to disconnect users from the unprivileged role and verify the error
     with allure.step('Attempt to disconnect users from the unprivileged role and verify error'):
 
         response = disconnect_user_open_api(engines, no_privilige_user, no_privilige_pass, privilige_user)
         check_error_message(response)
-        verify_sessions_active(engines, privilige_user)
+        session_mgr.verify_sessions_active(cli_common, privilige_user)
 
         response = disconnect_user_open_api(engines, no_privilige_user, no_privilige_pass)
         check_error_message(response)
-        verify_sessions_active(engines, privilige_user)
+        session_mgr.verify_sessions_active(cli_common, privilige_user)
 
     # Use REST API to disconnect users from the privileged role and verify the sessions are closed
     with allure.step('Disconnect users from the privileged role and verify sessions are closed'):
         for user in [no_privilige_user, simple_user]:
             # Disconnect no_disconnect_user
             disconnect_user_open_api(engines, privilige_user, privilige_pass, user)
-            verify_sessions_disconnected(engines, user)
+            session_mgr.verify_sessions_disconnected(cli_common, user)
 
         # Disconnect all users
         disconnect_user_open_api(engines, privilige_user, privilige_pass)
-        verify_sessions_disconnected(engines, privilige_user)
+        session_mgr.verify_sessions_disconnected(cli_common, privilige_user)
 
     verify_logs_updated_successfully(engines, [system_admin, sudo_user, no_privilige_user, simple_user], [1, 1, 1, 1])
     verify_logs_updated_successfully_disconnect_all(engines, [privilige_user], [1])
@@ -2123,14 +1644,14 @@ def test18_rest_api_disconnect_nginx_down(engines):
     sudo_user, sudo_pass = add_user_with_sudo(engines, 'sudo_user')
 
     # Create sessions for all users using threading
-    create_session_thread(engines, basic_user, basic_pass)
-    create_session_thread(engines, system_admin, system_admin_pass)
-    create_session_thread(engines, sudo_user, sudo_pass)
+    session_mgr.create_session_thread(engines, basic_user, basic_pass)
+    session_mgr.create_session_thread(engines, system_admin, system_admin_pass)
+    session_mgr.create_session_thread(engines, sudo_user, sudo_pass)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -2221,18 +1742,18 @@ def test19_disconnect_user_during_scp_transfer(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create sessions
-    create_session_thread(engines, scp_user, scp_pass)
-    create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_session_thread(engines, scp_user, scp_pass)
+    session_mgr.create_session_thread(engines, super_user, super_pass)
 
     # Wait for all threads to complete and get the actual session objects
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
     # Get session objects
     super_session = sessions_dict[super_user][0]
     scp_session = sessions_dict[scp_user][0]
     add_ssh_key_to_localhost(engines, scp_user)
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -2277,7 +1798,7 @@ def test19_disconnect_user_during_scp_transfer(engines):
         assert 'scp' not in transfer_process, "SCP transfer still running"
 
         # Verify user is disconnected
-        verify_sessions_disconnected(engines, scp_user)
+        session_mgr.verify_sessions_disconnected(cli_common, scp_user)
 
     # Verify logs
     verify_logs_updated_successfully(engines, [scp_user], [2])
@@ -2302,13 +1823,13 @@ def test20_different_connection_types(engines):
     basic_user2, basic_password2 = create_user(system, 'basic2')
     basic_user3, basic_password3 = create_user(system, 'basic3', apply=True)
 
-    create_session_thread(engines, system_admin_user, system_admin_password)
-    create_session_thread(engines, basic_user1, basic_password1)
-    create_sessions(engines, basic_user2, basic_password2, 2)
-    create_session_thread(engines, basic_user3, basic_password3)
-    wait_for_sessions_threads()
+    session_mgr.create_session_thread(engines, system_admin_user, system_admin_password)
+    session_mgr.create_session_thread(engines, basic_user1, basic_password1)
+    session_mgr.create_sessions(engines, basic_user2, basic_password2, 2)
+    session_mgr.create_session_thread(engines, basic_user3, basic_password3)
+    session_mgr.wait_for_sessions_threads()
 
-    resest_channels()
+    session_mgr.reset_channels()
 
     rotate_logs(engines)
 
@@ -2324,7 +1845,7 @@ def test20_different_connection_types(engines):
         disconnect_user_serial_connection(session, basic_user2, serial_engine=True)
 
         verify_sessions_state(engines, users_sessions_should_be_active=sessions_dict[system_admin_user] + sessions_dict[basic_user3], users_sessions_should_be_closed=sessions_dict[basic_user1] + sessions_dict[basic_user2])
-        verify_sessions_active(engines, system_admin_user, expected_num_sessions=2)
+        session_mgr.verify_sessions_active(cli_common, system_admin_user, expected_num_sessions=2)
 
         disconnect_user_serial_connection(session, system_admin_user, validate=False, serial_engine=True)
 
@@ -2343,6 +1864,7 @@ def test20_different_connection_types(engines):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.radius
+@pytest.mark.t21
 def test21_disconnect_radius_user(engines):
     """
     Test disconnecting a RADIUS user.
@@ -2353,50 +1875,52 @@ def test21_disconnect_radius_user(engines):
     super_user, super_pass = add_user_with_sudo(engines, 'super')
 
     # Create a session for the sudo user
-    create_session(engines, super_user, super_pass)
+    session_mgr.create_session(engines, super_user, super_pass)
 
     config_radius_server(engines)
     set_radius_order(engines)
 
-    # Create RADIUS user sessions
-    radius_users = ["pradadm1", "pradmon1"]
-    radius_passwords = ["pradadm1", "pradmon1"]
+    # Create RADIUS user sessions - use constants
+    radius_config = CLRadiusPhysicalServer.SERVER_IPV4
+    radius_users = [user.username for user in radius_config.users][:2]
+    radius_passwords = [user.password for user in radius_config.users][:2]
+    logger.info(f"Using RADIUS users from constants: {radius_users}")
 
     # Create sessions for RADIUS users
     for user, password in zip(radius_users, radius_passwords):
-        create_session_thread(engines, user, password)
+        session_mgr.create_session_thread(engines, user, password)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
     # Reset channels and logs
-    resest_channels()
+    session_mgr.reset_channels()
     rotate_logs(engines)
 
     # Verify the sessions are active
     for user in radius_users:
-        verify_sessions_active(engines, user, expected_num_sessions=1)
+        session_mgr.verify_sessions_active(cli_common, user, expected_num_sessions=1)
 
     # Disconnect the RADIUS users using sudo user
     for user in radius_users:
         disconnect_user(sessions_dict[super_user][0], user)
-        verify_sessions_disconnected(engines, user)
+        session_mgr.verify_sessions_disconnected(cli_common, user)
 
     # Create sessions for RADIUS users
     for user, password in zip(radius_users, radius_passwords):
-        create_sessions(engines, user, password, 3)
+        session_mgr.create_sessions(engines, user, password, 3)
 
     # Wait for all threads to complete
-    wait_for_sessions_threads()
+    session_mgr.wait_for_sessions_threads()
 
     # Verify the sessions are active
     for user in radius_users:
-        verify_sessions_active(engines, user, expected_num_sessions=3)
+        session_mgr.verify_sessions_active(cli_common, user, expected_num_sessions=3)
 
     unset_radius_order(engines)
 
     # Reset channels and logs
-    resest_channels()
+    session_mgr.reset_channels()
     rotate_logs(engines)
 
     disconnect_user(sessions_dict[super_user][0], retry_run=False)
@@ -2409,16 +1933,16 @@ def test21_disconnect_radius_user(engines):
     basic_user1, basic_password1 = create_user(system, 'basic1')
     basic_user2, basic_password2 = create_user(system, 'basic2')
     system_admin_user, system_admin_password = add_user_with_system_admin(engines, 'system_admin', apply=True)
-    create_session_thread(engines, system_admin_user, system_admin_password)
-    create_sessions(engines, super_user, super_pass, 3)
-    create_sessions(engines, basic_user1, basic_password1, 3)
-    create_session_thread(engines, basic_user2, basic_password2)
-    wait_for_sessions_threads()
+    session_mgr.create_session_thread(engines, system_admin_user, system_admin_password)
+    session_mgr.create_sessions(engines, super_user, super_pass, 3)
+    session_mgr.create_sessions(engines, basic_user1, basic_password1, 3)
+    session_mgr.create_session_thread(engines, basic_user2, basic_password2)
+    session_mgr.wait_for_sessions_threads()
     set_radius_order(engines)
 
     for user, password in zip(radius_users, radius_passwords):
-        create_sessions(engines, user, password, 3)
-    wait_for_sessions_threads()
+        session_mgr.create_sessions(engines, user, password, 3)
+    session_mgr.wait_for_sessions_threads()
 
     # radius user disconnect other users without sudo permissions
     for user in [basic_user1, basic_user2, system_admin_user, radius_users[0]]:
@@ -2433,7 +1957,7 @@ def test21_disconnect_radius_user(engines):
     # radius user disconnect other users with sudo permissions
     for user in [basic_user1, basic_user2, system_admin_user, radius_users[1]]:
         disconnect_user(sessions_dict[radius_users[0]][0], user)
-        verify_sessions_disconnected(engines, user)
+        session_mgr.verify_sessions_disconnected(cli_common, user)
 
     unset_radius_order(engines)
 
@@ -2441,27 +1965,28 @@ def test21_disconnect_radius_user(engines):
     with allure.step('Radius user disconnect thyself'):
         disconnect_user(sessions_dict[radius_users[0]][0], radius_users[0], retry_run=False)
 
-    verify_sessions_disconnected(engines, radius_users[0])
+    session_mgr.verify_sessions_disconnected(cli_common, radius_users[0])
 
     sessions_dict.clear()
 
-    create_session_thread(engines, super_user, super_pass)
-    create_sessions(engines, system_admin_user, system_admin_password, 3)
-    create_session_thread(engines, basic_user1, basic_password1)
-    create_sessions(engines, basic_user2, basic_password2, 3)
-    wait_for_sessions_threads()
+    session_mgr.create_session_thread(engines, super_user, super_pass)
+    session_mgr.create_sessions(engines, system_admin_user, system_admin_password, 3)
+    session_mgr.create_session_thread(engines, basic_user1, basic_password1)
+    session_mgr.create_sessions(engines, basic_user2, basic_password2, 3)
+    session_mgr.wait_for_sessions_threads()
 
     set_radius_order(engines)
-    create_sessions(engines, radius_users[0], radius_passwords[0], 3)
-    create_session_thread(engines, radius_users[1], radius_passwords[1])
-    wait_for_sessions_threads()
+    session_mgr.create_sessions(engines, radius_users[0], radius_passwords[0], 3)  # ADMIN user: 3 sessions
+    session_mgr.create_session_thread(engines, radius_users[1], radius_passwords[1])  # MONITOR user: 1 session
+    session_mgr.wait_for_sessions_threads()
 
-    for user, count in zip(radius_users + [basic_user1, basic_user2, super_user, system_admin_user], [1, 3, 1, 3, 1, 3]):
-        verify_sessions_active(engines, user, expected_num_sessions=count)
+    # Expected counts: radius_users[0]=3 (ADMIN), radius_users[1]=1 (MONITOR), basic1=1, basic2=3, super=1, sys_admin=3
+    for user, count in zip(radius_users + [basic_user1, basic_user2, super_user, system_admin_user], [3, 1, 1, 3, 1, 3]):
+        session_mgr.verify_sessions_active(cli_common, user, expected_num_sessions=count)
 
     unset_radius_order(engines)
     # Reset channels and logs
-    resest_channels()
+    session_mgr.reset_channels()
     rotate_logs(engines)
 
     with allure.step('Radius user disconnect all users'):
@@ -2471,34 +1996,8 @@ def test21_disconnect_radius_user(engines):
 
 
 def config_radius_server(engines):
-    """
-    Configure the radius server for the test.
-    """
-    system = System(force_api=ApiType.NVUE)
-    radius_config = RadiusPhysicalServer.SERVER_IPV4
-
-    with allure.step('Configure the radius server'):
-        radius_server = system.aaa.radius.server.server_id[radius_config.hostname]
-        radius_server.set(AaaConsts.PORT, radius_config.port)
-        radius_server.set(AaaConsts.SECRET, radius_config.secret)
-        radius_server.set(AaaConsts.PRIORITY, radius_config.priority, apply=True, ask_for_confirmation='-y')
+    """Configure the radius server - wrapper for config_radius_server_base"""
+    config_radius_server_base(engines, use_fips_aware_apply=False)
 
 
-def set_radius_order(engines):
-    """
-    Set the radius order.
-    """
-    system = System(force_api=ApiType.NVUE)
-    with allure.step('Set the radius order'):
-        system.aaa.set('authentication-order', '10 radius')
-        system.aaa.set('authentication-order', '20 local', apply=True, ask_for_confirmation='-y')
-
-
-def unset_radius_order(engines):
-    """
-    Unset the radius order.
-    """
-    system = System(force_api=ApiType.NVUE)
-    with allure.step('Unset the radius order'):
-        system.aaa.unset('authentication-order', '10 radius')
-        system.aaa.unset('authentication-order', '20 local', apply=True, ask_for_confirmation='-y')
+# Note: set_radius_order and unset_radius_order are imported from aaa_server_config module

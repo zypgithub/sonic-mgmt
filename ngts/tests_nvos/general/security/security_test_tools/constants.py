@@ -48,6 +48,14 @@ class AaaConsts:
     DISABLED = 'disabled'
 
 
+class CLAaaConsts:
+    """Cumulus Linux AAA Constants - Updated server configuration for testing"""
+    # New working RADIUS/TACACS/LDAP server for CL testing
+    PHYSICAL_AAA_SERVER_IPV4_ADDR = '10.237.0.86'
+    PHYSICAL_AAA_SERVER_IPV6_ADDR = 'fdfd:fdfd:10:237:250:56ff:fe1b:56'
+    PHYSICAL_AAA_SERVER_DN = 'fit-l-vrt-60-086.mtl.labs.mlnx'
+
+
 class UserRole:
     ADMIN = 'admin'
     MONITOR = 'monitor'
