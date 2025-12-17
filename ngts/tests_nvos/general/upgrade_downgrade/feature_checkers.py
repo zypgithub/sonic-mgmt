@@ -55,6 +55,7 @@ from ngts.nvos_constants.constants_nvos import (
     ClusterApps,
     ClusterConsts,
     RbacConsts,
+    SystemConsts,
     TestFlowType,
 )
 from ngts.nvos_tools.Devices import IbDevice
@@ -146,6 +147,14 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_test_utils import (
 )
 from ngts.tests_nvos.general.security.test_api_server_security.constants import API_INSTALLED
 from ngts.tests_nvos.general.security.test_api_server_security.helpers import cleanup_mtls_test, run_curl_and_verify, setup_mtls_checker
+from ngts.tests_nvos.general.security.test_ssh_cert_auth.helpers import (
+    SshCertAuthHelper,
+    get_random_key_type,
+    get_random_principal,
+    set_cert_auth,
+    set_trusted_ca_key,
+    verify_user_login,
+)
 from ngts.tests_nvos.system.aaa.helpers import create_new_user
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
 from ngts.tools.test_utils import allure_utils as allure
@@ -938,6 +947,66 @@ def _check_ldap_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
         extra_setup_func=wait_for_ldap_nvued_restart_workaround,
     )
 
+
+@_requires_compatibility(minimal_version="25.02.6000")
+def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify SSH certificate authentication upgrade works as expected.
+    Test flow:
+        1. Generate SSH key pair and CA key pair
+        2. Sign user certificate with CA
+        3. Set principal and enable cert-auth for admin user
+        4. Set trusted CA key on the system
+        5. Verify user can login with certificate
+        6. Save configuration
+        7. Do upgrade
+        8. Verify user can still login with certificate after upgrade
+    """
+    system = System()
+    ssh_cert_auth_helper = SshCertAuthHelper()
+    key_name = "upgrade_cert_test_key"
+    key_type = get_random_key_type()
+    principal = get_random_principal()
+    admin_user = UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
+    hostname = engines.dut.ip
+
+    try:
+        with allure.step("Setup SSH certificate authentication"):
+            ssh_cert_auth_helper.ensure_keys_directory()
+
+            with allure.step("Generate keys and sign certificate"):
+                ca_val, key_private_path = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+                    key_name=key_name, key_type=key_type, principals=[principal]
+                )
+
+            with allure.step(f"Set cert-auth principal {principal} for admin"):
+                set_cert_auth(system=system, user=admin_user, principal=principal, state="enabled", apply=False)
+
+            with allure.step(f"Set trusted CA key {key_name}"):
+                set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
+
+            with allure.step("Verify login with certificate before upgrade"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=True)
+
+            with allure.step("Save configuration"):
+                NvueGeneralCli.save_config(engines.dut)
+
+        yield  # Do upgrade
+
+        with allure.step("Verify SSH cert auth after upgrade"):
+            with allure.step("Verify login with certificate after upgrade"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=True)
+
+    finally:
+        with allure.step("Cleanup SSH cert auth configuration"):
+            try:
+                system.ssh_server.trusted_ca_keys.unset()
+                system.aaa.user.user_id[admin_user.username].ssh.cert_auth.unset(apply=True)
+            except Exception as cleanup_err:
+                logger.warning(f"Cleanup failed: {cleanup_err}")
+            ssh_cert_auth_helper.cleanup_generated_keys(key_name)
+
+
 # #################### End of Feature Checkers ###################
 
 
@@ -1125,6 +1194,7 @@ _CHECKERS: List[CheckerFn] = [
     _check_nmx_controller_rbac,
     _check_nmx_telemetry_rbac,
     _check_speed_configuration,
+    _check_ssh_cert_auth,
 ]
 
 _CHECKERS.append(random.choice([_check_tacacs_auth, _check_radius_auth, _check_ldap_auth]))  # This is intended to be random, as two AAA checkers can't run together

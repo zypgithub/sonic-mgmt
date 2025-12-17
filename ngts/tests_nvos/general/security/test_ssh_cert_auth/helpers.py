@@ -6,7 +6,10 @@ from typing import List, Optional, Tuple
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.security_test_tools.constants import UserRole
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_ssh_cert_auth.constants import (
     CERT_VALIDITY_PERIODS,
     SSH_CERT_AUTH_KEYS_PATH,
@@ -161,3 +164,28 @@ def cleanup_trusted_ca_keys(system: System):
 def cleanup_user_cert_auth(system: System, username: str):
     with allure.step(f"Clean up cert-auth for user: {username}"):
         system.aaa.user.user_id[username].ssh.cert_auth.unset()
+
+
+def verify_user_login(user: UserInfo, key_private_path: str, hostname: str, engines, expect_success: bool = True):
+    with allure.step(f"log in with certificate for user {user.username} with role {user.role}, expect success: {expect_success}"):
+        session_obj = PKAAuthVerifier(username=user.username, private_key_path=key_private_path, hostname=hostname, engines=engines)
+        session_obj.verify_authentication(expect_success=expect_success)
+        if expect_success:
+            session_obj.verify_authorization(user_is_admin=user.role == UserRole.ADMIN)
+
+
+def set_cert_auth(system: System, user: UserInfo, principal: str, state: str, apply: bool = False):
+    with allure.step(f"set cert auth state {state} and principal {principal} for user {user.username}"):
+        system.aaa.user.user_id[user.username].ssh.cert_auth.principals[principal].set().verify_result()
+        if state == "enabled":
+            system.aaa.user.user_id[user.username].ssh.cert_auth.enable_state(apply=apply)
+        elif state == "disabled":
+            system.aaa.user.user_id[user.username].ssh.cert_auth.disable_state(apply=apply)
+        else:
+            raise ValueError(f"invalid state: {state}")
+
+
+def set_trusted_ca_key(system: System, key_name: str, key_type: str, ca_val: str, apply: bool = False):
+    with allure.step("set trusted ca"):
+        system.ssh_server.trusted_ca_keys.key_id[key_name].set_key_val(ca_val)
+        system.ssh_server.trusted_ca_keys.key_id[key_name].set_key_type(key_type, apply=apply)
