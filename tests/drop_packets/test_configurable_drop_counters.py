@@ -354,10 +354,13 @@ def setup_counters(request, device_capabilities, duthosts, rand_one_dut_hostname
     counter_type = request.param
     supported_reasons = device_capabilities["reasons"][counter_type]
 
-    def _setup_counters(drop_reasons):
-        if any(reason not in supported_reasons for reason in drop_reasons):
-            pytest.skip("Drop reasons not supported on target DUT")
+    # skip early if the test's drop_reason parameter is not supported for this counter type
+    drop_reason = request.node.callspec.params.get('drop_reason')
+    if drop_reason and drop_reason not in supported_reasons:
+        pytest.skip("Drop reason {} not supported for counter type {} on target DUT".format(
+            drop_reason, counter_type))
 
+    def _setup_counters(drop_reasons):
         cdc.create_drop_counter(duthost, "TEST", counter_type, drop_reasons)
         time.sleep(1)
 
