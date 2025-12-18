@@ -18,7 +18,6 @@ from ngts.tools.test_utils import allure_utils as allure
 logger = logging.getLogger()
 
 
-@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
@@ -108,7 +107,6 @@ def test_cluster_state(engines, devices, random_api, has_loopbox, standalone_sys
         pass
 
 
-@disabled_access_ports
 @pytest.mark.timeout(50 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
@@ -130,7 +128,6 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
         pass
 
 
-@disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_state_with_stressed_resources(engines, devices, random_api, test_name, has_loopbox, standalone_system, setup_name):
