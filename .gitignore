@@ -34,20 +34,4 @@ sonic-dump/
 **/common/sai_validation/github.com/
 tests/pfc_headroom_test_params/*.json
 tests/priority/*.json
-
-# Standalone bug handler build dist and build folder
-# and python venv folder
-tests/common/plugins/loganalyzer/bughandler/dist
-tests/common/plugins/loganalyzer/bughandler/build
-tests/common/plugins/loganalyzer/bughandler/.cache
-.venv
-venv
-.devcontainer_old/
-.env_old
-file.log
-log.txt
-.devcontainer/
-.cache/
-
-# CLAUDE local setup
-CLAUDE.local.md
+ansible/group_vars/vm_host/creds.yml

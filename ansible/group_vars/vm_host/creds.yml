@@ -1,9 +1,0 @@
-ansible_user: "{{ lookup('env','TEST_SERVER_USER') }}"
-ansible_password: "{{ lookup('env','TEST_SERVER_PASSWORD') }}"
-ansible_sudo_pass: "{{ lookup('env','TEST_SERVER_PASSWORD') }}"
-
-# Use the following username/password variables to login to vm hosts
-# instead of the default variables (defined above).
-vm_host_user: "{{ lookup('env','TEST_SERVER_USER') }}"
-vm_host_password: "{{ lookup('env','TEST_SERVER_PASSWORD') }}"
-vm_host_become_password: "{{ lookup('env','TEST_SERVER_PASSWORD') }}"
