@@ -188,7 +188,6 @@ def get_ptf_crl_server_ip(duthost, ptfhost):
 
 
 def create_revoked_cert_and_crl(localhost, ptfhost, duthost=None):
-
     create_client_key(localhost, revoke=True)
 
     create_client_csr(localhost, revoke=True)
