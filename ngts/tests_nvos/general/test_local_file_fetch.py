@@ -57,8 +57,7 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
 
 @pytest.mark.general
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-@pytest.mark.parametrize('component_fetch_action, component_fetch_verify_action, file_fetch_path, dut_path, component_files_obj, cleanup_obj', [
+@pytest.mark.parametrize('test_api, component_fetch_action, component_fetch_verify_action, file_fetch_path, dut_path, component_files_obj', [
     pytest.param(
         random.choice(ApiType.ALL_TYPES),
         System().image.action_fetch,
@@ -88,7 +87,7 @@ def file_fetch_path(request, downgrade_version_realpath) -> Path:
     )
 ], indirect=['file_fetch_path'])
 def test_local_file_fetch(engines: EnginesT, test_api: ApiType, register_cleanup, file_fetch_path: Path,
-                          component_fetch_action: Callable, component_fetch_verify_action: Callable, dut_path: Path, component_files_obj: Files, cleanup_obj: Files):
+                          component_fetch_action: Callable, component_fetch_verify_action: Callable, dut_path: Path, component_files_obj: Files):
     """
     Test that verifies local file fetch functionality for system images, configuration files, and platform firmware.
     The test copies a file to the DUT's /tmp directory, fetches it using the appropriate component action,
@@ -117,7 +116,7 @@ def test_local_file_fetch(engines: EnginesT, test_api: ApiType, register_cleanup
         file_url = generate_file_location_uri(str(dut_tmp_file_path))
         component_fetch_action(file_url)
         component_fetch_verify_action([fetched_file_name])()
-        register_cleanup(partial(_cleanup_fetched_files, component_files_obj, original_files, cleanup_obj, [fetched_file_name]))
+        register_cleanup(partial(_cleanup_fetched_files, component_files_obj, original_files, [fetched_file_name]))
     with allure.step(f"Verify fetched file {fetched_file_name} from {dut_path} integrity"):
         assert fetched_file_name in engines.dut.run_cmd(f'ls {dut_path}'), f"Failed to fetch {fetched_file_name}"
         dut_file_path = Path(dut_path) / fetched_file_name
