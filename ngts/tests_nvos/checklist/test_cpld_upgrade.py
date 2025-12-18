@@ -23,7 +23,7 @@ logger = logging.getLogger()
 
 @pytest.mark.timeout(45 * MINUTE, func_only=True)
 @pytest.mark.cpld
-def test_cpld_upgrade(engines, devices, topology_obj):
+def test_cpld_upgrade(engines, devices, topology_obj, show_platform_initial_state):
     """
     @summary: test all these commands:
         nv show fae platform firmware cpld files

@@ -21,7 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.bmc
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
 @pytest.mark.parametrize("platform_component_with_clear", ["bmc"], indirect=True)
-def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name, nv_command):
+def test_bmc_install(engines, devices, topology_obj, test_api, platform_component_with_clear, test_name, nv_command, show_platform_initial_state):
     """
     @summary: test all these commands:
         nv show platform firmware BMC files

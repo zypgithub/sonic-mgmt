@@ -65,6 +65,7 @@ from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.ngts_types import EnginesT
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.AirTool import get_internal_ip_for_oob_server
+from ngts.nvos_tools.platform.Platform import Platform
 
 logger = logging.getLogger()
 
@@ -123,6 +124,19 @@ def verify_no_kernel_errors(engines):
         filtered_logs = "\n".join(unexpected_lines)
         allure.attach("Filtered Kernel Errors", filtered_logs or "(no unexpected errors)")
         assert not filtered_logs.strip(), f"Unexpected error logs in kernel:\n{filtered_logs}"
+
+
+@pytest.fixture(scope='function')
+def show_platform_initial_state(engines):
+    """
+    For regression analysis, print the platform info before each test case.
+    This helps to understand the initial state of the system (firmware versions, etc.).
+    Add this fixture to platform firmware tests to see initial state.
+    """
+    with allure.step('Before test case: show platform firmware info'):
+        platform = Platform()
+        firmware_output = platform.firmware.show()
+        logger.info(f"Platform firmware initial state:\n{firmware_output}")
 
 
 @pytest.fixture(autouse=True)
