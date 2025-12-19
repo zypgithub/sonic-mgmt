@@ -1003,7 +1003,6 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
-        config_db = None
         if is_air:
             if custom_config_db_air_path:
                 if SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
@@ -1020,7 +1019,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             # No need to modify port_config.ini for NvidiaAir setups - because ports split not supported yet
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
-        self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, config_db)
+        config_db = self.upload_config_db_file(topology_obj, setup_name, hwsku, platform)
         if not is_air:
             config_file_prefix = self.get_config_file_prefix(setup_name)
             config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
@@ -1055,6 +1054,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         save_config_db_json(self.engine, config_db)
         if self.is_performance_setup(setup_name):
             self.reload_configuration(force=True)
+        return config_db
 
     def update_sai_xml_file(self, platform, hwsku, global_flag=False, local_flags=False):
         switch_sai_xml_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
