@@ -1,0 +1,4 @@
+StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
+rcon-sws-3-8,7005,r-bobcat-09,ssh,,rcon
+rcon-sws-3-8,7006,r-leopard-97,ssh,,rcon
+

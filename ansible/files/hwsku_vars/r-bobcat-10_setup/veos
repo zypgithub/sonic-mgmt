@@ -1,0 +1,125 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_2:
+    eos:
+      children:
+        vms_2:
+    servers:
+      vars:
+        topologies:
+          - t1
+          - t1-28-lag
+          - t1-48-lag
+          - t0
+          - t0-28
+          - t0-88-o8c80
+      children:
+        server_2:
+
+
+vm_host_2:
+  hosts:
+    R-SONIC-24_2:
+      ansible_host: 10.215.38.180
+
+
+vms_2:
+  hosts:
+    VM0201:
+      ansible_host: 10.215.38.249
+    VM0202:
+      ansible_host: 10.215.38.250
+    VM0203:
+      ansible_host: 10.215.38.251
+    VM0204:
+      ansible_host: 10.215.38.252
+    VM0205:
+      ansible_host: 10.215.38.253
+    VM0206:
+      ansible_host: 10.215.38.254
+    VM0207:
+      ansible_host: 10.215.40.1
+    VM0208:
+      ansible_host: 10.215.40.3
+    VM0209:
+      ansible_host: 10.215.40.4
+    VM0210:
+      ansible_host: 10.215.40.5
+    VM0211:
+      ansible_host: 10.215.40.6
+    VM0212:
+      ansible_host: 10.215.40.7
+    VM0213:
+      ansible_host: 10.215.40.8
+    VM0214:
+      ansible_host: 10.215.40.9
+    VM0215:
+      ansible_host: 10.215.40.10
+    VM0216:
+      ansible_host: 10.215.40.11
+    VM0217:
+      ansible_host: 10.215.40.12
+    VM0218:
+      ansible_host: 10.215.40.13
+    VM0219:
+      ansible_host: 10.215.40.14
+    VM0220:
+      ansible_host: 10.215.40.15
+    VM0221:
+      ansible_host: 10.215.40.16
+    VM0222:
+      ansible_host: 10.215.40.17
+    VM0223:
+      ansible_host: 10.215.40.18
+    VM0224:
+      ansible_host: 10.215.40.19
+    VM0225:
+      ansible_host: 10.215.40.20
+    VM0226:
+      ansible_host: 10.215.40.21
+    VM0227:
+      ansible_host: 10.215.40.22
+    VM0228:
+      ansible_host: 10.215.40.23
+    VM0229:
+      ansible_host: 10.215.40.24
+    VM0230:
+      ansible_host: 10.215.40.25
+    VM0231:
+      ansible_host: 10.215.40.26
+    VM0232:
+      ansible_host: 10.215.40.27
+    VM0233:
+      ansible_host: 10.215.40.28
+    VM0234:
+      ansible_host: 10.215.40.29
+    VM0235:
+      ansible_host: 10.215.40.30
+    VM0236:
+      ansible_host: 10.215.40.31
+    VM0237:
+      ansible_host: 10.215.40.32
+    VM0238:
+      ansible_host: 10.215.40.33
+    VM0239:
+      ansible_host: 10.215.40.34
+    VM0240:
+      ansible_host: 10.215.40.35
+    VM0241:
+      ansible_host: 10.215.40.36
+    VM0242:
+      ansible_host: 10.215.40.37
+    VM0243:
+      ansible_host: 10.215.40.38
+    VM0244:
+      ansible_host: 10.215.40.39
+
+
+server_2:
+  children:
+    vm_host_2:
+    vms_2:
+  vars:
+    host_var_file: host_vars/R-SONIC-24_2.yml
