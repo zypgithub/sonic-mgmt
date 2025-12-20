@@ -23,11 +23,14 @@ from lib.utils import parse_topology, get_logger
 
 logger = get_logger("CheckoutOnSonicMgmt")
 
+SONIC_MGMT_REPO_URL = "https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/switchx/sonic/sonic-mgmt"
+
 
 def _parse_args():
     # Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--topo", dest="topo", help="Path to the MARS topology configuration file")
+    parser.add_argument("--branch", dest="branch", help="Branch to checkout", required=False)
     parser.add_argument("--tarball", dest="tarball", help="Path to the tarball file")
     parser.add_argument("--workspace-path", dest="workspace_path",
                         help="Specify the location to checkout sonic-mgmt repo")
@@ -35,7 +38,12 @@ def _parse_args():
                                                               "the same as in MARS topology file")
     parser.add_argument("--tarball_path", dest="tarball_path", help="Tarballs directory",
                         default="/auto/sw_regression/system/SONIC/MARS/tarballs/")
-    return parser.parse_args()
+
+    args = parser.parse_args()
+
+    if not args.tarball and not args.branch:
+        parser.error("Checkout requires --branch or --tarball flag to be set")
+    return args
 
 
 @retry(ThreadException, tries=3, delay=10)
@@ -43,8 +51,6 @@ def main():
 
     args = _parse_args()
 
-    tarball_shared_path = args.tarball_path
-    tarball_path = os.path.join(tarball_shared_path, args.tarball)
     workspace_path = args.workspace_path
     host_name = args.host_name if args.host_name else constants.TEST_SERVER_DEVICE_ID
     topo = parse_topology(args.topo)
@@ -52,7 +58,7 @@ def main():
     host_device_username, host_device_password = topo.get_user_access(host_device.USERS[0])
     host_ssh_port = getattr(host_device, "PORT", 22)
     host = Connection(host_device.BASE_IP, port=host_ssh_port, user=host_device_username,
-                      config=Config(overrides={"run": {"echo": True}}),
+                      config=Config(overrides={"run": {"echo": True}}), inline_ssh_env=True,
                       connect_kwargs={"password": host_device_password})
 
     logger.info("Check if {} exists ".format(workspace_path))
@@ -64,10 +70,18 @@ def main():
     logger.info("Create workspace folder {}".format(workspace_path))
     host.run("mkdir -p {}".format(workspace_path))
 
-    logger.info("Extract tarball {} into workspace folder {}".format(tarball_path, workspace_path))
-    host.run("tar -xvf {} -C {}".format(tarball_path, workspace_path))
+    if args.tarball:
+        tarball_path = os.path.join(args.tarball_path, args.tarball)
+        logger.info("Extract tarball %s into workspace folder %s", tarball_path, workspace_path)
+        host.run("tar -xvf {} -C {}".format(tarball_path, workspace_path))
+        logger.info("Tarball extraction completed successfully.")
+    else:
+        logger.info("Clone sonic-mgmt repo (branch=%s) into workspace folder %s", args.branch, workspace_path)
+        host.config.run.env = {"GERRIT_API_KEY": os.getenv("GERRIT_API_KEY")}
+        host.run("git clone -b {} {} {}/sonic-mgmt".format(args.branch, SONIC_MGMT_REPO_URL, workspace_path))
+        logger.info("Sonic-mgmt repo cloned successfully.")
 
-    logger.info("Tarball extraction completed successfully.")
+    logger.info("Checkout completed successfully.")
 
 
 if __name__ == "__main__":
