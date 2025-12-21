@@ -2,7 +2,6 @@ from typing import Callable, TypedDict, Dict, List
 import pytest
 import re
 import logging
-import math
 
 from ngts.nvos_tools.infra.DfCmdBuilder import DfCmdBuilder
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -190,16 +189,17 @@ def test_device_memory(devices):
     """
     with allure.step("Verify memory size"):
         with allure.step("Verify memory size from platform"):
+            device_expected_memory_sizes: List[float] = [round(memory_size * 10) / 10 for memory_size in devices.dut.memory_size]
             platform = Platform()
             memory_output: str = OutputParsingTool.parse_json_str_to_dictionary(platform.show()).get_returned_value()[PlatformConsts.MEMORY]
             memory_output: float = float(memory_output.split()[0])
-            assert memory_output == devices.dut.memory_size, (
-                f"Memory size {memory_output} does not match expected size {devices.dut.memory_size}"
+            assert memory_output in device_expected_memory_sizes, (
+                f"Memory size {memory_output} does not match expected size {device_expected_memory_sizes}"
             )
         with allure.step("Verify memory size from system"):
             system = System()
             memory_output: int = OutputParsingTool.parse_json_str_to_dictionary(system.show("memory")).get_returned_value()[SystemConsts.MEMORY_PHYSICAL_KEY]["total"]
-            memory_output: float = math.floor(float(memory_output / (1024 ** 3)))
-            assert memory_output == devices.dut.memory_size, (
+            memory_output: float = round((float(memory_output / (1024 ** 3))) * ROUNDING_PRECISION) / ROUNDING_PRECISION
+            assert memory_output in devices.dut.memory_size, (
                 f"Memory size {memory_output} does not match expected size {devices.dut.memory_size}"
             )

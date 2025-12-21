@@ -467,7 +467,7 @@ class IbSwitch(BaseSwitch):
             "nv show interface swA10p1 link plr",
         ]
 
-        self.memory_size: float = 15.0
+        self.memory_size: List[float] = [15.0]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI]
 
     def sleep_after_system_reboot(self):
@@ -801,7 +801,7 @@ class BlackMambaSwitch(IbSwitch):
         })
         self.memory_speed = 2667  # in MT/s
 
-        self.memory_size: float = 15.0
+        self.memory_size: List[float] = [30.73]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
     def get_mgmt_ports(self) -> List[str]:
@@ -987,6 +987,7 @@ class BlackMambaDGXSwitch(BlackMambaSwitch):
             'PDB-1-Conv-In-1', 'PDB-1-Conv-Out-1'
         ]
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/black_mamba_dgx_versions.json"
+        self.memory_size: List[float] = [31.17, 30.73]
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
@@ -1342,7 +1343,7 @@ class NvLinkSwitch(IbSwitch):
             PhyRecoveryConsts.LAST_SERDES_EQ_RECOVERY_ATTEMPTS: 0
         }
 
-        self.memory_size: float = 15.0
+        self.memory_size: List[float] = [15.04]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
     def get_mgmt_ports(self) -> List[str]:
@@ -1934,6 +1935,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
             PlatformConsts.SYSTEM_TYPE: "N5100_LD",
             "asic-model": self.asic_type,
         })
+        self.memory_size: List[float] = [15.48]
 
     def _init_fan_list(self):
         self.fan_list = ["FAN1/1", "FAN1/2", "FAN2/1", "FAN2/2", "FAN3/1", "FAN3/2", "FAN4/1", "FAN4/2", "FAN5/1", "FAN5/2", "FAN6/1", "FAN6/2"]
@@ -2759,6 +2761,8 @@ class RosalindSwitch(RosalindSurrogateSwitch):
                 PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: 0
             }
         }
+        self.memory_size: List[float] = [30.77, 31.21]
+        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
 
     def setup_cluster_for_sdn_config(self, cluster, engines):
         """
