@@ -3,6 +3,7 @@ from .RandomizationTool import RandomizationTool
 from .SendCommandTool import SendCommandTool
 from .OutputParsingTool import OutputParsingTool
 from .TrafficGeneratorTool import TrafficGeneratorTool
+from .TrafficValidatorTool import TrafficValidatorTool
 from .ValidationTool import ValidationTool
 from .IpTool import IpTool
 from .ConfigTool import ConfigTool
@@ -19,6 +20,7 @@ class Tools:
     SendCommandTool = SendCommandTool()
     OutputParsingTool = OutputParsingTool()
     TrafficGeneratorTool = TrafficGeneratorTool()
+    TrafficValidatorTool = TrafficValidatorTool()
     ValidationTool = ValidationTool()
     IpTool = IpTool()
     ConfigTool = ConfigTool()

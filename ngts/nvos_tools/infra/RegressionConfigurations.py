@@ -48,6 +48,10 @@ class Configurations:
         "10.7.144.153": ['sw1p1', 'sw1p2'],
         "10.7.144.154": ['sw1p1', 'sw1p2'],
         "10.7.144.58": ['sw1p1', 'sw1p2', 'sw2p1'],
+
+        # Taipan
+        "10.7.145.34": ['sw5p1', 'sw6p1'],
+        "10.7.145.39": ['sw5p1', 'sw6p1'],
     }
 
     juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_136", "NVOS_juliet_10_7_148_184",

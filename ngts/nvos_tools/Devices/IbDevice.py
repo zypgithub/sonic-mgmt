@@ -16,6 +16,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, PhyRecoveryConsts
 from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.TrafficValidatorTool import TrafficErrorCounters
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -57,6 +58,7 @@ class IbSwitch(BaseSwitch):
         self.init_cli_coverage_prop("nvos")
         self._init_interface_lists()
         self._init_interface_attributes_mapping_dict()
+        self._init_link_error_counters()
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -469,6 +471,23 @@ class IbSwitch(BaseSwitch):
 
         self.memory_size: List[float] = [15.0]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI]
+
+        # Initialize link error counters for traffic validation
+
+    def _init_link_error_counters(self):
+        """
+        Initialize link error counters to check after traffic tests.
+
+        Override in subclasses to add platform-specific counters by extending the dict.
+
+        Structure:
+            traffic_error_counters = {
+                'link': [...],       # Counters under 'nv show interface <port> counters link'
+                'top_level': [...],  # Counters under 'nv show interface <port> counters'
+            }
+        """
+        # Use defaults from TrafficErrorCounters helper
+        self.traffic_error_counters = TrafficErrorCounters.get_default()
 
     def sleep_after_system_reboot(self):
         pass
