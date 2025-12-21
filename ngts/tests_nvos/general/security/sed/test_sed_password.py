@@ -4,6 +4,7 @@ import string
 import pytest
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
+from ngts.ngts_types import DevicesT
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.TpmTool import TpmTool
@@ -13,7 +14,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.mark.system
 @pytest.mark.security
-def test_change_sed_password(engines, devices, sed_default_password, random_api):
+def test_change_sed_password(engines, devices: DevicesT, sed_default_password, random_api):
     """
     @summary:
         Verify that change SED password works via nv action both for NVUE and OpenAPI
@@ -31,7 +32,7 @@ def test_change_sed_password(engines, devices, sed_default_password, random_api)
     system = System()
     new_sed_password = "test_sed_password"
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Set new SED password via nv action change system security sed-password {new_sed_password}"):
         system.security.action_change_sed_password(new_sed_password)
@@ -41,21 +42,21 @@ def test_change_sed_password(engines, devices, sed_default_password, random_api)
         if (start := disk_name_output.find("/dev/")) != -1 and (end := disk_name_output.find(" ", start)) != -1:
             disk_name = disk_name_output[start:end]
         else:
-            assert False, "Can't find correct disk name for this device"
+            raise AssertionError("Can't find correct disk name for this device")
 
     _verify_sed_password_works(switch, new_sed_password, disk_name)
 
-    _verify_tpm_banks_password(tpm_tool, new_sed_password)
+    _verify_tpm_banks_password(tpm_tool, new_sed_password, device=devices.dut)
 
     with allure.step("Reboot the system"):
         system.reboot.action_reboot(engine=switch, device=devices.dut)
 
-    _verify_tpm_banks_password(tpm_tool, new_sed_password)
+    _verify_tpm_banks_password(tpm_tool, new_sed_password, device=devices.dut)
 
 
 @pytest.mark.system
 @pytest.mark.security
-def test_back_old_pass(engines, devices, sed_default_password):
+def test_back_old_pass(engines, devices: DevicesT, sed_default_password):
     """
     @summary:
         Verify that change SED password works when flow was broken during the action flow
@@ -72,7 +73,7 @@ def test_back_old_pass(engines, devices, sed_default_password):
     system = System()
     new_sed_password = "old_password"
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step("Set primary tpm bank to new password"):
         tpm_tool.set_sed_password_primary_bank(new_sed_password, devices.dut)
@@ -80,12 +81,12 @@ def test_back_old_pass(engines, devices, sed_default_password):
     with allure.step("Reboot the system"):
         system.reboot.action_reboot(engine=switch, device=devices.dut)
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
 
 @pytest.mark.system
 @pytest.mark.security
-def test_back_new_pass(engines, devices, sed_default_password):
+def test_back_new_pass(engines, devices: DevicesT, sed_default_password):
     """
     @summary:
         Verify that change SED password works with new password when banks don't match
@@ -103,7 +104,7 @@ def test_back_new_pass(engines, devices, sed_default_password):
     system = System()
     new_sed_password = "Another_pass"
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Set new SED password via nv action change system security sed-password {new_sed_password}"):
         system.security.action_change_sed_password(new_sed_password)
@@ -115,12 +116,12 @@ def test_back_new_pass(engines, devices, sed_default_password):
     with allure.step("Reboot the system"):
         system.reboot.action_reboot(engine=switch, device=devices.dut)
 
-    _verify_tpm_banks_password(tpm_tool, new_sed_password)
+    _verify_tpm_banks_password(tpm_tool, new_sed_password, device=devices.dut)
 
 
 @pytest.mark.system
 @pytest.mark.security
-def test_password_length_negative(engines, devices, sed_default_password):
+def test_password_length_negative(engines, devices: DevicesT, sed_default_password):
     """
     @summary:
         Verify that change SED password works only with passwords from 8 to 250 chars
@@ -135,26 +136,26 @@ def test_password_length_negative(engines, devices, sed_default_password):
     long_pass = generate_random_string_with_length(251, 502)
     short_pass = generate_random_string_with_length(1, 7)
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Try to set long SED password via nv action {long_pass}"):
         system.security.action_change_sed_password(long_pass).verify_result(should_succeed=False)
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Try to set short SED password via nv action {short_pass}"):
         system.security.action_change_sed_password(short_pass).verify_result(should_succeed=False)
 
-    _verify_tpm_banks_password(tpm_tool, sed_default_password)
+    _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
 
-def _verify_tpm_banks_password(tpm_tool, expected_password):
+def _verify_tpm_banks_password(tpm_tool, expected_password, device):
     with allure.step("Verify tpm banks have old password"):
         with allure.independent_step("Verify primary bank has correct password"):
-            password_primary = tpm_tool.get_sed_password_primary_bank()
+            password_primary = tpm_tool.get_sed_password_primary_bank(device=device)
             assert password_primary == expected_password, f"The password from tpm primary bank should match {expected_password}"
         with allure.independent_step("Verify secondary bank has correct password"):
-            password_secondary = tpm_tool.get_sed_password_secondary_bank()
+            password_secondary = tpm_tool.get_sed_password_secondary_bank(device=device)
             assert password_secondary == expected_password, f"The password from tpm secondary bank should match {expected_password}"
 
 

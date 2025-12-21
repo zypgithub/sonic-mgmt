@@ -360,10 +360,10 @@ class BaseSwitch(BaseDevice):
 
     # Gorilla and Eth override it as they don't support it
     def verify_sed_password(self, tpm_tool, sed_default_password=SecurityConsts.SED_DEFAULT_PASSWORD):
-        password_from_tpm = tpm_tool.get_sed_password_primary_bank()
-        assert password_from_tpm == sed_default_password, f"Pass from tpm should be default SED pass"
-        password_from_tpm = tpm_tool.get_sed_password_secondary_bank()
-        assert password_from_tpm == sed_default_password, f"Pass from tpm should be default SED pass"
+        password_from_tpm = tpm_tool.get_sed_password_primary_bank(device=self)
+        assert password_from_tpm == sed_default_password, "Pass from tpm should be default SED pass"
+        password_from_tpm = tpm_tool.get_sed_password_secondary_bank(device=self)
+        assert password_from_tpm == sed_default_password, "Pass from tpm should be default SED pass"
 
     def _init_available_databases(self):
         super()._init_available_databases()
