@@ -19,7 +19,6 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.tests_nvos.platform.constants import TransceiversConsts
 from ngts.tests_nvos.platform.test_platform_transceiver import _verify_transceiver_status
-from ngts.tests_nvos.interfaces.nvl_port.helpers import validate_ports_state_and_speed
 
 logger = logging.getLogger()
 

@@ -95,10 +95,10 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
                     if is_bug_active(4566854):
                         adjusted_cli_output.pop(PhyHealthConsts.TIME_SINCE_LAST_CLEAR_MIN, None)
                     for attribute, value in adjusted_cli_output.items():
-                        gnmi_value = gnmi_output_as_dict[attribute]
                         with allure.independent_step(f"Testing {attribute}"):
-                            logger.info(f"CLI value = {value}, gnmi value = {gnmi_value}")
                             assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
+                            gnmi_value = gnmi_output_as_dict[attribute]
+                            logger.info(f"CLI value = {value}, gnmi value = {gnmi_value}")
                             assert (str(gnmi_value).lower() == str(value).lower()) or handle_numeric_values(gnmi_value, value), f"Output mismatch"
 
 
@@ -147,7 +147,7 @@ def adjust_supported_speeds(value):
 
 
 def adjust_auto_negotiate(value):
-    return 'true' if value == 'on' else 'false'
+    return 'true' if value in ['enabled'] else 'false'
 
 
 def adjust_logical_state(value):
