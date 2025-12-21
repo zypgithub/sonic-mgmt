@@ -1,14 +1,14 @@
 import random
 import string
 
-import allure
 import pytest
-
-from ngts.nvos_tools.infra.TpmTool import TpmTool
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.system.System import System
+
 from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.TpmTool import TpmTool
+from ngts.nvos_tools.system.System import System
+from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.system
@@ -162,7 +162,7 @@ def _verify_sed_password_works(switch: LinuxSshEngine, password: str, disk_name:
     with allure.step("Verify SED is working with provided password"):
         cmd = f"sudo sedutil-cli --listLockingRanges '{password}' '{disk_name}'"
         output = switch.run_cmd(cmd)
-        exit_code = int(switch.run_cmd('echo $?').split('\n')[-1])
+        exit_code = int(switch.run_cmd("echo $?").split("\n")[-1])
         assert exit_code == 0, "The sed list locking ranges should be successful"
 
 
@@ -173,4 +173,4 @@ def _change_sed_password_manually(engine, old_pass: str, new_pass: str, disk_nam
 def generate_random_string_with_length(minimal: int, maximum: int):
     with allure.step(f"Generate random string with specified range length {minimal}-{maximum}"):
         length = random.randint(minimal, maximum)
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+        return "".join(random.choices(string.ascii_letters + string.digits, k=length))
