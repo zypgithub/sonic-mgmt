@@ -80,9 +80,11 @@ def test_transceiver_status_unplug(engines, devices, test_api):
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
+
         IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
+        # read eeprom values and config interface run show fae interface before and after unplug/plug .. add configurations (think about it .. at least delayed recovery)
 
     finally:
         IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)

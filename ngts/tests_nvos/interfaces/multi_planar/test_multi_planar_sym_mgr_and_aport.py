@@ -134,9 +134,9 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
 
         with allure.independent_step("Validate show fae interface <port-id> link counters command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_json_str_to_dictionary,
-                                                selected_port.interface.link.counters.show,
-                                                selected_fae_port.interface.link.counters.show,
-                                                selected_fae_plane_port.interface.link.counters.show)
+                                                selected_port.interface.counters.show,
+                                                selected_fae_port.interface.counters.show,
+                                                selected_fae_plane_port.interface.counters.show)
 
         with allure.independent_step("Validate show fae interface <port-id> link diagnostics command"):
             validate_mp_show_interface_commands(OutputParsingTool.parse_json_str_to_dictionary,

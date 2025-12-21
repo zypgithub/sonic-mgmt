@@ -75,7 +75,7 @@ class IbInterfaceConsts:
     LINK_DIAGNOSTICS_NEGOTIATION_FAILURE_PORT = {'2': {'status': 'Negotiation failure'}}
     LINK_DIAGNOSTICS_SIGNAL_NOT_DETECTED = {'57': {'status': 'signal not detected'}}
     LINK_BREAKOUT = "breakout"
-    LINK_STATS_LINK_DOWNED = "link-downed"
+    LINK_STATS_LINK_DOWNED = "carrier-down-count"
     LINK_IB_SPEED = "ib-speed"
     LINK_SUPPORTED_IB_SPEEDS = "supported-ib-speed"
     LINK_SPEED = "speed"

@@ -360,9 +360,9 @@ def check_counters(counters_before, counters_after):
         assert counters_before.keys() == counters_after.keys()
 
     with allure.step(f"Validate {IbInterfaceConsts.LINK_STATS_LINK_DOWNED} counter increased by 1"):
-        assert counters_after[IbInterfaceConsts.LINK_STATS_LINK_DOWNED] == counters_before[IbInterfaceConsts.LINK_STATS_LINK_DOWNED] + 1
-        counters_before.pop(IbInterfaceConsts.LINK_STATS_LINK_DOWNED)
-        counters_after.pop(IbInterfaceConsts.LINK_STATS_LINK_DOWNED)
+        assert counters_after[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATS_LINK_DOWNED] == counters_before[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATS_LINK_DOWNED] + 1
+        counters_before.pop(IbInterfaceConsts.LINK)
+        counters_after.pop(IbInterfaceConsts.LINK)
 
     with allure.step("Validate that none of the counters have changed by more than 20%"):
         for key, before_value in counters_before.items():

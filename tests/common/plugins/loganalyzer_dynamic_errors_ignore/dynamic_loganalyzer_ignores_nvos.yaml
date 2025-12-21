@@ -1153,7 +1153,7 @@
 
 # NVOS
 - Errors_list:
-    - "ERR health-statsd#health_history: gnmi-server: Container 'gnmi-server' is not running"
+    - "ERR health-statsd#health_history: nv-gnmi: Container 'nv-gnmi' is not running"
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_docker_stop
