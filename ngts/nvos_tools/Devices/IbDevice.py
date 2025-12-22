@@ -1649,6 +1649,7 @@ class JulietScaleoutSwitch(JulietSwitch):
         self.core_count = 8
         self.reboot_type = 'julietscaleout_reboot'
         self.reset_factory = 'julietscaleout reset factory'
+        self.generate_tech_support = 'julietscaleout generate_tech_support'
         self.constants.firmware.extend([PlatformConsts.FW_FPGA, PlatformConsts.FW_BMC])
         self.ssd_image = None
         self.voltage_sensors = [

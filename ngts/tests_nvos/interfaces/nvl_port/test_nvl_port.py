@@ -38,7 +38,6 @@ logger = logging.getLogger()
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-@pytest.mark.nvl_ci
 def test_nvl_internal_fnm_ports(devices):
     """
     Validate that all internal FNM ports on NVL systems are UP by default.
@@ -67,7 +66,6 @@ def test_nvl_internal_fnm_ports(devices):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-@pytest.mark.nvl_ci
 def test_nvl_fnm_ports_up(devices, has_loopbox, standalone_system):
     """
     Validate that all regular FNM ports on NVL systems are UP by default.
@@ -99,7 +97,6 @@ def test_nvl_fnm_ports_up(devices, has_loopbox, standalone_system):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-@pytest.mark.nvl_ci
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, standalone_system):
     """
