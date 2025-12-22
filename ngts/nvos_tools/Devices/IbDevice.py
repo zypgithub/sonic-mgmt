@@ -2234,7 +2234,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         Rosalind/Surrogate systems: BMC, CPU (no FPGA, no NVSwitch)
         """
         logging.info(f'Rosalind/Surrogate available ERoTs: BMC and CPU only')
-        return [SPDMComponents.BMC, SPDMComponents.CPU]
+        return [SPDMComponents.BMC, SPDMComponents.CPU, SPDMComponents.NVSWITCH_SMA_0, SPDMComponents.NVSWITCH_SMA_1]
 
     def _init_dockers(self):
         """Override docker list for Rosalind/Surrogate platforms - uses gnmi-server instead of nv-gnmi/nv-umf."""

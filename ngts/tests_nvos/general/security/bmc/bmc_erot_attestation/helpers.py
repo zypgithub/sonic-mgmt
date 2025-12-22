@@ -3,10 +3,11 @@ import logging
 import os
 import random
 import traceback
-from typing import Tuple
+from typing import Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import TestFlowType
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -23,8 +24,8 @@ from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import 
 from ngts.tools.test_utils import allure_utils as allure
 
 
-def get_component_obj(component_name: str) -> SpdmComponent:
-    assert component_name in SPDMComponents.ALL_SUPPORTED_COMPONENTS, f'given component name "{component_name} not in {SPDMComponents.ALL_SUPPORTED_COMPONENTS}'
+def get_component_obj(component_name: str, supported_components: List[str]) -> SpdmComponent:
+    assert component_name in supported_components, f'given component name "{component_name} not in {supported_components}'
     component_field_name = COMPONENT_TO_SPDM_OBJ_FIELD[component_name]
     spdm = System().security.spdm
     assert hasattr(spdm, component_field_name), f'spdm object does not have component field "{component_field_name}"'

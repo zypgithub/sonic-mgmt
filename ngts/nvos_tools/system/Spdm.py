@@ -11,6 +11,8 @@ class SPDMComponents:
     BMC = 'ERoT_BMC_0'
     CPU = 'ERoT_CPU_0'
     FPGA = 'ERoT_FPGA_0'
+    NVSWITCH_SMA_0 = 'IRoT_NVSwitch_SMA_0'
+    NVSWITCH_SMA_1 = 'IRoT_NVSwitch_SMA_1'
     NVSWITCH_0 = 'ERoT_NVSwitch_0'
     NVSWITCH_1 = 'ERoT_NVSwitch_1'
     ALL_SUPPORTED_COMPONENTS = [BMC, CPU, FPGA, NVSWITCH_0, NVSWITCH_1]
@@ -22,6 +24,8 @@ COMPONENT_TO_SPDM_OBJ_FIELD: Dict[str, str] = {
     SPDMComponents.FPGA: 'fpga',
     SPDMComponents.NVSWITCH_0: 'nvswitch_0',
     SPDMComponents.NVSWITCH_1: 'nvswitch_1',
+    SPDMComponents.NVSWITCH_SMA_0: 'mcu0',
+    SPDMComponents.NVSWITCH_SMA_1: 'mcu1',
 }
 
 
@@ -39,6 +43,8 @@ class Spdm(BaseComponent):
         self.fpga = SpdmComponent(self, f'/{SPDMComponents.FPGA}')
         self.nvswitch_0 = SpdmComponent(self, f'/{SPDMComponents.NVSWITCH_0}')
         self.nvswitch_1 = SpdmComponent(self, f'/{SPDMComponents.NVSWITCH_1}')
+        self.mcu0 = SpdmComponent(self, f'/{SPDMComponents.NVSWITCH_SMA_0}')
+        self.mcu1 = SpdmComponent(self, f'/{SPDMComponents.NVSWITCH_SMA_1}')
 
 
 class SpdmComponent(BaseComponent):
