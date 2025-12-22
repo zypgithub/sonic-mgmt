@@ -2213,4 +2213,11 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_negative
 
+
+- Errors_list:
+    - ".*python /usr/local/bin/cluster_app set-log-level nmx-controller warning.*"
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/cluster_upgrade_test/cluster_upgrade_test.py
+
 # --------------------------------------------------
