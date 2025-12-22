@@ -126,7 +126,8 @@ class OpenApiGeneralCli:
             endpoint_ip=engine.ip,
             resource_path='/',
             param_name='',
-            param_value=''
+            param_value='',
+            open_api_port=engine.open_api_port
         )
 
         # Step 3: Send PATCH request (creates revision)
@@ -182,7 +183,8 @@ class OpenApiGeneralCli:
             endpoint_ip=engine.ip,
             resource_path='/',
             param_name='',
-            param_value=''
+            param_value='',
+            open_api_port=engine.open_api_port
         )
 
         # Step 2: Send REPLACE request (creates revision)
