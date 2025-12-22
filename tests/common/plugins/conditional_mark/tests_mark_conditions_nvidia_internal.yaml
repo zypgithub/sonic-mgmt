@@ -160,23 +160,12 @@ tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_in
     conditions:
     - "https://redmine.mellanox.com/issues/3272016 and 'simx' in platform"
 
-tests/nightly/app_extension/test_app_extension_install_uninstall.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
-
 tests/nightly/app_extension/test_app_extension_install_uninstall.py::test_app_install_uninstall:
   xfail:
     reason: "Testcase ignored due to RM issue: https://github.com/sonic-net/sonic-buildimage/issues/19878"
     conditions:
     - "https://github.com/sonic-net/sonic-buildimage/issues/19878"
 
-tests/nightly/app_extension/test_app_extension_upgrade.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3943532 on SPC5 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3943532 and 'sn5640' in platform"
 
 tests/nightly/ecmp_calculator/test_ecmp_calculator.py:
   skip:
@@ -589,12 +578,6 @@ ecmp/inner_hashing:
     conditions_logical_operator: or
     conditions:
     - "'msn2' in platform"
-
-everflow/test_everflow_testbed.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4497373"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4497373"
 
 everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror::test_everflow_dscp_with_policer:
   skip:
@@ -1021,12 +1004,6 @@ smartswitch/platform_tests/test_platform_dpu.py::test_pcie_link:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
     conditions:
     - "https://redmine.mellanox.com/issues/4490249"
-
-span/test_port_mirroring.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4497373"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4497373"
 
 system_health/test_system_health.py::test_service_checker:
   skip:
