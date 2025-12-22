@@ -105,6 +105,7 @@ class TestCpuRamHddUsage:
 
     @pytest.mark.build
     @pytest.mark.push_gate
+    @pytest.mark.physical_coverage
     def test_cpu_usage(self, request, expected_cpu_usage_dict):
         """
         This tests checks CPU usage - total and per process
@@ -118,6 +119,7 @@ class TestCpuRamHddUsage:
 
     @pytest.mark.build
     @pytest.mark.push_gate
+    @pytest.mark.physical_coverage
     def test_ram_usage(self, request, expected_ram_usage_dict, skip_test_ram_usage_on_asan):
         """
         This tests checks RAM usage - total and per process
