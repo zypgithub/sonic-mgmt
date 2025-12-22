@@ -469,12 +469,6 @@ bgp/test_bgp_sentinel.py:
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/18998
 
-bgp/test_bgp_dual_asn.py::test_bgp_dual_asn_v4:
-  skip:
-    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
-    conditions:
-    - https://redmine.mellanox.com/issues/4397221
-
 console/test_console_driver.py:
   skip:
     reason: "Not supported on existing testbed. the switch needs to be attached to a DUT via USB link."
@@ -613,42 +607,6 @@ everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_e
     reason: "Testcase ignored due to https://github.com/sonic-net/sonic-mgmt/issues/16087"
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/16087
-
-hash/test_generic_hash.py::test_lag_hash[CRC-DST_MAC:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
-
-hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-DST_MAC:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
-
-hash/test_generic_hash.py::test_lag_hash[CRC-ETHERTYPE:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
-
-hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-ETHERTYPE:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
-
-hash/test_generic_hash.py::test_lag_hash[CRC-VLAN_ID:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
-
-hash/test_generic_hash.py::test_lag_hash[CRC_CCITT-VLAN_ID:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4436939"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4436939"
 
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   skip:
@@ -1083,12 +1041,6 @@ show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4733094"
     conditions:
     - "https://redmine.mellanox.com/issues/4733094 and 'trixie' in build_version"
-
-pc/test_lag_2.py::test_lag:
-  skip:
-    reason: "Testcase skipped due to https://redmine.mellanox.com/issues/4397221"
-    conditions:
-    - https://redmine.mellanox.com/issues/4397221
 
 qos/test_qos_sai.py::TestQosSai::testQosSaiDwrr:
   skip:
