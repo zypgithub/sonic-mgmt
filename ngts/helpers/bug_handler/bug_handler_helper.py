@@ -116,7 +116,8 @@ def create_session_tmp_folder(session_id):
 
 
 def clear_files(session_id):
-    os.system(f"sudo rm -rf /tmp/{session_id}")
+    if session_id:  # make sure that we don't delete the root tmp folder case the session id is not set
+        os.system(f"sudo rm -rf /tmp/{session_id}")
     os.system("rm -rf /tmp/parsed_sanitizer_dumps/")
 
 
