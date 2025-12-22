@@ -325,7 +325,7 @@ def _create_upload_urls(engines, devices, protocol):
     Returns:
         tuple: (invalid_url_1, invalid_url_2, upload_path, target_engine)
     """
-    if devices.dut.is_ib():
+    if devices.dut.is_ib() or devices.dut.is_nvl():
         # For IB devices, use player (sonic_mgmt)
         player = engines['sonic_mgmt']
         invalid_url_1 = '{}://{}:{}{}/tmp/'.format(protocol, player.username, player.password, player.ip)

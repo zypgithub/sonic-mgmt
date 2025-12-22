@@ -309,6 +309,9 @@ class BaseDevice(ABC):
     def is_ib(self):
         return self.switch_type == NvosConst.IB_SWITCH_TYPE
 
+    def is_nvl(self):
+        return self.switch_type == NvosConst.NVL_SWITCH_TYPE
+
 # -------------------------- Base Appliance ----------------------------
 
 
