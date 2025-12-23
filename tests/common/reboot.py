@@ -198,6 +198,7 @@ def is_ssh_banner_absent(localhost, dut_ip, check_timeout, ssh_port=22):
     )
     return banner_check.is_failed or 'Timeout' in banner_check.get('msg', '')
 
+
 def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res=None, interval=1, check_timeout=1):
     """
     Wait for DUT to shutdown by checking SSH banner availability.
@@ -770,7 +771,8 @@ def ssh_connection_with_retry(localhost, host_ip, port, delay, timeout):
         'search_regex': SONIC_SSH_REGEX
     }
     short_timeout = 40
-    params_to_update_list = [{}, {'search_regex': None, 'timeout': short_timeout}]
+    short_delay = 10
+    params_to_update_list = [{}, {'search_regex': None, 'timeout': short_timeout, 'delay': short_delay}]
     for num_try, params_to_update in enumerate(params_to_update_list):
         iter_connection_params = default_connection_params.copy()
         iter_connection_params.update(params_to_update)
