@@ -80,7 +80,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.backup_logs_stored = False
         super().__init__(engine, cli_obj, dut_alias)
         self._is_simx_moose = None
-        self._is_simx_bison = None
+        self._is_bison = None
 
     def show_setup_versions(self):
         return ''
@@ -1476,10 +1476,10 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self._is_simx_moose = self.check_is_platform(['sn5600', 'simx'])
         return self._is_simx_moose
 
-    def is_simx_bison(self):
-        if self._is_simx_bison is None:
-            self._is_simx_bison = self.check_is_platform(['sn5640', 'simx'])
-        return self._is_simx_bison
+    def is_bison(self):
+        if self._is_bison is None:
+            self._is_bison = self.check_is_platform(['sn5640'])
+        return self._is_bison
 
     def check_is_platform(self, exp_condition_list, platform=None):
         """
@@ -1490,6 +1490,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if platform is None:
             platform = self.cli_obj.chassis.get_platform()
         return all(condition in platform for condition in exp_condition_list)
+
+    def is_asan_image(self, validate=False):
+        asan_val_from_sonic_ver_cmd = "sonic-cfggen -y /etc/sonic/sonic_version.yml -v asan"
+        asan_val = self.engine.run_cmd(asan_val_from_sonic_ver_cmd, validate=validate)
+        is_asan = False
+        if "yes" in asan_val:
+            logger.info("The current sonic image is a ASAN image")
+            is_asan = True
+        return is_asan
 
     def show_version(self, validate=False):
         return self.engine.run_cmd('show version', validate=validate)

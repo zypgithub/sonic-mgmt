@@ -8,7 +8,6 @@ from ngts.cli_wrappers.common.interface_clis_common import InterfaceCliCommon
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser, parse_show_interfaces_transceiver_eeprom
 from ngts.constants.constants import AutonegCommandConstants, SonicConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 
@@ -298,8 +297,8 @@ class SonicInterfaceCli(InterfaceCliCommon):
 
     def get_tries_num(self):
         tries_num = 32
-        if is_redmine_issue_active([4027501]) and self.cli_obj.general.is_simx_bison():
-            tries_num = 120
+        if self.cli_obj.general.is_asan_image() and self.cli_obj.general.is_bison():
+            tries_num = 70
         elif self.cli_obj.general.is_simx_moose():
             #  Adding extra minute for simx SPC4 due to scale limitations
             tries_num = 44
