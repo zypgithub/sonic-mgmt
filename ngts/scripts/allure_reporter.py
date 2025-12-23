@@ -138,7 +138,15 @@ def generate_report(allure_server_url, allure_project):
 
     start_time = time.time()
     response = requests.get('{}/generate-report?project_id={}'.format(allure_server_url, allure_project),
-                            verify=SSL_VERIFICATION, timeout=HTTP_TIMEOUT).json()
+                            verify=SSL_VERIFICATION, timeout=HTTP_TIMEOUT)
+    logger.info(f"RESPONSE STATUS: {response.ok}")
+    if not response.ok:
+        logger.info("project doesn't exist, creating project")
+        create_project(allure_server_url, allure_project)
+        response = requests.get('{}/generate-report?project_id={}'.format(allure_server_url, allure_project),
+                                verify=SSL_VERIFICATION, timeout=HTTP_TIMEOUT)
+        logger.info(f"RESPONSE STATUS: {response.ok}")
+    response = response.json()
     diff_time = time.time() - start_time
     logger.info(f"generating report takes {diff_time}")
     report_url = response['data']['report_url']
