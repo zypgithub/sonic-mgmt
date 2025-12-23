@@ -19,6 +19,8 @@ def fec_configuration(topology_obj, interfaces, setup_name, engines, cli_objects
     Pytest fixture which will clean all fec configuration leftover from the dut
 
     """
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json /etc/sonic/config_db.json.bak")
+
     tested_ports = []
     tested_dut_host_ports = [interfaces.dut_ha_1, interfaces.dut_ha_2, interfaces.dut_hb_1]
     tested_ports += get_tested_ports(tested_lb_dict)
@@ -27,7 +29,8 @@ def fec_configuration(topology_obj, interfaces, setup_name, engines, cli_objects
     yield
 
     logger.info('Starting FEC configuration cleanup')
-    cli_objects.dut.general.apply_basic_config(topology_obj, setup_name, platform_params, is_air=is_air)
+    cli_objects.dut.engine.run_cmd("sudo cp /etc/sonic/config_db.json.bak /etc/sonic/config_db.json")
+    cli_objects.dut.general.reload_flow(topology_obj=topology_obj, reload_force=True)
 
     logger.info('FEC cleanup completed')
 
