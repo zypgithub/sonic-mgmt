@@ -142,12 +142,6 @@ tests/nightly/p4/sampling_example/test_entry_advance.py:
   skip:
     reason: "Test not supported. Skip until all config_db.json file will be updated with breakout_cfg section"
 
-tests/nightly/cpu_mem/test_bulk_counter_performance.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3832426"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3832426"
-
 tests/nightly/arp/test_arp.py::test_arp_table_updated_during_ping:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4566594"
