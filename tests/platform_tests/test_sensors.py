@@ -108,14 +108,6 @@ def test_sensors(duthosts, rand_one_dut_hostname, sensors_data):
     is_sensor_alarm = sensors_facts['sensors']['alarm']
     sensor_alarms = sensors_facts['sensors']['alarms']
 
-    # ignore the temp alarm if the psu is Murata 1500 due to known issue
-    if is_sensor_alarm and sensor_alarms.get("temp", False):
-        dut_basic_facts = duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts']
-        psu_manufacture = dut_basic_facts.get("psu_manufacture", '')
-        psu_capacity = dut_basic_facts.get("psu_capacity", '')
-        if psu_manufacture == 'Murata-PS' and psu_capacity == '1500':
-            logging.warning("Ignore the temp alarm if the psu is Murata 1500 due to known issue")
-            is_sensor_alarm = False
     pytest_assert(not is_sensor_alarm, "Sensor alarms:\n{}".format(to_json(sensor_alarms)))
 
     # Analyze sensor warnings

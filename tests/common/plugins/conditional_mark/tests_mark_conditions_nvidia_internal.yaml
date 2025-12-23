@@ -924,8 +924,10 @@ platform_tests/test_sensors.py::test_sensors:
     - "https://redmine.mellanox.com/issues/4261914 and 'sn5640_simx' in platform"
   xfail:
     reason: "Testcase ignored due to RM 4776315 on canonical bobcat setup"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4776315 and 'bobcat-10' in testbed"
+    - "https://redmine.mellanox.com/issues/4441016 and psu_manufacture=='Murata-PS' and psu_capacity=='1500'"
 
 smartswitch/platform_tests/test_platform_dpu.py::test_npu_dpu_date:
   xfail:
