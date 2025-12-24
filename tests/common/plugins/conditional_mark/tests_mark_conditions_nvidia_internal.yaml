@@ -1080,12 +1080,6 @@ vxlan/test_vxlan_bfd_tsa.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4691530"
 
-vxlan/test_vxlan_multi_tunnel.py:
-  skip:
-    reason: "Testcase ignored due to feature not supported: https://redmine.mellanox.com/issues/4668780"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4668780"
-
 vxlan/test_vnet_decap.py:
   xfail:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4691530"
