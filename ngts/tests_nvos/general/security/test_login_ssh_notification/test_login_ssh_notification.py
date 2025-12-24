@@ -36,7 +36,7 @@ def convert_linux_date_output_to_datetime_object(linux_date_string):
     return date
 
 
-def parse_ssh_login_notification(dut_ip, username, password):
+def parse_ssh_login_notification(dut_ip, username, password, assert_last_login=True, assert_no_errors=False):
     '''
     @summary: in this function we will parse the login ssh notification parameters
     when creating ssh connection to switch and extracting all the parameters
@@ -45,13 +45,21 @@ def parse_ssh_login_notification(dut_ip, username, password):
         2.	Number of unsuccessful logins since last successful login – (per user)
         3.	Last unsuccessful date/time and location (terminal or IP) – (per user)
         4.	Changes to user's account since last login (password, role, group, etc) – (per user)
-        5.	Number of total successful logins since a date/time – (user with admin capabilities)
+        5.	Number of total successful logins since a date/time – (for all users)
 
+    :param dut_ip: IP address of the device under test
+    :param username: username to login with
+    :param password: password for the user
+    :param assert_last_login: If True (default), asserts that "Last login:" message exists.
+                             Set to False for first-time logins where no history exists yet.
+    :param assert_no_errors: If True, validates the SSH login notification for common errors.
+                            Defaults to False (lenient mode) - use True in strict validation scenarios
+                            where MOTD/login scripts must be error-free.
     :return: will return a dictionary of each parameter, e.g.:
     {
-        'last_successful_login_date' : datetime bject of cuurent date,
+        'last_successful_login_date' : datetime object of current date,
         'last_successful_login_ip' : '10.7.34.240',
-        'last_unsuccessful_login_date' : datetime bject of cuurent date,
+        'last_unsuccessful_login_date' : datetime object of current date,
         'last_unsuccessful_login_ip' : '10.7.34.240',
         'number_of_unsuccessful_attempts_since_last_login', '4',
         'record_period' : '5',
@@ -68,21 +76,34 @@ def parse_ssh_login_notification(dut_ip, username, password):
         # notification_login_message = ssh_to_device_and_retrieve_raw_login_ssh_notification(dut_ip,
         #                                                                                    username,
         #                                                                                    password)
+
+    if assert_no_errors:
+        with allure.step('Verify no errors in SSH login notification'):
+            # Check for common shell/script error patterns that indicate MOTD or login script failures
+            match = Consts.SSH_LOGIN_ERROR_PATTERN.search(notification_login_message)
+            if match:
+                assert False, \
+                    f"SSH login notification contains error matching pattern '{match.group()}'\n" \
+                    f"Full notification message:\n{notification_login_message}"
+
     with allure.step('Parse ssh login output'):
         for key, regex in Consts.LOGIN_SSH_NOTIFICATION_REGEX_DICT.items():
             logging.info(f'Extract key: {key}')
             match = re.findall(regex, notification_login_message)
             if regex == Consts.LAST_SUCCESSFUL_LOGIN_DATE_REGEX:
-                assert match, f'could not find {key} in ssh login message.\nregex: {regex}\n' \
-                    f'login message:\n{notification_login_message}'
-                # there will be always output to catch it
-                result[Consts.LAST_SUCCESSFUL_LOGIN_DATE] = convert_linux_date_output_to_datetime_object(match[0])
+                if assert_last_login:
+                    assert match, f'could not find {key} in ssh login message.\nregex: {regex}\n' \
+                        f'login message:\n{notification_login_message}'
+                # there will be always output to catch it if it is not first login
+                result[Consts.LAST_SUCCESSFUL_LOGIN_DATE] = convert_linux_date_output_to_datetime_object(match[0]) if match else None
             elif regex == Consts.LAST_UNSUCCESSFUL_LOGIN_DATE_REGEX:
                 # not always the message will appear
-                if len(match) != 0:
-                    result[Consts.LAST_UNSUCCESSFUL_LOGIN_DATE] = convert_linux_date_output_to_datetime_object(match[0])
-                else:
-                    result[Consts.LAST_UNSUCCESSFUL_LOGIN_DATE] = None
+                result[Consts.LAST_UNSUCCESSFUL_LOGIN_DATE] = convert_linux_date_output_to_datetime_object(match[0]) if match else None
+            elif regex == Consts.NUMBER_OF_SUCCESSFUL_CONNECTIONS_IN_THE_LAST_RECORD_PERIOD_REGEX:
+                # Assert this field should always be present for all users
+                assert match, f'could not find {key} in ssh login message.\nregex: {regex}\n' \
+                    f'login message:\n{notification_login_message}'
+                result[key] = match[0]
             else:
                 result[key] = match[0] if match else None
 
