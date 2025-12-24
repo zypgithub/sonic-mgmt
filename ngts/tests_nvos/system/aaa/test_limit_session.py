@@ -47,7 +47,7 @@ TEST_GROUP2 = "test_class2"
 TEST_PASSWORD = "TestPassword123!"
 
 # Minimum required Cumulus version for max-logins feature
-MIN_CUMULUS_VERSION = (5, 15)
+MIN_CUMULUS_VERSION = (5, 16)
 
 
 def get_cumulus_version(dut_engine=None):
@@ -88,8 +88,8 @@ def get_cumulus_version(dut_engine=None):
 @pytest.fixture(scope="module", autouse=True)
 def check_cumulus_version(engines):
     """
-    Module-level fixture to verify Cumulus version is 5.15 or higher.
-    The max-logins feature is only available in Cumulus 5.15+.
+    Module-level fixture to verify Cumulus version is 5.16 or higher.
+    The max-logins feature is only available in Cumulus 5.16+.
     """
     version = get_cumulus_version(engines.dut)
     version_str = f"{version[0]}.{version[1]}"
