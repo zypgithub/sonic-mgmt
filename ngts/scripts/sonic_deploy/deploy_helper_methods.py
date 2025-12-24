@@ -703,18 +703,7 @@ class DeployDpuHelper:
     def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj, setup_name):
 
         rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
-
-        with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
-            DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
-
         dut_engine = topology_obj.players[dut_alias]['engine']
-
-        with allure.step('Copying image to switch dut'):
-            dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
-            dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-            retry_call(lambda: dut_engine.run_cmd(
-                f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
-                tries=5, delay=2)
 
         with allure.step('Start monitoring minicom'):
             for index in dpu_index_list:
@@ -723,6 +712,16 @@ class DeployDpuHelper:
                         f"sudo screen -dmS ttyUSB{index}_log minicom -D /dev/ttyUSB{index} -C /tmp/ttyUSB{index}", validate=True)
                 except Exception as e:
                     logger.warning(f"Failed to start monitoring minicom for DPU{index}: {e}")
+
+        with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
+            DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
+
+        with allure.step('Copying image to switch dut'):
+            dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
+            dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
+            retry_call(lambda: dut_engine.run_cmd(
+                f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
+                tries=5, delay=2)
 
         try:
             with allure.step('Install BFB image on all DPUs'):
