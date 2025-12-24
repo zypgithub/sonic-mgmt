@@ -31,6 +31,7 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -136,6 +137,8 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
         cmd = f"gnmic -a {target_ip} --port {target_port} --skip-verify subscribe --prefix '{prefix_and_path[0]}'" \
             f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
+        if is_redmine_issue_active([4782619])[0]:
+            cmd = "timeout -s INT 5s " + cmd
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd_set([cmd, '\n', '\n', '\x03', '\x03'],
