@@ -197,7 +197,7 @@ def test_interface_link_diagnostics_basic_invalid_ports(engines, devices):
         for port_name in ('eth0', 'ib0', 'lo'):
             with allure.independent_step(port_name):
                 output_dictionary = any_port.show_interface(port_names=f'{port_name} link diagnostics')
-                assert output_dictionary == "Error: 'diagnostics' is not one of ['brief', 'state', 'counters']", \
+                assert output_dictionary == "Error: 'diagnostics' is not one of ['brief', 'state']", \
                     f"Can run command for {port_name} transceiver"
 
 

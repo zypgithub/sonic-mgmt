@@ -2169,6 +2169,8 @@
 # NVOS: Expected logs after reboot
 - Errors_list:
     - '.*WARNING kernel.*clocksource: Long readout interval, skipping watchdog check.*'
+    - '.*NOTICE swss.*orchagent: :- registerAsicSdkHealthEventCategories: Suppressed category list is empty for severity warning.*'
+    - '.*WARNING swss.*orchagent: :- validatePortConfig: Validation error: missing mandatory field\(speed\).*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_power_cycle.py
