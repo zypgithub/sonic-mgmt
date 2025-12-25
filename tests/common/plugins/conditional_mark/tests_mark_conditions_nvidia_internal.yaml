@@ -1,10 +1,4 @@
 ########################## NGTS IGNORE START ##########################
-tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image[dpu]:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4781596"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4781596"
-
 scripts/log_profiler/log_profiler.py:
   skip:
     reason: "The test not stable, skip it statically"

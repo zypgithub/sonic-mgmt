@@ -35,6 +35,7 @@ def dut_host(engines, request, device_type, topology_obj):
         return engines.dut
 
 
+@pytest.mark.loganalyzer_hosts(include='dpu')
 def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer):
     """
     Test checks errors in logs which happen during deploy SONiC image

@@ -53,12 +53,15 @@ def _filter_duthosts_for_loganalyzer(duthosts, request):
     hosts_without_dpus = set([dut for dut in duthosts if 'dpu' not in dut])
     hosts_list = list(hosts_without_dpus)
     # unless include pattern is provided
-    marker = request.node.get_closest_marker("loganalyzer_hosts") if request and hasattr(request, 'node') else None
-    if marker and hasattr(marker, 'kwargs') and marker.kwargs.get('include'):
-        pattern = marker.kwargs['include']
-        included_hosts = set([dut for dut in duthosts if pattern in dut])
-        logging.info(f"Including '{pattern}' from loganalyzer: {included_hosts}")
-        hosts_list = list(hosts_without_dpus | included_hosts)
+    if request and hasattr(request, 'node'):
+        for item in request.node.items:
+            marker = item.get_closest_marker("loganalyzer_hosts")
+            if marker and hasattr(marker, 'kwargs') and marker.kwargs.get('include'):
+                pattern = marker.kwargs['include']
+                included_hosts = set([dut for dut in duthosts if pattern in dut])
+                logging.info(f"Including '{pattern}' from loganalyzer: {included_hosts}")
+                hosts_list = list(hosts_without_dpus | included_hosts)
+                break
     logging.info(f"Hosts list for loganalyzer: {hosts_list}")
     return hosts_list
 
