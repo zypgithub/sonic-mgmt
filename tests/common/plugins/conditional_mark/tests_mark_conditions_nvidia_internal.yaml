@@ -509,6 +509,12 @@ dash/test_fnic.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4687261"
 
+dash/test_dash_smartswitch_vnet.py:
+  skip:
+    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4804684"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4804684"
+
 dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_monitor_checksum_validation:
   xfail:
     reason: "xfail due to RM ticket https://redmine.mellanox.com/issues/4690202"
@@ -834,10 +840,6 @@ platform_tests/test_cpu_memory_usage.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
-  xfail:
-    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4516317"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4516317"
 
 platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
@@ -964,10 +966,12 @@ platform_tests/test_reload_config.py::test_reload_configuration:
     - "'simx' in platform"
 
 platform_tests/test_cpu_memory_usage.py::test_cpu_memory_usage:
-  skip:
+  xfail:
     reason: "Testcase ignored due to standalone dpu platform and RM issue: https://redmine.mellanox.com/issues/3754090"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/3754090 and 'nvda_bf-9009' in platform"
+    - "https://redmine.mellanox.com/issues/4804252 and 'nvda_bf-bf3comdpu' in platform"
 
 platform_tests/link_flap/test_cont_link_flap.py::TestContLinkFlap::test_cont_link_flap:
   xfail:
@@ -989,17 +993,11 @@ sflow/test_sflow.py:
   skip:
     reason: "Sflow is not supported on 202411 and greater releases"
 
-smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_switch:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4401509"
+smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_dpu_kernel_panic:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4807510"
     conditions:
-    - "https://redmine.mellanox.com/issues/4401509 and '4280' in platform"
-
-smartswitch/platform_tests/test_platform_dpu.py::test_pcie_link:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4490249"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4490249"
+    - "https://redmine.mellanox.com/issues/4807510"
 
 system_health/test_system_health.py::test_service_checker:
   skip:
