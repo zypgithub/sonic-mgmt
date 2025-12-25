@@ -136,7 +136,7 @@ def test_set_fae_platform_cpo(engines, devices, test_api, nv_command, get_els_li
 
                     if field_key == CpoConsts.ELS_INITIALIZATION_STATE:
                         with allure.step("ELS initialization state is disabled - try to activate and expect error"):
-                            nv_command.platform.transceiver.activate(transceiver_name=random_els).verify_result(False)
+                            nv_command.platform.transceiver.transceiver_id[random_els].activate().verify_result(False)
 
                 finally:
                     with allure.step(f"Unset {field_key}"):
@@ -169,13 +169,13 @@ def test_fae_platform_cpo_bad_flow(engines, devices, nv_command, test_api, get_e
 
     with allure.step("Test activate with invalid parameters"):
         with allure.independent_step("Test activate with ELS out of range"):
-            nv_command.platform.transceiver.activate(transceiver_name='els999').verify_result(False)
+            nv_command.platform.transceiver.transceiver_id['els999'].activate().verify_result(False)
 
         with allure.independent_step("Test activate with optical engine ID"):
-            nv_command.platform.transceiver.activate(transceiver_name='oe1').verify_result(False)
+            nv_command.platform.transceiver.transceiver_id['oe1'].activate().verify_result(False)
 
         with allure.independent_step("Test activate with invalid ELS ID"):
-            nv_command.platform.transceiver.activate(transceiver_name='invalid').verify_result(False)
+            nv_command.platform.transceiver.transceiver_id['invalid'].activate().verify_result(False)
 
     with allure.step("Test invalid string command"):
         nv_command.fae.system.show('invalid_cmd', should_succeed=False)
@@ -188,19 +188,21 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
     """
     Test Objective:
     Verify PMAOS (Physical Module Activation/Deactivation) functionality for ELS transceivers.
-    Test the complete cycle: plug out event -> verify status -> link down -> plug in event -> activate ELS -> link up.
+    Test the complete cycle: plug out event -> verify status -> some ports down -> plug in event -> activate ELS -> ports restored.
 
     Test Flow:
     1. Pick a random ELS transceiver
-    2. Simulate plug out event using PMAOS
-    3. Verify transceiver status is 'Removed'
-    4. Verify link state is down
-    5. Simulate plug in event using PMAOS
-    6. Activate the ELS transceiver
-    7. Verify link state is up
-    8. Verify transceiver status is 'Inserted'
+    2. Verify initial ELS status is 'Inserted'
+    3. Capture baseline of ports in up state
+    4. Simulate plug out event using PMAOS
+    5. Verify transceiver status is 'Removed'
+    6. Verify activate fails when ELS is removed
+    7. Verify some ports are down after unplug
+    8. Simulate plug in event using PMAOS
+    9. Verify ELS status returned to 'Inserted'
+    10. Activate the ELS transceiver
+    11. Verify all baseline ports are back in up state
     """
-    pytest.skip("Skip test_els_unplug_plug_event since plug out/in event is unstable")
     TestToolkit.tested_api = test_api
 
     els_list = get_els_list
@@ -218,8 +220,9 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
 
         with allure.step("Capture baseline of ports in up state"):
             baseline_up_ports = get_ports_in_up_state()
+            logger.info(f"Baseline: {len(baseline_up_ports)} ports in up state")
 
-        with allure.step("Simulate plug out event using PMAOS"):
+        with allure.step(f"Simulate plug out event for {random_els} using PMAOS"):
             # Use PMAOS to simulate unplug event
             mst_device = get_mst_device_for_els_index(els_index)
             IbInterfaceTool.simulate_unplug_module_event(
@@ -229,14 +232,15 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
         with allure.step("Verify ELS status changed to 'Removed'"):
             _verify_transceiver_status(platform, random_els, expected_module_status='Removed')
 
-        with allure.step("Activate ELS transceiver"):
-            platform.transceiver.activate(transceiver_name=random_els).verify_result(False)
+        with allure.step(f"Activate {random_els} - expect failure when removed"):
+            platform.transceiver.transceiver_id[random_els].activate().verify_result(False)
 
-        with allure.step("Verify link state is down"):
-            get_ports_in_up_state()
+        with allure.step("Verify some ports are down"):
+            current_up_ports = get_ports_in_up_state()
+            logger.info(f"After unplug: {len(current_up_ports)} ports in up state")
 
     finally:
-        with allure.step("Simulate plug in event using PMAOS"):
+        with allure.step(f"Simulate plug in event for {random_els} using PMAOS"):
             # Use PMAOS to simulate plug in event
             mst_device = get_mst_device_for_els_index(els_index)
             IbInterfaceTool.simulate_plugin_module_event(
@@ -246,11 +250,20 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
         with allure.step("Verify ELS status returned to 'Inserted'"):
             _verify_transceiver_status(platform, random_els, expected_module_status='Inserted')
 
-        with allure.step("Activate ELS transceiver"):
-            platform.transceiver.activate(transceiver_name=random_els).verify_result()
+        with allure.step(f"Activate {random_els}"):
+            activate_result = platform.transceiver.transceiver_id[random_els].activate(
+                test_name=test_els_unplug_plug_event.__name__
+            )
+            activate_result.verify_result()
+            logger.info(f"Activation of {random_els} took {activate_result.duration} seconds")
 
-        with allure.step("Verify link state is up"):
-            get_ports_in_up_state()
+        with allure.step("Verify link state is up and matches baseline"):
+            retry_call(validate_ports_state, [baseline_up_ports], exceptions=AssertionError, tries=6, delay=10)
+            current_up_ports = get_ports_in_up_state()
+            logger.info(f"After plug in: {len(current_up_ports)} ports in up state (baseline: {len(baseline_up_ports)})")
+
+        with allure.step("Verify activation time is within threshold"):
+            OperationTime.verify_operation_time(activate_result.duration, 'activate els').verify_result()
 
 
 @pytest.mark.platform

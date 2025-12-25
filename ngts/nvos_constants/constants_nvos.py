@@ -1887,6 +1887,7 @@ class OperationTimeConsts:
                   'juliet-power-cycle': 335,
                   'users disconnection by inactivity timeout': 65,
                   'enable snmp': 22,
+                  'activate els': 75,
                   }
     THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
     THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
