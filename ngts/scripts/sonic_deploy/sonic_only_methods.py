@@ -647,6 +647,7 @@ class SonicInstallationSteps:
                 logger.info("Prepare sai.xml files for Port Init feature testing")
                 cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
                                         local_flags=False, platform_params=platform_params)
+                SonicInstallationSteps.enable_issu(cli.engine, platform_params)
 
         # Community only steps
         if is_community(sonic_topo):
@@ -942,7 +943,6 @@ class SonicInstallationSteps:
                 if not is_community(sonic_topo):
                     cli.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
                                              chip_type=chip_type, enable_im=True)
-
             with allure.step("Set dut NTP timezone to {} time.".format(set_timezone)):
                 cli.engine.disconnect()
                 system_set_timezone(cli.engine, set_timezone)
@@ -959,6 +959,24 @@ class SonicInstallationSteps:
                     SonicInstallationSteps.post_install_check(ansible_path=ansible_path, dut_name=dut_name,
                                                               sonic_topo=sonic_topo)
             cli.engine.run_cmd('sudo sonic-installer cleanup -y')
+
+    @staticmethod
+    def enable_issu(dut, platform_params, issu_enabled=True):
+        """
+        @summary: Just set issu on SN5640 DUT to specified status. Do not reboot.
+        """
+        hwskus_need_enable_issu = ['Mellanox-SN5640-C512S2']
+        dut_platform = platform_params["platform"]
+        dut_hwsku = platform_params["hwsku"]
+        if dut_hwsku not in hwskus_need_enable_issu:
+            return
+        sai_profile = f"/usr/share/sonic/device/{dut_platform}/{dut_hwsku}/sai.profile"
+        cmd = f"basename $(cat {sai_profile} | grep SAI_INIT_CONFIG_FILE | cut -d'=' -f2)"
+        sai_xml_filename = dut.run_cmd(cmd)
+        logger.info(f"sai_xml_filename: {sai_xml_filename}")
+        sai_xml_path = f"/usr/share/sonic/device/{dut_platform}/{dut_hwsku}/{sai_xml_filename}"
+        value = "1" if issu_enabled else "0"
+        dut.run_cmd(f"sudo sed -i 's/<issu-enabled> *[0-9]* *<\\/issu-enabled>/<issu-enabled>{value}<\\/issu-enabled>/g' {sai_xml_path}")
 
     @staticmethod
     def reboot_validation_sonic(dut_name, sonic_topo, reboot, ansible_path):
