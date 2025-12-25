@@ -112,6 +112,8 @@ SETUPS_GROUPS_MAP = {
         },
         ('ptf_any', 'spc5'): {'sonic_bobcat_bobcat-10': SETUPS_GROUP_1,
                               'sonic_bison_mtvr-bison-133': SETUPS_GROUP_1,
+                              'sonic_bison_r-bison-11': SETUPS_GROUP_1,
+                              'sonic_bison_r-bison-12': SETUPS_GROUP_1,
                               'sonic_moose_mtvr-moose-10': SETUPS_GROUP_1}
     }
 }
