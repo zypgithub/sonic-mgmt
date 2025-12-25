@@ -87,7 +87,7 @@ class SdkCliCommon():
     def run_overlay_cmd(self, command_prefix, is_in_syncd):
         perf_sys_sdk_path = '/root/perf_sys_sdk'
         sys_sdk_path = '/root/sys_sdk'
-        overlay_cmd = f'sudo {perf_sys_sdk_path}/overlay_files.py {sys_sdk_path} {perf_sys_sdk_path} to_sys_sdk --verbose'
+        overlay_cmd = f'{perf_sys_sdk_path}/overlay_files.py {sys_sdk_path} {perf_sys_sdk_path} to_sys_sdk --verbose'
         if not is_in_syncd:
             self.engine.run_cmd(overlay_cmd)
         else:
