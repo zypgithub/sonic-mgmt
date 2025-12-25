@@ -1,0 +1,52 @@
+switches:
+
+    - ip: 200.202.200.150
+      alias: dut
+      username: admin
+      password: YourPaSsWoRd
+      hostname: r-chameleon-test-10
+      mac: 81:f4:32:ef:cf:af
+      CONN_TYPE: 'SSH'
+      CLI_TYPE: 'Sonic'
+      sub_type: chameleon
+      switch_type: SN5810_LD
+      devdescription: '{"hwsku":"Mellanox-SN5810_LD-O128A2","platform":"x86_64-nvidia_sn5810_ld_-r0", "asic_type": "mellanox", "asic_count": 1}'
+
+hosts:
+
+    - ip: 200.202.200.151
+      alias: ha
+      username: root
+      password: 3tango
+      hostname: mtvr-test10-10-007
+      mac: 00:50:56:28:0f:45
+      ha-1: enp130s0f0
+      ha-2: enp130s0f1
+
+
+    - ip: 200.202.200.152
+      alias: hb
+      username: root
+      password: 3tango
+      hostname: mtvr-test10-10-008
+      mac: 00:50:56:28:0f:46
+      hb-1: enp131s0f0
+      hb-2: enp131s0f1
+
+other_entities:
+
+    - ip: 200.202.200.154
+      username: svc-nbu-sws-sonic
+      password: svc-nbu-sws-sonic11
+      alias: hypervisor
+      mac: 44:a8:42:1b:a9:e9
+      hostname: mtvr-test10-10
+      entity_id: hypervisor
+
+    - ip: 200.202.200.153
+      username: root
+      password: 12345 # NOTE: password is 12345
+      alias: sonic-mgmt
+      mac: 00:50:56:28:0f:44
+      hostname: mtvr-test10-10-mgmt1
+      entity_id: sonic_mgmt

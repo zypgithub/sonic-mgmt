@@ -46,7 +46,7 @@ class GeneralResource(object):
     Please do not use inherited class for switch editing.
     """
 
-    def __init__(self, name, device_type, alias):
+    def __init__(self, name, device_type, alias, ip=None):
         """
 
         :param name: Name of a resource given from res_dict
@@ -58,7 +58,8 @@ class GeneralResource(object):
         self.transaction_obj = Noga_DB_API()
         self.transaction_obj.set_cursor()
         self.alias = alias
-
+        self.ip = ip
+        self.custom_params = {}
         print("New GeneralResource: name: %s, type %s, alias %s" % (self.name, self.type, self.alias))
 
     def _collect_transaction_device_info(self):
@@ -67,7 +68,7 @@ class GeneralResource(object):
         :return: tuple with a record id and record type id (Noga databases required values.)
         """
         rec_type = self.transaction_obj.res_type_by_name(self.type)
-        rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip address", socket.gethostbyname(self.name))[0]
+        rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip address", self.ip)[0]
         return (rec_type, rec_id)
 
     def import_alias(self):
@@ -79,10 +80,16 @@ class GeneralResource(object):
         res_params = {"name": self.name,
                       "Free_text": self.alias}
         res_params["description"] = self.alias
+        for key, value in self.custom_params.items():
+            if value is not None and value != "":
+                res_params[key] = value
         (rec_id, rec_type) = self._collect_transaction_device_info()
         print("  record id %s record type id %s" % (rec_id, rec_type))
         print("  Update params params: %s" % res_params)
         self.transaction_obj.update_record_params(rec_type, rec_id, res_params)
+
+    def set_custom_params(self, custom_params):
+        self.custom_params = custom_params
 
 
 class LinkResource(GeneralResource):
@@ -90,8 +97,8 @@ class LinkResource(GeneralResource):
     @summary: class inherited from Resource, with redefined method.
     """
 
-    def __init__(self, ip, alias):
-        GeneralResource.__init__(self, ip, "Port", alias)
+    def __init__(self, name, alias):
+        GeneralResource.__init__(self, name, "Port", alias)
 
     def _collect_transaction_device_info(self):
         rec_type = self.transaction_obj.res_type_by_name(self.type)
@@ -104,20 +111,20 @@ class HostResource(GeneralResource):
     @summary: class inherited from Resource, with redefined method.
     """
 
-    def __init__(self, ip, alias):
-        GeneralResource.__init__(self, ip, "vm", alias)
+    def __init__(self, name, alias, ip):
+        GeneralResource.__init__(self, name, "vm", alias, ip)
 
     def _collect_transaction_device_info(self):
         rec_type = self.transaction_obj.res_type_by_name(self.type)
 
         # TODO: Some VMs defined as server in noga. remove 'except' when fixing that issue
         try:
-            rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip", socket.gethostbyname(self.name))[0]
+            rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip", self.ip)[0]
         except BaseException:
             print("Exception occurred while collecting host info")
             print("(PATCH): retry with \'server\' name....")
             rec_type = self.transaction_obj.res_type_by_name("server")
-            rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip", socket.gethostbyname(self.name))[0]
+            rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip", self.ip)[0]
 
         return (rec_id, rec_type)
 
@@ -127,12 +134,12 @@ class SwitchResource(GeneralResource):
     @summary: class inherited from Resource, with redefined method.
     """
 
-    def __init__(self, ip, alias):
-        GeneralResource.__init__(self, ip, "switch", alias)
+    def __init__(self, name, alias, ip):
+        GeneralResource.__init__(self, name, "switch", alias, ip)
 
     def _collect_transaction_device_info(self):
         rec_type = self.transaction_obj.res_type_by_name(self.type)
-        rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip address", self.name)[0]
+        rec_id = self.transaction_obj.find_matching_ids_by_attr(rec_type, "ip address", self.ip)[0]
         return (rec_id, rec_type)
 
 
@@ -163,7 +170,9 @@ def fill_hosts(hosts_dict):
     """
     list_to_return = []
     for host in hosts_dict.keys():
-        list_to_return.append(HostResource(host, hosts_dict[host]['alias']))
+        host_resource = HostResource(host, hosts_dict[host]['alias'], hosts_dict[host]['ip'])
+        host_resource.set_custom_params(hosts_dict[host]['custom_params'])
+        list_to_return.append(host_resource)
     return list_to_return
 
 
@@ -175,7 +184,9 @@ def fill_switches(switches_dict):
     """
     list_to_return = []
     for ip in switches_dict.keys():
-        list_to_return.append(SwitchResource(ip, switches_dict[ip]['alias']))
+        switch_resource = SwitchResource(ip, switches_dict[ip]['alias'], switches_dict[ip]['ip'])
+        switch_resource.set_custom_params(switches_dict[ip]['custom_params'])
+        list_to_return.append(switch_resource)
     return list_to_return
 
 
@@ -217,6 +228,7 @@ def create_objects_list(data):
 
     objects_list = list_of_hosts + list_of_links + list_of_switches
     return objects_list
+
 
 
 if __name__ == '__main__':
