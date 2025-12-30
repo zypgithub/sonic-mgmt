@@ -4576,7 +4576,7 @@ class WRRtest(sai_base_test.ThriftInterfaceDataPlane):
 
             while recv_pkt:
                 received = self.dataplane.poll(
-                    device_number=0, port_number=dst_port_id, timeout=10)
+                    device_number=0, port_number=dst_port_id, timeout=2)
                 if isinstance(received, self.dataplane.PollFailure):
                     recv_pkt = None
                     break
