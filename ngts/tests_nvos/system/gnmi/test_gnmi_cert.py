@@ -361,8 +361,8 @@ def test_gnmi_cert_rotation(engines, devices, gnmi_certs):
     with allure.step('Subscribe to gnmi client stream'):
         client = GnmiClient(cert1.ip, GnmiConsts.GNMI_DEFAULT_PORT, username, password,
                             cacert=cert1.cacert)
-        _, _, gnmi_process = client.gnmic_subscribe(prefix='platform-general', path='', mode=GnmiMode.STREAM,
-                                                    cacert=cert1.cacert, keep_session_alive=True)
+        _, _, _, gnmi_process = client.gnmic_subscribe(prefix='platform-general', path='', mode=GnmiMode.STREAM,
+                                                       cacert=cert1.cacert, keep_session_alive=True)
 
     output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
     validate_gnmi_streaming_output(output, err)

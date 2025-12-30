@@ -315,10 +315,10 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
                         verify_tools_installed=True)
     for command in gnmi_list:
         prefix_and_path = command[GnmiConsts.XPATH_KEY].rsplit("/", 1)
-        gnmi_client_output, gnmi_client_err, _ = client.gnmic_subscribe(prefix=prefix_and_path[0],
-                                                                        path=prefix_and_path[1],
-                                                                        mode='once', flat=True,
-                                                                        skip_cert_verify=True)
+        gnmi_client_output, gnmi_client_err, _, _ = client.gnmic_subscribe(prefix=prefix_and_path[0],
+                                                                           path=prefix_and_path[1],
+                                                                           mode='once', flat=True,
+                                                                           skip_cert_verify=True)
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_client_output, gnmi_client_err)
         gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         redis_output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",

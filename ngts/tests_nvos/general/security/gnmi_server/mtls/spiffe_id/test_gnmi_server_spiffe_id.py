@@ -959,6 +959,8 @@ def test_gnmi_spiffe_reboot_case(reboot_flow, engines, scp_player, dut_hostname)
         engines.dut.disconnect()
 
     with allure.step("verify after reboot"):
+        with allure.step("wait for gnmi docker to become available"):
+            time.sleep(10)
         if is_save_flow:
             check_spiffe_positive(engines, setup)
         else:

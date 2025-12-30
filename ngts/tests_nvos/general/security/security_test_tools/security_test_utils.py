@@ -1297,7 +1297,7 @@ def create_gnmi_subscription(gnmi_client, user, streaming=True, path='/', prefix
         # Start GNMI subscription
         # With skip_cert_verify=True, the client will skip certificate validation
         # but still use TLS encryption and username/password authentication
-        _, _, gnmi_subscription_process = gnmi_client.gnmic_subscribe(
+        _, _, _, gnmi_subscription_process = gnmi_client.gnmic_subscribe(
             prefix=prefix,
             path=path,
             mode=mode,

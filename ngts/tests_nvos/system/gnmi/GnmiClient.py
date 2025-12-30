@@ -74,7 +74,7 @@ class GnmiClient:
     def gnmic_subscribe(self, prefix, path, mode: str, flat: bool = False, username='', password='',
                         skip_cert_verify: bool = False, cacert='', debug_mode: bool = True,
                         cmd_time=None, keep_session_alive: bool = False, wait_till_done: bool = False) -> Tuple[
-            str, str, subprocess.Popen]:
+            str, str, int, subprocess.Popen]:
         allowed_modes = GnmiMode.ALL_MODES if not keep_session_alive else [GnmiMode.STREAM, GnmiMode.POLL]
         assert mode in allowed_modes, f'unsupported gnmi subscribe mode: "{mode}"'
         mode = f"--mode {mode}" if mode != GnmiMode.STREAM else GnmiMode.STREAM
@@ -178,7 +178,7 @@ class GnmiClient:
     def _run_gnmic_op(self, gnmi_op: str, skip_cert_verify: bool, cacert: str, debug_mode: bool, cmd_time,
                       username: str = '', password: str = '', keep_session_alive: bool = False,
                       wait_till_done: bool = False) -> Tuple[
-            str, str, subprocess.Popen]:
+            str, str, int, subprocess.Popen]:
         debug_mode = debug_mode and not skip_cert_verify
         with allure.step('compose the gnmic command'):
             username = username or self.username
