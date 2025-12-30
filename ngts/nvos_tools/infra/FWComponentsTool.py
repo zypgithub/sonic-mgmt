@@ -8,6 +8,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -48,7 +49,7 @@ class FWComponentsTool:
                     encrypted_fpga = ''
                 component_name = f'{component_name}{encrypted_fpga}'
         device = TestToolkit.get_device()
-        fw_path = device.fw_versions_json_file_path
+        fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not FWComponentsTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:
@@ -60,15 +61,15 @@ class FWComponentsTool:
             if device_name in ["juliet-160", "juliet-195"]:
                 provisioning = PRODUCTION
             component_image_info = platform_components_dict[provisioning][component_name][version]
-            filename = getattr(component_image_info.keys(), "filename", None)
-            if not filename:
-                filename = component_image_info['path'].split("/")[-1]
-            return component_image_info['path'], filename, component_image_info['version_name']
+            path = component_image_info['path']
+            # Derive filename from path if not explicitly provided (e.g., for CPLD components)
+            filename = component_image_info.get('filename') or path.rsplit('/', 1)[-1]
+            return path, filename, component_image_info['version_name']
 
     @staticmethod
     def get_fw_component_version_dict(component_name, version):
         device = TestToolkit.get_device()
-        fw_path = device.fw_versions_json_file_path
+        fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):
             if not FWComponentsTool.PLATFORM_COMPONENTS_DICT:
                 with open(fw_path, 'r') as file:

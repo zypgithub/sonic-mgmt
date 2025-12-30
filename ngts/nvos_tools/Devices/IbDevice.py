@@ -1513,6 +1513,7 @@ class JulietSwitch(NvLinkSwitch):
             "Install BIOS": 600,
             'install cpld': 720,
             self.generate_tech_support: 120,
+            'julietscaleout generate_tech_support': 120,
         })
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
@@ -2841,7 +2842,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         super()._init_platform_lists()
         self.platform_environment_fan_values = {}
         self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|920-9K42W-00L6-TS1")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
 
 
 # -------------------------- RosalindSimx Switch ----------------------------
