@@ -321,6 +321,24 @@ class DataBaseNames:
     STATE_DB = 'StateDb'
 
 
+class DelayedRecovery:
+    DELAYED_RECOVERY_STATE = "state"
+    DELAYED_RECOVERY_LOSS_TH = "fec-plr-align-loss-th"
+    DELAYED_RECOVERY_RETRY_TH = "plr-retry-th"
+    DELAYED_RECOVERY_STATE_FORCE = "peer-state-force"
+    DELAYED_RECOVERY_LOSS_TH_FORCE = "peer-fec-plr-align-loss-th-force"
+    DELAYED_RECOVERY_RETRY_TH_FORCE = "peer-plr-retry-th-force"
+    DELAYED_RECOVERY_DEFAULT_STATE = "enabled"
+    DELAYED_RECOVERY_DEFAULT_LOSS_TH = 127
+    DELAYED_RECOVERY_DEFAULT_RETRY_TH = 255
+    DELAYED_RECOVERY_DEFAULT_FORCE_STATE = "enabled"
+    DELAYED_RECOVERY_DEFAULT_FORCE_LOSS_TH = "disabled"
+    DELAYED_RECOVERY_DEFAULT_FORCE_RETRY_TH = "disabled"
+    DELAYED_RECOVERY_DEFAULT_APPLIED_STATE = "fw-default"
+    DELAYED_RECOVERY_DEFAULT_APPLIED_LOSS_TH = 0
+    DELAYED_RECOVERY_DEFAULT_APPLIED_RETRY_TH = 0
+
+
 class PhyHealthConsts:
     """Constants for phy health related fields and values."""
 
