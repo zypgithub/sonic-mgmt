@@ -78,6 +78,10 @@ def complete_install(duthost, localhost, boot_type, res, pdu_ctrl, component, au
     if boot_type != "none":
         if not auto_reboot:
             logger.info("Waiting on install to finish.")
+            # TODO: WA for RM#4704448, remove it or make it permanent based on the final analysis
+            from infra.tools.redmine.redmine_api import is_redmine_issue_active
+            if is_redmine_issue_active([4704448])[0] and 'FPGA' in component:
+                timeout = 2400
             res.get(timeout)
             if res._value['failed']:
                 pytest.fail(f"The component installation is not successful: {res._value}")
