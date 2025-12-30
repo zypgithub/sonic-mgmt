@@ -277,7 +277,8 @@ def test_auth_restrictions_action_clear_user(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-def test_auth_restrictions_action_clear_all(random_api, engines, test_users):
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
     """
     @summary: Verify the functionality of action clear command
 
@@ -289,8 +290,10 @@ def test_auth_restrictions_action_clear_all(random_api, engines, test_users):
         5. Block both users
         6. Unblock all
         7. Verify both are unblocked
+
+    Do not use random_api fixture for this test, as it breaks it, because user set does not work via OpenApi
     """
-    TestToolkit.tested_api = random_api
+    TestToolkit.tested_api = test_api
 
     with allure.step('Enable lockout'):
         restrictions = System().aaa.authentication.restrictions
