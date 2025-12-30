@@ -541,6 +541,8 @@ def update_open_api_port(topology_obj, devices, engines):
         open_api_port = topology_conn.get('OPEN_API_PORT', device.open_api_port)
         device.open_api_port = open_api_port
         engines[player_name].open_api_port = open_api_port
+        # backwards compatibility, if instance has no attr like this, will retrieve from class level attr.
+        LinuxSshEngine.open_api_port = open_api_port
 
 
 @pytest.fixture
