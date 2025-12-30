@@ -259,9 +259,7 @@ def test_techsupport_multiple_times(engines, test_name, random_api, devices, ser
 
             with allure.step('Validate show tech-support command format'):
                 show_output = system.techsupport.files.show()
-                output_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-                # Extract 'files' dict from the response
-                files_dict = output_dict.get('files', {})
+                files_dict = Tools.OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
                 assert SystemConsts.LATEST_KEY in files_dict, \
                     f"Output of show tech-support is missing key '{SystemConsts.LATEST_KEY}'. Existing keys: {files_dict.keys()}"
                 latest_file = files_dict.pop(SystemConsts.LATEST_KEY)[SystemConsts.PATH_KEY]

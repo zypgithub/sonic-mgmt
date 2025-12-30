@@ -138,20 +138,6 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def action_profile_change(engine, device, resource_path, op_param=""):
-        """
-        Rebooting the switch
-        """
-        list_items = [f'{key} {value}' for key, value in op_param.items()]
-        op_param = ' '.join(list_items)
-        path = resource_path.replace('/', ' ')
-        cmd = "nv action change {path} {op_param}".format(path=path, op_param=op_param)
-        cmd = " ".join(cmd.split())
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
-        return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True).verify_result()
-
-    @staticmethod
-    @check_output
     def action_run_ztp(engine, device, resource_path, op_param="", expected_boot=False):
         """
         Ztp action run

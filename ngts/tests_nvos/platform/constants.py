@@ -95,7 +95,7 @@ class TransceiversConsts:
             downgrade_version_name="fw_70_250_00096_dev_signed_WOLVERINE_DK.bin",
             upgrade_version_number="70.250.97",
             downgrade_version_number="70.250.96",
-            installation_time=480
+            installation_time=300
         ),
         '130': Transceiver(
             transceiver_type='Sian2',

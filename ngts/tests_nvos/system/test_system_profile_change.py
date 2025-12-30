@@ -1,20 +1,24 @@
 import logging
-import pytest
-
-from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
-from ngts.tools.test_utils import allure_utils as allure
+import os
 import random
 import time
-import os
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import SystemConsts
-from ngts.nvos_constants.constants_nvos import DatabaseConst
-from ngts.tests_nvos.system.clock.ClockTools import ClockTools
+
+import pytest
+
 from ngts.constants.constants import LinuxConsts
+from ngts.nvos_constants.constants_nvos import DatabaseConst, SystemConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
+from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
+from ngts.tools.test_utils import allure_utils as allure
 
 invalid_cmd_str = ['Invalid config', 'Error', 'command not found', 'Bad Request', 'Not Found', "unrecognized arguments",
                    "error: unrecognized arguments", "invalid choice", "Action failed", "Invalid Command",
@@ -30,7 +34,7 @@ invalid_profile_adaptive_routing_change_commands = ['adaptive-routing-groups 127
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_change_default(engines, devices):
+def test_system_profile_change_default(engines, devices, random_api):
     """
     Test flow:
         1. run nv show system profile
@@ -54,7 +58,7 @@ def test_system_profile_change_default(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_negative(engines, devices):
+def test_system_profile_negative(engines, devices, random_api):
     """
     Test flow:
         1. Testing all negative scenarios for action
@@ -83,7 +87,8 @@ def test_system_profile_negative(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices, setup_name):
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
+def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm, devices, setup_name, test_name, random_api):
     """
     Test flow:
         1. Check that with different routing group we have traffic
@@ -109,8 +114,15 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
         with allure.step("Change adaptive-routing-groups to possible value"):
             positive_group_value = random.randrange(128, 1792, 128)
 
-            params = {'adaptive-routing-groups': positive_group_value}
-            system.profile.action_profile_change(params_dict=params)
+            params = {SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS: positive_group_value}
+            reboot_params = RebootParams(topology_obj=TestToolkit.topology_obj if hasattr(TestToolkit, 'topology_obj') else None)
+            result_obj, duration = OperationTime.save_duration(
+                'profile change with reboot', '', test_name,
+                system.profile.action_profile_change,
+                params_dict=params, reboot_params=reboot_params
+            )
+            result_obj.verify_result()
+            logging.info(f"Profile change took {duration} seconds")
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
@@ -138,7 +150,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
             Tools.TrafficGeneratorTool.send_ib_traffic(players, interfaces, setup_name, True).verify_result()
 
     with allure.step('Change system profile to default'):
-        change_profile_to_default(system, devices, engines)
+        change_profile_to_default(system, devices, engines, test_name)
 
         with allure.step("Start OpenSm"):
             OpenSmTool.start_open_sm(engines).verify_result()
@@ -155,7 +167,7 @@ def test_system_profile_adaptive_routing(engines, players, interfaces, start_sm,
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_changes_stress(engines, devices):
+def test_system_profile_changes_stress(engines, devices, test_name, random_api):
     """
     Test flow:
         1. Stress system
@@ -183,8 +195,16 @@ def test_system_profile_changes_stress(engines, devices):
     with allure.step('Check that we can change system profile during stress test'):
         with allure.step("Enable adaptive-routing and enable breakout-mode, configure groups"):
             positive_group_value = random.randrange(128, 1792, 128)
-            system.profile.action_profile_change(
-                params_dict={'adaptive-routing-groups': positive_group_value})
+            params = {SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS: positive_group_value}
+            reboot_params = RebootParams()
+            result_obj, duration = OperationTime.save_duration(
+                'profile change with reboot', '', test_name,
+                system.profile.action_profile_change,
+                params_dict=params, reboot_params=reboot_params
+            )
+            result_obj.verify_result()
+            logging.info(f"Profile change took {duration} seconds")
+
             system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
                 .get_returned_value()
             values_to_verify = [SystemConsts.PROFILE_STATE_ENABLED, positive_group_value,
@@ -195,12 +215,12 @@ def test_system_profile_changes_stress(engines, devices):
                                                             system_profile_output).verify_result()
 
         with allure.step('Verify default values'):
-            change_profile_to_default(system, devices, engines)
+            change_profile_to_default(system, devices, engines, test_name)
 
 
 @pytest.mark.system
 @pytest.mark.system_profile_cleanup
-def test_system_profile_redis_db_crash(engines, devices):
+def test_system_profile_redis_db_crash(engines, devices, test_name, random_api):
     """
     Test flow:
         1. Write to config db adaptive routing group value
@@ -224,14 +244,36 @@ def test_system_profile_redis_db_crash(engines, devices):
                                                         system_profile_output).verify_result()
 
     with allure.step('Change system profile to default'):
-        change_profile_to_default(system, devices, engines)
+        change_profile_to_default(system, devices, engines, test_name)
 
 
-def change_profile_to_default(system, devices, engines):
+def change_profile_to_default(system, devices, engines, test_name=None):
+    """
+    Change system profile back to default values.
+
+    :param system: System object
+    :param devices: devices fixture
+    :param engines: engines fixture
+    :param test_name: test name for duration tracking (optional)
+    """
     with allure.step('Change system profile to default'):
-        system.profile.action_profile_change(
-            params_dict={SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS:
-                         devices.dut.system_profile_default_values[SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX]})
+        default_ar_groups = devices.dut.system_profile_default_values[SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX]
+        params = {SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS: default_ar_groups}
+        reboot_params = RebootParams()
+
+        if test_name:
+            result_obj, duration = OperationTime.save_duration(
+                'default profile change with reboot', '', test_name,
+                system.profile.action_profile_change,
+                params_dict=params, reboot_params=reboot_params
+            )
+            result_obj.verify_result()
+            logging.info(f"Profile change to default took {duration} seconds")
+        else:
+            system.profile.action_profile_change(
+                params_dict=params, reboot_params=reboot_params
+            ).verify_result()
+
         system_profile_output = OutputParsingTool.parse_json_str_to_dictionary(system.profile.show()) \
             .get_returned_value()
         ValidationTool.validate_fields_values_in_output(SystemConsts.PROFILE_OUTPUT_FIELDS,

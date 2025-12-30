@@ -4,6 +4,7 @@ import re
 import allure
 from retry import retry
 
+from ngts.cli_wrappers.linux.linux_ip_clis import LinuxIpCli
 from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.cli_wrappers.openapi.openapi_ib_interface_clis import OpenApiIbInterfaceCli
 from ngts.nvos_constants.constants_nvos import ApiType
@@ -204,9 +205,16 @@ class Port(BaseComponent):
 
     def get_port_ip_addresses(self, dut_engine):
         with allure.step(f"Get mgmt port {self.name} ip addresses"):
-            ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
-                self.interface.ipv4.address.show(dut_engine=dut_engine)).get_returned_value())
-        return ip_addresses_show[0].split("/")[0]
+            try:
+                ip_addresses_show = list(OutputParsingTool.parse_json_str_to_dictionary(
+                    self.interface.ipv4.address.show(dut_engine=dut_engine)).get_returned_value())
+                return ip_addresses_show[0].split("/")[0]
+            except Exception as e:
+                logger.info(f"Fallback: parsing 'ip addr' since older version image 25.02.6000 - {e}")
+                linux_ip_cli = LinuxIpCli(dut_engine)
+                ip_info = linux_ip_cli.get_ip_info(ip_ver='4')
+                ip_addresses = linux_ip_cli.get_interface_ip_addresses(self.name, ip_info)
+                return ip_addresses[0] if ip_addresses else None
 
     @staticmethod
     def parse_port_name(name):

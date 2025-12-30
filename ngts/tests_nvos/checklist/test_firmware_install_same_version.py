@@ -6,7 +6,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.platform.Platform import Platform
-from ngts.nvos_constants.constants_nvos import OperationTimeConsts, NvosConst, PlatformConsts
+from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.tests_nvos.constants import (FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA,
                                        FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA)
 from ngts.nvos_tools.infra.BmcTool import BmcTool
@@ -37,8 +37,12 @@ def test_firmware_install_same_version(devices, test_api, test_name):
         component = select_random_component(devices)
         platform_component = getattr(Platform().firmware, component)
 
+    if component == FW_COMPONENT_CPLD and is_bug_active(4800718):
+        pytest.skip("Bug #4800718 is active - skipping CPLD firmware install same version test")
+
     with allure.step("Install same fw version without using 'skip-version-check' option"):
-        result = install_same_firmware_version(test_name=test_name,
+        result = install_same_firmware_version(devices=devices,
+                                               test_name=test_name,
                                                component=component,
                                                platform_component=platform_component,
                                                skip_version_check=False)
@@ -66,7 +70,8 @@ def test_firmware_install_same_version_skip_check(devices, test_api, test_name):
         platform_component = getattr(Platform().firmware, component)
 
     with allure.step("Install same fw version while using 'skip-version-check' option"):
-        result = install_same_firmware_version(test_name=test_name,
+        result = install_same_firmware_version(devices=devices,
+                                               test_name=test_name,
                                                component=component,
                                                platform_component=platform_component,
                                                skip_version_check=True)
@@ -148,7 +153,7 @@ def test_firmware_install_invalid_version(devices, test_api, test_name):
         verify_msg_in_out_or_err(msg, result)
 
 
-def install_same_firmware_version(test_name, component, platform_component, skip_version_check=False):
+def install_same_firmware_version(devices, test_name, component, platform_component, skip_version_check=False):
     """
         @summary: Given a component, install same firmware version on component (no need to reboot) using
         skip-version_check option if needed (skip_version_check=True)
@@ -163,7 +168,7 @@ def install_same_firmware_version(test_name, component, platform_component, skip
                     BmcTool.verify_platform_component_version(platform_component, version_name)
 
             operation = f'install {component}'
-            duration_threshold = OperationTimeConsts.THRESHOLDS.get(operation)
+            duration_threshold = devices.dut.expected_operation_durations[operation]
             result_obj = BmcTool.fetch_and_install_platform_component_without_reboot(platform_component=platform_component,
                                                                                      path=path, name=version_name,
                                                                                      filename=filename,
@@ -199,7 +204,8 @@ def _run_fae_firmware_install_test(devices, test_name, component_type, component
         component_name, firmware_component = component_selector(devices)
 
     with allure.step("Install same fw version without using 'skip-version-check' option"):
-        result_obj = install_same_firmware_version(test_name=test_name,
+        result_obj = install_same_firmware_version(devices=devices,
+                                                   test_name=test_name,
                                                    component=component_type,
                                                    platform_component=firmware_component,
                                                    skip_version_check=False)
@@ -209,7 +215,8 @@ def _run_fae_firmware_install_test(devices, test_name, component_type, component
         verify_msg_in_out_or_err(msg, result_obj)
 
     with allure.step("Install same fw version while using 'skip-version-check' option"):
-        result_obj = install_same_firmware_version(test_name=test_name,
+        result_obj = install_same_firmware_version(devices=devices,
+                                                   test_name=test_name,
                                                    component=component_type,
                                                    platform_component=firmware_component,
                                                    skip_version_check=True)

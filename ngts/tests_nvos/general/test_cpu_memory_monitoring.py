@@ -534,8 +534,8 @@ def verify_gnmic_events(engines, devices, events, docker, resource):
 
     with allure.step("Run gnmi session (once) and verify events were streamed"):
         for event_id in [high_usage_event_id, normal_usage_event_id]:
-            out, err, duration_sec, _ = client.gnmic_subscribe_system_event(event_id=event_id, skip_cert_verify=True,
-                                                                            keep_session_alive=False)
+            out, err, _ = client.gnmic_subscribe_system_event(event_id=event_id, skip_cert_verify=True,
+                                                              keep_session_alive=False)
             # WA: Extract valid JSON from output (may contain extra text after termination)
             # bug: https://redmine.mellanox.com/issues/4782619
             if is_bug_active(4782619):
