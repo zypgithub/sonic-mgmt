@@ -58,8 +58,8 @@ r-bison-08-ptf-any
 
 [ptf]
 # MTVR r-bison-08 PTF host
-ptf-r-bison-08 ansible_host=10.215.51.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
-10.215.51.62 ansible_host=10.215.51.62 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+ptf-r-bison-08 ansible_host=10.215.40.182 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.40.182 ansible_host=10.215.40.182 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 
 [pdu]
 pdu-10-208-2-47 ansible_host=10.208.2.47 protocol=snmp
