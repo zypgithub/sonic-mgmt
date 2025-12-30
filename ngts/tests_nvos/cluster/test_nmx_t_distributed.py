@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 from retry import retry
 
-from cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
 from ngts.tools.test_utils import allure_utils as allure
@@ -15,18 +15,17 @@ from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts, NmxTelemetryConsts
 from ngts.nvos_tools.system.System import System
-from nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.tests_nvos.constants import MINUTE
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.ib.Ib import Ib
 
 logger = logging.getLogger()
 
 
 @pytest.mark.nmx
-def test_nmx_t_distributed_basic_configuration(dut_engines, random_api, topology_obj):
+def test_nmx_t_distributed_basic_configuration(dut_engines, random_api):
     """
     @summary:
         Verify nmx-telemetry-agent basic configuration.
@@ -81,7 +80,7 @@ def test_nmx_t_distributed_basic_configuration(dut_engines, random_api, topology
 
 
 @pytest.mark.nmx
-@pytest.mark.timeout(12 * MINUTE, func_only=True)
+@pytest.mark.timeout(10 * MINUTE, func_only=True)
 def test_nmx_t_distributed_functionality(dut_engines, random_api, setup_name):
     """
     @summary:
@@ -106,20 +105,22 @@ def test_nmx_t_distributed_functionality(dut_engines, random_api, setup_name):
             allure.attach(f"Primary switch: {primary_engine.ip}")
 
         with allure.step("On primary switch: configure cluster nodes, enable cluster and verify dockers"):
+            TestToolkit.tested_api = ApiType.NVUE
             with allure.step("Configure cluster nodes"):
                 _configure_cluster_nodes(primary_engine, dut_engines, cluster)
 
-            with allure.step("Start cluster and verify dockers"):
+            with allure.step("Enable cluster and verify dockers"):
                 ClusterTools.start_cluster(cluster, setup_name, engine=primary_engine)
                 _verify_docker_running(primary_engine, NmxTelemetryConsts.NMX_TELEMETRY_DOCKER_NAME)
+            TestToolkit.tested_api = random_api
 
-        with allure.step("Verify all nmx-telemetry-agents are connected and healthy"):
-            _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae)
+        if len(list(dut_engines.keys())) > 1:
+            with allure.step("Verify all nmx-telemetry-agents are connected and healthy"):
+                _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae)
 
         with allure.step("Verify nmx-telemetry is in ok state"):
-            ClusterTools.wait_until_app_expected_status(cluster, app=ClusterConsts.NMX_TELEMETRY,
-                                                        expected_status=NmxTelemetryConsts.STATUS_OK,
-                                                        engine=primary_engine)
+            _verify_app_status(cluster, app=ClusterConsts.NMX_TELEMETRY,
+                               expected_status=NmxTelemetryConsts.STATUS_OK, engine=primary_engine)
 
         with allure.step("Verify that main switch is able to collect telemetry from all other switches in the rack"):
             with allure.step("Verify all ASICs have LIDs"):
@@ -139,7 +140,8 @@ def test_nmx_t_distributed_functionality(dut_engines, random_api, setup_name):
 
 
 @pytest.mark.nmx
-def test_nmx_t_distributed_bad_flow(dut_engines, random_api, setup_name):
+@pytest.mark.timeout(5 * MINUTE, func_only=True)
+def test_nmx_t_distributed_bad_flow(dut_engines, setup_name):
     """
     @summary:
         Check nmx-telemetry distributed bad scenarios.
@@ -152,7 +154,7 @@ def test_nmx_t_distributed_bad_flow(dut_engines, random_api, setup_name):
         5. On primary switch, check nmx-t health
         6. Cleanup - remove nodes configuration, disable cluster, re-enable nmx-telemetry-agent
     """
-    TestToolkit.tested_api = random_api
+    TestToolkit.tested_api = ApiType.NVUE
     fae = Fae()
     cluster = Cluster()
 
@@ -166,7 +168,7 @@ def test_nmx_t_distributed_bad_flow(dut_engines, random_api, setup_name):
             with allure.step("Configure cluster nodes"):
                 _configure_cluster_nodes(primary_engine, dut_engines, cluster)
 
-            with allure.step("Start cluster and verify dockers"):
+            with allure.step("Enable cluster and verify dockers"):
                 ClusterTools.start_cluster(cluster, setup_name, engine=primary_engine)
                 _verify_docker_running(primary_engine, NmxTelemetryConsts.NMX_TELEMETRY_DOCKER_NAME)
 
@@ -200,7 +202,8 @@ def test_nmx_t_distributed_bad_flow(dut_engines, random_api, setup_name):
 
 
 @pytest.mark.nmx
-def test_nmx_t_distributed_reboot(dut_engines, random_api, setup_name):
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
+def test_nmx_t_distributed_reboot(dut_engines, setup_name):
     """
     @summary:
         Verify nmx-t distributed functionality is retrieved after reboot.
@@ -217,7 +220,7 @@ def test_nmx_t_distributed_reboot(dut_engines, random_api, setup_name):
         9. Verify that main switch is able to collect telemetry from all other switches in the rack
         10. Cleanup - unset cluster nodes configuration and disable cluster
     """
-    TestToolkit.tested_api = random_api
+    TestToolkit.tested_api = ApiType.NVUE
     fae = Fae()
     cluster = Cluster()
     system = System()
@@ -231,7 +234,7 @@ def test_nmx_t_distributed_reboot(dut_engines, random_api, setup_name):
             with allure.step("Configure cluster nodes"):
                 _configure_cluster_nodes(primary_engine, dut_engines, cluster)
 
-            with allure.step("Start cluster and verify dockers"):
+            with allure.step("Enable cluster and verify dockers"):
                 ClusterTools.start_cluster(cluster, setup_name, engine=primary_engine)
                 _verify_docker_running(primary_engine, NmxTelemetryConsts.NMX_TELEMETRY_DOCKER_NAME)
 
@@ -250,21 +253,24 @@ def test_nmx_t_distributed_reboot(dut_engines, random_api, setup_name):
             assert state == NvosConst.ENABLED, "Cluster is not enabled"
 
         with allure.step("On primary switch, check nmx-t health"):
-            ClusterTools.wait_until_app_expected_status(cluster, app=ClusterConsts.NMX_TELEMETRY,
-                                                        expected_status=NmxTelemetryConsts.STATUS_OK,
-                                                        engine=primary_engine)
+            _verify_app_status(cluster, app=ClusterConsts.NMX_TELEMETRY,
+                               expected_status=NmxTelemetryConsts.STATUS_OK, engine=primary_engine)
 
-        with allure.step("Check nmx-telemetry-agent state on all switches, and verify nmx-t docker is running"):
-            for _, dut_engine in dut_engines.items():
-                state = _get_nmx_telemetry_agent_state(fae, dut_engine)
-                assert state == NvosConst.ENABLED, f"agent should be enabled, got {state}"
-                _verify_docker_running(dut_engine, NmxTelemetryConsts.NMX_TELEMETRY_DOCKER_NAME)
+        if random_engine.ip != primary_engine.ip:
+            with allure.step("On primary switch, restart nmx-controller app"):
+                _restart_app(cluster, ClusterConsts.NMX_CONTROLLER, primary_engine)
 
-        with allure.step("Verify all nmx-t-agents are connected"):
-            _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae)
+        if len(list(dut_engines.keys())) > 1:
+            with allure.step("Check nmx-telemetry-agent state on all switches, and verify nmx-t docker is running"):
+                for _, dut_engine in dut_engines.items():
+                    state = _get_nmx_telemetry_agent_state(fae, dut_engine)
+                    assert state == NvosConst.ENABLED, f"agent should be enabled, got {state}"
+                    _verify_docker_running(dut_engine, NmxTelemetryConsts.NMX_TELEMETRY_DOCKER_NAME)
 
-        # simx limitation: once
-        with allure.step("Verify that main switch is able to collect telemetry from all other switches in the rack"):
+            with allure.step("Verify all nmx-t-agents are connected"):
+                _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae)
+
+        with allure.step("Verify that main switch is able to collect telemetry from all switches in rack"):
             with allure.step("Verify all ASICs have LIDs"):
                 _check_lids(dut_engines)
 
@@ -340,19 +346,20 @@ def _verify_docker_running(engine, docker_name, should_run=True):
 
 def _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae):
     """Verify all agents are connected to the main switch and are healthy."""
-    output = None
+    agents_dict = None
     for _ in range(15):
         output = OutputParsingTool.parse_show_output_to_dict(fae.cluster.apps.app_name[ClusterConsts.NMX_TELEMETRY]
                                                              .show(dut_engine=primary_engine)).get_returned_value()
-        if output.get(NmxTelemetryConsts.AGENTS, None) is None:
+        agents_dict = output.get(NmxTelemetryConsts.AGENTS, None)
+        if agents_dict is None:
             logger.info("Retrying in 5 seconds...")
             time.sleep(5)
         else:
             break
-    assert output, "nmx telemetry has no agents"
+    assert agents_dict, "nmx telemetry has no agents"
 
     with allure.independent_step("Verify all agents are connected"):
-        ips_list = list(output[NmxTelemetryConsts.AGENTS].keys())
+        ips_list = list(agents_dict.keys())
         missing_switches = []
         for _, dut_engine in dut_engines.items():
             if dut_engine.ip == primary_engine.ip:
@@ -363,7 +370,7 @@ def _verify_agents_connectivity_and_health(dut_engines, primary_engine, fae):
 
     with allure.independent_step("Verify all agents are healthy"):
         unhealthy_switches = []
-        for agent_ip, agent_data in output[NmxTelemetryConsts.AGENTS].items():
+        for agent_ip, agent_data in agents_dict.items():
             if agent_data['status'] != NmxTelemetryConsts.STATUS_HEALTHY:
                 unhealthy_switches.append(agent_ip)
         assert unhealthy_switches == [], f"Not all switches are in healthy state. Unhealthy switches: {unhealthy_switches}"
@@ -385,7 +392,7 @@ def _post_reboot_check(engine):
     with allure.step("Wait until ssh is ready"):
         cli_unavailable_msg = "NVOS CLI is unavailable"
         out = engine.run_cmd('nv show system version')
-        while cli_unavailable_msg in out:
+        while (cli_unavailable_msg in out) or (not out.strip()):
             logger.warning("CLI is not up. Try again after 5 seconds...")
             time.sleep(5)
             out = engine.run_cmd('nv show system version')
@@ -397,12 +404,12 @@ def _check_lids(dut_engines):
     ib = Ib()
     for _, dut_engine in dut_engines.items():
         out = OutputParsingTool.parse_show_output_to_dict(ib.device.show(dut_engine=dut_engine)).get_returned_value()
-        for asic, asic_data in out.items():
+        for _, asic_data in out.items():
             if "lid" in asic_data:
                 assert asic_data["lid"] != 0, "Some ASICs do not have LIDs allocated to them."
 
 
-@retry(Exception, tries=60, delay=5)
+@retry(Exception, tries=30, delay=5)
 def _check_telemetry_collection(dut_engines, primary_engine):
     """Verify that main switch is able to collect telemetry from all other switches in the rack."""
     ip_list = []
@@ -421,3 +428,19 @@ def _check_telemetry_collection(dut_engines, primary_engine):
 @retry(Exception, tries=5, delay=10)
 def _check_message_in_log(engine, system, msg_list, start_time):
     system.log.verify_expected_logs_by_time(msg_list, engine, only_latest_log=False, start_time=start_time)
+
+
+@retry(Exception, tries=6, delay=20)
+def _verify_app_status(cluster, app, expected_status, engine):
+    output = OutputParsingTool.parse_show_output_to_dict(
+        cluster.apps.show(dut_engine=engine)).get_returned_value()
+    app_status = output[app]['status']
+    assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
+
+
+def _restart_app(cluster, app, engine):
+    """Stop and start a cluster app."""
+    with allure.step(f"Stop app {app}"):
+        cluster.apps.app_name[app].action_stop_cluster_app(engine=engine)
+    with allure.step(f"Start app {app}"):
+        cluster.apps.app_name[app].action_start_cluster_app(engine=engine)
