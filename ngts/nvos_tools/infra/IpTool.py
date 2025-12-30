@@ -1,6 +1,8 @@
+import ipaddress
 import logging
 import random
 import re
+from enum import Enum
 from typing import List
 
 import allure
@@ -14,6 +16,18 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 logger = logging.getLogger()
+
+
+class Ipv6Type(Enum):
+    """Enum representing different types of IPv6 addresses."""
+    GLOBAL = 'global'
+    LINK_LOCAL = 'link-local'
+    LOOPBACK = 'loopback'
+    MULTICAST = 'multicast'
+    PRIVATE = 'private'
+    RESERVED = 'reserved'
+    UNSPECIFIED = 'unspecified'
+    INVALID = 'invalid'
 
 
 class IpTool:
@@ -194,27 +208,55 @@ class IpTool:
         return matches[0]
 
     @staticmethod
+    def _extract_ipv6_from_address_string(address: str) -> str:
+        """
+        Extract IPv6 address from address string like 'fdfd:fdfd:7:145::1/64'.
+        Uses ipaddress module for proper validation.
+
+        Returns:
+            IPv6 address string if valid, empty string otherwise
+        """
+        try:
+            ip_part = address.split('/')[0]
+            addr = ipaddress.ip_address(ip_part)
+            if isinstance(addr, ipaddress.IPv6Address):
+                return str(addr)
+        except ValueError:
+            pass
+        return ''
+
+    @staticmethod
     def get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(eth_interface_name: str, dut_engine: LinuxSshEngine = None) -> str:
         try:
-            ipv6_pattern = r'([0-9a-fA-F:]+)/64'
             out = dut_engine.run_cmd(f'nv show interface {eth_interface_name} ip address -o json', validate=True)
             no_cli_msgs = ['Error', 'NVOS CLI is unavailable', 'System is initializing', 'This may take a few minutes']
             if any(msg in out for msg in no_cli_msgs):
                 return ''
             out_dict = OutputParsingTool.parse_json_str_to_dictionary(out).get_returned_value()
             addresses = list(out_dict.keys())
+
+            all_ipv6_addresses = []
             for address in addresses:
-                matches = re.findall(ipv6_pattern, address)
-                if matches:
-                    return matches[0]
-            return ''
-        except Exception as e:
+                ipv6 = IpTool._extract_ipv6_from_address_string(address)
+                if ipv6:
+                    all_ipv6_addresses.append(ipv6)
+
+            if not all_ipv6_addresses:
+                return ''
+
+            routable_addresses = [addr for addr in all_ipv6_addresses if IpTool.is_routable_ipv6(addr)]
+            if routable_addresses:
+                return routable_addresses[0]
+
+            return all_ipv6_addresses[0]
+        except Exception:
             logging.warning(f'failed to get ipv6 address for interface {eth_interface_name}: {ExceptionTool.format_traceback()}')
             return ''
 
     @staticmethod
     def get_player_ipv6_addr(player_ipv4_addr: str, player_engine: LinuxSshEngine = None) -> str:
-        ipv6_pattern = r'inet6\s+([0-9a-fA-F:]+)/64'
+        # Pattern to extract address with prefix from inet6 lines
+        inet6_pattern = r'inet6\s+(\S+)'
 
         def _is_interface_line(s: str) -> bool:
             return bool(re.match(r'^\d+: ', s))
@@ -237,11 +279,32 @@ class IpTool:
         for interface in interfaces:
             if player_ipv4_addr not in interface:
                 continue
-            interface_ipv6_addresses = re.findall(ipv6_pattern, interface)
+
+            # Extract all inet6 address entries and validate them
+            inet6_matches = re.findall(inet6_pattern, interface)
+            interface_ipv6_addresses = []
+            for match in inet6_matches:
+                ipv6 = IpTool._extract_ipv6_from_address_string(match)
+                if ipv6:
+                    interface_ipv6_addresses.append(ipv6)
+
             if not interface_ipv6_addresses:
-                logging.warning(f'interface of {player_ipv4_addr} has no inet6 records.\n\ninterface:\n{interface}\n\nall output:\n{interfaces}')
+                logging.warning(
+                    f'interface of {player_ipv4_addr} has no inet6 records.\n\n'
+                    f'interface:\n{interface}\n\nall output:\n{interfaces}'
+                )
                 return ''
-            # assert interface_ipv6_addresses, f'interface of {player_ipv4_addr} has no inet6 records.\n\ninterface:\n{interface}\n\nall output:\n{interfaces}'
+
+            routable_addresses = [addr for addr in interface_ipv6_addresses if IpTool.is_routable_ipv6(addr)]
+            if routable_addresses:
+                logging.info(f'ipv6 address of interface: {routable_addresses[0]}')
+                return routable_addresses[0]
+
+            logging.warning(
+                f'interface of {player_ipv4_addr} has only link-local IPv6 '
+                f'addresses which require scope ID for remote connections. '
+                f'Addresses found: {interface_ipv6_addresses}'
+            )
             logging.info(f'ipv6 address of interface: {interface_ipv6_addresses[0]}')
             return interface_ipv6_addresses[0]
 
@@ -252,6 +315,81 @@ class IpTool:
     def is_address_ipv6(address: str) -> bool:
         pattern = r'^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$'
         return bool(re.match(pattern, address, re.IGNORECASE))
+
+    @staticmethod
+    def get_ipv6_type(ipv6_addr: str) -> Ipv6Type:
+        """
+        Determine the type of an IPv6 address.
+
+        Args:
+            ipv6_addr: IPv6 address string
+
+        Returns:
+            Ipv6Type enum value indicating the address type
+        """
+        if not ipv6_addr:
+            return Ipv6Type.INVALID
+        try:
+            addr = ipaddress.ip_address(ipv6_addr)
+            if addr.is_loopback:
+                return Ipv6Type.LOOPBACK
+            if addr.is_unspecified:
+                return Ipv6Type.UNSPECIFIED
+            if addr.is_link_local:
+                return Ipv6Type.LINK_LOCAL
+            if addr.is_multicast:
+                return Ipv6Type.MULTICAST
+            if addr.is_global:
+                return Ipv6Type.GLOBAL
+            if addr.is_private:
+                return Ipv6Type.PRIVATE
+            if addr.is_reserved:
+                return Ipv6Type.RESERVED
+            return Ipv6Type.RESERVED
+        except ValueError:
+            return Ipv6Type.INVALID
+
+    @staticmethod
+    def is_link_local_ipv6(ipv6_addr: str) -> bool:
+        """
+        Check if IPv6 address is link-local (fe80::/10).
+        Link-local addresses require a scope ID for remote connections.
+
+        Args:
+            ipv6_addr: IPv6 address string
+
+        Returns:
+            True if address is link-local, False otherwise
+        """
+        return IpTool.get_ipv6_type(ipv6_addr) == Ipv6Type.LINK_LOCAL
+
+    @staticmethod
+    def is_global_ipv6(ipv6_addr: str) -> bool:
+        """
+        Check if IPv6 address is globally routable.
+
+        Args:
+            ipv6_addr: IPv6 address string
+
+        Returns:
+            True if address is global unicast, False otherwise
+        """
+        return IpTool.get_ipv6_type(ipv6_addr) == Ipv6Type.GLOBAL
+
+    @staticmethod
+    def is_routable_ipv6(ipv6_addr: str) -> bool:
+        """
+        Check if IPv6 address is routable (usable without scope ID).
+        This includes global and private/ULA addresses, but excludes link-local.
+
+        Args:
+            ipv6_addr: IPv6 address string
+
+        Returns:
+            True if address can be used without scope ID, False otherwise
+        """
+        addr_type = IpTool.get_ipv6_type(ipv6_addr)
+        return addr_type in (Ipv6Type.GLOBAL, Ipv6Type.PRIVATE)
 
     @staticmethod
     def is_dhcp_client6_has_lease(engine: LinuxSshEngine = None) -> bool:

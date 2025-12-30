@@ -7,6 +7,7 @@ import pytest
 
 from ngts.constants.constants import GnmiConsts
 from ngts.nvos_constants.constants_nvos import TestFlowType
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.conftest import cleanup_after_aaa
@@ -71,6 +72,9 @@ def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuse
         bad-flow: expect invalid user client doesn't get update
     """
     host_address = dut_ipv6_addr if addressing_type == AddressingType.IPV6 else engines.dut.ip
+
+    if addressing_type == AddressingType.IPV6 and not IpTool.is_routable_ipv6(host_address):
+        pytest.skip("This setup has only link-local ipv6 address, to run this test need global or unique local")
 
     system = System()
     auth = system.aaa.authentication
