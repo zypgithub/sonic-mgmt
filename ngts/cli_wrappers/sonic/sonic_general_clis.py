@@ -952,7 +952,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         if not self.is_performance_setup(setup_name):
             with allure.step("Apply qos and dynamic buffer config"):
-                self.cli_obj.qos.reload_qos()
+                self.cli_obj.qos.reload_qos(no_dynamic=True)
                 self.verify_dockers_are_up(dockers_list=['swss'])
                 self.cli_obj.qos.stop_buffermgrd()
                 self.cli_obj.qos.start_buffermgrd()
@@ -1464,12 +1464,16 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
     def is_spc4_or_above(self):
         """
-        Check if the current platform is SPC4 or above.
-        Returns True if the platform is NOT SPC1, SPC2, or SPC3.
-
-        :return: True if platform is SPC4 or above (not SPC1-SPC3), False otherwise
+        Function to check if the current DUT is SPC4 or above
         """
-        return not (self.is_spc1() or self.is_spc2() or self.is_spc3())
+        platform = self.cli_obj.chassis.get_platform()
+
+        match = re.search(r'sn(\d)', platform, re.IGNORECASE)
+        if not match:
+            raise ValueError(f"Cannot get platform: '{platform}'")
+
+        chip_gen = int(match.group(1)) - 1
+        return chip_gen >= 4
 
     def is_simx_moose(self):
         if self._is_simx_moose is None:

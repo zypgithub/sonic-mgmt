@@ -3,6 +3,8 @@ import json
 import allure
 import logging
 import pandas as pd
+
+logger = logging.getLogger()
 from ngts.helpers.system_helpers import copy_files_to_syncd
 from ngts.helpers.performance.traffic_helpers import convert_to_percentage
 from ngts.constants.constants import BugHandlerConst, InfraConst
@@ -228,3 +230,111 @@ class SonicTrimmingCli(TrimmingCommon):
         portstat_trimmed_pkts = int(portstat_dict["TRIM_TX_PKTS"].replace(",", ""))
         portstat_dropped_trimmed_pkts = int(portstat_dict["TRIM_DRP_PKTS"].replace(",", ""))
         return portstat_trimmed_pkts, portstat_dropped_trimmed_pkts
+
+    def check_buffer_profile_exists(self, buffer_profile_name):
+        """
+        Check if a buffer profile exists in CONFIG_DB.
+        :param buffer_profile_name: Name of the buffer profile to check
+        :return: True if profile exists, False otherwise
+        """
+        cmd_check = f"redis-cli -n 4 exists 'BUFFER_PROFILE|{buffer_profile_name}'"
+        result = self.engine.run_cmd(cmd_check)
+        return result.strip() != "0"
+
+    def get_buffer_profile_packet_discard_action(self, buffer_profile_name):
+        """
+        Get the packet discard action for a buffer profile.
+        :param buffer_profile_name: Name of the buffer profile
+        :return: Packet discard action ("trim" or "drop")
+        """
+        cmd_get = f"redis-cli -n 4 hget 'BUFFER_PROFILE|{buffer_profile_name}' packet_discard_action"
+        result = self.engine.run_cmd(cmd_get)
+        action = result.strip().strip('"')
+        return action if action else "drop"
+
+    def get_all_buffer_profile_keys(self):
+        """
+        Get all buffer profile names from CONFIG_DB.
+        :return: List of buffer profile names
+        """
+        cmd_keys = "redis-cli -n 4 KEYS 'BUFFER_PROFILE|*'"
+        result = self.engine.run_cmd(cmd_keys)
+        if not result.strip():
+            return []
+
+        # Parse the keys and extract profile names
+        profile_names = []
+        for line in result.strip().splitlines():
+            line = line.strip().strip('"').strip("'")
+            if line.startswith("BUFFER_PROFILE|"):
+                profile_name = line.split("|", 1)[1]
+                profile_names.append(profile_name)
+        return profile_names
+
+    def config_mmu_trimming(self, buffer_profile_name, action):
+        """
+        Configure MMU trimming for a buffer profile.
+        :param buffer_profile_name: Name of the buffer profile
+        :param action: Action to perform ("on" or "off")
+        """
+        cmd = f"sudo config mmu -p {buffer_profile_name} -t {action}"
+        self.engine.run_cmd(cmd)
+
+    def show_mmu(self):
+        """
+        Show MMU configuration.
+        :return: Output of show mmu command
+        """
+        cmd = "show mmu"
+        return self.engine.run_cmd(cmd)
+
+    def get_buffer_profile_trimming_status(self, buffer_profile_name):
+        """
+        Get the current packet discard action for a specific buffer profile.
+        :param buffer_profile_name: Name of the buffer profile to check
+        :return: Current packet discard action setting ("trim" or "drop")
+        """
+        logger.info(f"Starting status check for buffer profile: {buffer_profile_name}")
+        if not self.check_buffer_profile_exists(buffer_profile_name):
+            logger.error(f"Buffer profile {buffer_profile_name} does not exist")
+            raise ValueError(f"Buffer profile {buffer_profile_name} does not exist")
+        return self.get_buffer_profile_packet_discard_action(buffer_profile_name)
+
+    def configure_trimming_action(self, buffer_profile_name, action):
+        """
+        Configure packet discard action for a specific buffer profile.
+        :param buffer_profile_name: Name of the buffer profile to configure
+        :param action: Packet discard action, must be either "on" or "off"
+        :return: True if configuration was successful
+        """
+        logger.info(f"Starting configuration for profile: {buffer_profile_name}, action: {action}")
+        if action not in ["on", "off"]:
+            raise ValueError(f"Invalid action: {action}. Must be either 'on' or 'off'")
+
+        self.config_mmu_trimming(buffer_profile_name, action)
+        self.show_mmu()
+        logger.info(f"Successfully set packet trimming action to '{action}' for buffer profile {buffer_profile_name}")
+        return True
+
+    def discover_trimming_enabled_profiles(self):
+        """
+        Discover all buffer profiles with trimming enabled.
+        :return: List of buffer profile names with trimming enabled
+        """
+        logger.info("Discovering buffer profiles with trimming enabled")
+        trimming_profiles = []
+        try:
+            buffer_profile_names = self.get_all_buffer_profile_keys()
+            logger.info(f"Found {len(buffer_profile_names)} total buffer profiles")
+
+            for buffer_profile_name in buffer_profile_names:
+                logger.info(f"Checking profile: {buffer_profile_name}")
+                trimming_status = self.get_buffer_profile_trimming_status(buffer_profile_name)
+                if trimming_status == "trim":
+                    trimming_profiles.append(buffer_profile_name)
+                    logger.info(f"Added profile: {buffer_profile_name}")
+            logger.info(f"Discovery complete: {len(trimming_profiles)} profiles have trimming enabled")
+            return trimming_profiles
+        except Exception as e:
+            logger.error(f"Exception occurred while discovering trimming profiles: {str(e)}")
+            return []

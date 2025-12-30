@@ -1,3 +1,6 @@
+from ngts.cli_util.cli_parsers import generic_sonic_output_parser
+
+
 class SonicWjhCli:
     """
     This class hosts SONiC What Just Happened (WJH) CLI methods and related utilities
@@ -23,3 +26,8 @@ class SonicWjhCli:
 
     def config_wjh_channel_state(self, channel_name, state):
         return self.engine.run_cmd(f'sudo config what-just-happened channel state {channel_name} {state}')
+
+    def is_channel_enabled(self, channel_name):
+        channels_config = self.show_wjh_configuration_channels()
+        channel_conf = generic_sonic_output_parser(channels_config, output_key="Channel")
+        return channel_name in channel_conf

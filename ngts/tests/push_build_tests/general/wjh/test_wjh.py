@@ -17,6 +17,8 @@ from ngts.tests.push_build_tests.general.wjh.utils import (wjh_is_channel_enable
 # Import from tests/common directory
 from scapy.all import Ether, Dot1Q, IP, IPv6, Raw, TCP
 from ngts.tests.push_build_tests.general.conftest import check_qos_counter_status
+from tests.common.mellanox_data import LOSSY_ONLY_HWSKUS
+from tests.common.utilities import wait_until
 pytest.CHANNEL_CONF = None
 logger = logging.getLogger()
 
@@ -166,22 +168,22 @@ def disable_trimming(topology_obj, cli_objects, interfaces, engines):
     # Check if platform is SPC4 or above - trimming is only supported on SPC4+
     if cli_objects.dut.general.is_spc4_or_above():
         logger.info('WJH trimming pre test')
-        trimming_enabled_profiles = discover_trimming_enabled_profiles(cli_objects.dut)
+        trimming_enabled_profiles = cli_objects.dut.trimming.discover_trimming_enabled_profiles()
         logger.info(f"Found trimming enabled profiles: {trimming_enabled_profiles}")
         for profile_name in trimming_enabled_profiles:
-            current_status = get_buffer_profile_trimming_status(cli_objects.dut, profile_name)
+            current_status = cli_objects.dut.trimming.get_buffer_profile_trimming_status(profile_name)
             logger.info(f"Profile {profile_name} current status: {current_status}")
             logger.info(f"Disabling trimming for profile: {profile_name}")
-            configure_trimming_action(cli_objects.dut, profile_name, "off")
+            cli_objects.dut.trimming.configure_trimming_action(profile_name, "off")
     yield
 
     if cli_objects.dut.general.is_spc4_or_above() and trimming_enabled_profiles:
         logger.info('WJH trimming post test')
         for profile_name in trimming_enabled_profiles:
-            current_status = get_buffer_profile_trimming_status(cli_objects.dut, profile_name)
+            current_status = cli_objects.dut.trimming.get_buffer_profile_trimming_status(profile_name)
             logger.info(f"Profile {profile_name} current status: {current_status}")
             logger.info(f"Enable trimming for profile: {profile_name}")
-            configure_trimming_action(cli_objects.dut, profile_name, "on")
+            cli_objects.dut.trimming.configure_trimming_action(profile_name, "on")
 
 
 @pytest.fixture(scope='class', autouse=True)
@@ -191,16 +193,16 @@ def enable_channel_buffer(cli_objects, interfaces, engines):
     """
     logger.info(f"checking if platform is SPC1 since buffer channel is not supported in SPC1")
     if cli_objects.dut.general.is_spc1():
-        yield
+        pytest.skip("buffer channel is not supported in SPC1.")
     else:
         try:
             with allure.step('WJH buffer channel pre test'):
-                initial_state_buffer_enabled = wjh_is_channel_enabled(cli_objects.dut, "buffer")
+                initial_state_buffer_enabled = cli_objects.dut.wjh.is_channel_enabled("buffer")
                 logger.info(f"Initial state enabled: {initial_state_buffer_enabled}")
                 if not initial_state_buffer_enabled:
                     logger.info("Enabling buffer channel")
-                    wjh_config_channel_state(cli_objects.dut, "buffer", "enabled")
-                    if not wjh_is_channel_enabled(cli_objects.dut, "buffer"):
+                    cli_objects.dut.wjh.config_wjh_channel_state("buffer", "enabled")
+                    if not cli_objects.dut.wjh.is_channel_enabled("buffer"):
                         raise AssertionError("wjh_buffer_channel_management_fixture: Buffer channel is not enabled")
                 else:
                     logger.info("Buffer channel already enabled")
@@ -214,8 +216,8 @@ def enable_channel_buffer(cli_objects, interfaces, engines):
             with allure.step('WJH buffer channel post test'):
                 if not initial_state_buffer_enabled:
                     logger.info("Restoring to disabled state")
-                    wjh_config_channel_state(cli_objects.dut, "buffer", "disabled")
-                    if wjh_is_channel_enabled(cli_objects.dut, "buffer"):
+                    cli_objects.dut.wjh.config_wjh_channel_state("buffer", "disabled")
+                    if cli_objects.dut.wjh.is_channel_enabled("buffer"):
                         raise AssertionError("Buffer channel is still enabled")
         except Exception as e:
             logger.error(f"Cleanup failed with exception: {e}")
@@ -260,11 +262,18 @@ def wjh_buffer_configuration(topology_obj, cli_objects, interfaces, engines):
     logger.info('WJH Buffer cleanup completed')
 
 
+def flush_wjh_cmd(engine):
+    output = engine.run_cmd("show what-just-happened poll")
+    if "Timeout waiting for daemon" in output:
+        raise Exception("WJH daemon timeout")
+    return output
+
+
 @pytest.fixture(scope="function", autouse=True)
 def flush_wjh_table(engines):
     logger.info(
         "\n\nFlushing WJH Table before running the test case to avoid background noise from dropped packets\n\n")
-    engines.dut.run_cmd("show what-just-happened poll")
+    retry_call(flush_wjh_cmd, fargs=[engines.dut], tries=5, delay=5, logger=logger)
     yield
 
 
@@ -376,7 +385,7 @@ def validate_wjh_table(engines, cmd, table_type, interface, dst_ip, src_ip, prot
 
 
 def validate_wjh_acl_buffer_table(engines, cmd, table_types, interface, dst_ip, src_ip, proto, drop_reason_message,
-                                  dst_mac, src_mac, drop_reason, table_separator):
+                                  dst_mac, src_mac, drop_reason, table_separator, cli_object):
     """
     A function that checks the WJH buffer/acl tables (raw/agg + second page)
     :param engines: engines fixture
@@ -391,6 +400,7 @@ def validate_wjh_acl_buffer_table(engines, cmd, table_types, interface, dst_ip, 
     :param src_mac: src mac
     :param drop_reason: drop reason
     :param table_separator: name of second table in WJH output of buffer/acl, used to parse the tables.
+    :param cli_object: cli_object
     """
     output = engines.dut.run_cmd(cmd)
     split_tables = output.split(table_separator)
@@ -412,7 +422,7 @@ def validate_wjh_acl_buffer_table(engines, cmd, table_types, interface, dst_ip, 
     # be skipped
     if drop_reason in ['buffer_congestion', 'buffer_latency']:
         check_buffer_info_table(parsed_tables[1], result['entry'], drop_reason, table_types[0],
-                                is_dynamic_buffer_configured(engines))
+                                cli_object, is_dynamic_buffer_configured(engines))
 
 
 def is_dynamic_buffer_configured(engines):
@@ -421,7 +431,7 @@ def is_dynamic_buffer_configured(engines):
     return buffer_mode.strip('"') == "dynamic"
 
 
-def check_buffer_info_table(table, entry, drop_reason, table_type, is_dynamic_buffer=False):
+def check_buffer_info_table(table, entry, drop_reason, table_type, cli_object, is_dynamic_buffer=False):
     """
     A function that checks the WJH buffer info table
     :param table: buffer info table
@@ -442,7 +452,10 @@ def check_buffer_info_table(table, entry, drop_reason, table_type, is_dynamic_bu
     latency_exceed_substring = "Latency"
     tc_watermark_exceed_substring = "TC Watermark >"
     occupancy_exceed_substring = "Occupancy >"
-    expected_tc_id = '1' if is_dynamic_buffer else '0'
+    # Lossy-only platforms use TC 0, others use TC 1 based on DSCP->TC->QUEUE mapping
+    lossy_only_hwsku = cli_object.chassis.get_platform_hwsku() in LOSSY_ONLY_HWSKUS
+    expected_tc_id = '0' if lossy_only_hwsku else '1'
+
     for key in table:
         entry = table[key]
         # If entry is a list, it means that the message is longer then one line,
@@ -533,7 +546,7 @@ def do_acl_buffer_raw_test(engines, cli_object, channel, channel_types, interfac
     check_if_channel_enabled(cli_object, engines, channel, channel_types[0])
     retry_call(validate_wjh_acl_buffer_table, fargs=[engines, command, channel_types, interface, dst_ip, src_ip, proto,
                                                      drop_reason_message, dst_mac, src_mac,
-                                                     drop_reason, table_separator],
+                                                     drop_reason, table_separator, cli_object],
                tries=3, delay=3, logger=logger)
 
 
@@ -581,7 +594,7 @@ def do_acl_buffer_agg_test(engines, cli_object, channel, channel_types, interfac
     check_if_channel_enabled(cli_object, engines, channel, channel_types[0])
     retry_call(validate_wjh_acl_buffer_table, fargs=[engines, command, channel_types, interface, dst_ip, src_ip, proto,
                                                      drop_reason_message, dst_mac, src_mac,
-                                                     drop_reason, table_separator],
+                                                     drop_reason, table_separator, cli_object],
                tries=3, delay=3, logger=logger)
 
 
@@ -674,6 +687,11 @@ class TestBuffer:
             pytest.fail(f"Could not finish the test due to exception: \n{e}.\nAborting!.")
 
 
+def is_ports_in_state(cli_objects, ports_list, state='up'):
+    cli_objects.dut.interface.check_ports_status(ports_list, state)
+    return True
+
+
 @pytest.mark.wjh
 @pytest.mark.build
 @allure.title('WJH L1 Raw test case')
@@ -684,6 +702,8 @@ def test_l1_raw_drop(engines, cli_objects):
     try:
         with allure.step('Shutting down {} interface'.format(port)):
             cli_objects.dut.interface.disable_interface(port)
+            wait_until(30, 1, 0, is_ports_in_state, cli_objects, [port], 'down')
+
         drop_reason_message = 'Generic L1 event - Check layer 1 aggregated information'
         na = WJHConsts.NA
         with allure.step('Validating WJH raw table output'):
@@ -695,6 +715,7 @@ def test_l1_raw_drop(engines, cli_objects):
         pytest.fail(f"Could not finish the test due to exception: \n{str(e)}.\nAborting!.")
     finally:
         cli_objects.dut.interface.enable_interface(port)
+        wait_until(30, 1, 0, is_ports_in_state, cli_objects, [port], 'up')
 
 
 @pytest.mark.wjh
