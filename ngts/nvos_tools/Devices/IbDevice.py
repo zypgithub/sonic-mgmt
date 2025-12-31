@@ -1585,7 +1585,7 @@ class JulietSwitch(NvLinkSwitch):
                 return available_erots
         # Default: Standard Juliet systems have all SPDM components
         logging.info(f'Using default (all) SPDM components for {setup_name}')
-        return SPDMComponents.ALL_SUPPORTED_COMPONENTS
+        return SPDMComponents.juliet_components()
 
 
 # -------------------------- JulietScaleout Switch ----------------------------
@@ -2249,11 +2249,11 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
     def get_spdm_components(self, setup_name: str) -> List[str]:
         """
-        Get available SPDM components for this device type.
-        Rosalind/Surrogate systems: BMC, CPU (no FPGA, no NVSwitch)
+        Get available SPDM components for Rosalind devices.
+        Rosalind: BMC, CPU, MCUs (SMA), and 4 NVSwitches.
         """
-        logging.info(f'Rosalind/Surrogate available ERoTs: BMC and CPU only')
-        return [SPDMComponents.BMC, SPDMComponents.CPU, SPDMComponents.NVSWITCH_SMA_0, SPDMComponents.NVSWITCH_SMA_1]
+        logging.info(f'Rosalind available SPDM components for {setup_name}')
+        return SPDMComponents.rosalind_components()
 
     def _init_dockers(self):
         """Override docker list for Rosalind/Surrogate platforms - uses gnmi-server instead of nv-gnmi/nv-umf."""

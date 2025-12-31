@@ -3,33 +3,43 @@ import logging
 import os
 import random
 import traceback
-from typing import Tuple, List
+from typing import List, Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+
 from ngts.nvos_constants.constants_nvos import TestFlowType
-from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.Spdm import SpdmComponent, SPDMComponents, COMPONENT_TO_SPDM_OBJ_FIELD, SpdmComponentFields
+from ngts.nvos_tools.system.Spdm import SpdmComponent, SpdmComponentFields
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import \
-    validate_certs_chain, save_ordered_chain, order_certs, parse_certs_str
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import \
-    verify_spdm_measurements
-from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import VALID_NONCE_LEN, SpdmConsts, NOT_EMPTY
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_cert_chain.verify_cert_chain import (
+    order_certs,
+    parse_certs_str,
+    save_ordered_chain,
+    validate_certs_chain,
+)
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.client_scripts.verify_spdm_measurements.verify_spdm_measurements import (
+    verify_spdm_measurements,
+)
+from ngts.tests_nvos.general.security.bmc.bmc_erot_attestation.constants import NOT_EMPTY, VALID_NONCE_LEN, SpdmConsts
 from ngts.tools.test_utils import allure_utils as allure
 
 
 def get_component_obj(component_name: str, supported_components: List[str]) -> SpdmComponent:
-    assert component_name in supported_components, f'given component name "{component_name} not in {supported_components}'
-    component_field_name = COMPONENT_TO_SPDM_OBJ_FIELD[component_name]
+    """
+    Get SPDM component object by component name.
+
+    Uses spdm.get_component() for device-agnostic access, which creates the
+    component with the correct path based on the actual component name
+    (e.g., 'ERoT_NVSwitch_0' for Juliet, 'NVSwitch_0' for Rosalind).
+    """
+    assert component_name in supported_components, f'given component name "{component_name}" not in {supported_components}'
     spdm = System().security.spdm
-    assert hasattr(spdm, component_field_name), f'spdm object does not have component field "{component_field_name}"'
-    return getattr(spdm, component_field_name)
+    return spdm.get_component(component_name)
 
 
 def randomize_hex_str(length: int = VALID_NONCE_LEN) -> str:
