@@ -323,10 +323,13 @@ class DeployImageHelper:
                     'sudo cp -r /host/reboot-cause/history/* /host/reboot-cause/backup/ 2>/dev/null || true',
                     # Remove all old reboot-cause history files
                     'sudo rm -f /host/reboot-cause/history/reboot-cause-*.json',
+                    # remove all reboot-cause history from the STATE_DB
+                    'sonic-db-cli STATE_DB KEYS "REBOOT_CAUSE|*" | xargs -I {} sonic-db-cli STATE_DB DEL "{}" || true',
                     # Restart the process-reboot-cause service to reset state
                     'sudo systemctl restart process-reboot-cause.service || true',
                     # Verify cleanup
-                    'ls -la /host/reboot-cause/history/ || true'
+                    'ls -la /host/reboot-cause/history/ || true',
+                    'sonic-db-cli STATE_DB KEYS "REBOOT_CAUSE|*" || true',
                 ]
                 for cmd in cleanup_commands:
                     try:

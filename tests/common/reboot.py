@@ -691,7 +691,7 @@ def check_reboot_cause_history(dut, reboot_type_history_queue):
                 return False
         return True
     logger.error("The number of expected reboot-cause:{} is more than that of actual reboot-cuase:{}".format(
-        reboot_type_history_len, len(reboot_type_history_queue)))
+        reboot_type_history_len, len(reboot_cause_history_got)))
     return False
 
 
