@@ -296,6 +296,7 @@ tests/push_build_tests/general/wjh/test_wjh.py::TestBuffer::test_buffer:
     conditions:
     - "'simx' in platform"
     - "https://redmine.mellanox.com/issues/4618360 and 'sn5640' in platform"
+    - "https://redmine.mellanox.com/issues/4815589"
 
 tests/push_build_tests/general/doroce/test_doroce.py:
   skip:
