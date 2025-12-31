@@ -51,6 +51,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
+NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2']
 
 
 class SonicGeneralCli:
@@ -1348,10 +1349,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 port = unsplit_ports_for_update[-1]
                 parsed_platform_json_by_breakout_modes[port][1] = {'1x100G[50G,25G,10G,1G]'}
                 config_db_json['PORT'][port]['speed'] = '100000'
-        self.update_breakout_mode_for_split_ports(split_ports_for_update, hwsku, breakout_cfg_dict,
-                                                  config_db_json, parsed_platform_json_by_breakout_modes)
-        self.update_breakout_mode_for_unsplit_ports(unsplit_ports_for_update, breakout_cfg_dict,
-                                                    config_db_json, parsed_platform_json_by_breakout_modes)
+        if hwsku not in NOT_SUPPORTED_DPB_SKU_LIST:
+            self.update_breakout_mode_for_split_ports(split_ports_for_update, hwsku, breakout_cfg_dict,
+                                                      config_db_json, parsed_platform_json_by_breakout_modes)
+            self.update_breakout_mode_for_unsplit_ports(unsplit_ports_for_update, breakout_cfg_dict,
+                                                        config_db_json, parsed_platform_json_by_breakout_modes)
         port_info_dict = config_db_json.get(ConfigDbJsonConst.PORT, [])
         breakout_cfg_dict = {port: breakout_mode for port, breakout_mode in breakout_cfg_dict.items()
                              if port in port_info_dict}
