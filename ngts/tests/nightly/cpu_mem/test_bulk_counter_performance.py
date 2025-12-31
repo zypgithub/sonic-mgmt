@@ -22,7 +22,8 @@ AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR = {
     "x86_64-mlnx_msn4700_simx-r0": 1.25,
     "x86_64-nvidia_sn5600_simx-r0": 1.25,
     "x86_64-nvidia_sn5640_simx-r0": 1.25,
-    "x86_64-nvidia_sn5810_ld_simx-r0": 1.25
+    "x86_64-nvidia_sn5810_ld_simx-r0": 1.25,
+    "x86_64-nvidia_sn6600_simx-r0": 1.25
 }
 
 
