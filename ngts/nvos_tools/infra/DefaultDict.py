@@ -19,4 +19,5 @@ class DefaultDict(defaultdict):
     """
 
     def __missing__(self, key):
-        return self.default_factory(key)
+        self[key] = value = self.default_factory(key)
+        return value
