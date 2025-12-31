@@ -20,6 +20,7 @@ IS_IPV6 = "is_ipv6"
 ALLURE_URL = "allure_url"
 DUMP_INFO = "dump_info"
 TEST_INSERTED_TIME = "test_inserted_time"
+TEST_RUNNING_TIME = "test_running_time"
 MARS_NAME = "mars_name"
 MARS_RESULT = "mars_result"
 SKIP_REASON = "skip_reason"
@@ -148,7 +149,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
             basic_session_info = json.load(f)
 
     if valid_tests_data(session_id, mars_key_id):
-        tests_results, tests_skipreason, tests_exceptions = parse_tests_results(terminalreporter)
+        tests_results, tests_skipreason, tests_exceptions, tests_durations = parse_tests_results(terminalreporter)
         for test_case_name, test_result in tests_results.items():
             result_json = {}
             result_json.update(basic_session_info)
@@ -173,6 +174,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
             result_json[ALLURE_URL] = report_url
             result_json[DUMP_INFO] = dump_info
             result_json[TEST_INSERTED_TIME] = test_inserted_time
+            result_json[TEST_RUNNING_TIME] = tests_durations.get(test_case_name, "NULL")
             results_list_json.append(result_json)
         logger.info(f"Tests results to be exported to SQL DB: {results_list_json}")
         dump_json_to_file(results_list_json, session_id, mars_key_id, cli_type)
@@ -228,12 +230,14 @@ def parse_tests_results(terminalreporter):
     tests_results = {}
     tests_skipreason = {}
     tests_exceptions = {}
+    tests_durations = {}
     stats_keys = ['skipped', 'passed', 'failed', 'error', 'xpassed', 'xfailed']
     for key in stats_keys:
         for test_obj in terminalreporter.stats.get(key, []):
             exception = ""
             exception_regex = ""
             skipreason = ""
+            running_time = "NULL"  # A Float type column in SQL will convert an empty string to 0
             result = test_obj.outcome
             if key == "skipped":
                 result, skipreason = get_skip_type_reason(test_obj)
@@ -241,11 +245,16 @@ def parse_tests_results(terminalreporter):
                 result, skipreason = get_xfail_skip_type_reason(test_obj)
             if key == "failed" or key == "error":
                 exception, exception_regex = get_exception(test_obj)
+            if 'passed' in key:
+                running_time = getattr(test_obj, 'duration', "NULL")
+                if running_time != "NULL":
+                    running_time = round(running_time, 2)
 
             tests_results.update({test_obj.nodeid: result})
             tests_skipreason.update({test_obj.nodeid: skipreason})
             tests_exceptions.update({test_obj.nodeid: (exception, exception_regex)})
-    return tests_results, tests_skipreason, tests_exceptions
+            tests_durations.update({test_obj.nodeid: running_time})
+    return tests_results, tests_skipreason, tests_exceptions, tests_durations
 
 
 def update_exception_from_la_error(tests_exceptions, test_case_name, la_redmine_issues):
