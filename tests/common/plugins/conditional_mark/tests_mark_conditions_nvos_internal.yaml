@@ -375,13 +375,14 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_hidden_non_nvlink:
   skip:
     reason: "Testcase skipped on Juliet systems, "
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' in testbed"
 
 ngts/tests_nvos/interfaces/test_kr_configs.py::test_kr_cli_flow:
   skip:
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
@@ -390,6 +391,7 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_config_removal:
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
@@ -398,6 +400,7 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_invalid_kr_mode_rejected:
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
@@ -406,6 +409,7 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_interface_range_sequential_a
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
@@ -414,6 +418,7 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_link_transition_timing:
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
@@ -422,6 +427,7 @@ ngts/tests_nvos/interfaces/test_kr_configs.py::test_error_ber_target_not_reached
     reason: "Testcase can run only on Access ports that are connected to GPU or loopback"
     conditions_logical_operator: and
     conditions:
+      - "'juliet' not in testbed"
       - "'juliet-148' not in testbed"
       - "'juliet-126' not in testbed"
 
