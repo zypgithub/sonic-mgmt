@@ -1279,9 +1279,9 @@ platform_tests/cli/test_show_platform.py::test_show_platform_fan:
 
 platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
   skip:
-    reason: "Skipped on SPC6 due to RM 4765935"
+    reason: "Skipped on SPC6 due to RM 4817671"
     conditions:
-    - "https://redmine.mellanox.com/issues/4765935 and '6600_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4817671 and '6600_simx' in platform"
 
 high_frequency_telemetry/test_high_frequency_telemetry.py:
   xfail:
@@ -1300,6 +1300,12 @@ platform_tests/api/:
     reason: "API service is not fully functional on AIR - WIP https://redmine.mellanox.com/issues/4779975"
     conditions:
     - "https://redmine.mellanox.com/issues/4779975 and 'air' in testbed"
+
+platform_tests/cli/test_show_platform.py::test_platform_serial_no:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4817680"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4817680 and 'sn6600' in platform"
 
 srv6:
   skip:
