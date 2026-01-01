@@ -231,6 +231,8 @@ class InfraConst:
     STM_IP = "10.209.104.53"
     SELECTED_DPUS = 'selected_dpus'
 
+    LOOPBOX_LABEL = 'loopbox'
+
 
 class LinuxConsts:
     CONF_FEC = "Configured FEC encodings"

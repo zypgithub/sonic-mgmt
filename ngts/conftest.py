@@ -25,7 +25,7 @@ from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, CliType
+from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
@@ -365,13 +365,16 @@ def fw_versions_json_file(request):
 
 
 @pytest.fixture(scope='session')
-def has_loopbox(setup_name):
+def has_loopbox(topology_obj):
     """
     Method to check if system has loopbox.
-    :param setup_name: the setup name
+    :param topology_obj: the setup topology object
     :return: if setup has loopbox or not
     """
-    return setup_name in Configurations.juliet_systems_with_loopbox
+    with allure.step('Checking if system has loopbox'):
+        dut_setup_common_attributes = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']
+        labels = dut_setup_common_attributes['labels']
+        return labels and InfraConst.LOOPBOX_LABEL in labels
 
 
 @pytest.fixture(scope='session')
