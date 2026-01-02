@@ -434,6 +434,13 @@ def config_check(engines, cli_objects, topology_obj, request, sonic_version, pla
             "DEVICE_METADATA.localhost.timezone",
         }
 
+        # In the test_push_gate_reboot_policer with max ports test, the config check is executed before uninstall
+        # cpu-report app extension, the cpu-report config still exist in /etc/sonic/init_cfg.json,
+        # so ignore cpu-report config check here.
+        if request.config.option.ports_number == "max":
+            ignore_keys.add("FEATURE.cpu-report")
+            ignore_keys.add("AUTO_TECHSUPPORT_FEATURE.cpu-report")
+
         pre_running_config = dut_data["pre_running_config"]
         cur_running_config = dut_data["cur_running_config"]
         pre_running_config_keys = set(pre_running_config.keys())
