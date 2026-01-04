@@ -202,6 +202,7 @@ rosalind-eb2-2102      ansible_host=10.220.12.102 ansible_hostv6="" sonic_versio
 rosalind-eb2-2124      ansible_host=10.220.12.124 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6100_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-eb1-2152      ansible_host=10.220.12.152 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6100_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-chipless-117      ansible_host=10.7.145.117 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6100_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+rosalind-eb2-164      ansible_host=10.7.145.164 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N6100_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-191      ansible_host=10.7.148.191 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-1363     ansible_host=10.220.13.63 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 juliet-1364     ansible_host=10.220.13.64 ansible_hostv6="" sonic_version=v2 hwsku="ACS-N5500_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
