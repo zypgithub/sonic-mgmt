@@ -43,6 +43,18 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/pretest.cases </cases>
     </test>
     <test>
+        <cases>
+            sonic-mgmt/sonic-tool/mars/cases/community/pretest_dpu.cases
+        </cases>
+        <ignore>
+            <condition>
+                <key> base_version_dpu:(none) </key>
+                <op> == </op>
+                <value> none </value>
+            </condition>
+        </ignore>
+    </test>
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/common/cpld.cases </cases>
     </test>
     <test>
