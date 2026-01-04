@@ -400,6 +400,18 @@ class IbSwitch(BaseSwitch):
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.counters_db_name = 'COUNTERS_DB'
 
+        # Expected ACL rule counts after migration (device-specific, can be overridden)
+        self.expected_acl_rule_counts = {
+            'acl-default-loopback': 1,
+            'acl-default-loopback-ipv6': 1,
+            'acl-default-dos': 61,
+            'acl-default-dos-ipv6': 72,
+            'acl-default-whitelist': 25,
+            'acl-default-whitelist-ipv6': 24,
+            'acl-default-outbound': 2,
+            'acl-default-outbound-ipv6': 2
+        }
+
         self.voltage_sensors = ["PMIC-1-12V-ASIC-VCORE-In-1", "PMIC-1-ASIC-VCORE-Out-1", "PMIC-2-12V-ASIC-HVDD-DVDD-In-1",
                                 "PMIC-2-ASIC-DVDD-WEST-Out-2", "PMIC-2-ASIC-HVDD-WEST-Out-1", "PMIC-3-12V-ASIC-HVDD-DVDD-In-1",
                                 "PMIC-3-ASIC-DVDD-EAST-Out-2", "PMIC-3-ASIC-HVDD-EAST-Out-1", "PMIC-4-3.3V-OSFP-P01-P08-Out-1",
@@ -2259,16 +2271,11 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         return SPDMComponents.rosalind_components()
 
     def _init_dockers(self):
-        """Override docker list for Rosalind/Surrogate platforms - uses gnmi-server instead of nv-gnmi/nv-umf."""
+        """Override docker list for Rosalind/Surrogate platforms - uses nv-gnmi/nv-umf instead of gnmi-server."""
         super()._init_dockers()
-        # Remove legacy dockers that don't exist on Rosalind/Surrogate
-        if 'nv-gnmi' in self.available_dockers:
-            self.available_dockers.remove('nv-gnmi')
-        if 'nv-umf' in self.available_dockers:
-            self.available_dockers.remove('nv-umf')
-        # Add the actual docker used on Rosalind/Surrogate platforms
-        if 'gnmi-server' not in self.available_dockers:
-            self.available_dockers.append('gnmi-server')
+        # Remove gnmi-server if present (Rosalind/Surrogate uses nv-gnmi and nv-umf)
+        if 'gnmi-server' in self.available_dockers:
+            self.available_dockers.remove('gnmi-server')
 
     def _init_constants(self):
         super()._init_constants()
@@ -2333,6 +2340,8 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.cpld_amount = 2
         self._extend_firmware_by_cpld_amount()
         self.memory_speed = 2667  # in MT/s (Rosalind/Surrogate use 2667, not 2400)
+        # Rosalind Surrogate has an extra whitelist rule enabling nvbridge communication
+        self.expected_acl_rule_counts['acl-default-whitelist'] = 26
         stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
                             "temperature.csv.gz", "voltage.csv.gz"]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)

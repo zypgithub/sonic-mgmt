@@ -73,7 +73,7 @@ RULE_CONFIG_FUNCTION = {
 
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_acls(engines, test_api):
+def test_show_acls(engines, devices, test_api):
     """
     Validate ACL show commands and verify new ACL structure after migration.
     This test validates:
@@ -124,7 +124,7 @@ def test_show_acls(engines, test_api):
                                     f"WHITELIST ACL {acl_name} rule {rule_id} missing 'whitelist' remark: {remark}"
 
         with allure.step("Verify ACL rule counts match expected values"):
-            for acl_name, expected_count in AclConsts.NEW_ACL_EXPECTED_RULE_COUNTS.items():
+            for acl_name, expected_count in devices.dut.expected_acl_rule_counts.items():
                 if acl_name in acls:
                     actual_count = len(acls[acl_name].get(AclConsts.RULE, {}))
                     assert actual_count == expected_count, \
