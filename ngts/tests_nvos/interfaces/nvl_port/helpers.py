@@ -23,14 +23,15 @@ def show_interface_and_validate(engines, devices, ports_list, command=''):
     ValidationTool.compare_values(output_keys.sort(), ports_list.sort()).verify_result()
 
 
-def toggle_port_state(selected_port, port_state, test_name=''):
+def toggle_port_state(selected_port, port_state, test_name='', devices=None):
     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
     with allure_step("Wait till port {} is {}".format(selected_port, port_state)):
         res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
                                                         selected_port.interface.wait_for_port_state, port_state,
                                                         sleep_time=0.2)
         res_obj.verify_result()
-        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
+        operation = 'port goes {}'.format(port_state)
+        OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
 
 def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, state=NvosConsts.LINK_STATE_UP):

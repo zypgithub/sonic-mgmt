@@ -95,7 +95,8 @@ class BaseFWUpgradeTest:
 
             res_obj = fetch_and_install_erot_image(fw_component, prev_path, prev_version, prev_filename, test_name)
             with allure.step(f"verify operation time for install erot {prev_version!r} (duration: {res_obj.duration:.2f})"):
-                OperationTime.verify_operation_time(res_obj.duration, 'install erot').verify_result()
+                OperationTime.verify_operation_time(res_obj.duration, 'install erot',
+                                                    threshold=switch.expected_operation_durations.get('install erot')).verify_result()
 
             with allure.step(f"Sleep for {MINUTE} so the bg-copy will finish"):
                 time.sleep(MINUTE)
@@ -106,7 +107,8 @@ class BaseFWUpgradeTest:
         finally:
             res_obj = fetch_and_install_erot_image(fw_component, curr_path, curr_version, curr_filename, test_name)
             with allure.step(f"verify operation time for install erot {curr_version!r} (duration: {res_obj.duration:.2f})"):
-                OperationTime.verify_operation_time(res_obj.duration, 'install erot').verify_result()
+                OperationTime.verify_operation_time(res_obj.duration, 'install erot',
+                                                    threshold=switch.expected_operation_durations.get('install erot')).verify_result()
 
             with allure.step(f"Verifying installation was successful for each erot component"):
                 verify_installation(fw_components_names, curr_version)

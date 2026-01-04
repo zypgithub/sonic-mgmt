@@ -83,7 +83,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
         verify_the_setup_is_functional(system, engines)
 
     with allure.step("Verify operation time"):
-        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
     with allure.step('Check if NVL Switch'):
         if devices.dut.switch_type == NvosConst.NVL_SWITCH_TYPE:
@@ -143,7 +143,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name, serial_
         verify_the_setup_is_functional(system, engines)
 
     with allure.step("Verify operation time"):
-        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
 @pytest.mark.timeout(25 * MINUTE)
@@ -199,7 +199,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, se
         verify_the_setup_is_functional(system, engines)
 
     with allure.step("Verify operation time"):
-        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
 @pytest.mark.timeout(30 * MINUTE)
@@ -249,7 +249,7 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name, se
         verify_the_setup_is_functional(system, engines)
 
     with allure.step("Verify operation time"):
-        OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
 @pytest.mark.system

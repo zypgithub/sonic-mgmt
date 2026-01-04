@@ -4,7 +4,6 @@ import pytest
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts, HealthConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_constants.constants_nvos import OperationTimeConsts
 from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.constants import MINUTE
@@ -21,8 +20,8 @@ logger = logging.getLogger()
 @pytest.fixture(scope='module', autouse=True)
 def _update_install_threshold(devices):
     if isinstance(devices.dut, NvLinkSwitch) and redmine_helpers.is_bug_active(4221742):
-        OperationTimeConsts.THRESHOLDS['reboot with default FW installation'] *= 2
-        OperationTimeConsts.THRESHOLDS['reboot with new user FW'] *= 2
+        devices.dut.expected_operation_durations['reboot with default FW installation'] *= 2
+        devices.dut.expected_operation_durations['reboot with new user FW'] *= 2
 
 
 @pytest.mark.checklist
@@ -62,7 +61,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
             with allure.step("Install firmware and verify"):
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_CUSTOM, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
-                install_new_image_fw(nv_command.platform, test_name, test_image_name)
+                install_new_image_fw(nv_command.platform, test_name, test_image_name, devices)
             with allure.step('Verify the firmware installed successfully'):
                 verify_firmware_with_platform_cmd(nv_command.platform, version_name)
                 nv_command.system.validate_health_status(HealthConsts.OK)
@@ -73,7 +72,7 @@ def test_install_platform_firmware(engines, devices, test_name, topology_obj, nv
                 nv_command.platform.firmware.asic.set(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT, apply=True)
                 NvueGeneralCli.save_config(engines.dut)
 
-            install_default_image_fw(nv_command.system, test_name, fw_has_changed)
+            install_default_image_fw(nv_command.system, test_name, fw_has_changed, devices)
 
         with allure.step('Verify the firmware installed successfully'):
             verify_firmware_with_platform_cmd(nv_command.platform, actual_firmware)
@@ -92,17 +91,17 @@ def get_asic_dict(platform):
     return asic_dictionary
 
 
-def install_new_image_fw(platform, test_name, fw_file_name):
+def install_new_image_fw(platform, test_name, fw_file_name, devices):
     with allure.step('new fw image installation'):
         res_obj, duration = OperationTime.save_duration('reboot with new user FW', '', test_name,
                                                         platform.firmware.asic.files.file_name[fw_file_name].action_file_install_with_reboot)
     with allure.step('Verify operation time'):
-        OperationTime.verify_operation_time(duration, 'install user FW').verify_result()
+        OperationTime.verify_operation_time(duration, 'install user FW', devices).verify_result()
 
     return res_obj
 
 
-def install_default_image_fw(system, test_name, fw_has_changed):
+def install_default_image_fw(system, test_name, fw_has_changed, devices):
     with allure.step('Rebooting the dut after image installation'):
         logging.info("Rebooting dut")
         if fw_has_changed:
@@ -110,7 +109,7 @@ def install_default_image_fw(system, test_name, fw_has_changed):
                                                             system.reboot.action_reboot, system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL)
             res = res_obj
             with allure.step('Verify operation time'):
-                OperationTime.verify_operation_time(duration, 'reboot with default FW installation').verify_result()
+                OperationTime.verify_operation_time(duration, 'reboot with default FW installation', devices).verify_result()
         else:
             res = system.reboot.action_reboot()
 

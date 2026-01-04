@@ -57,7 +57,7 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
                                                                test_name=test_name)
 
         with allure.step(f"verify operation time for install sma {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install sma').verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, 'install sma', devices).verify_result()
         validate_firmware_versions(version_name, device.sma_amount, platform)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
     finally:
@@ -66,7 +66,7 @@ def test_sma_install(engines, devices, topology_obj, test_api, platform_componen
                                                                name=version_name, filename=filename, topology_obj=topology_obj,
                                                                test_name=test_name)
         with allure.step(f"verify operation time for install sma {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install sma').verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, 'install sma', devices).verify_result()
         validate_firmware_versions(version_name, device.sma_amount, platform)
 
 

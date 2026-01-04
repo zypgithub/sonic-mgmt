@@ -71,7 +71,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
             res_obj.verify_result()
             time.sleep(3)
         with allure.step('verify duration'):
-            OperationTime.verify_operation_time(duration, 'set hostname').verify_result()
+            OperationTime.verify_operation_time(duration, 'set hostname', devices).verify_result()
         with allure.step('verify change in show'):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME, new_hostname_value).verify_result()

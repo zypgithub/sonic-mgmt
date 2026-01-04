@@ -106,7 +106,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         duration = execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
 
         with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(duration, devices.dut.reset_factory).verify_result()
+            OperationTime.verify_operation_time(duration, devices.dut.reset_factory, devices).verify_result()
 
 
 def verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format):

@@ -75,7 +75,7 @@ def _test_command_supported(engines, devices, topology_obj, test_name, test_api,
         assert output["user"] == 'admin'
 
     with allure.step("Assert power-cycle duration was not too long"):
-        OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.power_cycle_type, devices).verify_result()
 
 
 def _test_command_not_supported(engines, devices, test_name, test_api, force_str):

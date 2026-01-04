@@ -173,7 +173,7 @@ def test_set_inactivity_timeout(engines, devices, topology_obj, test_name):
                 end_time = time.time()
                 total_time = end_time - start_time
                 logger.info(f"Users disconnection by inactivity timeout duration - {total_time} seconds")
-                OperationTime.verify_operation_time(total_time, "users disconnection by inactivity timeout").verify_result()
+                OperationTime.verify_operation_time(total_time, "users disconnection by inactivity timeout", devices).verify_result()
 
         except BaseException as ex:
             raise Exception("Failed on {}".format(str(ex)))

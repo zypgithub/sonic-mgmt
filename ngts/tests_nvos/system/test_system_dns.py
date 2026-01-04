@@ -449,7 +449,7 @@ def test_factory_reset_for_static_system_dns(engines, devices):
         clear_system_dns(system, engines)
 
         with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory).verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory, devices).verify_result()
 
 
 @pytest.mark.dns
@@ -503,7 +503,7 @@ def test_factory_reset_with_config_save_for_static_system_dns(engines, devices):
         clear_system_dns(system, engines)
 
         with allure.step("Verify operation time"):
-            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory).verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, devices.dut.reset_factory, devices).verify_result()
 
 
 @pytest.mark.dns

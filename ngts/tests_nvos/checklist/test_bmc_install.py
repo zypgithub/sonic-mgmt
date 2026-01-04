@@ -57,7 +57,7 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
             BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_BMC_PATH_NAME)
         with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, 'install bmc', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
@@ -65,6 +65,6 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
                                                                name=version_name, filename=filename, topology_obj=topology_obj,
                                                                test_name=test_name)
         with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install bmc').verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, 'install bmc', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master

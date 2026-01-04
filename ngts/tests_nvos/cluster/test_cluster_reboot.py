@@ -55,7 +55,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
                                                              nmx_c_expected_state='up')
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
 
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
         if not standalone_system:
             output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),

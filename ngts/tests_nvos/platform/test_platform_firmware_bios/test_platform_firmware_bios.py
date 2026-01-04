@@ -41,7 +41,7 @@ def test_bios_auto_update_disabled(devices, engines, topology_obj, test_api, ori
     res_obj = platform_firmware_bios_helpers.fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
                                                                     topology_obj=topology_obj, test_name=test_name)
     with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
-        OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
+        OperationTime.verify_operation_time(res_obj.duration, 'install bios', devices).verify_result()
 
     platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
 
@@ -84,7 +84,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
             res_obj = platform_firmware_bios_helpers.fetch_and_install_bios(platform=platform, path=path, name=version_name, filename=filename,
                                                                             topology_obj=topology_obj, test_name=test_name)
             with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
-                OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
+                OperationTime.verify_operation_time(res_obj.duration, 'install bios', devices).verify_result()
             platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
     finally:
         with allure.step(f'Installation and reboot with latest BIOS version '):
@@ -95,7 +95,7 @@ def test_bios_auto_update_enabled(devices, engines, topology_obj, test_api, orig
         platform_firmware_bios_helpers.verify_bios_version(engines, platform, version_name)
 
         with allure.step('Verify operation time'):
-            OperationTime.verify_operation_time(res.duration, 'install bios').verify_result()
+            OperationTime.verify_operation_time(res.duration, 'install bios', devices).verify_result()
 
         platform.firmware.bios.set(op_param_name=PlatformConsts.FW_AUTO_UPDATE, op_param_value=NvosConst.DISABLED,
                                    apply=True).verify_result()

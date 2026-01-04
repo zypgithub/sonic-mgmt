@@ -65,7 +65,7 @@ def test_reboot_command(engines, devices, test_name):
             validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.independent_step("Verify reboot time is within expected range"):
-            OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
+            OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
 
 @pytest.mark.system
@@ -79,7 +79,7 @@ def test_reboot_command_force(engines, devices, test_name, random_api):
     with allure.step('Run nv action reboot system mode force'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name,
                                                            system.reboot.action_reboot, params='force')
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type).verify_result()
+        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
 
 @pytest.mark.system
@@ -142,7 +142,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
             validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.step("Verify reboot time is within expected range"):
-            OperationTime.verify_operation_time(result_obj.duration, mode).verify_result()
+            OperationTime.verify_operation_time(result_obj.duration, mode, devices).verify_result()
 
     finally:
         if not ping_device(engines.dut.ip):

@@ -56,7 +56,7 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
             BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_CPU_PATH_NAME)
         with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
-            OperationTime.verify_operation_time(res_obj.duration, 'install bios').verify_result()
+            OperationTime.verify_operation_time(res_obj.duration, 'install bios', devices).verify_result()
     finally:
         path, filename, version_name = BmcTool.get_fw_component_version_latest(component_name)
         BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=path,

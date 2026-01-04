@@ -122,7 +122,7 @@ def test_stress_cluster_state(engines, devices, test_api, test_name, has_loopbox
             for i in range(10):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration('start stop cluster', '', test_name, ClusterTools.start_stop_cluster, cluster, setup_name, output_format)
-                OperationTime.verify_operation_time(duration, 'start stop cluster').verify_result()
+                OperationTime.verify_operation_time(duration, 'start stop cluster', devices).verify_result()
 
     finally:
         pass
@@ -149,7 +149,7 @@ def test_cluster_state_with_stressed_resources(engines, devices, random_api, tes
             # Loop until the timeout is reached
             while time.time() - start_time < timeout:
                 result_obj, duration = OperationTime.save_duration('start stop cluster stressed resources', '', test_name, ClusterTools.start_stop_cluster, cluster, setup_name, output_format)
-                OperationTime.verify_operation_time(duration, 'start stop cluster stressed resources').verify_result()
+                OperationTime.verify_operation_time(duration, 'start stop cluster stressed resources', devices).verify_result()
     finally:
         if installed_packages:
             StressResourcesTool.delete_packages(engines, installed_packages)

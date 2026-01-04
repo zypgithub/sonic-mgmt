@@ -1848,6 +1848,12 @@ class HealthConsts:
 
 
 class OperationTimeConsts:
+    """
+    Constants for operation time tracking and database columns.
+
+    Note: Operation duration thresholds have been moved to device classes
+    (e.g., IbDevice.expected_operation_durations) for per-device customization.
+    """
     OPERATION_COL = 'operation'
     PARAMS_COL = 'params'
     DURATION_COL = 'duration'
@@ -1858,45 +1864,6 @@ class OperationTimeConsts:
     TEST_NAME_COL = 'test_name'
     SESSION_ID_COL = 'session_id'
     DATE_COL = 'date'
-    THRESHOLDS = {'reboot': 250 if is_bug_active(4364632) else 225,     # TODO: revert once bug closed
-                  'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
-                  'julietscaleout reset factory': 600,
-                  'reset factory': 300,
-                  'install user FW': 500,
-                  'install default fw': 360,
-                  'port goes up': 30,
-                  'port goes down': 4,
-                  'reboot with default FW installation': 500,
-                  'reboot with new user FW': 500,
-                  'set hostname': 12,
-                  'generate tech-support': 75,
-                  'julietscaleout generate_tech_support': 120,
-                  'start stop cluster app': 810,
-                  'start stop cluster app with loopbox': 720,
-                  'start stop cluster': 285,
-                  'cluster update log level': 6,
-                  'install bmc': 1200,
-                  'bmc install without reboot': 710,
-                  'install fpga': 900,
-                  'fpga install without reboot': 130,
-                  'install sma': 900,
-                  'install asic': 600,
-                  'install bios': 600,
-                  'bios install without reboot': 250,
-                  'install cpld': 720,
-                  'cpld install without reboot': 400,
-                  'install erot': 420,
-                  ActionConsts.POWER_CYCLE: 360,
-                  'juliet-power-cycle': 335,
-                  'users disconnection by inactivity timeout': 65,
-                  'enable snmp': 22,
-                  'activate els': 75,
-                  }
-    THRESHOLDS['start stop cluster app stressed resources'] = THRESHOLDS['start stop cluster app'] * 1.1
-    THRESHOLDS['start stop cluster app stressed resources with loopbox'] = THRESHOLDS['start stop cluster app with loopbox'] * 1.1
-    THRESHOLDS['start stop cluster stressed resources'] = THRESHOLDS['start stop cluster'] * 1.1
-    THRESHOLDS['julietscaleout generate_tech_support'] = THRESHOLDS['julietscaleout generate_tech_support'] * 1.1
-    THRESHOLDS['reboot with new user FW'] = THRESHOLDS['reboot with new user FW'] * 1.05
 
 
 class StatsConsts:

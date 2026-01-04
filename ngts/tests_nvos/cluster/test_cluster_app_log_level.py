@@ -94,7 +94,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
                 log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
                 for app in devices.dut.expected_cluster_apps:
                     result_obj, duration = OperationTime.save_duration('cluster update log level', '', test_name, cluster.apps.app_name[app].loglevel.action_update_cluster_log_level, level=log_level)
-                    OperationTime.verify_operation_time(duration, 'cluster update log level').verify_result()
+                    OperationTime.verify_operation_time(duration, 'cluster update log level', devices).verify_result()
                     ClusterTools.verify_log_level(log_level, app, output_format, cluster)
     finally:
         if installed_packages:

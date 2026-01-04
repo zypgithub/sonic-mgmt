@@ -7,7 +7,8 @@ from typing import Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
-    DiskConsts, DateTimeConsts, CumulusConsts
+    DiskConsts, DateTimeConsts, CumulusConsts, ActionConsts
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -488,10 +489,78 @@ class BaseSwitch(BaseDevice):
         self.disk_default_partition_name = DiskConsts.DEFAULT_PARTITION_NAME
         self.disk_partition_capacity_limit = DiskConsts.PARTITION_CAPACITY_LIMIT
         self.disk_minimum_free_space = DiskConsts.MINIMUM_FREE_SPACE
-        self.reboot_type = 'reboot'  # If system has special reboot (in terms of time) this var will describe it. Useful when extracting THRESHOLDS
+        self.reboot_type = 'reboot'  # If system has special reboot (in terms of time) this var will describe it. Used for expected_operation_durations lookup
         self.generate_tech_support = 'generate tech-support'
         self.reset_factory = 'reset factory'
         self.power_cycle_type = 'power-cycle'
+        # Initialize empty expected_operation_durations, then populate via _init_expected_operation_durations()
+        self.expected_operation_durations = {}
+        self._init_expected_operation_durations()
+
+    def _init_expected_operation_durations(self):
+        """
+        Initialize all expected operation durations for timing validations.
+
+        All thresholds are defined here for simplicity. Child device classes
+        can override specific values (e.g., generate_tech_support) by calling
+        super()._init_expected_operation_durations() first, then updating.
+
+        Note: Values with bug-conditional adjustments use is_bug_active() for temporary workarounds.
+        Multiplier-based values (stressed resources, etc.) are pre-calculated for clarity.
+        """
+        self.expected_operation_durations.update({
+            # Reboot operations
+            'reboot': 250 if is_bug_active(4364632) else 225,  # TODO: revert once bug closed
+            'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
+            'julietscaleout reset factory': 600,
+            'reset factory': 300,
+
+            # Firmware installation operations
+            'install user FW': 500,
+            'install default fw': 360,
+            'reboot with default FW installation': 500,
+            'reboot with new user FW': 525,  # Pre-calculated: 500 * 1.05
+
+            # Port operations
+            'port goes up': 30,
+            'port goes down': 4,
+
+            # System operations
+            'set hostname': 12,
+            self.generate_tech_support: 75,  # Default for IB devices; Eth overrides to 130
+            'julietscaleout generate_tech_support': 132,  # Pre-calculated: 120 * 1.1
+
+            # Cluster operations
+            'start stop cluster app': 810,
+            'start stop cluster app with loopbox': 720,
+            'start stop cluster': 285,
+            'start stop cluster app stressed resources': 891,  # Pre-calculated: 810 * 1.1
+            'start stop cluster app stressed resources with loopbox': 792,  # Pre-calculated: 720 * 1.1
+            'start stop cluster stressed resources': 313.5,  # Pre-calculated: 285 * 1.1
+            'cluster update log level': 6,
+
+            # Platform firmware component installations
+            'install bmc': 1200,
+            'bmc install without reboot': 710,
+            'install fpga': 900,
+            'fpga install without reboot': 130,
+            'install sma': 400,
+            'install asic': 600,
+            'install bios': 600,
+            'bios install without reboot': 250,
+            'install cpld': 720,
+            'cpld install without reboot': 400,
+            'install erot': 420,
+
+            # Power operations
+            ActionConsts.POWER_CYCLE: 360,
+            'juliet-power-cycle': 335,
+
+            # Security and user operations
+            'users disconnection by inactivity timeout': 65,
+            'enable snmp': 22,
+            'activate els': 75,
+        })
 
     def _init_psu_list(self):
         super()._init_psu_list()

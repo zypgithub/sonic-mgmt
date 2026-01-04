@@ -106,7 +106,11 @@ class EthSwitch(BaseSwitch):
         self.disk_minimum_free_space = 5.5  # Gig
         self.ib_ports_num = 32
         self.supports_tpm_testing = False
-        self.expected_operation_durations = {}
+        # Note: expected_operation_durations is populated via _init_expected_operation_durations()
+
+    def _init_expected_operation_durations(self):
+        """Initialize expected operation durations for Ethernet devices."""
+        super()._init_expected_operation_durations()
         self.expected_operation_durations.update({
             self.generate_tech_support: 130
         })

@@ -331,7 +331,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
                 f"Child port s1 {child_ports[0].name} out-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[0]['out-pkts']}, got {output_dictionary['out-pkts']}"
 
         with allure.step("Set s1 to down"):
-            toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_DOWN)
+            toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_DOWN, devices=devices)
 
     with allure.step("Test second child port (s2)"):
         with allure.step("Run traffic and verify counters on s2"):
@@ -345,7 +345,7 @@ def test_split_port_counters(engines, players, interfaces, start_sm, devices, se
                 f"Child port s2 {child_ports[1].name} out-pkts should increase by at least {MIN_PACKET_INCREASE} from baseline {child_baseline_counters[1]['out-pkts']}, got {output_dictionary['out-pkts']}"
 
     with allure.step("Set s1 back to up"):
-        toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_UP)
+        toggle_port_state(child_ports[0], NvosConsts.LINK_STATE_UP, devices=devices)
 
     with allure.step("Unset parent port"):
         parent_port.interface.link.unset(op_param='breakout', apply=True, ask_for_confirmation=True).verify_result()
@@ -682,11 +682,12 @@ def validate_list_ports_state(expected_ports: list, state=NvosConsts.LINK_STATE_
     ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()
 
 
-def toggle_port_state(selected_port, port_state, test_name=''):
+def toggle_port_state(selected_port, port_state, test_name='', devices=None):
     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
     with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
         res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
                                                         selected_port.interface.wait_for_port_state, port_state,
                                                         sleep_time=0.2)
         res_obj.verify_result()
-        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
+        operation = 'port goes {}'.format(port_state)
+        OperationTime.verify_operation_time(duration, operation, devices).verify_result()

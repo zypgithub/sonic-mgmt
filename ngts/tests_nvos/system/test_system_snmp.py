@@ -24,7 +24,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 
 
 @pytest.mark.system
-def test_snmp_default_values_fields(engines, test_name):
+def test_snmp_default_values_fields(engines, devices, test_name):
     """
     Test flow:
         1. Check snmp output default values
@@ -61,10 +61,7 @@ def test_snmp_default_values_fields(engines, test_name):
             test_name,
             enable_snmp,
         )
-        OperationTime.verify_operation_time(
-            duration,
-            "enable snmp",
-        ).verify_result()
+        OperationTime.verify_operation_time(duration, "enable snmp", devices).verify_result()
 
     with allure.step('Verify fields and values after snmp enabled'):
         listening_address_output = OutputParsingTool.parse_json_str_to_dictionary(

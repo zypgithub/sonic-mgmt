@@ -135,7 +135,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
             for i in range(4):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
-                OperationTime.verify_operation_time(duration, operation).verify_result()
+                OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
     finally:
         pass
@@ -169,7 +169,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
                     operation = 'start stop cluster app stressed resources with loopbox'
                 ClusterTools.start_cluster(cluster, setup_name, output_format)
                 result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
-                OperationTime.verify_operation_time(duration, operation).verify_result()
+                OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
     finally:
         pass

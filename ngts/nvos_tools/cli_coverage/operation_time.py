@@ -62,10 +62,23 @@ class OperationTime:
             duration_time_dict[OperationTimeConsts.TEST_NAME_COL] = test_name
 
     @staticmethod
-    def verify_operation_time(duration, operation='', threshold="") -> ResultObj:
+    def verify_operation_time(duration, operation='', devices=None, threshold=None) -> ResultObj:
+        """
+        Verify that operation completed within expected threshold.
+
+        Args:
+            duration: The actual duration of the operation in seconds.
+            operation: Name of the operation (for logging/error messages).
+            devices: Devices object to look up threshold from expected_operation_durations.
+            threshold: Optional explicit threshold (overrides devices lookup if provided).
+
+        Returns:
+            ResultObj indicating success or failure with error message.
+        """
         ret_val = ResultObj(True)
-        if not threshold:
-            threshold = OperationTimeConsts.THRESHOLDS.get(operation)
+        # Get threshold from devices if not explicitly provided
+        if threshold is None and devices is not None:
+            threshold = devices.dut.expected_operation_durations.get(operation)
         if threshold is not None and threshold < duration:
             err_msg = f"{operation} took {duration} seconds - more time than threshold of {threshold} seconds"
             logger.error(err_msg)

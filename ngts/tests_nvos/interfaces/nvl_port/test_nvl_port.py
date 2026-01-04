@@ -248,7 +248,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
             port_type = 'fnm' if interface_type == 'fnm' else ''
             selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP, requested_ports_type=port_type, interface_type=interface_type).get_returned_value()
             TestToolkit.update_tested_ports([selected_port])
-            toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name, devices)
             logger.info("Sleeping for 15 seconds till toggle is reflected")
             time.sleep(15)
             port_init_state_restored = False
@@ -259,7 +259,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
                                                               field_name=IbInterfaceConsts.LINK_STATE,
                                                               expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
 
-            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name, devices)
             logger.info("Sleeping for 15 seconds till toggle is reflected")
             time.sleep(15)
             port_init_state_restored = True
@@ -271,7 +271,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
                                                               expected_value=NvosConsts.LINK_STATE_UP).verify_result()
     finally:
         if not port_init_state_restored:
-            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+            toggle_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name, devices)
 
 
 @pytest.mark.interface

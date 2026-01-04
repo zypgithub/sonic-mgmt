@@ -177,7 +177,7 @@ def _verify_fw_versions(firmware: List[str], recipe: Dict[str, Any], current_fw_
     return Result(ok=not errors, operation="FW versions", error_message="FW versions are not as expected: %s" % errors)
 
 
-def _update_cpld(recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, current_fw_versions: Dict[str, Any]) -> List[Result]:
+def _update_cpld(recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, current_fw_versions: Dict[str, Any], devices=None) -> List[Result]:
     """
     Update the CPLD FW.
 
@@ -185,6 +185,7 @@ def _update_cpld(recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, c
         recipe: Recipe dictionary containing the firmware versions.
         scp_path: Path to the SCP server.
         current_fw_versions: Current firmware versions.
+        devices: Devices object for threshold lookup.
 
     Returns:
         List[Result]: List of results of the CPLD FW update.
@@ -222,7 +223,7 @@ def _update_cpld(recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, c
 
             try:  # We don't want to fail the test if the duration is not as expected at this stage.
                 with allure.step("Verify Operation Time"):
-                    OperationTime.verify_operation_time(res_obj.duration, 'cpld install without reboot').verify_result()
+                    OperationTime.verify_operation_time(res_obj.duration, 'cpld install without reboot', devices).verify_result()
             except AssertionError as e:
                 logger.exception(e)
                 return [Result(ok=True, operation=f'CPLD FW {state}', duration_error=str(e))]
@@ -245,7 +246,7 @@ def _is_encrypted_fpga() -> bool:
         return fpga_ver not in non_encrypted_fpga_ips
 
 
-def _fetch_n_update_fw(firmware: List[str], recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, current_fw_versions: Dict[str, str]) -> List[Result]:
+def _fetch_n_update_fw(firmware: List[str], recipe: Dict[str, Union[Dict[str, Any], str]], scp_path: str, current_fw_versions: Dict[str, str], devices=None) -> List[Result]:
     '''
     Fetch and update the firmware of the given components.
 
@@ -253,6 +254,7 @@ def _fetch_n_update_fw(firmware: List[str], recipe: Dict[str, Union[Dict[str, An
         firmware: List of firmware components to update.
         recipe: Recipe dictionary containing the firmware versions.
         scp_path: Path to the SCP server.
+        devices: Devices object for threshold lookup.
 
     Returns:
         Dictionary containing the results of the firmware update for each component.
@@ -312,6 +314,7 @@ def _fetch_n_update_fw(firmware: List[str], recipe: Dict[str, Union[Dict[str, An
                         OperationTime.verify_operation_time(
                             res_obj.duration,
                             f'{component_name.replace("_encrypted", "")} install without reboot',  # case of encrypted FPGA. only keep the name.
+                            devices,
                         ).verify_result()
                     results.append(Result(ok=True, operation=f'{component_name} FW {state}'))
                 except AssertionError as e:
@@ -370,7 +373,7 @@ def _update_nvos(engines: EnginesT, topology_obj, nvos: Path) -> Result:
             OperationTime.verify_operation_time(
                 res_obj.duration,
                 'install nvos',
-                700
+                threshold=700
             ).verify_result()
     except AssertionError as e:
         duration_error = str(e)
@@ -406,8 +409,8 @@ def update_system_fw(devices: DevicesT, engines: EnginesT, sys_pkg: SystemPackag
             recipe: Dict[str, Any] = json.load(reader)[provisioning]
 
     with allure.step("Update FW"):
-        results = _fetch_n_update_fw(devices.dut.constants.firmware, recipe, scp_path, current_fw_versions)
-        results.extend(_update_cpld(recipe, scp_path, current_fw_versions))
+        results = _fetch_n_update_fw(devices.dut.constants.firmware, recipe, scp_path, current_fw_versions, devices)
+        results.extend(_update_cpld(recipe, scp_path, current_fw_versions, devices))
         logger.debug(f'[***] {results=}')
         if any(res.duration_error for res in results):
             metadata.setdefault(ResultMetadata.DURATION_ERROR, {}).update({

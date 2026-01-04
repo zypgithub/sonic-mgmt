@@ -10,6 +10,7 @@ from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
                                                 DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts)
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -342,8 +343,8 @@ class IbSwitch(BaseSwitch):
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
         self.techsupport_upload_success_message = 'File upload successfully'
         self.techsupport_delete_success_message = 'File delete successfully'
-        self.techsupport_threshold = OperationTimeConsts.THRESHOLDS.get('generate tech-support')
         self.techsupport_file_not_found_message = SystemConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
+        # Note: techsupport_threshold is set after _init_expected_operation_durations() is called
 
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
@@ -449,7 +450,8 @@ class IbSwitch(BaseSwitch):
                     current_version='0202-000', alternate_version='0202-002'),
         }
         self.module_offset = None  # Should be overridden in child if used for module mapping
-        self.expected_operation_durations = {}
+        # Note: _init_expected_operation_durations() is called by BaseSwitch._init_platform_lists()
+        self.techsupport_threshold = self.expected_operation_durations.get(self.generate_tech_support)
         self.unsupported_commands_list = [
             "nv show platform environment leakage",
             "nv show platform firmware BMC",

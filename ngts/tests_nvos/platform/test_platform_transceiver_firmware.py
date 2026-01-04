@@ -161,7 +161,7 @@ def test_install_transceiver_firmware_positive(engines, devices, random_api, tes
                 result_obj, duration = OperationTime.save_duration(f"transceiver firmware downgrade to {transceiver_obj.downgrade_version_number}",
                                                                    '', test_name, platform.transceiver.action_install,
                                                                    random_transceiver, transceiver_obj.downgrade_version_name)
-                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", transceiver_obj.installation_time).verify_result()
+                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", threshold=transceiver_obj.installation_time).verify_result()
 
             with allure.step("run {} show counters command".format(random_port)):
                 counters_before_install = OutputParsingTool.parse_json_str_to_dictionary(
@@ -179,7 +179,7 @@ def test_install_transceiver_firmware_positive(engines, devices, random_api, tes
                 result_obj, duration = OperationTime.save_duration(f"transceiver firmware upgrade to {transceiver_obj.upgrade_version_number}",
                                                                    '', test_name, platform.transceiver.action_install,
                                                                    random_transceiver, transceiver_obj.upgrade_version_name)
-                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", transceiver_obj.installation_time).verify_result()
+                OperationTime.verify_operation_time(duration, f"transceiver firmware installation", threshold=transceiver_obj.installation_time).verify_result()
 
 
 @pytest.mark.platform

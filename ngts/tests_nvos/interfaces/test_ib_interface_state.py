@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @pytest.mark.ib_interfaces
 @pytest.mark.air
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_state(test_name, test_api):
+def test_ib_interface_state(test_name, test_api, devices):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -32,17 +32,17 @@ def test_ib_interface_state(test_name, test_api):
 
     flow:
     1. Select a random port (state of which is up)
-    2. Set selected port state to ‘down’
-    3. Verify the configuration applied by running “show” command
-    4. Set selected port state to ‘up’
+    2. Set selected port state to 'down'
+    3. Verify the configuration applied by running "show" command
+    4. Set selected port state to 'up'
     5. Wait until the port is up
-    6. Verify the configuration applied by running “show” command
+    6. Verify the configuration applied by running "show" command
     """
     TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     try:
-        set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name)
+        set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, test_name, devices)
 
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             selected_port.interface.link.show()).get_returned_value()
@@ -52,7 +52,7 @@ def test_ib_interface_state(test_name, test_api):
                                                           expected_value=NvosConsts.LINK_STATE_DOWN).verify_result()
 
     finally:
-        set_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name)
+        set_port_state(selected_port, NvosConsts.LINK_STATE_UP, test_name, devices)
 
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
             selected_port.interface.link.show()).get_returned_value()
@@ -62,18 +62,18 @@ def test_ib_interface_state(test_name, test_api):
                                                           expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
-def set_port_state(selected_port, port_state, test_name=''):
+def set_port_state(selected_port, port_state, test_name='', devices=None):
     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-    wait_for_port_state(selected_port, port_state, test_name=test_name)
+    wait_for_port_state(selected_port, port_state, test_name=test_name, devices=devices)
 
 
-def wait_for_port_state(selected_port, port_state, logical_state=None, test_name=''):
+def wait_for_port_state(selected_port, port_state, logical_state=None, test_name='', devices=None):
     with allure.step("Wait till port {} is {}".format(selected_port, port_state)):
         res_obj, duration = OperationTime.save_duration('port goes {}'.format(port_state), '', test_name,
                                                         selected_port.interface.wait_for_port_state, port_state,
                                                         sleep_time=0.2, logical_state=logical_state)
         res_obj.verify_result()
-        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state)).verify_result()
+        OperationTime.verify_operation_time(duration, 'port goes {}'.format(port_state), devices).verify_result()
 
 
 @pytest.mark.ib_interfaces
@@ -169,7 +169,7 @@ def test_ib_interface_state_up_once(engines, devices, random_api):
 
     try:
         with allure.step(f'run nv set interface {port_name} link state down and apply'):
-            set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN)
+            set_port_state(selected_port, NvosConsts.LINK_STATE_DOWN, devices=devices)
 
         with allure.step(f'run nv action update fae interface {port_name} link state up-once and apply'):
             fae.interface.link.state.action(ActionConsts.UPDATE,
@@ -193,7 +193,7 @@ def test_ib_interface_state_up_once(engines, devices, random_api):
 
     finally:
         with allure.step(f'run nv set interface {port_name} link state up and apply'):
-            set_port_state(selected_port, NvosConsts.LINK_STATE_UP)
+            set_port_state(selected_port, NvosConsts.LINK_STATE_UP, devices=devices)
 
 
 def verify_port_state(output_dictionary, expected_state):

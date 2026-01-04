@@ -263,7 +263,7 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
             logger.info(f"After plug in: {len(current_up_ports)} ports in up state (baseline: {len(baseline_up_ports)})")
 
         with allure.step("Verify activation time is within threshold"):
-            OperationTime.verify_operation_time(activate_result.duration, 'activate els').verify_result()
+            OperationTime.verify_operation_time(activate_result.duration, 'activate els', devices).verify_result()
 
 
 @pytest.mark.platform
