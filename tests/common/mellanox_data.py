@@ -30,6 +30,9 @@ MULTI_HARDWARE_TYPE_PLATFORMS = ['x86_64-mlnx_msn4700-r0',
                                  'x86_64-mlnx_msn3700-r0',
                                  'x86_64-mlnx_msn3700c-r0']
 SWITCH_MODELS = {
+    "x86_64-nvidia_sn5810_ld_simx-r0": {
+        "chip_type": "spectrum5"
+    },
     "x86_64-nvidia_sn5810_ld-r0": {
         "chip_type": "spectrum5",
         "reboot": {
