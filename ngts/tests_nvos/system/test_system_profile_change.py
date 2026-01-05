@@ -257,7 +257,7 @@ def change_profile_to_default(system, devices, engines, test_name=None):
     :param test_name: test name for duration tracking (optional)
     """
     with allure.step('Change system profile to default'):
-        default_ar_groups = devices.dut.system_profile_default_values[SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX]
+        default_ar_groups = int(devices.dut.system_profile_default_values[SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS_INDEX])
         params = {SystemConsts.PROFILE_ADAPTIVE_ROUTING_GROUPS: default_ar_groups}
         reboot_params = RebootParams()
 

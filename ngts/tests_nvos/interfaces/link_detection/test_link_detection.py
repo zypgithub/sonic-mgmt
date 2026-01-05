@@ -215,8 +215,9 @@ def _unsplit_port_for(engine, peer_port_name):
 def _switch_port_connection_mode(port_name, connection_mode):
     with allure.step(f"Set connection-mode for {port_name} to {connection_mode}"):
         interface = Interface(parent_obj=None, port_name=port_name)
-        interface.link.connection_mode.set(connection_mode, apply=True,
-                                           ask_for_confirmation=True).verify_result()
+        interface.link.set(op_param_name=LinkDetectionConsts.CONNECTION_MODE,
+                           op_param_value=connection_mode, apply=True,
+                           ask_for_confirmation=True).verify_result()
 
 
 def _switch_port_connection_mode_to_default(port_name):

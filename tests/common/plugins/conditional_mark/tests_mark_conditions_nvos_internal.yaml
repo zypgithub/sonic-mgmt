@@ -490,7 +490,7 @@ tests_nvos/platform/test_platform_staged_boot.py::test_show_set_platform_boot_po
       - "'rosalind-eb1-10' in testbed"
       - https://redmine.mellanox.com/issues/4784658
 
-ngts/tests_nvos/multi_asic/test_fatal_mode.py:
+tests_nvos/multi_asic/test_fatal_mode.py:
   skip:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4780661"
     conditions:

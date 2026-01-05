@@ -83,20 +83,6 @@ class DebugImageInfo(BaseComponent):
         super().__init__(parent=parent_obj, path="/debug-image")
         self.files = Files(self)
 
-    def action_fetch(self, fetch_url):
-        """
-        Fetch debug firmware file for CRDT token generation.
-
-        Command: nv action fetch fae platform debug info debug-image <url>
-
-        Args:
-            fetch_url: URL to fetch the debug firmware from
-
-        Returns:
-            ResultObj: Command result
-        """
-        return self.action(ActionConsts.FETCH, (None, fetch_url))
-
     def action_delete_all(self):
         """Delete all CRDT token info files."""
         with allure.step("Delete all CRDT token info files"):

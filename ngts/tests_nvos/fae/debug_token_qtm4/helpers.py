@@ -511,11 +511,11 @@ class DebugTokenConsts:
 
     # Error messages
     INVALID_FILENAME_ERROR = "Invalid filename"
-    INVALID_EXTENSION_ERROR = "Invalid extension"
+    INVALID_EXTENSION_ERROR = "not in an xml format"
     FILE_NOT_FOUND_ERROR = "File not found"
-    FILE_ALREADY_EXISTS_ERROR = "File already exists"
+    FILE_ALREADY_EXISTS_ERROR = "already exists"
     CONNECTION_FAILED_ERROR = "Connection failed"
-    NO_ACTIVE_TOKEN_ERROR = "No active token"
+    NO_ACTIVE_TOKEN_ERROR = "no token installed"
 
     # Test values for error scenarios
     INVALID_FILENAME = 'bad<name>.abc'

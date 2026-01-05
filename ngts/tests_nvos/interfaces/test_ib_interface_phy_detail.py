@@ -341,8 +341,8 @@ def _get_test_ports(engine, device) -> Tuple[Port, Port, Port, Port, Port]:
     PORTS = {
         '10.7.145.61': ('swA5p1', 'swA8p1', 'swA3p1'),
         '10.7.145.62': ('swA5p1', 'swA8p1', 'swA3p1'),
-        '10.7.148.94': ('swB1p1', 'swB2p1', 'swA10p1'),
-        '10.7.148.95': ('swB1p1', 'swB2p1', 'swA10p1'),
+        '10.7.148.94': ('swB5p1', 'swB6p1', 'swA1p1'),
+        '10.7.148.95': ('swB5p1', 'swB6p1', 'swA1p1'),
         '10.7.148.138': ('swA1p1', 'swA2p1', 'swA15p1'),
         '10.7.148.139': ('swA1p1', 'swA2p1', 'swA15p1'),
         '10.7.148.248': ('sw7p1', 'sw8p2', 'sw61p1'),

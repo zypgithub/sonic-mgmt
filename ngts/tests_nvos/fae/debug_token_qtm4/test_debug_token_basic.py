@@ -283,9 +283,9 @@ def _test_error_flows(test_name, manager):
                 False, DebugTokenConsts.FILE_NOT_FOUND_ERROR
             )
 
-        with allure.independent_step("Uninstall when no token enabled - expect error"):
+        with allure.independent_step("Uninstall when no token enabled - expect success with message"):
             manager.uninstall_token().verify_result(
-                False, DebugTokenConsts.NO_ACTIVE_TOKEN_ERROR
+                True, DebugTokenConsts.NO_ACTIVE_TOKEN_ERROR
             )
 
 

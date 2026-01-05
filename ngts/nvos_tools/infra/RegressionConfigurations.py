@@ -190,9 +190,10 @@ class RegressionConfigurations:
                             ndr_port.interface.link.show(dut_engine=engine)).get_returned_value()
 
                         if ndr_port_show[LinkDetectionConsts.CONNECTION_MODE] != LinkDetectionConsts.CONNECTION_MODE_NDR:
-                            ndr_port.interface.link.connection_mode.set(LinkDetectionConsts.CONNECTION_MODE_NDR,
-                                                                        apply=False, dut_engine=engine,
-                                                                        ask_for_confirmation=True).verify_result()
+                            ndr_port.interface.link.set(op_param_name=LinkDetectionConsts.CONNECTION_MODE,
+                                                        op_param_value=LinkDetectionConsts.CONNECTION_MODE_NDR,
+                                                        apply=False, dut_engine=engine,
+                                                        ask_for_confirmation=True).verify_result()
                             port_updated = True
 
                     if apply and port_updated:
