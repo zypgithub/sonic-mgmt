@@ -273,14 +273,14 @@ class CounterpollHelper:
         """
         dut_engine = engines.dut
         MonitResult = namedtuple('MonitResult', ['processes', 'memory'])
-        cmd = f"top -d {interval} -n {iterations+1} -b -E k"
+        cmd = f"top -d {interval} -n {iterations + 1} -b -E k"
         stdout = dut_engine.run_cmd(cmd)
 
         monit_results = []
         proc_section = False
         mem_re = re.compile(
-            (r"^KiB Mem\s+:\s+(?P<total>\d+)\s+total,\s+(?P<free>\d+)"
-             r"\s+free,\s+(?P<used>\d+)\s+used,\s+\d+\s+buff/cache\s*$")
+            (r"^KiB Mem\s+:\s+(?P<total>\d+)\+?\s*total,\s+(?P<free>\d+)"
+             r"\+?\s*free,\s+(?P<used>\d+)\+?\s*used,\s+\d+\+?\s*buff/cache\s*$")
         )
         mem_attrs = ('total', 'free', 'used')
         proc_attrs = ('pid', 'status', 'cpu_percent', 'memory_percent', 'name')
