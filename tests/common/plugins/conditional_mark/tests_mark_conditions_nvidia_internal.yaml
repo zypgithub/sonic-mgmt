@@ -1294,12 +1294,6 @@ platform_tests/mellanox/test_reboot_cause.py:
     conditions:
     - "'6600_simx' in platform"
 
-platform_tests/api/:
-  skip:
-    reason: "API service is not fully functional on AIR - WIP https://redmine.mellanox.com/issues/4779975"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4779975 and 'air' in testbed"
-
 platform_tests/cli/test_show_platform.py::test_platform_serial_no:
   skip:
     reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4817680"
@@ -1335,5 +1329,17 @@ ip/test_ip_packet.py::TestIPPacket::test_forward_ip_packet_with_0xffff_chksum_dr
     reason: "Skipped due to RM issue: https://redmine.mellanox.com/issues/4812867 and sn6600 platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4812867 and 'sn6600' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_serial:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790927"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4790927 and 'sn6600' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_model:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790935"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4790935 and 'sn6600' in platform"
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
