@@ -1527,7 +1527,7 @@ class JulietSwitch(NvLinkSwitch):
             "Install BIOS": 600,
             'install cpld': 720,
             self.generate_tech_support: 120,
-            'julietscaleout generate_tech_support': 120,
+            'julietscaleout generate_tech_support': 132,
         })
         self.num_of_plane_ports = 1
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
@@ -2351,7 +2351,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
-        self.constants = self.constants._replace(log_dump_files=log_dump_files, techsupport_size_limit_mb=135)
+        self.constants = self.constants._replace(log_dump_files=log_dump_files, techsupport_size_limit_mb=140)
         self.voltage_sensors = [
             "PDB-1-Conv-In-1",
             "PDB-1-Conv-Out-1",
