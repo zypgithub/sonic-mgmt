@@ -475,6 +475,8 @@ class Filter(BaseComponent):
         path = '/filter/' + str(filter_id) if filter_id else '/filter'
         BaseComponent.__init__(self, parent=parent_obj, path=path)
         self.filter_id = filter_id
+        self.action = None
+        self.match = None
 
     def set_action_filter(self, regex, expected_str='', apply=False, ask_for_confirmation=False):
         with allure.step("Set action filter with regex : {}".format(regex)):
@@ -483,10 +485,13 @@ class Filter(BaseComponent):
                               ask_for_confirmation=ask_for_confirmation)
             if expected_str:
                 result.verify_result(False, expected_value=expected_str)
+            self.action = regex
             return result
 
     def unset_action_filter(self, apply=False, ask_for_confirmation=False):
-        return self.unset(SyslogConsts.ACTION, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        result = self.unset(SyslogConsts.ACTION, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        self.action = None
+        return result
 
     def set_match_filter(self, regex, expected_str='', apply=False, ask_for_confirmation=False):
         with allure.step("Set match filter with regex : {}".format(regex)):
@@ -495,10 +500,13 @@ class Filter(BaseComponent):
                               ask_for_confirmation=ask_for_confirmation)
             if expected_str:
                 result.verify_result(False, expected_value=expected_str)
+            self.match = regex
             return result
 
     def unset_match_filter(self, apply=False, ask_for_confirmation=False):
-        return self.unset(SyslogConsts.MATCH, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        result = self.unset(SyslogConsts.MATCH, apply=apply, ask_for_confirmation=ask_for_confirmation)
+        self.match = None
+        return result
 
 
 class FilterOptions(BaseComponent):
