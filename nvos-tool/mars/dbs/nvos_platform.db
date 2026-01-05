@@ -62,4 +62,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/platform/nvos_platform_memory_and_ram.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind-surrogate, rosalind-chipless, rosalind]</value> </condition></ignore>
+	</test>
 </DBDEF>
