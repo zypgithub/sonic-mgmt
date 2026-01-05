@@ -17,8 +17,6 @@ from .utilities import wait_until, get_plt_reboot_ctrl
 from tests.common.helpers.dut_utils import ignore_t2_syslog_msgs, create_duthost_console, creds_on_dut
 from tests.common.fixtures.conn_graph_facts import get_graph_facts
 from pytest_ansible.errors import AnsibleConnectionFailure
-from tests.common.platform.device_utils import get_ssh_port_from_duthost
-
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +25,7 @@ power_on_event = threading.Event()
 
 # SSH defines
 SONIC_SSH_PORT = 22
-SONIC_SSH_REGEX = r'OpenSSH_[\w\.]+ Debian'
+SONIC_SSH_REGEX = 'OpenSSH_[\\w\\.]+ Debian'
 
 REBOOT_TYPE_WARM = "warm"
 REBOOT_TYPE_SAI_WARM = "sai-warm"
@@ -183,63 +181,31 @@ def check_warmboot_finalizer_inactive(duthost):
     return 'inactive' == stdout.strip()
 
 
-def is_ssh_banner_absent(localhost, dut_ip, check_timeout, ssh_port=22):
-    """
-    Check if SSH banner is NOT available (either port closed or no banner present).
-    Returns True if SSH is down (no banner), False if SSH is still up (banner present).
-    """
-    banner_check = localhost.wait_for(
-        host=dut_ip,
-        port=ssh_port,
-        state='started',
-        search_regex=SONIC_SSH_REGEX,
-        timeout=check_timeout,
-        module_ignore_errors=True
-    )
-    return banner_check.is_failed or 'Timeout' in banner_check.get('msg', '')
-
-
-def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res=None, interval=1, check_timeout=1):
-    """
-    Wait for DUT to shutdown by checking SSH banner availability.
-    Args:
-        duthost: DUT host object
-        localhost: localhost object
-        delay: delay before starting to check
-        timeout: maximum time to wait for shutdown
-        reboot_res: reboot task result (optional)
-        interval: interval to check SSH banner
-        check_timeout: timeout to check SSH banner
-    """
+def wait_for_shutdown(duthost, localhost, delay, timeout, reboot_res=None):
     hostname = duthost.hostname
     dut_ip = duthost.mgmt_ip
-    port = get_ssh_port_from_duthost(duthost)
     logger.info('waiting for ssh to drop on {}'.format(hostname))
+    res = localhost.wait_for(host=dut_ip,
+                             port=SONIC_SSH_PORT,
+                             state='absent',
+                             search_regex=SONIC_SSH_REGEX,
+                             delay=delay,
+                             timeout=timeout,
+                             module_ignore_errors=True)
 
-    shutdown_detected = wait_until(
-        timeout=timeout,
-        interval=interval,
-        delay=delay,
-        condition=is_ssh_banner_absent,
-        localhost=localhost,
-        dut_ip=dut_ip,
-        ssh_port=port,
-        check_timeout=check_timeout
-    )
-    if not shutdown_detected:
+    if res.is_failed or ('msg' in res and 'Timeout' in res['msg']):
         if reboot_res and reboot_res.ready():
             logger.error('reboot result: {} on {}'.format(reboot_res.get(), hostname))
         raise Exception('DUT {} did not shutdown'.format(hostname))
 
 
-def wait_for_startup(duthost, localhost, delay, timeout):
+def wait_for_startup(duthost, localhost, delay, timeout, port=SONIC_SSH_PORT):
     # TODO: add serial output during reboot for better debuggability
     #       This feature requires serial information to be present in
     #       testbed information
     hostname = duthost.hostname
     dut_ip = duthost.mgmt_ip
     logger.info('waiting for ssh to startup on {}'.format(hostname))
-    port = get_ssh_port_from_duthost(duthost)
     is_ssh_connected, res, num_tries = ssh_connection_with_retry(
         localhost=localhost,
         host_ip=dut_ip,
