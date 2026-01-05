@@ -185,8 +185,7 @@ def test_phy_recovery_bad_flow(devices, random_api):
 
         with allure.independent_step(f"Testing bad-mode on interface {selected_port.port.name}"):
             logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.MODE} to bad-mode")
-            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.MODE, "bad-mode", apply=True, ask_for_confirmation=True,
-                                 expected_str=ERR_MSG_BAD_MODE).verify_result()
+            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.MODE, "bad-mode", expected_str=ERR_MSG_BAD_MODE).verify_result()
 
         with allure.independent_step(f"Testing bad-timeout on interface {selected_port.port.name}"):
             logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.TIMEOUT} to -1")
@@ -195,8 +194,7 @@ def test_phy_recovery_bad_flow(devices, random_api):
                 if is_bug_active(4631963) and random_api == ApiType.OPENAPI
                 else ERR_MSG_TIMEOUT_VALID_RANGE
             )
-            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.TIMEOUT, -1, apply=True, ask_for_confirmation=True,
-                                 expected_str=expected_str).verify_result()
+            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.TIMEOUT, -1, expected_str=expected_str).verify_result()
 
 
 @pytest.mark.interface
