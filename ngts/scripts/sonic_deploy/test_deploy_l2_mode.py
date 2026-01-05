@@ -1,13 +1,15 @@
 #!/usr/bin/env python
-import allure
 import csv
-import logging
 import json
-import pytest
+import logging
 from collections import defaultdict
+
+import allure
+import pytest
+
 from ngts.constants.constants import SonicConst
-from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
+from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
 
 
 logger = logging.getLogger()
@@ -15,14 +17,6 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope="function", autouse=True)
 def confirm_setup_ready(cli_objects):
-    #TODO: WA for issue RM#4643466, revert when the issue is fixed
-    from infra.tools.redmine.redmine_api import is_redmine_issue_active
-    if is_redmine_issue_active([4643466])[0] and \
-        'bobcat' in cli_objects.dut.chassis.get_hostname():
-        cli_objects.dut.general.shutdown_dpu(list(range(4)))
-        dpu_interfaces = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
-        cli_objects.dut.interface.disable_interfaces(dpu_interfaces)
-        cli_objects.dut.general.verify_dpus_down(list(range(4)))
 
     admin_up_ports = cli_objects.dut.interface.get_admin_up_ports()
 
@@ -133,7 +127,7 @@ def test_restore_default_mode(cli_objects, engines, sonic_topo, topology_obj, wo
         # Reload the minigraph directly on the switch
         with allure.step("Reload minigraph directly on the switch"):
             engines.dut.run_cmd(f'sudo config load_minigraph --override_config -y')
-            cli_objects.dut.general.verify_dockers_are_up()
+            cli_objects.dut.general.verify_dockers_are_up(running_config=True)
     else:
         with allure.step("Deploy minigraph"):
             run_testbed_cli_script(ansible_cmd, setup_info['ansible_path'])

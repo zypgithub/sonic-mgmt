@@ -326,19 +326,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
     # Add 6 tries due to fw update would add external delay to syncd container boot up
     @retry(Exception, tries=21, delay=10)
-    def verify_dockers_are_up(self, dockers_list=None):
+    def verify_dockers_are_up(self, dockers_list=None, running_config=False):
         """
         Verifying the dockers are in up state during a specific time interval
         :param dockers_list: list of dockers to check
+        :param running_config: whether to read config from running config or file
         :return: None, raise error in case of unexpected result
         """
         with allure.step('Check that dockers in UP state'):
-            self._verify_dockers_are_up(dockers_list)
+            self._verify_dockers_are_up(dockers_list, running_config=running_config)
 
-    def _verify_dockers_are_up(self, dockers_list):
+    def _verify_dockers_are_up(self, dockers_list, running_config=False):
         """
         Verifying the dockers are in up state
         :param dockers_list: list of dockers to check
+        :param running_config: whether to read config from running config or file
         :return: None, raise error in case of unexpected result
         """
         if dockers_list is None:
@@ -346,7 +348,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
             # Try to get extended docker list for DUT type ToRRouter
             try:
-                config_db = self.get_config_db()
+                if running_config:
+                    logger.info('Reading config from running config')
+                    config_db = self.get_config_db_from_running_config()
+                else:
+                    logger.info('Reading config from config_db.json')
+                    config_db = self.get_config_db()
                 if self.is_bluefield(config_db['DEVICE_METADATA']['localhost']['hwsku']):
                     dockers_list = SonicConst.DOCKERS_LIST_BF
                 elif config_db['DEVICE_METADATA']['localhost']['type'] == 'ToRRouter':
