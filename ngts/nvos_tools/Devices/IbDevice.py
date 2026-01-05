@@ -406,7 +406,7 @@ class IbSwitch(BaseSwitch):
             'acl-default-loopback-ipv6': 1,
             'acl-default-dos': 61,
             'acl-default-dos-ipv6': 72,
-            'acl-default-whitelist': 25,
+            'acl-default-whitelist': 26,
             'acl-default-whitelist-ipv6': 24,
             'acl-default-outbound': 2,
             'acl-default-outbound-ipv6': 2
