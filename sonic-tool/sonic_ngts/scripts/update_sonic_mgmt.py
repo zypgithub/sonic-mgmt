@@ -266,9 +266,10 @@ if __name__ == "__main__":
     ansible_port = topology.players['dut']['engine'].ssh_port
     hwsku = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
 
-    files = [inv, lab, testbed_yaml, sonic_nvidia_common_devices]
+    files = [inv, lab, testbed_yaml]
     if 'air' in setup_name:
         os.system(f"echo '{ansible_host} {setup_name}' >> /etc/hosts")
+        files.append(sonic_nvidia_common_devices)
     for f in files:
         if not f.entry_exists(dut_name=dut_name):
             if isinstance(f, TestbedYAML):
