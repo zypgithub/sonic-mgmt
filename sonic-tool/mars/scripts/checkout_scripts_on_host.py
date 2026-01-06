@@ -38,7 +38,7 @@ def _parse_args():
                                                               "the same as in MARS topology file")
     parser.add_argument("--tarball_path", dest="tarball_path", help="Tarballs directory",
                         default="/auto/sw_regression/system/SONIC/MARS/tarballs/")
-    parser.add_argument("--clone_repo", dest="clone_repo", help="Clone the repo", default=False)
+    parser.add_argument("--clone_repo", dest="clone_repo", help="Clone the repo", default="False")
 
     args = parser.parse_args()
 
@@ -71,7 +71,7 @@ def main():
     logger.info("Create workspace folder {}".format(workspace_path))
     host.run("mkdir -p {}".format(workspace_path))
 
-    if args.tarball and not args.clone_repo:
+    if args.tarball and args.clone_repo != "True":
         tarball_path = os.path.join(args.tarball_path, args.tarball)
         logger.info("Extract tarball %s into workspace folder %s", tarball_path, workspace_path)
         host.run("tar -xvf {} -C {}".format(tarball_path, workspace_path))
