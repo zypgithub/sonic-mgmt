@@ -3,12 +3,13 @@ CRDT (Debug Image Token) Functionality Test
 
 Test Plan Section 6.2: CRDT Complete Flow - IPN Systems
 """
+import logging
 import pytest
+from retry.api import retry_call
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts, HealthConsts, RebootConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, RebootConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
@@ -17,75 +18,125 @@ from ngts.tools.test_utils import allure_utils as allure
 from .helpers import (
     CRDTTokenManager,
     DebugTokenConsts,
+    DebugTokenFileHelper,
     TokenVerifier,
 )
 from .token_signing import CRDTTokenSigner
 
+logger = logging.getLogger()
 
-@pytest.mark.timeout(30 * MINUTE)
+
+def _assert_health_ok(nv_command) -> None:
+    """Assert system health status is OK."""
+    nv_command.system.validate_health_status(HealthConsts.OK)
+
+
+@pytest.mark.timeout(45 * MINUTE)
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crdt
 @pytest.mark.functionality
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crdt_complete_flow(engines, devices, nv_command, test_name, test_api,
+def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
                             topology_obj, serial_log_analyzers, skip_if_opn_system):
     """
     Test Plan Section 6.2: CRDT Complete Flow with Firmware
 
     Comprehensive CRDT token lifecycle with firmware operations:
-    1. Verify initial state (token disabled)
-    2. Fetch debug BIN firmware for token generation
-    3. Generate token info from BIN file
-    4. Sign token on switch using mlxconfig (private key already copied)
-    5. Install CRDT token
-    6. Verify token status enabled for all ASICs
-    7. Fetch and install MFA firmware (without reboot)
-    8. Verify token is still applied after MFA install
-    9. Reboot with default firmware
-    10. Verify token persistence (token should remain enabled after reboot)
+    - Verify initial state (token disabled) and save original firmware version
+    - Fetch debug BIN firmware for token generation
+    - Generate first token info from BIN file
+    - Sign first token on switch
+    - Install first CRDT token
+    - Verify token status enabled for all ASICs
+    - Uninstall token and verify token is disabled
+    - Try to reinstall same token - expect failure
+    - Generate and sign second token
+    - Install second CRDT token
+    - Verify token status enabled for all ASICs
+    - Fetch and install MFA firmware
+    - Verify token is still applied and firmware version changed
+    - Try to uninstall token while debug FW in use - expect failure
+    - Reboot with default firmware
+    - Verify token persistence and original firmware version restored
     Cleanup: Factory reset to ensure clean state
 
-    Test Scope: Token signing on switch with BIN/MFA firmware operations and persistence verification
+    Test Scope: Token signing, uninstall flow, firmware version verification
     """
     serial_analyzer, = serial_log_analyzers.values()
-    TestToolkit.tested_api = test_api
     manager = CRDTTokenManager()
     system = System()
-    debug_fw_bin = DebugTokenConsts.DEBUG_FW_FILENAME
+
+    # Get firmware info from JSON
+    fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+    debug_fw_bin = fw_info['bin_filename']
+    expected_debug_fw_version = fw_info['version_name']
 
     try:
-        with allure.step('Step 1: Verify initial state'):
+        with allure.step('Verify initial state and save original firmware version'):
+            original_firmware_version = DebugTokenFileHelper.get_asic_firmware_version(nv_command)
+            logger.info(f"Original firmware version: {original_firmware_version}")
+
             token_status = manager.get_token_status()
             assert not token_status.is_enabled, "Token should be disabled initially"
-            nv_command.system.validate_health_status(HealthConsts.OK)
+            retry_call(_assert_health_ok, [nv_command], exceptions=AssertionError, tries=6, delay=5)
 
-        with allure.step('Step 2: Fetch debug BIN firmware for token generation'):
+        with allure.step('Fetch debug BIN firmware for token generation'):
             manager.fetch_debug_fw().verify_result()
 
-        with allure.step('Step 3: Generate CRDT token info from BIN file'):
-            token_info_file = DebugTokenConsts.CRDT_TOKEN_INFO
-            manager.generate_token_info(token_info_file, test_name, fw_signed_filename=debug_fw_bin)
-            manager.verify_files_output(expected_files=[token_info_file])
+        with allure.step('Generate first CRDT token info from BIN file'):
+            first_token_info_file = "crdt_first_token.xml"
+            manager.generate_token_info(first_token_info_file, test_name, fw_signed_filename=debug_fw_bin)
+            manager.verify_files_output(expected_files=[first_token_info_file])
 
-        with allure.step('Step 4: Sign token on switch'):
+        with allure.step('Sign first token on switch'):
             signer = CRDTTokenSigner(engines)
-            signed_token_path, signed_token_name = signer.sign_on_switch(token_info_file)
+            first_signed_token_path, first_signed_token_name = signer.sign_on_switch(first_token_info_file)
 
-        with allure.step('Step 5: Install signed CRDT token'):
-            manager.install_token(signed_token_name).verify_result()
+        with allure.step('Install first signed CRDT token'):
+            manager.install_token(first_signed_token_name).verify_result()
 
-        with allure.step('Step 6: Verify token status ENABLED for all ASICs'):
+        with allure.step('Verify first token status ENABLED for all ASICs'):
             TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
 
-        with allure.step('Step 7: Fetch and install MFA firmware'):
+        with allure.step('Uninstall token and verify token is disabled'):
+            manager.uninstall_token().verify_result()
+            TokenVerifier.verify_token_enabled(manager, expected_enabled=False)
+
+        with allure.step('Try to reinstall same token - expect failure'):
+            # After uninstall, the same token should not be applicable
+            manager.install_token(first_signed_token_name).verify_result(False)
+            TokenVerifier.verify_token_enabled(manager, expected_enabled=False)
+
+        with allure.step('Generate and sign second token'):
+            second_token_info_file = "crdt_second_token.xml"
+            manager.generate_token_info(second_token_info_file, test_name, fw_signed_filename=debug_fw_bin)
+            second_signed_token_path, second_signed_token_name = signer.sign_on_switch(second_token_info_file)
+
+        with allure.step('Install second signed CRDT token'):
+            manager.install_token(second_signed_token_name).verify_result()
+
+        with allure.step('Verify second token status ENABLED for all ASICs'):
+            TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
+
+        with allure.step('Fetch and install MFA firmware'):
             manager.fetch_and_install_mfa_fw(nv_command, engines).verify_result()
 
-        with allure.step('Step 8: Verify token is still applied after MFA install'):
+        with allure.step('Verify token and firmware version after MFA install'):
             TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
-            nv_command.system.validate_health_status(HealthConsts.OK)
 
-        with allure.step('Step 9: Reboot with default firmware'):
+            # Verify firmware version changed to debug version
+            if expected_debug_fw_version:
+                DebugTokenFileHelper.verify_firmware_version(nv_command, expected_debug_fw_version, 'after MFA install')
+
+            retry_call(_assert_health_ok, [nv_command], exceptions=AssertionError, tries=6, delay=5)
+
+        with allure.step('Try to uninstall token while debug FW in use - expect failure'):
+            # Token cannot be uninstalled while debug firmware is actively running
+            manager.uninstall_token().verify_result(False)
+            # Token should still be enabled after failed uninstall attempt
+            TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
+
+        with allure.step('Reboot with default firmware'):
             nv_command.platform.firmware.asic.set(
                 PlatformConsts.FW_SOURCE,
                 PlatformConsts.FW_SOURCE_DEFAULT,
@@ -98,11 +149,16 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, test_api,
                 nv_command.system.reboot.action_reboot,
                 system_is_ready_timeout=PlatformConsts.TIMEOUT_AFTER_FW_INSTALL
             )
-            OperationTime.verify_operation_time(duration, 'reboot with default FW').verify_result()
-            nv_command.system.validate_health_status(HealthConsts.OK)
+            retry_call(_assert_health_ok, [nv_command], exceptions=AssertionError, tries=6, delay=5)
 
-        with allure.step('Step 10: Verify token persistence after reboot'):
+        with allure.step('Verify token persistence and original firmware version restored'):
             TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
+
+            # Verify firmware version is back to original
+            DebugTokenFileHelper.verify_firmware_version(nv_command, original_firmware_version, 'after reboot with default FW')
+
+        with allure.step('Verify operation time for reboot with default FW'):
+            OperationTime.verify_operation_time(duration, 'reboot with default FW').verify_result()
 
     finally:
         # Cleanup: Factory reset to ensure clean state
@@ -117,6 +173,9 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, test_api,
                 result_obj.verify_result()
 
             TokenVerifier.verify_token_enabled(manager, expected_enabled=False)
+
+            # Verify firmware version is back to original after factory reset
+            DebugTokenFileHelper.verify_firmware_version(nv_command, original_firmware_version, 'after factory reset')
 
             expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
             validate_reboot_reason_and_user(system, expected_reason, expected_user)

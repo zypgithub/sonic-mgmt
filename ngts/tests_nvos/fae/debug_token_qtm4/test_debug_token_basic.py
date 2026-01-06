@@ -30,16 +30,16 @@ def _test_crcs_file_management(engines, test_name, manager: CRCSTokenManager):
     """Test CRCS file management commands."""
     file_ext = '.xml'
 
-    with allure.step('Step 1: Generate CRCS token info file'):
+    with allure.step('Generate CRCS token info file'):
         filename = f'crcs_test{file_ext}'
         manager.generate_token_info(filename, test_name)
         manager.verify_files_output(expected_files=[filename])
 
-    with allure.step('Step 2: Show CRCS token info files'):
+    with allure.step('Show CRCS token info files'):
         files = manager.get_token_info_files()
         assert filename in files, f"File {filename} not found in {files}"
 
-    with allure.step('Step 3: Rename CRCS token info file'):
+    with allure.step('Rename CRCS token info file'):
         new_filename = f'crcs_renamed{file_ext}'
         manager.customer_support.files.file_name[filename].action_rename(
             new_name=new_filename
@@ -47,7 +47,7 @@ def _test_crcs_file_management(engines, test_name, manager: CRCSTokenManager):
         manager.verify_files_output(expected_files=[new_filename], unexpected_files=[filename])
         filename = new_filename
 
-    with allure.step('Step 4: Upload CRCS token info file to server'):
+    with allure.step('Upload CRCS token info file to server'):
         upload_path = DebugTokenFileHelper.get_upload_path(engines)
         manager.customer_support.files.file_name[filename].action_upload(
             upload_path=upload_path
@@ -56,11 +56,11 @@ def _test_crcs_file_management(engines, test_name, manager: CRCSTokenManager):
         DebugTokenFileHelper.cleanup_remote_file(engines, filename)
         manager.verify_files_output(expected_files=[filename])
 
-    with allure.step('Step 5: Delete specific CRCS token info file'):
+    with allure.step('Delete specific CRCS token info file'):
         manager.delete_token_info(filename).verify_result()
         manager.verify_files_output(unexpected_files=[filename])
 
-    with allure.step('Step 6: Generate 2 files and delete all'):
+    with allure.step('Generate 2 files and delete all'):
         file1 = DebugTokenFileHelper.generate_random_filename(file_ext)
         file2 = DebugTokenFileHelper.generate_random_filename(file_ext)
         manager.generate_token_info(file1, test_name)
@@ -98,16 +98,16 @@ def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
     with allure.step('Fetch debug BIN firmware for CRDT token generation'):
         manager.fetch_debug_fw().verify_result()
 
-    with allure.step('Step 1: Generate CRDT token info file'):
+    with allure.step('Generate CRDT token info file'):
         filename = f'crdt_test{file_ext}'
         manager.generate_token_info(filename, test_name, fw_signed_filename=debug_fw_bin)
         manager.verify_files_output(expected_files=[debug_fw_bin, filename])
 
-    with allure.step('Step 2: Show CRDT token info files'):
+    with allure.step('Show CRDT token info files'):
         files = manager.get_token_info_files()
         assert filename in files, f"File {filename} not found in {files}"
 
-    with allure.step('Step 3: Rename CRDT token info file'):
+    with allure.step('Rename CRDT token info file'):
         new_filename = f'crdt_renamed{file_ext}'
         manager.debug_image.files.file_name[filename].action_rename(
             new_name=new_filename
@@ -115,7 +115,7 @@ def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
         manager.verify_files_output(expected_files=[debug_fw_bin, new_filename], unexpected_files=[filename])
         filename = new_filename
 
-    with allure.step('Step 4: Upload CRDT token info file to server'):
+    with allure.step('Upload CRDT token info file to server'):
         upload_path = DebugTokenFileHelper.get_upload_path(engines)
         manager.debug_image.files.file_name[filename].action_upload(
             upload_path=upload_path
@@ -124,11 +124,11 @@ def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
         DebugTokenFileHelper.cleanup_remote_file(engines, filename)
         manager.verify_files_output(expected_files=[debug_fw_bin, filename])
 
-    with allure.step('Step 5: Delete specific CRDT token info file'):
+    with allure.step('Delete specific CRDT token info file'):
         manager.delete_token_info(filename).verify_result()
         manager.verify_files_output(expected_files=[debug_fw_bin], unexpected_files=[filename])
 
-    with allure.step('Step 6: Generate 2 files and delete all'):
+    with allure.step('Generate 2 files and delete all'):
         file1 = DebugTokenFileHelper.generate_random_filename(file_ext)
         file2 = DebugTokenFileHelper.generate_random_filename(file_ext)
         manager.generate_token_info(file1, test_name, fw_signed_filename=debug_fw_bin)
@@ -136,7 +136,8 @@ def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
         manager.verify_files_output(expected_files=[debug_fw_bin, file1, file2])
 
         manager.delete_all_token_info().verify_result()
-        manager.verify_files_output(expected_files=[debug_fw_bin])
+        # delete_all removes all files including the debug firmware binary
+        manager.verify_files_output()
 
 
 def _test_crdt_generate_multiple(test_name, manager: CRDTTokenManager):
@@ -157,7 +158,7 @@ def _test_crdt_generate_multiple(test_name, manager: CRDTTokenManager):
 
     with allure.step('Delete all files'):
         manager.delete_all_token_info().verify_result()
-        manager.verify_files_output(expected_files=[debug_fw_bin])
+        manager.verify_files_output()
 
 
 # ==================== CRCS Tests ====================

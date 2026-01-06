@@ -10,6 +10,7 @@ from enum import Enum
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -191,22 +192,23 @@ class CRDTTokenManager(ITokenFileManager, ITokenLifecycle):
         return self.debug_image
 
     def fetch_debug_fw(self, debug_fw_filename: Optional[str] = None,
-                       source_path: Optional[str] = None) -> ResultObj:
+                       bin_path: Optional[str] = None) -> ResultObj:
         """
         Fetch debug firmware file required for CRDT token generation.
 
         Args:
-            debug_fw_filename: Name of the debug FW file (defaults to DEBUG_FW_FILENAME)
-            source_path: Source path for debug FW (defaults to DEBUG_FW_SOURCE_PATH)
+            debug_fw_filename: Name of the debug FW file (defaults from JSON or fallback)
+            bin_path: Full path to BIN file (defaults from JSON or fallback)
 
         Returns:
             ResultObj indicating success/failure
         """
-        debug_fw_filename = debug_fw_filename or DebugTokenConsts.DEBUG_FW_FILENAME
-        source_path = source_path or DebugTokenConsts.DEBUG_FW_SOURCE_PATH
+        # Get firmware info from JSON or use fallback
+        fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+        debug_fw_filename = debug_fw_filename or fw_info['bin_filename']
+        fetch_url = bin_path or fw_info['bin_path']
 
         with allure.step(f'Fetch debug firmware: {debug_fw_filename}'):
-            fetch_url = f'{source_path}{debug_fw_filename}'
             result = self.debug_image.action_fetch(fetch_url)
             if result:
                 self._debug_fw_filename = debug_fw_filename
@@ -214,22 +216,23 @@ class CRDTTokenManager(ITokenFileManager, ITokenLifecycle):
 
     def fetch_and_install_mfa_fw(self, nv_command, engines,
                                  mfa_filename: Optional[str] = None,
-                                 source_path: Optional[str] = None) -> ResultObj:
+                                 mfa_path: Optional[str] = None) -> ResultObj:
         """
         Fetch and install MFA firmware for CRDT token testing.
 
         Args:
             nv_command: NV command object for platform firmware operations
             engines: Engines dictionary
-            mfa_filename: Name of the MFA file (defaults to DEBUG_MFA_FILENAME)
-            source_path: Source path for MFA (defaults to DEBUG_FW_SOURCE_PATH)
+            mfa_filename: Name of the MFA file (defaults from JSON or fallback)
+            mfa_path: Full path to MFA file (defaults from JSON or fallback)
 
         Returns:
             ResultObj indicating success/failure
         """
-
-        mfa_filename = mfa_filename or DebugTokenConsts.DEBUG_MFA_FILENAME
-        source_path = source_path or DebugTokenConsts.DEBUG_FW_SOURCE_PATH
+        # Get firmware info from JSON or use fallback
+        fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+        mfa_filename = mfa_filename or fw_info['mfa_filename']
+        fetch_url = mfa_path or fw_info['mfa_path']
 
         with allure.step(f'Fetch and install MFA firmware: {mfa_filename}'):
             nv_command.platform.firmware.asic.set(
@@ -239,7 +242,6 @@ class CRDTTokenManager(ITokenFileManager, ITokenLifecycle):
             )
             NvueGeneralCli.save_config(engines.dut)
 
-            fetch_url = f'{source_path}{mfa_filename}'
             nv_command.platform.firmware.asic.action_fetch(fetch_url).verify_result()
             return nv_command.platform.firmware.asic.files.file_name[mfa_filename].action_file_install_with_reboot(force=True)
 
@@ -396,10 +398,46 @@ class DebugTokenFileHelper:
             output = player.run_cmd(f'ls {remote_path} | grep {filename}')
             return bool(output)
 
+    @staticmethod
+    def get_asic_firmware_version(nv_command) -> str:
+        """
+        Get the actual firmware version from the first ASIC.
+
+        Args:
+            nv_command: NV command object
+
+        Returns:
+            Firmware version string
+        """
+        show_output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.firmware.show()
+        ).get_returned_value()
+        asic_dictionary = {k: v for k, v in show_output.items()
+                           if PlatformConsts.FW_ASIC in k and 'EROT' not in k}
+        assert asic_dictionary and len(asic_dictionary.keys()) > 0, "ASIC list is empty"
+        first_asic_name = list(asic_dictionary.keys())[0]
+        return asic_dictionary[first_asic_name]["actual-firmware"]
+
+    @staticmethod
+    def verify_firmware_version(nv_command, expected_version: str, step_description: str = ""):
+        """
+        Verify the firmware version matches the expected version.
+
+        Args:
+            nv_command: NV command object
+            expected_version: Expected firmware version string
+            step_description: Description for the verification step
+        """
+        with allure.step(f'Verify firmware version{": " + step_description if step_description else ""}'):
+            actual_version = DebugTokenFileHelper.get_asic_firmware_version(nv_command)
+            logger.info(f"Expected firmware: {expected_version}, Actual firmware: {actual_version}")
+            assert actual_version == expected_version, \
+                f"Firmware version mismatch. Expected: {expected_version}, Got: {actual_version}"
 
 # ====================
 # Test Fixtures
 # ====================
+
 
 @pytest.fixture(scope='session', autouse=True)
 def cleanup_debug_tokens_session():
@@ -500,9 +538,12 @@ class DebugTokenConsts:
     XML_EXTENSION = '.xml'
     BIN_EXTENSION = '.bin'
 
-    # Debug firmware
-    DEBUG_FW_FILENAME = "debug_fw_for_testing.bin"
-    DEBUG_MFA_FILENAME = "debug_fw_mfa.mfa"
+    # Component name for BmcTool lookup
+    DEBUG_ASIC_COMPONENT = "debug_asic"
+
+    # Fallback debug firmware values (used if JSON lookup fails)
+    DEBUG_FW_FILENAME = "debug_fw_41_2018_0220.bin"
+    DEBUG_MFA_FILENAME = "debug_fw_41_2018_0220.mfa"
     DEBUG_FW_SOURCE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/debug_token/"
 
     # Token filenames for tests
@@ -523,3 +564,31 @@ class DebugTokenConsts:
     NONEXISTENT_TOKEN = 'nonexistent_token.bin'
     INVALID_URL = 'scp://nonexistent_host_12345/path/'
     INVALID_TOKEN_URL = 'scp://nonexistent_host_12345/token.bin'
+
+    @classmethod
+    def get_debug_asic_fw_info(cls):
+        """
+        Get debug ASIC firmware info from platform components JSON.
+
+        Returns:
+            Dict with keys: bin_path, bin_filename, mfa_path, mfa_filename, version_name
+            Falls back to default constants if JSON lookup fails.
+        """
+        try:
+            component_info = BmcTool.get_fw_component_version_dict(cls.DEBUG_ASIC_COMPONENT, "latest")
+            return {
+                'bin_path': component_info['bin_path'],
+                'bin_filename': component_info['bin_filename'],
+                'mfa_path': component_info['mfa_path'],
+                'mfa_filename': component_info['mfa_filename'],
+                'version_name': component_info['version_name']
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get debug ASIC info from JSON, using fallback values: {e}")
+            return {
+                'bin_path': f"{cls.DEBUG_FW_SOURCE_PATH}{cls.DEBUG_FW_FILENAME}",
+                'bin_filename': cls.DEBUG_FW_FILENAME,
+                'mfa_path': f"{cls.DEBUG_FW_SOURCE_PATH}{cls.DEBUG_MFA_FILENAME}",
+                'mfa_filename': cls.DEBUG_MFA_FILENAME,
+                'version_name': None
+            }
