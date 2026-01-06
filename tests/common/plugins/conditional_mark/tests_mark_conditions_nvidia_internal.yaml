@@ -1342,4 +1342,16 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_model:
     conditions:
     - "https://redmine.mellanox.com/issues/4790935 and 'sn6600' in platform"
 
+everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror:
+  skip:
+    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
+    conditions:
+    - "'sn6600' in platform"
+
+everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
+  skip:
+    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
+    conditions:
+    - "'sn6600' in platform"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
