@@ -15,6 +15,9 @@ class SupportedRebootReloadTypes:
         self.fast_reboot = 'fast-reboot'
         self.warm_reboot = 'warm-reboot'
         self.config_reload = 'config reload -y'
+        if '4280' in platform:
+            del self.fast_reboot
+            del self.warm_reboot
         if is_redmine_issue_active([4435626])[0]:
             del self.fast_reboot
             del self.warm_reboot

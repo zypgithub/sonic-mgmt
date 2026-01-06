@@ -8,6 +8,7 @@ from ngts.constants.constants import InterfacesTypeConstants, FecConstants
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.helpers.interface_helpers import get_alias_number
+from ngts.helpers.general_helper import is_smartswitch_platform
 
 logger = logging.getLogger()
 
@@ -125,10 +126,10 @@ def reboot_reload_random(topology_obj, dut_engine, cli_object, ports, cleanup_li
     :return: raise assertion error in case reload/reboot failed
     """
     supported_reboot_modes = ['reload', 'warm-reboot', 'fast-reboot', 'reboot']
+    if is_smartswitch_platform(topology_obj):
+        supported_reboot_modes = ['reload', 'reboot']
     if simx:
         supported_reboot_modes = ['reload', 'reboot', 'fast-reboot']
-    if is_redmine_issue_active([3431712])[0]:
-        supported_reboot_modes.remove('fast-reboot')
 
     mode = random.choice(supported_reboot_modes)
     with allure.step('Preforming {} on dut:'.format(mode)):

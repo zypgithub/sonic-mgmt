@@ -33,8 +33,8 @@ dhcp_option_53 = 'udp[250:1]'
 
 
 @pytest.fixture(scope='module', autouse=True)
-def skip_dhcp_relay_v4_test(platform_params):
-    if is_smartswitch_platform(platform_params):
+def skip_dhcp_relay_v4_test(topology_obj):
+    if is_smartswitch_platform(topology_obj):
         pytest.skip(
             "Smartswitch not support the case. \
              Because by default, dhcp relay v4 is enabled on smartswitch and is mainly for DPU.\
