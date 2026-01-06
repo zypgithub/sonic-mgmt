@@ -1201,7 +1201,8 @@ class MarsConstants:
         '/workspace': '/workspace',
         '/.autodirect/LIT/SCRIPTS': '/.autodirect/LIT/SCRIPTS',
         '/.autodirect/sw/release/': '/.autodirect/sw/release/',
-        '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/'
+        '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
+        '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/'
     }
 
     VER_SDK_PATH = "/opt/ver_sdk"

@@ -35,6 +35,7 @@ SONIC_MGMT_MOUNTPOINTS = {
     '/auto/sw/tools/comet/': '/auto/sw/tools/comet/',
     '/auto/sw/projects/performance/results/mongodb/': '/auto/sw/projects/performance/results/mongodb/',
     '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
+    '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/',
 }
 AIR_SONIC_MGMT_MOUNTPOINTS = {
     '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
