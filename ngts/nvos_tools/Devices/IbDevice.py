@@ -406,8 +406,8 @@ class IbSwitch(BaseSwitch):
             'acl-default-loopback-ipv6': 1,
             'acl-default-dos': 61,
             'acl-default-dos-ipv6': 72,
-            'acl-default-whitelist': 27,
-            'acl-default-whitelist-ipv6': 26,
+            'acl-default-whitelist': 26,
+            'acl-default-whitelist-ipv6': 25,
             'acl-default-outbound': 2,
             'acl-default-outbound-ipv6': 2
         }
@@ -2628,6 +2628,11 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.asic_type = NvosConst.NVL6
         self.supported_nvl_speeds = ['200G', '400G', '360G', '328G']  # Rosalind supports all speeds
         # Note: Rosalind has no regular FNM (nvl_fnm_ports is empty), only internal FNM
+
+        # Expected ACL rule counts after migration (device-specific, can be overridden)
+        self.expected_acl_rule_counts.update({
+            'acl-default-whitelist': 27,
+            'acl-default-whitelist-ipv6': 26})
 
         # IMPORTANT: Real Rosalind (not surrogate) has ONLY nmx-controller, NO nmx-telemetry
         # Override parent (RosalindSurrogateSwitch) which has both apps
