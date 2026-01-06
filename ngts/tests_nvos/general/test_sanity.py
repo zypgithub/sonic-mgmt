@@ -37,7 +37,7 @@ def test_ci_sanity_acl(engines, topology_obj, devices):
     TestToolkit.tested_api = ApiType.NVUE
 
     with allure.step("Test ACL"):
-        test_show_acls(engines, ApiType.NVUE)
+        test_show_acls(engines, devices, ApiType.NVUE)
 
 
 @pytest.mark.simx
