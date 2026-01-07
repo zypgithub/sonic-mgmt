@@ -94,6 +94,23 @@ class ClusterConsts:
     MAINTENANCE_STATE_OPTIONS = ['up', 'diag', 'down']
 
 
+class NmxTelemetryConsts:
+    # docker name
+    NMX_TELEMETRY_DOCKER_NAME = "nmx-t.telemetry.telemetry"
+
+    # health
+    STATUS_OK = 'ok'
+    STATUS_NOT_OK = 'not ok'
+    STATUS_HEALTHY = 'Healthy'
+
+    # messages
+    NMX_T_AGENT_STOPPED_MESSAGE = "Telemetry agent stopped successfully"
+    NMX_T_AGENT_STARTED_MESSAGE = "Telemetry agent started successfully"
+    CHANGE_AGENT_CONFIG_ERR_MESSAGE = "Cannot change telemetry agent configuration when cluster state is enabled"
+
+    AGENTS = 'agents'
+
+
 class AnsbilePlaybooksConsts:
     USER = 'user'
     PASS = 'pass'

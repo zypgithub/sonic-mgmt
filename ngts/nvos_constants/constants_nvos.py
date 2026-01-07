@@ -874,6 +874,7 @@ class SystemConsts:
     NV_BRIDGE_NODE_IP = '127.0.0.1'
     NV_BRIDGE_NODE_NEGATIVE_IP = '1.1.1.1'
     NV_BRIDGE_NODE_SERVER = 'node primary server'
+    NODE = 'node'
 
     CLUSTER_STATE_DISABLED = 'disabled'
     CLUSTER_STATE_ENABLED = 'enabled'

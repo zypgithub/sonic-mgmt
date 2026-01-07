@@ -44,4 +44,7 @@
     <test>
         <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nv_bridge.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nvos_nmx_t_distributed.cases</cases>
+    </test>
 </DBDEF>
