@@ -2526,7 +2526,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
     def _init_interfaces_ib_lanes(self):
         self.supported_lanes = '2X'  # Rosalind regular NVL ports (simplex + duplex)
-        self.supported_internal_fnm_lanes = '1X,2X'  # Rosalind internal FNM
+        self.supported_internal_fnm_lanes = '2X'  # Rosalind internal FNM
 
 # -------------------------- Rosalind Switch ----------------------------
 
@@ -2815,7 +2815,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
 
     def _init_interfaces_ib_lanes(self):
         self.supported_lanes = '1X,2X'  # Rosalind regular NVL ports (simplex + duplex)
-        self.supported_internal_fnm_lanes = '1X,2X'  # Rosalind internal FNM
+        self.supported_internal_fnm_lanes = '2X'  # Rosalind internal FNM
 
     def _init_platform_lists(self):
         super()._init_platform_lists()
