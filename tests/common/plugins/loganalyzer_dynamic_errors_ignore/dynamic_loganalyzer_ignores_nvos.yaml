@@ -831,6 +831,13 @@
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
 
+# NVOS SECURITY - platform certificate bad URL test
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*Failed to upload file:.*Name or service not known.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate_bad_url
+
 # NVOS SECURITY
 - Errors_list:
     - '.*ERR nvued:.*ERROR:.*Something went wrong in fetching the X\.509.*certificate.*URI.*'

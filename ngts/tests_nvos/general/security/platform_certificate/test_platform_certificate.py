@@ -10,18 +10,18 @@ from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.platform_certificate.constants import (
     PLATFORM_CERT_FILENAME,
     REMOTE_PATH,
-    REMOTE_PATH_HTTPS,
     REQUIRED_CERT_FIELDS,
     UploadProtocol,
 )
 from ngts.tests_nvos.general.security.platform_certificate.helpers import (
-    get_sftp_url,
-    verify_certificate_fields,
-    parse_certificate_dates,
-    validate_certificate_dates,
     extract_serial_number,
+    get_sftp_url,
     get_system_serial_number,
+    get_url_for_protocol,
+    parse_certificate_dates,
     sanity_check_uploaded_file,
+    validate_certificate_dates,
+    verify_certificate_fields,
 )
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -164,16 +164,12 @@ def test_upload_platform_certificate_bad_url(engines, devices):
         result = system.security.platform_certificate.action_upload(remote_url=bad_url)
 
     with allure.step("Verify upload failed"):
-        result.verify_result(should_succeed=False, expected_value='Action failed')
+        result.verify_result(should_succeed=False, expected_value="Action failed")
 
 
 @pytest.mark.security
 @pytest.mark.platform_certificate
-@pytest.mark.parametrize(
-    "protocol",
-    list(UploadProtocol),
-    ids=lambda p: p.value
-)
+@pytest.mark.parametrize("protocol", list(UploadProtocol), ids=lambda p: p.value)
 def test_upload_platform_certificate_protocols(protocol, engines, devices, remote_engine, cleanup_uploaded_cert, nv_command: NvCommand):
     """
     Test upload with different protocols.
@@ -186,14 +182,7 @@ def test_upload_platform_certificate_protocols(protocol, engines, devices, remot
     TestToolkit.tested_api = ApiType.NVUE
 
     with allure.step(f"Build {protocol.value} URL"):
-        if protocol == UploadProtocol.HTTPS:
-            remote_url = f"{REMOTE_PATH_HTTPS}{PLATFORM_CERT_FILENAME}"
-        elif protocol == UploadProtocol.SCP:
-            remote_url = get_sftp_url(remote_engine, PLATFORM_CERT_FILENAME).replace('sftp', 'scp')
-        elif protocol == UploadProtocol.SFTP:
-            remote_url = get_sftp_url(remote_engine, PLATFORM_CERT_FILENAME)
-        else:
-            pytest.fail(f"Unsupported protocol: {protocol}")
+        remote_url = get_url_for_protocol(protocol, remote_engine, PLATFORM_CERT_FILENAME)
         logger.info(f"Testing upload with {protocol.value}: {remote_url}")
 
     with allure.step(f"Execute upload with {protocol.value}"):
@@ -208,10 +197,6 @@ def test_upload_platform_certificate_protocols(protocol, engines, devices, remot
         else:
             remote_file_path = f"{REMOTE_PATH}/{PLATFORM_CERT_FILENAME}"
             upload_ok = sanity_check_uploaded_file(
-                engines,
-                remote_engine.ip,
-                remote_engine.username,
-                remote_engine.password,
-                remote_file_path
+                engines, remote_engine.ip, remote_engine.username, remote_engine.password, remote_file_path
             )
             assert upload_ok, f"Certificate upload with {protocol.value} failed"

@@ -5,15 +5,45 @@ from typing import Optional, Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.security.platform_certificate.constants import (
-    REMOTE_SFTP_URL_TEMPLATE,
+    REMOTE_URL_TEMPLATE,
+    REMOTE_PATH_HTTPS,
     REQUIRED_CERT_FIELDS,
     CERT_FIELD_NOT_BEFORE,
     CERT_FIELD_NOT_AFTER,
     CERT_FIELD_SERIAL_NUMBER,
+    UploadProtocol,
 )
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
+
+
+def get_url_for_protocol(
+    protocol: UploadProtocol,
+    remote_engine: LinuxSshEngine,
+    dst_filename: str
+) -> str:
+    """
+    Build a URL for the given upload protocol.
+
+    Args:
+        protocol: The upload protocol (SCP, SFTP, HTTPS)
+        remote_engine: Remote engine with connection details
+        dst_filename: Destination filename
+
+    Returns:
+        URL string for the specified protocol
+    """
+    if protocol == UploadProtocol.HTTPS:
+        return f"{REMOTE_PATH_HTTPS}{dst_filename}"
+
+    return REMOTE_URL_TEMPLATE.format(
+        protocol=protocol.value,
+        username=remote_engine.username,
+        password=remote_engine.password,
+        host=remote_engine.ip,
+        filename=dst_filename
+    )
 
 
 def get_sftp_url(remote_engine: LinuxSshEngine, dst_filename: str) -> str:
@@ -25,9 +55,11 @@ def get_sftp_url(remote_engine: LinuxSshEngine, dst_filename: str) -> str:
         dst_filename: Destination filename
 
     Returns:
-        SCP URL string
+        SFTP URL string
     """
-    return REMOTE_SFTP_URL_TEMPLATE.format(remote_engine.username, remote_engine.password, remote_engine.ip, dst_filename)
+    return get_url_for_protocol(
+        UploadProtocol.SFTP, remote_engine, dst_filename
+    )
 
 
 def verify_certificate_fields(cert_output: str) -> bool:
