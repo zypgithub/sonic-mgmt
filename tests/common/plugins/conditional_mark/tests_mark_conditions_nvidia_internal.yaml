@@ -1354,4 +1354,10 @@ everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
     conditions:
     - "'sn6600' in platform"
 
+everflow/test_everflow_ipv6.py::TestIngressEverflowIPv6::test_icmpv6_.*:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4827591 and sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4827591 and 'sn6600' in platform"
+
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
