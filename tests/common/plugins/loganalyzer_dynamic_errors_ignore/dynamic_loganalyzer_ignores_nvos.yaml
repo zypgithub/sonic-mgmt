@@ -2237,4 +2237,13 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/cluster/test_nmx_t_distributed.py::test_nmx_t_distributed_bad_flow
+
+- Errors_list:
+    - '.*ERR healthd: Voltage sensor reading is not available for HSC-2 VinDC In.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSC-2 VinDC Out.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSCC-2 Conv In 1.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSCC-2 Conv Out 1.*'
+  Conditions:
+    - Redmine:
+        - 4818038
 # --------------------------------------------------
