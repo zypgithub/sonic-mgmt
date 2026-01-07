@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import requests
-from netmiko import ConnectHandler
+from netmiko import ConnectHandler, ReadTimeout
 from paramiko.ssh_exception import AuthenticationException
 from retry.api import retry_call, retry
 
@@ -218,9 +218,9 @@ class DutUtilsTool:
     @staticmethod
     def run_cmd_with_disconnect(engine, cmd, timeout=5):
         try:
-            return engine.run_cmd(cmd, timeout=timeout)
-        except socket.error as e:
-            logging.info('Got "OSError: Socket is closed" - Current engine was also disconnected')
+            return engine.run_cmd(cmd, timeout=timeout, retry_run=False)
+        except (socket.error, ReadTimeout) as e:
+            logging.info('Got error: %s. Current engine was also disconnected', e)
             engine.disconnect()
             return "Action succeeded"
 
@@ -326,7 +326,7 @@ def wait_for_specific_regex_in_logs(engine, regex, timeout=70):
               'password': engine.password, 'timeout': timeout}
     with allure.step(f"wait for {timeout} seconds to see '{regex}' in logs"):
         connection = ConnectHandler(**device)
-        connection.send_command('nv show system log file follow', expect_string=regex)
+        connection.send_command('nv show system log file follow', expect_string=regex, read_timeout=timeout)
         return
 
 
