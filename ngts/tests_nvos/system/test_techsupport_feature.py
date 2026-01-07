@@ -349,8 +349,10 @@ def verify_techsupport_files_sizes(files_list, folder, skynet=False):
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE]
     elif folder == 'cluster':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
-    elif folder == 'hw-mgmt' and skynet:
+    elif folder == 'hw-mgmt':
         files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE]
+        if skynet:
+            files_list += [file for file in files_list if file not in SystemConsts.TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE]
 
     assert len(files_list) == 0, f"the following files are empty {files_list}"
 

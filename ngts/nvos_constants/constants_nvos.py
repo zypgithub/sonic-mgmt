@@ -519,9 +519,10 @@ class SystemConsts:
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
                                              'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
                                              'empty.sh', 'nv-bridge_reconcile']
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed']
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
+                                                 'nvlink_domain_telemetry.csv']
     TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
-    TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
+    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
