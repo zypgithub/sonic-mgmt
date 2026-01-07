@@ -138,7 +138,7 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
         if is_redmine_issue_active([4782619])[0]:
-            cmd = "timeout -s INT 5s " + cmd
+            cmd = "timeout -s INT 8s " + cmd
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd_set([cmd, '\n', '\n', '\x03', '\x03'],
