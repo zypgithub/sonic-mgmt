@@ -796,6 +796,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_critical_thres
     conditions:
       - "asic_type in ['vs'] or platform in ['armhf-nokia_ixs7215_52x-r0']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'simx' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_threshold:
   skip:
@@ -804,6 +805,7 @@ platform_tests/api/test_thermal.py::TestThermalApi::test_get_high_threshold:
     conditions:
       - "asic_type in ['vs']"
       - "is_multi_asic==True and release in ['201911']"
+      - "'simx' in platform"
 
 platform_tests/api/test_thermal.py::TestThermalApi::test_get_low_critical_threshold:
   skip:
