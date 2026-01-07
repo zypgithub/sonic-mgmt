@@ -2222,4 +2222,12 @@
     - Affected_test_cases:
         - tests_nvos/cluster/cluster_upgrade_test/cluster_upgrade_test.py
 
+
+- Errors_list:
+    - '.*asic_debug_config.*validate nvos version failed.*'
+    - '.*ERR health-statsd#health_history: nmx-telemetry-agent: Unreachable*'
+    - '.*ERR health-statsd#health_history: Summary: Not OK.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_nmx_t_distributed.py::test_nmx_t_distributed_bad_flow
 # --------------------------------------------------

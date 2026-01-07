@@ -2634,43 +2634,6 @@ class RosalindSwitch(RosalindSurrogateSwitch):
             'acl-default-whitelist': 27,
             'acl-default-whitelist-ipv6': 26})
 
-        # IMPORTANT: Real Rosalind (not surrogate) has ONLY nmx-controller, NO nmx-telemetry
-        # Override parent (RosalindSurrogateSwitch) which has both apps
-        self.cluster_app = {
-            ClusterConsts.NMX_CONTROLLER: {
-                **{key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
-                'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "disabled"},
-                "rbac": {"rbac-file": "", "rbac-mode": ""}
-            }
-        }
-        self.cluster_app_installed = {
-            ClusterConsts.NMX_CONTROLLER: {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']}
-        }
-        self.expected_cluster_apps = [ClusterConsts.NMX_CONTROLLER]
-        self.cluster_config_files_by_app = {
-            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES
-        }
-        self.cluster_state_files_by_app = {
-            ClusterConsts.NMX_CONTROLLER: ClusterConsts.NMX_CONTROLLER_STATE_FILE_TYPES
-        }
-        # Override cluster_files to only include controller (no telemetry for real Rosalind)
-        cluster_files = ['conf', ClusterConsts.NMX_CONTROLLER]
-        self.constants = self.constants._replace(cluster_files=cluster_files)
-        # Tech-support: Rosalind only has controller logs
-        self.cluster_techsupport_dirs_by_app = {
-            ClusterConsts.NMX_CONTROLLER: f'log/nmx/{ClusterConsts.NMX_CONTROLLER_PREFIX}'
-        }
-        # Override log files to only include controller (remove telemetry)
-        self.cluster_log_files_by_app = {
-            ClusterConsts.NMX_CONTROLLER: ['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz']
-        }
-        # Update constants.log_nmx_files to match (for backward compatibility)
-        # Clear inherited value and rebuild from all apps in cluster_log_files_by_app
-        self.constants.log_nmx_files.clear()
-        for app_logs in self.cluster_log_files_by_app.values():
-            if app_logs:  # Only extend if list is not empty
-                self.constants.log_nmx_files.extend(app_logs)
-
         # SDN Configuration edit commands for Rosalind
         # Rosalind does NOT edit FM config (no fm_config_edits needed)
         self.sdn_fm_config_edits = None  # Rosalind doesn't modify FM config

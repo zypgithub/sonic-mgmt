@@ -100,19 +100,20 @@ class ClusterTools:
         return [f for f in state_file_types if not (standalone_system and f == 'topology')]
 
     @staticmethod
-    def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True):
+    def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True, engine=None):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
+                cluster.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
 
             if output[SystemConsts.STATE] == 'disabled':
-                cluster.set(op_param_name="state", op_param_value='enabled', apply=True)
+                cluster.set(op_param_name="state", op_param_value='enabled', apply=True, dut_engine=engine)
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up',
+                                                             engine=engine)
             ClusterTools.reboot_compute_nodes_gpus(setup_name)
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
+                cluster.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
 
             with allure.step("Validate state is enabled"):
@@ -159,23 +160,24 @@ class ClusterTools:
             ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
 
     @staticmethod
-    def stop_cluster(cluster, output_format=OutputFormat.json):
+    def stop_cluster(cluster, output_format=OutputFormat.json, engine=None):
         with allure.step("Stop cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
+                cluster.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
 
             if output[SystemConsts.STATE] == 'enabled':
-                cluster.set(op_param_name="state", op_param_value='disabled', apply=True)
+                cluster.set(op_param_name="state", op_param_value='disabled', apply=True, dut_engine=engine)
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
+                                                             nmx_c_expected_state='down', engine=engine)
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=output_format),
+                cluster.show(output_format=output_format, dut_engine=engine),
                 output_format=output_format).get_returned_value()
 
             with allure.step("Validate state is disabled"):
                 output = OutputParsingTool.parse_show_output_to_dict(
-                    cluster.show(output_format=output_format),
+                    cluster.show(output_format=output_format, dut_engine=engine),
                     output_format=output_format).get_returned_value()
                 assert output[SystemConsts.STATE] == 'disabled', f"State is: " \
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
@@ -537,13 +539,13 @@ class ClusterTools:
         TestToolkit.tested_api = test_api
 
     @staticmethod
-    def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='', app=''):
+    def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='', app='', engine=None):
         for _ in range(15):
             final_sleep_time = 2
             if (not cluster_expected_state) and (not nmx_c_expected_state):
                 final_sleep_time += 8
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.show(output_format=OutputFormat.json),
+                cluster.show(output_format=OutputFormat.json, dut_engine=engine),
                 output_format=OutputFormat.json).get_returned_value()
             with allure.step(
                     f"Polling until cluster state is {cluster_expected_state} "
@@ -564,7 +566,7 @@ class ClusterTools:
                     if app:
                         logger.info(f"Checking {app} state")
                         output = OutputParsingTool.parse_show_output_to_dict(
-                            cluster.apps.running.show(output_format=OutputFormat.json),
+                            cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine),
                             output_format=OutputFormat.json).get_returned_value()
                         app_status = output[app]['status']
                         if app_status == 'ok':
@@ -751,11 +753,11 @@ class ClusterTools:
         else:
             return None
 
-    @retry(Exception, tries=4, delay=5)
-    def wait_until_app_expected_status(cluster, app, expected_status):
+    @retry(Exception, tries=6, delay=5)
+    def wait_until_app_expected_status(cluster, app, expected_status, engine=None):
         with allure.step(f"Waiting for {app} to be in {expected_status} status"):
             output = OutputParsingTool.parse_show_output_to_dict(
-                cluster.apps.running.show(output_format=OutputFormat.json)).get_returned_value()
+                cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine)).get_returned_value()
             app_status = output[app]['status']
             assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
 
