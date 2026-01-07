@@ -47,7 +47,7 @@ CHIP_LAG_MEMBERS_LIM = {
 @pytest.mark.reboot_reload
 @allure.title('LAG_LACP core functionality and reboot')
 def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type, interfaces, engines, cleanup_list,
-                                        platform_params, is_simx):
+                                        platform_params, is_simx, lag_config_order, l3_route_config):
     """
     This test case will check the base functionality of LAG/LACP feature.
     Config base configuration as in the picture below.
@@ -62,6 +62,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
     :param interfaces: interfaces fixture
     :param engines: engines fixture
     :param cleanup_list: list with functions to cleanup
+    :param lag_config_order: LAG configuration order (add_lag_first or add_member_first)
     :return: raise assertion error on unexpected behavior
 
                                                 dut
@@ -72,11 +73,14 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
               |     ha_dut1.50 |-------|                            |             hb_dut1 in bond|  bond0.50      |
               |     50.0.0.2/24|       |                            |             hb_dut2 in bond|  50.0.0.3/24   |
               |                |       |            PortChannel1111 |----------------------------|                |
-              ------------------       |              vlan 50 trunk |dut_hb2 in lag              ------------------
-                                       |                            |
-                                       ------------------------------
+              |     ha_dut2    |-------|              vlan 50 trunk |dut_hb2 in lag              ------------------
+              |     51.0.0.2/24|       |dut_ha2 51.0.0.1/24         |
+              ------------------       ------------------------------
+              L2: ha_dut1.50 -> Vlan50 -> PortChannel1111 -> bond0.50
+              L3: ha_dut2 -> dut_ha2 -> route -> Vlan50 -> PortChannel1111 -> bond0.50
     """
     dut_cli = topology_obj.players['dut']['cli']
+    logger.info("Executing test with order: {}".format(lag_config_order))
 
     cleanup_list.append((cli_objects.hb.interface.enable_interface, (interfaces.dut_hb_1,)))
     cleanup_list.append((cli_objects.hb.interface.enable_interface, (interfaces.dut_hb_2,)))
@@ -86,13 +90,23 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
     lag_lacp_config_dict = {
         'dut': [{'type': 'lacp', 'name': PORTCHANNEL_NAME, 'members': [interfaces.dut_hb_1, interfaces.dut_hb_2]}]
     }
-    add_lag_conf(topology_obj, lag_lacp_config_dict, cleanup_list)
 
     # VLAN config which will be used in this test
     vlan_config_dict = {'vlan_id': 50,
                         'vlan_member': PORTCHANNEL_NAME
                         }
-    add_vlan_conf(engines.dut, dut_cli, vlan_config_dict, cleanup_list)
+
+    if lag_config_order == "add_lag_first":
+        dut_cli.lag.create_lag_interface(PORTCHANNEL_NAME)
+        dut_cli.vlan.add_port_to_vlan(vlan_config_dict['vlan_member'], vlan_config_dict['vlan_id'])
+        for member in [interfaces.dut_hb_1, interfaces.dut_hb_2]:
+            dut_cli.lag.add_port_to_port_channel(member, PORTCHANNEL_NAME)
+        cleanup_list.append((LagLacpConfigTemplate.cleanup, (topology_obj, lag_lacp_config_dict)))
+        cleanup_list.append((dut_cli.vlan.del_port_from_vlan,
+                             (vlan_config_dict['vlan_member'], vlan_config_dict['vlan_id'])))
+    else:
+        add_lag_conf(topology_obj, lag_lacp_config_dict, cleanup_list)
+        add_vlan_conf(engines.dut, dut_cli, vlan_config_dict, cleanup_list)
 
     try:
         with allure.step('Validate the PortChannel status'):
@@ -108,6 +122,11 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
             validation_ping = {'sender': 'ha', 'args': {'count': 3, 'dst': '50.0.0.1'}}
             PingChecker(topology_obj.players, validation_ping).run_validation()
             traffic_validation(topology_obj, traffic_type)
+            # PING for L3 to trigger ARP on dut_ha2 interface
+            l3_validation_ping = {'sender': 'ha', 'args': {'count': 3, 'dst': l3_route_config['dut_l3_ip'],
+                                                           'src_ip': l3_route_config['ha_l3_ip']}}
+            PingChecker(topology_obj.players, l3_validation_ping).run_validation()
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP1: Disable interface 1 on host, traffic should pass via interface 2'):
             cli_objects.hb.interface.disable_interface(interfaces.hb_dut_1)
@@ -117,6 +136,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'D'), (interfaces.dut_hb_2, 'S')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP2: Enable interface 1 and disable interface 2 on host,'
                          ' traffic should pass via interface 1'):
@@ -128,6 +148,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'S'), (interfaces.dut_hb_2, 'D')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP3: Enable both interfaces on host'):
             cli_objects.hb.interface.enable_interface(interfaces.hb_dut_2)
@@ -137,6 +158,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'S'), (interfaces.dut_hb_2, 'S')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP4: Reboot dut'):
             dut_cli.general.save_configuration()
@@ -153,6 +175,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'S'), (interfaces.dut_hb_2, 'S')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP6: Validate fallback parameter (default - false)'):
             cli_objects.hb.interface.disable_interface('bond0')
@@ -178,6 +201,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'S'), (interfaces.dut_hb_2, 'S')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
         with allure.step('STEP8: Validate functionality of LAG with fallback parameter "true"'):
             config_bond_type_lag(topology_obj, interfaces, cleanup_list)
@@ -189,6 +213,7 @@ def test_core_functionality_with_reboot(topology_obj, cli_objects, traffic_type,
                                                   'Up',
                                                   [(interfaces.dut_hb_1, 'S'), (interfaces.dut_hb_2, 'S')])
             traffic_validation(topology_obj, traffic_type)
+            l3_traffic_validation(topology_obj, l3_route_config)
 
     except BaseException as err:
         raise AssertionError(err)
@@ -844,7 +869,7 @@ def verify_port_channels_ipv6_addresses(cli_object, dut_engine, expected_ip_info
 
 def traffic_validation(topology_obj, traffic_type):
     """
-    Validate the handed traffic type on the setup
+    Validate the handed traffic type on the setup (L2 traffic)
     :param topology_obj: topology object
     :param traffic_type: the type of the traffic (TCP/UDP)
     :return: None, raise error in case of unexpected result
@@ -861,6 +886,30 @@ def traffic_validation(topology_obj, traffic_type):
                            'receive_args': {'interface': 'bond0.50',
                                             'filter': tcpdump_filter, 'count': 100}}
     ]
+    }
+    ScapyChecker(topology_obj.players, validation).run_validation()
+
+
+def l3_traffic_validation(topology_obj, l3_route_config):
+    """
+    Validate L3 routed traffic through LAG.
+    Traffic path: ha (51.0.0.2) -> DUT (51.0.0.1) routes to -> hb (50.0.0.3) via LAG
+    """
+    dut_cli = topology_obj.players['dut']['cli']
+    ha_l3_iface = l3_route_config['ha_l3_iface']
+    dut_l3_iface = l3_route_config['dut_l3_iface']
+    ha_l3_ip = l3_route_config['ha_l3_ip']
+
+    dut_mac = dut_cli.mac.get_mac_address_for_interface(dut_l3_iface)
+    l3_pkt = 'Ether(dst="{}")/IP(src="{}",dst="50.0.0.3")/TCP()/Raw()'.format(dut_mac, ha_l3_ip)
+    validation = {
+        'sender': 'ha',
+        'send_args': {'interface': ha_l3_iface, 'packets': l3_pkt, 'count': 100},
+        'receivers': [
+            {'receiver': 'hb',
+             'receive_args': {'interface': 'bond0.50',
+                              'filter': 'dst 50.0.0.3 and tcp', 'count': 100}}
+        ]
     }
     ScapyChecker(topology_obj.players, validation).run_validation()
 
