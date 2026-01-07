@@ -152,7 +152,7 @@ def test_can_ping_from_eth1(engines, devices):
     except Exception:
         logger.error(f"Could not ping sonic-mgmt through eth1. Fixing...")
         gateway = Port("eth0").interface.ipv4.gateway.show(output_format=OutputFormat.auto).splitlines()[-1].strip()
-        devices.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
+        engines.dut.run_cmd(f"sudo ip route add {engines.sonic_mgmt.ip} via {gateway} dev eth1")
         raise
 
 
@@ -166,22 +166,21 @@ def test_acl_ipv6(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     3. validate counters increase
     """
     TestToolkit.tested_api = random_api
-    if not IpTool.is_dhcp_client6_has_lease(engines.dut):
-        pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
+
+    # Check if DUT has IPv6 configured before running the test
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    switch_ipv6_addr = IpTool.verify_ipv6_available(mgmt_port_name)
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'
-        mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-        mgmt_port = Port(mgmt_port_name)
         ipv6_prefix_or_netmask = sonic_mgmt_ipv6_addr + '/64'
         rule_id = '1'
         rule_configuration_dict = {AclConsts.ACTION: AclConsts.DENY, AclConsts.SOURCE_IP: sonic_mgmt_ipv6_addr}
 
         acl_id_1 = "AA_TEST_ACL_IPV6"
+        mgmt_port = Port(mgmt_port_name)
         acl_id_1_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id_1, acl_type, rule_id,
                                                                   rule_configuration_dict, mgmt_port, AclConsts.INBOUND, AclConsts.CONTROL_PLANE)
-
-        switch_ipv6_addr = mgmt_port.interface.get_ipv6_address()
 
     with allure.step("Validate ACL counters"):
         time.sleep(5)
@@ -451,7 +450,8 @@ def test_acl_match_fragment(engines, test_api, topology_obj):
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
     dest_addr = engines.dut.ip
-    packet = f"IP(dst=\"{dest_addr}\") /  ICMP() / (\"X\" * (8000))"
+    # Create a proper non-first fragment (no upper-layer header, with fragment offset)
+    packet = f"IP(dst=\"{dest_addr}\", proto=1, flags=\"MF\", frag=100) / Raw(load=\"X\"*20)"
     rule_id = '3'
     rule_configuration_dict = {AclConsts.ACTION: AclConsts.PERMIT, AclConsts.IP_PROTOCOL: 'icmp', AclConsts.FRAGMENT: AclConsts.FRAGMENT}
     acl_obj = config_acl_with_rule_attached_to_interface(engines.dut, acl_id, 'ipv4', rule_id, rule_configuration_dict, mgmt_port,
@@ -595,7 +595,10 @@ def test_acl_match_icmpv6_type(engines, test_api, topology_obj):
     acl_id = "AA_TEST_ACL_ICMPV6_TYPE"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
-    dest_addr = engines.dut.ip
+
+    # Get IPv6 address for IPv6 packets - skip if not available
+    dest_addr = IpTool.verify_ipv6_available(mgmt_port_name)
+
     icmpv6_type_packet_dict = {'router-solicitation': f"IPv6(dst=\"{dest_addr}\") / ICMPv6ND_RS()",
                                'router-advertisement': f"IPv6(dst=\"{dest_addr}\") / ICMPv6ND_RA()"}
     # 'neighbor-solicitation': f"IPv6(dst=\"{dest_addr}\") / ICMPv6ND_NS()",

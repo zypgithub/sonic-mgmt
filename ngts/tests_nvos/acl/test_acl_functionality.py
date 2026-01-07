@@ -665,6 +665,9 @@ def test_acl_dscp_supported_values_ipv4(engines, devices, test_api, topology_obj
 @pytest.mark.acl
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_acl_dscp_supported_values_ipv6(engines, devices, test_api, topology_obj, sonic_mgmt_ipv6_addr):
+    # Check if DUT has IPv6 configured before running the test
+    IpTool.verify_ipv6_available('eth0')
+
     configure_validate_dscp_acl_value(engines, devices, acl_type=IpConsts.IPV6, protocol=AclConsts.ICMPV6, sonic_ip=sonic_mgmt_ipv6_addr)
 
 

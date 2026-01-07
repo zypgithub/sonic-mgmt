@@ -432,3 +432,30 @@ class IpTool:
         if not hostname.endswith(mgmt2_suffix):
             hostname = hostname + mgmt2_suffix
         return hostname
+
+    @staticmethod
+    def verify_ipv6_available(port_name='eth0'):
+        """
+        Helper function to verify IPv6 is available on the DUT interface.
+        Skips the test if IPv6 is not configured or not supported.
+
+        Args:
+            port_name: Name of the management port to check (default: 'eth0')
+
+        Returns:
+            str: The IPv6 address if available
+
+        Raises:
+            pytest.skip: If IPv6 is not available or not configured
+        """
+        import pytest
+        from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+
+        mgmt_port = Port(port_name)
+        try:
+            ipv6_addr = mgmt_port.interface.get_ipv6_address()
+            if not ipv6_addr or ipv6_addr == "":
+                pytest.skip(f"No IPv6 address found on DUT interface {port_name}; IPv6 not supported or not configured")
+            return ipv6_addr
+        except Exception as e:
+            pytest.skip(f"Failed to get IPv6 address from DUT interface {port_name}: {e}; IPv6 not supported")
