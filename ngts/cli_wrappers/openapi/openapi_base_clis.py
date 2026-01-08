@@ -2,7 +2,7 @@ import logging
 
 import requests
 
-from ngts.nvos_constants.constants_nvos import OpenApiReqType, SystemConsts
+from ngts.nvos_constants.constants_nvos import OpenApiReqType, SystemConsts, ActionConsts
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from .openapi_command_builder import OpenApiCommandHelper
@@ -47,9 +47,20 @@ class OpenApiBaseCli(BaseCli):
             result.update_traceback()
         else:
             if output.startswith(OpenApiCommandHelper.ACTION_ERROR):
-                result = ResultObj(False, output, output.partition(' ')[2])
-            else:
-                result = ValidationTool.verify_any_string_in_string(output, expected_output)
+                # Special handling for "Close client sessions failed" error during reboot
+                # This specific error is expected and should not fail the reboot action
+                error_message = output.partition(' ')[2]
+                is_expected_reboot_error = (
+                    action_str == ActionConsts.REBOOT and
+                    'Close client sessions failed' in error_message
+                )
+                if not is_expected_reboot_error:
+                    return ResultObj(False, output, error_message)
+
+                logger.info(f"Reboot action: Ignoring expected error '{error_message}'")
+                output = error_message
+
+            result = ValidationTool.verify_any_string_in_string(output, expected_output)
         return result
 
     @staticmethod

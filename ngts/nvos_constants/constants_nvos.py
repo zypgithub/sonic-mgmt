@@ -839,6 +839,8 @@ class SystemConsts:
         "Restarting system",
         "The system will reboot now!",
         "Rebooting System in cold mode",
+        "System will power cycle in a few seconds",
+        "Reboot service initiated successfully"
     )
 
     LOCALHOST = "127.0.0.1"
