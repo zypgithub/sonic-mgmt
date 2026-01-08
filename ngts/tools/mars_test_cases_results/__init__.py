@@ -237,6 +237,8 @@ def parse_tests_results(terminalreporter):
             result = test_obj.outcome
             if key == "skipped":
                 result, skipreason = get_skip_type_reason(test_obj)
+            if key == "xfailed":
+                result, skipreason = get_xfail_skip_type_reason(test_obj)
             if key == "failed" or key == "error":
                 exception, exception_regex = get_exception(test_obj)
 
@@ -336,6 +338,20 @@ def get_skip_type_reason(test_obj):
     skipped_flavor = get_updated_skipped_type(test_obj.outcome, skipped_flavors, skipreason)
     logger.debug("The skip type for {} is : {}".format(test_obj.nodeid, skipped_flavor))
     return skipped_flavor, str(skipreason)
+
+
+def get_xfail_skip_type_reason(test_obj):
+    xfail_flavors = {
+        "skipped_rm": ["https://redmine.mellanox.com"],
+        "skipped_github": ["https://github.com"]
+    }
+
+    result = test_obj.outcome
+    xfail_reason = test_obj.wasxfail
+
+    xfail_flavor = get_updated_skipped_type(test_obj.outcome, xfail_flavors, xfail_reason)
+    logger.debug("The xfail type for {} is : {}".format(test_obj.nodeid, xfail_flavor))
+    return xfail_flavor, str(xfail_reason)
 
 
 def get_updated_skipped_type(skipped_type, skipped_flavors, skip_reason):
