@@ -24,12 +24,9 @@ def test_fw_dump_me(engines, devices):
         6. Validate and delete
     """
     system = System(None)
-    ibv_num = str(random.randint(0, devices.dut.asic_amount - 1) if hasattr(devices.dut, 'asic_amount') else '')
-    # just multi asic systems have asic_amount attribute
-    syncd_ibv = "syncd-ibv0{}".format(ibv_num)
-
-    dev = "_dev{}".format(ibv_num) if devices.dut.switch_class == NvosConst.JULIET_SWITCH else ""
-    sdk_dump_folder = f"/var/log/mellanox/sdk-dumps{dev}/"
+    ibv_num = random.randint(0, devices.dut.asic_amount - 1)
+    syncd_ibv = f"syncd-ibv0{ibv_num}"
+    sdk_dump_folder = f"/var/log/mellanox/sdk-dumps_dev{ibv_num}/"
 
     with allure.step('Upload sdk fw crush file to switch'):
         player_engine = engines['sonic_mgmt']

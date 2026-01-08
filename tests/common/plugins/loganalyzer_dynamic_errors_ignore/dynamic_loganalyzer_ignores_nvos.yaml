@@ -2247,3 +2247,10 @@
     - Redmine:
         - 4818038
 # --------------------------------------------------
+
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*translated.py.*failed to get cleared stats Working outside of request context.*'
+  Conditions:
+    - Redmine:
+        - 4735499
+# --------------------------------------------------
