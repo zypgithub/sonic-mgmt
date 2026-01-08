@@ -19,7 +19,7 @@ from tests.common.platform.transceiver_utils import is_sw_control_enabled,\
     get_port_expected_error_state_for_mellanox_device_on_sw_control_enabled
 from tests.common.mellanox_data import is_mellanox_device
 from collections import defaultdict
-from tests.platform_tests.mellanox.conftest import is_sw_control_feature_enabled
+from tests.platform_tests.mellanox.conftest import is_sw_control_feature_enabled  # noqa: F401
 
 from .platform_api_test_base import PlatformApiTestBase
 
