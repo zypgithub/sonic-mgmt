@@ -1342,6 +1342,18 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_model:
     conditions:
     - "https://redmine.mellanox.com/issues/4790935 and 'sn6600' in platform"
 
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
+  skip:
+    reason: "Test is skipped - watchdog not supported on simx platforms"
+    conditions:
+    - "'simx' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
+  skip:
+    reason: "Test is skipped - thermals not supported on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
+
 everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror:
   skip:
     reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
