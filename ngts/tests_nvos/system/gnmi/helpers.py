@@ -188,7 +188,9 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
         if is_redmine_issue_active([4782619])[0]:
-            cmd = "timeout -s INT 8s " + cmd
+            cmd = "timeout -s INT 4s " + cmd
+        else:
+            raise Exception(f"4782619 fixed, need to update the test")
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd_set([cmd, '\n', '\n', '\x03', '\x03'],
@@ -198,10 +200,17 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             gnmi_client_output = re.findall(f"{re.escape(xpath)}:\\s+\\w+", gnmi_client_output)[0]
         elif "once" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
+            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
+            gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         else:
-            gnmi_client_output = sonic_mgmt_engine.run_cmd_after_cmd([cmd, '\x03']).replace(cmd, '')
+            # add this line after fixing the issue 4782619
+            # gnmi_client_output = sonic_mgmt_engine.run_cmd_after_cmd([cmd, '\x03']).replace(cmd, '') - need to use this after fixing the issue 4782619
+            # delete the line below after fixing the issue 4782619
+            gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
             gnmi_client_output = re.sub(r"\^C(.*\n.*)*", '', gnmi_client_output)
+            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
+            gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
 
         gnmi_updates_dict = {}
