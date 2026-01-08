@@ -89,6 +89,7 @@ class BaseDevice(ABC):
         self.voltage_sensors = []
         self.has_nmx = False
         self.has_bmc = False
+        self.supports_ssd_upgrade = False
         self.supported_commands = []
         self.supports_tpm_testing = True
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"

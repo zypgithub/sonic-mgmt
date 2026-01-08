@@ -776,6 +776,7 @@ class BlackMambaSwitch(IbSwitch):
         self.asic_amount = 4
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         super()._init_constants()
+        self.supports_ssd_upgrade = True
         self.ib_ports_num = 2 * 72
         self.core_count = 4
         self.cpld_amount = 6
@@ -827,6 +828,7 @@ class BlackMambaSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 550,
             'install cpld': 1000,
+            'install ssd': 20,
             self.generate_tech_support: 105,
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 14.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
@@ -1115,6 +1117,7 @@ class CrocodileSwitch(IbSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.supports_ssd_upgrade = True
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.ib_ports_num = 64
         self.core_count = 4
@@ -1162,6 +1165,7 @@ class CrocodileSwitch(IbSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 500,
             'install cpld': 720,
+            'install ssd': 20,
             self.generate_tech_support: 75,
             InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 13.5 * MINUTE,
             InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 9 * MINUTE,
@@ -1396,6 +1400,7 @@ class JulietSwitch(NvLinkSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.supports_ssd_upgrade = True
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.mgmt_ports = ['eth0', 'eth1']
         self.components_list = [FW_COMPONENT_CPLD,
@@ -1526,6 +1531,7 @@ class JulietSwitch(NvLinkSwitch):
         self.expected_operation_durations.update({
             "Install BIOS": 600,
             'install cpld': 720,
+            'install ssd': 20,
             self.generate_tech_support: 120,
             'julietscaleout generate_tech_support': 132,
         })

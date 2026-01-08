@@ -8,7 +8,8 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.tests_nvos.constants import (FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA,
-                                       FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA)
+                                       FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA,
+                                       FW_COMPONENT_SSD)
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.Fae import Fae
@@ -128,9 +129,8 @@ def test_firmware_install_invalid_version(devices, test_api, test_name):
         @summary: test installing invalid fw version (already deleted version)
 
         Test flow:
-            1. Check if device had BMC, otherwise nothing to od.
-            2. If device has BMC, randomize a component from list [BMC, FPGA, BIOS, EROT].
-            3. Install invalid fw version for chosen component, and expect an error.
+            1. Select a random component on device (CPLD if no BMC, otherwise from device's components_list).
+            2. Install invalid fw version for chosen component, and expect an error.
     """
     TestToolkit.tested_api = test_api
 
@@ -249,13 +249,16 @@ def select_random_component(devices):
         @summary: Select a random component on tested device
     """
     components_list = [FW_COMPONENT_CPLD]
-
     with allure.step('Check whether device has BMC'):
         has_bmc = getattr(devices.dut, 'has_bmc', None)
         if not has_bmc:
             logger.info("Device does not have BMC.")
         else:
             components_list = devices.dut.components_list
+
+    # Add SSD for switches that support SSD firmware updates
+    if devices.dut.supports_ssd_upgrade:
+        components_list.append(FW_COMPONENT_SSD)
 
     with allure.step("Randomize a components from components list"):
         logger.info(f"Components list = {components_list}")

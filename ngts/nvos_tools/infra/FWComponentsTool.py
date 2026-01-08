@@ -1,9 +1,10 @@
 import json
 import logging
+import pytest
 
-from ngts.nvos_constants.constants_nvos import PlatformConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts, ChassisLocationConsts
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
-from ngts.tests_nvos.constants import FW_COMPONENT_FPGA
+from ngts.tests_nvos.constants import FW_COMPONENT_FPGA, FW_COMPONENT_SSD
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -60,7 +61,27 @@ class FWComponentsTool:
             device_name = TestToolkit.topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
             if device_name in ["juliet-160", "juliet-195"]:
                 provisioning = PRODUCTION
-            component_image_info = platform_components_dict[provisioning][component_name][version]
+
+            # For SSD, add part number level: provisioning → ssd → part_number → version
+            if component_name == FW_COMPONENT_SSD:
+                # Special handling for SSD - requires part number lookup
+                with allure.step('Get SSD part number from device'):
+                    ssd_output = OutputParsingTool.parse_json_str_to_dictionary(
+                        Platform().firmware.ssd.show()
+                    ).get_returned_value()
+                    ssd_part_number = ssd_output.get('part-number', '').strip()
+                    assert ssd_part_number and ssd_part_number != ChassisLocationConsts.NA, \
+                        "SSD part-number is not shown in 'nv show platform firmware ssd' output"
+
+                    # Validate that the detected part number exists in the firmware versions JSON
+                    ssd_part_data = platform_components_dict[provisioning][component_name].get(ssd_part_number)
+                    if not ssd_part_data:
+                        # Skip test if part number not supported in JSON - indicates test doesn't cover this SSD model yet
+                        pytest.skip(f"SSD part number '{ssd_part_number}' not found in firmware versions JSON")
+                component_image_info = ssd_part_data[version]
+            else:
+                component_image_info = platform_components_dict[provisioning][component_name][version]
+
             path = component_image_info['path']
             # Derive filename from path if not explicitly provided (e.g., for CPLD components)
             filename = component_image_info.get('filename') or path.rsplit('/', 1)[-1]
@@ -68,6 +89,7 @@ class FWComponentsTool:
 
     @staticmethod
     def get_fw_component_version_dict(component_name, version):
+        # Note : If you want to use function with SSD, you need to support part number lookup in the json file (see _get_fw_component_version_info function).
         device = TestToolkit.get_device()
         fw_path = BmcTool.FW_VERSIONS_JSON_FILE or device.fw_versions_json_file_path
         with allure.step(f'Read platform components info from json {fw_path}'):

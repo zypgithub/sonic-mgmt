@@ -27,6 +27,7 @@ class Firmware(BaseComponent):
         self.bios = PlatformComponent(self, component_name='BIOS')
         self.cpld = PlatformComponent(self, component_name='CPLD1')
         self.erot = PlatformComponent(self, component_name='EROT')
+        self.ssd = PlatformComponent(self, component_name='SSD')
         self.erot_id: Dict[str, ErotComponent] = DefaultDict(lambda erot_name: ErotComponent(self, erot_name=erot_name))
 
     def install_bios_firmware(self, bios_image_path, device, topology_obj=None):
