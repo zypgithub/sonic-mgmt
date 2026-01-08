@@ -107,7 +107,8 @@ class DeviceConnection:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            client.connect(self.hostname, username=self.username, password=self.passwords[self.password_index], allow_agent=False)
+            client.connect(self.hostname, username=self.username,
+                           password=self.passwords[self.password_index], allow_agent=False)
             ftp_client = client.open_sftp()
             ftp_client.get(remote_path, local_path)
             ftp_client.close()
