@@ -21,19 +21,46 @@ MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
 
 
 class OpenSmTool:
+    # Class-level configuration for opensm path.
+    # Set automatically by the configure_opensm_path fixture in conftest.py
+    OPENSM_PATH = SM_MASTER_OPEN_SM_PATH
+
+    @classmethod
+    def set_opensm_path(cls, opensm_path):
+        """
+        Set opensm path for the test session.
+        Called by the configure_opensm_path fixture in conftest.py.
+
+        Args:
+            opensm_path: The opensm path to use.
+        """
+        cls.OPENSM_PATH = opensm_path
+        is_doca = opensm_path == DOCA_OPEN_SM_PATH
+        logging.info(f"OpenSmTool configured: OPENSM_PATH={cls.OPENSM_PATH} (doca={is_doca})")
 
     @staticmethod
-    def start_open_sm(engines=None, multiplanar=False, use_doca_opensm=False):
-        return OpenSmTool.start_open_sm_on_server(engines, multiplanar, use_doca_opensm)
+    def start_open_sm(engines=None, multiplanar=False):
+        """
+        Start OpenSM.
+
+        Args:
+            engines: The engines object containing dut and hfnm.
+            multiplanar: Whether to use multiplanar mode.
+        """
+        return OpenSmTool.start_open_sm_on_server(engines, multiplanar)
 
     @staticmethod
     def stop_open_sm(engines=None):
         return OpenSmTool.stop_open_sm_on_server(engines)
 
     @staticmethod
-    def start_open_sm_on_server(engines, multiplanar=False, use_doca_opensm=False):
+    def start_open_sm_on_server(engines, multiplanar=False):
         """
-        Start open sm if it's not running
+        Start OpenSM if it's not running.
+
+        Args:
+            engines: The engines object containing dut and hfnm.
+            multiplanar: Whether to use multiplanar mode.
         """
         if not hasattr(engines, "hfnm"):
             logging.warning(MISSING_HFNM_MESSAGE)
@@ -65,15 +92,17 @@ class OpenSmTool:
                     engines.hfnm.run_cmd(
                         f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
 
-            # Determine the opensm path
-            # For doca traffic systems, use Doca opensm directly instead of UFM opensm
-            if use_doca_opensm:
-                logging.info("Using Doca opensm (doca traffic system)")
+            # Determine opensm path:
+            # - Doca opensm takes precedence (for doca traffic systems)
+            # - For non-doca multiplanar, use UFM opensm
+            # - Otherwise use the configured OPENSM_PATH
+            if OpenSmTool.OPENSM_PATH == DOCA_OPEN_SM_PATH:
                 opensm_path = DOCA_OPEN_SM_PATH
             elif multiplanar:
                 opensm_path = OPEN_SM_PATH
             else:
-                opensm_path = SM_MASTER_OPEN_SM_PATH
+                opensm_path = OpenSmTool.OPENSM_PATH
+            logging.info(f"Using opensm path: {opensm_path}")
 
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''

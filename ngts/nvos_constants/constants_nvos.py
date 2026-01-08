@@ -846,6 +846,10 @@ class SystemConsts:
         "Reboot service initiated successfully"
     )
 
+    ACTION_INSTALL_SUCCESS_MESSAGES = (
+        "is successfully installed",
+    )
+
     LOCALHOST = "127.0.0.1"
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
