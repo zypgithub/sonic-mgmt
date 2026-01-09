@@ -64,6 +64,10 @@ tests/nightly/sflow/test_sflow.py:
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/2271111 and 'simx' in platform"
+  xfail:
+    reason: "known issue https://redmine.mellanox.com/issues/4830085"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4830085"
 
 tests/nightly/fec/test_fec.py::TestFec::test_negative_fec:
   skip:
