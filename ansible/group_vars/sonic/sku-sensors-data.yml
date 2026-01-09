@@ -5367,6 +5367,15 @@ sensors_checks:
         - - mp2891-i2c-5-65/PMIC-4 VDD_T4 ADJ Temp 1/temp1_input
           - mp2891-i2c-5-65/PMIC-4 VDD_T4 ADJ Temp 1/temp1_crit
 
+
+    non_zero:
+      fan: [ ]
+      power: [ ]
+      temp: [ ]
+    psu_skips: { }
+    sensor_skip_per_version: { }
+
+
   x86_64-mlnx_msn4700_simx-r0:
     alarms:
       fan:
