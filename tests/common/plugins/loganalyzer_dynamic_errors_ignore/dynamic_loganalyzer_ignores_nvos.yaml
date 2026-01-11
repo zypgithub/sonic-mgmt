@@ -587,6 +587,7 @@
 - Errors_list:
     - '.* ERR rsyslogd: omfwd: remote server.*'
     - '.* ERR rsyslogd: cannot connect to.*'
+    - ".*ERR rsyslogd:.+cannot connect to .+Connection refused.+"
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/syslog/test_system_syslog.py::test_rsyslog_protocol
@@ -1692,6 +1693,15 @@
   Conditions:
     - Affected_test_cases:
         - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
+
+#NVOS
+- Errors_list:
+    - '.*ERR\s+health-statsd#health_history:\s+snmp:(?:snmp-subagent|snmpd):\s+Process\s+''(?:snmp-subagent|snmpd)''\s+in\s+container\s+''snmp''\s+is\s+not\s+running'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
+      - tests_nvos/system/test_system_snmp.py::test_snmp_default_values_fields
+      - tests_nvos/system/test_system_snmp.py::test_system_snmp_functional
 
 - Errors_list:
     - '.*IPTables\-Dropped\-.*'
