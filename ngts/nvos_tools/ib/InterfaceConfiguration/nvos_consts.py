@@ -328,7 +328,7 @@ class DelayedRecovery:
     DELAYED_RECOVERY_STATE_FORCE = "peer-state-force"
     DELAYED_RECOVERY_LOSS_TH_FORCE = "peer-fec-plr-align-loss-th-force"
     DELAYED_RECOVERY_RETRY_TH_FORCE = "peer-plr-retry-th-force"
-    DELAYED_RECOVERY_DEFAULT_STATE = "enabled"
+    DELAYED_RECOVERY_DEFAULT_STATE = "disabled"
     DELAYED_RECOVERY_DEFAULT_LOSS_TH = 127
     DELAYED_RECOVERY_DEFAULT_RETRY_TH = 255
     DELAYED_RECOVERY_DEFAULT_FORCE_STATE = "enabled"
