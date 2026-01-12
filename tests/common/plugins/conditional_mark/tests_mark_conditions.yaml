@@ -3988,6 +3988,12 @@ pfcwd/test_pfcwd_cli.py:
      conditions:
         - "https://github.com/sonic-net/sonic-mgmt/issues/21466"
 
+pfcwd/test_pfcwd_cli.py:
+  xfail:
+     reason: "Xfail due to https://github.com/sonic-net/sonic-mgmt/issues/21466 on Mellanox platform"
+     conditions:
+        - "https://github.com/sonic-net/sonic-mgmt/issues/21466 and asic_type in ['mellanox']"
+
 pfcwd/test_pfcwd_function.py::TestPfcwdFunc::test_pfcwd_actions:
   xfail:
     reason: "On Dualtor AA setup, test_pfcwd_actions is not stable due to github issue https://github.com/sonic-net/sonic-mgmt/issues/15387"
