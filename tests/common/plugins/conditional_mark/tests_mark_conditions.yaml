@@ -1370,6 +1370,18 @@ dualtor_io/test_normal_op.py:
     conditions:
       - "asic_type in ['vs']"
 
+dualtor_io/test_normal_op.py::test_mux_port_switch_active_server_to_active_server:
+  xfail:
+    reason: "Xfail the case on dualtor-aa setup due to github issue: https://github.com/sonic-net/sonic-mgmt/issues/21043"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21043 and 'dualtor-aa' in topo_name"
+
+dualtor_io/test_normal_op.py::test_mux_port_switch_active_server_to_standby_server:
+  xfail:
+    reason: "Xfail the case on dualtor-aa setup due to github issue: https://github.com/sonic-net/sonic-mgmt/issues/21043"
+    conditions:
+      - "https://github.com/sonic-net/sonic-mgmt/issues/21043 and 'dualtor-aa' in topo_name"
+
 dualtor_io/test_normal_op.py::test_upper_tor_config_reload_upstream:
   xfail:
     reason: "Xfail the case on dualtor-aa setup due to github issue: https://github.com/sonic-net/sonic-mgmt/issues/21139"
