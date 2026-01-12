@@ -5823,3 +5823,13 @@ zmq/test_gnmi_zmq.py::test_gnmi_zmq:
     conditions:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
+#######################################
+#####       sed_password_change   #####
+#######################################
+sed_password_change:
+  skip:
+    reason: "SED password tests only supported on Spectrum 5 and later (Mellanox devices with SED/TPM support)"
+    conditions_logical_operator: or
+    conditions:
+      - "asic_gen in ['spc1', 'spc2', 'spc3', 'spc4']"
