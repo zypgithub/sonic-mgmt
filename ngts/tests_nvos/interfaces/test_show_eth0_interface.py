@@ -108,7 +108,7 @@ def test_ib_show_interface_ip(engines, test_api):
         output_dictionary_ipv4 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ipv4.show()).get_returned_value()
 
-        validate_ip_fields(output_dictionary, ipv4=True)
+        validate_ip_fields(output_dictionary_ipv4, ipv4=True)
 
     with allure.step('IPV6 - Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):

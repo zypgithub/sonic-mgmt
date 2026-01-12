@@ -1907,7 +1907,7 @@ def test_syslog_logging_during_system_reboot(engines, random_api):
             system.syslog.servers.set_server(remote_server_ip, apply=True)
 
         with allure.step("Perform reboot"):
-            system.reboot.action_reboot()
+            system.reboot.action_reboot(send_user_confirmation='y')
 
             # Wait for system to come back online
             max_wait = 300
