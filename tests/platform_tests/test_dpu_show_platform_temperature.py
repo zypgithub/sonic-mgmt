@@ -5,13 +5,38 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 
 pytestmark = [
-    pytest.mark.topology('dpu')
+    pytest.mark.topology('dpu', 'smartswitch')
 ]
 
+# NVIDIA Smartswitch DPU platform
+NVIDIA_SMART_SWITCH_DPU_PLATFORM = 'arm64-nvda_bf-bf3comdpu'
+# Standalone DPU platform
 BF_3_PLATFORM = 'arm64-nvda_bf-9009d3b600cvaa'
-SENSORS = {BF_3_PLATFORM: ['CPU', 'DDR', 'SFP0', 'SFP1']}
+
+SENSORS = {NVIDIA_SMART_SWITCH_DPU_PLATFORM: ['CPU', 'DDR', 'NVME'],
+           BF_3_PLATFORM: ['CPU', 'DDR', 'SFP0', 'SFP1']}
 SENSOR_ITEMS = ['temperature', 'high th', 'low th', 'crit high th', 'crit low th', 'warning', 'timestamp']
 EXPECTED_SENSOR_VALUES = {
+    NVIDIA_SMART_SWITCH_DPU_PLATFORM: {
+        'CPU': {
+            'high th': '95',
+            'low th': 'N/A',
+            'crit high th': '100',
+            'crit low th': 'N/A'
+        },
+        'DDR': {
+            'high th': '95',
+            'low th': 'N/A',
+            'crit high th': '100',
+            'crit low th': 'N/A'
+        },
+        'NVME': {
+            'high th': '100',
+            'low th': 'N/A',
+            'crit high th': '110',
+            'crit low th': 'N/A'
+        }
+    },
     BF_3_PLATFORM: {
         'CPU': {
             'high th': '95',
@@ -94,4 +119,3 @@ def test_dpu_show_platform_temperature(duthosts, rand_one_dut_hostname):
                         pytest_assert(actual_value == expected_value,
                                       f"{item} value of sensor {sensor} is not as expected, "
                                       f"actual: {actual_value}, expected: {expected_value}")
-

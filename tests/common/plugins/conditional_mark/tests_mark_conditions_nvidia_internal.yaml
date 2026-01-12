@@ -483,7 +483,7 @@ dash/platform/test_dpu_show_platform_temperature.py:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3923171"
     conditions:
-    - "https://redmine.mellanox.com/issues/3923171"
+    - "https://redmine.mellanox.com/issues/3923171 and 'dpu' in topo_name"
 
 dash/test_dash_vnet.py::test_outbound_vnet_direct:
   skip:
