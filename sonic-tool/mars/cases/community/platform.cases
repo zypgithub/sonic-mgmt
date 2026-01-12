@@ -16,6 +16,16 @@
     </global>
 
     <case>
+        <info> Test BMC Case </info>
+        <name> bmc </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --fw-pkg /root/mars/workspace/sonic-mgmt/tests/platform_tests/fwutil/firmware.json --clean-alluredir --alluredir=/tmp/allure-results --timeout 5400 --session-timeout 5400 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts platform_tests/api/test_bmc.py  </static_args>
+             </params>
+        </cmd>
+    </case>
+
+    <case>
         <info> Test Show Platform CLI Case </info>
         <name> show_platform </name>
         <cmd>
