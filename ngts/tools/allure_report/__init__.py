@@ -9,11 +9,12 @@ from plugins.allure_server import pytest_addoption, pytest_sessionfinish, pytest
 
 
 def ansible_host_pattern_param_already_loaded(session):
-    ansible_host_pattern_loaded = False
-    if hasattr(session.config.option, 'ansible_host_pattern'):
-        ansible_host_pattern_loaded = False if session.config.option.ansible_host_pattern == "stub_string" or \
-            not session.config.option.ansible_host_pattern else True
-    return ansible_host_pattern_loaded
+    # the ansible_host_pattern param is defined when it has the value
+    # which is not "stub_string" or "localhost"
+    return hasattr(session.config.option, 'ansible_host_pattern') and \
+        session.config.option.ansible_host_pattern and \
+        session.config.option.ansible_host_pattern != "stub_string" and \
+        session.config.option.ansible_host_pattern != "localhost"
 
 
 def get_setup_topology(session):

@@ -61,17 +61,17 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                                                allure_project_id_suffix=allure_project_id_suffix)
         random_seed = int(time.time())
         if self.sonic_topo:
-            cmd_template = '/ngts_venv/bin/pytest --setup_name={} --sonic-topo={} --session_id={} --mars_key_id={} {} ' \
-                           '--dynamic_update_skip_reason --allure_server_project_id={} {} --random_seed={} ' \
+            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --sonic-topo={} --session_id={} --mars_key_id={} {} ' \
+                           '--dynamic_update_skip_reason --allure_server_project_id={} --random_seed={} ' \
                            '--store_la_logs --ignore_la_failure'
-            cmd = cmd_template.format(self.setup_name, self.sonic_topo, self.session_id, self.mars_key_id,
-                                      self.raw_options, allure_project, self.test_script, random_seed)
+            cmd = cmd_template.format(self.test_script, self.setup_name, self.sonic_topo, self.session_id,
+                                      self.mars_key_id, self.raw_options, allure_project, random_seed)
         else:
-            cmd_template = '/ngts_venv/bin/pytest --setup_name={} --session_id={} --mars_key_id={} {} ' \
-                           '--dynamic_update_skip_reason --allure_server_project_id={} {} --random_seed={} ' \
+            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --session_id={} --mars_key_id={} {} ' \
+                           '--dynamic_update_skip_reason --allure_server_project_id={} --random_seed={} ' \
                            '--store_la_logs --ignore_la_failure'
-            cmd = cmd_template.format(self.setup_name, self.session_id, self.mars_key_id,
-                                      self.raw_options, allure_project, self.test_script, random_seed)
+            cmd = cmd_template.format(self.test_script, self.setup_name, self.session_id,
+                                      self.mars_key_id, self.raw_options, allure_project, random_seed)
 
         # when disabling one plugin, we also need to remove the relevant pytest argument
         if "no:ngts.tools.conditional_mark" in cmd:

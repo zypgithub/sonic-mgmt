@@ -128,7 +128,7 @@ def create_folder(path_to_create):
 
 
 def get_platform_info(topology_obj):
-    hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+    hostname = topology_obj.players["dut"]["attributes"].noga_query_data["attributes"]["Common"]["Name"]
     platform_info = get_platform_info_from_file(hostname)
     if not platform_info:
         platform_info = get_platform_info_from_noga(topology_obj)
@@ -248,21 +248,26 @@ def get_topology_from_noga(session, slow_cli=False, override_type=False, force_u
 
 def patch_ansible_shell_action_module():
     """
-    Patch ansible.plugins.action.shell, if in here missing ActionModule class.
+    Patch ansible shell action module if ActionModule class is missing.
+
+    This is a workaround for a race condition in ansible's lazy plugin loading
+    when used with parallel execution (e.g., ThreadPool). The module may get
+    cached before ActionModule is fully initialized.
+
+    Supports ansible-core 2.18+ (collections path only).
     """
     try:
-        import ansible.plugins.action.shell as shell    # noqa: E402
-        if not hasattr(shell, "ActionModule"):
-            from ansible.plugins.action import ActionBase   # noqa: E402
+        from ansible.plugins.action import ActionBase
+        import ansible_collections.ansible.builtin.plugins.action.shell as shell_module
 
+        if not hasattr(shell_module, "ActionModule"):
             class ActionModule(ActionBase):
-                """Fallback-version ActionModule for ansible.plugins.action.shell."""
+                """Fallback ActionModule for ansible shell plugin."""
                 pass
-            shell.ActionModule = ActionModule
-            logger.info("Added missing ActionModule to ansible.plugins.action.shell")
+
+            shell_module.ActionModule = ActionModule
+            logger.info("Patched missing ActionModule in ansible_collections.ansible.builtin.plugins.action.shell")
         else:
             logger.debug("ActionModule already exists, patch skipped.")
     except Exception as e:
-        error_msg = f"Failed to patch ansible shell plugin: {e}"
-        logger.warning(error_msg)
-        raise Exception(error_msg)
+        logger.warning(f"Failed to patch ansible shell plugin: {e}")
