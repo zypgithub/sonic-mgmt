@@ -13,7 +13,8 @@ class UploadProtocol(Enum):
 
 # Remote path for certificate uploads
 REMOTE_PATH = '/tmp'
-REMOTE_SFTP_URL_TEMPLATE = 'sftp://{}:{}@{}' + REMOTE_PATH + '/{}'
+# Generic URL template - protocol is a parameter
+REMOTE_URL_TEMPLATE = '{protocol}://{username}:{password}@{host}' + REMOTE_PATH + '/{filename}'
 REMOTE_PATH_HTTPS = 'https://nbu-mtr-nfs.nvidia.com/auto/sw_system_project/NVOS_INFRA/verification_files/platform_certificate/'
 
 # Platform certificate filename

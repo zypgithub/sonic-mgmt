@@ -51,6 +51,7 @@ class Fae(BaseComponent):
         self.interface = Interface(self, port_name)
         self.platform = FaePlatform(self)
         self.cluster = FaeCluster(self)
+        self.nmx_telemetry_agent = FaeNmxTelemetryAgent(self)
 
 
 class FaeCluster(BaseComponent):
@@ -86,6 +87,11 @@ class FaeClusterApp(BaseComponent):
     def action_uninstall(self, expect_reboot=False) -> ResultObj:
         """nv action uninstall fae cluster apps <app_name> [force]"""
         return self.action_deprecated(ActionConsts.UNINSTALL, expect_reboot=expect_reboot)
+
+
+class FaeNmxTelemetryAgent(BaseComponent):
+    def __init__(self, parent):
+        super().__init__(parent=parent, path=f'/nmx-telemetry-agent')
 
 
 class Ib(BaseComponent):

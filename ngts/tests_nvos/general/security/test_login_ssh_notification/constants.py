@@ -63,3 +63,10 @@ class LoginSSHNotificationConsts:
     MAX_LOGIN_TIME = 10
 
     PASSWORD_UPDATE_WAIT_TIME = 3
+
+    # Compiled regex pattern for SSH login notification error detection
+    # Combines multiple error patterns for efficient single-pass matching
+    SSH_LOGIN_ERROR_PATTERN = re.compile(
+        r':\s*line\s+\d+:|syntax error|invalid date|Permission denied',
+        re.IGNORECASE
+    )

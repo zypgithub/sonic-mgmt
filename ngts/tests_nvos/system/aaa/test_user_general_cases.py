@@ -1,4 +1,5 @@
 import logging
+import random
 
 import pytest
 
@@ -10,6 +11,9 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
+from ngts.tests_nvos.general.security.test_login_ssh_notification.test_login_ssh_notification import parse_ssh_login_notification
+from ngts.tests_nvos.general.security.test_login_ssh_notification.constants import LoginSSHNotificationConsts
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -138,6 +142,63 @@ def test_disconnect_all_users(engines):
         # time.sleep(5)
         for connection in connections:
             verify_after_disconnect(engines.dut, system, connection.username, connection.password)
+
+
+@pytest.mark.system
+@pytest.mark.simx
+def test_unset_then_set_back_same_user(engines):
+    """
+    Test that a user that was unset and then set back has a clean state (no errors, connection count reset).
+
+    Test flow:
+        1. Set new user [viewer, configurator]
+        2. Connect using the new user
+        3. Unset new user
+        4. Set back the same user
+        5. Connect again using the same user
+        6. Verify connection count is reset to 0 and got no errors
+
+    """
+    system = System(force_api=ApiType.NVUE)
+
+    with allure.step('Configure SSH server login-record-period to ensure connection count tracking'):
+        # Set login-record-period to 1 day (minimum value) to enable connection count tracking
+        system.ssh_server.set(LoginSSHNotificationConsts.RECORD_PERIOD, 1, apply=True).verify_result()
+
+    # Randomize user role
+    available_roles = [SystemConsts.ROLE_VIEWER, SystemConsts.ROLE_CONFIGURATOR]
+    selected_role = random.choice(available_roles)
+
+    with allure.step(f'Create new user with role: {selected_role}'):
+        username, password = system.aaa.user.set_new_user(role=selected_role, apply=True)
+
+    with allure.step(f'Connect using user "{username}"'):
+        ConnectionTool.create_ssh_conn(engines.dut.ip, username, password).verify_result()
+
+    with allure.step(f'Unset user "{username}"'):
+        system.aaa.user.user_id[username].unset(apply=True).verify_result()
+        verify_after_delete(system, username, engines.dut)
+
+    with allure.step(f'Verify user deletion logged in /var/log/auth.log'):
+        auth_log = engines.dut.run_cmd(f"sudo grep \"userdel\\[.*\\]: delete user '{username}'\" /var/log/auth.log | tail -1")
+        assert auth_log.strip(), f"Expected 'userdel: delete user {username}' in auth.log but not found"
+
+    with allure.step(f'Set back user "{username}" with role: {selected_role}'):
+        system.aaa.user.user_id[username].set('role', selected_role).verify_result()
+        system.aaa.user.user_id[username].set(SystemConsts.USER_PASSWORD, password, apply=True).verify_result()
+
+    with allure.step(f'Verify user re-creation logged in /var/log/auth.log'):
+        auth_log = engines.dut.run_cmd(f"sudo grep \"usermod\\[.*\\]: change user '{username}' password\" /var/log/auth.log | tail -1")
+        assert auth_log.strip(), f"Expected 'usermod: change user {username} password' in auth.log after set-back but not found"
+
+    with allure.step(f'Connect again with user "{username}" and verify clean state'):
+        # Note: Errors in SSH notification (like date parsing errors) are checked by parse_ssh_login_notification()
+        login_notification = parse_ssh_login_notification(engines.dut.ip, username, password, assert_last_login=False, assert_no_errors=True)
+
+        # Verify number of successful connections is reset (should be 0)
+        successful_connections = login_notification.get('number_of_successful_connections_in_the_last_record_period')
+        assert successful_connections == '0', \
+            f"User should have 0 successful connections in history, but got: {successful_connections}"
 
 
 def kill_no_tty_processes(dut_engine, username):

@@ -381,15 +381,12 @@ class OpenApiSystemCli(OpenApiBaseCli):
 
     @staticmethod
     def action_delete_certificate(engine, resource_path):
-        logging.info(f'Run action delete on: {resource_path} using OpenApi')
-        params = \
-            {
-                "state": "start",
-                "parameters": {}
-            }
+        logging.info(f"Run action delete on: {resource_path} using OpenApi")
+        params = {"state": "start", "parameters": {}}
 
-        return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, resource_path, params)
+        return OpenApiCommandHelper.execute_action(
+            ActionType.DELETE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
+        )
 
     @staticmethod
     def action_upload_platform_certificate(engine, resource_path, remote_url):
@@ -401,5 +398,5 @@ class OpenApiSystemCli(OpenApiBaseCli):
         logging.info(f"Run action upload platform-certificate to: {remote_url}")
         params = {"state": "start", "parameters": {"remote-url": remote_url}}
         return OpenApiCommandHelper.execute_action(
-            ActionType.UPLOAD, engine.engine.username, engine.engine.password, engine.ip, resource_path, params
+            ActionType.UPLOAD, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
         )

@@ -606,3 +606,64 @@ class ValidationTool:
             assert fec_conf_applied == expected_value, f"Fec mode is {fec_conf_applied} instead of {expected_value}"
         else:
             assert fec_conf_applied != expected_value, f"Fec mode must not be {expected_value}"
+
+    def _compute_dict_diff(before_dict, after_dict, ignore_fields=None):
+        """
+        Compute a recursive diff between two dictionaries.
+        Returns a dictionary that contains only the differences:
+        - Keys removed: {key: {"removed": <value_before>}}
+        - Keys added:   {key: {"added": <value_after>}}
+        - Values changed: {key: {"before": <value_before>, "after": <value_after>}}
+        - Nested differences are represented as nested dicts under the same key.
+        """
+        ignore_fields = ignore_fields or []
+        ignore_exact_paths = {tuple(p.split('.')) for p in ignore_fields if isinstance(p, str) and '.' in p}
+        ignore_key_names = {p for p in ignore_fields if isinstance(p, str) and '.' not in p}
+
+        def _is_ignored(path, key):
+            # Ignore exact path match
+            if tuple(path + [key]) in ignore_exact_paths:
+                return True
+            # Ignore by key name anywhere in the structure
+            if key in ignore_key_names:
+                return True
+            return False
+
+        def _diff(before, after, path):
+            # If both are dicts, compute structural diff; otherwise, return change if values differ
+            if isinstance(before, dict) and isinstance(after, dict):
+                differences = {}
+                before_keys = set(before.keys())
+                after_keys = set(after.keys())
+
+                # Removed keys
+                for key in sorted(before_keys - after_keys):
+                    if not _is_ignored(path, key):
+                        differences[key] = {"removed": before[key]}
+
+                # Added keys
+                for key in sorted(after_keys - before_keys):
+                    if not _is_ignored(path, key):
+                        differences[key] = {"added": after[key]}
+
+                # Keys present in both
+                for key in sorted(before_keys & after_keys):
+                    if _is_ignored(path, key):
+                        continue
+                    before_value = before[key]
+                    after_value = after[key]
+                    if isinstance(before_value, dict) and isinstance(after_value, dict):
+                        nested_diff = _diff(before_value, after_value, path + [key])
+                        if nested_diff:
+                            differences[key] = nested_diff
+                    else:
+                        if before_value != after_value:
+                            differences[key] = {"before": before_value, "after": after_value}
+
+                return differences
+            else:
+                if before != after:
+                    return {"before": before, "after": after}
+                return {}
+
+        return _diff(before_dict, after_dict, [])

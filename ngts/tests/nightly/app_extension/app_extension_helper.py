@@ -12,7 +12,9 @@ from retry.api import retry_call
 logger = logging.getLogger()
 APP_INFO = {
     "name": "cpu-report",
-    "repository": "{}/sonic/cpu-report".format(MarsConstants.DOCKER_REGISTRY),
+    # Repository path without registry prefix; use get_app_repository() to get the
+    # full repository including the relevant registry (lab vs AIR).
+    "repository": "sonic/cpu-report",
     "normal1": {"digest": "sha256:59801bed4ebe5701f6cbac232281d0d7e990c2274a70e0b1d8818a4710cbf1bf ",
                 "version": "1.0.0"},
     "normal2": {"digest": "sha256:96a87a62ca962fbf92a33c25e6bb2768aa6f113203845da64603d13872eb642f",
@@ -30,6 +32,16 @@ APP_INFO = {
     "shut_down": {"digest": " sha256:912eefe5b0b3566051115e141efe007dc68dbdb76a9772e0fe7768e1cc38ae3a",
                   "version": "10.0.0"},
 }
+
+
+def get_app_repository(is_air):
+    """
+    Return full repository (including registry) for APP_INFO["name"].
+
+    :param is_air: True for Nvidia AIR setups, False for lab/regular setups.
+    """
+    registry = MarsConstants.AIR_DOCKER_REGISTRY if is_air else MarsConstants.DOCKER_REGISTRY
+    return "{}/{}".format(registry, APP_INFO["repository"])
 
 
 def verify_app_repository_list_format(output_cmd):

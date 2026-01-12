@@ -576,13 +576,13 @@ def tst_all_pwh_confs(request):
 
 
 @pytest.fixture
-def start_sm(engines, devices, traffic_available, doca_traffic_system):
+def start_sm(engines, devices, traffic_available):
     """
     Starts OpenSM
     """
     if traffic_available:
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
-        result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar, use_doca_opensm=doca_traffic_system)
+        result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
         if not result.result:
             with allure.step('open_sm failed to start (possibly due to #4088479), attempting to recover'):
                 with allure.step('Rebooting all traffic VMs'):
@@ -603,19 +603,25 @@ def start_sm(engines, devices, traffic_available, doca_traffic_system):
                     time.sleep(5)
 
                 with allure.step('Retrying to start open_sm'):
-                    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar, use_doca_opensm=doca_traffic_system).verify_result()
+                    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar).verify_result()
     else:
         raise SetupIssue("Traffic is not available on this setup")
 
 
 @pytest.fixture
-def stop_sm(engines):
+def stop_sm(engines, devices):
     """
-    Stops OpenSM
+    Stops OpenSM for the duration of the test, then restarts it after.
     """
     result = OpenSmTool.stop_open_sm(engines)
     if not result.result:
         logging.warning("Failed to stop openSM")
+
+    yield  # Test runs here with SM stopped
+
+    # Cleanup: restart OpenSM after test completes
+    logging.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
+    OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
 
 
 @pytest.fixture(scope="session")

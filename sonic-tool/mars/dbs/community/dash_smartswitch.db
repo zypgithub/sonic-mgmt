@@ -11,6 +11,14 @@
             <!-- OPTIONAL TAGS -->
             <tags> DASH </tags>
 
+            <ignore>
+                <condition>
+                    <key> dut_hwsku </key>
+                    <op> not in </op>
+                    <value> [Mellanox-SN4280-O28, Mellanox-SN4280-O8C40] </value>
+                </condition>
+            </ignore>
+
             <!-- pre db commands - executed once before DB run -->
             <pre>
             </pre>

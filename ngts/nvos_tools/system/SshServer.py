@@ -7,6 +7,24 @@ class SshServer(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ssh-server')
         self.trusted_ca_keys = TrustedCaKeys(self)
+        self.deny_user = DenyUser(self)
+        self.allow_user = AllowUser(self)
+
+
+class AllowUser(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/allow-user')
+
+    def set_allow_user(self, user: str, apply: bool = False):
+        self.set(op_param_name='user', op_param_value=user, apply=apply)
+
+
+class DenyUser(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/deny-user')
+
+    def set_deny_user(self, user: str, apply: bool = False):
+        self.set(op_param_name='user', op_param_value=user, apply=apply)
 
 
 class TrustedCaKeys(BaseComponent):

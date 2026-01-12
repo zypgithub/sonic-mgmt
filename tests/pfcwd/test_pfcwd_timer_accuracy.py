@@ -17,6 +17,8 @@ pytestmark = [
 ]
 
 ITERATION_NUM = 20
+STORM_DURATION = 20
+TOLERANCE = 0.5
 
 logger = logging.getLogger(__name__)
 
@@ -347,6 +349,104 @@ class TestPfcwdAllTimer(object):
         except Exception as e:
             logger.warning("Get timestamp: An unexpected error occurred: pattern {} err {}".format(pattern, str(e)))
             return int(0)
+
+    def get_port_oid(self, duthost, port):
+        """
+        Get port OID from COUNTERS_PORT_NAME_MAP
+        """
+        cmd = "sonic-db-cli COUNTERS_DB HGET COUNTERS_PORT_NAME_MAP {}".format(port)
+        port_oid = duthost.shell(cmd)['stdout'].strip()
+        return port_oid
+
+    def get_pfc_rx_pause_duration(self, duthost, port_oid, queue):
+        """
+        Get PFC RX pause duration counter
+        """
+        counter_key = "SAI_PORT_STAT_PFC_{}_RX_PAUSE_DURATION_US".format(queue)
+        cmd = "sonic-db-cli COUNTERS_DB HGET COUNTERS:{} {}".format(port_oid, counter_key)
+        duration = duthost.shell(cmd)['stdout'].strip()
+        return int(duration)
+
+    def get_pfc_rx_frames(self, duthost, port_oid, queue):
+        """
+        Get PFC RX frames counter
+        """
+        counter_key = "SAI_PORT_STAT_PFC_{}_RX_PKTS".format(queue)
+        cmd = "sonic-db-cli COUNTERS_DB HGET COUNTERS:{} {}".format(port_oid, counter_key)
+        frames = duthost.shell(cmd)['stdout'].strip()
+        return int(frames)
+
+    def test_pfc_rx_pause_duration_accuracy(self, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
+                                            pfcwd_timer_setup_restore):
+        """
+        Test PFC RX pause duration counter accuracy
+
+        Test Steps:
+            1. Configure PFC watchdog
+            2. Read initial PFC RX pause duration counter and PFC RX frames counter
+            3. Start PFC storm on the test port and queue
+            4. Read final PFC RX pause duration counter and PFC RX frames counter
+            5. Calculate duration_diff = final_counter - initial_counter.
+        """
+        duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+        logger.info("--- Test PFC RX Duration Counter Accuracy ---")
+
+        setup_info = pfcwd_timer_setup_restore
+        storm_handle = setup_info['storm_handle']
+        pfc_wd_test_port = setup_info['selected_test_port']
+        pfc_queue = storm_handle.pfc_queue_idx
+
+        logger.info("Test port: {}, Queue: {}".format(pfc_wd_test_port, pfc_queue))
+
+        try:
+            # Get port OID
+            port_oid = self.get_port_oid(duthost, pfc_wd_test_port)
+
+            # Get PFC RX frames counter before storm
+            pfc_frames_before = self.get_pfc_rx_frames(duthost, port_oid, pfc_queue)
+            logger.info("PFC RX frames before storm: {}".format(pfc_frames_before))
+
+            # Get PFC RX duration counter before storm
+            counter_before = self.get_pfc_rx_pause_duration(duthost, port_oid, pfc_queue)
+            logger.info("Initial PFC RX duration: {} us".format(counter_before))
+
+            # Start PFC storm
+            logger.info("Starting PFC storm for {} seconds".format(STORM_DURATION))
+            storm_handle.start_storm()
+            time.sleep(STORM_DURATION)
+            storm_handle.stop_storm()
+            # Wait for counters to update
+            time.sleep(int(setup_info['timers']['pfc_wd_poll_time']) / 1000 + 1)
+
+            # Get PFC RX frames counter after storm
+            pfc_frames_after = self.get_pfc_rx_frames(duthost, port_oid, pfc_queue)
+            logger.info("PFC RX frames after storm: {}".format(pfc_frames_after))
+
+            # Get PFC RX duration counter after storm
+            counter_after = self.get_pfc_rx_pause_duration(duthost, port_oid, pfc_queue)
+            logger.info("Final PFC RX duration: {} us".format(counter_after))
+
+            # Calculate frames received
+            frames_diff = pfc_frames_after - pfc_frames_before
+            logger.info(f"PFC frames received: {frames_diff}")
+            pytest_assert(frames_diff > 0, "Did not receive any PFC frames")
+
+            # Calculate duration difference
+            duration_diff = counter_after - counter_before
+            # Convert to microseconds
+            expected_duration_us = STORM_DURATION * 1000000
+            logger.info(f"Duration difference: {duration_diff} us (expected: {expected_duration_us} us)")
+
+            # Check if within TOLERANCE
+            min_expected = expected_duration_us * (1 - TOLERANCE)
+            max_expected = expected_duration_us * (1 + TOLERANCE)
+            pytest_assert(min_expected <= duration_diff <= max_expected, f"PFC RX duration counter is not accurate:"
+                          f" {duration_diff} us (expected: {expected_duration_us} us, +-{TOLERANCE*100}%). "
+                          f"Deviation: {abs(duration_diff - expected_duration_us) / expected_duration_us * 100:.2f}%")
+
+        finally:
+            storm_handle.stop_storm()
+            duthost.command("pfcwd start_default")
 
     def test_pfcwd_timer_accuracy(self, duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname,
                                   pfcwd_timer_setup_restore, fanouthosts, set_pfc_time_cisco_8000):

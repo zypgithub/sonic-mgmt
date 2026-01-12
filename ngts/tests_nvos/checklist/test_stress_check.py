@@ -15,6 +15,7 @@ invalid_cmd_str = ['Invalid config', 'Error', 'command not found', 'Bad Request'
 
 
 @pytest.mark.checklist
+@pytest.mark.cumulus
 def test_stress_check_nvue(engines):
     logging.info("*********** CLI Stress Test ({}) *********** ".format(engines.dut.ip))
     num_of_iterations = 10
@@ -36,6 +37,7 @@ def test_stress_check_nvue(engines):
 
 
 @pytest.mark.checklist
+@pytest.mark.cumulus
 def test_stress_check_openapi(engines):
     logging.info("*********** REST Stress Test ({}) *********** ".format(engines.dut.ip))
     num_of_iterations = 45
@@ -49,15 +51,15 @@ def test_stress_check_openapi(engines):
     logging.info(cmd + " succeeded -----------------------------------")
 
     cmd = 'openapi: show interface eth0 link'
-    mgmt_int = Port(None)
+    mgmt_int = Port('eth0')  # Explicitly specify eth0 as the port name
     logging.info("Run " + cmd)
-    _run_cmd_openapi([mgmt_int], num_of_iterations)
+    _run_cmd_openapi([mgmt_int.interface.link], num_of_iterations)  # Use interface.link to get the correct path
     logging.info(cmd + " succeeded -----------------------------------")
 
     cmds = ['nv show platform firmware', 'nv show interface eth0 link']
     platform = Platform()
     logging.info("Run openapi: " + cmds[0] + " and " + cmds[1])
-    _run_cmd_openapi([platform.firmware, mgmt_int], num_of_iterations)
+    _run_cmd_openapi([platform.firmware, mgmt_int.interface.link], num_of_iterations)
     logging.info(cmds[0] + "and" + cmds[1] + " succeeded -----------------------------------")
 
 

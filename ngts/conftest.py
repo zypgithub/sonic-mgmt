@@ -25,13 +25,14 @@ from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
-from ngts.constants.constants import PytestConst, NvosCliTypes, DebugKernelConsts, CliType
+from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType
 from ngts.constants.constants import SerialLoggerConst
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
-from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO
+from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool, DOCA_OPEN_SM_PATH, SM_MASTER_OPEN_SM_PATH
+from ngts.tests.nightly.app_extension.app_extension_helper import APP_INFO, get_app_repository
 from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag, add_fixture_name, \
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
@@ -365,13 +366,16 @@ def fw_versions_json_file(request):
 
 
 @pytest.fixture(scope='session')
-def has_loopbox(setup_name):
+def has_loopbox(topology_obj):
     """
     Method to check if system has loopbox.
-    :param setup_name: the setup name
+    :param topology_obj: the setup topology object
     :return: if setup has loopbox or not
     """
-    return setup_name in Configurations.juliet_systems_with_loopbox
+    with allure.step('Checking if system has loopbox'):
+        dut_setup_common_attributes = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']
+        labels = dut_setup_common_attributes['labels']
+        return labels and InfraConst.LOOPBOX_LABEL in labels
 
 
 @pytest.fixture(scope='session')
@@ -392,6 +396,15 @@ def doca_traffic_system(setup_name):
     :return: if setup is a doca traffic system or not
     """
     return setup_name in Configurations.doca_traffic_systems
+
+
+@pytest.fixture(scope='session', autouse=True)
+def configure_opensm_path(doca_traffic_system):
+    """
+    Configure OpenSmTool.OPENSM_PATH based on whether this is a doca traffic system.
+    This runs automatically at the beginning of the test session.
+    """
+    OpenSmTool.set_opensm_path(DOCA_OPEN_SM_PATH if doca_traffic_system else SM_MASTER_OPEN_SM_PATH)
 
 
 @pytest.fixture(scope='session')
@@ -767,11 +780,11 @@ def upgrade_params(base_version, target_version, wjh_deb_url):
 
 
 @pytest.fixture(scope="session")
-def shared_params():
+def shared_params(is_air):
     shared_dict = DottedDict()
     shared_dict.app_ext_is_app_ext_supported = False
     shared_dict.app_ext_app_name = APP_INFO["name"]
-    shared_dict.app_ext_app_repository_name = APP_INFO["repository"]
+    shared_dict.app_ext_app_repository_name = get_app_repository(is_air)
     shared_dict.app_ext_version = APP_INFO["shut_down"]["version"]
 
     return shared_dict

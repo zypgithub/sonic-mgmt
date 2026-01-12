@@ -3,6 +3,7 @@ import logging
 import os
 import glob
 import grpc
+import ipaddress
 
 from grpc_tools import protoc
 
@@ -12,8 +13,8 @@ from tests.gnmi.helper import gnmi_container, apply_cert_config, recover_cert_co
 from tests.gnmi.helper import GNMI_SERVER_START_WAIT_TIME, check_ntp_sync_status
 from tests.common.gu_utils import create_checkpoint, rollback
 from tests.common.helpers.gnmi_utils import GNMIEnvironment, create_revoked_cert_and_crl, create_gnmi_certs, \
-    delete_gnmi_certs, prepare_root_cert, prepare_server_cert, prepare_client_cert, \
-    copy_certificate_to_dut, copy_certificate_to_ptf
+    delete_gnmi_certs, prepare_root_cert, prepare_server_cert, prepare_client_cert, copy_certificate_to_dut, \
+    copy_certificate_to_ptf
 from tests.common.helpers.ntp_helper import setup_ntp_context
 
 
@@ -85,7 +86,7 @@ def setup_gnmi_rotated_server(duthosts, rand_one_dut_hostname, localhost, ptfhos
     prepare_server_cert(duthost, localhost)
     prepare_client_cert(localhost)
     copy_certificate_to_ptf(ptfhost)
-    create_revoked_cert_and_crl(localhost, ptfhost, duthost)
+    create_revoked_cert_and_crl(localhost, ptfhost)
     copy_certificate_to_dut(duthost)
 
 
@@ -155,10 +156,14 @@ def grpc_channel(duthosts, rand_one_dut_hostname):
     duthost = duthosts[rand_one_dut_hostname]
 
     # Get DUT gRPC server address and port
-    if ":" in duthost.mgmt_ip and not duthost.mgmt_ip.startswith('['):
-        ip = f"[{duthost.mgmt_ip}]"
-    else:
-        ip = duthost.mgmt_ip
+    ip = duthost.mgmt_ip
+    # Format IPv6 addresses with brackets for URL
+    try:
+        if isinstance(ipaddress.ip_address(ip), ipaddress.IPv6Address):
+            ip = f"[{ip}]"
+    except ValueError:
+        # If parsing fails, use the address as-is
+        pass
     env = GNMIEnvironment(duthost, GNMIEnvironment.GNMI_MODE)
     port = env.gnmi_port
     target = f"{ip}:{port}"

@@ -51,7 +51,7 @@ class TestWatchdogApi(PlatformApiTestBase):
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
         if duthost.facts['platform'] == 'armhf-nokia_ixs7215_52x-r0' or \
                 duthost.facts['platform'] == 'arm64-nokia_ixs7215_52xb-r0' or \
-                    duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_dpu"):
+                duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_dpu"):
             duthost.shell("watchdogutil disarm")
 
         assert not watchdog.is_armed(platform_api_conn)
@@ -264,8 +264,13 @@ class TestWatchdogApi(PlatformApiTestBase):
         if watchdog_timeout is None:
             pytest.skip('"too_big_timeout" parameter is required for this test case')
         actual_timeout = watchdog.arm(platform_api_conn, watchdog_timeout)
-        self.expect(actual_timeout == -1, "{}: Watchdog should be disarmed, but returned timeout of {} seconds"
-                    .format(self.test_arm_too_big_timeout.__name__, watchdog_timeout))
+        self.expect(
+            actual_timeout == -1,
+            "{}: Watchdog should be disarmed when configured with {} seconds, "
+            "but returned timeout of {} seconds".format(
+                self.test_arm_too_big_timeout.__name__, watchdog_timeout, actual_timeout
+            ),
+        )
         self.assert_expectations()
 
     @pytest.mark.dependency(depends=["test_arm_disarm_states"])
@@ -274,6 +279,11 @@ class TestWatchdogApi(PlatformApiTestBase):
 
         watchdog_timeout = -1
         actual_timeout = watchdog.arm(platform_api_conn, watchdog_timeout)
-        self.expect(actual_timeout == -1, "{}: Watchdog should be disarmed, but returned timeout of {} seconds"
-                    .format(self.test_arm_negative_timeout.__name__, watchdog_timeout))
+        self.expect(
+            actual_timeout == -1,
+            "{}: Watchdog should be disarmed when configured with {} seconds, "
+            "but returned timeout of {} seconds".format(
+                self.test_arm_too_big_timeout.__name__, watchdog_timeout, actual_timeout
+            ),
+        )
         self.assert_expectations()

@@ -72,6 +72,12 @@ class CumulusConsts:
     TECHSUPPORT_ACTION_DELETE_SUCCESS_MESSAGE = "File Delete Succeeded"
     TECHSUPPORT_THRESHOLD = 150
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
+    NTP_SYNCHRONIZATION_MAX_TIME = 300
+    NTP_LOGS_COMPONENT_ID = "nvue"
+    LOG_MSG_SET_NTP = ["nv set system ntp server 10.7.77.134 state"]
+
+    DISK_MODE_FULL_DISK = 'full-disk'
+    DISK_MODE_USAGE = 'usage'
 
 
 class TestConsts:
@@ -519,9 +525,10 @@ class SystemConsts:
                                              'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
                                              'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
                                              'empty.sh', 'nv-bridge_reconcile']
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed']
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
+                                                 'nvlink_domain_telemetry.csv']
     TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
-    TECHSUPPORT_HWMGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
+    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -534,7 +541,6 @@ class SystemConsts:
     MAX_SYSTEM_DATETIME = MAX_SYSTEM_DATE + " 23:59:59"
 
     NBU_NFS_SERVER = "https://nbu-mtr-nfs.nvidia.com"
-
     PRE_LOGIN_MESSAGE = 'pre-login'
     POST_LOGIN_MESSAGE = 'post-login'
     POST_LOGOUT_MESSAGE = 'post-logout'
@@ -833,6 +839,15 @@ class SystemConsts:
         "Disconnecting from NVOS, system is offline during reboot",
         "System will be rebooted",
         "System will power cycle in a few seconds"
+        "Restarting system",
+        "The system will reboot now!",
+        "Rebooting System in cold mode",
+        "System will power cycle in a few seconds",
+        "Reboot service initiated successfully"
+    )
+
+    ACTION_INSTALL_SUCCESS_MESSAGES = (
+        "is successfully installed",
     )
 
     LOCALHOST = "127.0.0.1"
@@ -874,6 +889,7 @@ class SystemConsts:
     NV_BRIDGE_NODE_IP = '127.0.0.1'
     NV_BRIDGE_NODE_NEGATIVE_IP = '1.1.1.1'
     NV_BRIDGE_NODE_SERVER = 'node primary server'
+    NODE = 'node'
 
     CLUSTER_STATE_DISABLED = 'disabled'
     CLUSTER_STATE_ENABLED = 'enabled'
@@ -1472,6 +1488,13 @@ class NtpConsts:
     HOSTNAME_SUFFIX = '.lab.mtl.com'
     SERVER2_HOSTNAME = 'l-coreslave' + HOSTNAME_SUFFIX
     SERVER3_IPV4 = '10.7.77.136'
+    SERVER4_IPV4 = 'time1.google.com'
+    SERVER5_IPV4 = 'google.com'
+    SERVER6_IPV4 = '0.cumulusnetworks.pool.ntp.org'
+    SERVER7_IPV4 = '1.cumulusnetworks.pool.ntp.org'
+    SERVER8_IPV4 = '2.cumulusnetworks.pool.ntp.org'
+    SERVER9_IPV4 = '3.cumulusnetworks.pool.ntp.org'
+    SERVER10_IPV4 = '4.cumulusnetworks.pool.ntp.org'
     DUMMY_SERVER1 = 'dummy.server1'
     DUMMY_SERVER2 = 'dummy.server2'
     DUMMY_SERVER3 = 'dummy.server3'
@@ -1607,6 +1630,40 @@ class NtpConsts:
         TRUSTED: Trusted.NO.value,
         TYPE: KeyType.MD5.value,
         VALUE: '*'
+    }
+    REFERENCE_DEFAULT_VALUE = 'local'
+    EXPECTED_DURATION = 300
+    CUMULUS_NTP_DEFAULT_DICT = {
+        LISTEN: {Listen.ETH0.value: {}},
+        SERVER: {},
+        STATE: State.ENABLED.value,
+        STATUS: Status.UNSYNCHRONISED.value,
+        VRF: Vrf.MGMT.value
+    }
+    CUMULUS_EXPECTED_DURATION = 400
+    CUMULUS_SERVER1_DEFAULT_VALUES_DICT = {
+        IBURST: Iburst.ENABLED.value,
+        ASSOCIATION_TYPE: AssociationType.SERVER.value,
+        STATE: State.ENABLED.value,
+        VERSION: Version.VERSION_4.value
+    }
+    CUMULUS_SERVER_NONE_DEFAULT_VALUES_DICT = {
+        IBURST: Iburst.ENABLED.value,
+        ASSOCIATION_TYPE: AssociationType.SERVER.value,
+        STATE: State.DISABLED.value,
+        VERSION: Version.VERSION_3.value
+    }
+    CUMULUS_MULTIPLE_SERVERS_CONFIG_DICT = {
+        SERVER1_IPV4: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        SERVER2_HOSTNAME: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER1: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER2: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER3: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER4: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER5: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER6: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER7: CUMULUS_SERVER1_DEFAULT_VALUES_DICT,
+        DUMMY_SERVER8: CUMULUS_SERVER1_DEFAULT_VALUES_DICT
     }
 
 
@@ -2587,3 +2644,11 @@ class SSDConsts:
         ADVERTISED_SIZE_GB: 160.0,
         SSD_PART_NUMBER: 'VTPM24GLXI160-BM12'
     }
+
+
+class ServiceConsts:
+    NTP = 'ntp@mgmt'
+    NTP_RESOURCE_LIMIT_CPU = 'cpu'
+    NTP_RESOURCE_LIMIT_CPU_DEFAULT_VALUE = 10
+    NTP_RESOURCE_LIMIT_MEMORY = 'memory'
+    NTP_RESOURCE_LIMIT_MEMORY_DEFAULT_VALUE = "1000G"

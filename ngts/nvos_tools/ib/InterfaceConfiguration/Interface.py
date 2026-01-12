@@ -39,7 +39,6 @@ class Interface(BaseComponent):
         self.ipv6 = IpV6(self)
         self.vrf = BaseComponent(self, path='/vrf')
         self.link = LinkMgmt(self)
-        self.delayed_recovery = BaseComponent(self, path='/delayed-recovery')
         self.plan_ports = BaseComponent(self, path='/plan-ports')
         self.acl = Acl(self)
         self.lldp = LldpInterface(self)

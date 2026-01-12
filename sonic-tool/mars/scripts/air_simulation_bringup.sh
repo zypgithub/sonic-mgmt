@@ -10,7 +10,7 @@ python3 -m ensurepip --default-pip 2>/dev/null || true
 unset PYTHONPATH
 
 pip3 install --upgrade pip
-pip3 install --ignore-installed "devts@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@master"
+pip3 install --ignore-installed "devts@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@DEV_python38_adjusted"
 # to solve the issue of openssl and urllib3 version compatibility
 pip3 install "requests<2.32.0" "urllib3<2"
 

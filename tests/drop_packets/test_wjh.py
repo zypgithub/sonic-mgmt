@@ -219,25 +219,45 @@ def verify_drop_on_wjh_raw_table(duthost, pkt, discard_group, drop_information=N
     return False
 
 
-def verify_drop_on_agg_wjh_table(duthost, pkt, num_packets, discard_group, drop_information=None):
-    logger.info(f"The discard group is {discard_group}, the drop information is {drop_information}, the num_packets "
-                f"is {num_packets}")
+def check_wjh_drop_counts_in_aggregate_table(duthost, discard_group, pkt, num_packets, entry_totals, acl_on_rule_table, drop_information):
     if discard_group in ["ACL"]:
         tables = get_agg_tables_output(duthost, command="show what-just-happened poll {} --aggregate".format(
             discard_group.lower()))
     else:
         tables = get_agg_tables_output(duthost)
-    entries = check_if_entry_exists(tables[0], pkt)
 
-    for entry in entries:
-        if int(entry['Count']) == num_packets:
+    for entry in check_if_entry_exists(tables[0], pkt):
+        key = (entry.get('sPort', ''), entry.get('Drop reason - Recommended action', ''))
+        sum_of_previous_drop_counts = entry_totals.get(key, 0)
+        current_drop_count = int(entry.get('Count', 0))
+        entry_totals[key] = sum_of_previous_drop_counts + current_drop_count
+
+        if entry_totals[key] == num_packets:
+            logger.info(f"WJH verified: {key[0]} cumulative={entry_totals[key]}, expected={num_packets}")
             if discard_group == 'ACL':
-                return verify_drop_on_wjh_rule_table(entry, tables[1], drop_information)
-            return True
-        else:
-            logger.info(f"Count not match, actual: {entry['Count']}, expected: {num_packets}, entry: {entry}")
+                  acl_on_rule_table['value'] = verify_drop_on_wjh_rule_table(entry, tables[1], drop_information)
+            return  True
+
+    if entry_totals:
+        for key, total in entry_totals.items():
+            logger.info(f"WJH count not match: {key[0]} cumulative={total}, expected={num_packets}")
     return False
 
+
+def verify_drop_on_agg_wjh_table(duthost, pkt, num_packets, discard_group, drop_information=None,
+                                 timeout=120, interval=1):
+    """
+    Verify packet drops on WJH aggregate table with cumulative counting.
+    WJH rate-limits burst sampling, so we poll multiple times and sum counts per entry.
+    """
+    logger.info(f"Verifying WJH agg: discard_group={discard_group}, expected={num_packets}")
+    entry_totals = {}
+    acl_on_rule_table = {'value': None}
+
+    wjh_drop_count_result = wait_until(timeout, interval, 0, check_wjh_drop_counts_in_aggregate_table, duthost, discard_group,
+                  pkt, num_packets, entry_totals, acl_on_rule_table, drop_information)
+
+    return acl_on_rule_table['value'] if acl_on_rule_table['value'] else wjh_drop_count_result
 
 def do_raw_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports, tx_dut_ports=None,
                 comparable_pkt=None, skip_counter_check=False, drop_information=None, ip_ver='ipv4'):
@@ -245,7 +265,7 @@ def do_raw_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports
     send_packets(pkt, ptfadapter, ports_info["ptf_tx_port_id"])
     # verify packet is dropped
     exp_pkt = expected_packet_mask(pkt, ip_ver=ip_ver)
-    testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports)
+    verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports)
 
     # Some test cases will not increase the drop counter consistently on certain platforms
     if skip_counter_check:
@@ -274,7 +294,7 @@ def do_agg_test(discard_group, pkt, ptfadapter, duthost, ports_info, sniff_ports
 
     # verify packet is dropped
     exp_pkt = expected_packet_mask(pkt, ip_ver=ip_ver)
-    testutils.verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports, timeout=1)
+    verify_no_packet_any(ptfadapter, exp_pkt, ports=sniff_ports, timeout=0.3)
 
     time.sleep(2)
 

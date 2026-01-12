@@ -43,7 +43,7 @@ class Ztp(BaseComponent):
 
             return res
 
-    def action_run_ztp_url(self, engine=None, device=None, params_dict={}, url=''):
+    def action_run_ztp_url(self, engine=None, device=None, params_dict={}, url='', exempted_err_msgs=()):
         with allure.step('Execute action for {resource_path}'.format(resource_path=self.get_resource_path())):
             if not engine:
                 engine = TestToolkit.get_engine()
@@ -51,8 +51,7 @@ class Ztp(BaseComponent):
                 device = TestToolkit.get_device()
 
             marker = TestToolkit.get_loganalyzer_marker(engine)
-            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp_url, engine, device,
-                                                  self.get_resource_path(), params_dict, url)
+            res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp_url, engine, device, self.get_resource_path(), params_dict, url, exempted_err_msgs=exempted_err_msgs)
 
             return res
 

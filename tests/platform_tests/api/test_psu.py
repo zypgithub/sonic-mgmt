@@ -90,7 +90,7 @@ class TestPsuApi(PlatformApiTestBase):
             data = get_data(psu_info["api"], psu_info["psu_id"])
             if not is_mellanox_device(self.duthost):
                 if self.expect(
-                    data is not None, "Failed to retrieve {} of PSU {}".format(message, psu_info["psu_id"])):
+                        data is not None, "Failed to retrieve {} of PSU {}".format(message, psu_info["psu_id"])):
                     self.expect(
                         isinstance(data, float), "PSU {} {} appears incorrect".format(psu_info["psu_id"], message))
 

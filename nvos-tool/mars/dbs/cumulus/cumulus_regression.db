@@ -87,6 +87,11 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_additional_tests.cases </cases>
 	</test>
+
+	<!-- Fips Cumulus Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_fips.cases </cases>
+	</test>
 	
 </DBDEF>
 

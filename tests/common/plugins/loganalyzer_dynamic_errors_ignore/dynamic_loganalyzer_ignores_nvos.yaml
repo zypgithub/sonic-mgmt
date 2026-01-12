@@ -831,6 +831,13 @@
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_bad_secret
       - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_timeout
 
+# NVOS SECURITY - platform certificate bad URL test
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*Failed to upload file:.*Name or service not known.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate_bad_url
+
 # NVOS SECURITY
 - Errors_list:
     - '.*ERR nvued:.*ERROR:.*Something went wrong in fetching the X\.509.*certificate.*URI.*'
@@ -2222,4 +2229,28 @@
     - Affected_test_cases:
         - tests_nvos/cluster/cluster_upgrade_test/cluster_upgrade_test.py
 
+
+- Errors_list:
+    - '.*asic_debug_config.*validate nvos version failed.*'
+    - '.*ERR health-statsd#health_history: nmx-telemetry-agent: Unreachable*'
+    - '.*ERR health-statsd#health_history: Summary: Not OK.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_nmx_t_distributed.py::test_nmx_t_distributed_bad_flow
+
+- Errors_list:
+    - '.*ERR healthd: Voltage sensor reading is not available for HSC-2 VinDC In.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSC-2 VinDC Out.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSCC-2 Conv In 1.*'
+    - '.*ERR healthd: Voltage sensor reading is not available for HSCC-2 Conv Out 1.*'
+  Conditions:
+    - Redmine:
+        - 4818038
+# --------------------------------------------------
+
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*translated.py.*failed to get cleared stats Working outside of request context.*'
+  Conditions:
+    - Redmine:
+        - 4735499
 # --------------------------------------------------

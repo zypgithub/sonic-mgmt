@@ -323,7 +323,7 @@ class TestThermalApi(PlatformApiTestBase):
             if not is_mellanox_device(duthost):
                 # Ensure the thermal high threshold temperature is sane
                 if self.expect(high_critical_threshold is not None,
-                            "Unable to retrieve Thermal {} high critical threshold".format(i)):
+                               "Unable to retrieve Thermal {} high critical threshold".format(i)):
                     self.expect(isinstance(high_critical_threshold, float),
                                 "Thermal {} high threshold appears incorrect".format(i))
         if thermals_skipped == self.num_thermals:

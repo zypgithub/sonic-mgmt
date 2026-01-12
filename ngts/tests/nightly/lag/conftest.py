@@ -16,9 +16,53 @@ logger = logging.getLogger()
 TRAFFIC_TYPES = ['TCP', 'UDP']
 
 
+def pytest_addoption(parser):
+    parser.addoption("--lag_config_order", action="store", default="random",
+                     choices=["add_lag_first", "add_member_first", "random"],
+                     help="LAG configuration order: add_lag_first, add_member_first, or random (default)")
+
+
 @pytest.fixture()
 def traffic_type():
     return random.choice(TRAFFIC_TYPES)
+
+
+@pytest.fixture()
+def lag_config_order(request):
+    """
+    Fixture to decide the LAG configuration order.
+    Returns either 'add_lag_first' or 'add_member_first'.
+    """
+    cli_opt = request.config.getoption("--lag_config_order", default="random")
+    if cli_opt == "random":
+        return random.choice(["add_lag_first", "add_member_first"])
+    return cli_opt
+
+
+@pytest.fixture()
+def l3_route_config(interfaces, engines):
+    """
+    Fixture to setup L3 routing for traffic validation.
+    Traffic path: ha (51.0.0.2) -> DUT (51.0.0.1) routes to -> hb (50.0.0.3) via LAG
+    """
+    ha_l3_iface = interfaces.ha_dut_2
+    dut_l3_iface = interfaces.dut_ha_2
+    ha_l3_ip, dut_l3_ip, hb_subnet = '51.0.0.2', '51.0.0.1', '50.0.0.0'
+
+    engines.dut.run_cmd('sudo config interface ip add {} {}/24'.format(dut_l3_iface, dut_l3_ip))
+    engines.ha.run_cmd('sudo ip addr add {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface))
+    engines.ha.run_cmd('sudo ip route add {}/24 via {}'.format(hb_subnet, dut_l3_ip))
+
+    yield {
+        'ha_l3_iface': ha_l3_iface,
+        'dut_l3_iface': dut_l3_iface,
+        'ha_l3_ip': ha_l3_ip,
+        'dut_l3_ip': dut_l3_ip
+    }
+
+    engines.ha.run_cmd('sudo ip route del {}/24 via {}'.format(hb_subnet, dut_l3_ip), validate=False)
+    engines.ha.run_cmd('sudo ip addr del {}/24 dev {}'.format(ha_l3_ip, ha_l3_iface), validate=False)
+    engines.dut.run_cmd('sudo config interface ip remove {} {}/24'.format(dut_l3_iface, dut_l3_ip))
 
 
 @pytest.fixture(scope='package', autouse=True)

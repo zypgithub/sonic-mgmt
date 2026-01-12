@@ -193,7 +193,9 @@ def modify_lanes_per_platform(platform, port_lanes, split_x2=False):
     lanes_8_spit_x2_x4_lanes = False
     lanes_8_spit_x4_x2_lanes = False
 
-    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER, PlatformTypesConstants.PLATFORM_TIGON]
+    four_lanes_x2_split_platforms = [PlatformTypesConstants.PLATFORM_PANTHER,
+                                     PlatformTypesConstants.PLATFORM_PANTHER_A1,
+                                     PlatformTypesConstants.PLATFORM_TIGON]
     lanes_4_spit_x2_x2_lanes = platform in four_lanes_x2_split_platforms
 
     eight_lanes_x4_split_platforms = [PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_MOOSE,

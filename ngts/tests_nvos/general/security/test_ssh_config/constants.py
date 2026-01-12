@@ -16,6 +16,10 @@ class SshConfigConsts:
     DEFAULT_PORT = 22
     PORTS = 'ports'
     PORT = 'port'
+    DENY_USERS = "deny-users"
+    ALLOW_USERS = "allow-users"
+    CUMULUS_USER = "cumulus"
+    INACTIVE_TIMEOUT = "inactive-timeout"
 
     SSH_CONFIG_CONNECTION_OPTIONS = ' -o ControlMaster=auto ' \
         '  -o ControlPersist=60s ' \

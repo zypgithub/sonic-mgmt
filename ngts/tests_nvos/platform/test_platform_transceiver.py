@@ -15,6 +15,8 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.platform.constants import TransceiversConsts
+from ngts.tests_nvos.interfaces.test_ib_interface_configuration import wait_for_port_to_become_active
+from ngts.tests_nvos.platform.helpers import _pre_port_config, _post_port_config
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -80,7 +82,7 @@ def test_transceiver_status_unplug(engines, devices, test_api):
 
     try:
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
-
+        show_ports_output = _pre_port_config(ports)
         IbInterfaceTool.simulate_unplug_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 8)
         _verify_link_state_down(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Removed')
@@ -88,6 +90,9 @@ def test_transceiver_status_unplug(engines, devices, test_api):
 
     finally:
         IbInterfaceTool.simulate_plugin_module_event(engines.dut, devices.dut, module_index, mst_dev_name, 50)
+        _verify_link_state_up(ports)
+        wait_for_port_to_become_active(ports[0])
+        _post_port_config(show_ports_output, ports)
         _verify_link_state_up(ports)
         _verify_transceiver_status(platform, transceiver_id=module_under_test, expected_module_status='Inserted')
 
@@ -241,29 +246,30 @@ def find_missing_ports(connected_transceivers, ports):
 
 def _verify_transceiver_status(platform, transceiver_id, expected_module_status='Inserted',
                                expected_error_status='N/A'):
-    with allure.step("Check status and error-status exists in nv show platform transceiver"):
-        transceiver_output = OutputParsingTool.parse_json_str_to_dictionary(
-            platform.transceiver.show(transceiver_id)).get_returned_value()
-        fields_to_check = [PlatformConsts.TRANSCEIVER_STATUS, PlatformConsts.TRANSCEIVER_ERROR_STATUS]
-        Tools.ValidationTool.verify_field_exist_in_json_output(transceiver_output, fields_to_check). \
-            verify_result()
+    with allure.step(f"Check transceiver {transceiver_id} status - expected"):
+        with allure.step("Check status and error-status exists in nv show platform transceiver"):
+            transceiver_output = OutputParsingTool.parse_json_str_to_dictionary(
+                platform.transceiver.show(transceiver_id)).get_returned_value()
+            fields_to_check = [PlatformConsts.TRANSCEIVER_STATUS, PlatformConsts.TRANSCEIVER_ERROR_STATUS]
+            Tools.ValidationTool.verify_field_exist_in_json_output(transceiver_output, fields_to_check). \
+                verify_result()
 
-    with allure.step(f"Check {PlatformConsts.TRANSCEIVER_STATUS} has correct value {expected_module_status}"):
-        Tools.ValidationTool.verify_field_value_in_output(output_dictionary=transceiver_output,
-                                                          field_name=PlatformConsts.TRANSCEIVER_STATUS,
-                                                          expected_value=expected_module_status).verify_result()
-
-    with allure.step("Verify error status exists"):
-        module_status = transceiver_output[PlatformConsts.TRANSCEIVER_STATUS].strip()
-        error_status = transceiver_output[PlatformConsts.TRANSCEIVER_ERROR_STATUS].strip()
-        assert error_status in MODULE_STATUS_DICT[
-            module_status], f"module-error-status is in not allowed state: {error_status}"
-
-    with allure.step(f"Check {PlatformConsts.TRANSCEIVER_ERROR_STATUS} has correct value {expected_error_status}"):
-        if not is_bug_active(4323183):
+        with allure.step(f"Check {PlatformConsts.TRANSCEIVER_STATUS} has correct value {expected_module_status}"):
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=transceiver_output,
-                                                              field_name=PlatformConsts.TRANSCEIVER_ERROR_STATUS,
-                                                              expected_value=expected_error_status).verify_result()
+                                                              field_name=PlatformConsts.TRANSCEIVER_STATUS,
+                                                              expected_value=expected_module_status).verify_result()
+
+        with allure.step("Verify error status exists"):
+            module_status = transceiver_output[PlatformConsts.TRANSCEIVER_STATUS].strip()
+            error_status = transceiver_output[PlatformConsts.TRANSCEIVER_ERROR_STATUS].strip()
+            assert error_status in MODULE_STATUS_DICT[
+                module_status], f"module-error-status is in not allowed state: {error_status}"
+
+        with allure.step(f"Check {PlatformConsts.TRANSCEIVER_ERROR_STATUS} has correct value {expected_error_status}"):
+            if not is_bug_active(4323183):
+                Tools.ValidationTool.verify_field_value_in_output(output_dictionary=transceiver_output,
+                                                                  field_name=PlatformConsts.TRANSCEIVER_ERROR_STATUS,
+                                                                  expected_value=expected_error_status).verify_result()
 
 
 def _verify_transceiver_fields(platform, transceiver_id, expected_module_status='Inserted',
@@ -294,33 +300,35 @@ def _verify_transceiver_fields(platform, transceiver_id, expected_module_status=
 
 
 def _verify_link_state_up(up_ports):
-    link_states = [
-        OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
-        for port in up_ports
-    ]
-    port_names = [port.name for port in up_ports]
-    with allure.step(f"Verify link for any of the {port_names} is {NvosConsts.LINK_STATE_UP}"):
-        for link_state in link_states:
-            if not link_state:
-                assert False, "Link state is empty should be up or down"
-            # At least one of the ports should be up for inserted transceiver.
-            if NvosConsts.LINK_STATE_UP in link_state:
-                return
-        assert False, f"None of the ports are {NvosConsts.LINK_STATE_UP}"
+    with allure.step("Verify link for any of the up ports is up"):
+        link_states = [
+            OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
+            for port in up_ports
+        ]
+        port_names = [port.name for port in up_ports]
+        with allure.step(f"Verify link for any of the {port_names} is {NvosConsts.LINK_STATE_UP}"):
+            for link_state in link_states:
+                if not link_state:
+                    assert False, "Link state is empty should be up or down"
+                # At least one of the ports should be up for inserted transceiver.
+                if NvosConsts.LINK_STATE_UP in link_state:
+                    return
+            assert False, f"None of the ports are {NvosConsts.LINK_STATE_UP}"
 
 
 def _verify_link_state_down(down_ports):
-    link_states = [
-        OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
-        for port in down_ports
-    ]
-    port_names = [port.name for port in down_ports]
-    with allure.step(f"Verify all {port_names} are down"):
-        for link_state in link_states:
-            if not link_state:
-                assert False, "Link state is empty should be up or down"
-            if NvosConsts.LINK_STATE_DOWN not in link_state:
-                assert False, "The link state is up for removed transceiver"
+    with allure.step("Verify all down ports are down"):
+        link_states = [
+            OutputParsingTool.parse_json_str_to_dictionary(port.interface.link.state.show()).get_returned_value()
+            for port in down_ports
+        ]
+        port_names = [port.name for port in down_ports]
+        with allure.step(f"Verify all {port_names} are down"):
+            for link_state in link_states:
+                if not link_state:
+                    assert False, "Link state is empty should be up or down"
+                if NvosConsts.LINK_STATE_DOWN not in link_state:
+                    assert False, "The link state is up for removed transceiver"
 
 
 def _get_module_with_status(platform, status):

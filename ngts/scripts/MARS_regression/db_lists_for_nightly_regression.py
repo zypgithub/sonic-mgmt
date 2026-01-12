@@ -31,7 +31,11 @@ COMMUNITY_SET1_TEST_GROUP_MAP = {
     'community/rpc_qos_dualtor.db': PLATFORM_DEPENDENT,
     'community/post_rpc.db': PLATFORM_DEPENDENT,
     'community/system.db': PLATFORM_DEPENDENT,
-    'community/bsl.db': PLATFORM_DEPENDENT
+    'community/bsl.db': PLATFORM_DEPENDENT,
+    'community/smartswitch.db': PLATFORM_DEPENDENT,
+    'community/dash_smartswitch.db': PLATFORM_DEPENDENT,
+    'community/platform_dpu_on_ss.db': PLATFORM_DEPENDENT,
+    'community/techsupport_dpu_on_ss.db': PLATFORM_DEPENDENT,
 }
 
 

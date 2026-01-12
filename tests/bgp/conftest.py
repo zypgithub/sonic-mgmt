@@ -17,7 +17,8 @@ from tests.common.helpers.generators import generate_ips
 from tests.common.helpers.parallel import parallel_run
 from tests.common.helpers.parallel import reset_ansible_local_tmp
 from tests.common.utilities import wait_until, get_plt_reboot_ctrl, is_ipv6_only_topology
-from tests.common.utilities import wait_tcp_connection, is_ipv6_address
+from tests.common.utilities import wait_tcp_connection
+from tests.common.utilities import is_ipv6_only_topology
 from tests.common import config_reload
 from bgp_helpers import define_config, apply_default_bgp_config, DUT_TMP_DIR, TEMPLATE_DIR, BGP_PLAIN_TEMPLATE,\
     BGP_NO_EXPORT_TEMPLATE, DUMP_FILE, CUSTOM_DUMP_SCRIPT, CUSTOM_DUMP_SCRIPT_DEST,\
@@ -209,70 +210,28 @@ def setup_bgp_graceful_restart(duthosts, rand_one_dut_hostname, nbrhosts, tbinfo
 def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhost, request, tbinfo, topo_scenario):
     """Setup interfaces for the new BGP peers on PTF."""
 
-    def _is_required_ip_version(ip_addr, ip_version):
-        addr_version = 'v6' if is_ipv6_address(ip_addr) else 'v4'
-        return addr_version == ip_version
+    is_v6_topo = is_ipv6_only_topology(tbinfo)
 
-    def _get_ip_version(mg_facts):
-        """Detect IP version from any available interface."""
-        for intf_list in [mg_facts.get("minigraph_vlan_interfaces", []),
-                          mg_facts.get("minigraph_portchannel_interfaces", []),
-                          mg_facts.get("minigraph_interfaces", [])]:
-            if intf_list:
-                return 'v6' if is_ipv6_address(intf_list[0]["addr"]) else 'v4'
-        return 'v4'
+    def is_matching_ip_version(ip_addr):
+        return ((is_v6_topo and ipaddress.ip_address(ip_addr).version == 6) or
+                (not is_v6_topo and ipaddress.ip_address(ip_addr).version == 4))
 
-    def _duthost_cleanup_ip(asichost, ip, ip_version='v4'):
+    def _duthost_cleanup_ip(asichost, ip):
         """
         Search if "ip" is configured on any DUT interface. If yes, remove it.
         """
+        for line in duthost.shell("{} ip addr show | grep 'inet{} '".format(
+                                  asichost.ns_arg, '6' if is_v6_topo else ''))['stdout_lines']:
+            # Example line: '''    inet 10.0.0.2/31 scope global Ethernet104'''
+            fields = line.split()
+            intf_ip = fields[1].split("/")[0]
+            if intf_ip == ip:
+                intf_name = fields[-1]
+                asichost.config_ip_intf(intf_name, ip, "remove")
 
-        inet_pattern = 'inet6' if ip_version == 'v6' else 'inet '
+        ip_intfs = duthost.show_and_parse('show ip{} interface {}'.format(
+                                          'v6' if is_v6_topo else '', asichost.cli_ns_option))
 
-        cmd = "{} ip addr show".format(asichost.ns_arg)
-        lines = asichost.shell(cmd)['stdout_lines']
-        # The output for v4 and v6 is different, In v4 we can take interface name in "inet" line,
-        # but v6 doesn't have it.
-        # So we need to handle the name of the interface before the IP address in "inet" line.
-        # Example for v4:
-        # 233: Ethernet496: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9100 qdisc fq_codel state UP group default qlen 1000
-        # link/ether b0:cf:0e:b3:20:00 brd ff:ff:ff:ff:ff:ff permaddr b0:cf:0e:b3:20:74
-        # inet 10.0.1.192/31 scope global Ethernet496
-        #    valid_lft forever preferred_lft forever
-        # inet6 fc00::381/126 scope global
-        #    valid_lft forever preferred_lft forever
-        # inet6 fe80::b2cf:eff:feb3:2000/64 scope link
-        #    valid_lft forever preferred_lft forever
-        #
-        # Example for v6:
-        # 1463: Ethernet416: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9100 qdisc fq_codel state UP group default qlen 1000
-        # link/ether 38:25:f3:75:98:0a brd ff:ff:ff:ff:ff:ff permaddr 38:25:f3:75:98:ba
-        # inet6 fc00::681/126 scope global
-        #    valid_lft forever preferred_lft forever
-        # inet6 fe80::3a25:f3ff:fe75:980a/64 scope link
-        #    valid_lft forever preferred_lft forever
-        header_re = re.compile(r'^(\d+): ([^:]+):')
-        current_intf = None
-
-        for line in lines:
-            line = line.rstrip()
-            m = header_re.match(line)
-            if m:
-                current_intf = m.group(2)   # interface name
-                continue
-            # for inet/inet6 lines
-            line_stripped = line.strip()
-
-            if line_stripped.startswith(inet_pattern):
-                # inet 10.0.1.192/31 scope global
-                # inet6 fc00::681/126 scope global
-                fields = line_stripped.split()
-                addr = fields[1].split("/")[0]
-                if addr == ip and current_intf:
-                    asichost.config_ip_intf(current_intf, ip, "remove")
-
-        show_cmd = SHOW_IP_INTERFACE_CMD[ip_version] + ' {}'
-        ip_intfs = duthost.show_and_parse(show_cmd.format(asichost.cli_ns_option))
         # For interface that has two IP configured, the output looks like:
         #       admin@vlab-03:~$ show ip int
         #       Interface        Master    IPv4 address/mask    Admin/Oper    BGP Neighbor    Neighbor IP
@@ -309,21 +268,20 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
                 last_interface = ip_intf["interface"]
 
         # Remove the specified IP from interfaces
-        ip_field = "ip{} address/mask".format(ip_version)
         for ip_intf in ip_intfs:
-            if ip_intf[ip_field].split("/")[0] == ip:
+            key = "ipv6 address/mask" if is_v6_topo else "ipv4 address/mask"
+            if ip_intf[key].split("/")[0] == ip:
                 asichost.config_ip_intf(ip_intf["interface"], ip, "remove")
 
-    def _find_vlan_intferface(mg_facts, ip_version='v4'):
+    def _find_vlan_intferface(mg_facts):
         for vlan_intf in mg_facts["minigraph_vlan_interfaces"]:
-            addr_version = 'v6' if is_ipv6_address(vlan_intf["addr"]) else 'v4'
-            if addr_version == ip_version:
+            if (is_matching_ip_version(vlan_intf["addr"])):
                 return vlan_intf
-        raise ValueError("No Vlan interface with IP{} defined in current topo".format(ip_version))
+        raise ValueError("No Vlan interface defined in current topo")
 
     def _find_loopback_interface(mg_facts, loopback_intf_name="Loopback0"):
         for loopback in mg_facts["minigraph_lo_interfaces"]:
-            if loopback["name"] == loopback_intf_name:
+            if loopback["name"] == loopback_intf_name and is_matching_ip_version(loopback["addr"]):
                 return loopback
         raise ValueError("No loopback interface %s defined." % loopback_intf_name)
 
@@ -340,6 +298,7 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
 
             mux_configs = mux_cable_server_ip(duthost)
             local_interfaces = random.sample(list(mux_configs.keys()), peer_count)
+            server_ip_key = "server_ipv6" if is_v6_topo else "server_ipv4"
             for local_interface in local_interfaces:
                 connections.append(
                     {
@@ -350,7 +309,7 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
                         # interface and cause layer3 packet drop on PTF, so here same interface for different
                         # neighbor.
                         "neighbor_intf": "eth%s" % mg_facts["minigraph_port_indices"][local_interfaces[0]],
-                        "neighbor_addr": "%s/%s" % (mux_configs[local_interface]["server_ipv4"].split("/")[0],
+                        "neighbor_addr": "%s/%s" % (mux_configs[local_interface][server_ip_key].split("/")[0],
                                                     vlan_intf_prefixlen)
                     }
                 )
@@ -378,49 +337,41 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
                     ),
                     module_ignore_errors=True
                 )
-
-            ptfhost.shell("ip route add %s via %s" % (loopback_intf_addr, vlan_intf_addr))
+            ptfhost.shell("ip route add {}{} via {}".format(
+                loopback_intf_addr, "/128" if is_v6_topo else "/32", vlan_intf_addr
+            ))
             yield connections
 
         finally:
-            ptfhost.shell("ip route delete %s" % loopback_intf_addr)
+            ptfhost.shell("ip route delete {}{}".format(loopback_intf_addr, "/128" if is_v6_topo else "/32"))
             for conn in connections:
-                ptfhost.shell("ifconfig %s 0.0.0.0" % conn["neighbor_intf"])
+                ptfhost.shell("ip address flush %s scope global" % conn["neighbor_intf"])
 
     @contextlib.contextmanager
     def _setup_interfaces_t0_or_mx(mg_facts, peer_count):
         try:
             connections = []
             is_backend_topo = "backend" in tbinfo["topo"]["name"]
-            ip_version = _get_ip_version(mg_facts)
-            vlan_intf = _find_vlan_intferface(mg_facts, ip_version)
+            vlan_intf = _find_vlan_intferface(mg_facts)
             vlan_intf_name = vlan_intf["attachto"]
             vlan_intf_addr = "%s/%s" % (vlan_intf["addr"], vlan_intf["prefixlen"])
             vlan_members = mg_facts["minigraph_vlans"][vlan_intf_name]["members"]
             is_vlan_tagged = mg_facts["minigraph_vlans"][vlan_intf_name].get("type", "").lower() == "tagged"
             vlan_id = mg_facts["minigraph_vlans"][vlan_intf_name]["vlanid"]
             local_interfaces = random.sample(vlan_members, peer_count)
-
-            # For large IPv6 subnet (e.g., /64), use a /120 subnet to avoid memory issues
-            # /120 gives 256 addresses which is sufficient for testing
-            subnet_for_gen = vlan_intf["subnet"]
-            vlan_subnet = ipaddress.ip_network(six.text_type(vlan_intf["subnet"]))
-            if vlan_subnet.version == 6 and vlan_subnet.prefixlen < 120:
-                subnet_for_gen = "{}/120".format(vlan_subnet.network_address)
-
             neighbor_addresses = generate_ips(
                 peer_count,
-                subnet_for_gen,
+                vlan_intf["subnet"],
                 [netaddr.IPAddress(vlan_intf["addr"])]
             )
 
             loopback_ip = None
             for intf in mg_facts["minigraph_lo_interfaces"]:
-                if netaddr.IPAddress(intf["addr"]).version == int(ip_version.strip('v')):
+                if (is_matching_ip_version(intf["addr"])):
                     loopback_ip = intf["addr"]
                     break
             if not loopback_ip:
-                pytest.fail("ip{} lo interface not found".format(ip_version))
+                pytest.fail("ipv{} lo interface not found".format('6' if is_v6_topo else '4'))
 
             neighbor_intf = random.choice(local_interfaces)
             for neighbor_addr in neighbor_addresses:
@@ -436,9 +387,8 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
 
             ptfhost.remove_ip_addresses()  # In case other case did not cleanup IP address configured on PTF interface
 
-            ip_cmd = "ip -6" if ip_version == 'v6' else "ip"
             for conn in connections:
-                ptfhost.shell("{} address add %s/%d dev %s".format(ip_cmd) % (
+                ptfhost.shell("ip address add %s/%d dev %s" % (
                     conn["neighbor_addr"], vlan_intf["prefixlen"], conn["neighbor_intf"]
                 ))
 
@@ -453,71 +403,70 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
         try:
             connections = []
             is_backend_topo = "backend" in tbinfo["topo"]["name"]
-            ip_version = _get_ip_version(mg_facts)
-            ip_interfaces = []
+            interfaces = []
             used_subnets = set()
             asic_idx = 0
             if mg_facts["minigraph_interfaces"]:
                 for intf in mg_facts["minigraph_interfaces"]:
-                    if _is_required_ip_version(intf["addr"], ip_version):
+                    if (is_matching_ip_version(intf["addr"])):
                         intf_asic_idx = duthost.get_port_asic_instance(intf["attachto"]).asic_index
-                        if not ip_interfaces:
-                            ip_interfaces.append(intf["attachto"])
+                        if not interfaces:
+                            interfaces.append(intf["attachto"])
                             asic_idx = intf_asic_idx
                         else:
                             if intf_asic_idx != asic_idx:
                                 continue
                             else:
-                                ip_interfaces.append(intf["attachto"])
+                                interfaces.append(intf["attachto"])
                         used_subnets.add(ipaddress.ip_network(intf["subnet"]))
 
-            ip_lag_interfaces = []
+            lag_interfaces = []
             if mg_facts["minigraph_portchannel_interfaces"]:
                 for pt in mg_facts["minigraph_portchannel_interfaces"]:
-                    if _is_required_ip_version(pt["addr"], ip_version):
+                    if (is_matching_ip_version(pt["addr"])):
                         pt_members = mg_facts["minigraph_portchannels"][pt["attachto"]]["members"]
                         pc_asic_idx = duthost.get_asic_index_for_portchannel(pt["attachto"])
                         # Only use LAG with 1 member for bgpmon session between PTF,
                         # It's because exabgp on PTF is bind to single interface
                         if len(pt_members) == 1:
                             # If first time, we record the asic index
-                            if not ip_lag_interfaces:
+                            if not interfaces and not lag_interfaces:
                                 asic_idx = pc_asic_idx
-                                ip_lag_interfaces.append(pt["attachto"])
+                                lag_interfaces.append(pt["attachto"])
                             # Not first time, only append the port-channel that belongs to the same asic in current list
                             else:
                                 if pc_asic_idx != asic_idx:
                                     continue
                                 else:
-                                    ip_lag_interfaces.append(pt["attachto"])
-                        used_subnets.add(ipaddress.ip_network(pt["subnet"]))
+                                    lag_interfaces.append(pt["attachto"])
+                            used_subnets.add(ipaddress.ip_network(pt["subnet"]))
 
             vlan_sub_interfaces = []
             if is_backend_topo:
                 for intf in mg_facts.get("minigraph_vlan_sub_interfaces"):
-                    if _is_required_ip_version(intf["addr"], ip_version):
+                    if (is_matching_ip_version(intf["addr"])):
                         vlan_sub_interfaces.append(intf["attachto"])
                         used_subnets.add(ipaddress.ip_network(intf["subnet"]))
 
             subnet_prefixlen = list(used_subnets)[0].prefixlen
             # Use a subnet which doesnt conflict with other subnets used in minigraph
-            default_subnet = "2001:db8::/32" if ip_version == 'v6' else "20.0.0.0/24"
-            subnets = ipaddress.ip_network(six.text_type(default_subnet)).subnets(new_prefix=subnet_prefixlen)
+            base_network = "2000:0::/64" if is_v6_topo else "20.0.0.0/24"
+            subnets = ipaddress.ip_network(six.text_type(base_network)).subnets(new_prefix=subnet_prefixlen)
 
             loopback_ip = None
             for intf in mg_facts["minigraph_lo_interfaces"]:
-                if netaddr.IPAddress(intf["addr"]).version == int(ip_version.strip('v')):
+                if (is_matching_ip_version(intf["addr"])):
                     loopback_ip = intf["addr"]
                     break
             if not loopback_ip:
-                pytest.fail("ip{} lo interface not found".format(ip_version))
+                pytest.fail("ipv{} lo interface not found".format('6' if is_v6_topo else '4'))
 
-            num_intfs = len(ip_interfaces + ip_lag_interfaces + vlan_sub_interfaces)
+            num_intfs = len(interfaces + lag_interfaces + vlan_sub_interfaces)
             if num_intfs < peer_count:
-                pytest.skip("Found {} IP{} interfaces or lags with 1 port member,"
-                            " but require {} interfaces".format(num_intfs, ip_version, peer_count))
+                pytest.skip("Found {} IPv{} interfaces or lags with 1 port member,"
+                            " but require {} interfaces".format(num_intfs, '6' if is_v6_topo else '4', peer_count))
 
-            for intf, subnet in zip(random.sample(ip_interfaces + ip_lag_interfaces + vlan_sub_interfaces,
+            for intf, subnet in zip(random.sample(interfaces + lag_interfaces + vlan_sub_interfaces,
                                                   peer_count), subnets):
                 def _get_namespace(minigraph_config, intf):
                     namespace = DEFAULT_NAMESPACE
@@ -552,41 +501,42 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
 
                 # Find out if any other interface has the same IP configured. If yes, remove it
                 # Otherwise, there may be conflicts and test would fail.
-                _duthost_cleanup_ip(asichost, conn["local_addr"].split("/")[0], ip_version)
+                _duthost_cleanup_ip(asichost, conn["local_addr"])
 
                 # bind the ip to the interface and notify bgpcfgd
                 asichost.config_ip_intf(conn["local_intf"], conn["local_addr"], "add")
 
-                ip_cmd = "ip -6" if ip_version == 'v6' else "ip"
-                ptfhost.shell("{} address add {} dev {}".format(ip_cmd, conn["neighbor_addr"], conn["neighbor_intf"]))
+                ptfhost.shell("ip address add %s dev %s" % (conn["neighbor_addr"], conn["neighbor_intf"]))
 
                 # add route to loopback address on PTF host
                 nhop_ip = re.split("/", conn["local_addr"])[0]
-                prefix_len = "128" if ip_version == 'v6' else "32"
-
                 try:
-                    family = socket.AF_INET6 if is_ipv6_address(nhop_ip) else socket.AF_INET
-                    socket.inet_pton(family, nhop_ip)
-                    ptfhost.shell("{} route del {}/{} ".format(
-                        ip_cmd, conn["loopback_ip"], prefix_len), module_ignore_errors=True
+                    if is_v6_topo:
+                        socket.inet_pton(socket.AF_INET6, nhop_ip)
+                    else:
+                        socket.inet_aton(nhop_ip)
+
+                    ptfhost.shell(
+                        "ip route del {}{}".format(conn["loopback_ip"], "/128" if is_v6_topo else "/32"),
+                        module_ignore_errors=True
                     )
-                    ptfhost.shell("{} route add {}/{} via {}".format(
-                        ip_cmd, conn["loopback_ip"], prefix_len, nhop_ip)
-                    )
+                    ptfhost.shell("ip route add {}{} via {}".format(
+                        conn["loopback_ip"], "/128" if is_v6_topo else "/32", nhop_ip
+                    ))
                 except socket.error:
-                    raise Exception("Invalid address {}".format(nhop_ip))
+                    raise Exception("Invalid V{} address {}".format('6' if is_v6_topo else '4', nhop_ip))
 
             yield connections
 
         finally:
-            ip_cmd = "ip -6" if ip_version == 'v6' else "ip"
-            prefix_len = "128" if ip_version == 'v6' else "32"
             for conn in connections:
                 asichost = duthost.asic_instance_from_namespace(conn['namespace'])
                 asichost.config_ip_intf(conn["local_intf"], conn["local_addr"], "remove")
-                ptfhost.shell("{} address flush dev {}".format(ip_cmd, conn["neighbor_intf"]))
+                ptfhost.shell("ip address flush %s scope global" % conn["neighbor_intf"])
                 ptfhost.shell(
-                    "{} route del {}/{}".format(ip_cmd, conn["loopback_ip"], prefix_len),
+                    "ip route del {}{}".format(
+                        conn["loopback_ip"],
+                        "/128" if is_v6_topo else "/32"),
                     module_ignore_errors=True
                 )
 
@@ -672,9 +622,11 @@ def backup_bgp_config(duthost):
 
 
 @pytest.fixture(scope="module")
-def bgpmon_setup_teardown(ptfhost, duthosts, enum_rand_one_per_hwsku_frontend_hostname, localhost, setup_interfaces):
+def bgpmon_setup_teardown(ptfhost, duthosts, enum_rand_one_per_hwsku_frontend_hostname, localhost, setup_interfaces,
+                          tbinfo):
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     connection = setup_interfaces[0]
+    is_v6_topo = is_ipv6_only_topology(tbinfo)
     dut_lo_addr = connection["loopback_ip"].split("/")[0]
     peer_addr = connection['neighbor_addr'].split("/")[0]
     mg_facts = duthost.minigraph_facts(host=duthost.hostname)['ansible_facts']
@@ -705,10 +657,17 @@ def bgpmon_setup_teardown(ptfhost, duthosts, enum_rand_one_per_hwsku_frontend_ho
     # Start bgp monitor session on PTF
     ptfhost.file(path=DUMP_FILE, state="absent")
     ptfhost.copy(src=CUSTOM_DUMP_SCRIPT, dest=CUSTOM_DUMP_SCRIPT_DEST)
+    if ipaddress.ip_address(peer_addr).version == 4:
+        router_id = peer_addr
+    else:
+        # Generate router ID by combining 20.0.0.0 base with last 3 bytes of IPv6 addr
+        router_id_base = ipaddress.IPv4Address("20.0.0.0")
+        ipv6_addr = ipaddress.IPv6Address(peer_addr)
+        router_id = str(ipaddress.IPv4Address(int(router_id_base) | int(ipv6_addr) & 0xFFFFFF))
     ptfhost.exabgp(name=BGP_MONITOR_NAME,
                    state="started",
                    local_ip=peer_addr,
-                   router_id=peer_addr,
+                   router_id=router_id,
                    peer_ip=dut_lo_addr,
                    local_asn=asn,
                    peer_asn=asn,
@@ -717,13 +676,14 @@ def bgpmon_setup_teardown(ptfhost, duthosts, enum_rand_one_per_hwsku_frontend_ho
 
     # Flush neighbor and route in advance to avoid possible "RTNETLINK answers: File exists"
     ptfhost.shell("ip neigh flush to %s nud permanent" % dut_lo_addr)
-    ptfhost.shell("ip route del %s" % dut_lo_addr + "/32", module_ignore_errors=True)
+    ptfhost.shell("ip route del {}{}".format(dut_lo_addr, "/128" if is_v6_topo else "/32"), module_ignore_errors=True)
 
     # Add the route to DUT loopback IP  and the interface router mac
     ptfhost.shell("ip neigh add %s lladdr %s dev %s" % (dut_lo_addr,
                                                         duthost.facts["router_mac"],
                                                         connection["neighbor_intf"]))
-    ptfhost.shell("ip route add %s dev %s" % (dut_lo_addr + "/32", connection["neighbor_intf"]))
+    ptfhost.shell("ip route add {}{} dev {}".format(dut_lo_addr, "/128" if is_v6_topo else "/32",
+                                                    connection["neighbor_intf"]))
 
     pt_assert(wait_tcp_connection(localhost, ptfhost.mgmt_ip, BGP_MONITOR_PORT, timeout_s=60),
               "Failed to start bgp monitor session on PTF")
@@ -738,7 +698,7 @@ def bgpmon_setup_teardown(ptfhost, duthosts, enum_rand_one_per_hwsku_frontend_ho
     ptfhost.file(path=CUSTOM_DUMP_SCRIPT_DEST, state="absent")
     ptfhost.file(path=DUMP_FILE, state="absent")
     # Remove the route to DUT loopback IP  and the interface router mac
-    ptfhost.shell("ip route del %s" % dut_lo_addr + "/32")
+    ptfhost.shell("ip route del {}{}".format(dut_lo_addr, "/128" if is_v6_topo else "/32"))
     ptfhost.shell("ip neigh flush to %s nud permanent" % dut_lo_addr)
 
 

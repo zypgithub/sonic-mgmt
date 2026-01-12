@@ -53,7 +53,7 @@ r-bobcat-10,Ethernet112,r-leopard-98,Ethernet112,400000,151,Access,on
 r-bobcat-10,Ethernet120,r-leopard-98,Ethernet120,400000,152,Access,on
 r-bobcat-10,Ethernet128,r-leopard-98,Ethernet128,400000,153,Access,on
 r-bobcat-10,Ethernet136,r-leopard-98,Ethernet136,400000,154,Access,off
-r-bobcat-10,Ethernet144,r-leopard-98,Ethernet144,400000,155,Access,off
+r-bobcat-10,Ethernet144,r-leopard-98,Ethernet144,400000,155,Access,on
 r-bobcat-10,Ethernet152,r-leopard-98,Ethernet152,400000,156,Access,on
 r-bobcat-10,Ethernet160,r-leopard-98,Ethernet160,100000,157,Access,on
 r-bobcat-10,Ethernet162,r-leopard-98,Ethernet162,100000,158,Access,on

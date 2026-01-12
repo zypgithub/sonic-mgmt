@@ -231,6 +231,8 @@ class InfraConst:
     STM_IP = "10.209.104.53"
     SELECTED_DPUS = 'selected_dpus'
 
+    LOOPBOX_LABEL = 'loopbox'
+
 
 class LinuxConsts:
     CONF_FEC = "Configured FEC encodings"
@@ -1232,6 +1234,7 @@ class MarsConstants:
     }
 
     DOCKER_REGISTRY = "nbu-harbor.gtm.nvidia.com"
+    AIR_DOCKER_REGISTRY = "harbor-mts.nvidia.com"
 
     DUT_LOG_BACKUP_PATH = "/.autodirect/sw_system_project/sonic/dut_logs"
 
@@ -1244,10 +1247,8 @@ class MarsConstants:
 
 class AppExtensionInstallationConstants:
     WJH_APP_NAME = 'what-just-happened'
-    WJH_REPOSITORY = '{}/sonic-wjh/docker-wjh'.format(MarsConstants.DOCKER_REGISTRY)
     LC_MANAGER = 'line-card-manager'
     DOAI = 'doai'
-    LC_MANAGER_REPOSITORY = '{}/sonic-lc-manager/line-card-manager'.format(MarsConstants.DOCKER_REGISTRY)
     APPLICATION_LIST = [
         P4SamplingConsts.APP_NAME,
         WJH_APP_NAME,
@@ -1730,3 +1731,9 @@ class WJHConsts:
 class FanoutVersionConsts:
     EXPECTED_MLNX_VERSION = ["3.10.4206", "3.10.4302"]
     EXPECTED_SONIC_VERSION_LIST = ["202412_RC.172-b633d62aa_Internal", "202505_RC.94-7d1d472f8_Internal"]
+
+
+class SerialConsts:
+    PLATFORM_SERIAL_NUM_MAP = {
+        "x86_64-nvidia_sn6600_simx-r0": "MT25116050YD"
+    }

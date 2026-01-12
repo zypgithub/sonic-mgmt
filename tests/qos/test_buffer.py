@@ -972,7 +972,8 @@ def pg_to_test(request):
 
 def test_change_speed_cable(duthosts, rand_one_dut_hostname, conn_graph_facts,  # noqa: F811
                             port_to_test, speed_to_test, mtu_to_test, cable_len_to_test,
-                            skip_traditional_model, skip_lossy_buffer_only, update_cable_len_for_all_ports):
+                            skip_traditional_model, skip_lossy_buffer_only,
+                            update_cable_len_for_all_ports):  # noqa: F811
     """The testcase for changing the speed and cable length of a port
 
     Change the variables of the port, including speed, mtu and cable length,
@@ -1679,9 +1680,8 @@ def test_shared_headroom_pool_configure(duthosts,
                          shp_size_before_shp, None)
 
 
-def test_lossless_pg(duthosts, rand_one_dut_hostname, conn_graph_facts, port_to_test, pg_to_test,   # noqa: F811
-                     skip_traditional_model, skip_lossy_buffer_only, update_cable_len_for_all_ports):
-
+def test_lossless_pg(duthosts, rand_one_dut_hostname, conn_graph_facts, port_to_test, pg_to_test,      # noqa: F811
+                     skip_traditional_model, skip_lossy_buffer_only, update_cable_len_for_all_ports):  # noqa: F811
     """Test case for non default dynamic th
 
     Test case to verify the static profile with non default dynamic th

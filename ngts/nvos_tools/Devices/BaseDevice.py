@@ -195,6 +195,12 @@ class BaseDevice(ABC):
         logger.info(f'CONF_YML_FILE_PATH: {config_file_path}')
         return config_file_path, config_filename
 
+    def is_eth(self):
+        return self.switch_type == CumulusConsts.ETH_SWITCH_TYPE
+
+    def is_ib(self):
+        return self.switch_type == NvosConst.IB_SWITCH_TYPE
+
     def _relevant_config_filename_by_version(self, version: str) -> str:
         version_num, _ = get_version_info(version)
         if version_num:

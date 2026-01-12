@@ -56,7 +56,7 @@ if __name__ == "__main__":
                                       connect_kwargs={"password": sonic_mgmt_device_password},
                                       inline_ssh_env=True)
     update_sonic_mgmt_script_path = f'{sonic_mgmt_repo_path}/sonic-tool/sonic_ngts/scripts/update_sonic_mgmt.py'
-    cmd = f'PYTHONPATH=/devts/ {constants.NGTS_PATH_PYTHON} {update_sonic_mgmt_script_path} --dut="{args.dut_name}" ' \
+    cmd = f'PYTHONPATH=/devts/:/root/mars/workspace/sonic-mgmt/ {constants.NGTS_PATH_PYTHON} {update_sonic_mgmt_script_path} --dut="{args.dut_name}" ' \
           f'--mgmt_repo="{sonic_mgmt_repo_path}" --setup_name="{setup_name}"'
 
     sonic_mgmt_container.run(cmd)

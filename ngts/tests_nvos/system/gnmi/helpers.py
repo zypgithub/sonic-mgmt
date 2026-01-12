@@ -50,6 +50,56 @@ def validate_memory_and_cpu_utilization():
                                                                             expected=SystemConsts.CPU_PERCENT_THRESH_MAX)
 
 
+def validate_cpu_utilization_with_retry(check_individual_cores=False, max_retries=3, retry_interval=2):
+    system = System()
+
+    for attempt in range(max_retries):
+        cpu_show = OutputParsingTool.parse_json_str_to_dictionary(system.show("cpu")).get_returned_value()
+
+        if check_individual_cores:
+            # Check each CPU core individually
+            cpu_cores = cpu_show[SystemConsts.CPU_CORES].keys()
+            high_cpu_cores = []
+
+            for core in cpu_cores:
+                cpu_utilization = cpu_show[SystemConsts.CPU_CORES][core][SystemConsts.CPU_UTILIZATION_KEY]
+                if cpu_utilization >= SystemConsts.CPU_PERCENT_THRESH_MAX:
+                    high_cpu_cores.append((core, cpu_utilization))
+
+            if not high_cpu_cores:
+                # All cores are within acceptable limits
+                logger.info(f"All CPU cores are within acceptable limits on attempt {attempt + 1}")
+                break
+            elif attempt < max_retries - 1:
+                # Some cores are still high, wait and retry
+                logger.info(f"Attempt {attempt + 1}: High CPU cores detected: {high_cpu_cores}. Retrying in {retry_interval} seconds...")
+                time.sleep(retry_interval)
+            else:
+                # Final attempt failed, report the issue
+                high_cpu_details = ", ".join([f"{core}: {util}%" for core, util in high_cpu_cores])
+                assert False, \
+                    "CPU utilization spikes detected after {retries} attempts. High CPU cores: {cores}. " \
+                    "This may indicate temporary system load or background processes.". \
+                    format(retries=max_retries, cores=high_cpu_details)
+        else:
+            # Check total CPU utilization
+            cpu_utilization = cpu_show[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
+            logger.info(f"Total CPU utilization attempt {attempt + 1}: {cpu_utilization}%")
+
+            if cpu_utilization < SystemConsts.CPU_PERCENT_THRESH_MAX:
+                # CPU utilization is within acceptable limits
+                break
+            elif attempt < max_retries - 1:
+                # CPU utilization is still high, wait and retry
+                logger.info(f"Total CPU utilization {cpu_utilization}% exceeds threshold {SystemConsts.CPU_PERCENT_THRESH_MAX}%. Retrying in {retry_interval} seconds...")
+                time.sleep(retry_interval)
+            else:
+                # Final attempt failed, report the issue
+                assert False, "Total CPU utilization: {actual}% is higher than the maximum limit of: {expected}% after {retries} attempts. " \
+                    "This may indicate temporary system load or background processes.". \
+                    format(actual=cpu_utilization, expected=SystemConsts.CPU_PERCENT_THRESH_MAX, retries=max_retries)
+
+
 def run_gnmi_client_in_the_background(target_ip, xpath, device):
     prefix_and_path = xpath.rsplit("/", 1)
     command = f"gnmic -a {target_ip} --port {GnmiConsts.GNMI_DEFAULT_PORT} --skip-verify subscribe " \
@@ -138,7 +188,9 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
         if is_redmine_issue_active([4782619])[0]:
-            cmd = "timeout -s INT 5s " + cmd
+            cmd = "timeout -s INT 4s " + cmd
+        else:
+            raise Exception(f"4782619 fixed, need to update the test")
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd_set([cmd, '\n', '\n', '\x03', '\x03'],
@@ -148,10 +200,17 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             gnmi_client_output = re.findall(f"{re.escape(xpath)}:\\s+\\w+", gnmi_client_output)[0]
         elif "once" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
+            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
+            gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         else:
-            gnmi_client_output = sonic_mgmt_engine.run_cmd_after_cmd([cmd, '\x03']).replace(cmd, '')
+            # add this line after fixing the issue 4782619
+            # gnmi_client_output = sonic_mgmt_engine.run_cmd_after_cmd([cmd, '\x03']).replace(cmd, '') - need to use this after fixing the issue 4782619
+            # delete the line below after fixing the issue 4782619
+            gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
             gnmi_client_output = re.sub(r"\^C(.*\n.*)*", '', gnmi_client_output)
+            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
+            gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
 
         gnmi_updates_dict = {}

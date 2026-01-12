@@ -2,9 +2,10 @@ import logging
 import time
 
 import pytest
+from retry import retry
 
 from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
@@ -254,12 +255,9 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
         assert list(output_dictionary.keys())[2] == SystemConsts.CPU_LOAD_AVERAGE_KEY, "Unexpected Key value"
         assert list(output_dictionary.keys())[3] == SystemConsts.CPU_MODEL_KEY, "Unexpected Key value"
         assert list(output_dictionary.keys())[4] == SystemConsts.CPU_TOTAL_UTILIZATION_KEY, "Unexpected Key value"
-        assert output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY] == devices.dut.core_count, \
-            "Unexpected switch core-count"
 
-        utilization = output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
-        assert SystemConsts.CPU_PERCENT_THRESH_MIN < utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
-            "utilization percentage is out of range"
+        with allure.step('Verify core-count'):
+            verify_core_count(devices, output_dictionary)
 
 
 @pytest.mark.system
@@ -404,3 +402,37 @@ def help_system_contact_location(engines, system, field_name):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
             assert system_output[field_name] is None, "System {} in system show is {} instead of Null".\
                 format(field_name, system_output[field_name])
+
+
+def verify_core_count(devices, output_dictionary):
+    """
+    Verify core-count and model
+    """
+    if devices.dut.is_eth():
+        # Verify core-count and model
+        assert 0 < output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY] == devices.dut.core_count, \
+            "CPU core-count must be greater than 0 and match expected device core-count"
+        assert output_dictionary[SystemConsts.CPU_MODEL_KEY], "CPU model must be non-empty"
+
+        # Verify total-utilization
+        assert SystemConsts.CPU_PERCENT_THRESH_MIN < output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY] < SystemConsts.CPU_PERCENT_THRESH_MAX, \
+            "CPU total-utilization is out of range"
+
+        # Verify load-average fields
+        load_avg = output_dictionary[SystemConsts.CPU_LOAD_AVERAGE_KEY]
+        assert 0 <= load_avg["one-minute"] and 0 <= load_avg["five-minute"] and 0 <= load_avg["fifteen-minute"], \
+            "load-average values must be non-negative"
+
+        # Verify cores count and utilization
+        cores = output_dictionary[SystemConsts.CPU_CORES]
+        assert len(cores) == output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY], \
+            "Number of cores must match core-count"
+        for cpu_name, cpu_data in cores.items():
+            assert 0 <= cpu_data["utilization"] <= 100, \
+                f"Core {cpu_name} utilization must be between 0 and 100"
+    else:
+        assert output_dictionary[SystemConsts.CPU_CORE_COUNT_KEY] == devices.dut.core_count, \
+            "Unexpected switch core-count"
+        utilization = output_dictionary[SystemConsts.CPU_TOTAL_UTILIZATION_KEY]
+        assert SystemConsts.CPU_PERCENT_THRESH_MIN < utilization < SystemConsts.CPU_PERCENT_THRESH_MAX, \
+            "utilization percentage is out of range"

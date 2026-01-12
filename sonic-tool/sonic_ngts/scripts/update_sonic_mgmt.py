@@ -7,7 +7,9 @@ import sys
 import json
 import pandas as pd
 import numpy as np
+import re
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
+from ngts.constants.constants import SerialConsts
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -95,7 +97,7 @@ class Inventory:
         with open(self.inventory_path) as inventory_file:
             return dut_name in inventory_file.read()
 
-    def add_entry(self, dut_name, ansible_host, ansible_port, hwsku):
+    def add_entry(self, dut_name, ansible_host, ansible_port, hwsku, topology_type):
         """
         Add new entries to the inventory file
         Entry example:
@@ -103,8 +105,16 @@ class Inventory:
         air_2700_1 ansible_host=147.75.47.205 ansible_port=18696
         """
         buff = ""
+        serial = SerialConsts.PLATFORM_SERIAL_NUM_MAP.get(topology_type, None)
+        model_match = re.search(r'SN(\d+)', hwsku)
+        if model_match:
+            model = model_match.group(0)
         host_entry_ptf_any = f"{dut_name}-ptf-any ansible_host={ansible_host} ansible_port={ansible_port} sonic_hwsku={hwsku}"
         host_entry = f"{dut_name} ansible_host={ansible_host} ansible_port={ansible_port} sonic_hwsku={hwsku}"
+        if serial:
+            host_entry += f" serial={serial}"
+        if model:
+            host_entry += f" model={model}"
 
         for line in self.inventory_buff.splitlines():
             if "[sonic_latest]" in line:
@@ -264,8 +274,9 @@ if __name__ == "__main__":
     topology = get_topology_by_setup_name(setup_name=setup_name, slow_cli=False)
     ansible_host = topology.players['dut']['engine'].ip
     ansible_port = topology.players['dut']['engine'].ssh_port
-    hwsku = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
-
+    devdescription = json.loads(topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])
+    hwsku = devdescription['hwsku']
+    topology_type = devdescription['platform']
     files = [inv, lab, testbed_yaml]
     if 'air' in setup_name:
         os.system(f"echo '{ansible_host} {setup_name}' >> /etc/hosts")
@@ -277,6 +288,8 @@ if __name__ == "__main__":
             elif isinstance(f, SonicNvidiaCommonDevices):
                 f.add_entry(host_name=ansible_host, management_ip=ansible_host, hwsku=hwsku)
                 f.add_entry(host_name=dut_name, management_ip=ansible_host, hwsku=hwsku)
+            elif isinstance(f, Inventory):
+                f.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku, topology_type=topology_type)
             else:
                 f.add_entry(dut_name=dut_name, ansible_host=ansible_host, ansible_port=ansible_port, hwsku=hwsku)
             logger.info(f"Entry for '{dut_name}' DUT entry added to {f.__class__.__name__} file.")

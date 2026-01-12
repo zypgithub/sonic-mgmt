@@ -90,11 +90,13 @@ class File(BaseComponent):
         return result
 
     def action_install(self, reboot_params, force=True, additional_flags=(), send_user_confirmation=None,
-                       expected_output=SystemConsts.REBOOT_RESPONSE_MESSAGES, skip_version_check=False) -> ResultObj:
+                       expected_output=None, skip_version_check=False) -> ResultObj:
         flags = ([ActionParamConsts.FORCE] if force else []) + (
             additional_flags.split() if isinstance(additional_flags, str) else list(additional_flags))
         if skip_version_check:
             flags.append('skip-version-check')
+        if expected_output is None:
+            expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES if reboot_params else SystemConsts.ACTION_INSTALL_SUCCESS_MESSAGES
         result = self.action(ActionConsts.INSTALL, flags=flags, send_user_confirmation=send_user_confirmation,
                              reboot_params=reboot_params, expected_output=expected_output)
         return result
