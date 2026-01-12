@@ -162,6 +162,9 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
             # explicitly define one here:
             player.putenv("HOME", "/root")
             player.putenv("ANSIBLE_CONFIG", os.path.join(self.sonic_mgmt_path, "ansible"))
+            # Added to support the new ngts image, which defautls python to /opt/venv/bin/python
+            player.putenv("VIRTUAL_ENV", "/opt/venv")
+            player.putenv("PATH", "/opt/venv/bin" + os.pathsep + player.getenv("PATH"))
         return ErrorCode.SUCCESS
 
     def run_commands(self):
@@ -275,7 +278,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         cmd = "{PYTEST_BIN_NAME} {SCRIPTS} --inventory=\"../ansible/inventory,../ansible/veos\" --host-pattern {DUT_NAME} --module-path \
                ../ansible/library/ --testbed {TESTBED} --setup_name={SETUP_NAME} --testbed_file ../ansible/testbed.yaml \
                --allow_recover  --session_id {SESSION_ID} --mars_key_id {MARS_KEY_ID} \
-               --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure"
+               --junit-xml {REPORT_FILE} --assert plain {OPTIONS} {ALLURE_PROJ} --skip_sanity --dynamic_update_skip_reason --random_seed={RANDOM_SEED} --store_la_logs --ignore_la_failure -o junit_family=legacy --rootdir={SONIC_MGMT_PATH}/tests"
         cmd = cmd.format(PYTEST_BIN_NAME=pytest_bin_name,
                          SCRIPTS=self.test_scripts,
                          DUT_NAME=self.dut_name,
@@ -287,7 +290,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          OPTIONS=self.raw_options,
                          ALLURE_PROJ=allure_proj_pytest_arg,
                          RANDOM_SEED=random_seed,
-                         TESTBED=testbed
+                         TESTBED=testbed,
+                         SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
         if 'bobcat' in self.dut_name and self.run_test_on_dpu_only != "True":
             cmd += f" --dpu-pattern {','.join(dpu_duts)}"

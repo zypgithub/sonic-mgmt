@@ -13,7 +13,6 @@ def pytest_addoption(parser):
     """
     parser.addoption(
         "--sensor_type",
-        type="choice",
         action="store",
         default="random",
         choices=["all", "random", "asic", "ambient", "cpu_pack", "module", "voltmon", "sodimm"],

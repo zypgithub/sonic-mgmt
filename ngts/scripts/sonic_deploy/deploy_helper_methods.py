@@ -13,7 +13,10 @@ import yaml
 import allure
 import pytest
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from netmiko.ssh_exception import NetmikoAuthenticationException
+try:
+    from netmiko.ssh_exception import NetmikoAuthenticationException
+except ImportError:
+    from netmiko.exceptions import NetmikoAuthenticationException
 from infra.tools.topology_tools.nogaq import upload_data_to_noga
 from infra.tools.general_constants.constants import NogaConstants
 

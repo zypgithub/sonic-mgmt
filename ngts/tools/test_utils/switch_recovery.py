@@ -6,7 +6,10 @@ import string
 import subprocess
 import time
 
-from netmiko.ssh_exception import NetmikoAuthenticationException
+try:
+    from netmiko.ssh_exception import NetmikoAuthenticationException
+except ImportError:
+    from netmiko.exceptions import NetmikoAuthenticationException
 
 import ngts.tools.test_utils.allure_utils as allure
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine

@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import List, Tuple
 
 import pytest
-from exceptiongroup import BaseExceptionGroup
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCli
 from ngts.helpers import system_helpers
