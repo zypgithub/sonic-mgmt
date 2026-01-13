@@ -338,6 +338,10 @@ class IbSwitch(BaseSwitch):
             previous_image_path='auto/sw_system_release/erot/juliet/01.03.0183.000/sign/n04/dev/cec1736-ecfw-01.03.0183.0000-n04-dev-initial.bin',
             version_names={'cec1736-ecfw-01.03.0196.0001-n04-dev-initial.fwpkg': '01.03.0196.0001_n04',
                            'cec1736-ecfw-01.03.0202.0000-n04-dev-initial.fwpkg': '01.03.0202.0000_n04'})
+        self.ztp_prod_json = 'uninstall_prod.json'
+        self.ztp_dev_json = 'uninstall.json'
+        self.ztp_complex_prod_json = 'complex_prod.json'
+        self.ztp_complex_dev_json = 'complex.json'
 
         # Techsupport constants for IB devices
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
@@ -817,10 +821,6 @@ class BlackMambaSwitch(IbSwitch):
         self.allow_cpld_update = True
         self.system_profile_default_values = ['enabled', '1792', 'enabled', 'disabled', '1']
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [2, 1, 0, 3])
-        self.ztp_prod_json = 'uninstall_prod.json'
-        self.ztp_dev_json = 'uninstall.json'
-        self.ztp_complex_prod_json = 'complex_prod.json'
-        self.ztp_complex_dev_json = 'complex.json'
         self.valid_ports_count = 144
         self.number_of_transceivers = 145
         self.transceivers_tables_name = "TRANSCEIVER_FIRMWARE_INFO"
@@ -1136,10 +1136,6 @@ class CrocodileSwitch(IbSwitch):
             filename="fw-QTM3-rel-35_2014_2012.mfa"
         )
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [1, 0])
-        self.ztp_prod_json = 'uninstall_prod.json'
-        self.ztp_dev_json = 'uninstall.json'
-        self.ztp_complex_prod_json = 'complex_prod.json'
-        self.ztp_complex_dev_json = 'complex.json'
         self.voltage_sensors = ['PMIC-1-12V-VDD-ASIC1-In-1', 'PMIC-1-ASIC1-VDD-Out-1',
                                 'PMIC-2-12V-HVDD-DVDD-ASIC1-In-1', 'PMIC-2-ASIC1-DVDD-PL0-Out-2',
                                 'PMIC-2-ASIC1-HVDD-PL0-Out-1', 'PMIC-3-12V-HVDD-DVDD-ASIC1-In-1',
@@ -1430,10 +1426,6 @@ class JulietSwitch(NvLinkSwitch):
         self.fpga_older_version_path = "/auto/sw_system_release/fpga/juliet/V0_15/FPGA_juliet_0v15.fwpkg"
         self.has_nmx = True
         self.has_bmc = True
-        self.ztp_prod_json = 'uninstall_juliet_prod.json'
-        self.ztp_dev_json = 'uninstall_juliet.json'
-        self.ztp_complex_prod_json = 'complex_prod_juliet.json'
-        self.ztp_complex_dev_json = 'complex_juliet.json'
         self.show_platform_chassis_location_output = {
             ChassisLocationConsts.TRAY_ID: ExpectedString(range_min=-1, range_max=18),
             ChassisLocationConsts.SLOT_NUM: ExpectedString(range_min=0, range_max=28),
