@@ -13,7 +13,7 @@
                     <ep_targets> SONIC_MGMT </ep_targets>
                 </players_selection>
                 <params>
-                    <exec> /ngts_venv/bin/python3.8 /devts/scripts/docker/containers_bringup.py --setup_name [[conf:extra_info.setup_name]]  --smartswitch_setup </exec>
+                    <exec> /ngts_venv/bin/python /devts/scripts/docker/containers_bringup.py --setup_name [[conf:extra_info.setup_name]]  --smartswitch_setup </exec>
                 </params>
             </pre>
         </Test>
