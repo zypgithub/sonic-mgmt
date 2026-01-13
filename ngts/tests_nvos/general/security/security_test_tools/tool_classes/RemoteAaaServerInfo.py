@@ -2,11 +2,11 @@ import copy
 import logging
 import socket
 import subprocess
-from typing import List, Dict
-
-from typing_extensions import TypeAlias
+from typing import Dict, List
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from typing_extensions import TypeAlias
+
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.system.Ldap import Ldap
@@ -21,7 +21,7 @@ from ngts.tools.test_utils import allure_utils as allure
 UsersPerAuthMedium: TypeAlias = Dict[str, Dict[str, List[UserInfo]]]
 
 
-def ping_server(address: str, count: int = 2, timeout: int = 3) -> bool:
+def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None) -> bool:
     """
     Ping a server to check if it's reachable.
 
@@ -29,6 +29,8 @@ def ping_server(address: str, count: int = 2, timeout: int = 3) -> bool:
         address: IP address (IPv4/IPv6) or hostname to ping
         count: Number of ping attempts
         timeout: Timeout in seconds for the ping command
+        dut_engine: Optional DUT engine to run ping from DUT instead of
+            test runner
 
     Returns:
         True if server is reachable, False otherwise
@@ -36,10 +38,17 @@ def ping_server(address: str, count: int = 2, timeout: int = 3) -> bool:
     try:
         is_ipv6 = ":" in address
         ping_cmd = "ping6" if is_ipv6 else "ping"
-        cmd = [ping_cmd, "-c", str(count), "-W", str(timeout), address]
-        logging.debug(f"Running ping command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout * count + 5)
-        is_reachable = result.returncode == 0
+        cmd_str = f"{ping_cmd} -c {count} -W {timeout} {address}"
+        logging.debug(f"Running ping command: {cmd_str}")
+
+        if dut_engine:
+            result = dut_engine.run_cmd(cmd_str)
+            is_reachable = "0% packet loss" in result or "0 received" not in result
+        else:
+            cmd = [ping_cmd, "-c", str(count), "-W", str(timeout), address]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout * count + 5)
+            is_reachable = result.returncode == 0
+
         if is_reachable:
             logging.info(f"Server {address} is reachable")
         else:
@@ -53,7 +62,7 @@ def ping_server(address: str, count: int = 2, timeout: int = 3) -> bool:
         return False
 
 
-def check_port(address: str, port: int, timeout: int = 3) -> bool:
+def check_port(address: str, port: int, timeout: int = 3, dut_engine=None) -> bool:
     """
     Check if a specific port is open on the server.
 
@@ -61,22 +70,33 @@ def check_port(address: str, port: int, timeout: int = 3) -> bool:
         address: IP address (IPv4/IPv6) or hostname to check
         port: Port number to check
         timeout: Timeout in seconds for the connection attempt
+        dut_engine: Optional DUT engine to run check from DUT instead of
+            test runner
 
     Returns:
         True if port is open, False otherwise
     """
     try:
-        is_ipv6 = ":" in address
-        family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
-        sock = socket.socket(family, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
-        result = sock.connect_ex((address, port))
-        sock.close()
-        is_open = result == 0
+        if dut_engine:
+            is_ipv6 = ":" in address
+            nc_flag = "-6" if is_ipv6 else "-4"
+            cmd = f"nc -zv {nc_flag} -w {timeout} {address} {port}"
+            logging.debug(f"Running port check command on DUT: {cmd}")
+            result = dut_engine.run_cmd(cmd)
+            is_open = "succeeded" in result.lower() or "open" in result.lower()
+        else:
+            is_ipv6 = ":" in address
+            family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
+            sock = socket.socket(family, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            result = sock.connect_ex((address, port))
+            sock.close()
+            is_open = result == 0
+
         if is_open:
             logging.info(f"Port {port} on {address} is open")
         else:
-            logging.warning(f"Port {port} on {address} is closed (code: {result})")
+            logging.warning(f"Port {port} on {address} is closed")
         return is_open
     except socket.timeout:
         logging.warning(f"Connection to {address}:{port} timed out")
@@ -90,8 +110,17 @@ def check_port(address: str, port: int, timeout: int = 3) -> bool:
 
 
 class RemoteAaaServerInfo:
-    def __init__(self, hostname, priority, secret, port, users: List[UserInfo], ipv4_addr: str = '',
-                 docker_name: str = '', users_per_auth_medium: UsersPerAuthMedium = None):
+    def __init__(
+        self,
+        hostname,
+        priority,
+        secret,
+        port,
+        users: List[UserInfo],
+        ipv4_addr: str = "",
+        docker_name: str = "",
+        users_per_auth_medium: UsersPerAuthMedium = None,
+    ):
         self.hostname = hostname
         self.priority = priority
         self.secret = secret
@@ -103,9 +132,13 @@ class RemoteAaaServerInfo:
 
         # validate users_per_auth_medium and set it
         if users_per_auth_medium:
-            assert all(key in AuthMedium.ALL_MEDIUMS for key in users_per_auth_medium.keys()), f'invalid "users_per_auth_medium" param: 1st layer keys must be in {AuthMedium.ALL_MEDIUMS}'
+            assert all(key in AuthMedium.ALL_MEDIUMS for key in users_per_auth_medium.keys()), (
+                f'invalid "users_per_auth_medium" param: 1st layer keys must be in {AuthMedium.ALL_MEDIUMS}'
+            )
             for _, users_per_role in users_per_auth_medium.items():
-                assert all(key in UserRole.ALL_ROLES for key in users_per_role.keys()), f'invalid "users_per_auth_medium" param: 2nd layer keys must be in {UserRole.ALL_ROLES}'
+                assert all(key in UserRole.ALL_ROLES for key in users_per_role.keys()), (
+                    f'invalid "users_per_auth_medium" param: 2nd layer keys must be in {UserRole.ALL_ROLES}'
+                )
         self.users_per_auth_medium: UsersPerAuthMedium = users_per_auth_medium
 
     def copy(self, deep=False):
@@ -117,12 +150,20 @@ class RemoteAaaServerInfo:
     def configure(self, engines, set_explicit_priority=False, apply=False, dut_engine=None):
         raise Exception('Method "configure" is not implemented!')
 
-    def _configure(self, engines, server_resource_obj: ServerId, conf_to_set: dict, set_explicit_priority: bool,
-                   apply: bool, dut_engine: ProxySshEngine = None):
+    def _configure(
+        self,
+        engines,
+        server_resource_obj: ServerId,
+        conf_to_set: dict,
+        set_explicit_priority: bool,
+        apply: bool,
+        dut_engine: ProxySshEngine = None,
+    ):
         if set_explicit_priority:
             conf_to_set[AaaConsts.PRIORITY] = self.priority
-        configure_resource(engines, resource_obj=server_resource_obj, conf=conf_to_set, apply=apply,
-                           verify_apply=False, dut_engine=dut_engine)
+        configure_resource(
+            engines, resource_obj=server_resource_obj, conf=conf_to_set, apply=apply, verify_apply=False, dut_engine=dut_engine
+        )
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         raise Exception('Method "configure" is not implemented!')
@@ -142,54 +183,79 @@ class RemoteAaaServerInfo:
             return self.ipv4_addr
         return self.hostname
 
-    def verify_availability(self, check_service: bool = True) -> ResultObj:
+    def verify_availability(self, check_service: bool = True, dut_engine=None) -> ResultObj:
         """
         Verify that the AAA server is reachable via ping and optionally
-        check if the AAA service port is open.
+        check if the AAA service port is open. Checks are performed from
+        the DUT to ensure the DUT can reach the AAA server.
 
         Args:
             check_service: If True, also checks if the service port is open.
+            dut_engine: Optional DUT engine. If None, uses TestToolkit DUT.
 
         Returns:
             ResultObj with the result of the verification
 
         """
+        if dut_engine is None:
+            dut_engine = TestToolkit.engines.dut
         address = self.get_ping_address()
-        with allure.step(f"Verify AAA server availability: {address}:{self.port}"):
-            is_available = ping_server(address)
+        with allure.step(f"Verify AAA server availability from DUT: {address}:{self.port}"):
+            is_available = ping_server(address, dut_engine=dut_engine)
             if not is_available:
-                return ResultObj(False, f"AAA server {self.hostname} (ping: {address}) is not reachable. Cannot run good flow test.")
+                return ResultObj(
+                    False, f"AAA server {self.hostname} (ping: {address}) is not reachable from DUT. Cannot run good flow test."
+                )
 
             if check_service:
-                service_up = check_port(address, self.port)
+                service_up = check_port(address, self.port, dut_engine=dut_engine)
                 if not service_up:
-                    return ResultObj(False, f"AAA service on {self.hostname}:{self.port} is not responding. Server is pingable but service may be down. Cannot run good flow test.")
+                    return ResultObj(
+                        False,
+                        f"AAA service on {self.hostname}:{self.port} is not "
+                        f"responding from DUT. Server is pingable but service "
+                        f"may be down. Cannot run good flow test.",
+                    )
 
-            return ResultObj(True, f"AAA server {self.hostname} (ping: {address}) is reachable and service is responding")
+            return ResultObj(True, f"AAA server {self.hostname} (ping: {address}) is reachable from DUT and service is responding")
 
 
 def update_active_aaa_server(item, server: RemoteAaaServerInfo):
     item.active_remote_aaa_server = server
     if server is None:
-        with allure.step('Change active remote auth server to None'):
+        with allure.step("Change active remote auth server to None"):
             item.active_remote_aaa_server = None
             item.active_remote_admin_engine = None
     else:
-        with allure.step('Update to new active remote auth server'):
+        with allure.step("Update to new active remote auth server"):
             item.active_remote_auth_server = server
-        with allure.step('Create ssh engine with remote admin user'):
-            logging.info('Find remote admin user to use')
-            remote_admin = [user for user in server.users if user.role == 'admin'][0]
-            logging.info(f'Create ssh engine with user: {remote_admin.username}')
-            item.active_remote_admin_engine = ProxySshEngine(device_type=TestToolkit.engines.dut.device_type,
-                                                             ip=TestToolkit.engines.dut.ip,
-                                                             username=remote_admin.username,
-                                                             password=remote_admin.password)
+        with allure.step("Create ssh engine with remote admin user"):
+            logging.info("Find remote admin user to use")
+            remote_admin = [user for user in server.users if user.role == "admin"][0]
+            logging.info(f"Create ssh engine with user: {remote_admin.username}")
+            item.active_remote_admin_engine = ProxySshEngine(
+                device_type=TestToolkit.engines.dut.device_type,
+                ip=TestToolkit.engines.dut.ip,
+                username=remote_admin.username,
+                password=remote_admin.password,
+            )
 
 
 class TacacsServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, timeout, auth_mode, users: List[UserInfo], ipv4_addr: str = '',
-                 docker_name: str = '', users_per_auth_mode: Dict[str, List[UserInfo]] = None, users_per_auth_medium: UsersPerAuthMedium = None):
+    def __init__(
+        self,
+        hostname,
+        priority,
+        secret,
+        port,
+        timeout,
+        auth_mode,
+        users: List[UserInfo],
+        ipv4_addr: str = "",
+        docker_name: str = "",
+        users_per_auth_mode: Dict[str, List[UserInfo]] = None,
+        users_per_auth_medium: UsersPerAuthMedium = None,
+    ):
         super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.timeout = timeout
         # self.retransmit = retransmit
@@ -201,19 +267,21 @@ class TacacsServerInfo(RemoteAaaServerInfo):
             AaaConsts.SECRET: self.secret,
             AaaConsts.PORT: self.port,
             AaaConsts.TIMEOUT: self.timeout,
-            AaaConsts.SERVER_AUTH_MODE: self.auth_mode
+            AaaConsts.SERVER_AUTH_MODE: self.auth_mode,
             # AaaConsts.RETRANSMIT: server.retransmit
         }
         server_resource_obj = System().aaa.tacacs.server.server_id[self.hostname]
         self._configure(engines, server_resource_obj, conf_to_set, set_explicit_priority, apply, dut_engine)
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
-        System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT, apply=apply,
-                                                                dut_engine=dut_engine).ignore_result()
+        System().aaa.tacacs.server.server_id[self.hostname].set(
+            AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT, apply=apply, dut_engine=dut_engine
+        ).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
-        System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.PORT, self.port, apply=apply,
-                                                                dut_engine=dut_engine).ignore_result()
+        System().aaa.tacacs.server.server_id[self.hostname].set(
+            AaaConsts.PORT, self.port, apply=apply, dut_engine=dut_engine
+        ).ignore_result()
 
     def update_auth_mode(self, auth_mode: str, item, dut_engine=None, set_on_dut: bool = True):
         logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_mode} passwords')
@@ -225,10 +293,10 @@ class TacacsServerInfo(RemoteAaaServerInfo):
 
         if set_on_dut:
             assert item, f"argument 'item' was not provided"
-            engine = dut_engine or (
-                item.active_remote_admin_engine if hasattr(item, 'active_remote_admin_engine') else None)
-            System().aaa.tacacs.server.server_id[self.hostname].set(AaaConsts.SERVER_AUTH_MODE, auth_mode, apply=True,
-                                                                    dut_engine=engine).ignore_result()
+            engine = dut_engine or (item.active_remote_admin_engine if hasattr(item, "active_remote_admin_engine") else None)
+            System().aaa.tacacs.server.server_id[self.hostname].set(
+                AaaConsts.SERVER_AUTH_MODE, auth_mode, apply=True, dut_engine=engine
+            ).ignore_result()
 
     def __update_passwords_of_users_per_auth_medium(self, new_auth_mode):
         for medium, users_per_role in self.users_per_auth_medium.items():
@@ -238,9 +306,23 @@ class TacacsServerInfo(RemoteAaaServerInfo):
 
 
 class LdapServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, users: List[UserInfo], base_dn, bind_dn, timeout_bind,
-                 timeout_search, version, ssl_port=636, ipv4_addr: str = '', docker_name: str = '',
-                 users_per_auth_medium: UsersPerAuthMedium = None):
+    def __init__(
+        self,
+        hostname,
+        priority,
+        secret,
+        port,
+        users: List[UserInfo],
+        base_dn,
+        bind_dn,
+        timeout_bind,
+        timeout_search,
+        version,
+        ssl_port=636,
+        ipv4_addr: str = "",
+        docker_name: str = "",
+        users_per_auth_medium: UsersPerAuthMedium = None,
+    ):
         super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.base_dn = base_dn
         self.bind_dn = bind_dn
@@ -268,19 +350,32 @@ class LdapServerInfo(RemoteAaaServerInfo):
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         ldap = System().aaa.ldap
         ldap.server.server_id[self.hostname].unset(apply=False, dut_engine=dut_engine).verify_result()
-        ldap.server.server_id['unreachable-' + self.hostname].set(AaaConsts.PRIORITY, self.priority,
-                                                                  apply=apply, dut_engine=dut_engine).ignore_result()
+        ldap.server.server_id["unreachable-" + self.hostname].set(
+            AaaConsts.PRIORITY, self.priority, apply=apply, dut_engine=dut_engine
+        ).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
         ldap = System().aaa.ldap
-        ldap.server.server_id['unreachable-' + self.hostname].unset(apply=False, dut_engine=dut_engine).verify_result()
-        ldap.server.server_id[self.hostname].set(AaaConsts.PRIORITY, self.priority,
-                                                 apply=apply, dut_engine=dut_engine).ignore_result()
+        ldap.server.server_id["unreachable-" + self.hostname].unset(apply=False, dut_engine=dut_engine).verify_result()
+        ldap.server.server_id[self.hostname].set(AaaConsts.PRIORITY, self.priority, apply=apply, dut_engine=dut_engine).ignore_result()
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
-    def __init__(self, hostname, priority, secret, port, timeout, auth_type, users: List[UserInfo], retransmit=0,
-                 statistics=AaaConsts.DISABLED, ipv4_addr: str = '', docker_name: str = '', users_per_auth_medium: UsersPerAuthMedium = None):
+    def __init__(
+        self,
+        hostname,
+        priority,
+        secret,
+        port,
+        timeout,
+        auth_type,
+        users: List[UserInfo],
+        retransmit=0,
+        statistics=AaaConsts.DISABLED,
+        ipv4_addr: str = "",
+        docker_name: str = "",
+        users_per_auth_medium: UsersPerAuthMedium = None,
+    ):
         super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
         self.timeout = timeout
         self.auth_type = auth_type
@@ -292,18 +387,20 @@ class RadiusServerInfo(RemoteAaaServerInfo):
             AaaConsts.SECRET: self.secret,
             AaaConsts.PORT: self.port,
             AaaConsts.TIMEOUT: self.timeout,
-            AaaConsts.AUTH_TYPE: self.auth_type
+            AaaConsts.AUTH_TYPE: self.auth_type,
         }
         hostname_resource_obj = System().aaa.radius.server.server_id[self.hostname]
         self._configure(engines, hostname_resource_obj, conf_to_set, set_explicit_priority, apply, dut_engine)
 
     def make_unreachable(self, engines, apply=False, dut_engine=None):
-        System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT,
-                                                                apply=apply, dut_engine=dut_engine).ignore_result()
+        System().aaa.radius.server.server_id[self.hostname].set(
+            AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT, apply=apply, dut_engine=dut_engine
+        ).ignore_result()
 
     def make_reachable(self, engines, apply=False, dut_engine=None):
-        System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.PORT, self.port, apply=apply,
-                                                                dut_engine=dut_engine).ignore_result()
+        System().aaa.radius.server.server_id[self.hostname].set(
+            AaaConsts.PORT, self.port, apply=apply, dut_engine=dut_engine
+        ).ignore_result()
 
     def update_auth_type(self, auth_type: str, item, dut_engine=None, set_on_dut: bool = True):
         logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_type} passwords')
@@ -311,7 +408,7 @@ class RadiusServerInfo(RemoteAaaServerInfo):
 
         if set_on_dut:
             assert item, f"argument 'item' was not provided"
-            engine = dut_engine or (
-                item.active_remote_admin_engine if hasattr(item, 'active_remote_admin_engine') else None)
-            System().aaa.radius.server.server_id[self.hostname].set(AaaConsts.AUTH_TYPE, auth_type, apply=True,
-                                                                    dut_engine=engine).ignore_result()
+            engine = dut_engine or (item.active_remote_admin_engine if hasattr(item, "active_remote_admin_engine") else None)
+            System().aaa.radius.server.server_id[self.hostname].set(
+                AaaConsts.AUTH_TYPE, auth_type, apply=True, dut_engine=engine
+            ).ignore_result()

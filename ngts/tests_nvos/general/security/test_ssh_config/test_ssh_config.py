@@ -30,18 +30,21 @@ def rand_ssh_port():
     all_ports.remove(SshConfigConsts.DEFAULT_PORT)
     new_login_port = random.choice(all_ports)
     acl = Acl()
+    rule_id = '209'
     with allure.step(f'add ACL rule to permit ssh through port {new_login_port}'):
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT'].rule.rule_id['9'].action.set('permit')
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT_IPV6'].rule.rule_id['9'].action.set('permit')
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT'].rule.rule_id['9'].match.ip.set('protocol', 'tcp')
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT_IPV6'].rule.rule_id['9'].match.ip.set('protocol', 'tcp')
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT'].rule.rule_id['9'].match.ip.tcp.set('dest-port', f'{new_login_port}')
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT_IPV6'].rule.rule_id['9'] \
-            .match.ip.tcp.set('dest-port', f'{new_login_port}', apply=True, ask_for_confirmation=True)
+        acl_rule = acl.acl_id['acl-default-whitelist'].rule.rule_id[rule_id]
+        acl_rule.match.ip.set_protocol('tcp')
+        acl_rule.match.ip.tcp.set('dest-port', new_login_port)
+        acl_rule.action.set('permit')
+
+        acl_rule_ipv6 = acl.acl_id['acl-default-whitelist-ipv6'].rule.rule_id[rule_id]
+        acl_rule_ipv6.match.ip.set_protocol('tcp')
+        acl_rule_ipv6.match.ip.tcp.set('dest-port', new_login_port)
+        acl_rule_ipv6.action.set('permit', apply=True, ask_for_confirmation=True).verify_result()
     yield new_login_port
     with allure.step('remove test ACL rule'):
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT'].rule.rule_id['9'].unset()
-        acl.acl_id['ACL_MGMT_INBOUND_CP_DEFAULT_IPV6'].rule.rule_id['9'].unset(apply=True, ask_for_confirmation=True)
+        acl.acl_id['acl-default-whitelist'].rule.rule_id[rule_id].unset()
+        acl.acl_id['acl-default-whitelist-ipv6'].rule.rule_id[rule_id].unset(apply=True, ask_for_confirmation=True).verify_result()
 
 
 @pytest.mark.checklist

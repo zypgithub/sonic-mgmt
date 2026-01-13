@@ -313,8 +313,7 @@ class IpTool:
 
     @staticmethod
     def is_address_ipv6(address: str) -> bool:
-        pattern = r'^(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}$'
-        return bool(re.match(pattern, address, re.IGNORECASE))
+        return ipaddress.ip_address(address).version == 6
 
     @staticmethod
     def get_ipv6_type(ipv6_addr: str) -> Ipv6Type:

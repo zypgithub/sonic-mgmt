@@ -34,7 +34,6 @@ class SshHardeningConsts:
                   'aes128-cbc',
                   'aes192-cbc',
                   'aes256-cbc',
-                  'rijndael-cbc@lysator.liu.se',
                   'aes128-ctr',
                   'aes192-ctr',
                   'aes256-ctr',
@@ -71,7 +70,7 @@ class SshHardeningConsts:
                     'ecdh-sha2-nistp521',
                     'curve25519-sha256',
                     'curve25519-sha256@libssh.org',
-                    # 'sntrup4591761x25519-sha512@tinyssh.org'
+                    'sntrup761x25519-sha512@openssh.com'
                     ]
     }
 
