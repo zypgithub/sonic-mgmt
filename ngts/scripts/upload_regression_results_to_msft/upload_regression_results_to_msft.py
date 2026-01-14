@@ -981,8 +981,17 @@ class ReleaseResultsUploader:
     def get_host_setup_name(host, setups_list):
         host_setup_name = None
         for setup_name in setups_list:
-            if host in setup_name:
+            if setup_name == "sonic-dual-tor-leopard":
+                if host in ["r-leopard-70", "r-leopard-72"]:
+                    host_setup_name = setup_name
+                    break
+            elif setup_name == "sonic-dual-tor-leopard-02":
+                if host in ["r-leopard-91", "r-leopard-93"]:
+                    host_setup_name = setup_name
+                    break
+            elif host in setup_name:
                 host_setup_name = setup_name
+                break
         return host_setup_name
 
     def filter_setups(self, setups):
