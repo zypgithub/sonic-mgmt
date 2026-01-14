@@ -80,12 +80,6 @@ SWITCH_MODELS = {
             "asic_ambient": {
                 "number": 1
             },
-            "port_ambient": {
-                "number": 1
-            },
-            "fan_ambient": {
-                "number": 1
-            },
             "sodimm": {
                 "start": 1,
                 "number": 2
