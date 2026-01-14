@@ -27,18 +27,21 @@ class TestNewTc:
     @pytest.fixture(autouse=False)
     def hide_thermalctld(self):
         """
-        As per https://github.com/sonic-net/sonic-buildimage/pull/24273
-        The thermalctld service will update the thermal sensor value
-        This fixture is to hide the thermalctld service to avoid the thermal
-        sensor value being updated by the thermalctld service. test_temperature_sweep
-        needs to mock the temperature value so we need to stop the thermalctld service
-        before the test and start it after the test.
+        Currently we use different services to update the thermal sensor value
+        and it's still evolving, so we need to stop the services to avoid the
+        thermal sensor value being updated by the services.
+        Refer to below FRs to get more details:
+        - https://redmine.mellanox.com/issues/4818037
+        - https://redmine.mellanox.com/issues/4808309
         """
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
+        # stop the service to update asic thermals
+        self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
         yield
         self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")
         self.dut_engine.run_cmd("sudo systemctl start hw-management-sync")
+        self.dut_engine.run_cmd("sudo systemctl start hw-management-thermal-updater")
 
     @allure.title('test temperature sweep')
     @pytest.mark.usefixtures("hide_thermalctld")
