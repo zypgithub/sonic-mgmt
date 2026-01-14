@@ -17,8 +17,10 @@ class ConnectMSSQL:
 
     def connect_db(self):
         self.conn = pyodbc.connect(
-            # Linux driver
-            'DRIVER={ODBC Driver 17 for SQL Server};SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)
+            # Linux driver, requires the ngts to have DSN "MSSQLDRIVERDSN" in /etc/odbc.ini
+            # to be set up with the correct driver version, example:
+            # echo -e '[MSSQLDRIVERDSN]\nDescription=Microsoft ODBC Driver 18 for SQL Server\nDriver=ODBC Driver 18 for SQL Server\n' | sudo tee -a /etc/odbc.ini
+            'DSN=MSSQLDRIVERDSN;SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)
         # Windows Driver
         # 'DRIVER={SQL Server Native Client 11.0};SERVER=' + self.server + ';DATABASE=' + self.database + ';UID=' + self.username + ';PWD=' + self.password)
         self.cursor = self.conn.cursor()
