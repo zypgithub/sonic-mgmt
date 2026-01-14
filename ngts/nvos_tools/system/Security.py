@@ -23,6 +23,7 @@ class Security(BaseComponent):
         self.tpm = Tpm(self)
         self.spdm = Spdm(self)
         self.platform_certificate = PlatformCertificate(self)
+        self.gpumad = GPUMad(self)
 
     def action_change_sed_password(self, new_password: str, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action change sed pass for {self.get_resource_path()}'):
@@ -32,3 +33,8 @@ class Security(BaseComponent):
                 params = {"sed-password": new_password}
             return SendCommandTool.execute_command(self._cli_wrapper.action_change, engine,
                                                    self.get_resource_path(), params)
+
+
+class GPUMad(BaseComponent):
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/gpu-mad-firewall')

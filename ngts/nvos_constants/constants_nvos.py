@@ -508,6 +508,8 @@ class SystemConsts:
     DATE_TIME = 'date-time'
     VERSION = 'version'
     SECURITY = 'security'
+    GPU_MAD_STATE_ENABLED = 'enabled'
+    GPU_MAD_STATE_DISABLED = 'disabled'
     CONTACT = 'contact'
     LOCATION = 'location'
     TECHSUPPORT_FILES_PATH = '/host/dump/'
