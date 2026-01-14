@@ -1,7 +1,6 @@
 import copy
 import os
 from datetime import datetime
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class PytestConst:
@@ -69,14 +68,7 @@ class SonicConst:
         # Docker containers classification for multi-ASIC platforms
         # Global containers: run once per system
         # Per-ASIC containers: run once per ASIC namespace
-        # NOTE: Due to bug https://redmine.mellanox.com/issues/4789109 - snmp and telemetry dockers are not up.
-        # Dynamically set DOCKERS_GLOBAL based on bug status at module load time:
-        if is_redmine_issue_active(4789109):
-            # Bug still active - use workaround list without snmp and telemetry
-            DOCKERS_GLOBAL = ['pmon', 'radv', 'lldp', 'eventd', 'gnmi', 'database']
-        else:
-            # Bug resolved - use full list with snmp and telemetry
-            DOCKERS_GLOBAL = ['pmon', 'telemetry', 'snmp', 'radv', 'lldp', 'eventd', 'gnmi', 'database']
+        DOCKERS_GLOBAL = ['pmon', 'telemetry', 'snmp', 'radv', 'lldp', 'eventd', 'gnmi', 'database']
 
         DOCKERS_PER_ASIC = ['swss', 'syncd', 'bgp', 'teamd', 'database', 'lldp']  # ASIC-specific containers
 
