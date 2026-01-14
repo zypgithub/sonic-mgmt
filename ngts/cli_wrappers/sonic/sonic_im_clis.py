@@ -230,13 +230,6 @@ class SonicImClis:
         @param: chip_type: chip_type fixture
         @param: enable_im: flag for enable IM by default
         """
-        # TODO: This is WA on mtvr-moose-08 ci setup for RM#4154761
-        from infra.tools.redmine.redmine_api import is_redmine_issue_active
-        dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
-        if is_redmine_issue_active([4154761])[0] and "mtvr-moose-08" in dut_name:
-            logger.info('IM is not enabled on mtvr-moose-08 due to RM#4154761')
-            return
-
         with allure.step('Check if system supports IM'):
             sonic_branch = get_sonic_branch(topology_obj)
             skip_for_release = ['201911', '202012', '202205', '202211', '202305']
