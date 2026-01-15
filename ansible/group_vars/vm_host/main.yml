@@ -1,5 +1,5 @@
 supported_vm_types: [ "veos", "ceos", "vsonic", "vcisco", "csonic" ]
-root_path: veos-vm
+root_path: /images/veos-vm
 
 vm_console_base: 7000
 memory: 2621440
