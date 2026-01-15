@@ -1,4 +1,9 @@
 parameters:
+- name: AGENT_POOL
+  type: object
+  default:
+    name: sonic-ubuntu-1c
+
 - name: TIMEOUT_IN_MINUTES_PR_TEST
   type: number
   default: 480
@@ -37,7 +42,7 @@ jobs:
     displayName: "Get impacted area"
     timeoutInMinutes: 20
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -57,7 +62,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -91,7 +96,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -126,7 +131,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -160,7 +165,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -194,7 +199,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -233,7 +238,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -271,7 +276,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
@@ -306,7 +311,7 @@ jobs:
       TEST_SCRIPTS: $[ dependencies.get_impacted_area.outputs['SetVariableTask.TEST_SCRIPTS'] ]
     timeoutInMinutes: ${{ parameters.TIMEOUT_IN_MINUTES_PR_TEST }}
     continueOnError: false
-    pool: sonic-ubuntu-1c
+    pool: ${{ parameters.AGENT_POOL }}
     steps:
       - ${{ if eq(parameters.CHECKOUT_SONIC_MGMT, true) }}:
         - checkout: ${{ parameters.SONIC_MGMT_NAME }}
