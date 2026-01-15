@@ -69,9 +69,11 @@ class FWComponentsTool:
                     ssd_output = OutputParsingTool.parse_json_str_to_dictionary(
                         Platform().firmware.ssd.show()
                     ).get_returned_value()
-                    ssd_part_number = ssd_output.get('part-number', '').strip()
-                    assert ssd_part_number and ssd_part_number != ChassisLocationConsts.NA, \
+                    ssd_part_number_full = ssd_output.get('part-number', '').strip()
+                    assert ssd_part_number_full and ssd_part_number_full != ChassisLocationConsts.NA, \
                         "SSD part-number is not shown in 'nv show platform firmware ssd' output"
+                    # Extract part number without manufacturer prefix
+                    ssd_part_number = ssd_part_number_full.split()[-1]
 
                     # Validate that the detected part number exists in the firmware versions JSON
                     ssd_part_data = platform_components_dict[provisioning][component_name].get(ssd_part_number)
