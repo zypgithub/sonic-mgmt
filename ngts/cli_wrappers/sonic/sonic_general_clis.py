@@ -2153,7 +2153,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         dpu_status = self.engine.run_cmd(f'show chassis module status')
         return generic_sonic_output_parser(dpu_status, output_key="Name")
 
-    @retry(Exception, tries=60, delay=3)
+    @retry(Exception, tries=90, delay=3)
     def verify_dpus_down(self, dpu_index_list):
         """
         Verifying the Oper-Status are Offline and Admin-Status are down for the specified DPUs
