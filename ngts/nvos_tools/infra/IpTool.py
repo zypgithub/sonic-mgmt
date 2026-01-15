@@ -313,7 +313,10 @@ class IpTool:
 
     @staticmethod
     def is_address_ipv6(address: str) -> bool:
-        return ipaddress.ip_address(address).version == 6
+        try:
+            return ipaddress.ip_address(address).version == 6
+        except ValueError:
+            return False
 
     @staticmethod
     def get_ipv6_type(ipv6_addr: str) -> Ipv6Type:
