@@ -143,7 +143,8 @@ def acl(duthosts, enum_rand_one_per_hwsku_hostname, acl_setup, request):
     acl_facts = duthost.acl_facts()["ansible_facts"]["ansible_acl_facts"]
     pytest_require(ACL_TABLE_NAME in acl_facts, "{} acl table not exists")
 
-    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
+    loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
+                              bughandler=get_bughandler_instance({"type": "default"}))
     loganalyzer.load_common_config()
 
     try:
@@ -217,8 +218,7 @@ def gre_version(duthosts, enum_rand_one_per_hwsku_hostname):
 
 
 @pytest.fixture(scope='function')
-def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip,
-              mirror_setup, gre_version, request, tbinfo):
+def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip, mirror_setup, gre_version, request, tbinfo):
     """
     fixture gathers all configuration fixtures
     :param duthost: DUT host
@@ -258,7 +258,8 @@ def mirroring(duthosts, enum_rand_one_per_hwsku_hostname, neighbor_ip,
     try:
         yield
     finally:
-        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request)
+        loganalyzer = LogAnalyzer(ansible_host=duthost, marker_prefix='acl', request=request,
+                                  bughandler=get_bughandler_instance({"type": "default"}))
         loganalyzer.load_common_config()
 
         try:

@@ -112,7 +112,8 @@ class TestBMCApi(PlatformApiTestBase):
         Returns:
             bool: True if BMC is busy (BackgroundCopyStatus != "Completed"), False otherwise
         """
-        res = duthost.command(BMC_GET_STATUS_COMMAND.format(self.bmc_root_user, self.bmc_root_password, bmc_ip))["stdout"]
+        res = duthost.command(
+            BMC_GET_STATUS_COMMAND.format(self.bmc_root_user, self.bmc_root_password, bmc_ip))["stdout"]
         pytest_assert(res is not None, "Failed to query BMC status")
 
         try:
@@ -142,9 +143,8 @@ class TestBMCApi(PlatformApiTestBase):
             bool: True if update successful, False otherwise
         """
         start_time = time.time()
-
-        logger.info(f"Starting BMC firmware update via {method.upper()}" +
-                   (f" ({cli_type})" if method == 'cli' and cli_type else ""))
+        cli_suffix = f" ({cli_type})" if method == 'cli' and cli_type else ""
+        logger.info(f"Starting BMC firmware update via {method.upper()}{cli_suffix}")
 
         while True:
             if time.time() - start_time > timeout:
