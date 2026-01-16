@@ -3,6 +3,7 @@ import logging
 import pytest
 import random
 import os
+import re
 from retry.api import retry_call
 from ngts.constants.constants import InfraConst, PytestConst
 from ngts.common.util import get_specified_installed_dpus
@@ -38,23 +39,36 @@ def dut_host(engines, request, device_type, topology_obj):
 @pytest.mark.loganalyzer_hosts(include='dpu')
 def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer):
     """
-    Test checks errors in logs which happen during deploy SONiC image
-    This test must be executed as first test case after deploy SONiC image, because test logic will analyze syslog
-    files since first entry in log till current test case execution entries.
-    Test logic is next:
-    - Get current LogAnalyzer start_string as variable and remove existing start_string from syslog file
-    - Get oldest syslog file id
-    - Create LogAnalyzer start_string and put it into oldest syslog file(create it)
+    Test checks errors in logs which happen during deploy SONiC image.
+    This test must be executed as first test case after deploy SONiC image.
+    Test logic:
+    - Get current LogAnalyzer start_string and remove existing start_string from syslog file
+    - Try to find 'sonic-installer: Installing image' log:
+       - If found: Insert start_string before install log (to avoid analyzing logs from previous image)
+       - If not found: Create new oldest syslog file with start_string inside
     - Then on teardown step LogAnalyzer will analyze all logs since start_string till end_string(which will be
     added after current test case automatically by LogAnalyzer logic)
-    :param engines: engines fixture
+    :param dut_host: dut engine
     :param request: pytest build-in
+    :param loganalyzer: loganalyzer fixture
     """
     os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
     log_analyzer_start_string_line = get_la_start_string(dut_host, request)
-    oldest_syslog_id = get_oldest_syslog_id(dut_host)
-    new_log_analyzer_start_string = get_new_start_string(dut_host, oldest_syslog_id, log_analyzer_start_string_line)
-    insert_new_start_string(dut_host, oldest_syslog_id, new_log_analyzer_start_string)
+
+    # Find sonic-installer log and insert start_string before it (avoid logs from previous image)
+    install_info = find_install_image_log(dut_host)
+
+    if install_info:
+        syslog_file, line_number, timestamp = install_info
+        logger.info(f'Found install image log in {syslog_file} at line {line_number}')
+        new_start_string = ' '.join([timestamp, log_analyzer_start_string_line])
+        insert_start_string_before_line(dut_host, syslog_file, line_number, new_start_string)
+    else:
+        # Fallback to original logic: create new oldest syslog file
+        logger.warning('Install image log not found, falling back to oldest syslog')
+        oldest_syslog_id = get_oldest_syslog_id(dut_host)
+        new_start_string = get_new_start_string(dut_host, oldest_syslog_id, log_analyzer_start_string_line)
+        insert_new_start_string(dut_host, oldest_syslog_id, new_start_string)
     ignore_regex = [
         r".*crashkernel=\d+M",
         r".*Command line: BOOT_IMAGE=.*",
@@ -84,6 +98,53 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
                    tries=3,
                    delay=3,
                    logger=logger)
+
+
+def find_install_image_log(engine):
+    """
+    Find the 'sonic-installer: Installing image SONiC-OS-' log in syslog files.
+    :param engine: dut engine object
+    :return: tuple (syslog_file, line_number, timestamp) or None if not found
+    """
+    search_pattern = "sonic-installer: Installing image SONiC-OS-"
+
+    with allure.step('Finding sonic-installer log for upgrade start point'):
+        logger.info(f'Searching for pattern: {search_pattern}')
+        # Search all syslog files including .gz files, get first match
+        cmd = f'sudo zgrep -Hn "{search_pattern}" /var/log/syslog* 2>/dev/null | head -1'
+        result = engine.run_cmd(cmd, validate=False)
+
+        if result:
+            # Result format: "file_path:line_number:log_content"
+            columns = result.split(':', 2)
+            syslog_file = columns[0]
+            line_number = int(columns[1])
+            timestamp = ' '.join(columns[2].split()[:4])
+            return (syslog_file, line_number, timestamp)
+
+        logger.warning('Install image log not found in any syslog file')
+        return None
+
+
+def insert_start_string_before_line(engine, syslog_file, line_number, start_string):
+    """
+    Insert start_string before the specified line in syslog file.
+    Handles both regular and .gz compressed files.
+    :param engine: dut engine object
+    :param syslog_file: path to syslog file
+    :param line_number: line number to insert before
+    :param start_string: the start_string to insert
+    """
+    with allure.step(f'Inserting start_string before line {line_number} in {syslog_file}'):
+        logger.info(f'Inserting start_string before line {line_number} in {syslog_file}')
+        if syslog_file.endswith('.gz'):
+            # For .gz files: decompress, edit, re-compress
+            engine.run_cmd(f'sudo gunzip {syslog_file}')
+            uncompressed_file = syslog_file[:-3]  # Remove .gz suffix
+            engine.run_cmd(f"sudo sed -i '{line_number}i\\{start_string}' {uncompressed_file}")
+            engine.run_cmd(f'sudo gzip {uncompressed_file}')
+        else:
+            engine.run_cmd(f"sudo sed -i '{line_number}i\\{start_string}' {syslog_file}")
 
 
 def get_la_start_string(engine, request):
