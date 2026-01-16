@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CASEDEF>
+    <global>
+        <Test>
+            <info> QOS DualTor scenario tor test </info>
+            <name> qos_sai_dualtor_scenario_tor </name>
+            <owner> </owner>
+            <pre>
+                <type> reg_exec_cmd </type>
+                <name> work around: Disable counterpoll </name>
+                <tout> 300 </tout>
+                <run_posts_after_pre_failed> True </run_posts_after_pre_failed>
+                <ignore_pre_fail> True </ignore_pre_fail>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_change_counterpoll_status.py  --setup_name=[[conf:extra_info.setup_name]] --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer -k test_change_counterpoll_status[disable] </exec>
+                </params>
+            </pre>
+            <post>
+                <type> reg_exec_cmd </type>
+                <name> work around: Enable counterpoll </name>
+                <tout> 300 </tout>
+                <players_selection>
+                    <ep_targets> SONIC_MGMT </ep_targets>
+                </players_selection>
+                <params>
+                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_change_counterpoll_status.py  --setup_name=[[conf:extra_info.setup_name]] --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer -k test_change_counterpoll_status[enable] </exec>
+                </params>
+            </post>
+        </Test>
+        <Case>
+            <tags> QOS dualtor </tags>
+            <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
+            <tout> 55555 </tout>
+        </Case>
+    </global>
+
+    <case>
+        <ignore>
+            <condition>
+                <key> dut_hwsku </key>
+                <op> not in </op>
+                <value> ["Mellanox-SN4700-V64"] </value>
+            </condition>
+            <condition>
+                <key> topology </key>
+                <op> not in </op>
+                <value> ["dualtor-aa-64-breakout"] </value>
+            </condition>
+        </ignore>
+        <info> pre_tests install saithrift in ptf </info>
+        <name> pre_tests install saithrift in ptf </name>
+        <tout> 600 </tout>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --allure_server_addr=\"10.215.11.120\"  --py_saithrift_url=\"http://nbu-mtr-nfs.nvidia.com/auto/sw_regression/system/SONIC/MARS/conf/saithrift/python-saithrift_0.9.4_amd64.deb\" -k \"test_update_saithrift_ptf\"\'" --test-scripts test_pretest.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
+    <case>
+        <ignore>
+            <condition>
+                <key> dut_hwsku </key>
+                <op> not in </op>
+                <value> ["Mellanox-SN4700-V64"] </value>
+            </condition>
+            <condition>
+                <key> topology </key>
+                <op> not in </op>
+                <value> ["dualtor-aa-64-breakout"] </value>
+            </condition>
+        </ignore>
+        <info> QOS DualTor scenario tor Case </info>
+        <name> qos dualtor scenario tor </name>
+        <cmd>
+             <params>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -k=\"testQosSaiPfcXoffLimit or testQosSaiPfcXonLimit or testQosSaiHeadroomPoolSize\" --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --qos_swap_syncd=False --qos_dual_tor=True\'" --test-scripts qos/test_qos_sai.py </static_args>
+             </params>
+        </cmd>
+    </case>
+
+</CASEDEF>

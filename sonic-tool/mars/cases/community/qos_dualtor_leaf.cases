@@ -2,8 +2,8 @@
 <CASEDEF>
     <global>
         <Test>
-            <info> QOS Dual Tor Test </info>
-            <name> qos_sai_dualtor </name>
+            <info> QOS DualTor scenario leaf test </info>
+            <name> qos_sai_dualtor_scenario_leaf </name>
             <owner> </owner>
             <pre>
                 <type> reg_exec_cmd </type>
@@ -31,13 +31,20 @@
             </post>
         </Test>
         <Case>
-            <tags> QOS dualtor </tags>
+            <tags> QOS dualtor leaf</tags>
             <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
             <tout> 55555 </tout>
         </Case>
     </global>
 
     <case>
+        <ignore>
+            <condition>
+                <key> dut_hwsku </key>
+                <op> not in </op>
+                <value> ["Mellanox-SN4700-O32"] </value>
+            </condition>
+        </ignore>
         <info> pre_tests install saithrift in ptf </info>
         <name> pre_tests install saithrift in ptf </name>
         <tout> 600 </tout>
@@ -49,11 +56,18 @@
     </case>
 
     <case>
-        <info> QOS Dual tor Case </info>
-        <name> qos dual tor </name>
+        <ignore>
+            <condition>
+                <key> dut_hwsku </key>
+                <op> not in </op>
+                <value> ["Mellanox-SN4700-O32"] </value>
+            </condition>
+        </ignore>
+        <info> QOS DualTor scenario leaf Case </info>
+        <name> qos dualtor scenario leaf </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo ptf32 --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -k=\"testQosSaiPfcXoffLimit or testQosSaiPfcXonLimit or testQosSaiHeadroomPoolSize or testQosSaiSeparatedDscpToPgMapping or testQosSaiSeparatedDscpQueueMapping\" --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --qos_swap_syncd=False --qos_dual_tor=True\'" --test-scripts qos/test_qos_sai_dual_tor.py::TestQosSaiDualTor </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -k=\"testQosSaiPfcXoffLimit or testQosSaiPfcXonLimit or testQosSaiHeadroomPoolSize or testQosSaiSeparatedDscpToPgMapping or testQosSaiSeparatedDscpQueueMapping\" --clean-alluredir --alluredir=/tmp/allure-results --timeout 3600 --session-timeout 3600 --allure_server_addr=\"10.215.11.120\" --qos_swap_syncd=False --qos_dual_tor=True\'" --test-scripts qos/test_qos_sai.py </static_args>
              </params>
         </cmd>
     </case>

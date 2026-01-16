@@ -10,37 +10,11 @@
 
             <!-- OPTIONAL TAGS -->
             <tags> RPC_QOS_DUALTOR </tags>
-            <ignore>
-                <condition>
-                    <key> dut_name </key>
-                    <op> not in </op>
-                    <value> ["mtvr-leopard-01", "mtvr-leopard-09", "r-leopard-70", "r-leopard-72"] </value>
-                </condition>
-            </ignore>
 
             <!-- pre db commands - executed once before DB run -->
             <pre>
-                <name> deploy ptf32 topo </name>
-                <type> reg_exec_cmd </type>
-                <tout> 3000 </tout>
-                <run_posts_after_pre_failed> True </run_posts_after_pre_failed>
-                <players_selection>
-                    <ep_targets> SONIC_MGMT </ep_targets>
-                </players_selection>
-                <params>
-                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_rpc_check_and_set_topology.py --setup_name=[[conf:extra_info.setup_name]] --current_topo=[[conf:extra_info.topology]] --expected_topo=ptf32  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
-                </params>
             </pre>
             <post>
-                <name> restore original topo </name>
-                <type> reg_exec_cmd </type>
-                <tout> 3000 </tout>
-                <players_selection>
-                    <ep_targets> SONIC_MGMT </ep_targets>
-                </players_selection>
-                <params>
-                    <exec> PYTHONPATH=/devts/  /ngts_venv/bin/pytest /root/mars/workspace/sonic-mgmt/ngts/scripts/test_rpc_check_and_set_topology.py --setup_name=[[conf:extra_info.setup_name]] --current_topo=ptf32 --expected_topo=[[conf:extra_info.topology]]  --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini  --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --disable_loganalyzer </exec>
-                </params>
             </post>
         </DB>
         <Test>
@@ -69,7 +43,11 @@
     </global>
 
     <test>
-        <cases> sonic-mgmt/sonic-tool/mars/cases/community/qos_dualtor.cases </cases>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/qos_dualtor_tor.cases </cases>
+    </test>
+
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/qos_dualtor_leaf.cases </cases>
     </test>
 
 </DBDEF>
