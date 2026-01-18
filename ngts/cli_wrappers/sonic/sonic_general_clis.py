@@ -1065,6 +1065,16 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             with allure.step('Apply DNS servers configuration'):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
 
+        # TODO: WA to add stability, remove this after the issue is fixed.
+        if "5640" in platform_params["platform"] and is_redmine_issue_active([4841537])[0]:
+            logger.info("Disable interfaces on SN5640 that are connected to servers and not to VMs")
+            self.cli_obj.interface.disable_interfaces(
+                interfaces_list=[
+                    "Ethernet1-7",
+                    "Ethernet248-254",
+                    "Ethernet257-263",
+                    "Ethernet504-510",
+                ])
         self.cli_obj.general.save_configuration()
 
     def get_chip_gen(self, platform_params):
