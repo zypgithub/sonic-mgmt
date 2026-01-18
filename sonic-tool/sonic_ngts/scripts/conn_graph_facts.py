@@ -12,9 +12,8 @@ from minigraph_facts import get_config_db_json_from_hostname, get_dut_ports
 
 config_module_logging('conn_graph_facts')
 logger = logging.getLogger(__name__)
-SONIC_SSH_PORT = 22
 
-def add_device_conn_info(device_facts, hostname, port=SONIC_SSH_PORT):
+def add_device_conn_info(device_facts, hostname):
     """
     Add device connection information to the device facts.
 
@@ -27,7 +26,7 @@ def add_device_conn_info(device_facts, hostname, port=SONIC_SSH_PORT):
     """
     logs = []
     logs.append('Getting conn_facts')
-    config_db = retry_call(get_config_db_json_from_hostname, fargs=[hostname, logs, port], tries=5, delay=6, logger=None)
+    config_db = retry_call(get_config_db_json_from_hostname, fargs=[hostname, logs], tries=5, delay=6, logger=None)
     all_dut_ports = get_dut_ports(config_db, logs)
     for port_name in all_dut_ports.keys():
         speed = config_db['PORT'][port_name]['speed']
@@ -44,8 +43,7 @@ def main():
             filepath=dict(required=False),
             group=dict(required=False),
             anchor=dict(required=False, type='list'),
-            ignore_errors=dict(required=False, type='bool', default=False),
-            ansible_port=dict(required=False, type='int', default=SONIC_SSH_PORT),
+            ignore_errors=dict(required=False, type='bool', default=False)
         ),
         mutually_exclusive=[['host', 'hosts', 'anchor']],
         supports_check_mode=True
@@ -59,7 +57,7 @@ def main():
         if results:
             logger.debug("Start to add device_conn info for host {}".format(module.params.get('hosts')))
             for host in module.params.get('hosts'):
-                results = add_device_conn_info(results, host, module.params.get('ansible_port'))
+                results = add_device_conn_info(results, host)
             logger.debug("The conn graph facts after adding device_conn info is: {}".format(results))
             module.exit_json(**results)
         else:

@@ -872,8 +872,10 @@ def speed_to_test(request):
         speed_to_test
     """
     global PLATFORM_SUPPORTED_SPEEDS_TO_TEST
-    if request.param not in PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
-        pytest.skip(f"Skipping case for speed {request.param} because it is not tested by the platform")
+    if not PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
+        pytest.skip("Buffer Model is traditional, skipping test")
+    elif request.param not in PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
+        pytest.skip(f"Speed {request.param} is not supported by the platform")
     return request.param
 
 
@@ -917,10 +919,8 @@ def port_to_test(request, duthost):
     global NUMBER_OF_LANES
     if PORT_TO_TEST:
         return PORT_TO_TEST
-    dut_vars = duthost.host.options["inventory_manager"].get_host(duthost.hostname).vars
-    external_dut_port = dut_vars.get("ansible_port", 22)
     dutLagInterfaces = []
-    mgFacts = duthost.minigraph_facts(host=duthost.hostname, port=external_dut_port)['ansible_facts']
+    mgFacts = duthost.minigraph_facts(host=duthost.hostname)['ansible_facts']
 
     for _, lag in list(mgFacts["minigraph_portchannels"].items()):
         dutLagInterfaces += lag["members"]
