@@ -366,9 +366,14 @@
 				],
 				"CPLD2": [
 					{
-						"firmware": "",
-						"version": "",
-						"reboot": ["power off","cold"]
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5810_LD/FUI000524/FUI000524_BURN_CPLD000423_REV0300_CPLD000424_REV0200_CPLD000425_REV0300_CPLD000427_REV0003_CH5S_IPN.vme",
+						"version": "CPLD000423_REV0300",
+						"reboot": ["power off"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5810_LD/FUI000524/FUI000524_BURN_CPLD000423_REV0200_CPLD000424_REV0200_CPLD000425_REV0200_CPLD000370_REV0002_CH5S_IPN.vme",
+						"version": "CPLD000423_REV0200",
+						"reboot": ["power off"]
 					}
 				],
 				"BMC": [
