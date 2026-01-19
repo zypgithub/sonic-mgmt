@@ -26,7 +26,7 @@ COMMANDS_FOR_ACTUAL = {
     "SDK": {"cmd": "docker exec syncd bash -c 'dpkg -l | grep sdn'", "regex": "sdn-appliance *([0-9.-]*mlnx1)"},
     "SAI": {"cmd": "docker exec syncd bash -c 'dpkg -l | grep mlnx-sai'", "regex": ".*1\\.mlnx\\.([A-Za-z0-9.]*)"},
     "FW": {"cmd": "mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "regex": "FW * [0-9]{2}\\.([0-9.]*)"},
-    "KERNEL": {"cmd": "uname -r", "regex": "([0-9][0-9.-]*)-.*"},
+    "KERNEL": {"cmd": "uname -r", "regex": "(.*)-[a-z0-9]+$"},
     "BFSOC": {"cmd": "dpkg -l | grep mlxbf-bootimages", "regex": "mlxbf-bootimages *([0-9.-]*)"}
 }
 
