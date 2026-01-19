@@ -16,6 +16,9 @@ ETH_PFX = 'eth'
 ETHERNET_PFX = "Ethernet"
 BACKPLANE = 'backplane'
 MAX_RETRY_TIME = 3
+CREATE_PTF_ADAPTER_TIMEOUT = 60
+CREATE_PTF_ADAPTER_INTERVAL = 10
+CREATE_PTF_ADAPTER_DELAY = 0
 
 
 def pytest_addoption(parser):
@@ -174,7 +177,19 @@ def ptfadapter(ptfhosts, tbinfo, request, duthost):
             return False
         return True
 
-    with PtfTestAdapter(ptfagents, ptfhosts) as adapter:
+    def create_ptf_test_adapter(holder, ptfagents, ptfhosts):
+        try:
+            holder["adapter"] = PtfTestAdapter(ptfagents, ptfhosts)
+            return True
+        except Exception:
+            logger.warning(f"Failed to create PtfTestAdapter")
+            raise
+
+    holder = {}
+    assert wait_until(CREATE_PTF_ADAPTER_TIMEOUT, CREATE_PTF_ADAPTER_INTERVAL, CREATE_PTF_ADAPTER_DELAY,
+                      create_ptf_test_adapter, holder, ptfagents, ptfhosts), \
+                    "Failed to create PtfTestAdapter within %s seconds" % CREATE_PTF_ADAPTER_TIMEOUT
+    with holder["adapter"] as adapter:
         if not request.config.option.keep_payload:
             override_ptf_functions()
             node_id = request.module.__name__

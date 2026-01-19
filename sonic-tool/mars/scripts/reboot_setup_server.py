@@ -45,6 +45,12 @@ def create_connection(host, user, password):
 
 def get_test_server_from_topo(topo_path):
     """Parse topology and return test server info"""
+    logger.info("Check if the setup have the topology_origin_server.xml file with original server info")
+    base, ext = os.path.splitext(topo_path)
+    origin_server_topo_path = base + "_origin_server" + ext
+    if os.path.exists(origin_server_topo_path):
+        topo_path = origin_server_topo_path
+
     logger.info("Parsing topology from {}".format(topo_path))
     topo = parse_topology(topo_path)
     test_server_device = topo.get_device_by_topology_id(constants.TEST_SERVER_DEVICE_ID)
