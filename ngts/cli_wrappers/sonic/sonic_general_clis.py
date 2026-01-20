@@ -1068,13 +1068,22 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # TODO: WA to add stability, remove this after the issue is fixed.
         if "5640" in platform_params["platform"] and is_redmine_issue_active([4841537])[0]:
             logger.info("Disable interfaces on SN5640 that are connected to servers and not to VMs")
-            self.cli_obj.interface.disable_interfaces(
-                interfaces_list=[
-                    "Ethernet1-7",
-                    "Ethernet248-254",
-                    "Ethernet257-263",
-                    "Ethernet504-510",
-                ])
+            if "CI_sonic_SPC5_3" in setup_name or "CI_sonic_SPC5_4" in setup_name:
+                self.cli_obj.interface.disable_interfaces(
+                    interfaces_list=[
+                        "Ethernet1",
+                        "Ethernet3",
+                        "Ethernet5",
+                        "Ethernet7",
+                    ])
+            elif "CI_sonic_SPC5_1" in setup_name or "CI_sonic_SPC5_2" in setup_name:
+                self.cli_obj.interface.disable_interfaces(
+                    interfaces_list=[
+                        "Ethernet1-7",
+                        "Ethernet248-254",
+                        "Ethernet257-263",
+                        "Ethernet504-510",
+                    ])
         self.cli_obj.general.save_configuration()
 
     def get_chip_gen(self, platform_params):
