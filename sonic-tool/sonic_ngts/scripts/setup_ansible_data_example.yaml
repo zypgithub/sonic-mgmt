@@ -1,0 +1,18 @@
+switches:
+    - ip: 10.210.24.97
+    - domain: mtvt-chameleon-test-10
+    - sonic_hwsku: Mellanox-SN5810_LD-O128A2
+    - serial_console: ssh -l rcon:7019 10.245.2.8
+
+pdus:
+  - ip: 10.208.1.10
+  - pdu_name: psu1
+  - port: 31
+  - sku: Raritan
+  - protocol: snmp
+
+  - ip: 10.208.1.11
+  - pdu_name: psu2
+  - port: 32
+  - sku: Raritan
+  - protocol: snmp
