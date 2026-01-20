@@ -36,13 +36,13 @@ class SonicAclCli:
 
         return self.engine.run_cmd(cmd)
 
-    def apply_config(self, cfg_path):
+    def apply_config(self, cfg_path, validate=False):
         """
         On DUT applies ACL config defined in file 'cfg_path'
         :param cfg_path: Path to the ACL config file stored on DUT
         :return: command output
         """
-        return self.engine.run_cmd(f"acl-loader update full {cfg_path}")
+        return self.engine.run_cmd(f"acl-loader update full {cfg_path}", validate=validate)
 
     def apply_acl_rules(self, cfg_path):
         """

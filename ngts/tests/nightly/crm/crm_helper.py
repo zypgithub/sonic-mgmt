@@ -170,7 +170,7 @@ def verify_counters(env, resource, used, used_sign, available=None):
     else:
         current_used, current_available = get_main_crm_stat(env, resource)
 
-    assert eval('{} {} {}'.format(current_used, used_sign, used)),\
+    assert eval('{} {} {}'.format(current_used, used_sign, used)), \
         'Unexpected used count for \'{}\': expected \'{}\' {}; actual received - {}'.format(
             resource, used_sign, used, current_used
     )
@@ -178,7 +178,7 @@ def verify_counters(env, resource, used, used_sign, available=None):
     if available:
         low_treshold = available - int(available * AVAILABLE_TOLERANCE)
         high_treshold = available + int(available * AVAILABLE_TOLERANCE)
-        assert low_treshold <= current_available <= high_treshold,\
+        assert low_treshold <= current_available <= high_treshold, \
             'Unexpected available count for \'{}\': expected range {}...{}; actual received - {}'.format(
                 resource, low_treshold, high_treshold, current_available
             )
@@ -224,7 +224,7 @@ def apply_acl_config(env, entry_num=1):
         raise Exception('Incorrect number of ACL entries specified - {}'.format(entry_num))
 
     logger.info("Applying ACL config on DUT")
-    env.sonic_cli.acl.apply_config(os.path.join(dst_dir, acl_rules_file))
+    retry_call(env.sonic_cli.acl.apply_config, fargs=[os.path.join(dst_dir, acl_rules_file), True], tries=3, delay=1, logger=None)
 
 
 def get_used_percent(crm_used, crm_available):

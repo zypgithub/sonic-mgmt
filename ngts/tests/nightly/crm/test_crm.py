@@ -243,6 +243,13 @@ def test_crm_acl(env, cleanup):
             ensure_crm_acl_table_not_empty, fargs=[env, ], tries=env.MAX_CRM_UPDATE_TIME, delay=1, logger=None
         )
 
+    with allure.step(f'Verify 2 used ACL entries in CRM ACL table after ACL configuration'):
+        retry_call(
+            verify_counters, fargs=[env, acl_entry_resource, 2, '==', None],
+            tries=env.MAX_CRM_UPDATE_TIME,
+            delay=1, logger=None
+        )
+
     acl_entry_used, acl_entry_available = get_acl_crm_stat(env, acl_entry_resource)
     acl_counter_used, acl_counter_available = get_acl_crm_stat(env, acl_counter_resource)
 
