@@ -457,27 +457,6 @@
           "out_of_mail": false
         },
         {
-          "name": "BAT QTM3",
-          "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
-          "category": "BAT",
-          "node": "MINI_MARS@QTM3",
-          "parameters": {
-            "matrix_row": "CHIPSIM",
-            "matrix_col": "QTM3",
-            "global_conf": "${MARS_GLOBAL_CONF}",
-            "local_conf": "${MARS_LOCAL_CONF}",
-            "setup_id": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}",
-            "setup_conf_file_path": "/auto/sysgwork/G/MARS_conf/stm_10_7_225_113/setups/${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}/",
-            "target_version": "${NVOS_BIN}",
-            "base_version": "${NVOS_BIN}",
-            "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
-            "mars_release_version": "${MARS_RELEASE_VERSION}"
-          },
-          "skip": "${SKIP_NVOS_BAT}",
-          "on_failure": "stop",
-          "out_of_mail": false
-        },
-        {
           "name": "Free community setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
