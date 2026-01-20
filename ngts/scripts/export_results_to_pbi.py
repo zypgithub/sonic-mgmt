@@ -18,7 +18,7 @@ sys.path.append(str(sonic_mgmt_path))
 from ngts.nvos_constants.constants_nvos import OperationTimeConsts, TopologyConsts  # noqa: E402
 from ngts.constants.constants import InfraConst, CliType, DbConstants  # noqa: E402
 from ngts.scripts.allure_reporter import ALLURE_PROJECT_ID_SUFFIX  # noqa: E402
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL  # noqa: E402
+from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL  # noqa: E402
 
 logger = logging.getLogger(Path(__file__).stem if __name__ == "__main__" else __name__)
 
