@@ -7,7 +7,11 @@ from .ptfadapter import PtfTestAdapter, PtfAgent
 import ptf.testutils
 
 from tests.common import constants
+from tests.common.utilities import wait_until
 import random
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_PTF_NN_PORT_RANGE = [10900, 10999]
