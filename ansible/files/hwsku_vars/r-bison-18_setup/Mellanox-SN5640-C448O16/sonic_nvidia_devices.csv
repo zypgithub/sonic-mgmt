@@ -3,6 +3,6 @@ r-bison-18,10.210.25.64/22,Mellanox-SN5640-C448O16,DevSonic,,sonic
 r-bison-19,10.210.25.239/22,Mellanox-SN5640-C448O16,FanoutLeaf,,sonic
 r-moose-06,10.210.25.6/22,Mellanox-SN5600-C256S1,FanoutLeaf,,sonic
 r-sonic-19,10.215.60.120,TestServ,Server,,
-pdu-10-208-0-159,10.208.0.159,Vertiv,Pdu,snmp,
+pdu-10-208-0-159,10.208.0.159,Raritan,Pdu,snmp,
 rcon-sws-2-7,10.208.0.30,,ConsoleServer,ssh,sonic
 
