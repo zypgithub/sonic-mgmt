@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 import requests
 import json
 import allure
@@ -611,9 +612,6 @@ class SonicInstallationSteps:
                     deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                       recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
                                       cli_objs=[general_cli_obj], deploy_dpu=deploy_dpu)
-                    if deploy_dpu:
-                        dut['engine'].run_cmd('sudo config save -y')
-            logger.info("Deploying DASH API")
             with allure.step('Apply DNS servers configuration'):
                 logger.info("Applying DNS servers configuration")
                 for dut in setup_info['duts']:
@@ -621,33 +619,7 @@ class SonicInstallationSteps:
                     topology_obj.players[dut['dut_alias']]['engine'].disconnect()
                     general_cli_obj.cli_obj.ip.apply_dns_servers_into_resolv_conf(is_air_setup=is_air)
                     general_cli_obj.save_configuration()
-            if deploy_dpu:
-                logger.info("Deploying DASH API")
-                with allure.step('Update the dash api in sonic-mgmt'):
-                    try:
-                        retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
-                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-                    except Exception as e:
-                        logger.error(f"Failed to update the dash api in sonic-mgmt: {e}")
-                        logger.info("Copying the dash api to sonic-mgmt and try install again")
-                        os.system("scp /auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb ./libdashapi_1.0.0_amd64.deb")
-                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-                logger.info("Validating DPU configuration")
-                if dut_engine.run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) != 'dpu.conf':
-                    with allure.step('Startup dpu and save config'):
-                        for dut in setup_info['duts']:
-                            dut_alias = dut['dut_alias']
-                            dut_name = dut['dut_name']
-                            cli_obj = dut['cli_obj']
-                            # TODO parallelize this
-                            _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
-                            cli_obj.startup_dpu(dpu_index_list)
-                            cli_obj.save_configuration()
-                logger.info("Applying NAT config to smartSwitch")
-                with allure.step('Apply NAT config to smartSwitch'):
-                    for dut in setup_info['duts']:
-                        enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut['engine'])
-            logger.info("Validating Post InstallDUT configuration")
+            logger.info("Validating Post Install DUT configuration")
             sync_docker_time_to_israel(topology_obj)
 
         for dut in setup_info['duts']:
@@ -690,19 +662,7 @@ class SonicInstallationSteps:
                 else:
                     logger.info("No traffic hosts (ha/hb) found in topology, skipping XML-RPC server startup")
 
-            if deploy_dpu:
-                with allure.step('Update the dash api in sonic-mgmt'):
-                    try:
-                        retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
-                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-                    except Exception as e:
-                        logger.error(f"Failed to update the dash api in sonic-mgmt: {e}")
-                        logger.info("Copying the dash api to sonic-mgmt and try install again")
-                        os.system("scp /auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb ./libdashapi_1.0.0_amd64.deb")
-                        os.system("dpkg --install ./libdashapi_1.0.0_amd64.deb")
-                with allure.step('Apply NAT config to smartSwitch'):
-                    enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut_engine)
-            elif 'bobcat' in setup_name:
+            if (not deploy_dpu) and 'bobcat' in setup_name:
                 with allure.step('Disable DPUs for darkmode'):
                     for dut in setup_info['duts']:
                         dut_alias = dut['dut_alias']
@@ -717,6 +677,52 @@ class SonicInstallationSteps:
             for dut in setup_info['duts']:
                 ports_list = topology_obj.players_all_ports[dut['dut_alias']]
                 dut['cli_obj'].cli_obj.interface.check_link_state(ports_list)
+
+    @staticmethod
+    def dpu_post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, setup_info):
+
+        # Common for community and canonical setup
+        logger.info("Deploying DASH API")
+        with allure.step('Update the dash api in sonic-mgmt'):
+            try:
+                retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
+            except Exception as e:
+                logger.error(f"Failed to download the dash api package in sonic-mgmt: {e}")
+                logger.info("Copying the dash api to sonic-mgmt and try install again")
+                try:
+                    subprocess.run(["scp", "/auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb", "./libdashapi_1.0.0_amd64.deb"],
+                                   check=True, capture_output=False, text=True)
+                except Exception as e:
+                    logger.error(f"Failed to scp the dash api to sonic-mgmt: {e}")
+                    raise
+            subprocess.run(["dpkg", "--install", "./libdashapi_1.0.0_amd64.deb"],
+                           check=True, capture_output=False, text=True)
+
+        if is_community(sonic_topo):
+            # only for community setup
+            ansible_path = setup_info['ansible_path']
+            if setup_name.endswith('-ha'):
+                deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
+                                  recover_by_reboot=False, topology_obj=topology_obj,
+                                  cli_objs=None, deploy_dpu=True, config_dpu=True)
+            else:
+                for dut in setup_info['duts']:
+                    general_cli_obj = dut['cli_obj']
+                    deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
+                                      recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
+                                      cli_objs=[general_cli_obj], deploy_dpu=True, config_dpu=True)
+            logger.info("Validating DPU configuration")
+            for dut in setup_info['duts']:
+                # TODO parallelize this
+                general_cli_obj = dut['cli_obj']
+                dut_engine = dut['engine']
+                dut_engine.run_cmd('sudo config save -y')
+
+        # For both community and canonical setup
+        logger.info("Applying NAT config to smartSwitch")
+        with allure.step('Apply NAT config to smartSwitch'):
+            for dut in setup_info['duts']:
+                enable_nat_from_dut_mgmt_to_dpu_mgmt_intf(dut['engine'])
 
     @staticmethod
     def get_dut_cli(setup_info):

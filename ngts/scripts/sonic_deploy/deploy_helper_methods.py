@@ -2,6 +2,7 @@ import concurrent.futures
 import copy
 import logging
 import os
+import subprocess
 import netmiko
 import json
 import re
@@ -645,6 +646,32 @@ class DeployOrchestrator:
 
         DeployTopologyHelper.filter_testbed_yaml_file(self.context.setup_info)
 
+    def execute_dpu_post_installation_steps(self):
+        cli_obj = self.context.primary_cli_obj
+        cli_obj.dpu_post_installation_steps(self.context)
+
+    def execute_dpu_image_installation(self):
+        with allure.step(f'Start to install the bfb image on DPUs:{self.context.base_version_dpu}'):
+            # Download the DPU image file into sonic-mgmt container
+            # After the minigraph deployment, the DUT may not be able to access the NBU NFS server and DNS server
+            base_version_dpu = self.context.base_version_dpu
+            dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
+            dpu_image_file = "/tmp/" + base_version_dpu.split('/')[-1]
+            install_threads = []
+            try:
+                subprocess.run(["wget", "-t", "3", "-c", dpu_image_url, "-O", dpu_image_file], check=True, text=True, capture_output=False, timeout=300)
+                with concurrent.futures.ThreadPoolExecutor() as executor:
+                    for dut in self.context.setup_info['duts']:
+                        install_threads.append((f"DPU image install on {dut['dut_name']}",
+                                                executor.submit(DeployDpuHelper.bfb_install_dpu,
+                                                                self.context.topology_obj,
+                                                                dpu_image_file,
+                                                                dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
+                                                                self.context.setup_name)))
+                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
+            except Exception as e:
+                raise Exception(f"Failed to install the DPU image on one of the DUTs: {e}")
+
     def execute_full_deployment(self):
         """
         Execute the complete deployment flow
@@ -663,20 +690,6 @@ class DeployOrchestrator:
             results['install_threads'] = self.execute_installation()
             self.wait_until_deploy_background_process(results['install_threads'], timeout=1500)
 
-            # DPU installation if needed
-            if self.context.deploy_dpu:
-                with allure.step(f'Start to install the bfb image on DPUs:{self.context.base_version_dpu}'):
-                    install_threads = []
-                    executor = concurrent.futures.ThreadPoolExecutor()
-                    for dut in self.context.setup_info['duts']:
-                        install_threads.append((f"DPU image install on {dut['dut_name']}",
-                                               executor.submit(DeployDpuHelper.bfb_install_dpu,
-                                                               self.context.topology_obj,
-                                                               self.context.base_version_dpu,
-                                                               dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
-                                                               self.context.setup_name)))
-                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
-
         # Phase 3: Verify pre-installation processes
         with allure.step('verify pre installation processes are done'):
             self._verify_pre_installation_processes(results['pre_install_threads'])
@@ -688,6 +701,12 @@ class DeployOrchestrator:
             # Cleanup
             cache_full_path = os.path.join(os.path.dirname(__file__), '../../.pytest_cache')
             shutil.rmtree(cache_full_path, ignore_errors=True)
+
+        # Phase 5: DPU installation
+        if self.context.deploy_dpu:
+            # install DPUs
+            self.execute_dpu_image_installation()
+            self.execute_dpu_post_installation_steps()
 
         return results
 
@@ -708,7 +727,7 @@ class DeployDpuHelper:
     """Handle DPU-specific deployment operations"""
 
     @staticmethod
-    def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj, setup_name):
+    def bfb_install_dpu(topology_obj, dpu_image_file, dut_alias, dut_name, cli_obj, setup_name):
 
         rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
         dut_engine = topology_obj.players[dut_alias]['engine']
@@ -723,18 +742,21 @@ class DeployDpuHelper:
 
         with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
             DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
-
         with allure.step('Copying image to switch dut'):
-            dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
-            dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-            retry_call(lambda: dut_engine.run_cmd(
-                f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
+            retry_call(lambda: dut_engine.copy_file(
+                source_file=dpu_image_file,
+                dest_file=os.path.basename(dpu_image_file),
+                file_system=os.path.dirname(dpu_image_file) + os.sep,
+                direction='put',
+                overwrite_file=True,
+                verify_file=True
+            ),
                 tries=5, delay=2)
 
         try:
             with allure.step('Install BFB image on all DPUs'):
                 output = dut_engine.run_cmd(
-                    f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
+                    f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dpu_image_file} -v")
                 failures = []
                 for index in dpu_index_list:
                     pattern = f"{index}.*Installation Successful"
@@ -769,24 +791,11 @@ class DeployDpuHelper:
 
     @staticmethod
     def disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias):
-        if topology_obj.players[dut_alias]['engine'].run_cmd("ls /etc/mlnx/ | grep dpu.conf", validate=False) == 'dpu.conf':
-            if "DARK_MODE=true" in topology_obj.players[dut_alias]['engine'].run_cmd("cat /etc/mlnx/dpu.conf"):
-                with allure.step('Disable dark mode and power cycle'):
-                    topology_obj.players[dut_alias]['engine'].run_cmd(
-                        'sudo sh -c "sed -i \'s/DARK_MODE=true/DARK_MODE=false/\' /etc/mlnx/dpu.conf"')
-                    time.sleep(60)
-                    cli_obj.remote_reboot(topology_obj)
-                    cli_obj.verify_dockers_are_up()
-                    dpu_ready = topology_obj.players[dut_alias]['engine'].run_cmd(
-                        "dpuctl dpu-status | awk '{print $2}'")
-                    assert "False" not in dpu_ready, "Not all DPUs are ready."
-        else:
-            with allure.step('Disable dark mode by config chassis modules startup DPU'):
-                cli_obj.verify_dpus_down(dpu_index_list)
-                cli_obj.startup_dpu(dpu_index_list)
-                try:
-                    cli_obj.verify_dpus_up(dpu_index_list)
-                except AssertionError:
-                    logger.warning("Failed to verify DPUs are up, checking if they can receive the new image")
-                    cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
-                cli_obj.save_configuration()
+        with allure.step('Disable dark mode by config chassis modules startup DPU'):
+            cli_obj.startup_dpu(dpu_index_list)
+            try:
+                cli_obj.verify_dpus_up(dpu_index_list)
+            except AssertionError:
+                logger.warning("Failed to verify DPUs are up, checking if they can receive the new image")
+                cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
+            cli_obj.save_configuration()

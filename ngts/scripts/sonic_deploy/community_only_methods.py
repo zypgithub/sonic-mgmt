@@ -39,7 +39,7 @@ def get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number):
     return cmd
 
 
-def get_deploy_minigraph_cmd(dark_mode=False):
+def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False):
     """
     Method which returns the deploy minigraph command.
     """
@@ -51,7 +51,13 @@ def get_deploy_minigraph_cmd(dark_mode=False):
         # When dut is smartswitch and light mode, in testbed-cli.sh by default
         # the light mode is set to true, so we don't need to set it
         # when dut is not smartswitch, we don't need to set the light mode too
-        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault -vvvvv"
+        if config_dpu:
+            # run only dpu config tasks
+            dpu_config_param = '--tags "dpu_config"'
+        else:
+            # run all tasks except dpu config tasks
+            dpu_config_param = '--skip-tags "dpu_config"'
+        cmd = f"./testbed-cli.sh deploy-mg {{SWITCH}}-{{TOPO}} lab vault -vvvvv {dpu_config_param}"
     return cmd
 
 
@@ -86,7 +92,7 @@ def check_mst_dark_mode(cli_obj):
         logger.info("MST is healthy, no need to restart")
 
 
-def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_objs, deploy_dpu=False):
+def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_objs, deploy_dpu=False, config_dpu=False):
     """
     Method which doing minigraph deploy on DUT
     """
@@ -95,9 +101,11 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
         if 'bobcat' in dut_name and not deploy_dpu:
             dark_mode = True
             from infra.tools.redmine.redmine_api import is_redmine_issue_active
-            if is_redmine_issue_active([4518602])[0]:
-                check_mst_dark_mode(cli_obj)
-        cmd_temp = get_deploy_minigraph_cmd(dark_mode)
+            if is_redmine_issue_active([4518602])[0] and cli_objs is not None:
+                # TODO remove WA or parallelize the MST restart
+                for cli_obj in cli_objs:
+                    check_mst_dark_mode(cli_obj)
+        cmd_temp = get_deploy_minigraph_cmd(dark_mode, config_dpu)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
         if recover_by_reboot:

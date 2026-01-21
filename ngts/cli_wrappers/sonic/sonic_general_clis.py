@@ -2246,6 +2246,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # Configure DNS for IPv6 setups
         self._configure_ipv6_dns_for_sonic_mgmt_container(context.setup_info)
 
+    def dpu_post_installation_steps(self, context):
+        """Execute SONiC post-installation steps - base implementation"""
+        SonicInstallationSteps.dpu_post_installation_steps(
+            context.topology_obj, context.sonic_topo, context.recover_by_reboot, context.setup_name, context.setup_info
+        )
+
     def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
                            apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
                            target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
