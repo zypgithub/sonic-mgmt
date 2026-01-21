@@ -732,6 +732,16 @@ platform_tests/sfp/test_sfputil.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
+  skip:
+    reason: "Test skipped due to RM https://redmine.mellanox.com/issues/4846747 and CI setups"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4846747 and 'bison-1324' in testbed"
+    - "https://redmine.mellanox.com/issues/4846747 and 'bison-1323' in testbed"
+    - "https://redmine.mellanox.com/issues/4846747 and 'bison-1211' in testbed"
+    - "https://redmine.mellanox.com/issues/4846747 and 'bison-1212' in testbed"
+
 platform_tests/test_xcvr_info_in_db.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
