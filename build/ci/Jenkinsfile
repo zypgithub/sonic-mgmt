@@ -1,3 +1,5 @@
+@Library('common-lib@1.0.26') _
+
 pipeline {
     agent none
     options {
@@ -5,7 +7,7 @@ pipeline {
         buildDiscarder logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '30', numToKeepStr: '150')
     }
     environment {
-        GENERIC_CI_GIT_BRANCH = '5.0.4-66'
+        GENERIC_CI_GIT_BRANCH = '5.0.4-82'
         MAIN_NODE = 'MGMT_CI_MAIN'
         JSON_FILE = 'build/ci/ci_build_configuration.json'
     }

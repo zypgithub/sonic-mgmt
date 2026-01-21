@@ -15,6 +15,21 @@
     "CI_SONIC_SPC_SETUP_CHIP_TYPE=SPC",
     "CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE=SPC"
   ],
+  "agentConfig": [
+    {
+      "type": "pod",
+      "libraryResource": "devops/k8s/podTemplates/il/products/tools/mars/mini-mars-pod-template.yaml",
+      "label": "POD_MARS",
+      "parameters": [
+        {
+          "binding": {"variables": {
+              "mini_mars_image": "harbor.mellanox.com/sonic/sonic_mars_docker:latest"
+            }
+          }
+        }
+      ]
+    }
+  ],
   "phases": [
     {
       "phase_1": [
@@ -155,7 +170,7 @@
           "name": "Allocate setup SPC Community",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "MINI_MARS@COMMUNITY_SPC",
+          "container": "mini-mars:POD_MARS@COMMUNITY_SPC",
           "parameters": {
             "queue_id": "devops_sonic_ci_community_spc",
             "priority": "${PRIORITY_NUMBER}",
@@ -172,7 +187,7 @@
           "name": "Allocate setup SPC",
           "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
           "category": "Allocate setups",
-          "node": "MINI_MARS@SPC",
+          "container": "mini-mars:POD_MARS@SPC",
           "parameters": {
             "priority": "${PRIORITY_NUMBER}",
             "setup_var": "CI_SONIC_SPC_SETUP",
@@ -187,7 +202,7 @@
           "name": "Allocate setup SIMX SPC",
           "module": "${nfs_dir}/general/build/smart_allocate_setup/smart_allocate_setup.groovy",
           "category": "Allocate setups",
-          "node": "MINI_MARS@SIMX_SPC",
+          "container": "mini-mars:POD_MARS@SIMX_SPC",
           "parameters": {
             "priority": "${PRIORITY_NUMBER}",
             "setup_var": "CI_SONIC_SIMX_SPC_SETUP",
@@ -202,7 +217,7 @@
           "name": "Allocate setup SmartSwitch",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "MINI_MARS@SS",
+          "container": "mini-mars:POD_MARS@SS",
           "parameters": {
             "queue_id": "devops_sonic_ci_ss",
             "priority": "${PRIORITY_NUMBER}",
@@ -219,7 +234,7 @@
           "name": "Allocate setup QTM3",
           "module": "com.mellanox.jenkins.generic_modules.AllocateSetups",
           "category": "Allocate setups",
-          "node": "MINI_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM3",
           "parameters": {
             "queue_id": "devops_nvos_ci_qtm3",
             "priority": "${PRIORITY_NUMBER}",
@@ -236,7 +251,7 @@
           "name": "Deploy Community SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@COMMUNITY_SPC",
+          "container": "mini-mars:POD_MARS@COMMUNITY_SPC",
           "parameters": {
             "row": "ETH_COMMUNITY",
             "column": "SPC",
@@ -248,7 +263,8 @@
             "test_type": "REGRESSION",
             "sonic_mgmt_repo_url": "${nfs_dir}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy"
+            "test_name": "deploy",
+            "run_in_container": true
           },
           "skip": "${SKIP_COMMUNITY_REGRESSION}",
           "on_failure": "stop",
@@ -258,7 +274,7 @@
           "name": "Test Community SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@COMMUNITY_SPC",
+          "container": "mini-mars:POD_MARS@COMMUNITY_SPC",
           "parameters": {
             "row": "ETH_COMMUNITY",
             "column": "SPC",
@@ -270,7 +286,8 @@
             "test_type": "REGRESSION",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "test_name": "test"
+            "test_name": "test",
+            "run_in_container": true
           },
           "skip": "${SKIP_COMMUNITY_REGRESSION}",
           "on_failure": "stop",
@@ -280,7 +297,7 @@
           "name": "Deploy SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SPC",
+          "container": "mini-mars:POD_MARS@SPC",
           "parameters": {
             "row": "ETH",
             "column": "${CI_SONIC_SPC_SETUP_CHIP_TYPE}",
@@ -292,7 +309,8 @@
             "test_type": "CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy"
+            "test_name": "deploy",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_HW_SPC_BAT}",
           "on_failure": "stop",
@@ -302,7 +320,7 @@
           "name": "Test SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SPC",
+          "container": "mini-mars:POD_MARS@SPC",
           "parameters": {
             "row": "ETH",
             "column": "${CI_SONIC_SPC_SETUP_CHIP_TYPE}",
@@ -314,7 +332,8 @@
             "test_type": "CI",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "test_name": "test"
+            "test_name": "test",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_HW_SPC_BAT}",
           "on_failure": "stop",
@@ -324,7 +343,7 @@
           "name": "Deploy SIMX SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SIMX_SPC",
+          "container": "mini-mars:POD_MARS@SIMX_SPC",
           "parameters": {
             "row": "SIMX",
             "column": "${CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE}",
@@ -336,7 +355,8 @@
             "test_type": "CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy"
+            "test_name": "deploy",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
           "on_failure": "${SIMX_ON_FAILURE}",
@@ -346,7 +366,7 @@
           "name": "Test SIMX SPC",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SIMX_SPC",
+          "container": "mini-mars:POD_MARS@SIMX_SPC",
           "parameters": {
             "row": "SIMX",
             "column": "${CI_SONIC_SIMX_SPC_SETUP_CHIP_TYPE}",
@@ -358,7 +378,8 @@
             "test_type": "CI",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "test_name": "test"
+            "test_name": "test",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_SIMX_SPC_BAT}",
           "on_failure": "${SIMX_ON_FAILURE}",
@@ -368,7 +389,7 @@
           "name": "Deploy SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SS",
+          "container": "mini-mars:POD_MARS@SS",
           "parameters": {
             "row": "SMARTSWITCH",
             "column": "SPC3/BF3",
@@ -381,7 +402,8 @@
             "test_type": "MGMT_CI",
             "sonic_mgmt_repo_url": "${nfs_dir}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "test_name": "deploy"
+            "test_name": "deploy",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "on_failure": "stop",
@@ -391,7 +413,7 @@
           "name": "Test SmartSwitch",
           "module": "/auto/sw_system_release/ci/sonic_devops/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@SS",
+          "container": "mini-mars:POD_MARS@SS",
           "parameters": {
             "row": "SMARTSWITCH",
             "column": "SPC3/BF3",
@@ -404,7 +426,8 @@
             "test_type": "MGMT_CI",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
             "sonic_mgmt_repo_url": "${nfs_dir}",
-            "test_name": "test"
+            "test_name": "test",
+            "run_in_container": true
           },
           "skip": "${SKIP_SONIC_HW_SS_BAT}",
           "on_failure": "stop",
@@ -414,7 +437,7 @@
           "name": "Deploy QTM3",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM3",
           "parameters": {
             "row": "CHIPSIM",
             "column": "QTM3",
@@ -427,7 +450,8 @@
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "mars_run_type": "deploy"
+            "mars_run_type": "deploy",
+            "run_in_container": true
           },
           "skip": "${SKIP_NVOS_BAT}",
           "on_failure": "stop",
@@ -437,7 +461,7 @@
           "name": "Test QTM3",
           "module": "/auto/sw_system_release/ci/nos/nvos/build/ci/bat.groovy",
           "category": "BAT",
-          "node": "MINI_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM3",
           "parameters": {
             "row": "CHIPSIM",
             "column": "QTM3",
@@ -450,7 +474,8 @@
             "base_version": "${NVOS_BIN}",
             "custom_tarball_name": "${nfs_dir}/${TARBALL_NAME}",
             "mars_release_version": "${MARS_RELEASE_VERSION}",
-            "mars_run_type": "test"
+            "mars_run_type": "test",
+            "run_in_container": true
           },
           "skip": "${SKIP_NVOS_BAT}",
           "on_failure": "stop",
@@ -460,7 +485,7 @@
           "name": "Free community setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@COMMUNITY_SPC",
+          "container": "mini-mars:POD_MARS@COMMUNITY_SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_COMMUNITY_SPC_SETUP}"
           },
@@ -473,7 +498,7 @@
           "name": "Free SPC setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@SPC",
+          "container": "mini-mars:POD_MARS@SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_SPC_SETUP}"
           },
@@ -486,7 +511,7 @@
           "name": "Free SIMX SPC setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@SIMX_SPC",
+          "container": "mini-mars:POD_MARS@SIMX_SPC",
           "parameters": {
             "setup_name": "${CI_SONIC_SIMX_SPC_SETUP}"
           },
@@ -499,7 +524,7 @@
           "name": "Free QTM3 setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@QTM3",
+          "container": "mini-mars:POD_MARS@QTM3",
           "parameters": {
             "setup_name": "${NVOS_CHIPSIM_SONIC_MGMT_QTM3_SETUP}"
           },
@@ -512,7 +537,7 @@
           "name": "Free SmartSwitch setup",
           "module": "com.mellanox.jenkins.generic_modules.FreeSetup",
           "category": "Clean",
-          "node": "MINI_MARS@SS",
+          "container": "mini-mars:POD_MARS@SS",
           "parameters": {
             "setup_name": "${CI_SONIC_SS_SETUP}"
           },
