@@ -577,19 +577,16 @@ def analyze_time_stamp(time_stamp_list, polling_interval, sample_file):
         logger.info(f"Timestamp: {new_t}")
     logger.info(f"##-------------------------------##")
     logger.info(f"polling_interval = {polling_interval}")
-    delta_t1 = (formatted_time_stamp[1] - formatted_time_stamp[0]).seconds
-    logger.info(f"delta_t1 = {delta_t1}")
-    delta_t2 = (formatted_time_stamp[2] - formatted_time_stamp[1]).seconds
-    logger.info(f"delta_t2 = {delta_t2}")
+    max_deviation = 0
+    for index in range(1, min(3, len(formatted_time_stamp))):
+        delta = (formatted_time_stamp[index] - formatted_time_stamp[index - 1]).seconds
+        logger.info(f"delta_t{index} = {delta}")
+        deviation = abs(delta - polling_interval)
+        max_deviation = max(max_deviation, deviation)
     logger.info(f"##-------------------------------##")
-    deviation_1 = abs(delta_t1 - polling_interval)
-    deviation_2 = abs(delta_t2 - polling_interval)
-    if deviation_1 > SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE:
+    if max_deviation > SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE:
         logger.warning(
-            f"There is a big deviation: {deviation_1} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
-    if deviation_2 > SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE:
-        logger.warning(
-            f"There is a big deviation: {deviation_2} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
+            f"There is a big deviation: {max_deviation} seconds, greater than {SflowConsts.POLLING_INTERVAL_DEVIATION_TOLERANCE}")
 
 
 def copy_sample_file_to_ngts_docker(engines, sample_file):
