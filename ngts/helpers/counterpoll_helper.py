@@ -241,7 +241,7 @@ class CounterpollHelper:
     def monit_process(engines, interval, iterations):
         """
         This method is used to get the cpu and memory usage monitor result
-        Use top command to collect cpu and memory usage
+        Use top command with -E m to collect cpu and memory usage in MiB
         The typical output of top command is listed
 
         top - 05:50:42 up 28 min,  1 user,  load average: 0.47, 0.53, 0.62
@@ -273,14 +273,14 @@ class CounterpollHelper:
         """
         dut_engine = engines.dut
         MonitResult = namedtuple('MonitResult', ['processes', 'memory'])
-        cmd = f"top -d {interval} -n {iterations + 1} -b -E k"
+        cmd = f"top -d {interval} -n {iterations + 1} -b -E m"
         stdout = dut_engine.run_cmd(cmd)
 
         monit_results = []
         proc_section = False
         mem_re = re.compile(
-            (r"^KiB Mem\s+:\s+(?P<total>\d+)\+?\s*total,\s+(?P<free>\d+)"
-             r"\+?\s*free,\s+(?P<used>\d+)\+?\s*used,\s+\d+\+?\s*buff/cache\s*$")
+            (r"^MiB Mem\s+:\s+(?P<total>[\d.]+)\+?\s*total,\s+(?P<free>[\d.]+)"
+             r"\+?\s*free,\s+(?P<used>[\d.]+)\+?\s*used,\s+[\d.]+\+?\s*buff/cache\s*$")
         )
         mem_attrs = ('total', 'free', 'used')
         proc_attrs = ('pid', 'status', 'cpu_percent', 'memory_percent', 'name')
@@ -290,7 +290,7 @@ class CounterpollHelper:
                 proc_section = False
             elif line.startswith('top'):
                 monit_results.append(MonitResult([], {}))
-            elif line.startswith('KiB Mem'):
+            elif line.startswith('MiB Mem'):
                 CounterpollHelper.process_mem_section(monit_results, mem_re, line, mem_attrs)
             elif "PID" in line:
                 proc_section = True
@@ -311,7 +311,7 @@ class CounterpollHelper:
         """
         line_match = mem_re.match(line)
         values = (line_match.group(_) for _ in mem_attrs)
-        memory = {k: int(v) for k, v in zip(mem_attrs, values)}
+        memory = {k: float(v) for k, v in zip(mem_attrs, values)}
         used_percent = memory['used'] * 100 / float(memory['total'])
         memory['used_percent'] = round(used_percent, 2)
         monit_results[-1].memory.update(memory)
