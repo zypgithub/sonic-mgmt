@@ -1,10 +1,7 @@
 import base64
-import logging
-import os
 import random
 import string
 import time
-from typing import Dict
 from urllib.parse import quote
 
 import pytest
@@ -24,7 +21,6 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
@@ -846,7 +842,7 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
         assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'
 
 
-def get_image_data(system) -> Tuple[Dict, str, str, str]:
+def get_image_data(system) -> tuple[dict, str, str, str]:
     """
     Returns: Output of nv show system image (as dict),
              name of the image in the current partition,
