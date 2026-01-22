@@ -14,8 +14,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 DEFAULT_PTF_NN_PORT_RANGE = [10900, 10999]
 DEFAULT_DEVICE_NUM = 0
 ETH_PFX = 'eth'
