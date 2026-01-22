@@ -3,7 +3,7 @@
 	<global>
 		<default_params_type> extended_setup_step_params </default_params_type>
 		<DB>
-			<info> BMC Security Domain: BMC ERoT Attestation, BMC Credentials, Reset BMC Password </info>
+			<info> SSH Domain: SSH Config, Hardening, PKA, Trusted Auth, Login Notification </info>
 			<owner> Aleksander Romashin </owner>
 			<group> NVOS </group>
 			<dimension> VER </dimension>
@@ -42,7 +42,18 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_bmc.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_hardening.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_config.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_pka.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_trusted_auth.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_login_ssh_notification.cases </cases>
 	</test>
 </DBDEF>
