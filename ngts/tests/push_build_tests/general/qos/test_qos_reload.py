@@ -137,7 +137,7 @@ def test_qos_reload_ports(topology_obj, engines, cli_objects, setup_name, tested
     finally:
         with allure.step(f"Configure QOS on ports: {tested_ports} with CLI command"):
             logger.info(f"Configure QOS on ports: {tested_ports} with CLI command")
-            cli_object.qos.reload_qos(ports_list=tested_ports)
+            cli_object.qos.reload_qos(ports_list=tested_ports, no_dynamic=True)
 
         with allure.step(f"Save configuration on DUT"):
             logger.info(f"Save configuration on DUT")

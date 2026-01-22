@@ -29,7 +29,7 @@ class SonicQosCli:
         """
         cmd_suffix = ""
         if ports_list:
-            cmd_suffix += f"--ports {','.join(ports_list)}"
+            cmd_suffix += f"--ports {','.join(ports_list)} "
         if no_dynamic:
             cmd_suffix += "--no-dynamic-buffer"
 
