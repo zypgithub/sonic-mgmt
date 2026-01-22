@@ -21,7 +21,7 @@ from tests.common.config_reload import config_reload
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t1')
+    pytest.mark.topology('smartswitch')
 ]
 
 
