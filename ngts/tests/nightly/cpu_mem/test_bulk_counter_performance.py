@@ -68,6 +68,8 @@ def setup_thresholds(topology_obj, is_simx, platform_params):
     is_asan = is_sanitizer_image(topology_obj)
     if is_asan:
         memory_threshold = CounterpollConstants.MEMORY_THRESHOLD_ASAN
+    elif 'sn4600' in platform_params.platform:  # Tigon platform
+        memory_threshold = CounterpollConstants.MEMORY_THRESHOLD_TIGON
     # The CPU usage of `sx_sdk` on mellanox is expected to be higher, and the actual CPU usage
     # is correlated with the number of ports
     high_cpu_consume_procs[CounterpollConstants.SX_SDK] = CounterpollConstants.CPU_THRESHOLD_FOR_HIGH_CONSUME_PROCESS
