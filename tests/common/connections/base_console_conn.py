@@ -70,14 +70,16 @@ class BaseConsoleConn(CiscoBaseConnection):
         Write a command to terminal and poll until expected pattern is found or timeout
         """
         self.write_channel(command + self.RETURN)
-        self.read_until_pattern(pattern=pattern)
+        self.read_until_pattern(expect_string=pattern)
 
     def disable_paging(self, command="", delay_factor=1):
         # not supported
         pass
 
-    def find_prompt(self, delay_factor=1):
-        return super(BaseConsoleConn, self).find_prompt(delay_factor)
+    def find_prompt(self, delay_factor=1, pattern=None):
+        if pattern:
+            return super(BaseConsoleConn, self).find_prompt(delay_factor=delay_factor, pattern=pattern)
+        return super(BaseConsoleConn, self).find_prompt(delay_factor=delay_factor)
 
     def clear_buffer(self):
         # todo
