@@ -1696,7 +1696,8 @@
 
 #NVOS
 - Errors_list:
-    - '.*ERR\s+health-statsd#health_history:\s+snmp:(?:snmp-subagent|snmpd):\s+Process\s+''(?:snmp-subagent|snmpd)''\s+in\s+container\s+''snmp''\s+is\s+not\s+running'
+    - ".*ERR health-statsd#health_history: snmp:snmp-subagent: Process 'snmp-subagent' in container 'snmp' is not running.*"
+    - ".*ERR health-statsd#health_history: snmp:snmpd: Process 'snmpd' in container 'snmp' is not running.*"
   Conditions:
     - Affected_test_cases:
       - tests_nvos/system/test_system_snmp.py::test_system_snmp_negative
