@@ -56,7 +56,7 @@ class DeploymentContext:
                  recover_by_reboot, reboot, additional_apps, workspace_path, wjh_deb_url,
                  verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                  serial_log_analyzers, fanout_target_version, request, is_air,
-                 deploy_testbed_in_parallel=False, deploy_image_only=False):
+                 deploy_testbed_in_parallel=False, deploy_image_only=False, deploy_chipless=False):
         """
         Initialize DeploymentContext with all parameters.
 
@@ -98,6 +98,7 @@ class DeploymentContext:
         self.is_air = is_air
         self.deploy_testbed_in_parallel = deploy_testbed_in_parallel
         self.deploy_image_only = deploy_image_only
+        self.deploy_chipless = deploy_chipless
         # Initialize derived values (replaces lines 102-123 from original function)
         self._initialize()
 

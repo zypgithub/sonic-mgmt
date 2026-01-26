@@ -106,6 +106,9 @@ def pytest_addoption(parser):
     logger.info('Parsing deploy_image_only')
     parser.addoption("--deploy_image_only", action="store", default='no', choices=["yes", "no"], required=False,
                      help="Deploy the image only, skip add-topo and remove-topo")
+    logger.info('Parsing deploy_chipless')
+    parser.addoption("--deploy_chipless", help="Specify whether to do chipless deployment. Default is 'no'",
+                     choices=["no", "yes"], action="store", default="no")
 
 
 @pytest.fixture(scope="module")
@@ -394,3 +397,14 @@ def custom_config_db_air_path(request):
     if not custom_config_db_air:
         return None
     return custom_config_db_air
+
+
+@pytest.fixture(scope="module")
+def deploy_chipless(request):
+    """
+    Method for getting deploy_chipless from pytest arguments
+    :param request: pytest builtin
+    :return: deploy_chipless
+    """
+    deploy_chipless_arg = request.config.getoption('--deploy_chipless')
+    return deploy_chipless_arg == "yes"

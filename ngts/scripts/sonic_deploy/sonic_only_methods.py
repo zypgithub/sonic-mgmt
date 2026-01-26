@@ -6,6 +6,7 @@ import json
 import allure
 import pytest
 import sys
+import time
 from pathlib import Path
 
 from ngts.helpers import json_file_helper
@@ -63,7 +64,7 @@ class SonicInstallationSteps:
     @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
-            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False, is_air=False):
+            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False, is_air=False, deploy_chipless=False):
         """
         Pre-installation steps for SONIC
         :param sonic_topo: the topo for SONiC testing, for example: t0, t1, t1-lag, ptf32
@@ -78,6 +79,7 @@ class SonicInstallationSteps:
         :param is_performance: True if setup is performance, else False
         :param parallel: deploy testbed in parallel flag
         :param deploy_image_only: deploy image only flag
+        :param deploy_chipless: deploy chipless flag
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
@@ -122,7 +124,8 @@ class SonicInstallationSteps:
         elif is_performance:
             pass
         else:
-            SonicInstallationSteps.start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx)
+            SonicInstallationSteps.start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx,
+                                                                      deploy_chipless=deploy_chipless)
 
     @staticmethod
     def start_community_background_threads(threads_dict, setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag,
@@ -210,13 +213,13 @@ class SonicInstallationSteps:
             SonicInstallationSteps.copy_csv_inventory_lab(setup_name, destination_hwsku, is_air)
 
     @staticmethod
-    def start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx):
+    def start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx, deploy_chipless=False):
         """
         Start background threads for canonical setup
         """
         python_bin_path = sys.executable
 
-        if not is_simx:
+        if not is_simx and not deploy_chipless:
             run_containers_cmd = SonicInstallationSteps.generate_run_containers_command(python_bin_path, setup_name)
             run_background_process_on_host(threads_dict, 'containers_bringup', run_containers_cmd, timeout=600)
 
@@ -494,7 +497,7 @@ class SonicInstallationSteps:
                                 apply_base_config, target_version, is_shutdown_bgp, reboot_after_install,
                                 deploy_only_target, fw_pkg_path, reboot, additional_apps, setup_info, dut_alias,
                                 is_performance, chip_type, deploy_dpu=False, xml_rpc=True, is_air=False,
-                                custom_config_db_air_path=None):
+                                custom_config_db_air_path=None, deploy_chipless=False):
         """
         Post-installation steps
         :param topology_obj: topology object
@@ -517,13 +520,18 @@ class SonicInstallationSteps:
         :param deploy_dpu: deploy dpu flag
         :param is_air: is_air fixture
         :param custom_config_db_air_path: path to custom config_db.json file
+        :param deploy_chipless: deploy chipless flag
         """
         ansible_path = setup_info['ansible_path']
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
         for dut in setup_info['duts']:
             cli = dut['cli_obj']
             dut_alias = dut['dut_alias']
-            apply_base_config = False if is_performance else apply_base_config
+            apply_base_config = (
+                True if deploy_chipless
+                else False if is_performance
+                else apply_base_config
+            )
             cli.cli_obj.general.deploy_image_post_installtion(topology_obj, apply_base_config=apply_base_config,
                                                               setup_name=setup_name,
                                                               platform_params=platform_params,
@@ -531,7 +539,8 @@ class SonicInstallationSteps:
                                                               configure_dns=True, is_air=is_air, disable_ztp=True,
                                                               setup_info=setup_info,
                                                               dut_alias=dut_alias,
-                                                              custom_config_db_air_path=custom_config_db_air_path)
+                                                              custom_config_db_air_path=custom_config_db_air_path,
+                                                              deploy_chipless=deploy_chipless)
         dut_name = setup_info['duts'][0]['dut_name']
         dut_platform_path = f'/usr/share/sonic/device/{platform_params["platform"]}'
         sonic_mgmt_hwsku_path = '/usr/share/sonic/device/x86_64-kvm_x86_64-r0'
@@ -598,10 +607,11 @@ class SonicInstallationSteps:
             logger.info(f"Multi-ASIC platform {platform_params['platform']} detected")
 
         if not is_community(sonic_topo) and not is_performance:
-            # Enable Port Init Profile for Canonical setups
-            logger.info("Prepare sai.xml files for Port Init feature testing")
-            cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
-                                    local_flags=False, platform_params=platform_params)
+            if not deploy_chipless:
+                # Enable Port Init Profile for Canonical setups
+                logger.info("Prepare sai.xml files for Port Init feature testing")
+                cli.update_sai_xml_file(platform_params['platform'], platform_params['hwsku'], global_flag=True,
+                                        local_flags=False, platform_params=platform_params)
 
         # Community only steps
         if is_community(sonic_topo):
@@ -690,11 +700,29 @@ class SonicInstallationSteps:
                         cli_obj.shutdown_dpu(dpu_index_list)
                         cli.shutdown_dpu_data_interfaces(setup_name)
                         cli_obj.save_configuration()
+            if deploy_chipless:
+                with allure.step('Bring up pmon docker for chipless deploy'):
+                    SonicInstallationSteps.bring_up_pmon_for_chipless(dut_engine)
+            else:
+                # Only check port status at canonical setup, there is an ansible counterpart for community setup
+                for dut in setup_info['duts']:
+                    ports_list = topology_obj.players_all_ports[dut['dut_alias']]
+                    dut['cli_obj'].cli_obj.interface.check_link_state(ports_list)
 
-            # Only check port status at canonical setup, there is an ansible counterpart for community setup
-            for dut in setup_info['duts']:
-                ports_list = topology_obj.players_all_ports[dut['dut_alias']]
-                dut['cli_obj'].cli_obj.interface.check_link_state(ports_list)
+    @staticmethod
+    def bring_up_pmon_for_chipless(dut_engine):
+        """
+        Deploy chipless steps
+        """
+        dut_engine.run_cmd("sudo config feature state syncd disabled", validate=False)
+        dut_engine.run_cmd("sudo config feature state swss disabled", validate=False)
+        dut_engine.run_cmd("sudo config save -y", validate=False)
+        dut_engine.run_cmd("sudo sed -i '/^After=syncd.service$/d' /usr/lib/systemd/system/pmon.service", validate=False)
+        dut_engine.run_cmd("sudo sed -i '/sx_core/d' /usr/bin/pmon.sh", validate=False)
+        dut_engine.run_cmd("sudo docker rm pmon", validate=False)
+        dut_engine.run_cmd("sudo systemctl daemon-reload", validate=False)
+        dut_engine.run_cmd("sudo systemctl reset-failed pmon", validate=False)
+        dut_engine.run_cmd("sudo systemctl restart pmon", validate=False)
 
     @staticmethod
     def dpu_post_installation_steps(topology_obj, sonic_topo, recover_by_reboot, setup_name, setup_info):

@@ -205,11 +205,14 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.cli_obj.ip.apply_dns_servers_into_resolv_conf()
 
     def reboot_reload_flow(self, r_type='reboot', ports_list=None, topology_obj=None, wait_after_ping=45,
-                           reload_force=False):
+                           reload_force=False, deploy_chipless=False):
         """
         Wrapper for reboot and reload methods - which executes appropriate method based on reboot/reload type
         """
-        if r_type == SonicConst.CONFIG_RELOAD_CMD:
+        if deploy_chipless:
+            self.reload_configuration(reload_force)
+            time.sleep(180)
+        elif r_type == SonicConst.CONFIG_RELOAD_CMD:
             self.reload_flow(ports_list, topology_obj, reload_force)
         else:
             self.reboot_flow(r_type, ports_list, topology_obj, wait_after_ping)
@@ -575,18 +578,18 @@ class SonicGeneralCliDefault(GeneralCliCommon):
     def deploy_image_post_installtion(self, topology_obj, apply_base_config=False, setup_name=None,
                                       platform_params=None, reboot_after_install=None,
                                       set_timezone='Israel', disable_ztp=False, configure_dns=False,
-                                      setup_info=None, dut_alias=None, is_air=False, custom_config_db_air_path=None):
+                                      setup_info=None, dut_alias=None, is_air=False, custom_config_db_air_path=None,
+                                      deploy_chipless=False):
         # docker containers are not stable before all the platform configs are applied
         # will be verified after config_db is updated
-        if not is_air:
-            with allure.step('Verify dockers are up'):
-                self.verify_dockers_are_up()
+        if not deploy_chipless:
 
-        with allure.step("Modify default timezone"):
-            self.modify_init_cfg_timezone(SonicConst.TIMEZONE)
+            if not is_air:
+                with allure.step('Verify dockers are up'):
+                    self.verify_dockers_are_up()
 
-        if setup_info and dut_alias and self.is_fanout_deploy_needed(setup_name):
-            self.disable_ipv6_sonic_fanout(topology_obj, dut_alias)
+            with allure.step("Modify default timezone"):
+                self.modify_init_cfg_timezone(SonicConst.TIMEZONE)
 
         # Remove asic_table.json only for multi-asic Air platforms
         if is_air and SonicInstallationSteps.is_multi_asic_platform(platform_params=platform_params):
@@ -603,8 +606,9 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.engine.disconnect()
                 system_set_timezone(self.engine, set_timezone)
 
-        with allure.step("Init telemetry keys"):
-            self.init_telemetry_keys()
+        if not deploy_chipless:
+            with allure.step("Init telemetry keys"):
+                self.init_telemetry_keys()
 
         self.engine.disconnect()
 
@@ -614,7 +618,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.update_platform_params(platform_params, setup_name)
             with allure.step("Apply basic config"):
                 self.apply_basic_config(topology_obj, setup_name, platform_params, disable_ztp=disable_ztp,
-                                        configure_dns=configure_dns, is_air=is_air, custom_config_db_air_path=custom_config_db_air_path)
+                                        configure_dns=configure_dns, is_air=is_air, custom_config_db_air_path=custom_config_db_air_path,
+                                        deploy_chipless=deploy_chipless)
             self.restart_determine_reboot_cause()
         else:
             self.disable_ztp(disable_ztp)
@@ -1029,10 +1034,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 logger.info(f'Updated platform_params: \n{platform_params}')
 
     def apply_basic_config(self, topology_obj, setup_name, platform_params, reload_before_qos=False,
-                           disable_ztp=False, configure_dns=True, is_air=False, custom_config_db_air_path=None):
+                           disable_ztp=False, configure_dns=True, is_air=False, custom_config_db_air_path=None,
+                           deploy_chipless=False):
         with allure.step("Upload port_config.ini and config_db.json with reload of dut"):
             retry_call(self.apply_config_files,
-                       fargs=[topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path],
+                       fargs=[topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path, deploy_chipless],
                        tries=3,
                        delay=10,
                        logger=logger)
@@ -1047,12 +1053,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj,
                                         reload_force=True)
 
-        if not self.is_performance_setup(setup_name):
-            with allure.step("Apply qos and dynamic buffer config"):
-                self.cli_obj.qos.reload_qos(no_dynamic=True)
-                self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
-                self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)
-                self.cli_obj.qos.start_buffermgrd(platform_params=platform_params)
+        if deploy_chipless:
+            self.cli_obj.qos.reload_qos(no_dynamic=True)
+        else:
+            if not self.is_performance_setup(setup_name):
+                with allure.step("Apply qos and dynamic buffer config"):
+                    self.cli_obj.qos.reload_qos(no_dynamic=True)
+                    self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
+                    self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)
+                    self.cli_obj.qos.start_buffermgrd(platform_params=platform_params)
 
         with allure.step("Enable INFO logging on swss"):
             self.enable_info_logging_on_swss(platform_params=platform_params)
@@ -1219,7 +1228,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
 
         logger.info("✓ Multi-ASIC configuration applied successfully")
 
-    def apply_config_files(self, topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path=None):
+    def apply_config_files(self, topology_obj, setup_name, platform_params, is_air, custom_config_db_air_path=None,
+                           deploy_chipless=False):
         platform = platform_params['platform']
         hwsku = platform_params['hwsku']
         shared_path = '{}{}'.format(InfraConst.MARS_TOPO_FOLDER_PATH, setup_name)
@@ -1249,7 +1259,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.create_extended_config_db_file(setup_name, config_db, file_name=config_db_file_name)
         self.cli_obj.im.enable_im(topology_obj=topology_obj, platform_params=platform_params,
                                   chip_type=self.get_chip_gen(platform_params), enable_im=True)
-        self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True)
+        self.reboot_reload_flow(r_type=SonicConst.CONFIG_RELOAD_CMD, topology_obj=topology_obj, reload_force=True,
+                                deploy_chipless=deploy_chipless)
 
     def upload_port_config_ini(self, platform, hwsku, shared_path):
         switch_config_ini_path = f'/usr/share/sonic/device/{platform}/{hwsku}'
@@ -2228,7 +2239,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             context.sonic_topo, context.neighbor_type, context.base_version, context.target_version,
             context.setup_info, context.port_number, context.is_simx,
             threads_dict, context.destination_hwsku, context.is_performance,
-            parallel=context.deploy_testbed_in_parallel, deploy_image_only=context.deploy_image_only
+            parallel=context.deploy_testbed_in_parallel, deploy_image_only=context.deploy_image_only,
+            deploy_chipless=context.deploy_chipless
         )
 
     def post_installation_steps(self, context, image_helper=None):
@@ -2239,7 +2251,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             context.platform_params, context.apply_base_config, context.target_version,
             context.is_shutdown_bgp, context.reboot_after_install, context.deploy_only_target,
             context.fw_pkg_path, context.reboot, context.additional_apps, context.setup_info,
-            last_dut['dut_alias'], context.is_performance, context.chip_type, context.deploy_dpu, context.is_air
+            last_dut['dut_alias'], context.is_performance, context.chip_type, context.deploy_dpu, context.is_air,
+            deploy_chipless=context.deploy_chipless
         )
 
         # SONiC-specific post-upgrade operations
