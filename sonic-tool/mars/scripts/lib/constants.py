@@ -36,6 +36,10 @@ SONIC_MGMT_MOUNTPOINTS = {
     '/auto/sw/projects/performance/results/mongodb/': '/auto/sw/projects/performance/results/mongodb/',
     '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
 }
+AIR_SONIC_MGMT_MOUNTPOINTS = {
+    '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
+    '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
+}
 
 SONIC_MGMT_MOUNTPOINTS_MTBC = {
     '/auto/sw_regression/mtbcsw/system/SONIC/MARS': '/auto/sw_regression/mtbcsw/system/SONIC/MARS',

@@ -187,6 +187,8 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
         container_mountpoints_dict += constants.SONIC_MGMT_MOUNTPOINTS_MTBC.items()
     if conn.host in constants.MTL_NVOS_SERVER_LIST:
         container_mountpoints_dict += constants.MTL_NVOS_MOUNTPOINTS.items()
+    if air_setup:
+        container_mountpoints_dict = constants.AIR_SONIC_MGMT_MOUNTPOINTS.items()
     container_mountpoints_list = []
     for key, value in container_mountpoints_dict:
         if key == "/workspace":
