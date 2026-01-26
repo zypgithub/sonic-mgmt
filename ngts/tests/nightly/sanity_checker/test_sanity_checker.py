@@ -501,6 +501,23 @@ def write_failed_case_name(is_test_failed, case_name, is_in_deploy_image_flow):
         write_failed_sanity_checker_cases_to_file([f"{case_name} "])
 
 
+def is_valid_component_entry(component, component_info):
+    """
+    Check if a component entry is valid and should be included in parsing.
+
+    :param component: the component name string
+    :param component_info: the full parsed row dictionary
+    :return: True if the entry is valid, False if it should be skipped
+    """
+    if not component or not component.strip('-'):
+        return False
+    if component.upper() in ('COMPONENT', 'SIMX') or component.upper().startswith('SAI_API_HEAD'):
+        return False
+    if 'SONIC_SAI' in component_info or 'VENDOR_SAI' in component_info:
+        return False
+    return True
+
+
 def parse_component_version_table(engines):
     """
     The function parses the component version table gotten as the output of get_components_version.py script
@@ -513,9 +530,8 @@ def parse_component_version_table(engines):
     parsed_table = generic_sonic_output_parser(expected_component_version_table)
     version_dict = dict()
     for component_info in parsed_table:
-        component = component_info.get('COMPONENT') or component_info.get('component', '')
-        # We cannot guarantee that SimX version will be aligned
-        if component.upper() == 'SIMX':
+        component = (component_info.get('COMPONENT') or component_info.get('component', '')).strip()
+        if not is_valid_component_entry(component, component_info):
             continue
         compilation_version = component_info.get('COMPILATION') or component_info.get('compilation', '')
         actual_version = component_info.get('ACTUAL') or component_info.get('actual', '')
