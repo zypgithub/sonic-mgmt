@@ -1,7 +1,6 @@
 import logging
 import os
 import random
-from typing import List, Optional, Tuple
 
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -10,12 +9,8 @@ from ngts.tests_nvos.general.security.security_test_tools.constants import UserR
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.test_ssh_cert_auth.constants import (
-    CERT_VALIDITY_PERIODS,
-    SSH_CERT_AUTH_KEYS_PATH,
-    TEST_PRINCIPALS
-)
 from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
+from ngts.tests_nvos.general.security.test_ssh_cert_auth.constants import CERT_VALIDITY_PERIODS, SSH_CERT_AUTH_KEYS_PATH, TEST_PRINCIPALS
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
@@ -28,9 +23,15 @@ class SshCertAuthHelper:
 
     def ensure_keys_directory(self):
         with allure.step(f"Ensure keys directory: {self.keys_path}"):
-            os.makedirs(self.keys_path, exist_ok=True)
+            os.makedirs(self.keys_path, mode=0o777, exist_ok=True)
+            # Directory needs 777 permissions for both local user and regression (root) to write
+            try:
+                os.chmod(self.keys_path, 0o777)
+                logger.info(f"Set directory permissions to 777 for {self.keys_path}")
+            except Exception as e:
+                logger.warning(f"Could not set directory permissions: {e}")
 
-    def generate_key_pair(self, key_name: str, key_type: Optional[str] = None, ca: bool = False) -> Tuple[str, str, str]:
+    def generate_key_pair(self, key_name: str, key_type: str | None = None, ca: bool = False) -> tuple[str, str, str]:
         """
         Generate CA key pair for signing certificates.
 
@@ -49,25 +50,29 @@ class SshCertAuthHelper:
             self.ensure_keys_directory()
 
             SecuritySshTool.generate_auth_keypair(
-                key_type=key_type,
-                dst_path=key_path,
-                num_bits=SshHardeningConsts.PUBLIC_KEY_LENGTH_DICT.get(key_type, 2048)
+                key_type=key_type, dst_path=key_path, num_bits=SshHardeningConsts.PUBLIC_KEY_LENGTH_DICT.get(key_type, 2048)
             )
 
-            public_key_content = self.cmd_runner.run_cmd(f'cat {key_path}.pub').strip()
+            if not os.path.exists(key_path):
+                raise FileNotFoundError(f"Private key was not created: {key_path}. Check directory permissions: {self.keys_path}")
+            if not os.path.exists(f"{key_path}.pub"):
+                raise FileNotFoundError(f"Public key was not created: {key_path}.pub. Check directory permissions: {self.keys_path}")
+
+            public_key_content = self.cmd_runner.run_cmd(f"cat {key_path}.pub").strip()
             public_key_hash = self.extract_public_key(public_key_content)
 
             logger.info(f"Generated key pair: {key_path}")
             return public_key_hash, key_type, key_path
 
-    def generate_ca_key_pair(self, ca_name: str, key_type: Optional[str] = None) -> Tuple[str, str, str]:
+    def generate_ca_key_pair(self, ca_name: str, key_type: str | None = None) -> tuple[str, str, str]:
         return self.generate_key_pair(ca_name, key_type, ca=True)
 
-    def generate_user_key_pair(self, user_name: str, key_type: Optional[str] = None) -> Tuple[str, str, str]:
+    def generate_user_key_pair(self, user_name: str, key_type: str | None = None) -> tuple[str, str, str]:
         return self.generate_key_pair(user_name, key_type)
 
-    def sign_user_certificate(self, ca_private_key_name: str, user_key_name: str,
-                              principals: List[str], cert_id: str = 'cert', validity: Optional[str] = None) -> str:
+    def sign_user_certificate(
+        self, ca_private_key_name: str, user_key_name: str, principals: list[str], cert_id: str = "cert", validity: str | None = None
+    ) -> str:
         """
         Sign user certificate with CA private key.
 
@@ -81,8 +86,8 @@ class SshCertAuthHelper:
         Returns:
             Path to the signed certificate
         """
-        validity = validity or CERT_VALIDITY_PERIODS['day']
-        principals_str = ','.join(principals)
+        validity = validity or CERT_VALIDITY_PERIODS["day"]
+        principals_str = ",".join(principals)
         cert_path = f"{self.keys_path}/{user_key_name}-cert.pub"
 
         with allure.step(f"Sign certificate: {cert_id} with principals {principals_str}"):
@@ -95,7 +100,7 @@ class SshCertAuthHelper:
             )
 
             logger.info(f"Signing certificate with command: {sign_cmd}")
-            self.cmd_runner.run_cmd(sign_cmd, allowed_err='Signed user key')
+            self.cmd_runner.run_cmd(sign_cmd, allowed_err="Signed user key")
 
             if not os.path.exists(cert_path):
                 raise Exception(f"Certificate signing failed: {cert_path} not created")
@@ -103,7 +108,7 @@ class SshCertAuthHelper:
             logger.info(f"Certificate signed successfully: {cert_path}")
             return cert_path
 
-    def generate_keys_and_sign_certificate(self, key_name: str, key_type: str, principals: List[str]) -> Tuple[str, str]:
+    def generate_keys_and_sign_certificate(self, key_name: str, key_type: str, principals: list[str]) -> tuple[str, str]:
         _, _, key_path = self.generate_user_key_pair(key_name, key_type)
         ca_public_key_hash, _, _ = self.generate_ca_key_pair(key_name, key_type)
         _ = self.sign_user_certificate(f"{key_name}_ca", f"{key_name}_key", principals=principals)
@@ -132,13 +137,18 @@ class SshCertAuthHelper:
             key_name: Base path for the key pair
         """
         with allure.step(f"Cleanup key pair: {key_name}"):
-            SecuritySshTool.rm_auth_keypair(f"{self.keys_path}/{key_name}_ca")
-            SecuritySshTool.rm_auth_keypair(f"{self.keys_path}/{key_name}_key")
-            SecuritySshTool.rm_auth_key(f"{self.keys_path}/{key_name}_key-cert.pub")
+            try:
+                SecuritySshTool.rm_auth_keypair(f"{self.keys_path}/{key_name}_ca")
+                SecuritySshTool.rm_auth_keypair(f"{self.keys_path}/{key_name}_key")
+                SecuritySshTool.rm_auth_key(f"{self.keys_path}/{key_name}_key-cert.pub")
+            except Exception as e:
+                logger.warning(f"Could not fully cleanup keys for {key_name}: {e}")
 
 
-def get_random_principals(number_of_values_to_select: int = 1) -> List[str]:
-    return RandomizationTool.select_random_values(TEST_PRINCIPALS, number_of_values_to_select=number_of_values_to_select).get_returned_value()
+def get_random_principals(number_of_values_to_select: int = 1) -> list[str]:
+    return RandomizationTool.select_random_values(
+        TEST_PRINCIPALS, number_of_values_to_select=number_of_values_to_select
+    ).get_returned_value()
 
 
 def get_random_principal() -> str:
@@ -149,7 +159,7 @@ def get_random_validity() -> str:
     return random.choice(list(CERT_VALIDITY_PERIODS.values()))
 
 
-def get_random_key_type(exclude: Optional[List[str]] = None) -> str:
+def get_random_key_type(exclude: list[str] | None = None) -> str:
     exclude = exclude or []
     key_types = list(SshHardeningConsts.PUBLIC_KEY_LENGTH_DICT.keys())
     key_types = [key_type for key_type in key_types if key_type not in exclude]
