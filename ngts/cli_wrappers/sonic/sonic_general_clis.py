@@ -1982,7 +1982,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config_db_dict['DEVICE_METADATA']['localhost']['hostname'] = dut_name
         for interface in config_db_dict['PORT']:
             config_db_dict['PORT'][interface]['admin_status'] = 'up'
-        ips_dict = get_dhcp_ips_dict()
+        ips_dict = get_dhcp_ips_dict(setup_name)
         gw_ip = ips_dict[HostsConstants.OOB_MGMT_SERVER]
         dut_ip = ips_dict[HostsConstants.DUT]
         config_db_dict['MGMT_INTERFACE'] = {f'eth0|{dut_ip}/24': {'gwaddr': gw_ip}}

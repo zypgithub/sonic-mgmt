@@ -48,7 +48,7 @@ def prepare_air_community_directory(setup_name, topology, hwsku, platform_params
     filtered_platform_name = platform_params.filtered_platform.upper()
     dut_ip = topology.players['dut']['engine'].ip
     fanout_ip = topology.players['fanout']['engine'].ip
-    hypervisor_ip = topology.players['hyper']['engine'].ip
+    hypervisor_ip = topology.players['hypervisor']['engine'].ip
     oob_mgmt_server_ip = topology.players['oob-mgmt-server']['engine'].ip
     air_community_files_path = SimxCommunityConsts.SIMX_COMMUNITY_FILES_PATH
     common_files_path = SimxCommunityConsts.COMMON_FILES_PATH

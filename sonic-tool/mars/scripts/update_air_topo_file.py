@@ -11,7 +11,8 @@ from infra.tools.nvidia_air_tools.air import (
     get_public_port_for_host,
     get_simulation_hosts_services_dict
 )
-from infra.tools.general_constants.air_constants import HostsConstants, NvidiaAirConstants, SimulationMetadata
+from infra.tools.general_constants.air_constants import HostsConstants, Project
+from infra.tools.nvidia_air_tools.air_metadata import SimulationMetadataHandler, SimulationMetadata
 
 MARS_TOPO_FOLDER_PATH = "/auto/sw_regression/system/SONIC/MARS/conf/topo/"
 
@@ -30,12 +31,13 @@ def get_setup_topo(setup_name):
     return topo
 
 def get_simulation_connections(setup_name):
-    air = get_air_api_object(NvidiaAirConstants.SONIC)
+    air = get_air_api_object(Project.SONIC)
     simulation = air.simulations.list(title=setup_name)
     if not simulation:
         raise Exception(f'Simulation {setup_name} not available. Please check that simulation started.')
-    simulation = simulation[0]
-    simulation_metadata = json.loads(simulation.metadata)
+    simulation = next(simulation)
+    handler = SimulationMetadataHandler(simulation)
+    simulation_metadata = handler.retrieve()
     topology_type = simulation_metadata.get(SimulationMetadata.TOPOLOGY_TYPE, '').upper()
     _, ports_mapping_dict, mapping_public_ports_to_host = generate_port_mapping_dict(topology_type)
     hosts_services_dict = get_simulation_hosts_services_dict(simulation, mapping_public_ports_to_host)

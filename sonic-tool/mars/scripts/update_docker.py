@@ -367,6 +367,8 @@ def main():
     docker_host = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
     mac = docker_host.MAC_ADDRESS
     test_server = get_test_server_device(args, topo)
+    test_server.open()
+    test_server.transport.set_keepalive(30)
     if args.send_takeover_notification == 'yes':
         send_takeover_notification(topo)
     logger.info("Set hypervisor timezone to IST")
@@ -413,7 +415,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.3.35'}
+    default_list = {'docker-ngts': '1.3.62'}
     return default_list.get(docker_name, latest)
 
 
