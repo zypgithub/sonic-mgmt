@@ -1265,9 +1265,9 @@ tests/push_build_tests/L2/arp/test_arp.py::test_dut_reply_arp_response:
 
 tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4525926 and sn6600 platform"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4525926 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
 
 platform_tests/api/test_fan_drawer.py:
   skip:
