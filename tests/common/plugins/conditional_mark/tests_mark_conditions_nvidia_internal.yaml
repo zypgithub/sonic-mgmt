@@ -479,12 +479,6 @@ container_hardening/test_container_hardening.py::test_container_privileged.*what
     conditions:
     - https://redmine.mellanox.com/issues/4400983
 
-dash/platform/test_dpu_show_platform_temperature.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3923171"
-    conditions:
-    - "https://redmine.mellanox.com/issues/3923171 and 'dpu' in topo_name"
-
 dash/test_dash_vnet.py::test_outbound_vnet_direct:
   skip:
     reason: "Testcase ignored due to platform nvda_bf and RM issue: https://redmine.mellanox.com/issues/3634592"
