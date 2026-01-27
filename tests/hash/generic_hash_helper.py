@@ -323,6 +323,27 @@ def check_default_route(duthost, expected_nexthops):
     return set(nexthops) == set(expected_nexthops)
 
 
+def check_default_route_asic_db(duthost):
+    """
+    Check the default route exists in the asic db.
+    Args:
+        duthost (AnsibleHost): Device Under Test (DUT)
+    Returns:
+        True if the default route and nexthop id exist in the asic db.
+    """
+    logger.info("Check if the default route exists in the asic db.")
+    route_entry = duthost.shell(
+        'redis-cli -n 1 keys "*ASIC_STATE:SAI_OBJECT_TYPE_ROUTE_ENTRY:*0.0.0.0/0*"',
+        module_ignore_errors=True)["stdout"]
+    if not route_entry:
+        return False
+    route_entry_content = duthost.shell(f"redis-cli -n 1 hgetall '{route_entry}'")["stdout"]
+    if "SAI_ROUTE_ENTRY_ATTR_NEXT_HOP_ID" in route_entry_content:
+        return True
+    else:
+        return False
+
+
 def get_ptf_port_indices(mg_facts, downlink_interfaces, uplink_interfaces):
     """
     Get the ptf port indices for the interfaces under test.
