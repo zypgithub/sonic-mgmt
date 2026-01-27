@@ -398,6 +398,12 @@ def reboot(duthost, localhost, reboot_type='cold', delay=10,
     # Workaround
     logger.info('Waiting for ansible connection timeout')
     time.sleep(61)
+    # NOTE: That once our device is back up it may be running a different version of SONiC/Debian
+    # than before which may include a different version of python. Therefore, to prevent python
+    # interpreter not found issues in subsequent Ansible modules as a result of using the
+    # pre-reboot cached interpreter value, we need to clear the cached facts so that they are
+    # re-gathered on next use.
+    duthost.meta("clear_facts")
 
     if return_after_reconnect:
         return
