@@ -1,6 +1,0 @@
-#!/bin/sh
-# VALGRIND_RUNNER
-
-echo "Starting with valgrind: $0 $*"
-
-exec valgrind --tool=memcheck --leak-check=full --num-callers=30 --show-reachable=yes --trace-children=no --log-file=/valgrind/vg.$(basename $0).%p.out $0.bin $*
