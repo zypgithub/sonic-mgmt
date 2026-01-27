@@ -1403,6 +1403,11 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         if 'doai' not in current_features:
             config_db.pop('AR_GLOBAL', None)
 
+        if 'what-just-happened' not in current_features:
+            config_db.pop('WJH', None)
+            config_db.pop('WJH_CHANNEL', None)
+            logger.info("Removed WJH and WJH_CHANNEL tables as what-just-happened feature is not supported")
+
     def update_config_db_metadata_router(self, config_db_json):
         hwsku = config_db_json[ConfigDbJsonConst.DEVICE_METADATA][ConfigDbJsonConst.LOCALHOST][ConfigDbJsonConst.HWSKU]
         localhost_type = ConfigDbJsonConst.TOR_ROUTER
