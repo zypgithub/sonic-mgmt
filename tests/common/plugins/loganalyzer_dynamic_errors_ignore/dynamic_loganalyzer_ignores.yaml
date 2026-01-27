@@ -1929,3 +1929,12 @@
   Conditions:
   - Redmine:
     - 4670329
+
+- Errors_list:
+  - '.*ERR kernel:.*mlxplat mlxplat: Failed to get adapter for bus \d+.*'
+  - '.*ERR kernel:.*mlxplat mlxplat: probe with driver mlxplat failed with error \-\d+.*'
+  Conditions:
+  - Platform:
+    - sn6600_simx
+    Redmine:
+    - 4836707
