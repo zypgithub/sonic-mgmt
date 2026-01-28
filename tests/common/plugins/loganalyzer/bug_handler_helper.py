@@ -616,12 +616,14 @@ def bug_handler_wrapper(analyzers, duthosts, la_results):
         # clear files from previous run
         clear_files(os.environ.get(InfraConst.ENV_SESSION_ID, 'unknown_session_id'))
         # run bug handler in seperated step to decouple from analyze_logs
-        # save original logging handlers
+        # save original logging handlers and level
         original_handlers = logging.getLogger().handlers[:]
+        original_level = logging.getLogger().level
         logging.getLogger().handlers = []
         bh_results = parallel_run(bug_handler_processing, [analyzers, la_results], {}, duthosts, timeout=720)
-        # restore original logging handlers
+        # restore original logging handlers and level
         logging.getLogger().handlers = original_handlers
+        logging.getLogger().setLevel(original_level)
         for node in bh_results.keys():
             if 'failed' in bh_results[node]:
                 logging.error(f'Failed to run bug handler on {node}')
@@ -649,10 +651,13 @@ def bug_handler_processing(analyzers, la_results: dict, node=None, results=None)
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
 
+    # Use the root logger so that all logging calls in helper modules
+    # (e.g., ngts/helpers/bug_handler/bug_handler_helper.py which uses logging.getLogger())
+    # will also be captured in the file handler.
     # Remove all existing handlers to prevent logging to stdout/stderr
     # which can cause pipe deadlock when subprocess output buffer fills
     # and parent process does not read from the pipe.
-    bh_logger = logging.getLogger("bh_logger")
+    bh_logger = logging.getLogger()
     bh_logger.handlers = []
     bh_logger.setLevel(logging.INFO)
     bh_logger.addHandler(file_handler)
