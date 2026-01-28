@@ -373,13 +373,13 @@
 				],
 				"BMC": [
 					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel-005/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel-005.fwpkg",
-						"version": "chameleon_bu_kernel-005",
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-005/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-005.fwpkg",
+						"version": "chameleon_bu_kernel_leak-005",
 						"reboot": ["power off"]
 					},
 					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel-004/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel-004.fwpkg",
-						"version": "chameleon_bu_kernel-004",
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-004/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-004.fwpkg",
+						"version": "chameleon_bu_kernel_leak-004",
 						"reboot": ["power off"]
 					}
 				]
