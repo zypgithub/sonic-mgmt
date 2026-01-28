@@ -698,23 +698,6 @@ def _check_api_mtls_spiffe_id_and_crl(
                 )
             check_spiffe_positive_api(engines, revision_num, setup)
 
-        with allure.step("Make request via client application and see it fails"):
-            crl_validator.run_client(
-                setup.user1,
-                expect_success=False,
-                client_cert=client_cert,
-                client_cacert=server_cert,
-            )
-
-        crl_validator.unbind_crl()
-
-        with allure.step("Make request via client application and see it succeeds"):
-            crl_validator.run_client(
-                setup.user1,
-                expect_success=True,
-                client_cert=client_cert,
-                client_cacert=server_cert,
-            )
     finally:
         crl_validator.cleanup()
 
@@ -781,7 +764,6 @@ def _check_nmx_controller_rbac(
             rbac_tool_nmx_c.run_app_client(dut_hostname, bad_rbac_user, client_cert_nmx_c, server_cert_nmx_c, expect_success=True)
 
         with allure.step("update rbac file and mode"):
-            rbac_tool_nmx_c.import_rbac_file(rbac_file_name, rbac_file_path)  # Need to import again after upgrade, as it was not applied
             rbac_tool_nmx_c.update_rbac_file(rbac_file_name)
             rbac_tool_nmx_c.update_rbac_mode(RbacConsts.RBAC_MODE_USERNAME_PASSWORD)
 

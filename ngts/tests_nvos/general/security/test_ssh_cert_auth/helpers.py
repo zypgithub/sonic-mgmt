@@ -199,3 +199,158 @@ def set_trusted_ca_key(system: System, key_name: str, key_type: str, ca_val: str
     with allure.step("set trusted ca"):
         system.ssh_server.trusted_ca_keys.key_id[key_name].set_key_val(ca_val)
         system.ssh_server.trusted_ca_keys.key_id[key_name].set_key_type(key_type, apply=apply)
+
+
+def ssh_cert_auth_factory_reset_no_params_check():
+    """
+    Verify SSH certificate authentication is cleared after factory reset with no params.
+
+    Test flow:
+    1. Generate SSH key pair and CA key pair
+    2. Sign user certificate with CA
+    3. Set principal and enable cert-auth for admin user
+    4. Set trusted CA key on the system
+    5. Verify user can login with certificate
+    6. Save configuration
+    7. Factory reset
+    8. Verify trusted CA keys are cleared
+    9. Verify cert-auth is disabled for user
+    10. Verify user cannot login with certificate
+    """
+    from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+    from ngts.nvos_constants.constants_nvos import SystemConsts
+    from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+    from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+
+    engines = TestToolkit.engines
+    system = System()
+    ssh_cert_auth_helper = SshCertAuthHelper()
+    key_name = "factory_reset_cert_test_key"
+    key_type = get_random_key_type()
+    principal = get_random_principal()
+    admin_user = UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
+    hostname = engines.dut.ip
+
+    try:
+        with allure.step("Setup SSH certificate authentication"):
+            ssh_cert_auth_helper.ensure_keys_directory()
+
+            with allure.step("Generate keys and sign certificate"):
+                ca_val, key_private_path = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+                    key_name=key_name, key_type=key_type, principals=[principal]
+                )
+
+            with allure.step(f"Set cert-auth principal {principal} for admin"):
+                set_cert_auth(system=system, user=admin_user, principal=principal, state="enabled", apply=False)
+
+            with allure.step(f"Set trusted CA key {key_name}"):
+                set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
+
+            with allure.step("Verify login with certificate before factory reset"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=True)
+
+            with allure.step("Save configuration"):
+                NvueGeneralCli.save_config(engines.dut)
+
+        yield  # factory reset
+
+        with allure.step("Verify SSH cert auth is cleared after factory reset"):
+            with allure.step("Verify trusted CA keys are cleared"):
+                trusted_ca_keys_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.ssh_server.trusted_ca_keys.show()
+                ).get_returned_value()
+                assert key_name not in trusted_ca_keys_output, (
+                    f"Trusted CA key {key_name} should be cleared after factory reset: {trusted_ca_keys_output}"
+                )
+
+            with allure.step("Verify user cannot login with certificate after factory reset"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=False)
+
+    finally:
+        with allure.step("Cleanup SSH cert auth configuration"):
+            try:
+                system.ssh_server.trusted_ca_keys.unset()
+                system.aaa.user.user_id[admin_user.username].ssh.cert_auth.unset(apply=True)
+            except Exception as cleanup_err:
+                logger.warning("Cleanup failed: %s", cleanup_err)
+            ssh_cert_auth_helper.cleanup_generated_keys(key_name)
+
+    yield  # to prevent StopIteration on the 2nd next() call
+
+
+def ssh_cert_auth_factory_reset_keep_only_files_check():
+    """
+    Verify SSH certificate authentication configuration is reset but keys file is preserved
+    after factory reset with keep-only-files.
+
+    Test flow:
+    1. Generate SSH key pair and CA key pair
+    2. Sign user certificate with CA
+    3. Set principal and enable cert-auth for admin user
+    4. Set trusted CA key on the system
+    5. Verify user can login with certificate
+    6. Save configuration
+    7. Factory reset with keep-only-files
+    8. Verify trusted CA keys configuration is cleared (but files may be preserved)
+    9. Verify cert-auth is disabled for user
+    10. Verify user cannot login with certificate (config is reset)
+    """
+    from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+    from ngts.nvos_constants.constants_nvos import SystemConsts
+    from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+    from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+
+    engines = TestToolkit.engines
+    system = System()
+    ssh_cert_auth_helper = SshCertAuthHelper()
+    key_name = "factory_reset_keep_files_cert_key"
+    key_type = get_random_key_type()
+    principal = get_random_principal()
+    admin_user = UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
+    hostname = engines.dut.ip
+
+    try:
+        with allure.step("Setup SSH certificate authentication"):
+            ssh_cert_auth_helper.ensure_keys_directory()
+
+            with allure.step("Generate keys and sign certificate"):
+                ca_val, key_private_path = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+                    key_name=key_name, key_type=key_type, principals=[principal]
+                )
+
+            with allure.step(f"Set cert-auth principal {principal} for admin"):
+                set_cert_auth(system=system, user=admin_user, principal=principal, state="enabled", apply=False)
+
+            with allure.step(f"Set trusted CA key {key_name}"):
+                set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
+
+            with allure.step("Verify login with certificate before factory reset"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=True)
+
+            with allure.step("Save configuration"):
+                NvueGeneralCli.save_config(engines.dut)
+
+        yield  # factory reset with keep-only-files
+
+        with allure.step("Verify SSH cert auth config is reset after factory reset"):
+            with allure.step("Verify trusted CA keys configuration is cleared"):
+                trusted_ca_keys_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.ssh_server.trusted_ca_keys.show()
+                ).get_returned_value()
+                assert key_name not in trusted_ca_keys_output, (
+                    f"Trusted CA key {key_name} config should be cleared after factory reset: {trusted_ca_keys_output}"
+                )
+
+            with allure.step("Verify user cannot login with certificate (config is reset)"):
+                verify_user_login(admin_user, key_private_path, hostname, engines, expect_success=False)
+
+    finally:
+        with allure.step("Cleanup SSH cert auth configuration"):
+            try:
+                system.ssh_server.trusted_ca_keys.unset()
+                system.aaa.user.user_id[admin_user.username].ssh.cert_auth.unset(apply=True)
+            except Exception as cleanup_err:
+                logger.warning("Cleanup failed: %s", cleanup_err)
+            ssh_cert_auth_helper.cleanup_generated_keys(key_name)
+
+    yield  # to prevent StopIteration on the 2nd next() call
