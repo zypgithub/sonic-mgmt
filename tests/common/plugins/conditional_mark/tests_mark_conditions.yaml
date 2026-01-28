@@ -962,9 +962,11 @@ dhcp_relay/test_dhcp_counter_stress.py::test_dhcpmon_relay_counters_stress[reque
 
 dhcp_relay/test_dhcp_relay.py:
   skip:
-    reason: "Need to skip for Cisco backend platform"
+    reason: "Need to skip for Cisco backend platform and IPv6-only topologies (DHCPv4 relay requires IPv4 infrastructure)"
+    conditions_logical_operator: or
     conditions:
       - "platform in ['x86_64-8111_32eh_o-r0', 'x86_64-8122_64eh_o-r0', 'x86_64-8122_64ehf_o-r0']"
+      - "'-v6-' in topo_name"
 
 dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_after_link_flap:
   skip:
