@@ -4,7 +4,7 @@ import pytest
 from collections import namedtuple, Counter
 from ngts.helpers.counterpoll_helper import CounterpollHelper
 from ngts.helpers.sonic_branch_helper import is_sanitizer_image
-from ngts.constants.constants import CounterpollConstants, SonicConst
+from ngts.constants.constants import CounterpollConstants, SonicConst, PlatformTypesConstants
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 
@@ -25,6 +25,7 @@ AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR = {
     "x86_64-nvidia_sn5810_ld_simx-r0": 1.25,
     "x86_64-nvidia_sn6600_simx-r0": 1.25
 }
+DEFAULT_SIMX_AMPLIFY_FACTOR = 1
 
 
 @pytest.fixture(params=[CounterpollConstants.WATERMARK])
@@ -63,13 +64,23 @@ def setup_thresholds(topology_obj, is_simx, platform_params):
         # For simx platform we need to increase the memory threshold,
         # because the performance of simx is lower than the physical platform.
         # The initial value of amplify_factor_for_simx_memory_thr is got based on the test results
-        memory_threshold = memory_threshold * AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR[platform_params.platform]
+        amplify_factor = AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR.get(
+            platform_params.platform, DEFAULT_SIMX_AMPLIFY_FACTOR
+        )
+        if platform_params.platform not in AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR:
+            logger.warning(
+                f"SIMX platform '{platform_params.platform}' not found in AMPLIFY_FACTORY_FOR_SIMX_MEMORY_THR, "
+                f"using default amplify factor: {DEFAULT_SIMX_AMPLIFY_FACTOR}"
+            )
+        memory_threshold = memory_threshold * amplify_factor
     high_cpu_consume_procs = {}
     is_asan = is_sanitizer_image(topology_obj)
     if is_asan:
         memory_threshold = CounterpollConstants.MEMORY_THRESHOLD_ASAN
-    elif 'sn4600' in platform_params.platform:  # Tigon platform
+    elif PlatformTypesConstants.FILTERED_PLATFORM_TIGON in platform_params.platform.upper():
         memory_threshold = CounterpollConstants.MEMORY_THRESHOLD_TIGON
+    elif PlatformTypesConstants.FILTERED_PLATFORM_LIONFISH in platform_params.platform.upper():
+        memory_threshold = CounterpollConstants.MEMORY_THRESHOLD_LIONFISH
     # The CPU usage of `sx_sdk` on mellanox is expected to be higher, and the actual CPU usage
     # is correlated with the number of ports
     high_cpu_consume_procs[CounterpollConstants.SX_SDK] = CounterpollConstants.CPU_THRESHOLD_FOR_HIGH_CONSUME_PROCESS
