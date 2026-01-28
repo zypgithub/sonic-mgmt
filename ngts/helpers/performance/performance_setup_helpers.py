@@ -19,6 +19,7 @@ from ngts.helpers.performance.power_temp_helpers import validate_temperature, va
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
+from ngts.tools.infra import get_chip_type
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Callable, Tuple
@@ -149,6 +150,43 @@ class ValidationConfig:
         return validations
 
 
+def unsplit_all_ports(players, players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
+                      step="basic_test_configuration - unsplit_all_ports", parallel_run=True):
+    """
+    Unsplit all ports on SPC5 before applying test configuration.
+    This is needed because SPC5 comes up with ports already split after dvs_start.sh
+
+    Args:
+        players (dict): Dictionary containing player information and CLI interfaces
+        players_aliases (list): List of player aliases to unsplit. Defaults to PerfConsts.PERF_SETUP_PLAYERS_ALIASES
+        step (str): Description of the current setup step
+        parallel_run (bool): If True, unsplits in parallel. If False, unsplits sequentially. Defaults to True
+    """
+    spc5_aliases = []
+    try:
+        for player_alias in players_aliases:
+            switch_attributes = players[player_alias]['attributes'].noga_query_data['attributes']
+            chip_type = get_chip_type(switch_attributes)
+            if chip_type == "SPC5":
+                spc5_aliases.append(player_alias)
+    except (KeyError, AttributeError) as e:
+        raise TestIssue(f"Could not determine chip_type from topology: {e}")
+
+    if not spc5_aliases:
+        return
+
+    logger.info(f"Detected SPC5 - unsplitting all ports on all players: {spc5_aliases}")
+
+    if parallel_run:
+        call_performance_function_with_threads(players, players_aliases=spc5_aliases,
+                                               action="unsplit all ports",
+                                               performance_clis_function_name="unsplit_all_ports",
+                                               performance_clis_function_args=(), step=step)
+    else:
+        for player_alias in spc5_aliases:
+            players[player_alias]['cli'].performance.unsplit_all_ports()
+
+
 def apply_test_configuration(players, scenario, conf_args,
                              players_aliases=PerfConsts.PERF_SETUP_PLAYERS_ALIASES,
                              step="basic_test_configuration - apply_test_configuration", parallel_run=True):
@@ -167,6 +205,8 @@ def apply_test_configuration(players, scenario, conf_args,
     - In debug mode (parallel_run=False): Sequentially applies configuration to each player
     - In normal mode (parallel_run=True): Uses threading to apply configuration to all players in parallel
     """
+    unsplit_all_ports(players, players_aliases, parallel_run=parallel_run)
+
     if parallel_run:
         call_performance_function_with_threads(players, players_aliases=players_aliases,
                                                action="apply test configuration",

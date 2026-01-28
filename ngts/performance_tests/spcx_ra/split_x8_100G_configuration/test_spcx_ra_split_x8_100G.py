@@ -123,7 +123,7 @@ class TestSPCXRA_x8Split_100G:
 
     def port_hiccup(self, test_name, packet_size):
         port_list = self.cli_object.performance.get_dut_ports()
-        port_to_shutdown = random.sample(set(port_list), 1)
+        port_to_shutdown = random.sample(list(set(port_list)), 1)
         with allure.step(f"Shutting down port: {port_to_shutdown}"):
             set_ports_admin_state(self.players, port_list=port_to_shutdown, port_state="down")
         with allure.step(f"Bringing up port: {port_to_shutdown}"):
@@ -131,7 +131,7 @@ class TestSPCXRA_x8Split_100G:
 
     def port_repeated_toggle(self, test_name, packet_size):
         port_list = self.cli_object.performance.get_dut_ports()
-        port_to_shutdown = random.sample(set(port_list), 1)
+        port_to_shutdown = random.sample(list(set(port_list)), 1)
         with allure.step(f"toggle {port_to_shutdown} only - for x10 times"):
             for i in range(10):
                 with allure.step(f"Shutting down port: {port_to_shutdown}"):
@@ -142,7 +142,7 @@ class TestSPCXRA_x8Split_100G:
     def toggle_multiple_ports(self, test_name, packet_size):
         num_of_ports_to_shutdown = random.randrange(2, 10)
         port_list = self.cli_object.performance.get_dut_ports()
-        ports_to_shutdown = random.sample(set(port_list), num_of_ports_to_shutdown)
+        ports_to_shutdown = random.sample(list(set(port_list)), num_of_ports_to_shutdown)
         up_ports = list(set(port_list) - set(ports_to_shutdown))
         with allure.step(f"Shutting down ports: {ports_to_shutdown}"):
             set_ports_admin_state(self.players, port_list=ports_to_shutdown, port_state="down")

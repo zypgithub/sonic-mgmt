@@ -19,7 +19,6 @@ from ngts.performance_tests.conftest import get_all_players_ports
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, MultiNosSharedData
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 from ngts.constants.constants import BugHandlerConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.traffic_helpers import generate_incremental_addresses
 
 logger = logging.getLogger()
@@ -406,10 +405,6 @@ def basic_setup_configuration(players, conf_args, test_id, ipv6_enabled):
     finally:
         with allure.step('Restore Base Configuration on all Players'):
             restore_basic_configuration(players)
-            # TODO: Remove this once we have a better way to undo SDK tests
-            if is_redmine_issue_active([4644033])[0]:
-                player_cli_obj = players[PerfConsts.PERF_SETUP_DUT_ALIASES[0]]['cli']
-                player_cli_obj.performance.execute_cmd('> /var/log/syslog')
 
 
 @pytest.fixture(scope='function', autouse=True)

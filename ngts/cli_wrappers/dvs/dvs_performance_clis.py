@@ -6,6 +6,9 @@ from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.tools.infra import get_chip_type
+from infra.tools.exceptions.test_issue import TestIssue
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, UndefinedError, meta
 
 
@@ -46,6 +49,10 @@ class DvsPerformance(PerformanceCommon):
         self.connected_ports, self.unconnected_ports = self.get_player_ports()
 
     def apply_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
+        # TODO: Remove this once we have a better way to undo SDK tests
+        if is_redmine_issue_active([4644033])[0]:
+            self.clear_syslog()
+
         self.base_ports, self.ports_lanes = self.get_base_ports()
         self.right_left_ports_dict = self.get_right_left_ports_dict()
         self.connected_ports, self.unconnected_ports = self.get_player_ports()
@@ -311,6 +318,18 @@ class DvsPerformance(PerformanceCommon):
         self.unconnected_ports = self.original_unconnected_ports
         self.ports_lanes = self.original_port_lanes
 
+        # TODO: Remove this once we have a better way to undo SDK tests
+        if is_redmine_issue_active([4644033])[0]:
+            self.clear_syslog()
+
+    def clear_syslog(self):
+        """
+        Clear the syslog file to prevent issues with SDK tests.
+
+        This is a workaround for Redmine issue #4644033.
+        """
+        self.execute_cmd('> /var/log/syslog')
+
     def set_ports(self, ports_list, port_state):
         for port in ports_list:
             set_port_cmd = f"echo y |  sx_api_port_state_set.py --log_port {hex(port)} --state {port_state}"
@@ -399,6 +418,35 @@ class DvsPerformance(PerformanceCommon):
                                           ValidationConsts.OS_PORT_NAME: port})
         return os_ports_name_mapping
 
+    def get_bonus_ports_to_remove(self):
+        """
+        Get the number of bonus ports to remove from the end of the port list.
+
+        Different chip types have different numbers of management/bonus ports
+        that should not be used for testing.
+
+        Returns:
+            int: Number of ports to remove (0 for SPC1/2/3, 1 for SPC4, 2 for SPC5)
+
+        Raises:
+            TestIssue: If chip type is not recognized
+        """
+        switch_attributes = self.topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+        chip_type = get_chip_type(switch_attributes)
+
+        bonus_ports_map = {
+            "SPC1": 0,
+            "SPC2": 0,
+            "SPC3": 0,
+            "SPC4": 1,
+            "SPC5": 2
+        }
+
+        if chip_type not in bonus_ports_map:
+            raise TestIssue(f"Invalid chip type: {chip_type}")
+
+        return bonus_ports_map[chip_type]
+
     def get_base_ports(self):
         """
         Returns:
@@ -408,7 +456,10 @@ class DvsPerformance(PerformanceCommon):
         port_dump = self.execute_cmd('sx_api_ports_dump.py')
         port_label_tuple_list = re.findall(r"\|\s+(0x\d*\w*\d*)\|\s+\d+\|\s+\d+\|\s+(\d+)\|", port_dump)
         ports_lanes = self.get_ports_lanes(port_label_tuple_list)
-        port_label_tuple_list = port_label_tuple_list[:-1]
+
+        bonus_ports_to_remove = self.get_bonus_ports_to_remove()
+        if bonus_ports_to_remove > 0:
+            port_label_tuple_list = port_label_tuple_list[:-bonus_ports_to_remove]
         self.base_ports = port_label_tuple_list
         self.ports_lanes = ports_lanes
 
@@ -528,6 +579,8 @@ class DvsPerformance(PerformanceCommon):
 
     def set_ibm(self, scenario, conf_args, chip_type):
         self.restore_basic_configuration()
+        if chip_type == "SPC5":
+            self.unsplit_all_ports()
         self.apply_configuration_file(scenario, conf_args)
 
     def get_sdk_ports(self, ports_list):
@@ -641,9 +694,10 @@ class DvsPerformance(PerformanceCommon):
 
     def unsplit_all_ports(self):
         """
-        This method unsplit all SPC5 ports
+        Override base class method to unsplit all ports.
+        This is needed because SPC5 comes up with ports already split after dvs_start.sh
         """
-        logging.info("Unsplit all SPC5 ports")
+        logging.info("Unsplit all ports")
         get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
         self.execute_cmd(get_player_ports_cmd)
 

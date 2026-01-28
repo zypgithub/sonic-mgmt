@@ -12,7 +12,8 @@ import copy
 from ngts.constants.constants import CliType, InfraConst
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
-                                                                apply_test_configuration, skip_test_on_unsupported_os)
+                                                                apply_test_configuration, skip_test_on_unsupported_os,
+                                                                skip_test_on_unsupported_chip_type)
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
 logger = logging.getLogger()
@@ -21,8 +22,9 @@ TESTS_SCENARIO = "spcx_ra"
 
 
 @pytest.fixture(scope='module', autouse=True)
-def skip_test_conditionally(players):
+def skip_test_conditionally(players, chip_type):
     skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    skip_test_on_unsupported_chip_type(chip_type, "SPC5")
     yield
 
 

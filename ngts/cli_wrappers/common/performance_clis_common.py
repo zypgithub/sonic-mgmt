@@ -50,6 +50,14 @@ class PerformanceCommon:
         """
         raise NotImplementedError
 
+    def unsplit_all_ports(self):
+        """
+        Unsplit all ports before test configuration.
+        Default implementation does nothing (for SONiC/Cumulus).
+        Overridden in DvsPerformance for DVS-specific behavior.
+        """
+        pass
+
     def save_configuration_file(self, conf_path, conf_json, dst_dut_dir="/tmp"):
         """
         This method should be implemented in child class

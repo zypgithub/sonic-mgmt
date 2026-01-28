@@ -86,12 +86,23 @@ class DvsGeneralCli(GeneralCliCommon):
         self.engine.run_cmd_set([clean_switch_alias_cmd, restart_cmd], validate=True)
 
     def apply_mount(self):
-        logger.info(f"Adding mounts for {PerfConsts.USED_SITE} site")
-        cmd = f"SITE={PerfConsts.USED_SITE} nis_add.sh"
-        self.engine.run_cmd(cmd)
+        with allure.step("Apply mount and configure switch"):
+            hostname = self.hostname().strip()
+            logger.info(f"Querying Noga for site information of {hostname}")
 
-        cmd = "prepare_switch_for_regression.sh"
-        self.engine.run_cmd(cmd)
+            try:
+                noga_data = get_noga_entire_resource_data(resource_name=hostname)
+                setup_site = noga_data[0]['site']
+
+                logger.info(f"Adding mounts for {setup_site} site")
+                cmd = f"SITE={setup_site} nis_add.sh"
+                self.engine.run_cmd(cmd)
+            except Exception as e:
+                logger.error(f"Error querying Noga for site information: {e}")
+                raise
+
+            cmd = "prepare_switch_for_regression.sh"
+            self.engine.run_cmd(cmd)
 
     def set_aliases(self):
         logger.info("Setting aliases for sdk install, clean switch and fw burn commands")
