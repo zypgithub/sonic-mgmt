@@ -139,6 +139,9 @@ SRV6_MY_SID_LIST = [
     [SRV6_MY_LOCATOR_LIST[9][0], SRV6_MY_LOCATOR_LIST[9][1], SRV6_UN, 'default']
 ]
 
+# Static route prefix for SRv6 packets
+SRV6_ROUTE_PREFIX = '2001::/16'
+
 # Drop counter
 # For SN5640 platform, there are 512 ports.
 # The polling interval should be no less than 2 seconds to avoid BGP routes large convergence time.
