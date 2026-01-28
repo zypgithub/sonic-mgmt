@@ -465,7 +465,7 @@ bgp/test_bgp_sentinel.py::test_bgp_sentinel[IPv4:
 
 bgp/test_bgp_sentinel.py::test_bgp_sentinel[IPv6:
   xfail:
-    reason: "xfail due GH issue 23938"
+    reason: "xfail for GH issue 23938"
     conditions:
       - "https://github.com/sonic-net/sonic-buildimage/issues/23938"
 
