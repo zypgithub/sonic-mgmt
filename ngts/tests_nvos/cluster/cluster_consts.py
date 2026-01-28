@@ -57,18 +57,18 @@ class ClusterConsts:
     INITIAL_APPS_PATH = '/usr/local/cluster_pkgfiles/'
     INFRA_PACKAGES_PATH = '/host/cluster_infra/packages/'
     CONFIG_FILES_CHANGE = {'sm_config': "true",
-                           'fm_config': "sudo sed -i \"/^LOG_FILE_MAX_SIZE=/c\\LOG_FILE_MAX_SIZE=1023\" {file_path}",
+                           'fm_config': "sudo sed -i \"/^GFM_WAIT_TIMEOUT_SEC=/c\\GFM_WAIT_TIMEOUT_SEC=350\" {file_path}",
                            'rdm_config': "true",
                            'chassis_mapping': "true",
                            'telemetry': "true"}
     EXPECTED_LINE_TO_BE_PRESERVED_AFTER_UPGRADE = {'sm_config': "",
-                                                   'fm_config': "LOG_FILE_MAX_SIZE=1023",
+                                                   'fm_config': "GFM_WAIT_TIMEOUT_SEC=350",
                                                    'rdm_config': "",
                                                    'chassis_mapping': "",
                                                    'telemetry': ""}
     CONFIG_FILES_CONTENT_CHANGE = {
         'sm_config': lambda content: content,
-        'fm_config': lambda content: re.sub(r'^LOG_FILE_MAX_SIZE=.*$', 'LOG_FILE_MAX_SIZE=1023', content, flags=re.MULTILINE),
+        'fm_config': lambda content: re.sub(r'^GFM_WAIT_TIMEOUT_SEC=.*$', 'GFM_WAIT_TIMEOUT_SEC=350', content, flags=re.MULTILINE),
         'rdm_config': lambda content: content,
         'chassis_mapping': lambda content: content,
         'telemetry': lambda content: content
