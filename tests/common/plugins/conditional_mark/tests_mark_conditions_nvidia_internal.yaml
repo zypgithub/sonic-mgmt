@@ -713,6 +713,12 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_psus:
     conditions:
     - "'sn5810_ld' in platform"
 
+platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
+  xfail:
+    reason: "sfp test should be updated according to the CPO software control design implementation on sn5810_ld platform"
+    conditions:
+    - "'sn5810_ld' in platform"
+
 platform_tests/api/test_chassis_fans.py:
   skip:
     reason: "SN5810_LD doesn't support Chassis Fans"
