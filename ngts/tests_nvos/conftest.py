@@ -73,6 +73,10 @@ EXPECTED_KERNEL_PATTERNS = [
     re.compile(r".*ib3: multicast join failed for.*, status -\d+"),
 ]
 
+pytest_plugins = [
+    "ngts.common.plugins.valgrind.plugin",
+]
+
 
 def pytest_configure(config):
     """

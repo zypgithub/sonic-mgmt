@@ -58,7 +58,7 @@ class ValgrindPkg:
                 raise Exception(f'Process {process} not found')
             return path
 
-    def clear_valgrind_dir(self, dockers: list[str] = []) -> 'ValgrindPkg':
+    def clear_valgrind_dir(self, dockers: list[str] = []) -> Self:
         """
         Clears the valgrind dir.
         :param engine: the engine to use, may use a PrefixEngine with prefix 'sudo'

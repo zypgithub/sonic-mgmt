@@ -10,7 +10,7 @@ from ngts.ngts_types import EnginesT
 logger = logging.getLogger(__name__)
 
 pytest_plugins = (
-    # "ngts.common.plugins.valgrind.plugin",  # TODO: enable when the plugin is ready
+    "ngts.common.plugins.valgrind.plugin",
 )
 
 # Docker side-channel used by NVOS valgrind-compatible builds.
