@@ -415,12 +415,14 @@ class TestBMCApi(PlatformApiTestBase):
         """
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
 
-        bmc.reset_root_password(duthost)
+        res = bmc.reset_root_password(duthost)
+        pytest_assert(res[0] == 0, f"Failed to reset BMC root password {res[1]}")
         self._validate_bmc_login(duthost, bmc_ip, self.bmc_root_password)
         temp_password = self._generate_password()
         self._change_bmc_root_password(duthost, bmc_ip, temp_password)
         self._validate_bmc_login(duthost, bmc_ip, temp_password)
-        bmc.reset_root_password(duthost)
+        res = bmc.reset_root_password(duthost)
+        pytest_assert(res[0] == 0, f"Failed to reset BMC root password {res[1]}")
         self._validate_bmc_login(duthost, bmc_ip, self.bmc_root_password)
 
     def test_bmc_dump(self, duthosts, enum_rand_one_per_hwsku_hostname):
