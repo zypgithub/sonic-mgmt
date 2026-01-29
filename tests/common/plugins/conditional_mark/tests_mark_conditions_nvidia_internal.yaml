@@ -84,6 +84,13 @@ tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_hosts_ports:
   skip:
     reason: "Testcase is skipped permanently as it checks dut-host connections and we plan to move to SSIM which won't have such connections directly"
 
+tests/nightly/rocev2_acl_counter/test_rocev2_acl_counter.py::TestRocev2AclCounter:
+  skip:
+    # see details in https://redmine.mellanox.com/issues/4834399
+    reason: "internal test, not for MSFT. Not supported on bobcat with Multi Binding enabled"
+    conditions:
+    - "'sn4280' in platform"
+
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_dump:
   skip:
     reason: "Ignored on simx. The leaks reported by ASAN during test are not real leaks, test should not run on ASAN image."
