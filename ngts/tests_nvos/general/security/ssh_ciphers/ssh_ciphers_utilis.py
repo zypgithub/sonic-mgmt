@@ -1,22 +1,20 @@
 import logging
 import re
 import crypt
-from ngts.nvos_tools.system.User import User
-from infra.tools.connection_tools.utils import generate_strong_password
-from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from ngts.tests_nvos.general.security.ssh_ciphers.constants import SshCiphersConsts
 import pexpect
+
+from io import StringIO
+from infra.tools.connection_tools.utils import generate_strong_password
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.User import User
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from io import StringIO
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-import logging
+from ngts.tests_nvos.general.security.ssh_ciphers.constants import SshCiphersConsts
 from ngts.tests_nvos.general.security.ssh_ciphers.SshKeyManager import SshKeyManager
-from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 
 
 def setup_api_type(dut: ProxySshEngine, api_type: ApiType):
@@ -152,6 +150,8 @@ def create_ssh_command_and_spawn_process(username: str, ip: str, timeout: int, s
     with allure.step(f'Create SSH command and spawn pexpect process: {username}@{ip}'):
         try:
             # Add default SSH options to avoid host key checking (like other SSH functions in this file)
+            if SshCiphersConsts.STRICT_HOST_KEY_CHECKING not in ssh_options:
+                ssh_options = f'{SshCiphersConsts.STRICT_HOST_KEY_CHECKING} {ssh_options}'
             cmd = f'timeout {timeout} ssh -v {ssh_options} ' \
                 f'{username}@{ip} "echo SSH_LOGIN_SUCCESS"'
 
