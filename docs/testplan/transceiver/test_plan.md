@@ -215,7 +215,285 @@ These tests do not require traffic and are standalone, designed to run on a Devi
 
 5. A file (`sonic_{inv_name}_links.csv`) containing the connections of the ports should be present. This file is used to create the topology of the testbed which is required for minigraph generation.
 
-    - `inv_name` - inventory file name that contains the definition of the target DUTs. For further details, please refer to the [Inventory File](https://github.com/sonic-net/sonic-mgmt/blob/master/docs/testbed/README.new.testbed.Configuration.md#inventory-file)
+> Note: Each sub-section can contain its own `defaults` fields.
+
+**Key Design Rules:**
+
+- **No Overlap**: A field should **never** appear in both `mandatory` and `defaults` sections. This creates logical inconsistency because a field cannot simultaneously require explicit specification (mandatory) and have a fallback value (default). The framework would be unable to determine whether to enforce validation or apply defaults when the field is missing.
+- **Validation First**: The framework should first validate that all mandatory fields can be resolved through the priority hierarchy, then apply defaults for any missing optional fields.
+- **Category Isolation**: Each file contains only relevant test domain attributes
+- **Deployment Grouping**: Similar deployment patterns share common attributes via `deployment_configurations`
+- **Category Isolation**: Each category file should only contain attributes relevant to its specific test domain to maintain clear separation of concerns.
+- **Backward Compatibility**: Missing optional sections (platform, hwsku, etc.) are silently ignored to support gradual adoption and legacy configurations.
+
+##### Deployment Configurations
+
+The `deployment_configurations` feature eliminates attribute duplication by defining common attributes once per deployment type instead of repeating across vendors. The framework automatically extracts the DEPLOYMENT component from the `BASE_ATTRIBUTES` field in `port_attributes_dict` to determine which deployment configuration to apply.
+
+##### Priority-Based Attribute Resolution
+
+Attributes are resolved using this hierarchy (highest to lowest priority):
+
+1. **DUT-specific**: `dut.<DUT_NAME>`
+2. **Normalized Vendor Name + PN + Platform + HWSKU**: `transceivers.vendors.<NORMALIZED_VENDOR_NAME>.part_numbers.<NORMALIZED_PN>.platform_hwsku_overrides.<PLATFORM>+<HWSKU>`
+3. **Normalized Vendor Name + PN**: `transceivers.vendors.<NORMALIZED_VENDOR_NAME>.part_numbers.<NORMALIZED_PN>`
+4. **Normalized Vendor Name (defaults)**: `transceivers.vendors.<NORMALIZED_VENDOR_NAME>.defaults`
+5. **Deployment Configuration**: `transceivers.deployment_configurations.<DEPLOYMENT>` (resolved by extracting DEPLOYMENT from the `transceiver_configuration` field in `dut_info/<dut_hostname>.json`)
+6. **HWSKU-specific**: `hwsku.<HWSKU>` (if present in the file)
+7. **Platform-specific**: `platform.<PLATFORM>` (if present in the file)
+8. **Global defaults**: `defaults`
+
+> **Note:** For platform+HWSKU combinations in `platform_hwsku_overrides`, the key format is `"<PLATFORM_NAME>+<HWSKU_NAME>"` where the platform name and HWSKU name are concatenated with a literal `+` symbol.
+
+##### Example Category File
+
+Example `eeprom.json` file:
+
+```json
+{
+  "mandatory": ["vendor_name", "normalized_vendor_name", "dual_bank_supported"],
+  "defaults": {
+    "vdm_supported": false,
+    "cdb_backgroundmode_supported": false,
+    "sfputil_eeprom_dump_sec": 2
+  },
+  "transceivers": {
+    "deployment_configurations": {
+      "2x100G_200G_SIDE": {
+        "vdm_supported": true,
+        "dual_bank_supported": true
+      }
+    },
+    "vendors": {
+      "NORMALIZED_VENDOR_A": {
+        "defaults": {"vdm_supported": false},
+        "part_numbers": {
+          "NORMALIZED_VENDOR_PN_ABC": {
+            "vendor_name": "Vendor A",
+            "dual_bank_supported": true,
+            "platform_hwsku_overrides": {
+              "PLATFORM_ABC+VENDOR_HWSKU_ABC": {
+                "sfputil_eeprom_dump_time": 5
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+##### Framework Implementation
+
+The test framework loads and merges attributes from all relevant category files for each transceiver, using hierarchical override rules. This enables category-specific test logic to access only needed attributes while supporting platform, HWSKU, and vendor overrides.
+
+**Core Components:**
+
+1. **AttributeManager**: Central class for loading, merging, and accessing transceiver attributes
+2. **Category File Loader**: Loads JSON files for each test category  
+3. **Priority Resolver**: Implements the 8-level priority hierarchy
+4. **Validator**: Ensures mandatory fields are present
+
+**Data Structure:**
+The framework builds a `port_attributes_dict` keyed by logical port name, containing only ports from `dut_info/<dut_hostname>.json`:
+
+```python
+{
+    "PORT_NAME": {
+        # Base transceiver information from dut_info/<dut_hostname>.json
+        "BASE_ATTRIBUTES": {
+            "vendor_name": "vendor_name",
+            "normalized_vendor_name": "NORMALIZED_VENDOR_NAME",
+            "vendor_pn": "vendor_part_number",
+            "normalized_vendor_pn": "NORMALIZED_VENDOR_PN",
+            "vendor_sn": "serial_number",
+            "vendor_date": "vendor_date_code",
+            "vendor_oui": "vendor_oui",
+            "vendor_rev": "revision_number",
+            "transceiver_configuration": "AOC-200-QSFPDD-2x100G_200G_SIDE-0xFF-0xFF",  # original configuration string
+            # Parsed components from transceiver_configuration
+            "cable_type": "AOC",                    # extracted from TYPE
+            "speed_gbps": 200,                      # extracted from SPEED
+            "form_factor": "QSFPDD",                # extracted from FORM_FACTOR
+            "deployment": "2x100G_200G_SIDE",       # extracted from DEPLOYMENT
+            "media_lane_mask": "0xFF",              # extracted from MEDIA_LANE_MASK
+            "host_lane_mask": "0xFF",               # extracted from HOST_LANE_MASK
+            "media_lane_count": 8,                  # derived from media_lane_mask
+            "host_lane_count": 8                    # derived from host_lane_mask
+        },
+        # Category-specific attributes with merged overrides applied
+        "EEPROM_ATTRIBUTES": {
+            "attribute_1": "value_1",
+            "attribute_2": "value_2",
+            ...
+        }
+        "SYSTEM_ATTRIBUTES": {
+            "attribute_1": "value_1",
+            "attribute_2": "value_2",
+            ...
+        }
+        ...
+    }
+}
+```
+
+##### Attribute Merging Process
+
+The framework builds `port_attributes_dict` using this systematic process:
+
+1. **Initialize** port dictionary from `dut_info/<dut_hostname>.json` base attributes
+2. **For each category file**, perform priority-based merging using the 8-level hierarchy
+3. **Validate** mandatory fields for the current category
+4. **Store** merged attributes under category key (e.g., `EEPROM_ATTRIBUTES`, `SYSTEM_ATTRIBUTES`)
+5. **Expose** the complete dictionary via the session-scoped fixture `port_attributes_dict` (an autouse session fixture logs its contents for traceability).
+
+**Merging Behavior:**
+
+- Higher priority fields completely override earlier values
+- Missing sections are silently skipped
+- Graceful error handling for missing files and invalid JSON
+- The entire `port_attributes_dict` is captured in the log for debugging
+
+##### Usage
+
+Tests access attributes using: `port_attributes_dict[port_name][category_key][attribute_name]`  
+The `port_attributes_dict` is provided directly as a session-scoped fixture and is also initialized early for logging.
+
+**Example (inside a test):**
+
+```python
+def test_example(port_attributes_dict):
+    # Access EEPROM attributes
+    eeprom_attrs = port_attributes_dict["Ethernet0"].get("EEPROM_ATTRIBUTES", {})
+    dual_bank_supported = eeprom_attrs.get("dual_bank_supported")
+
+    # Access base transceiver configuration (parsed from transceiver_configuration)
+    base_attrs = port_attributes_dict["Ethernet0"]["BASE_ATTRIBUTES"]
+    cable_type = base_attrs["cable_type"]
+    deployment = base_attrs["deployment"]
+
+    assert cable_type in ("AOC", "DAC", "LR", "DR")
+```
+
+**Benefits:** Modular design, independent updates per category, conflict prevention, flexible overrides, and performance optimization.
+
+#### 3. Attribute Completeness Validation
+
+> **Process Flow**: See the [Validation Flow Diagram](diagrams/validation_flow.md) for a visual overview of the validation process and pytest integration.
+
+Optional post-processing validation ensures comprehensive attribute coverage for transceiver qualification by comparing the populated `port_attributes_dict` against deployment-specific templates.
+
+##### Template Structure
+
+**Location:** `ansible/files/transceiver/inventory/templates/deployment_templates.json`
+
+**Schema:** Templates define required and optional attributes by deployment type:
+
+```json
+{
+  "deployment_templates": {
+    "2x100G_200G_SIDE": {
+      "required_attributes": {
+        "BASE_ATTRIBUTES": ["vendor_name", "vendor_pn", "cable_type", "speed_gbps", "deployment"],
+        "EEPROM_ATTRIBUTES": ["dual_bank_supported", "vdm_supported"],
+        "DOM_ATTRIBUTES": ["temperature", "voltage", "tx_power", "alarm_flags"]
+      },
+      "optional_attributes": {
+        "BASE_ATTRIBUTES": ["hardware_rev", "vendor_rev"],
+        "CDB_FW_ATTRIBUTES": ["firmware_upgrade_support"]
+      }
+    }
+  }
+}
+```
+
+##### Template Components
+
+- `deployment_templates`: Root object containing all deployment templates
+  - `<DEPLOYMENT_NAME>`: Individual deployment template (e.g., `2x100G_200G_SIDE`)
+    - `required_attributes`: Lists of attributes that must be present for each category
+    - `optional_attributes`: Lists of attributes that should be present if available
+    - **Note:** Each category (e.g., `BASE_ATTRIBUTES`, `EEPROM_ATTRIBUTES`, `DOM_ATTRIBUTES`) can have its own set of required and optional attributes.
+
+##### Validation Process
+
+1. **Template Selection**: Uses `deployment` field from `BASE_ATTRIBUTES` to select appropriate template
+2. **Attribute Comparison**: Compares actual vs required attributes per category  
+3. **Gap Analysis**: Identifies missing required/optional attributes
+4. **Pytest Integration**: Reports results with standard log levels (INFO/WARNING/ERROR/DEBUG)
+
+##### Configuration Control
+
+The validation feature can also be controlled via passing a test parameters:
+
+- **`--skip_transceiver_template_validation`**: When specified, completely bypasses the attribute completeness validation
+  - Use case: Quick test runs during development or when template definitions are incomplete
+  - Default: `False` (validation is performed if the deployment_templates.json files exists)
+  - Example: `pytest test_transceiver.py --skip_transceiver_template_validation`
+
+**Note:** Even when validation is skipped, all attributes from category files are still loaded and available for test execution. This parameter only affects the post-processing template validation step.
+
+##### Console Output
+
+```python
+INFO     PASS: Ethernet0 (2x100G_200G_SIDE) - FULLY_COMPLIANT (19/20 attributes)
+WARNING  PARTIAL: Ethernet4 - Missing optional: VDM_ATTRIBUTES.historical_data
+ERROR    FAIL: Ethernet8 - Missing required: DOM_ATTRIBUTES.alarm_flags
+INFO     Overall Compliance: 87.5% (21/24 ports fully compliant)
+```
+
+##### Execution Control
+
+The validation results determine test execution flow:
+
+- **Critical failures**: `pytest.fail()` - stops test execution when required attributes are missing
+- **Warnings only**: `pytest.warns()` - continues with warnings for missing optional attributes
+- **Fully compliant**: Normal test execution proceeds without validation messages
+
+**Skipping Validation:**
+
+- Use `--skip_transceiver_template_validation` pytest parameter to completely bypass this validation step
+- See the "Configuration Control" section above for detailed usage information
+
+#### 4. Transceiver Firmware Info File
+
+A `transceiver_firmware_info.csv` file (located in `ansible/files/transceiver/inventory` directory) should exist if a transceiver being tested supports CMIS CDB firmware upgrade. This file will capture the firmware binary metadata for the transceiver. Each transceiver should have at least 2 firmware binaries (in addition to the gold firmware binary) so that firmware upgrade can be tested. Following should be the format of the file
+
+```csv
+normalized_vendor_name,normalized_vendor_pn,fw_version,fw_binary_name,md5sum
+<normalized_vendor_name_1>,<normalized_vendor_pn_1>,<firmware_version_1>,<firmware_binary_1>,<md5sum_1>
+<normalized_vendor_name_1>,<normalized_vendor_pn_1>,<firmware_version_2>,<firmware_binary_2>,<md5sum_2>
+<normalized_vendor_name_1>,<normalized_vendor_pn_1>,<firmware_version_3>,<firmware_binary_3>,<md5sum_3>
+# Add more vendor part numbers as needed
+```
+
+For each firmware binary, the following metadata should be included:
+
+- `normalized_vendor_name`: The normalized vendor name, created by applying the normalization rules described in the [CMIS CDB Firmware Binary Management](#141-cmis-cdb-firmware-binary-management) section.
+- `normalized_vendor_pn`: The normalized vendor part number, created by applying the normalization rules described in the [CMIS CDB Firmware Binary Management](#141-cmis-cdb-firmware-binary-management) section.
+- `fw_version`: The version of the firmware.
+- `fw_binary_name`: The filename of the firmware binary.
+- `md5sum`: The MD5 checksum of the firmware binary.
+
+#### 5. CMIS CDB Firmware Base URL File
+
+A `cmis_cdb_firmware_base_url.csv` file (located in `ansible/files/transceiver/inventory` directory) should be present to define the base URL for downloading CMIS CDB firmware binaries. The file should follow this format:
+
+```csv
+inv_name,fw_base_url
+<inventory_file_name>,<base_url>
+```
+
+- `inv_name`: The name of the inventory file that contains the definition of the target DUTs. For further details, please refer to the [Inventory File](https://github.com/sonic-net/sonic-mgmt/blob/master/docs/testbed/README.new.testbed.Configuration.md#inventory-file). The `inv_name` allows DUTs to be grouped based on their inventory file, enabling the test framework to fetch the correct base URL for firmware downloads.
+- `fw_base_url`: The base URL from which the CMIS CDB firmware binaries can be downloaded. This URL should point to the directory where the firmware binaries are stored. e.g., `http://1.2.3.4/cmis_cdb_firmware/`.
+
+Example of the file:
+
+```csv
+inv_name,fw_base_url
+lab,http://1.2.3.4/cmis_cdb_firmware/
+```
 
 #### 1.1 Link related tests
 
@@ -431,8 +709,8 @@ This section describes the automated process for copying firmware binaries to th
 To ensure only the necessary firmware binaries are present for each transceiver:
 
 1. **Parse `transceiver_firmware_info.csv`** to obtain the list of available firmware binaries, their versions, and associated vendor and part numbers.
-2. **Parse `transceiver_dut_info.csv`** to identify the transceivers present on each DUT.
-3. **Parse `transceiver_common_attributes.csv`** to get the gold firmware version for each transceiver type.
+2. **Parse `dut_info/<dut_hostname>.json`** to identify the transceivers present on each DUT.
+3. **Parse the appropriate per-category attributes file** to get the gold firmware version for each transceiver type.
 4. **For each unique combination of normalized vendor name and normalized part number on the DUT**, perform version sorting and selection:
    - Parse firmware versions using semantic versioning (X.Y.Z format)
    - Sort available firmware versions in descending order (most recent first)
