@@ -180,4 +180,37 @@
     </cmd>
   </case>
 
+  <case>
+    <name> test ssd firmware install </name>
+    <info> </info>
+    <tout> 3600 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_ssd_install.py::test_ssd_install --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --fw_versions_json_file=[[conf:extra_info.fw_versions_json_file]] --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 3600   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test ssd firmware rename delete </name>
+    <info> </info>
+    <tout> 900 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_ssd_install.py::test_ssd_firmware_rename_delete --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --fw_versions_json_file=[[conf:extra_info.fw_versions_json_file]] --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <name> test ssd install interruption recovery </name>
+    <info> </info>
+    <tout> 1800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/checklist/test_ssd_install.py::test_ssd_install_interruption_recovery --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --fw_versions_json_file=[[conf:extra_info.fw_versions_json_file]] --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
 </CASEDEF>

@@ -2620,6 +2620,7 @@ class SSDConsts:
     SIZE_GB: str = 'size_gb'
     ADVERTISED_SIZE_GB: str = 'advertised_size_gb'
     SSD_PART_NUMBER: str = 'part-number'
+    SSD_DUMP_FILENAME: str = 'ssd.dump'
 
     class SSDType(TypedDict):
         SIZE_GB: float
