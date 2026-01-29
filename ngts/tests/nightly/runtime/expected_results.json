@@ -198,21 +198,21 @@
         "show_sys_health_summary": "4.0962"
     },
     "SN5810_LD": {
-        "add_vlan": "0.436",
-        "del_vlan": "0.636",
-        "add_route": "0.436",
-        "del_route": "0.42",
-        "add_po": "0.446",
-        "del_po": "0.422",
-        "show_ifaces_status": "0.772",
-        "show_iface_tr_eeprom": "0.719",
-        "show_pl_fan": "0.535",
-        "show_pl_psustatus": "0.499",
-        "show_pl_firmware": "0.687",
-        "show_pl_pcieinfo": "0.859",
-        "show_pl_ssdhealth": "0.992",
-        "show_pl_syseeprom": "0.592",
-        "show_pl_temperature": "0.532",
-        "show_sys_health_summary": "4.0962"
+        "add_vlan": "0.654",
+        "del_vlan": "0.954",
+        "add_route": "0.654",
+        "del_route": "0.63",
+        "add_po": "0.669",
+        "del_po": "0.633",
+        "show_ifaces_status": "1.158",
+        "show_iface_tr_eeprom": "1.079",
+        "show_pl_fan": "0.803",
+        "show_pl_psustatus": "0.749",
+        "show_pl_firmware": "1.031",
+        "show_pl_pcieinfo": "1.289",
+        "show_pl_ssdhealth": "1.488",
+        "show_pl_syseeprom": "0.888",
+        "show_pl_temperature": "0.798",
+        "show_sys_health_summary": "6.144"
     }
 }
