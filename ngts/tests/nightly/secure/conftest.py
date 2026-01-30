@@ -157,14 +157,17 @@ def recover_switch_after_secure_boot_violation_message(secure_boot_helper, resto
 
 @pytest.fixture(scope="module", autouse=True)
 def dut_secure_type(platform_params, engines):
-    logger.info("Check the secure boot is dev or prod")
-    device = engines.dut.run_cmd('ls /dev/mst/ | egrep mt.*_pciconf0')
-    if not device:
-        pytest.fail(f"The mst device is not found.")
-    mst_info = engines.dut.run_cmd(f'sudo flint -d /dev/mst/{device} q full')
-    if SonicSecureBootConsts.SECURE_FW_DEV_MSG in mst_info:
+    if 'sn5810_ld' in platform_params.platform:
         return 'dev'
-    elif SonicSecureBootConsts.SECURE_FW_MSG in mst_info:
-        return 'prod'
     else:
-        pytest.fail("Failed to get the secure type of the device.")
+        logger.info("Check the secure boot is dev or prod")
+        device = engines.dut.run_cmd('ls /dev/mst/ | egrep mt.*_pciconf0')
+        if not device:
+            pytest.fail(f"The mst device is not found.")
+        mst_info = engines.dut.run_cmd(f'sudo flint -d /dev/mst/{device} q full')
+        if SonicSecureBootConsts.SECURE_FW_DEV_MSG in mst_info:
+            return 'dev'
+        elif SonicSecureBootConsts.SECURE_FW_MSG in mst_info:
+            return 'prod'
+        else:
+            pytest.fail("Failed to get the secure type of the device.")
