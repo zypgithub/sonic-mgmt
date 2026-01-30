@@ -4,6 +4,9 @@ import pytest
 import re
 import csv
 import os
+import json
+import shlex
+import subprocess
 
 from retry.api import retry
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
@@ -11,6 +14,9 @@ from ngts.helpers.secure_boot_helper import SonicSecureBootHelper
 from ngts.tests.conftest import get_dut_loopbacks
 from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, CliType
 from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
+from tests.common.helpers.firmware_helper import (
+    parse_firmware_status, get_bmc_version_from_firmware_data, get_bmc_info_from_firmware_data
+)
 
 pytestmark = [
     pytest.mark.disable_loganalyzer,
@@ -635,12 +641,124 @@ def fetch_versions_from_dut(dut_engine, is_simx, expected_components=None):
     return actual_versions_dict
 
 
+def get_bmc_version(dut_engine):
+    """Get BMC version and chassis name from 'fwutil show status'."""
+    output = dut_engine.run_cmd('sudo fwutil show status', timeout=60)
+
+    # Use shared parsing logic from firmware_helper
+    fw_data = parse_firmware_status(output)
+    bmc_version, chassis_name = get_bmc_version_from_firmware_data(fw_data)
+
+    if not bmc_version:
+        logger.info("BMC component not found in firmware status")
+
+    return bmc_version, chassis_name
+
+
+@retry(Exception, tries=50, delay=15)
+def verify_bmc_version(dut_engine, expected_version):
+    """Verify BMC version matches expected version with retries."""
+    current_version, _ = get_bmc_version(dut_engine)
+
+    if current_version == expected_version:
+        logger.info("BMC version verified: {}".format(current_version))
+        return
+
+    # Raise exception to trigger retry
+    logger.info("BMC version mismatch. Expected: {}, Current: {}".format(
+        expected_version, current_version))
+    raise Exception("BMC version mismatch. Expected: {}, Current: {}".format(
+        expected_version, current_version))
+
+
+def update_bmc_firmware(dut_engine, expected_version, firmware_path):
+    """Download, install BMC firmware and wait for update to complete."""
+    tmp_fw_path = '/tmp/{}'.format(os.path.basename(firmware_path))
+
+    try:
+        # Download firmware locally on mgmt container
+        result = subprocess.run(['curl', '-o', tmp_fw_path, firmware_path],
+                                capture_output=True, text=True, timeout=300)
+        if result.returncode != 0:
+            raise Exception("Failed to download firmware: {}".format(result.stderr))
+
+        # Verify file was downloaded locally
+        if not os.path.exists(tmp_fw_path):
+            raise Exception("Firmware file not found after download")
+        logger.info("Firmware downloaded successfully to local: {}".format(tmp_fw_path))
+
+        # Copy firmware from local to DUT
+        dut_engine.copy_file(source_file=tmp_fw_path,
+                             dest_file=os.path.basename(tmp_fw_path),
+                             file_system='/tmp',
+                             direction='put')
+        logger.info("Firmware copied to DUT: {}".format(tmp_fw_path))
+
+        install_cmd = 'sudo config platform firmware install chassis component BMC fw -y {}'.format(shlex.quote(tmp_fw_path))
+        logger.info("Starting BMC firmware installation")
+
+        # Enable SSH keep-alive to prevent connection drop during long-running commands
+        transport = dut_engine.engine.remote_conn.get_transport()
+        if transport:
+            transport.set_keepalive(30)  # Send keep-alive every 30 seconds
+            logger.info("SSH keep-alive enabled (interval: 30s)")
+
+        # BMC install is NOT idempotent - use send_command directly to avoid retry
+        output = dut_engine.engine.send_command(
+            install_cmd,
+            delay_factor=10,
+            max_loops=90
+        )
+        logger.info("BMC firmware installation output: {}".format(output))
+
+        verify_bmc_version(dut_engine, expected_version)
+        logger.info("BMC updated and verified successfully: {}".format(expected_version))
+        return True
+    except Exception as e:
+        logger.error("BMC update failed: {}".format(e))
+        return False
+    finally:
+        try:
+            if os.path.exists(tmp_fw_path):
+                os.remove(tmp_fw_path)
+            dut_engine.run_cmd('rm -f {}'.format(shlex.quote(tmp_fw_path)), timeout=30)
+        except Exception as e:
+            logger.warning("Cleanup failed: {}".format(e))
+
+
+def check_update_bmc_version(engines, fw_pkg):
+    """Check BMC version and update if needed."""
+    current_version, chassis_name = get_bmc_version(engines.dut)
+    logger.info("current_version: {}, chassis_name: {}".format(current_version, chassis_name))
+    if not current_version or not chassis_name:
+        logger.info("BMC not found or chassis name not found, skipping check")
+        return True
+
+    # Get BMC info from firmware package
+    expected_version, firmware_path = get_bmc_info_from_firmware_data(fw_pkg, chassis_name)
+    if not expected_version:
+        logger.info("BMC not defined in firmware.json for chassis={}".format(chassis_name))
+        return True
+
+    logger.info("BMC version - current: {}, expected: {}".format(current_version, expected_version))
+    if current_version == expected_version:
+        logger.info("BMC version is already up to date")
+        return True
+
+    if not firmware_path:
+        logger.error("No firmware path for BMC update")
+        return False
+
+    return update_bmc_firmware(engines.dut, expected_version, firmware_path)
+
+
 @pytest.mark.sanity_checker_common
-def test_component_version_check(engines, cli_objects, request, is_in_deploy_image_flow, is_simx):
+def test_component_version_check(engines, cli_objects, request, is_in_deploy_image_flow, is_simx, fw_pkg):
     """
     This test validates that component versions match the README file specifications.
     It compares both the COMPILATION versions (from get_component_versions.py) against README values
     and ACTUAL versions against directly fetched versions from the DUT.
+    Also checks and updates BMC version.
 
     If case fail, we will raise the failed case information in the allure report and disable bug handler tool
 
@@ -649,6 +767,7 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
     :param request: pytest request fixture
     :param is_in_deploy_image_flow: flag indicating if running in deploy flow
     :param is_simx: flag indicating if running on SIMX platform
+    :param fw_pkg: firmware package data fixture
     """
     # TODO: WA for RM#4895801 when the test is running in BAT with darkmode
     from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -750,3 +869,19 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
                 logger.error(err_msg)
                 assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
                 is_test_failed = True
+
+    # Check BMC version
+    with allure.step("Check BMC version"):
+        try:
+            if not check_update_bmc_version(engines, fw_pkg):
+                err_msg = "BMC version update failed"
+                logger.error(err_msg)
+                assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+                is_test_failed = True
+        except Exception as e:
+            err_msg = "BMC version check encountered an error: {}".format(e)
+            logger.error(err_msg)
+            assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
+            is_test_failed = True
+
+    write_failed_case_name(is_test_failed, request.node.name, is_in_deploy_image_flow)

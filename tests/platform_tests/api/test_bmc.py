@@ -14,7 +14,9 @@ from tests.common.helpers.platform_api import bmc
 from tests.common.platform.device_utils import platform_api_conn, start_platform_api_service    # noqa: F401
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from .platform_api_test_base import PlatformApiTestBase
-from tests.common.helpers.firmware_helper import show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE
+from tests.common.helpers.firmware_helper import (
+    show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE, get_bmc_version_from_firmware_data
+)
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
@@ -344,6 +346,21 @@ class TestBMCApi(PlatformApiTestBase):
                 return 0
         return 0
 
+    def _get_bmc_version(self, duthost, timeout=120):
+        start_time = time.time()
+
+        while True:
+            if time.time() - start_time > timeout:
+                logger.warning(f"Timeout after {timeout} seconds while getting BMC version")
+                return None
+
+            fw_data = show_firmware(duthost)
+            bmc_version, _ = get_bmc_version_from_firmware_data(fw_data)
+
+            if bmc_version and bmc_version != 'N/A':
+                return bmc_version
+
+            time.sleep(5)
 
     def _generate_platform_file(self, duthost, chassis_name, fw_path, fw_version):
         """

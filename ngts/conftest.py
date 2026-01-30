@@ -137,6 +137,12 @@ def pytest_addoption(parser):
     parser.addoption('--target_version', action='store', default=None, help='Path to target SONiC version')
     parser.addoption('--ansible_inventory_file', action='store', default='False', help='Path to ansible inventory file - for playbooks')
     parser.addoption('--fw_versions_json_file', action='store', default=None, help='Path to component_versions json file')
+    default_fw_pkg = os.path.join(
+        os.path.dirname(__file__),
+        '../tests/platform_tests/fwutil/firmware.json'
+    )
+    parser.addoption('--fw-pkg', action='store', default=default_fw_pkg,
+                     help='Path to firmware package (tar.gz or json file) for BMC/CPLD updates')
     parser.addoption('--wjh_deb_url', action='store', default=None, help='URL path to WJH deb package')
     parser.addoption("--session_id", action="store", default=None, help="Number of mars session id.")
     parser.addoption("--mars_key_id", action="store", default=None, help="mars key id.")
@@ -368,6 +374,19 @@ def fw_versions_json_file(request):
     :return: file path
     """
     return request.config.getoption('--fw_versions_json_file')
+
+
+@pytest.fixture(scope='module')
+def fw_pkg(request):
+    """
+    Fixture to extract firmware data from package file.
+    """
+    from tests.common.helpers.firmware_helper import extract_fw_data
+
+    fw_pkg_path = request.config.getoption('--fw-pkg')
+    if not fw_pkg_path or not os.path.exists(fw_pkg_path):
+        pytest.skip("No valid fw package specified.")
+    return extract_fw_data(fw_pkg_path)
 
 
 @pytest.fixture(scope='session')
