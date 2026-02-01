@@ -192,11 +192,12 @@ class EthSwitch(BaseSwitch):
 
     def _init_security_lists(self):
         super()._init_security_lists()
-        self.kex_algorithms = ['ecdh-sha2-nistp521', 'diffie-hellman-group-exchange-sha256',
-                               'curve25519-sha256@libssh.org', 'diffie-hellman-group18-sha512',
-                               'kex-strict-s-v00@openssh.com', 'ecdh-sha2-nistp256',
-                               'curve25519-sha256', 'ecdh-sha2-nistp384', 'diffie-hellman-group14-sha256',
-                               'sntrup761x25519-sha512@openssh.com', 'diffie-hellman-group16-sha512']
+        self.kex_algorithms = ['curve25519-sha256',
+                               'curve25519-sha256@libssh.org',
+                               'diffie-hellman-group16-sha512',
+                               'diffie-hellman-group18-sha512',
+                               'diffie-hellman-group14-sha256'
+                               ]
         # Use object-based cleanup instead of raw CLI commands
         self.aaa_cleanup_function = self._cleanup_aaa_configuration
 
