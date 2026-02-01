@@ -298,8 +298,7 @@ class SonicSecureBootHelper(SecureBootHelper):
         """
         This function will return the reboot command for specific test type(shim/grub/vmlinuz)
         """
-
-        if test_type in [SonicSecureBootConsts.SHIM, SonicSecureBootConsts.GRUB] or 'sn5640' in platform:
+        if test_type in [SonicSecureBootConsts.SHIM, SonicSecureBootConsts.GRUB] or 'sn5640' in platform or 'sn6600' in platform:
             reboot_cmd = SecureBootConsts.REBOOT
         else:
             reboot_cmd = random.choice(SonicSecureBootConsts.COLD_FAST_WARM_REBOOT_LIST)
