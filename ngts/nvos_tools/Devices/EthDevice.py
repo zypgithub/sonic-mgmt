@@ -67,11 +67,11 @@ class EthSwitch(BaseSwitch):
 
     def _init_constants(self):
         super()._init_constants()
-        self.pre_login_message = "None\n"
-        self.post_login_message = "\nWelcome to NVIDIA Cumulus (R) Linux (R)\n\nFor support and online " \
-                                  "technical documentation, visit\nhttps://www.nvidia.com/en-us/support\n\nThe " \
-                                  "registered trademark Linux (R) is used pursuant to a sublicense from LMI,\nthe " \
-                                  "exclusive licensee of Linus Torvalds, owner of the mark on a world-wide\nbasis.\n"
+        self.pre_login_message = "Welcome to NVIDIA Cumulus (R) Linux (R)\n"
+        self.post_login_message = "Welcome to NVIDIA Cumulus (R) Linux (R)\n" \
+                                  "For support and online technical documentation, visit https://www.nvidia.com/en-us/support\n" \
+                                  "The registered trademark Linux (R) is used pursuant to a sublicense from LMI, "\
+                                  "the exclusive licensee of Linus Torvalds, owner of the mark on a world-wide basis.\n"
         self.install_from_onie_timeout = 10 * 60
         self.login_pattern = CumulusConsts.LINUX_BOOT_PATTERN
         self.install_patterns = {self.login_pattern: 0, NvosConst.INSTALL_BOOT_PATTERN: 1,
