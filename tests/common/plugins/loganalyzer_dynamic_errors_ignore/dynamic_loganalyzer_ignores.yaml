@@ -1134,17 +1134,6 @@
     - 3863005
 
 - Errors_list:
-  - '.*ERR pmon#.*: Failed to read from file .* - OSError\(\d+, ''No such device or address''\).*'
-  Conditions:
-  - Affected_test_cases:
-    - platform_tests/test_platform_info.py::test_thermal_control_fan_status
-    - tests/nightly/evpn_vxlan/tech_support/test_evpn_vxlan_tech_support.py::TestEvpnVxlanTechSupport::test_tech_support
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - show_techsupport/test_auto_techsupport.py
-    Redmine:
-    - 3345290
-
-- Errors_list:
   - '.* ERR syncd#SDK: :- logEventData: fv: SAI_SWITCH_ATTR_PORT_STATE_CHANGE_NOTIFY: .*'
   - '.* ERR syncd#SDK: :- logEventData: fv: SAI_SWITCH_ATTR_FDB_EVENT_NOTIFY: .*'
   - '.* ERR syncd#SDK: :- logEventData: fv: SAI_SWITCH_ATTR_INIT_SWITCH: .*'
@@ -1157,16 +1146,6 @@
     - 3432623
     Branch:
     - 202211_SPC4_CS
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW assert msg: \[run_fw_assert_checker, old event, see the details by searching the original syndrome value in code\], FW assert event.*'
-  - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW health event device:\[\d+\] FW cause:\[\d+,FW ASSERT EVENT\] severity:\[\d+,FW FATAL SEVERITY\] register\[0x90f0\], long_process:\[\d+\],command_type:\[EMAD\], IRISC:\[\d+\], method:\[read\].*'
-  - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW SOS device:\[\d+] sending SDK health:\[fatal\] event cause:\[FW health issue,\d+\] \(irisc:\[\d+]\).*'
-  Conditions:
-  - Redmine:
-    - 3394692
-    Platform:
-    - x86_64-nvidia_sn5600-r0
 
 - Errors_list:
   - '.*ERR swss#orchagent.*doPortTask: Failed to get port id by alias:Ethernet.*'
@@ -1733,13 +1712,6 @@
   Conditions:
   - Affected_test_cases:
     - tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure
-
-# NVOS bug will not fix
-- Errors_list:
-  - '.*WARNING kernel: .*: supply vcc not found, using dummy regulator.*'
-  Conditions:
-  - Redmine:
-    - 3427602
 
 # NVOS
 - Errors_list:

@@ -458,16 +458,6 @@
         - x86_64-nvidia_sn5600-r0
 
 - Errors_list:
-    - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW assert msg: \[run_fw_assert_checker, old event, see the details by searching the original syndrome value in code\], FW assert event.*'
-    - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW health event device:\[\d+\] FW cause:\[\d+,FW ASSERT EVENT\] severity:\[\d+,FW FATAL SEVERITY\] register\[0x90f0\], long_process:\[\d+\],command_type:\[EMAD\], IRISC:\[\d+\], method:\[read\].*'
-    - '.*ERR syncd#SDK: \[HOST_INTERFACE.ERR\].*FW SOS device:\[\d+] sending SDK health:\[fatal\] event cause:\[FW health issue,\d+\] \(irisc:\[\d+]\).*'
-  Conditions:
-    - Redmine:
-        - 3394692
-      Platform:
-        - x86_64-nvidia_sn5600-r0
-
-- Errors_list:
     - '.* ERR swss#buffermgrd: :- guard: RedisReply catches system_error: command: .* reason: ERR Error running script .* attempt to perform arithmetic on local .current_profile_size. \(a nil value\): Input\/output error.*'
   Conditions:
     - Redmine:
@@ -1598,13 +1588,6 @@
     - Affected_test_cases:
       - tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure
       - tests_nvos/system/test_techsupport_feature.py::test_techsupport_with_dockers_down
-
-# NVOS bug will not fix
-- Errors_list:
-    - '.*WARNING kernel: .*: supply vcc not found, using dummy regulator.*'
-  Conditions:
-    - Redmine:
-        - 3427602
 
 # NVOS
 - Errors_list:

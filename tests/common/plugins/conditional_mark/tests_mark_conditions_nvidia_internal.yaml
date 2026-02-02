@@ -199,12 +199,6 @@ tests/nightly/auto_negotition/test_auto_neg_negative.py::TestAutoNegNegative::te
     conditions:
     - "https://redmine.mellanox.com/issues/4366226"
 
-tests/nightly/auto_negotition/test_auto_neg.py:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4556846, need cable replacement"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4556846 and 'bobcat-10' in testbed"
-
 tests/nightly/dynamic_port_breakout/test_dpb_introp.py::TestDPBInterop::test_dpb_configuration_interop:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3421305"
