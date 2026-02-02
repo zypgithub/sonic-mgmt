@@ -5,7 +5,7 @@ import allure
 import pytest
 
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
-from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps
+from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, update_hosts_file
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -13,7 +13,7 @@ from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
-from ngts.scripts.sonic_deploy.simx_community_helper import generate_air_community_files
+from ngts.scripts.sonic_deploy.simx_community_helper import prepare_air_community_directory
 
 
 @pytest.mark.disable_loganalyzer
@@ -27,8 +27,10 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
             setup_info['setup_name'] = setup_name
             dut = setup_info['duts'][0]
         cli_obj = setup_info['duts'][0]['cli_obj']
+        dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+        update_hosts_file(dut_ip=dut['engine'].ip, dut_name=dut_name, sonic_topo=sonic_topo, setup_name=setup_name)
         if isinstance(cli_obj, SonicGeneralCliDefault) and is_community(sonic_topo):
-            generate_air_community_files(setup_name=setup_name, topology=topology_obj, hwsku=destination_hwsku, platform_params=platform_params)
+            prepare_air_community_directory(setup_name=setup_name, topology=topology_obj, hwsku=destination_hwsku, platform_params=platform_params)
             threads_dict = {}
             sonic_cli = SonicGeneralCliDefault(engine=dut['engine'], cli_obj=cli_obj, dut_alias=dut['dut_alias'])
             with allure.step('Pre installation steps'):

@@ -11,7 +11,7 @@ from pathlib import Path
 from ngts.helpers import json_file_helper
 from ngts.helpers.system_helpers import set_timezone as system_set_timezone
 from ngts.scripts.sonic_deploy.image_preparetion_methods import is_url, get_sonic_branch
-from ngts.constants.constants import MarsConstants, SonicDeployConstants, SonicConst
+from ngts.constants.constants import MarsConstants, SonicDeployConstants, SonicConst, SimxCommunityConsts
 from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigraph_cmd, deploy_minigpraph, \
     reboot_validation, execute_script, is_dualtor_topo, is_dualtor_aa_topo, generate_minigraph, \
     config_y_cable_simulator, add_host_for_y_cable_simulator
@@ -928,6 +928,12 @@ class SonicInstallationSteps:
 def is_community(sonic_topo):
     if sonic_topo:
         return sonic_topo != 'ptf-any'
+
+
+def update_hosts_file(dut_ip, dut_name, sonic_topo, setup_name):
+    os.system(f"echo '{dut_ip} {dut_name}' >> /etc/hosts")
+    if is_community(sonic_topo):
+        os.system(f"echo '{SimxCommunityConsts.SERVER_DOCKER_IP} {setup_name}-hypervisor' >> /etc/hosts")
 
 
 def get_cached_topology(dut_name):

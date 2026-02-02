@@ -78,12 +78,3 @@ def prepare_air_community_directory(setup_name, topology, hwsku, platform_params
     for file_name in os.listdir(hwsku_source_path):
         if file_name in SimxCommunityConsts.FILES_TO_TEMPLATE:
             create_file(source_file_path=os.path.join(hwsku_source_path, file_name), dest_dir_path=destination_hwsku_path, **kwargs)
-
-
-def generate_air_community_files(setup_name, topology, hwsku, platform_params):
-    dut_ip = topology.players['dut']['engine'].ip
-    dut_name = topology.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
-    if 'air' in dut_name:
-        os.system(f"echo '{dut_ip} {dut_name}' >> /etc/hosts")
-        os.system(f"echo '{SimxCommunityConsts.SERVER_DOCKER_IP} {setup_name}-hypervisor' >> /etc/hosts")
-    prepare_air_community_directory(setup_name=setup_name, topology=topology, hwsku=hwsku, platform_params=platform_params)
