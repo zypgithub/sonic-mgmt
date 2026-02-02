@@ -488,7 +488,10 @@ class IbSwitch(BaseSwitch):
         ]
 
         self.memory_size: List[float] = [15.0]
-        self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI]
+        self.supported_disk_list: List[SSDConsts.SSDType] = [
+            SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI,
+            SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006
+        ]
 
         # Initialize link error counters for traffic validation
 
