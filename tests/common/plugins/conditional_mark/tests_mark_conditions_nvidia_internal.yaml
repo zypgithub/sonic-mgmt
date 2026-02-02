@@ -1432,14 +1432,20 @@ everflow/test_everflow_ipv6.py::TestIngressEverflowIPv6::test_icmpv6_.*:
 
 tests/nightly/acl/test_acl.py::test_acl_config:
   skip:
-    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600 platform"
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4824903 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
+
+tests/nightly/acl/test_acl_scale.py::test_acl_config_scale:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
 
 push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
   skip:
-    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600 platform"
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4824903 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
