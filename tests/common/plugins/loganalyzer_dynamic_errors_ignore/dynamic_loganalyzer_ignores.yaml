@@ -183,6 +183,21 @@
   - Affected_test_cases:
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
 
+# PCIE probe errors which should be ignored during the smartswitch deployment
+# Comments from Sasha:
+# This is a non-functional warning message that is rarely observed during BFB image installation,
+# when the BFB installer script starts the RSHIM daemon to create tmfifo interfaces.
+# The RSHIM daemon probes all PCI devices and receives a -17 (EEXIST: “already exists”) return code when probing the “0000:01:00.1” PCI device.
+# “0000:01:00.1” is the DPU SOC device, which we never use for image installation, as we are only interested in the ConnectX-7 device used to push the image.
+# From my point of view, it is safe to add this message to the ignore list.
+- Errors_list:
+  - '.*WARNING kernel:.*uio_pci_generic: probe of 0000:01:00.1 failed with error -17.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    Platform:
+    - sn4280
+
 # Ignore these errors on r-bobcat-01 due to a PSU hw issue
 - Errors_list:
   - '.*r-bobcat-01.*psu.*'
