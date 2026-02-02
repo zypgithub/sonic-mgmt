@@ -1200,8 +1200,10 @@ class MarsConstants:
         '/.autodirect/sw_regression/system/SONIC': '/.autodirect/sw_regression/system/SONIC',
         '/workspace': '/workspace',
         '/.autodirect/LIT/SCRIPTS': '/.autodirect/LIT/SCRIPTS',
+        '/.autodirect/LIT/LOGS/RR/': '/.autodirect/LIT/LOGS/RR/',
         '/.autodirect/sw/release/': '/.autodirect/sw/release/',
         '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
+        '/auto/LIT/LOGS/RR/': '/auto/LIT/LOGS/RR/',
         '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/'
     }
 
