@@ -41,6 +41,7 @@ Usage:
 import functools
 import logging
 import os
+import pytest
 import re
 import time
 import random
@@ -58,13 +59,18 @@ from ngts.nvos_constants.constants_nvos import (
     SystemConsts,
     TestFlowType,
 )
+from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.Devices import IbDevice
+from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.CrlValidator import CrlValidator
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
+from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.NmxRbacTool import NmxRbacTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.nmx.Apps import ClusterApp
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
@@ -1164,8 +1170,44 @@ def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: Syste
             NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
 
 
+@_requires_compatibility(minimal_version="25.02.2351")
+def _check_ssd_firmware_auto_upgrade(
+    engines: EnginesT, devices: DevicesT, **kwargs
+) -> Generator[None, None, None]:
+    """
+    Verify SSD auto-upgrade works correctly during NVOS upgrade.
+
+    Test Steps:
+    1. Verify device is on latest version.
+    2. Downgrade SSD firmware to previous version
+    3. yield (NVOS upgrade happens which includes latest SSD firmware)
+    4. Verify SSD firmware is at latest version after upgrade
+
+    """
+    ssd_component = Platform().firmware.ssd
+
+    try:
+        _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+    except pytest.skip.Exception as e:
+        # SSD part number not in firmware versions JSON - skip this checker gracefully
+        raise Skipped(f"SSD firmware checker skipped: {str(e)}")
+
+    # Step 1: Verify device is on latest SSD version
+    with allure.step('Verify device is on latest SSD version'):
+        BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
+
+    # Downgrade SSD firmware to previous version
+    SSDTool.downgrade_ssd_firmware(engines, ssd_component)
+
+    yield  # NVOS upgrade happens here (includes latest SSD firmware in bundle)
+
+    with allure.step("Verify SSD firmware after upgrade"):
+        BmcTool.verify_platform_component_version(ssd_component, latest_version_name)
+
+
 # the checker must be called e.g. test_rbac
 _CHECKERS: List[CheckerFn] = [
+    _check_ssd_firmware_auto_upgrade,
     _check_nmx_cert,
     _check_api_mtls_old,
     _check_cert_mgmt,

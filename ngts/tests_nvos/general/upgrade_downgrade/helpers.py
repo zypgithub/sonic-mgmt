@@ -163,6 +163,9 @@ def _verify_fw_versions(firmware: List[str], recipe: Dict[str, Any], current_fw_
         if item == 'ASIC':
             continue  # The ASIC comes with the NVOS, so we don't need to verify it
 
+        if item == 'SSD':
+            continue  # SSD is managed by the NVOS and verified by feature checker
+
         if item.startswith('CPLD'):
             if 'cpld' in recipe:
                 expected_fw_versions[item] = recipe['cpld']['latest']['version_name'][item]
@@ -270,6 +273,9 @@ def _fetch_n_update_fw(firmware: List[str], recipe: Dict[str, Union[Dict[str, An
             logger.info("Skipping ASIC - managed by the NVOS")
             continue
         if component_name.startswith('cpld'):  # will be handled separately
+            continue
+        if component_name.startswith('ssd'):
+            logger.info("Skipping SSD - managed by the NVOS")
             continue
 
         state = FWInstallState.NA
@@ -526,7 +532,7 @@ def remove_added_fw_files(devices: DevicesT) -> None:
     """ Remove all existing firmware files. """
     platform = Platform()
     for component_name in map(str.lower, devices.dut.constants.firmware):
-        if component_name.startswith(('cpld')):
+        if component_name.startswith(('cpld', 'ssd')):
             continue
 
         component: Optional[Union[PlatformComponent, Asic]] = getattr(platform.firmware, component_name, None)

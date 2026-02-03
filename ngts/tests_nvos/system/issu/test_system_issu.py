@@ -9,7 +9,8 @@ import time
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ActionConsts, ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts,
-                                                IssuConsts, NvosConst, SystemConsts)
+                                                IssuConsts, NvosConst, PlatformConsts, SystemConsts)
+from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
@@ -17,6 +18,8 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.DutUtilsTool import ping_device
+from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
+from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations, RegressionConfigurations
@@ -169,7 +172,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
             player, dut_engine, dut_device, target_version)
 
     with allure.step('Pre issu installation steps'):
-        traffic_start_time, interface_dict, ip_list = pre_issu_installation_steps(
+        traffic_start_time, interface_dict, ip_list, ssd_should_auto_update = pre_issu_installation_steps(
             engines, devices, target_version, scp_host_creds)
 
     issu_start = time.time()
@@ -187,7 +190,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
 
     with allure.step('Post issu installation steps'):
         post_issu_installation_steps(engines, devices, target_version, fw_version,
-                                     interface_dict, traffic_start_time, ip_list, test_name)
+                                     interface_dict, traffic_start_time, ip_list, test_name, ssd_should_auto_update)
 
 
 # @pytest.mark.system
@@ -800,6 +803,23 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         assert issu_status == IssuConsts.IssuStatus.NO_ISSU.value, \
             f"ISSU status is {issu_status}, instead of: {IssuConsts.IssuStatus.NO_ISSU.value}"
 
+    ssd_should_auto_update = False
+    with allure.step('Downgrade SSD firmware to test auto-upgrade during ISSU'):
+        if is_bug_active(4874171):
+            logger.info("Bug 4874171 is active - skipping SSD firmware testing during ISSU (https://redmine.mellanox.com/issues/4874171)")
+        else:
+            try:
+                ssd_component = Platform().firmware.ssd
+                # Get latest version and verify currently on latest
+                _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+                FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
+
+                # Downgrade SSD firmware to previous version
+                SSDTool.downgrade_ssd_firmware(engines, ssd_component)
+                ssd_should_auto_update = True
+            except pytest.skip.Exception as e:
+                logger.info(f"SSD downgrade skipped: {e}")
+
     with allure.step('Start pinging system mgmt ports'):
         ip_list = []
         for mgmt_port in devices.dut.mgmt_ports:
@@ -821,11 +841,11 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     # TODO: add ipoib test (random)
 
-    return traffic_start_time, interface_output, ip_list
+    return traffic_start_time, interface_output, ip_list, ssd_should_auto_update
 
 
 def post_issu_installation_steps(engines, devices, target_version, fw_expected,
-                                 interface_dict, traffic_start_time, ip_list, test_name=''):
+                                 interface_dict, traffic_start_time, ip_list, test_name='', ssd_should_auto_update=False):
     """
     - Stop Ping mgmt. port 0 and mgmt. port 1 and analyze both logs
     - Stop sending data packets from Host A to Host B and analyze log
@@ -897,6 +917,15 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected,
                     fw_version = OutputParsingTool.parse_json_str_to_dictionary(
                         Platform().firmware.show(dut_engine=dut_engine)).get_returned_value()['ASIC']['actual-firmware']
                     assert fw_version == fw_expected, f'FW version is: {fw_version}, instead of {fw_expected}'
+
+            if ssd_should_auto_update:
+                with allure.independent_step('Verify SSD was auto-upgraded to latest during ISSU'):
+                    ssd_component = Platform().firmware.ssd
+                    # Get latest version
+                    _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+
+                    # Verify SSD was upgraded to latest version
+                    FWComponentsTool.verify_platform_component_version(ssd_component, latest_version_name)
 
             # with allure.step('Validate ports counters'):
             #     for port in Configurations.ndr_ports[dut_engine.ip]:
