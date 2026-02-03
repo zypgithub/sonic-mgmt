@@ -373,10 +373,17 @@ class TestSfpApi(PlatformApiTestBase):
         return True
 
     def is_xcvr_support_power_override(self, xcvr_info_dict):
-        """Returns True if transceiver supports power override, False if not supported"""
+        """Returns True if transceiver supports power override, False if not supported.
+
+        Power override is only supported by SFF-8636 compliant QSFP modules.
+        CMIS modules (QSFP-DD, OSFP, or any module with cmis_rev) use a different
+        power management mechanism and do not support the SFF-8636 power override.
+        """
         xcvr_type = xcvr_info_dict["type_abbrv_name"]
         is_valid_xcvr_type = "QSFP" in xcvr_type and xcvr_type != "QSFP-DD"
-        return self.is_xcvr_optical(xcvr_info_dict) and is_valid_xcvr_type
+        # CMIS modules do not support SFF-8636 power override
+        is_cmis_module = xcvr_info_dict.get("cmis_rev") is not None
+        return self.is_xcvr_optical(xcvr_info_dict) and is_valid_xcvr_type and not is_cmis_module
 
     def get_interfaces_to_flap_after_sfp_reset(self, port_index_to_info_dict, duthost):
         interfaces_to_flap = []
