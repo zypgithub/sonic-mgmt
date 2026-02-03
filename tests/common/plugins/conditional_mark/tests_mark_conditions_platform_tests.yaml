@@ -491,6 +491,23 @@ platform_tests/api/test_psu.py::TestPsuApi::test_temperature:
       - "asic_type in ['vs']"
       - "is_multi_asic==True and release in ['201911']"
 
+
+platform_tests/api/test_psu.py::test_psus:
+  skip:
+    reason: "Test not supported on LD Platforms."
+    conditions_logical_operator: or
+    conditions:
+      - "asic_type in ['mellanox']"
+      - "platform in ['sn6600_ld']"
+
+platform_tests/daemon/test_psud.py:
+  skip:
+    reason: "Test not supported on LD Platforms."
+    conditions_logical_operator: or
+    conditions:
+      - "asic_type in ['mellanox']"
+      - "platform in ['sn6600_ld']"
+
 #######################################
 #####    api/test_psu_fans.py     #####
 #######################################
