@@ -304,7 +304,7 @@ class AutonegCommandConstants:
         FEC: (r"FEC\s*:\s*(.*)", "No FEC", "none", None, None),
         AUTONEG_MODE: (r"Auto Negotiation\s*:\s*(\w*\s*-*\s*\d*\w_*\d*X*|ON)",
                        r"FORCE\s+-\s+\d+\w_*\d*X*|ON", "enabled", "disabled", "Force"),
-        CABLE_SPEED: (r"Supported Cable Speed (?:\(Ext.\))?\s+:\s+0x[0-9a-z]+\s+\(([\w.,]+)\)",
+        CABLE_SPEED: (r"Supported Cable Speed (?:\(Ext.\))?\s+:\s+(?:0x[0-9a-z]+\s+\(([\w.,]+)\)|N/A)",
                       None, None, None, None),
         PART_NUMBER: (r"Vendor Part Number\s*:\s*(\S+)", None, None, None, None)
     }

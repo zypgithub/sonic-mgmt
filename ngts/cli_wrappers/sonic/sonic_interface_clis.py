@@ -592,7 +592,13 @@ class SonicInterfaceCli(InterfaceCliCommon):
             if key == AutonegCommandConstants.FEC:
                 parsed_info[key] = self.parse_fec_mode(actual_val)
             elif key == AutonegCommandConstants.CABLE_SPEED:
-                parsed_info[key] = actual_val.split(',')
+                # When SAI INDEPENDENT MODULE MODE is enabled, Supported Cable Speed shows N/A
+                # In this case, actual_val will be None since N/A is outside the capture group
+                if actual_val is None:
+                    logger.info("Supported Cable Speed is N/A, likely due to independent module mode")
+                    parsed_info[key] = ["N/A"]
+                else:
+                    parsed_info[key] = actual_val.split(',')
             elif expected_val is not None and re.search(expected_val, actual_val):
                 if additional_val is not None and re.search(additional_val, actual_val, re.IGNORECASE):
                     parsed_info[key] = additional_val

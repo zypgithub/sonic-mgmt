@@ -252,8 +252,15 @@ def get_breakout_modes(cli_object, port_name, port_dict, parsed_port_dict):
     port_number = get_alias_number(ports_aliases_dict[port_name])
     cable_speeds = retry_call(_mlxlink_get_cable_speeds, fargs=[cli_object, pci_conf, port_number], tries=5,
                               delay=10, logger=None)
+    all_breakout_modes = list(port_dict[SonicConstant.BREAKOUT_MODES].keys())
+    # When SAI independent module mode is enabled, cable speeds will be ['N/A'].
+    # In this case, skip filtering and return all platform breakout modes.
+    # Note: We only check for the explicit 'N/A' sentinel, not empty results,
+    # to avoid masking actual mlxlink parsing/collection failures.
+    if cable_speeds == ['N/A']:
+        return all_breakout_modes
     converted_cable_speeds = convert_cable_speeds(cable_speeds, len(parsed_port_dict[SonicConstant.LANES]))
-    return filter_breakout_modes(port_dict[SonicConstant.BREAKOUT_MODES].keys(), converted_cable_speeds)
+    return filter_breakout_modes(all_breakout_modes, converted_cable_speeds)
 
 
 def parse_platform_json(platform_json_obj, config_db_json, cli_object, ports_to_exclude=None):
@@ -333,7 +340,11 @@ def get_breakout_mode(engine_dut, cli_object, port_list):
     port_breakout_modes = get_dut_breakout_modes(engine_dut, cli_object)
     for port in port_list:
         supported_breakout_modes = port_breakout_modes[port]['breakout_modes']
-        breakout_mode[port] = supported_breakout_modes[-1]
+        if supported_breakout_modes:
+            breakout_mode[port] = supported_breakout_modes[-1]
+        else:
+            # Fallback to default breakout mode if no supported modes available
+            breakout_mode[port] = port_breakout_modes[port]['default_breakout_mode']
     return breakout_mode
 
 
