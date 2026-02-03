@@ -14396,3 +14396,31 @@
     - r-leopard-93
   inv_name: lab
   comment: 4700 Active-Active Dual-TOR testbed
+
+- conf-name: r-salamandra-01-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-salamandra-1
+  ptf_ip: 10.215.13.189/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - r-salamandra-01
+  inv_name: lab
+  comment: Mellanox MTR testbed
+
+- conf-name: salamandra-chipless-109-ptf-any
+  group-name: vm-t1
+  topo: ptf-any
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-salamandra-chipless-109
+  ptf_ip: 10.215.13.195/16
+  ptf_ipv6:
+  server: server_54
+  vm_base: VM0000
+  dut:
+    - salamandra-chipless-109
+  inv_name: lab
+  comment: Mellanox MTL testbed

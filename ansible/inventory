@@ -157,6 +157,15 @@ r-bison-simx-71 ansible_host=r-bison-simx-71  sonic_version=v2  sonic_hwsku=ACS-
 r-panther-simx-23-ptf-any ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 r-panther-simx-23 ansible_host=r-panther-simx-23  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 14000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 
+# MTR canonical testbed r-salamandra-1 topologies
+r-salamandra-01-ptf-any ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD             serial_console="" ptf_host=ptf-salamandra-1 ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2543XZ0777 model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0019-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2543XZ0777', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
+r-salamandra-01 ansible_host=r-salamandra-01  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="" ptf_host=ptf-salamandra-1 ptf_portmap="" pdu_host=pdu- base_mac="E8:9E:49:53:9E:3E" serial=MT2543XZ0777 model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0019-115200-dev', '0x22': u'920-9N62F-00LI-SKT', '0x23': u'MT2543XZ0777', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'E8:9E:49:53:9E:3E', '0x25': u'25/12/2025 05:40:37', '0x2b': u'Nvidia', '0x2a': u'548'}"
+
+# MTL canonical testbed salamandra-chipless-109 topologies
+salamandra-chipless-109-ptf-any ansible_host=salamandra-chipless-109  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD             serial_console="" ptf_host=ptf-salamandra-chipless-109 ptf_portmap="" pdu_host=pdu- base_mac="2C:9D:90:34:C6:78" serial=MT2603603QVH model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0019-115200-dev', '0x22': u'920-9N62F-00LI-KLF', '0x23': u'MT2603603QVH', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'2C:9D:90:34:C6:78', '0x25': u'01/24/2026 13:49:14', '0x2b': u'Nvidia', '0x2a': u'546'}"
+salamandra-chipless-109 ansible_host=salamandra-chipless-109  sonic_version=v2  sonic_hwsku=ACS-SN6600_LD           serial_console="" ptf_host=ptf-salamandra-chipless-109 ptf_portmap="" pdu_host=pdu- base_mac="2C:9D:90:34:C6:78" serial=MT2603603QVH model=SN6600_LD syseeprom_info="{'0x28': u'x86_64-nvidia_sn6600_ld-r0', '0x29': u'2025.05-5.3.0019-115200-dev', '0x22': u'920-9N62F-00LI-KLF', '0x23': u'MT2603603QVH', '0x21': u'SN6600_LD', '0x26': u'16', '0x24': u'2C:9D:90:34:C6:78', '0x25': u'01/24/2026 13:49:14', '0x2b': u'Nvidia', '0x2a': u'546'}"
+
+
 # MTR canonical testbed r-panther-simx-18 topologies
 r-panther-simx-18-ptf-any ansible_host=r-panther-simx-18  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 13000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
 r-panther-simx-18 ansible_host=r-panther-simx-18  sonic_version=v2  sonic_hwsku=ACS-MSN2700             serial_console="telnet r-sonic-02 13000" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-
@@ -1861,6 +1870,12 @@ r-r740-09-bf2-sonic-01-dpu
 r-r740-09-bf2-sonic-01-ptf-any
 
 [lab]
+r-salamandra-01-ptf-any
+r-salamandra-01
+
+salamandra-chipless-109-ptf-any
+salamandra-chipless-109
+
 c-anaconda-01-ptf-any
 c-anaconda-01
 c-anaconda-02-ptf-any
@@ -3175,6 +3190,10 @@ mlx-2201m-01
 podset_number=200
 
 [ptf]
+# MTVR canonical testbed ch5s-164 topologies
+ptf-salamandra-1 ansible_host=10.215.13.189 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+10.215.13.189 ansible_host=10.215.13.189 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
+
 # MTR arc-switch1038 PTF host
 ptf-1038 ansible_host=10.213.84.41 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"
 10.213.84.41 ansible_host=10.213.84.41 ansible_ssh_user="{{ lookup('env','PTF_USER') }}" ansible_ssh_pass="{{ lookup('env','PTF_PASSWORD') }}"  # Workaround for ansible inventory parsing issue

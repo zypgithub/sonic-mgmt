@@ -109,3 +109,5 @@ r-panther-simx-17,10.215.4.17,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-23,110.213.88.23,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-125,10.215.12.125,ACS-MSN2700,DevSonic,,sonic
 r-panther-simx-165,10.215.12.165,ACS-MSN2700,DevSonic,,sonic
+r-salamandra-01,10.209.48.43,ACS-SN6600_LD,DevSonic,,sonic
+salamandra-chipless-109,10.209.48.109,ACS-SN6600_LD,DevSonic,,sonic

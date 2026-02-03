@@ -1,4 +1,7 @@
 [sonic_latest]
+r-salamandra-01      ansible_host=10.209.48.43 ansible_hostv6="fe80::5e78:45ff:fe38:5c78" sonic_version=v2 hwsku="ACS-SN6600_LD" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+salamandra-chipless-109      ansible_host=10.7.145.109 ansible_hostv6="fe80::5e78:45ff:fe38:5c78" sonic_version=v2 hwsku="ACS-SN6600_LD" iface_speed=200000  mgmt_subnet_mask_length=22 vm_base=VM0000
+chameleon-1      ansible_host=10.7.145.138 ansible_port=22 sonic_version=v2 sonic_hwsku=Mellanox-SN5810-O128A2
 c-anaconda-01      ansible_host=10.75.67.50 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN3700C" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 c-anaconda-02      ansible_host=10.75.67.51 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN3700C" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
 r-buffalo-04      ansible_host=10.210.24.133 ansible_hostv6="fe80::e42:a1ff:fe44:44c0" sonic_version=v2 hwsku="ACS-MSN4800" iface_speed=25000  mgmt_subnet_mask_length=22 vm_base=VM0000
