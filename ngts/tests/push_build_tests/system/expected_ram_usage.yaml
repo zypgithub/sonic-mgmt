@@ -34,7 +34,7 @@ master:
     bgpcfgd: 70
     bgpmon: 20
     fpmsyncd: 7
-    orchagent: 75
+    orchagent: 103
     ntpd: 7
     neighsyncd: 7
     vlanmgrd: 7
