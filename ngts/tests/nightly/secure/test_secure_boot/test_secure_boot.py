@@ -82,10 +82,11 @@ def test_non_signed_kernel_module_load(secure_boot_helper, restore_kernel_module
 
 @pytest.mark.disable_loganalyzer
 @pytest.mark.parametrize("image_path", SecureBootConsts.IMAGE_PATH)
-def test_sonic_secure_boot_from_onie(secure_boot_helper, request, image_path, topology_obj, restore_to_sonic, dut_secure_type):
+def test_sonic_secure_boot_from_onie(secure_boot_helper, request, image_path, topology_obj, restore_to_sonic, dut_secure_type, platform_params):
     """
     In this test case we want to validate unsuccessful load of unsigned image from onie
     """
+    is_skip_mismatch_signature_test(platform_params, image_path, dut_secure_type)
     with allure.step("Test secure boot in onie mode"):
         secure_boot_helper.onie_secure_boot(request, image_path, topology_obj, dut_secure_type)
 
@@ -97,6 +98,7 @@ def test_fwutil_install_onie_key_check_fail(secure_boot_helper, platform_params,
     """
     In this test case we want to validate unsuccessful upgrade of unsigned onie by fwutil
     """
+    is_skip_mismatch_signature_test(platform_params, signed_type, dut_secure_type)
     with allure.step("Test secure boot of fwutil - onie upgrade"):
         secure_boot_helper.fwutil_install_secure_boot_negative(
             SonicSecureBootConsts.ONIE_COMPONENT, signed_type, dut_secure_type, platform_params,
@@ -122,3 +124,14 @@ def test_fwutil_install_bios_key_check_fail(secure_boot_helper, platform_params,
             assert secure_boot_helper.is_sonic_mode(), "Switch is not in SONiC mode"
 
         retry_call(assert_sonic_mode, tries=20, delay=15, logger=logger)
+
+
+def is_skip_mismatch_signature_test(platform_params, signed_type, dut_secure_type):
+    """
+    There are platforms that on IPN device, both dev and prod keys are installed, so installing the mismatch signature image will succeed.
+    in that case, mismatch tests are irrelevant and should be skipped.
+    """
+    platform_name = platform_params.platform.lower()
+    if platform_name in SonicSecureBootConsts.PLATFORM_THAT_DO_NOT_SUPPORT_MISMATCH_SIGNATURE_TEST and \
+            dut_secure_type == 'dev' and signed_type in SonicSecureBootConsts.MISMATCH_SIGNATURE_SIGNED_TYPE:
+        pytest.skip(f"Skip test for {platform_name} - on IPN device where both dev and prod keys installed, the test is irrelevant as it is able to install any image.")
