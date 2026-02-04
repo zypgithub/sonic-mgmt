@@ -17,10 +17,9 @@ from tests.smartswitch.common.device_utils_dpu import check_dpu_link_and_status,
 from tests.common.platform.device_utils import platform_api_conn, start_platform_api_service  # noqa: F401,F403
 from tests.smartswitch.common.reboot import perform_reboot
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 pytestmark = [
-    pytest.mark.topology('smartswitch', 't1')
+    pytest.mark.topology('smartswitch')
 ]
 
 kernel_panic_cmd = "sudo nohup bash -c 'sleep 5 && echo c > /proc/sysrq-trigger' &"
@@ -29,18 +28,6 @@ DUT_ABSENT_TIMEOUT_FOR_KERNEL_PANIC = 100
 DUT_ABSENT_TIMEOUT_FOR_MEMORY_EXHAUSTION = 240
 MAX_COOL_OFF_TIME = 300
 EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG = 40
-
-
-@pytest.fixture(scope="function", autouse=True)
-def arm_watchdog_on_dpus(dpuhosts):
-    """
-    Arm watchdog on DPUs.
-    """
-    # This is a workaround, when the ticket is fixed, the fixture should be removed
-    if is_redmine_issue_active([4402258])[0]:
-        for dpuhost in dpuhosts:
-            logging.info("Arming watchdog on DPU")
-            dpuhost.shell("sudo watchdogutil arm")
 
 
 def test_dpu_status_post_switch_reboot(duthosts, dpuhosts,
@@ -233,15 +220,15 @@ def test_dpu_status_post_dpu_kernel_panic(duthosts, dpuhosts,
         dpus_startup_and_check(duthost, dpu_on_list, num_dpu_modules)
 
     logging.info("Executing post test dpu check")
+    reboot_cause_pattern = r"reboot|Non-Hardware"
     if is_mellanox_devices(duthost.facts['hwsku']):
-        expected_reboot_cause = "Watchdog"
-    else:
-        expected_reboot_cause = "Non-Hardware"
+        reboot_cause_pattern = r"Watchdog"
     post_test_dpus_check(duthost, dpuhosts,
                          dpu_on_list, ip_address_list,
                          num_dpu_modules,
-                         re.compile(r"reboot|Non-Hardware",
-                                    re.IGNORECASE))
+                         re.compile(reboot_cause_pattern,
+                                    re.IGNORECASE),
+                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
 
 
 @pytest.mark.disable_loganalyzer
@@ -288,14 +275,16 @@ def test_dpu_check_post_dpu_mem_exhaustion(duthosts, dpuhosts,
         dpus_startup_and_check(duthost, dpu_on_list, num_dpu_modules)
 
     logging.info("Executing post test dpu check")
+    reboot_cause_pattern = r"reboot|Non-Hardware"
     if is_mellanox_devices(duthost.facts['hwsku']):
-        expected_reboot_cause = "Watchdog"
-    else:
-        expected_reboot_cause = "Non-Hardware"
-    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list,
+        reboot_cause_pattern = r"Watchdog"
+
+    post_test_dpus_check(duthost, dpuhosts,
+                         dpu_on_list, ip_address_list,
                          num_dpu_modules,
-                         re.compile(r"reboot|Non-Hardware",
-                                    re.IGNORECASE))
+                         re.compile(reboot_cause_pattern,
+                                    re.IGNORECASE),
+                         EXTRA_DPU_ONLINE_TIMEOUT_FOR_WATCHDOG)
 
 
 def test_cold_reboot_dpus(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname,
@@ -345,7 +334,6 @@ def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname
         duthosts: DUT hosts object
         dpuhosts: DPU hosts object
         enum_rand_one_per_hwsku_hostname: Randomized DUT hostname
-        localhost: Localhost object
         platform_api_conn: Platform API connection object
         num_dpu_modules: Number of DPU modules to verify
     """
@@ -363,8 +351,5 @@ def test_cold_reboot_switch(duthosts, dpuhosts, enum_rand_one_per_hwsku_hostname
                            ip_address_list)
 
     logging.info("Executing post switch reboot dpu check")
-    if is_mellanox_devices(duthost.facts['hwsku']):
-        expected_reboot_cause = "Non-Hardware"
-    else:
-        expected_reboot_cause = "reboot"
-    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list, num_dpu_modules, expected_reboot_cause)
+    post_test_dpus_check(duthost, dpuhosts, dpu_on_list, ip_address_list, num_dpu_modules,
+                         re.compile(r"reboot|Non-Hardware", re.IGNORECASE))

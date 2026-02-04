@@ -13,7 +13,6 @@ from tests.common.platform.interface_utils \
 from tests.common.reboot import wait_for_startup
 from tests.common.platform.processes_utils import wait_critical_processes
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 # Timeouts, Delays and Time Intervals in secs
 DPU_TIMEOUT = 210
@@ -53,6 +52,7 @@ def skip_for_non_smartswitch(duthost):
     if not duthost.facts.get('is_smartswitch'):
         pytest.skip("Test is supported only on smartswitch testbeds. "
                     "is_smartswitch: {}".format(duthost.facts.get('is_smartswitch')))
+
 
 @pytest.fixture(scope='function')
 def dpu_setup(duthosts, enum_rand_one_per_hwsku_hostname,
@@ -494,7 +494,7 @@ def post_test_switch_check(duthost, localhost,
     return
 
 
-def post_test_dpu_check(duthost, dpuhosts, dpu_name, reboot_cause, extra_dpu_online_timeout):
+def post_test_dpu_check(duthost, dpuhosts, dpu_name, reboot_cause, extra_dpu_online_timeout=0):
     """
     Runs all required checks for a given DPU
     Args:
