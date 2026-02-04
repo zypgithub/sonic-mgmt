@@ -223,13 +223,14 @@ def test_bgp_session_interface_down(duthosts, rand_one_dut_hostname, fanouthosts
 
     duthost.shell('show ip bgp summary', module_ignore_errors=True)
     duthost.shell('show ipv6 bgp summary', module_ignore_errors=True)
-    # default keepalive is 60 seconds, timeout 180 seconds. Hence wait for 180 seconds before timeout.
-    pytest_assert(
-        wait_until(180, 10, 0, verify_bgp_session_down, duthost, neighbor),
-        "neighbor {} state is still established".format(neighbor)
-    )
 
     try:
+        # default keepalive is 60 seconds, timeout 180 seconds. Hence wait for 180 seconds before timeout.
+        pytest_assert(
+            wait_until(180, 10, 0, verify_bgp_session_down, duthost, neighbor),
+            "neighbor {} state is still established".format(neighbor)
+        )
+
         # BGP service has start limit with value of StartLimitBurst=3 and StartLimitIntervalUSec=20min,
         # which means bgp service cannot start if it restarts more than 3 times within 20 minutes.
         # This case tests bgp and swss service restart. Restarting swss service also triggers bgp service restart.
