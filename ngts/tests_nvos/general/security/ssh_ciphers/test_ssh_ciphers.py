@@ -60,7 +60,7 @@ def test_ssh_ciphers_configuration(engines, api_type):
     try:
         general_test_flow(engines.dut, api_type, SshCiphersConsts.CIPHERS, list(SshCiphersConsts.DEFAULT_VALUES[SshCiphersConsts.CIPHERS]))
     finally:
-        cleanup_after_test(engines.dut, original_api=original_api)
+        cleanup_after_test(engines.dut, original_api=original_api, property_name=SshCiphersConsts.CIPHERS)
 
 
 @pytest.mark.cumulus
@@ -84,7 +84,7 @@ def test_ssh_macs_configuration(engines, api_type):
     try:
         general_test_flow(engines.dut, api_type, SshCiphersConsts.MACS, list(SshCiphersConsts.DEFAULT_VALUES[SshCiphersConsts.MACS]))
     finally:
-        cleanup_after_test(engines.dut, original_api=original_api)
+        cleanup_after_test(engines.dut, original_api=original_api, property_name=SshCiphersConsts.MACS)
 
 
 @pytest.mark.cumulus
@@ -108,7 +108,7 @@ def test_ssh_kex_algorithms_configuration(engines, api_type):
     try:
         general_test_flow(engines.dut, api_type, SshCiphersConsts.KEX_ALGOS, list(SshCiphersConsts.DEFAULT_VALUES[SshCiphersConsts.KEX_ALGOS]))
     finally:
-        cleanup_after_test(engines.dut, original_api=original_api)
+        cleanup_after_test(engines.dut, original_api=original_api, property_name=SshCiphersConsts.KEX_ALGOS)
 
 
 @pytest.mark.cumulus
@@ -132,7 +132,7 @@ def test_host_key_algorithms_configuration(engines, api_type):
     try:
         general_test_flow(engines.dut, api_type, SshCiphersConsts.HOST_KEY_ALGOS, list(SshCiphersConsts.DEFAULT_VALUES[SshCiphersConsts.HOST_KEY_ALGOS]))
     finally:
-        cleanup_after_test(engines.dut, original_api=original_api)
+        cleanup_after_test(engines.dut, original_api=original_api, property_name=SshCiphersConsts.HOST_KEY_ALGOS)
 
 
 @pytest.mark.cumulus
@@ -174,7 +174,7 @@ def test_ssh_pubkey_accepted_algorithms_configuration(engines, api_type):
         except Exception as e:
             logging.warning(f'Failed to unset user {username}: {e}')
         finally:
-            cleanup_after_test(engines.dut, original_api=original_api)
+            cleanup_after_test(engines.dut, original_api=original_api, property_name=SshCiphersConsts.PUBKEY_ACCEPTED_ALGOS)
 
 
 @pytest.mark.cumulus
