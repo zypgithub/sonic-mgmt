@@ -95,7 +95,8 @@ def pytest_configure(config):
         return
 
     mars_key_id = config.getoption("--mars_key_id", default=None)
-    if mars_key_id:
+    session_id = config.getoption("--session_id", default=None)
+    if mars_key_id or session_id:
         logger.info("MARS run detected - secrets already in environment, skipping Vault")
         return
 
