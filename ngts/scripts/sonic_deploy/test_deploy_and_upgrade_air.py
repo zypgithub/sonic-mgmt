@@ -20,7 +20,8 @@ from ngts.scripts.sonic_deploy.simx_community_helper import prepare_air_communit
 @allure.title('Deploy and upgrade image - Air')
 def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy_only_target, setup_name, base_version,
                                 platform_params, reboot_after_install, fw_pkg_path, recover_by_reboot, reboot, port_number,
-                                additional_apps, workspace_path, chip_type, custom_config_db_air_path, destination_hwsku):
+                                additional_apps, workspace_path, chip_type, custom_config_db_air_path, destination_hwsku,
+                                deploy_sequential):
     try:
         with allure.step('Collecting setup info'):
             setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
@@ -36,7 +37,8 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
             with allure.step('Pre installation steps'):
                 SonicInstallationSteps.pre_installation_steps(sonic_topo, neighbor_type='ceos',
                                                               base_version=base_version, target_version=None, setup_info=setup_info, port_number=port_number, is_simx=True,
-                                                              threads_dict=threads_dict, destination_hwsku=destination_hwsku, is_performance=False, is_air=True)
+                                                              threads_dict=threads_dict, destination_hwsku=destination_hwsku, is_performance=False, is_air=True,
+                                                              deploy_sequential=deploy_sequential)
             sonic_cli.deploy_fanout(topology_obj, destination_hwsku, platform_params, setup_info, dut['dut_alias'], threads_dict)
             wait_until_background_procs_done(threads_dict)
 

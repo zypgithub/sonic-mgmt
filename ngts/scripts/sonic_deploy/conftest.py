@@ -110,6 +110,10 @@ def pytest_addoption(parser):
     parser.addoption("--deploy_chipless", help="Specify whether to do chipless deployment. Default is 'no'",
                      choices=["no", "yes"], action="store", default="no")
 
+    logger.info('Parsing deploy_sequential')
+    parser.addoption("--deploy_sequential", action="store", default='no', choices=["yes", "no"], required=False,
+                     help="Run deploy steps serially and avoid thread pools")
+
 
 @pytest.fixture(scope="module")
 def workspace_path(request):
@@ -382,6 +386,21 @@ def deploy_image_only(request):
     """
     deploy_image_only_arg = request.config.getoption('--deploy_image_only')
     return deploy_image_only_arg == "yes"
+
+
+@pytest.fixture(scope="module")
+def deploy_sequential(request):
+    """
+    Retrieves the deploy_sequential value from pytest arguments.
+
+    Args:
+        request: The pytest builtin request fixture.
+
+    Returns:
+        bool: True if sequential deployment is requested, False otherwise.
+    """
+    deploy_sequential_arg = request.config.getoption('--deploy_sequential')
+    return deploy_sequential_arg == "yes"
 
 
 @pytest.fixture(scope="module")

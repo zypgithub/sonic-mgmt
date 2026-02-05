@@ -35,7 +35,7 @@ class SonicInstallationSteps:
     def pre_installation_steps_ha(sonic_topo, neighbor_type,
                                   base_version, target_version,
                                   setup_info, port_number,
-                                  threads_dict, destination_hwsku):
+                                  threads_dict, destination_hwsku, deploy_sequential=False):
         """
         Pre-installation steps for HA setup
         """
@@ -59,12 +59,14 @@ class SonicInstallationSteps:
         SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
                                                                   dut_name, sonic_topo, neighbor_type,
                                                                   ptf_tag, port_number,
-                                                                  ansible_path, setup_info, destination_hwsku)
+                                                                  ansible_path, setup_info, destination_hwsku,
+                                                                  deploy_sequential=deploy_sequential)
 
     @staticmethod
     def pre_installation_steps(
             sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, is_simx, threads_dict,
-            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False, is_air=False, deploy_chipless=False):
+            destination_hwsku, is_performance=False, parallel=False, deploy_image_only=False, is_air=False,
+            deploy_chipless=False, deploy_sequential=False):
         """
         Pre-installation steps for SONIC
         :param sonic_topo: the topo for SONiC testing, for example: t0, t1, t1-lag, ptf32
@@ -80,12 +82,23 @@ class SonicInstallationSteps:
         :param parallel: deploy testbed in parallel flag
         :param deploy_image_only: deploy image only flag
         :param deploy_chipless: deploy chipless flag
+        :param deploy_sequential: perform deployment sequentially
         """
         setup_name = setup_info['setup_name']
         dut_name = setup_info['duts'][0]['dut_name']
         if setup_name.endswith('-ha'):
             # Run the pre-installation steps for HA setup
-            SonicInstallationSteps.pre_installation_steps_ha(sonic_topo, neighbor_type, base_version, target_version, setup_info, port_number, threads_dict, destination_hwsku)
+            SonicInstallationSteps.pre_installation_steps_ha(
+                sonic_topo,
+                neighbor_type,
+                base_version,
+                target_version,
+                setup_info,
+                port_number,
+                threads_dict,
+                destination_hwsku,
+                deploy_sequential=deploy_sequential
+            )
         elif is_community(sonic_topo):
             ansible_path = setup_info['ansible_path']
             SonicInstallationSteps.override_hwsku_files(setup_info, destination_hwsku, is_air)
@@ -117,19 +130,28 @@ class SonicInstallationSteps:
             SonicInstallationSteps.start_community_background_threads(threads_dict, setup_name,
                                                                       dut_name, sonic_topo, neighbor_type,
                                                                       ptf_tag, port_number,
-                                                                      ansible_path, setup_info, destination_hwsku, parallel=parallel,
-                                                                      deploy_image_only=deploy_image_only)
+                                                                      ansible_path, setup_info, destination_hwsku,
+                                                                      parallel=parallel,
+                                                                      deploy_image_only=deploy_image_only,
+                                                                      deploy_sequential=deploy_sequential)
             if is_dualtor_topo(sonic_topo):
                 generate_minigraph(ansible_path, setup_info, setup_info['setup_name'], sonic_topo, port_number)
         elif is_performance:
             pass
         else:
-            SonicInstallationSteps.start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx,
-                                                                      deploy_chipless=deploy_chipless)
+            SonicInstallationSteps.start_canonical_background_threads(
+                threads_dict,
+                setup_name,
+                dut_name,
+                is_simx,
+                deploy_chipless=deploy_chipless,
+                deploy_sequential=deploy_sequential
+            )
 
     @staticmethod
     def start_community_background_threads(threads_dict, setup_name, dut_name, sonic_topo, neighbor_type, ptf_tag,
-                                           port_number, ansible_path, setup_info, hwsku, parallel=False, deploy_image_only=False):
+                                           port_number, ansible_path, setup_info, hwsku, parallel=False,
+                                           deploy_image_only=False, deploy_sequential=False):
         """
         Start background threads for community setup
         """
@@ -148,7 +170,7 @@ class SonicInstallationSteps:
                 add_topo_timeout = SonicDeployConstants.ADD_TOPO_TIMEOUT
             logger.info(f"Using add topology timeout: {add_topo_timeout}s for topology: {sonic_topo}")
             run_background_process_on_host(threads_dict, 'add_topology', add_topo_cmd, timeout=add_topo_timeout,
-                                           exec_path=ansible_path)
+                                           exec_path=ansible_path, deploy_sequential=deploy_sequential)
         else:
             logger.info("Skipping add-topo as deploy_image_only is True")
 
@@ -158,7 +180,7 @@ class SonicInstallationSteps:
                 "mtvr-gaur-02" != dut_name and "mtvr-gaur-03" != dut_name and "air-6600" not in dut_name and not setup_name.endswith('-ha')):
             gen_mg_cmd = get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number)
             run_background_process_on_host(threads_dict, 'generate_minigraph', gen_mg_cmd, timeout=300,
-                                           exec_path=ansible_path)
+                                           exec_path=ansible_path, deploy_sequential=deploy_sequential)
 
     @staticmethod
     def copy_csv_inventory_lab(setup_name, destination_hwsku, is_air=False):
@@ -213,7 +235,8 @@ class SonicInstallationSteps:
             SonicInstallationSteps.copy_csv_inventory_lab(setup_name, destination_hwsku, is_air)
 
     @staticmethod
-    def start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx, deploy_chipless=False):
+    def start_canonical_background_threads(threads_dict, setup_name, dut_name, is_simx, deploy_chipless=False,
+                                           deploy_sequential=False):
         """
         Start background threads for canonical setup
         """
@@ -221,10 +244,11 @@ class SonicInstallationSteps:
 
         if not is_simx and not deploy_chipless:
             run_containers_cmd = SonicInstallationSteps.generate_run_containers_command(python_bin_path, setup_name)
-            run_background_process_on_host(threads_dict, 'containers_bringup', run_containers_cmd, timeout=600)
+            run_background_process_on_host(threads_dict, 'containers_bringup', run_containers_cmd, timeout=600,
+                                           deploy_sequential=deploy_sequential)
 
         update_repo_cmd = SonicInstallationSteps.generate_update_sonic_mgmt_cmd(python_bin_path, dut_name, setup_name)
-        run_background_process_on_host(threads_dict, 'update_sonic_mgmt', update_repo_cmd)
+        run_background_process_on_host(threads_dict, 'update_sonic_mgmt', update_repo_cmd, deploy_sequential=deploy_sequential)
 
     @staticmethod
     def generate_run_containers_command(python_bin_path, setup_name):
@@ -709,7 +733,7 @@ class SonicInstallationSteps:
                         # TODO parallelize this
                         _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
                         cli_obj.shutdown_dpu(dpu_index_list)
-                        cli.shutdown_dpu_data_interfaces(setup_name)
+                        cli_obj.shutdown_dpu_data_interfaces(setup_name)
                         cli_obj.save_configuration()
             if deploy_chipless:
                 with allure.step('Bring up pmon docker for chipless deploy'):

@@ -3,6 +3,7 @@ import logging
 import os
 import time
 import re
+import threading
 from multiprocessing.pool import ThreadPool
 from http.server import HTTPServer
 import json
@@ -33,14 +34,14 @@ def get_real_paths(base_version, target_version, cli_type):
     return base_version, target_version
 
 
-def prepare_images(base_version, target_version, serve_file, cli_type=None):
+def prepare_images(base_version, target_version, serve_file, cli_type=None, deploy_sequential=False):
     """
     Method which starts HTTP server if need and share image via HTTP
     """
     image_urls = {"base_version": "", "target_version": ""}
 
     if serve_file:
-        serve_files_over_http(base_version, target_version, image_urls)
+        serve_files_over_http(base_version, target_version, image_urls, deploy_sequential=deploy_sequential)
     else:
         if base_version:
             set_image_path(base_version, "base_version", image_urls, cli_type)
@@ -86,7 +87,7 @@ def is_url(image_path):
     return re.match('https?://', image_path)
 
 
-def serve_files_over_http(base_version, target_version, image_urls):
+def serve_files_over_http(base_version, target_version, image_urls, deploy_sequential=False):
     served_files = {}
     verify_file_exists(base_version)
     served_files["/base_version"] = base_version
@@ -94,7 +95,7 @@ def serve_files_over_http(base_version, target_version, image_urls):
         verify_file_exists(target_version)
         served_files["/target_version"] = target_version
 
-    httpd = start_http_server(served_files)
+    httpd = start_http_server(served_files, deploy_sequential=deploy_sequential)
     http_base_url = "http://{}:{}".format(httpd.server_name, httpd.server_port)
     for served_file_path in served_files:
         image_urls[served_file_path.lstrip("/")] = http_base_url + served_file_path
@@ -105,7 +106,7 @@ def verify_file_exists(image_path):
     assert is_file, "Cannot access Image {}: no such file.".format(image_path)
 
 
-def start_http_server(served_files):
+def start_http_server(served_files, deploy_sequential=False):
     """
     @summary: Use ThreadPool to start a HTTP server
     @param served_files: Dictionary of the files to be served. Dictionary format:
@@ -119,8 +120,12 @@ def start_http_server(served_files):
     def run_httpd():
         httpd.serve_forever()
 
-    pool = ThreadPool()
-    pool.apply_async(run_httpd)
+    if deploy_sequential:
+        thread = threading.Thread(target=run_httpd, daemon=True)
+        thread.start()
+    else:
+        pool = ThreadPool()
+        pool.apply_async(run_httpd)
     time.sleep(5)  # The http server needs couple of seconds to startup
     logger.info("Started HTTP server on STM to serve files %s over http://%s:%s" %
                 (str(served_files), httpd.server_name, httpd.server_port))

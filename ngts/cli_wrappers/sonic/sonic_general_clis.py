@@ -2236,7 +2236,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             context.setup_info, context.port_number, context.is_simx,
             threads_dict, context.destination_hwsku, context.is_performance,
             parallel=context.deploy_testbed_in_parallel, deploy_image_only=context.deploy_image_only,
-            deploy_chipless=context.deploy_chipless
+            deploy_chipless=context.deploy_chipless,
+            deploy_sequential=context.deploy_sequential
         )
 
     def post_installation_steps(self, context, image_helper=None):

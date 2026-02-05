@@ -38,19 +38,32 @@ def run_process_on_host(cmd, timeout=60, exec_path=None, validate=False):
     return std_out, std_err, rc
 
 
-def run_background_process_on_host(processes_dict, process_name, cmd, **kwargs):
+def run_background_process_on_host(processes_dict, process_name, cmd, deploy_sequential=False, **kwargs):
     """
     Start process(run cmd) in background
     :param processes_dict: dict which contains threads names and objects
     :param process_name: name of process(will be displayed in Allure report)
     :param cmd: cmd which should be executed
+    :param deploy_sequential: if True, run synchronously without a thread pool
     :param kwargs: kwargs
     :return: process obj
     """
     with allure.step(f'Starting background process: "{process_name}"'):
-        process_executor = concurrent.futures.ThreadPoolExecutor()
-        process_obj = process_executor.submit(run_process_on_host, cmd, **kwargs)
-        processes_dict[process_name] = process_obj
+        if deploy_sequential:
+            process_obj = concurrent.futures.Future()
+            processes_dict[process_name] = process_obj
+            try:
+                result = run_process_on_host(cmd, **kwargs)
+                process_obj.set_result(result)
+            except Exception as e:
+                process_obj.set_exception(e)
+        else:
+            process_executor = concurrent.futures.ThreadPoolExecutor()
+            process_obj = process_executor.submit(run_process_on_host, cmd, **kwargs)
+            # Release executor resources once the submitted task completes.
+            # The future remains valid and the caller awaits it via wait_until_background_procs_done.
+            process_executor.shutdown(wait=False)
+            processes_dict[process_name] = process_obj
 
     return process_obj
 

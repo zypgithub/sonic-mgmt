@@ -56,7 +56,8 @@ class DeploymentContext:
                  recover_by_reboot, reboot, additional_apps, workspace_path, wjh_deb_url,
                  verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                  serial_log_analyzers, fanout_target_version, request, is_air,
-                 deploy_testbed_in_parallel=False, deploy_image_only=False, deploy_chipless=False):
+                 deploy_testbed_in_parallel=False, deploy_image_only=False, deploy_chipless=False,
+                 deploy_sequential=False):
         """
         Initialize DeploymentContext with all parameters.
 
@@ -99,6 +100,7 @@ class DeploymentContext:
         self.deploy_testbed_in_parallel = deploy_testbed_in_parallel
         self.deploy_image_only = deploy_image_only
         self.deploy_chipless = deploy_chipless
+        self.deploy_sequential = deploy_sequential
         # Initialize derived values (replaces lines 102-123 from original function)
         self._initialize()
 
@@ -154,7 +156,8 @@ class DeploymentContext:
                 self.base_version,
                 self.target_version,
                 self.serve_files,
-                cli_type
+                cli_type,
+                self.deploy_sequential
             )
 
             # Get base and target version URLs
@@ -271,17 +274,18 @@ class DeployImageHelper:
         return base_version, target_version
 
     @staticmethod
-    def prepare_images_to_install(base_version, target_version, serve_files, cli_type):
+    def prepare_images_to_install(base_version, target_version, serve_files, cli_type, deploy_sequential=False):
         """
         Prepare images to be installed
         :param base_version: base version argument
         :param target_version: target version argument
         :param serve_files: serve files
         :param cli_type: cli_type of the system
+        :param deploy_sequential: deploy steps serially
         :return:
         """
         with allure.step('Prepare images and get base version url'):
-            return prepare_images(base_version, target_version, serve_files, cli_type)
+            return prepare_images(base_version, target_version, serve_files, cli_type, deploy_sequential=deploy_sequential)
 
     @staticmethod
     def get_base_version_url(deploy_only_target, image_urls):
@@ -499,11 +503,15 @@ class DeployMultiNosHelper:
                 patterns_list=["password for cumulus"])
 
     @staticmethod
-    def multi_nos_pre_installation_steps(duts, target_cli_type, chip_type):
+    def multi_nos_pre_installation_steps(duts, target_cli_type, chip_type, deploy_sequential=False):
         logger.info("Multi NOS pre installation steps")
-        with concurrent.futures.ThreadPoolExecutor() as executor:
+        if deploy_sequential:
             for dut in duts:
-                executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install, dut, target_cli_type, chip_type)
+                DeployMultiNosHelper.do_multi_nos_pre_install(dut, target_cli_type, chip_type)
+        else:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                for dut in duts:
+                    executor.submit(DeployMultiNosHelper.do_multi_nos_pre_install, dut, target_cli_type, chip_type)
 
     @staticmethod
     def do_multi_nos_pre_install(dut, target_cli_type, chip_type):
@@ -514,7 +522,7 @@ class DeployMultiNosHelper:
             GeneralCliCommon(engine).uninstall_os_flow(current_os, target_cli_type, chip_type)
 
     @staticmethod
-    def multi_nos_post_installation_steps(duts, target_cli_type, is_performance):
+    def multi_nos_post_installation_steps(duts, target_cli_type, is_performance, deploy_sequential=False):
         for dut in duts:
             data_query = json.loads('{ "update": { "CLI_TYPE": "' + target_cli_type +
                                     '", "TYPE": "' + CliType.NOS_TO_TYPE_DICT[target_cli_type] +
@@ -525,18 +533,24 @@ class DeployMultiNosHelper:
                         f"{CliType.NOS_TO_TYPE_DICT[target_cli_type]}")
             upload_data_to_noga(data_query)
         if is_performance:
-            DeployMultiNosHelper.multi_nos_install_traffic_generator(duts)
+            DeployMultiNosHelper.multi_nos_install_traffic_generator(duts, deploy_sequential=deploy_sequential)
 
     @staticmethod
-    def multi_nos_install_traffic_generator(duts):
-        install_threads = []
-        executor = concurrent.futures.ThreadPoolExecutor()
-        for dut in duts:
-            cli_obj = dut['cli_obj']
-            with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
-                install_threads.append((f"Traffic Generator install on {dut['dut_name']}",
-                                        executor.submit(cli_obj.install_traffic_generator)))
-        DeployOrchestrator.wait_until_deploy_background_process(install_threads)
+    def multi_nos_install_traffic_generator(duts, deploy_sequential=False):
+        if deploy_sequential:
+            for dut in duts:
+                cli_obj = dut['cli_obj']
+                with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
+                    cli_obj.install_traffic_generator()
+        else:
+            install_threads = []
+            executor = concurrent.futures.ThreadPoolExecutor()
+            for dut in duts:
+                cli_obj = dut['cli_obj']
+                with allure.step('Install traffic generator on switch: {}'.format(dut['dut_name'])):
+                    install_threads.append((f"Traffic Generator install on {dut['dut_name']}",
+                                            executor.submit(cli_obj.install_traffic_generator)))
+            DeployOrchestrator.wait_until_deploy_background_process(install_threads)
 
 
 class DeployOrchestrator:
@@ -565,49 +579,82 @@ class DeployOrchestrator:
 
         replace_nos = self.context.request.config.getoption('--target_cli_type')
         if replace_nos:
-            DeployMultiNosHelper.multi_nos_pre_installation_steps(self.context.all_duts, replace_nos, self.context.chip_type)
+            DeployMultiNosHelper.multi_nos_pre_installation_steps(
+                self.context.all_duts,
+                replace_nos,
+                self.context.chip_type,
+                deploy_sequential=self.context.deploy_sequential
+            )
 
         return self.pre_install_threads
 
     def execute_installation(self):
         """Execute installation phase for all DUTs"""
 
-        executor = concurrent.futures.ThreadPoolExecutor()
+        executor = None if self.context.deploy_sequential else concurrent.futures.ThreadPoolExecutor()
         use_GA_image = False
 
-        for dut in self.context.all_duts:
-            cli_obj = self.context.get_cli_obj(dut)
-            related_base_version_url, related_target_version = DeployImageHelper.get_related_image_urls(
-                self.context.base_version_url, self.context.target_version_url, dut, use_GA_image)
+        try:
+            for dut in self.context.all_duts:
+                cli_obj = self.context.get_cli_obj(dut)
+                related_base_version_url, related_target_version = DeployImageHelper.get_related_image_urls(
+                    self.context.base_version_url, self.context.target_version_url, dut, use_GA_image)
 
-            if not cli_obj.is_dut_supports_image(related_base_version_url, dut['dut_name'], dut['cli_type']):
-                continue
+                if not cli_obj.is_dut_supports_image(related_base_version_url, dut['dut_name'], dut['cli_type']):
+                    continue
 
-            with allure.step('Install image on dut: {}'.format(dut['dut_name'])):
-                # Disconnect ssh connection
-                self.context.topology_obj.players[dut['dut_alias']]['engine'].disconnect()
-                platform_params_copy = copy.deepcopy(self.context.platform_params)
+                with allure.step('Install image on dut: {}'.format(dut['dut_name'])):
+                    # Disconnect ssh connection
+                    self.context.topology_obj.players[dut['dut_alias']]['engine'].disconnect()
+                    platform_params_copy = copy.deepcopy(self.context.platform_params)
 
-                self.install_threads.append((f"image install on {dut['dut_name']}",
-                                             executor.submit(self.deploy_image,
-                                                             topology_obj=self.context.topology_obj,
-                                                             setup_name=self.context.setup_name,
-                                                             image_url=related_base_version_url,
-                                                             platform_params=platform_params_copy,
-                                                             deploy_type=self.context.deploy_type,
-                                                             apply_base_config=self.context.apply_base_config,
-                                                             reboot_after_install=self.context.reboot_after_install,
-                                                             is_shutdown_bgp=self.context.is_shutdown_bgp,
-                                                             fw_pkg_path=self.context.fw_pkg_path,
-                                                             cli_type=dut['cli_obj'],
-                                                             target_image_url=related_target_version,
-                                                             destination_hwsku=self.context.destination_hwsku,
-                                                             setup_info=self.context.setup_info,
-                                                             dut_alias=dut['dut_alias'],
-                                                             fanout_deploy_threads=self.pre_install_threads,
-                                                             serial_log_analyzers=self.context.serial_log_analyzers,
-                                                             dut_ip=dut['dut_ip'],
-                                                             fanout_target_version=self.context.fanout_target_version)))
+                    if self.context.deploy_sequential:
+                        self.deploy_image(
+                            topology_obj=self.context.topology_obj,
+                            setup_name=self.context.setup_name,
+                            image_url=related_base_version_url,
+                            platform_params=platform_params_copy,
+                            deploy_type=self.context.deploy_type,
+                            apply_base_config=self.context.apply_base_config,
+                            reboot_after_install=self.context.reboot_after_install,
+                            is_shutdown_bgp=self.context.is_shutdown_bgp,
+                            fw_pkg_path=self.context.fw_pkg_path,
+                            cli_type=dut['cli_obj'],
+                            target_image_url=related_target_version,
+                            destination_hwsku=self.context.destination_hwsku,
+                            setup_info=self.context.setup_info,
+                            dut_alias=dut['dut_alias'],
+                            fanout_deploy_threads=self.pre_install_threads,
+                            serial_log_analyzers=self.context.serial_log_analyzers,
+                            dut_ip=dut['dut_ip'],
+                            fanout_target_version=self.context.fanout_target_version
+                        )
+                    else:
+                        self.install_threads.append((f"image install on {dut['dut_name']}",
+                                                     executor.submit(self.deploy_image,
+                                                                     topology_obj=self.context.topology_obj,
+                                                                     setup_name=self.context.setup_name,
+                                                                     image_url=related_base_version_url,
+                                                                     platform_params=platform_params_copy,
+                                                                     deploy_type=self.context.deploy_type,
+                                                                     apply_base_config=self.context.apply_base_config,
+                                                                     reboot_after_install=self.context.reboot_after_install,
+                                                                     is_shutdown_bgp=self.context.is_shutdown_bgp,
+                                                                     fw_pkg_path=self.context.fw_pkg_path,
+                                                                     cli_type=dut['cli_obj'],
+                                                                     target_image_url=related_target_version,
+                                                                     destination_hwsku=self.context.destination_hwsku,
+                                                                     setup_info=self.context.setup_info,
+                                                                     dut_alias=dut['dut_alias'],
+                                                                     fanout_deploy_threads=self.pre_install_threads,
+                                                                     serial_log_analyzers=self.context.serial_log_analyzers,
+                                                                     dut_ip=dut['dut_ip'],
+                                                                     fanout_target_version=self.context.fanout_target_version)))
+        finally:
+            if executor is not None:
+                # Allow running tasks to complete but release executor resources once they finish.
+                # The caller's wait_until_deploy_background_process still enforces timeouts on futures.
+                executor.shutdown(wait=False)
 
         return self.install_threads
 
@@ -643,7 +690,12 @@ class DeployOrchestrator:
 
         replace_nos = self.context.request.config.getoption('--target_cli_type')
         if replace_nos:
-            DeployMultiNosHelper.multi_nos_post_installation_steps(self.context.setup_info['duts'], replace_nos, self.context.is_performance)
+            DeployMultiNosHelper.multi_nos_post_installation_steps(
+                self.context.setup_info['duts'],
+                replace_nos,
+                self.context.is_performance,
+                deploy_sequential=self.context.deploy_sequential
+            )
 
         DeployTopologyHelper.filter_testbed_yaml_file(self.context.setup_info)
 
@@ -656,13 +708,17 @@ class DeployOrchestrator:
             base_version_dpu = self.context.base_version_dpu
             install_threads = []
             try:
-                if len(self.context.setup_info['duts']) == 1:
-                    # run in the main thread for single DUT
-                    DeployDpuHelper.bfb_install_dpu(self.context.topology_obj, base_version_dpu,
-                                                    self.context.setup_info['duts'][0]['dut_alias'],
-                                                    self.context.setup_info['duts'][0]['dut_name'],
-                                                    self.context.setup_info['duts'][0]['cli_obj'],
-                                                    self.context.setup_name)
+                if self.context.deploy_sequential or len(self.context.setup_info['duts']) == 1:
+                    # run sequentially: either explicitly requested or single DUT
+                    for dut in self.context.setup_info['duts']:
+                        DeployDpuHelper.bfb_install_dpu(
+                            self.context.topology_obj,
+                            base_version_dpu,
+                            dut['dut_alias'],
+                            dut['dut_name'],
+                            dut['cli_obj'],
+                            self.context.setup_name
+                        )
                 else:
                     # for multiple DUTs, run in parallel
                     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -691,14 +747,25 @@ class DeployOrchestrator:
         with allure.step('pre installation steps'):
             results['pre_install_threads'] = self.execute_pre_installation_steps()
 
+        # In sequential mode, pre-install processes have already completed inline.
+        # Verify them now so a failure stops the run before installation begins.
+        if self.context.deploy_sequential:
+            with allure.step('verify pre installation processes are done'):
+                self._verify_pre_installation_processes(results['pre_install_threads'])
+
         # Phase 2: Installation
         with allure.step('installation'):
             results['install_threads'] = self.execute_installation()
-            self.wait_until_deploy_background_process(results['install_threads'], timeout=1500)
+            if self.context.deploy_sequential:
+                logger.info("Sequential mode: installation completed inline, "
+                            "centralized timeout not applied (command-level timeouts still active)")
+            else:
+                self.wait_until_deploy_background_process(results['install_threads'], timeout=1500)
 
-        # Phase 3: Verify pre-installation processes
-        with allure.step('verify pre installation processes are done'):
-            self._verify_pre_installation_processes(results['pre_install_threads'])
+        # Phase 3: Verify pre-installation processes (background mode)
+        if not self.context.deploy_sequential:
+            with allure.step('verify pre installation processes are done'):
+                self._verify_pre_installation_processes(results['pre_install_threads'])
 
         # Phase 4: Post-installation
         with allure.step('post installation steps'):

@@ -24,7 +24,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
                             is_shutdown_bgp, fw_pkg_path, recover_by_reboot, reboot, additional_apps, workspace_path,
                             wjh_deb_url, verify_secure_boot, chip_type, destination_hwsku, show_setup_versions,
                             serial_log_analyzers, fanout_target_version, request, is_air,
-                            deploy_testbed_in_parallel, deploy_image_only, deploy_chipless):
+                            deploy_testbed_in_parallel, deploy_image_only, deploy_chipless,
+                            deploy_sequential):
     """
         Deploy SONiC/NVOS testing topology and upgrade switch
 
@@ -72,6 +73,7 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
         :param chip_type: chip_type fixture
         :param deploy_testbed_in_parallel: deploy_testbed_in_parallel fixture
         :param deploy_image_only: deploy_image_only fixture
+        :param deploy_sequential: deploy_sequential fixture
         :raise AssertionError: in case of script failure.
     """
     try:
@@ -89,7 +91,8 @@ def test_deploy_and_upgrade(topology_obj, is_simx, is_performance, base_version,
             destination_hwsku=destination_hwsku, show_setup_versions=show_setup_versions,
             serial_log_analyzers=serial_log_analyzers, fanout_target_version=fanout_target_version,
             request=request, is_air=is_air, deploy_testbed_in_parallel=deploy_testbed_in_parallel,
-            deploy_image_only=deploy_image_only, deploy_chipless=deploy_chipless
+            deploy_image_only=deploy_image_only, deploy_chipless=deploy_chipless,
+            deploy_sequential=deploy_sequential
         )
 
         # Execute deployment using orchestrator
