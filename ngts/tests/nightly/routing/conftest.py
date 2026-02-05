@@ -107,6 +107,7 @@ def configuration(topology_obj, cli_objects, engines, interfaces, platform_param
     cli_objects.dut.general.save_configuration()
 
     cli_objects.dut.general.restart_service('bgp')
+    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False)
 
     yield
 
@@ -123,6 +124,7 @@ def configuration(topology_obj, cli_objects, engines, interfaces, platform_param
 
     cli_objects.dut.frr.remove_frr_config_files()
     cli_objects.dut.general.restart_service('bgp')
+    cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False)
 
     # config below for ARP must be removed later, it's temporary workaround
     engines.dut.run_cmd(f'sudo ip neigh flush dev {interfaces.dut_ha_1}')

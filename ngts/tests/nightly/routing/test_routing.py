@@ -7,6 +7,7 @@ import random
 import ipaddress
 
 from retry.api import retry_call
+from retry import retry
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 
@@ -53,6 +54,9 @@ class TestRouting:
         self.static_route_24_ip = '50.0.0.{}'.format(random.choice(range(2, 255)))
 
         self.ha_or_hb_regex = f'({self.ha_dut_1_ip}|{self.hb_dut_1_ip})'
+
+        # Supported reboot modes for test_reboot
+        self.supported_reboot_modes = ['config reload -y', 'reboot']
 
         # Check that all BGPs established before run test(in other case first test may pass because session not yet UP)
         retry_call(self.check_bgp_sessions, fargs=[], tries=10, delay=5, logger=logger)
@@ -323,6 +327,14 @@ class TestRouting:
             self.validate_ip_interfaces(interface=self.interfaces.dut_hb_1, expected_ip=self.dut_hb_1_ip)
             self.validate_ip_interfaces(interface='Loopback0', expected_ip=self.dut_loopback_ip, mask='32')
 
+    @retry(tries=3, delay=1, logger=logger)
+    def confirm_bgp_session_state(self, ha_expected_state, hb_expected_state):
+        ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
+        self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
+                                                    expected_state=ha_expected_state)
+        self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
+                                                    expected_state=hb_expected_state)
+
     def test_check_existing_network_config_commands(self):
         """
         This test will check existing config commands functionality
@@ -331,37 +343,25 @@ class TestRouting:
         try:
             with allure.step('Checking command: "config bgp shutdown all"'):
                 self.dut_cli.bgp.shutdown_bgp_all()
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
+                self.confirm_bgp_session_state(ha_expected_state='Idle (Admin)', hb_expected_state='Idle (Admin)')
 
             with allure.step('Checking command: "config bgp startup all"'):
                 self.dut_cli.bgp.startup_bgp_all()
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Established')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Established', hb_expected_state='Established')
 
             with allure.step(f'Checking command: "config bgp shutdown neighbor {self.ha_dut_1_ip}"'):
                 self.dut_cli.bgp.shutdown_bgp_neighbor(neighbor=self.ha_dut_1_ip)
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Idle (Admin)', hb_expected_state='Established')
 
             with allure.step(f'Checking command: "config bgp startup neighbor {self.ha_dut_1_ip}"'):
                 self.dut_cli.bgp.startup_bgp_neighbor(neighbor=self.ha_dut_1_ip)
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Established')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Established', hb_expected_state='Established')
+
         except Exception as err:
+            # if any test failed restart BGP sessions
             self.dut_cli.bgp.startup_bgp_all()
+            # confirm BGP sessions are established before raising error
+            retry_call(self.check_bgp_sessions, fargs=[], tries=3, delay=5, logger=logger)
             raise err
 
     def test_routing(self):
@@ -419,14 +419,20 @@ class TestRouting:
             with allure.step('Startup all BGP sessions'):
                 self.dut_cli.bgp.startup_bgp_all()
 
-    def test_reboot(self, ha_dut_1_mac, hb_dut_1_mac):
+    @pytest.fixture(scope='function')
+    def random_reboot_type(self):
+        """
+        This fixture will return a random reboot type from the supported reboot modes
+        :return: reboot type
+        """
+        return random.choice(self.supported_reboot_modes)
+
+    def test_reboot(self, ha_dut_1_mac, hb_dut_1_mac, random_reboot_type):
         """
         This test will do reboot/reload and then will call test case which will run functional validation for routing
         :return: raise assertion error in case when test failed
         """
-        supported_reboot_modes = ['config reload -y', 'reboot']
-        reboot_type = random.choice(supported_reboot_modes)
-        self.dut_cli.general.reboot_reload_flow(r_type=reboot_type, topology_obj=self.topology_obj)
+        self.dut_cli.general.reboot_reload_flow(r_type=random_reboot_type, topology_obj=self.topology_obj)
 
         # config below for ARP must be removed later, it's temporary workaround
         self.dut.run_cmd(f'sudo ip neigh add 20.0.0.2 dev {self.interfaces.dut_ha_1} lladdr {ha_dut_1_mac}')
