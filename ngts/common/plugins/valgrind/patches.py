@@ -60,6 +60,12 @@ def _valgrind_multiplier_decorator_factory(obj: object, attr: str, sig: inspect.
 
 
 def _patch_wait_until_health_status_change_to(timeout_multiplier: float):
+    '''
+    Patch the System.wait_until_health_status_change_to function to increase the timeout.
+
+    :param timeout_multiplier: The multiplier for the timeout.
+    :return: None
+    '''
     from ngts.nvos_tools.system.System import System
     from retry import retry
 
@@ -84,6 +90,12 @@ def _patch_wait_until_health_status_change_to(timeout_multiplier: float):
 
 
 def _proxy_ssh_engine_patches(timeout_multiplier: float):
+    '''
+    Patch the proxy SSH engine to increase the timeouts.
+
+    :param timeout_multiplier: The multiplier for the timeout.
+    :return: None
+    '''
     from infra.tools.connection_tools import proxy_ssh_engine
 
     setattr(proxy_ssh_engine, _VG_SSH_MULTIPLIER_ATTR, timeout_multiplier)
@@ -151,6 +163,12 @@ def _proxy_ssh_engine_patches(timeout_multiplier: float):
 
 
 def _base_connection_patches(timeout_multiplier: float):
+    '''
+    Patch the BaseConnection to increase the timeouts.
+
+    :param timeout_multiplier: The multiplier for the timeout.
+    :return: None
+    '''
     from netmiko import BaseConnection
 
     setattr(BaseConnection, _VG_SSH_MULTIPLIER_ATTR, timeout_multiplier)
@@ -214,6 +232,12 @@ def _base_connection_patches(timeout_multiplier: float):
 
 
 def _patch_expected_operation_durations(timeout_multiplier: float):
+    '''
+    Patch the BaseSwitch to increase the expected operation durations.
+
+    :param timeout_multiplier: The multiplier for the timeout.
+    :return: None
+    '''
     from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 
     setattr(BaseSwitch, _VG_OP_DURATION_MULTIPLIER_ATTR, timeout_multiplier)

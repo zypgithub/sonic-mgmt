@@ -2,14 +2,17 @@ from __future__ import annotations
 
 from allure import attachment_type
 from pathlib import Path
+from typing import Self
 import hashlib
 import logging
 import pytest
 import shlex
 import json
+import os
 import re
 
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.constants.constants import InfraConst
 from ngts.ngts_types import EnginesT
 
 from . import patches, helpers as vg_helpers, analyzer as vg_analyzer
@@ -29,7 +32,7 @@ class ValgrindLogFilesSnapshot:
         self._before: dict[str, int] | None = None
         self._after: dict[str, int] | None = None
 
-    def __enter__(self) -> 'ValgrindLogFilesSnapshot':
+    def __enter__(self) -> Self:
         with allure.step('valgrind mark valgrind output files'):
             self._copy_valgrind_helper_scripts_to_dut()
             self._before = self._scan_valgrind_output(f'/tmp/vg.{self._nodeid}_before.json', assume_empty=True)
@@ -66,7 +69,7 @@ class ValgrindLogFilesSnapshot:
                 else:
                     logger.info(f"Valgrind helper script {file} already exists at {dest_file}")
 
-    def _scan_valgrind_output(self, output_file: str | None = None, assume_empty: bool = False) -> dict[str, int]:
+    def _scan_valgrind_output(self, output_file: str | None = None, /, *, assume_empty: bool = False) -> dict[str, int]:
         with allure.step("Scan valgrind output"):
             if not output_file:
                 result = self._engine_dut.run_cmd('python3 /tmp/vg_scan.py')
@@ -85,8 +88,8 @@ class ValgrindLogFilesSnapshot:
             dest_file.parent.mkdir(parents=True, exist_ok=True)
 
             self._engine_dut.copy_file(
-                source_file=str(result_file_loc),
-                dest_file=str(dest_file),
+                source_file=result_file_loc,
+                dest_file=dest_file,
                 file_system='/',
                 direction='get',
                 overwrite_file=True,
@@ -159,6 +162,21 @@ def pytest_addoption(parser: pytest.Parser):
     valgrind.addoption('--vg-ignore-dir', default=str(_DEFAULT_IGNORE_DIR), type=Path,
                        help='Directory containing valgrind ignore files (default: %(default)s)')
 
+    valgrind.addoption(
+        '--vg-bug-handler-scope',
+        choices=list(vg_analyzer.BugHandlerScope),
+        type=vg_analyzer.BugHandlerScope.from_value,
+        default=vg_analyzer.BugHandlerScope.SUB_SERVICE,
+        help='Scope of bug handler (default %(default)s)',
+    )
+    valgrind.addoption(
+        '--vg-trace-id-strategy',
+        choices=list(vg_analyzer.TraceIdStrategy),
+        type=vg_analyzer.TraceIdStrategy.from_value,
+        default=vg_analyzer.TraceIdStrategy.BY3,
+        help='Trace-id strategy for ignore matching (default: %(default)s)',
+    )
+
     valgrind.addoption('--vg-poc-mocks', action='store_true', default=False, help='Enable valgrind POC mocks')
     valgrind.addoption('--vg-poc-mocks-r5-artifacts', action='store_true', default=False, help='Enable valgrind POC mocks for R5 artifacts')
 
@@ -190,11 +208,66 @@ def pytest_configure(config: pytest.Config):
 
 @pytest.fixture
 def valgrind_config(request: pytest.FixtureRequest):
+    """ Valgrind configuration fixture. """
     return vg_analyzer.DecisionConfig(
         definitely_threshold=request.config.getoption('vg_definitely_threshold'),
         indirectly_threshold=request.config.getoption('vg_indirectly_threshold'),
         possibly_threshold=request.config.getoption('vg_possibly_threshold'),
         fail_on_warnings=request.config.getoption('vg_fail_on_warnings'),
+        bug_handler_scope=request.config.getoption('vg_bug_handler_scope'),
+    )
+
+
+@pytest.fixture(scope="session")
+def vg_ignore_registry(pytestconfig: pytest.Config) -> vg_analyzer.IgnoreRegistry | None:
+    """
+    Lazy session-scoped ignore registry.
+
+    NOTE: This fixture is intentionally not injected directly into the autouse `valgrind` fixture.
+    We request it via `request.getfixturevalue()` only when valgrind analysis actually runs.
+    """
+    if not pytestconfig.getoption("--valgrind-analyze") or pytestconfig.getoption("vg_no_ignores"):
+        return None
+
+    try:
+        ignore_dir = pytestconfig.getoption("vg_ignore_dir")
+    except Exception:  # noqa: BLE001
+        ignore_dir = _DEFAULT_IGNORE_DIR
+
+    strategy = pytestconfig.getoption("vg_trace_id_strategy")
+    trace_id_computer = vg_analyzer.TraceIdComputer(strategy=strategy)
+    registry = vg_analyzer.IgnoreRegistry(ignore_dir=ignore_dir, trace_id_computer=trace_id_computer)
+    setattr(pytestconfig, _VG_IGNORE_REGISTRY_ATTR, registry)
+    return registry
+
+
+@pytest.fixture
+def bug_handler_ctx(request: pytest.FixtureRequest, engines: EnginesT, topology_obj):
+    """ Valgrind bug handler context fixture. """
+    should_skip_bug_handler_action = request.config.getoption("--skip_bug_handler_action")
+    bug_handler_params = (request.config.getoption("--bug_handler_params", default=None) or "").strip().lower()
+    if bug_handler_params == "only_check":
+        bug_handler_mode = "no-action"
+    else:
+        # Default to "create" unless explicitly forced to only-check.
+        # NOTE: `--skip_bug_handler_action` is still supported as a hard skip (skip bug handler integration entirely).
+        bug_handler_mode = "create"
+
+    # Keep the legacy flag behavior intact: it disables valgrind bug handler integration entirely.
+    if should_skip_bug_handler_action:
+        bug_handler_mode = "no-action"
+    setup_name = request.config.getoption('--setup_name') or ""
+    session_id = request.config.getoption('--session_id') or os.environ.get(InfraConst.ENV_SESSION_ID)
+    cli_type = request.session.config.cache.get('CLI_TYPE', os.environ.get('CLI_TYPE'))
+
+    return vg_helpers.ValgrindBugHandlerContext(
+        setup_name=setup_name,
+        topology_obj=topology_obj,
+        engines=engines,
+        cli_type=cli_type,
+        mode=bug_handler_mode,
+        session_id=session_id,
+        skip_actions=should_skip_bug_handler_action,
     )
 
 
@@ -203,17 +276,22 @@ def valgrind(
     engines: EnginesT,
     request: pytest.FixtureRequest,
     valgrind_config: vg_analyzer.DecisionConfig,
+    bug_handler_ctx: vg_helpers.ValgrindBugHandlerContext,
 ):
+    """
+    Valgrind fixture.
+
+    This fixture is automatically used for all tests.
+    It collects the valgrind output files, diffs them, and analyzes the results.
+    """
     valgrind_enabled = request.config.getoption('--valgrind-analyze')
     valgrind_session_scope = request.config.getoption('--valgrind-session-analyze')
-
-    node: pytest.Function = request.node
-    valgrind_marker_disabled = node.get_closest_marker('disable_valgrind')
+    valgrind_marker_disabled = request.node.get_closest_marker('disable_valgrind')
     if valgrind_marker_disabled or valgrind_session_scope or not valgrind_enabled:
         yield
         return
 
-    nodeid = re.sub(r'[^\w-]', '_', node.nodeid)  # Sanitize for filesystem
+    nodeid = str(request.node.nodeid).split('::')[-1]
     with ValgrindLogFilesSnapshot(nodeid, engines) as vg_snapshot:
         yield  # make the test start
 
@@ -225,8 +303,14 @@ def valgrind(
 
     tar_path = vg_helpers.zip_valgrind_diff_files(engines.dut, nodeid, list(diff.keys()))
 
+    ignore_registry = None
+    if not request.config.getoption("vg_no_ignores"):
+        ignore_registry = request.getfixturevalue("vg_ignore_registry")
+
     vg_helpers.valgrind_analyze(
         diff,
         tar_path,
         valgrind_config=valgrind_config,
+        bug_handler_ctx=bug_handler_ctx,
+        ignore_registry=ignore_registry,
     )

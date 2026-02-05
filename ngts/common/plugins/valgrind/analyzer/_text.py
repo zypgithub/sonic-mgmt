@@ -17,6 +17,12 @@ LEAK_RECORD_RE = re.compile(
 
 
 def strip_pid_prefix(s: str) -> str:
+    """
+    Strip the PID prefix from the string.
+
+    :param s: The string to strip the PID prefix from.
+    :return: The string with the PID prefix stripped.
+    """
     # Fast path: most lines are not prefixed
     if not s.startswith('=='):
         return s
@@ -28,6 +34,12 @@ def strip_pid_prefix(s: str) -> str:
 
 
 def to_readable(bytes: int) -> str:
+    """
+    Convert the bytes to a readable string.
+
+    :param bytes: The bytes to convert.
+    :return: The readable string.
+    """
     suffixes = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     for i in range(len(suffixes)):
         if bytes < 1024:
