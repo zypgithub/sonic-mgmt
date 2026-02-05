@@ -9,6 +9,24 @@ DICT_WRITABLE_BYTE_FOR_PAGE_0 = {
     "sff8472": 110,
     "sff8636": 86}
 
+MGMT_TYPE_BY_LONG_TYPE = {
+    # SFF‑8472 (SFP family)
+    "Module/connector soldered to motherboard": "sff8472",
+    "SFP/SFP+/SFP28":                           "sff8472",
+
+    # SFF‑8636 (QSFP family)
+    "QSFP":                                     "sff8636",
+    "QSFP+ or later with SFF-8636 or SFF-8436": "sff8636",
+    "QSFP28 or later":                          "sff8636",
+
+    # CMIS (QSFP-DD / OSFP / SFP-DD / DSFP / QSFP+ CMIS)
+    "QSFP-DD Double Density 8X Pluggable Transceiver":   "cmis",
+    "OSFP 8X Pluggable Transceiver":                     "cmis",
+    "SFP-DD Double Density 2X Pluggable Transceiver":    "cmis",
+    "DSFP Dual Small Form Factor Pluggable Transceiver": "cmis",
+    "QSFP+ or later with CMIS":                          "cmis",
+}
+
 
 def parse_output(output_lines):
     """
@@ -199,19 +217,10 @@ def get_sfp_module_type(duthost, dev_conn):
 def get_sfp_mgmt_iface_type(duthost, interfaces):
     sfp_mgmt_iface_type = get_sfp_module_type(duthost, interfaces)
 
-    cmis_identifiers = ['OSFP', 'QSFP-DD']
-    sff8472_identifiers = ['SFP', 'SFP+', 'SFP28']
-    sff8636_identifiers = ['QSFP28', 'QSFP+', 'QSFP']
-
     for intf, module_type in sfp_mgmt_iface_type.items():
-        module_type = module_type.split()[0].upper()
-        logging.info(f"module_type: {module_type}")
-        if module_type in cmis_identifiers:
-            sfp_mgmt_iface_type[intf] = "cmis"
-        elif module_type in sff8472_identifiers:
-            sfp_mgmt_iface_type[intf] = "sff8472"
-        elif module_type in sff8636_identifiers:
-            sfp_mgmt_iface_type[intf] = "sff8636"
+        mgmt_type = MGMT_TYPE_BY_LONG_TYPE.get(module_type, "unknown")
+        sfp_mgmt_iface_type[intf] = mgmt_type
+        logging.info(f"{intf}: module_type= {module_type} → type={mgmt_type}")
 
     logging.info(f"sfp_mgmt_iface_type: {sfp_mgmt_iface_type}")
     return sfp_mgmt_iface_type
