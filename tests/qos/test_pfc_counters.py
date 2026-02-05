@@ -1,7 +1,7 @@
 from tests.common.fixtures.conn_graph_facts import conn_graph_facts, enum_fanout_graph_facts     # noqa: F401
 from tests.common.platform.interface_utils import get_dpu_npu_ports_from_hwsku    # noqa: F401
 from .qos_fixtures import leaf_fanouts      # noqa: F401
-from .qos_helpers import eos_to_linux_intf, nxos_to_linux_intf, sonic_to_linux_intf
+from tests.common.platform.device_utils import eos_to_linux_intf, nxos_to_linux_intf, sonic_to_linux_intf
 import os
 import time
 import pytest
