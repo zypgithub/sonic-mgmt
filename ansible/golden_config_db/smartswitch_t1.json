@@ -32,7 +32,27 @@
             "ifname": "",
             "nexthop": "18.0.202.1",
             "nexthop-vrf": "default"
+        },
+        "default|10.1.0.6/32": {
+            "blackhole": "false",
+            "distance": "0",
+            "ifname": "",
+            "nexthop": "18.1.202.1",
+            "nexthop-vrf": "default"
+        },
+        "default|10.1.0.7/32": {
+            "blackhole": "false",
+            "distance": "0",
+            "ifname": "",
+            "nexthop": "18.2.202.1",
+            "nexthop-vrf": "default"
+        },
+        "default|10.1.0.8/32": {
+            "blackhole": "false",
+            "distance": "0",
+            "ifname": "",
+            "nexthop": "18.3.202.1",
+            "nexthop-vrf": "default"
         }
     }
-
 }
