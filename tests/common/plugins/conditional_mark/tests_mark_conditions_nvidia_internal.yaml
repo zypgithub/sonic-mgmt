@@ -1448,4 +1448,9 @@ push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
     conditions:
     - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
 
+bgp/test_bgp_route_neigh_learning.py::test_bgp_neighbor_route_learnning:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4867442 and sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4867442 and 'sn6600' in platform"
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
