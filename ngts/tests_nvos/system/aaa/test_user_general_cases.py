@@ -1,5 +1,6 @@
 import logging
 import random
+import time
 
 import pytest
 
@@ -182,6 +183,9 @@ def test_unset_then_set_back_same_user(engines):
     with allure.step(f'Verify user deletion logged in /var/log/auth.log'):
         auth_log = engines.dut.run_cmd(f"sudo grep \"userdel\\[.*\\]: delete user '{username}'\" /var/log/auth.log | tail -1")
         assert auth_log.strip(), f"Expected 'userdel: delete user {username}' in auth.log but not found"
+
+    # wait for the logs to be written to the file (sometimes I/O could be slower)
+    time.sleep(5)
 
     with allure.step(f'Set back user "{username}" with role: {selected_role}'):
         system.aaa.user.user_id[username].set('role', selected_role).verify_result()
