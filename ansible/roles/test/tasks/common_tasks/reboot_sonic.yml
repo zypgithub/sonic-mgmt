@@ -34,7 +34,7 @@
       state: absent
       search_regex: "OpenSSH_[\\w\\.]+ Debian"
       delay: 10
-      timeout: 360
+      timeout: 180
     changed_when: false
 
   rescue:
@@ -59,7 +59,7 @@
     state: started
     search_regex: "OpenSSH_[\\w\\.]+ Debian"
     delay: 10
-    timeout: 360
+    timeout: 180
   changed_when: false
 
 - name: wait for {{ ready_timeout }} seconds for prcesses and interfaces to be stable

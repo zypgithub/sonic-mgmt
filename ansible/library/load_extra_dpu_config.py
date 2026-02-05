@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import concurrent.futures
+
 import paramiko
 import os
 import time
@@ -124,14 +124,6 @@ class LoadExtraDpuConfigModule(object):
                     MAX_RETRIES,
                 )
             )
-            # WA for RM#4629210
-            self.reboot_dpus()
-            if not self.wait_for_dpu_count_mid_plane_up(required_success_count):
-                self.module.fail_json(msg="DPU control planes are not ready on switch after rebooting the DPUs(required {}) after {} retries.".format(
-                    required_success_count,
-                MAX_RETRIES
-                )
-            )
 
         self.module.log("Configuring {} DPUs, requiring at least {} successful configurations".format(
             self.dpu_num, required_success_count))
@@ -243,25 +235,6 @@ class LoadExtraDpuConfigModule(object):
             retry_count += 1
         return False
 
-    # WA for RM#4629210
-    def reboot_single_dpu(self, index):
-        self.module.warn(f"Rebooting DPU{index}")
-        # output = subprocess.check_output(f"sudo reboot -d DPU{index} || true", stderr=subprocess.STDOUT, shell=True, text=True)
-        rc, out, err = self.module.run_command(f"sudo reboot -d DPU{index}")
-        self.module.warn(f"DPU{index} reboot rc: {rc}")
-        self.module.warn(f"DPU{index} reboot output: {out}")
-        self.module.warn(f"DPU{index} reboot error: {err}")
-        self.module.warn(f"DPU{index} rebooted")
-        return rc, out, err
-
-    def reboot_dpus(self):
-        self.module.warn(f"Rebooting {self.dpu_num} DPUs in parallel")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.dpu_num) as executor:
-            futures = [executor.submit(self.reboot_single_dpu, index) for index in range(self.dpu_num)]
-            self.module.warn(f"Waiting for {len(futures)} DPUs to reboot")
-            concurrent.futures.wait(futures)
-            for future in futures:
-                self.module.warn(f"DPU{future.result()}")
 
     def run(self):
         success_count, failure_count = self.configure_dpus()
