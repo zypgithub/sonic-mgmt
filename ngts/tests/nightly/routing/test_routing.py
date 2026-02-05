@@ -343,35 +343,20 @@ class TestRouting:
         try:
             with allure.step('Checking command: "config bgp shutdown all"'):
                 self.dut_cli.bgp.shutdown_bgp_all()
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
+                self.confirm_bgp_session_state(ha_expected_state='Idle (Admin)', hb_expected_state='Idle (Admin)')
 
             with allure.step('Checking command: "config bgp startup all"'):
                 self.dut_cli.bgp.startup_bgp_all()
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Established')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Established', hb_expected_state='Established')
 
             with allure.step(f'Checking command: "config bgp shutdown neighbor {self.ha_dut_1_ip}"'):
                 self.dut_cli.bgp.shutdown_bgp_neighbor(neighbor=self.ha_dut_1_ip)
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Idle (Admin)')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Idle (Admin)', hb_expected_state='Established')
 
             with allure.step(f'Checking command: "config bgp startup neighbor {self.ha_dut_1_ip}"'):
                 self.dut_cli.bgp.startup_bgp_neighbor(neighbor=self.ha_dut_1_ip)
-                ip_bgp_summary_data = self.dut_cli.bgp.parse_ip_bgp_summary()
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.ha_dut_1_ip,
-                                                            expected_state='Established')
-                self.dut_cli.bgp.validate_bgp_session_state(ip_bgp_summary_data, self.hb_dut_1_ip,
-                                                            expected_state='Established')
+                self.confirm_bgp_session_state(ha_expected_state='Established', hb_expected_state='Established')
+
         except Exception as err:
             # if any test failed restart BGP sessions
             self.dut_cli.bgp.startup_bgp_all()
