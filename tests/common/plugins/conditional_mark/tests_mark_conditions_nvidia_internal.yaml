@@ -1067,9 +1067,16 @@ sflow/test_sflow.py:
 
 smartswitch/platform_tests/test_reload_dpu.py::test_dpu_status_post_dpu_kernel_panic:
   xfail:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4807510"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4873571"
     conditions:
-    - "https://redmine.mellanox.com/issues/4807510"
+    - "https://redmine.mellanox.com/issues/4873571"
+
+
+smartswitch/platform_tests/test_reload_dpu.py::test_dpu_check_post_dpu_mem_exhaustion:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4873571"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4873571"
 
 system_health/test_system_health.py::test_service_checker:
   skip:
