@@ -30,6 +30,8 @@
     - '.*pcieport .* error containment capabilities:.*'
     - '.*Finished kdump-tools.service - Kernel crash dump capture service.*'
     - '.*Starting check_for_kernel_crashes.service - Check for kernel crashes and generate tech support.*'
+    - '.* mtvr-q3400-06(-mgmt2)? ERR sed_pw_recovery_service\.sh: Failed when reading from Bank.*'
+    - '.* mtvr-q3400-06(-mgmt2)? ERR sed_pw_recovery_service\.sh: Bank 1 & Bank 2 are empty'
   Conditions:
     - Affected_test_cases:
       - tests_nvos
