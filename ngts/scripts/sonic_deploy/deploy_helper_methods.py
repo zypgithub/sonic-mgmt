@@ -652,20 +652,15 @@ class DeployOrchestrator:
 
     def execute_dpu_image_installation(self):
         with allure.step(f'Start to install the bfb image on DPUs:{self.context.base_version_dpu}'):
-            # Download the DPU image file into sonic-mgmt container
-            # After the minigraph deployment, the DUT may not be able to access the NBU NFS server and DNS server
             base_version_dpu = self.context.base_version_dpu
-            dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
-            dpu_image_file = "/tmp/" + base_version_dpu.split('/')[-1]
             install_threads = []
             try:
-                subprocess.run(["wget", "-t", "3", "-c", dpu_image_url, "-O", dpu_image_file], check=True, text=True, capture_output=False, timeout=300)
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     for dut in self.context.setup_info['duts']:
                         install_threads.append((f"DPU image install on {dut['dut_name']}",
                                                 executor.submit(DeployDpuHelper.bfb_install_dpu,
                                                                 self.context.topology_obj,
-                                                                dpu_image_file,
+                                                                base_version_dpu,
                                                                 dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
                                                                 self.context.setup_name)))
                     DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
@@ -727,10 +722,21 @@ class DeployDpuHelper:
     """Handle DPU-specific deployment operations"""
 
     @staticmethod
-    def bfb_install_dpu(topology_obj, dpu_image_file, dut_alias, dut_name, cli_obj, setup_name):
+    def bfb_install_dpu(topology_obj, base_version_dpu, dut_alias, dut_name, cli_obj, setup_name):
 
         rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
         dut_engine = topology_obj.players[dut_alias]['engine']
+
+        with allure.step('Copying image to switch dut'):
+            dut_engine.run_cmd("sudo config bgp shutdown all")
+            try:
+                dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
+                dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
+                retry_call(lambda: dut_engine.run_cmd(
+                    f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
+                    tries=5, delay=2)
+            finally:
+                dut_engine.run_cmd("sudo config bgp startup all")
 
         with allure.step('Start monitoring minicom'):
             for index in dpu_index_list:
@@ -742,21 +748,11 @@ class DeployDpuHelper:
 
         with allure.step(f"Disable dark mode on {dut_name} {dut_alias}"):
             DeployDpuHelper.disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias)
-        with allure.step('Copying image to switch dut'):
-            retry_call(lambda: dut_engine.copy_file(
-                source_file=dpu_image_file,
-                dest_file=os.path.basename(dpu_image_file),
-                file_system=os.path.dirname(dpu_image_file) + os.sep,
-                direction='put',
-                overwrite_file=True,
-                verify_file=True
-            ),
-                tries=5, delay=2)
 
         try:
             with allure.step('Install BFB image on all DPUs'):
                 output = dut_engine.run_cmd(
-                    f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dpu_image_file} -v")
+                    f"sudo sonic-bfb-installer.sh -r {rshim_value} -b {dest_file} -v")
                 failures = []
                 for index in dpu_index_list:
                     pattern = f"{index}.*Installation Successful"
