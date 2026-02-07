@@ -355,8 +355,8 @@ def wait_for_crm_counter_update(cmd, duthost, expected_used, oper_used=">=", tim
 
 
 def wait_for_resource_stabilization(get_stats_func, duthost, asic_index, resource_key,
-                                     min_expected_used=None, tolerance_percent=5,
-                                     timeout=60, interval=5):
+                                    min_expected_used=None, tolerance_percent=5,
+                                    timeout=60, interval=5):
     """
     Wait for large resource configurations to stabilize by polling.
     Raises pytest.fail() if timeout is reached.
@@ -412,14 +412,14 @@ def wait_for_resource_stabilization(get_stats_func, duthost, asic_index, resourc
             final_stats = get_stats_func(duthost, asic_index)
             final_used = final_stats[resource_key]['used']
             final_avail = final_stats[resource_key]['available']
-        except:
+        except Exception:
             final_used = prev_used
             final_avail = "unknown"
 
         pytest.fail("{} resources did not stabilize within {} seconds. "
-                   "Expected min: {}, Actual: used={}, available={}".format(
-                       resource_key, timeout, min_expected_used if min_expected_used else "N/A",
-                       final_used, final_avail))
+                    "Expected min: {}, Actual: used={}, available={}".format(
+                        resource_key, timeout, min_expected_used if min_expected_used else "N/A",
+                        final_used, final_avail))
 
 
 def generate_neighbors(amount, ip_ver):
@@ -679,11 +679,13 @@ def test_crm_route(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_fro
     # Make sure CRM counters updated - use polling to wait for route counter to update
     logger.info(f"Waiting for route counters to update after adding {total_routes} routes...")
     expected_min_used = crm_stats_route_used + total_routes - CRM_COUNTER_TOLERANCE
+
     def check_route_added():
         return get_route_used() >= expected_min_used
 
     pytest_assert(wait_until(ROUTE_COUNTER_POLL_TIMEOUT, CRM_POLLING_INTERVAL, 0, check_route_added),
-                  f"Route counter did not update after adding {total_routes} routes within {ROUTE_COUNTER_POLL_TIMEOUT} seconds. "
+                  f"Route counter did not update after adding {total_routes} routes "
+                  f"within {ROUTE_COUNTER_POLL_TIMEOUT} seconds. "
                   f"Expected: used >= {expected_min_used}, Actual: used={get_route_used()}")
 
     # Get new ipv[4/6]_route/fdb_entry used and available counter value
@@ -720,11 +722,13 @@ def test_crm_route(duthosts, enum_rand_one_per_hwsku_frontend_hostname, enum_fro
     # Make sure CRM counters updated - use polling to wait for route counter to update
     logger.info(f"Waiting for route counters to update after deleting {total_routes} routes...")
     expected_max_used = crm_stats_route_used - total_routes + CRM_COUNTER_TOLERANCE
+
     def check_route_deleted():
         return get_route_used() <= expected_max_used
 
     pytest_assert(wait_until(ROUTE_COUNTER_POLL_TIMEOUT, CRM_POLLING_INTERVAL, 0, check_route_deleted),
-                  f"Route counter did not update after deleting {total_routes} routes within {ROUTE_COUNTER_POLL_TIMEOUT} seconds. "
+                  f"Route counter did not update after deleting {total_routes} routes "
+                  f"within {ROUTE_COUNTER_POLL_TIMEOUT} seconds. "
                   f"Expected: used <= {expected_max_used}, Actual: used={get_route_used()}")
 
     # Get new ipv[4/6]_route/fdb_entry used and available counter value
