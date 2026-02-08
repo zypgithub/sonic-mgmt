@@ -165,7 +165,7 @@ master:
     syncd: 380
     sonic_ax_impl: 60
     redis: 80
-    orchagent: 90
+    orchagent: 100
     thermalctld: 107
     telemetry: 100
     dialout: 90
