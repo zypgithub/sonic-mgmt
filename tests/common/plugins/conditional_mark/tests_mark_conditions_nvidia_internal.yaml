@@ -457,6 +457,12 @@ bgp/test_bgp_sentinel.py:
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/18998
 
+bgp/test_bgp_command.py::test_bgp_commands_with_like_bgp_container:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4874625"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4874625"
+
 console/test_console_driver.py:
   skip:
     reason: "Not supported on existing testbed. the switch needs to be attached to a DUT via USB link."
