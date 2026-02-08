@@ -46,6 +46,7 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
     TestToolkit.tested_api = random_api
 
     component_name = platform_component_with_clear.get_resource_basename().lower()
+    install_mode = None
     # Get latest version info
     latest_path, latest_filename, latest_version_name = FWComponentsTool.get_fw_component_version_latest(component_name)
 
@@ -97,7 +98,7 @@ def test_ssd_install(engines, devices, topology_obj, random_api, platform_compon
     finally:
         # Step 4: Always restore to latest version for test isolation
         # Use skip_version_check=True if we used skip-reboot before (device is already on latest, just not activated)
-        skip_version_check = install_mode != 'with_reboot'
+        skip_version_check = install_mode is not None and install_mode != 'with_reboot'
         with allure.step(f'Fetch and install SSD firmware {latest_version_name}'):
             BmcTool.fetch_and_install_platform_component(platform_component=platform_component_with_clear, path=latest_path,
                                                          name=latest_version_name, filename=latest_filename, topology_obj=topology_obj,
