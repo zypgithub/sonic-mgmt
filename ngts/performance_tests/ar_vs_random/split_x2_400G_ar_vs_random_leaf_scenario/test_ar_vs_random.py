@@ -30,12 +30,13 @@ class TestARvsRandom:
         self.is_ipv6 = False
 
     def _get_bw_threshold(self, bisection_traffic, packet_size):
+        bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(self.chip_type)
         if bisection_traffic:
-            return SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH
+            return bw_th
         else:
             return {
-                LEFT_PORTS_LEAF_TO_SPINE: {"tx": 0, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH},
-                RIGHT_PORTS_LEAF_TO_HOST: {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH, "rx": 0}
+                LEFT_PORTS_LEAF_TO_SPINE: {"tx": 0, "rx": bw_th},
+                RIGHT_PORTS_LEAF_TO_HOST: {"tx": bw_th, "rx": 0}
             }
 
     @pytest.mark.parametrize(

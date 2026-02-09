@@ -392,6 +392,24 @@ class Cl_Consts:
 
 class SPCXRAConsts:
     DUT_TX_UTIL_IBM_BW_TH = 0.96
+    DUT_TX_UTIL_IBM_BW_TH_SPC4_SPC5 = 0.959
+
+    @staticmethod
+    def get_min_line_rate_bw_threshold_ibm(chip_type):
+        """
+        Return minimum line rate IBM BW threshold: 0.959 for SPC4/SPC5 when issue 4848895 is active, 0.96 otherwise.
+        HW Bug #4848895: AR unfairness while sending similar packets SPC4/SPC5.
+
+        Args:
+            chip_type (str): Chip type
+
+        Returns:
+            float: Minimum line rate IBM BW threshold
+        """
+        if chip_type in ("SPC4", "SPC5") and is_redmine_issue_active([4848895])[0]:
+            return SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH_SPC4_SPC5
+        return SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH
+
     DUT_TX_UTIL_AUTO_TH_DICT = {
         PerfConsts.PACKET_SIZE_4K: {
             "left_ports": {ValidationConsts.TX: 0.92, ValidationConsts.RX: 0.92},

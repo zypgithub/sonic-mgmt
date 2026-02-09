@@ -12,7 +12,7 @@ from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig
                                                                 set_ports_admin_state,
                                                                 skip_test_on_unsupported_os, get_obj_method)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
-from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts
+from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, ValidationConsts
 from infra.tools.exceptions.test_issue import TestIssue
 from ngts.constants.constants import CliType, InfraConst
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
@@ -99,9 +99,14 @@ class TestSPCXRA_x2Split_400G:
                 self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
+            bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(self.chip_type)
+            bw_threshold = {
+                "left_ports": {ValidationConsts.TX: bw_th, ValidationConsts.RX: bw_th},
+                "right_ports": {ValidationConsts.TX: bw_th, ValidationConsts.RX: bw_th}
+            }
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size],
+                                      bw_threshold=bw_threshold,
                                       tc_occ_threshold=None,
                                       run_validate_performance_counters=should_validate_performance_counters(self.cli_object),
                                       packet_size=packet_size,
@@ -128,7 +133,7 @@ class TestSPCXRA_x2Split_400G:
             if is_redmine_issue_active([4335726])[0]:
                 self.cli_object.performance.wait_for_nexthop_resolution(self.conf_args, timeout=PerfConsts.TIMEOUT_FOR_NEXTHOP_RESOLUTION)
 
-        with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.DUT_TX_UTIL_IBM_TH_DICT[packet_size]}% "
+        with allure.step(f"Verifying the BW utilization is at least {SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(self.chip_type)}% "
                          f"on all the ports"):
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,

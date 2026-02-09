@@ -57,10 +57,15 @@ class Test_Alibaba_scenarios_with_reset:
                               for hash_type in ["crc", "random"]])
     @allure.title('test_Alibaba_scenario - {scenario_name} with {packet_size}B packets and {hash_type} hash')
     @allure.description('Added dynamically in test body')
-    def test_alibaba_scenario(self, request, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture):
+    def test_alibaba_scenario(self, request, scenario_name, scenario_configuration, packet_size, hash_type, alibaba_scenarios_fixture, sdk_branch):
         if self.ip == InfraConst.IPV6 and is_redmine_issue_active([4584135])[0] and scenario_name == "p4_1_leaf_seven_acl":
             configure_mloops(self.players)
             pytest.skip("Skipping test due to active Redmine issue 4584135 for IPv6")
+
+        with allure.step(f"Adjusting min packet size for SDK branch {sdk_branch}"):
+            if sdk_branch == "sx_sdk_4_7_4500" and is_redmine_issue_active([4885962])[0]:
+                packet_size += 100
+
         test_name = get_perf_test_name(request)
 
         with allure.step("Adding dynamic description to allure report"):
@@ -71,6 +76,7 @@ class Test_Alibaba_scenarios_with_reset:
                                        f"{'Add goto ACL' if scenario_configuration.create_goto_acl else 'No goto ACL'}")
         with allure.step(f"Updating the configuration from the fixture"):
             self.conf_args = alibaba_scenarios_fixture
+            self.conf_args["packet_size"] = packet_size
             self.traffic_jsons = get_alibaba_traffic(self.players, self.conf_args, spine_scenario=scenario_configuration.two_sided_ar)
 
         with allure.step(f"Run {packet_size}B packet Traffic on all the ports with hash type {hash_type}"):

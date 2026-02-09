@@ -16,6 +16,8 @@ from ngts.helpers.performance.performance_db_helpers import (create_performance_
 from ngts.helpers.thread_log_filter import config_root_logger
 from infra.tools.exceptions.test_issue import TestIssue
 
+logger = logging.getLogger()
+
 
 @pytest.fixture(scope="session", autouse=True)
 def config_root_logger_fixture():
@@ -214,3 +216,13 @@ def port_group_df(request, players, basic_setup_configuration, conf_args=None):
 def copy_sdk_changes_to_dut(cli_objects, basic_setup_configuration):
     cli_objects['dut'].performance.copy_sdk_changes_to_dut()
     yield
+
+
+@pytest.fixture(scope='session', autouse=True)
+def sdk_branch(players):
+    """
+    Returns the SDK branch currently running on the DUT.
+    """
+    general_cli = players['dut']['cli'].general
+    sdk_version = general_cli.get_sdk_version()
+    return general_cli.get_sdk_branch(sdk_version)

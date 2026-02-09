@@ -100,9 +100,10 @@ class TestAlibabaLeafScenario:
                 "unconnected_ports": {"tx": (0.7 / conf_args['split_right']) * 2, "rx": (0.7 / conf_args['split_right']) * 2}
             }
         else:
+            bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(self.chip_type)
             expected_bw = {
-                "left_split_ports": {"tx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH, "rx": SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH},
-                "right_split_ports": {"tx": (SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / conf_args['split_right']) * 2, "rx": (SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH / conf_args['split_right']) * 2}
+                "left_split_ports": {"tx": bw_th, "rx": bw_th},
+                "right_split_ports": {"tx": (bw_th / conf_args['split_right']) * 2, "rx": (bw_th / conf_args['split_right']) * 2}
             }
         return expected_bw
 
@@ -118,10 +119,10 @@ class TestAlibabaLeafScenario:
         if test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
             pytest.skip("Skipping test for 99.9 percent shaper value")
 
-        if not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
+        if not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled" and is_redmine_issue_active([4662379])[0]:
             pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
 
-        if not test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
+        if test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled" and is_redmine_issue_active([4662379])[0]:
             pytest.skip("Skipping Ali scenario 3, IPv4 enabled and IPv6 enabled")
 
         with allure.step(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}"):

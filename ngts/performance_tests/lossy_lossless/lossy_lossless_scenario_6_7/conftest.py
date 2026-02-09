@@ -25,8 +25,11 @@ from ngts.helpers.performance.traffic_helpers import (
     dscp_to_tc
 )
 from ngts.performance_tests.conftest import get_all_players_ports
+from ngts.tools.infra import get_chip_type
 
 logger = logging.getLogger()
+
+
 TESTS_SCENARIO = "lossy_lossless"
 
 
@@ -192,6 +195,8 @@ def get_scenario_6a_conf_args(players, all_ports_after_split, conf_args):
     right_unconnected = all_ports_after_split[PerfConsts.RIGHT_TG_ALIAS]["unconnected_ports"]
     left_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["left_split_ports"]
     right_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["right_split_ports"]
+    chip_type = get_chip_type(players['dut']['attributes'].noga_query_data['attributes'])
+    bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(chip_type)
 
     conf_args.update({
         PerfConsts.PORT_GROUPS: {
@@ -214,19 +219,19 @@ def get_scenario_6a_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "bisection_left_group": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "bisection_right_group": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "egress_ports_many_to_1_group_left": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: lossless_rx_expected_bw
             },
             "egress_ports_many_to_1_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: lossless_rx_expected_bw
             },
             "ingress_ports_many_to_1_group_left": {
@@ -338,6 +343,8 @@ def get_scenario_6b_conf_args(players, all_ports_after_split, conf_args):
     left_unconnected = all_ports_after_split[PerfConsts.LEFT_TG_ALIAS]["unconnected_ports"]
     left_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["left_split_ports"]
     right_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["right_split_ports"]
+    chip_type = get_chip_type(players['dut']['attributes'].noga_query_data['attributes'])
+    bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(chip_type)
 
     conf_args.update({
         PerfConsts.PORT_GROUPS: {
@@ -355,11 +362,11 @@ def get_scenario_6b_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "egress_ports_few_to_many_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: None
             },
             "bisection_egress_group_right": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: None
             },
             "ingress_ports_few_to_many_group_left": {
@@ -448,6 +455,8 @@ def get_scenario_7a_conf_args(players, all_ports_after_split, conf_args):
     right_unconnected = all_ports_after_split[PerfConsts.RIGHT_TG_ALIAS]["unconnected_ports"]
     left_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["left_split_ports"]
     right_split = all_ports_after_split[PerfConsts.DUT_ALIAS]["right_split_ports"]
+    chip_type = get_chip_type(players['dut']['attributes'].noga_query_data['attributes'])
+    bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(chip_type)
 
     conf_args.update({
         "two_sided_ar": False,
@@ -467,11 +476,11 @@ def get_scenario_7a_conf_args(players, all_ports_after_split, conf_args):
         },
         PerfConsts.BW_THRESHOLD: {
             "ports_connected_to_spine": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
             "ports_connected_to_nic": {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
+                ValidationConsts.TX: bw_th,
                 ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
             },
         }
@@ -651,15 +660,15 @@ def get_port_groups(left_groups, right_groups, all_groups, num_of_traffic_ports,
     return port_groups_dict
 
 
-def get_groups_bw_threshold(all_groups):
+def get_groups_bw_threshold(all_groups, players):
+    chip_type = get_chip_type(players['dut']['attributes'].noga_query_data['attributes'])
+    bw_th = SPCXRAConsts.get_min_line_rate_bw_threshold_ibm(chip_type)
     groups_bw_threshold = {
-        **{
-            group_name: {
-                ValidationConsts.TX: SPCXRAConsts.DUT_TX_UTIL_IBM_BW_TH,
-                ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
-            }
-            for group_name in all_groups
-        },
+        group_name: {
+            ValidationConsts.TX: bw_th,
+            ValidationConsts.RX: PerfConsts.DVS_SHAPER_VALUE
+        }
+        for group_name in all_groups
     }
     return groups_bw_threshold
 
@@ -733,7 +742,7 @@ def get_scenrio_7_b_or_c_conf_args(
 
     port_groups = get_port_groups(left_groups, right_groups, all_groups, num_of_traffic_ports, left_unconnected, right_unconnected, left_split, right_split)
     conf_args.update({PerfConsts.PORT_GROUPS: port_groups})
-    groups_bw_threshold = get_groups_bw_threshold(all_groups)
+    groups_bw_threshold = get_groups_bw_threshold(all_groups, players)
     conf_args.update({PerfConsts.BW_THRESHOLD: groups_bw_threshold})
     port_groups_dut = conf_args[PerfConsts.PORT_GROUPS][PerfConsts.DUT_ALIAS]
     ecmp_configurations_dict = get_groups_ecmp_configurations(all_groups, group_ips, left_groups, neigh_mac_left_tg, neigh_mac_right_tg, port_groups_dut)
