@@ -638,6 +638,12 @@ def pytest_collection(session):
         logger.info('Ignore conditional mark')
         return
 
+    # During collect-only runs (for example Cursor test discovery), device facts are unavailable.
+    # Without this guard, conditional mark fact loading can break collection.
+    if session.config.getoption('--collect-only', default=False):
+        logger.info('Collect-only mode: skipping conditional mark facts loading')
+        return
+
     conditions = load_conditions(session)
     if conditions:
         session.config.cache.set('TESTS_MARK_CONDITIONS', conditions)
