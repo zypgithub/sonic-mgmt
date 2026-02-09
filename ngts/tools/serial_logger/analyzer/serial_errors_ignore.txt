@@ -3,3 +3,5 @@
 # 'i' specifies a case-insensitive literal substring;
 # 'r' specifies a regex that the line should contain (searching for a match, not a fullmatch).
 
+r systemd\[\d+\]: Watchdog running with a pretimeout of \d+s with governor 'panic'\.
+r systemd\[\d+\]: Watchdog: setting pretimeout_governor to 'panic'
