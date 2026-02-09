@@ -41,6 +41,7 @@ SONIC_MGMT_MOUNTPOINTS = {
 AIR_SONIC_MGMT_MOUNTPOINTS = {
     '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
     '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
+    '/auto/sw_system_release': '/auto/sw_system_release',
 }
 
 SONIC_MGMT_MOUNTPOINTS_MTBC = {
