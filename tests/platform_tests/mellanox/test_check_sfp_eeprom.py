@@ -6,7 +6,7 @@ from .util import check_sfp_eeprom_info
 from tests.common.platform.transceiver_utils import parse_sfp_eeprom_infos
 from tests.common.utilities import wait_until
 from tests.common.helpers.assertions import pytest_assert
-from tests.platform_tests.conftest import check_pmon_uptime_minutes
+from tests.common.platform.processes_utils import check_pmon_uptime_minutes
 import logging
 
 pytestmark = [
