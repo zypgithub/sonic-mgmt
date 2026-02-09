@@ -245,7 +245,7 @@ def load_test_parameters(duthost):
         TESTPARAM_EXTRA_OVERHEAD = vendor_specific_param['extra_overhead']
         TESTPARAM_ADMIN_DOWN = vendor_specific_param['admin-down']
         MAX_SPEED_8LANE_PORT = vendor_specific_param['max_speed_8lane_platform'].get(platform)
-        if buffer_queue_table := TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'].get(platform):
+        if buffer_queue_table := TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'].get(platform):    # noqa: F841
             TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'] = buffer_queue_table
         else:
             TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'] = TESTPARAM_ADMIN_DOWN['BUFFER_QUEUE_TABLE'].get('default')
@@ -255,6 +255,7 @@ def load_test_parameters(duthost):
             PLATFORM_SUPPORTED_SPEEDS_TO_TEST = platform_supported_speeds_to_test
         else:
             PLATFORM_SUPPORTED_SPEEDS_TO_TEST = vendor_specific_param['supported_speeds_to_test'].get('default')
+
         # For ingress profile list, we need to check whether the ingress lossy profile exists
         ingress_lossy_pool = duthost.shell(
             'redis-cli -n 4 keys "BUFFER_POOL|ingress_lossy_pool"')['stdout']
@@ -873,9 +874,9 @@ def speed_to_test(request):
     """
     global PLATFORM_SUPPORTED_SPEEDS_TO_TEST
     if not PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
-        pytest.skip("Buffer Model is traditional, skipping test")
-    elif request.param not in PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
-        pytest.skip(f"Speed {request.param} is not supported by the platform")
+        pytest.skip("buffer is not dynamic - PLATFORM_SUPPORTED_SPEEDS_TO_TEST wasn't set")
+    if request.param not in PLATFORM_SUPPORTED_SPEEDS_TO_TEST:
+        pytest.skip(f"Skipping case for speed {request.param} because it is not tested by the platform")
     return request.param
 
 
@@ -2613,10 +2614,10 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname,
             # This should make it exceed the limit, so the profile should not applied to the APPL_DB
             time.sleep(20)
             size_in_appldb = duthost.shell(
-                f'redis-cli hget "BUFFER_PROFILE_TABLE:test-headroom" {param_name}')['stdout']
+                f'redis-cli hget "BUFFER_PROFILE_TABLE: test-headroom" {param_name}')['stdout']
             pytest_assert(size_in_appldb == maximum_profile[param_name],
                           f'The profile with a large size was applied to APPL_DB, which can make headroom exceeding. '
-                          f'size_in_appldb:{size_in_appldb}, '
+                          f'size_in_appldb: {size_in_appldb}, '
                           f'maximum_profile_{param_name}: {maximum_profile[param_name]}')
 
         param_name = "size" if disable_shp else "xoff"
