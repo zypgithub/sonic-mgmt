@@ -1967,6 +1967,9 @@ class ReloadTest(BaseTest):
                 elapsed_time += 1
                 time.sleep(1)
                 stdout_lines, stderr_lines, _ = self.vmhost_connection.execCommand(f"ls {self.remote_capture_pcap}")
+                self.log(f"Checking whether the pcapng file is created by: ls {self.remote_capture_pcap}")
+                self.log(f"stdout: {stdout_lines}")
+                self.log(f"stderr: {stderr_lines}")
                 if (self.remote_capture_pcap + '\n') in stdout_lines and len(stderr_lines) == 0:
                     self.log(f"The pcap file on the vmhost is created: {self.remote_capture_pcap}")
                     break
