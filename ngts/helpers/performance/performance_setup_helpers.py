@@ -205,8 +205,6 @@ def apply_test_configuration(players, scenario, conf_args,
     - In debug mode (parallel_run=False): Sequentially applies configuration to each player
     - In normal mode (parallel_run=True): Uses threading to apply configuration to all players in parallel
     """
-    unsplit_all_ports(players, players_aliases, parallel_run=parallel_run)
-
     if parallel_run:
         call_performance_function_with_threads(players, players_aliases=players_aliases,
                                                action="apply test configuration",

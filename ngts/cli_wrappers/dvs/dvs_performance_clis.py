@@ -314,13 +314,17 @@ class DvsPerformance(PerformanceCommon):
         self.cleanup_shared_json_file()
         restart_cmd = "dvs_stop.sh && dvs_start.sh --sdk_bridge_mode=HYBRID"
         self.execute_cmd(restart_cmd)
-        self.connected_ports = self.original_connected_ports
-        self.unconnected_ports = self.original_unconnected_ports
-        self.ports_lanes = self.original_port_lanes
 
         # TODO: Remove this once we have a better way to undo SDK tests
         if is_redmine_issue_active([4644033])[0]:
             self.clear_syslog()
+
+        switch_attributes = self.topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+        if get_chip_type(switch_attributes) == "SPC5":
+            self.unsplit_all_ports()
+        self.connected_ports = self.original_connected_ports
+        self.unconnected_ports = self.original_unconnected_ports
+        self.ports_lanes = self.original_port_lanes
 
     def clear_syslog(self):
         """
@@ -700,6 +704,9 @@ class DvsPerformance(PerformanceCommon):
         logging.info("Unsplit all ports")
         get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
         self.execute_cmd(get_player_ports_cmd)
+        self.update_player_ports()
+        self.base_ports, self.ports_lanes = self.get_base_ports()
+        self.right_left_ports_dict = self.get_right_left_ports_dict()
 
     def dynamic_configuration_helper(self, scenario, performance_parameters):
         """

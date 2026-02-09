@@ -6,7 +6,7 @@ import os
 import logging
 import time
 from datetime import datetime
-from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic
+from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic, unsplit_all_ports
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
 from ngts.constants.constants import PytestConst
 from ngts.constants.performance_constants import MongoDbConsts, PowerConsts, PerfConsts, ValidationConsts
@@ -226,3 +226,12 @@ def sdk_branch(players):
     general_cli = players['dut']['cli'].general
     sdk_version = general_cli.get_sdk_version()
     return general_cli.get_sdk_branch(sdk_version)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def unsplit_all_ports_on_spc5(players):
+    """
+    Unsplits all ports on the SPC5.
+    """
+    unsplit_all_ports(players, step="unsplit_all_ports_on_spc5 - unsplit_all_ports")
+    return
