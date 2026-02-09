@@ -1,0 +1,159 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_1:
+    eos:
+      children:
+        vms_1:
+    servers:
+      vars:
+        topologies:
+          - t1-28-lag
+          - t1-48-lag
+          - t0-28
+          - t0-88-o8c80
+      children:
+        server_01:
+        
+vm_host_1:
+  hosts:
+    FIT-SONIC-VRT-190_2:
+      ansible_host: fit-sonic-vrt-190
+
+vms_1:
+  hosts:
+    VM0063:
+      ansible_host: 10.220.10.191
+    VM0064:
+      ansible_host: 10.220.10.192
+    VM0065:
+      ansible_host: 10.220.10.193
+    VM0066:
+      ansible_host: 10.220.10.194
+    VM0067:
+      ansible_host: 10.220.10.195
+    VM0068:
+      ansible_host: 10.220.10.196
+    VM0069:
+      ansible_host: 10.220.10.197
+    VM0070:
+      ansible_host: 10.220.10.198
+    VM0071:
+      ansible_host: 10.220.10.199
+    VM0072:
+      ansible_host: 10.220.10.200
+    VM0073:
+      ansible_host: 10.220.10.201
+    VM0074:
+      ansible_host: 10.220.10.202
+    VM0075:
+      ansible_host: 10.220.10.203
+    VM0076:
+      ansible_host: 10.220.10.204
+    VM0077:
+      ansible_host: 10.220.10.205
+    VM0078:
+      ansible_host: 10.220.10.206
+    VM0079:
+      ansible_host: 10.220.10.207
+    VM0080:
+      ansible_host: 10.220.10.208
+    VM0081:
+      ansible_host: 10.220.10.209
+    VM0082:
+      ansible_host: 10.220.10.210
+    VM0083:
+      ansible_host: 10.220.10.211
+    VM0084:
+      ansible_host: 10.220.10.212
+    VM0085:
+      ansible_host: 10.220.10.213
+    VM0086:
+      ansible_host: 10.220.10.214
+    VM0087:
+      ansible_host: 10.220.10.215
+    VM0088:
+      ansible_host: 10.220.10.216
+    VM0089:
+      ansible_host: 10.220.10.217
+    VM0090:
+      ansible_host: 10.220.10.218
+    VM0091:
+      ansible_host: 10.220.10.219
+    VM0092:
+      ansible_host: 10.220.10.220
+    VM0093:
+      ansible_host: 10.220.10.221
+    VM0094:
+      ansible_host: 10.220.10.222
+    VM0095:
+      ansible_host: 10.220.10.223
+    VM0096:
+      ansible_host: 10.220.10.224
+    VM0097:
+      ansible_host: 10.220.10.225
+    VM0098:
+      ansible_host: 10.220.10.226
+    VM0099:
+      ansible_host: 10.220.10.227
+    VM0100:
+      ansible_host: 10.220.10.228
+    VM0101:
+      ansible_host: 10.220.10.229
+    VM0102:
+      ansible_host: 10.220.10.230
+    VM0103:
+      ansible_host: 10.220.10.231
+    VM0104:
+      ansible_host: 10.220.10.232
+    VM0105:
+      ansible_host: 10.220.10.233
+    VM0106:
+      ansible_host: 10.220.10.234
+    VM0107:
+      ansible_host: 10.220.10.235
+    VM0108:
+      ansible_host: 10.220.10.236
+    VM0109:
+      ansible_host: 10.220.10.237
+    VM0110:
+      ansible_host: 10.220.10.254
+    VM0111:
+      ansible_host: 10.220.10.239
+    VM0112:
+      ansible_host: 10.220.10.240
+    VM0113:
+      ansible_host: 10.220.10.241
+    VM0114:
+      ansible_host: 10.220.10.242
+    VM0115:
+      ansible_host: 10.220.10.243
+    VM0116:
+      ansible_host: 10.220.10.244
+    VM0117:
+      ansible_host: 10.220.10.245
+    VM0118:
+      ansible_host: 10.220.10.246
+    VM0119:
+      ansible_host: 10.220.10.247
+    VM0120:
+      ansible_host: 10.220.10.248
+    VM0121:
+      ansible_host: 10.220.10.249
+    VM0122:
+      ansible_host: 10.220.10.250
+    VM0123:
+      ansible_host: 10.220.10.251
+    VM0124:
+      ansible_host: 10.220.10.252
+    VM0125:
+      ansible_host: 10.220.10.253
+
+server_01:
+  children:
+    vm_host_1:
+    vms_1:
+  vars:
+    host_var_file: host_vars/FIT-SONIC-VRT-190_2.yml
+

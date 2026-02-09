@@ -1700,7 +1700,7 @@ class DoroceConsts:
     ALLOWED_PERCENTAGE_DEVIATION = 2
 
 
-SETUPS_WITH_NON_DEFAULT_PTF = ['r-bobcat-01', 'bobcat-1254', 'mtvr-bobcat-04']
+SETUPS_WITH_NON_DEFAULT_PTF = ['r-bobcat-01', 'bobcat-1254', 'bobcat-1240', 'mtvr-bobcat-04']
 FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE = "/tmp/file_include_failed_sanity_checker_case.txt"
 INSTALLED_DPUS = '/root/mars/workspace/sonic-mgmt/installed_dpus'
 

@@ -1,0 +1,3 @@
+StartDevice,StartPort,EndDevice,Console_type,Console_menu_type,Proxy
+rcon-10-220-15-235,7002,bobcat-1245,ssh,,root
+rcon-10-220-15-235,7003,leopard-1244,ssh,,root
