@@ -302,6 +302,15 @@ class TestSfpApi(PlatformApiTestBase):
         "slot_id",
     ]
 
+    EXPECTED_CPO_INFO_KEYS = [
+        'hardware_rev',
+        'host_lane_count',
+        'media_lane_count',
+        'media_interface_technology',
+        'cmis_rev',
+        'vdm_supported'
+    ]
+
     chassis_facts = None
     duthost_vars = None
 
@@ -315,6 +324,8 @@ class TestSfpApi(PlatformApiTestBase):
             if xcvr_info_dict["specification_compliance"] == "Passive Copper Cable" or \
                     xcvr_info_dict["specification_compliance"] == "passive_copper_media_interface":
                 return False
+        elif xcvr_info_dict["type"] == "CPO":
+            return True
         else:
             spec_compliance_dict = ast.literal_eval(xcvr_info_dict["specification_compliance"])
             if xcvr_info_dict["type_abbrv_name"] == "SFP":
@@ -490,6 +501,9 @@ class TestSfpApi(PlatformApiTestBase):
     def test_get_transceiver_info(self, duthosts, enum_rand_one_per_hwsku_hostname, localhost,
                                   platform_api_conn):   # noqa: F811
         # TODO: Do more sanity checking on transceiver info values
+        def _generate_active_apsel_hostlane(hostlane_count):
+            return [f"active_apsel_hostlane{n}" for n in range(1, hostlane_count + 1)]
+        active_apsel_hostlane_count = 8
         for i in self.sfp_setup["sfp_test_port_indices"]:
             info_dict = sfp.get_transceiver_info(platform_api_conn, i)
             if self.expect(info_dict is not None, "Unable to retrieve transceiver {} info".format(i)):
@@ -504,6 +518,10 @@ class TestSfpApi(PlatformApiTestBase):
                     elif info_dict["type"] == "Backplane Cartridge" and \
                             info_dict['manufacturer'].rstrip() == "Amphenol":
                         UPDATED_EXPECTED_XCVR_INFO_KEYS = self.EXPECTED_AMPH_BACKPLANE_KEYS
+                    elif info_dict["type"] == "CPO" and \
+                            info_dict['manufacturer'].rstrip() == "NVIDIA":
+                        UPDATED_EXPECTED_XCVR_INFO_KEYS = self.EXPECTED_XCVR_INFO_KEYS + self.EXPECTED_CPO_INFO_KEYS + \
+                                                          _generate_active_apsel_hostlane(active_apsel_hostlane_count)
                     else:
 
                         if info_dict["type_abbrv_name"] in ["QSFP-DD", "OSFP-8X", "QSFP+C"]:
@@ -511,7 +529,7 @@ class TestSfpApi(PlatformApiTestBase):
                             UPDATED_EXPECTED_XCVR_INFO_KEYS = self.EXPECTED_XCVR_INFO_KEYS + \
                                 self.EXPECTED_XCVR_NEW_CMIS_INFO_KEYS + \
                                 self.EXPECTED_XCVR_NEW_CMIS_FIRMWARE_INFO_KEYS + \
-                                ["active_apsel_hostlane{}".format(n) for n in range(1, active_apsel_hostlane_count + 1)]
+                                _generate_active_apsel_hostlane(active_apsel_hostlane_count)
                             firmware_info_dict = sfp.get_transceiver_info_firmware_versions(platform_api_conn, i)
                             if self.expect(firmware_info_dict is not None,
                                            "Unable to retrieve transceiver {} firmware info".format(i)):
@@ -592,7 +610,8 @@ class TestSfpApi(PlatformApiTestBase):
                     actual_keys = list(thold_info_dict.keys())
 
                     expected_keys = list(self.EXPECTED_XCVR_COMMON_THRESHOLD_INFO_KEYS)
-                    if info_dict["type_abbrv_name"] in ["QSFP-DD", "OSFP-8X", "QSFP+C"]:
+                    if info_dict["type_abbrv_name"] in ["QSFP-DD", "OSFP-8X", "QSFP+C"] or \
+                       info_dict["type"] == "CPO" and info_dict['manufacturer'].rstrip() == "NVIDIA":
                         expected_keys += self.QSFPDD_EXPECTED_XCVR_THRESHOLD_INFO_KEYS
                         if sfp.is_coherent_module(platform_api_conn, i):
                             if 'INPHI CORP' in info_dict['manufacturer'] and 'IN-Q3JZ1-TC' in info_dict['model']:
