@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import os
 from datetime import datetime
 
@@ -63,6 +62,72 @@ class FilesTool:
     def file_exists(engine, file_path):
         output = engine.run_cmd(f'ls {file_path}')
         return "No such file or directory" not in output
+
+    @staticmethod
+    def file_exists_sudo(engine, file_path: str) -> ResultObj:
+        """
+        Check if a file exists using 'test -f' with sudo privileges.
+
+        This method is more robust than file_exists() because:
+        - Uses 'test -f' which is purpose-built for file checking
+        - Returns ResultObj for chaining with verify_result()
+        - Works with protected files via sudo
+
+        Args:
+            engine: The test engine to run commands on
+            file_path: Full path to the file to check
+
+        Returns:
+            ResultObj: Result with True if file exists, False if not
+
+        Example:
+            # Verify file exists
+            FilesTool.file_exists_sudo(engines.dut, '/etc/ssh/principals/admin').verify_result(should_succeed=True)
+
+            # Verify file does not exist
+            FilesTool.file_exists_sudo(engines.dut, '/etc/ssh/principals/deleted_user').verify_result(should_succeed=False)
+        """
+        output = engine.run_cmd(f"sudo test -f {file_path} && echo 'EXISTS' || echo 'NOT_EXISTS'")
+        file_exists = "NOT_EXISTS" not in output  # Avoid substring match bug
+
+        info = f"File {file_path} {'exists' if file_exists else 'does not exist'}"
+        return ResultObj(file_exists, info=info)
+
+    @staticmethod
+    def read_file_content(engine, file_path: str, use_sudo: bool = True) -> ResultObj:
+        """
+        Read the content of a file with optional sudo privileges.
+
+        Note: Always returns success with content in returned_value. If the file doesn't exist
+        or can't be read, the error message becomes the content. Callers should use
+        verify_result(expected_value=...) to validate the content is as expected.
+
+        Args:
+            engine: The test engine to run commands on
+            file_path: Full path to the file to read
+            use_sudo: Whether to use sudo (default: True)
+
+        Returns:
+            ResultObj: Always returns True with file content (or error message) in returned_value
+
+        Example:
+            # Just read content
+            content = FilesTool.read_file_content(engines.dut, '/etc/ssh/principals/admin').verify_result()
+
+            # Read and verify content contains expected string
+            FilesTool.read_file_content(
+                engines.dut,
+                '/etc/ssh/principals/admin'
+            ).verify_result(expected_value='my-principal')
+        """
+        sudo_prefix = "sudo " if use_sudo else ""
+        file_content = engine.run_cmd(f"{sudo_prefix}cat {file_path}")
+
+        # Return content as-is. Caller uses verify_result(expected_value=...) to check correctness.
+        # If file doesn't exist or can't be read, error message becomes the content,
+        # which will fail content verification naturally.
+        info = f"Read content from {file_path}"
+        return ResultObj(True, returned_value=file_content, info=info)
 
     @staticmethod
     def validate_expected_files(engine, folder_path, expected_files, should_succeed=True):

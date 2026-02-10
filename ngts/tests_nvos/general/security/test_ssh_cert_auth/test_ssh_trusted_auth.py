@@ -3,6 +3,7 @@ from typing import List, Tuple
 import pytest
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, UserRole
+from ngts.nvos_tools.infra.FilesTool import FilesTool
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
@@ -66,6 +67,10 @@ def test_ssh_cert_basic_func(
     set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
     _verify_show_commands(system, users, key_name, key_type, random_principal, expected_state="enabled")
 
+    # Verify principals file EXISTS for both users when cert-auth is enabled
+    _verify_principals_file(engines, admin.username, principal=random_principal, should_exist=True)
+    _verify_principals_file(engines, monitor.username, principal=random_principal, should_exist=True)
+
     verify_user_login(admin, key_private_path, hostname, engines, expect_success=True)
     verify_user_login(monitor, key_private_path, hostname, engines, expect_success=True)
 
@@ -73,6 +78,10 @@ def test_ssh_cert_basic_func(
         system.aaa.user.user_id[admin.username].ssh.cert_auth.disable_state(apply=True)
 
     _verify_show_commands(system, [admin], key_name, key_type, expected_state="disabled")
+
+    # Verify principals file does NOT exist for admin (disabled) but EXISTS for monitor (enabled)
+    _verify_principals_file(engines, admin.username, should_exist=False)
+    _verify_principals_file(engines, monitor.username, principal=random_principal, should_exist=True)
 
     verify_user_login(admin, key_private_path, hostname, engines, expect_success=False)
     verify_user_login(monitor, key_private_path, hostname, engines, expect_success=True)
@@ -131,6 +140,10 @@ def test_ssh_cert_auth_disabled(
     set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
     _verify_show_commands(system, users, key_name, key_type, expected_state="disabled")
 
+    # Verify principals file does NOT exist when cert-auth state is disabled
+    _verify_principals_file(engines, admin.username, should_exist=False)
+    _verify_principals_file(engines, monitor.username, should_exist=False)
+
     verify_user_login(admin, key_private_path, hostname, engines, expect_success=False)
     verify_user_login(monitor, key_private_path, hostname, engines, expect_success=False)
 
@@ -139,6 +152,10 @@ def test_ssh_cert_auth_disabled(
 
     _verify_show_commands(system, [admin], key_name, key_type, random_principal, expected_state="enabled")
     _verify_show_commands(system, [monitor], key_name, key_type, expected_state="disabled")
+
+    # Verify principals file EXISTS for admin (enabled) but NOT for monitor (disabled)
+    _verify_principals_file(engines, admin.username, principal=random_principal, should_exist=True)
+    _verify_principals_file(engines, monitor.username, should_exist=False)
 
     verify_user_login(admin, key_private_path, hostname, engines, expect_success=True)
     verify_user_login(monitor, key_private_path, hostname, engines, expect_success=False)
@@ -196,6 +213,10 @@ def test_ssh_cert_auth_multiple_principals(
     _verify_show_commands(system, [admin], key_name, key_type, random_principal, expected_state="enabled")
     _verify_show_commands(system, [local_admin_user], key_name, key_type, another_random_principal, expected_state="enabled")
 
+    # Verify principals files exist with correct principals
+    _verify_principals_file(engines, admin.username, principal=random_principal, should_exist=True)
+    _verify_principals_file(engines, local_admin_user.username, principal=another_random_principal, should_exist=True)
+
     verify_user_login(admin, key_private_path, hostname, engines, expect_success=True)
     verify_user_login(local_admin_user, key_private_path, hostname, engines, expect_success=True)
 
@@ -249,6 +270,9 @@ def test_ssh_cert_auth_multiple_keys(
 
     _verify_show_commands(system, [admin], key_name, key_type, random_principal, expected_state="enabled")
 
+    # Verify principals file exists with correct principal
+    _verify_principals_file(engines, admin.username, principal=random_principal, should_exist=True)
+
     verify_user_login(admin, key_path, hostname, engines, expect_success=True)
     verify_user_login(admin, another_key_path, hostname, engines, expect_success=True)
 
@@ -288,6 +312,10 @@ def test_bad_principal(
     set_cert_auth(system=system, user=admin, principal=bad_principal, state="enabled")
     set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
     _verify_show_commands(system, [admin], key_name, key_type, bad_principal, expected_state="enabled")
+
+    # Verify principals file exists but with wrong principal (bad_principal instead of random_principal)
+    _verify_principals_file(engines, admin.username, principal=bad_principal, should_exist=True)
+
     verify_user_login(admin, key_path, hostname, engines, expect_success=False)
 
 
@@ -326,7 +354,55 @@ def test_bad_key_type(
     set_cert_auth(system=system, user=admin, principal=random_principal, state="enabled")
     set_trusted_ca_key(system, key_name, bad_key_type, ca_val, apply=True)
     _verify_show_commands(system, [admin], key_name, bad_key_type, random_principal, expected_state="enabled")
+
+    # Verify principals file exists with correct principal (but key type is wrong)
+    _verify_principals_file(engines, admin.username, principal=random_principal, should_exist=True)
+
     verify_user_login(admin, key_path, hostname, engines, expect_success=False)
+
+
+@pytest.mark.security
+@pytest.mark.ssh
+def test_principals_file_cleanup_on_user_deletion(
+    engines,
+    local_monitor_user: UserInfo,
+    nv_command: NvCommand,
+    ssh_cert_auth_helper_with_cleanup: Tuple[SshCertAuthHelper, str],
+    random_api,
+):
+    """
+    Test that principals file is removed when user is deleted.
+
+    Related to bug #4879586: [ssh-trusted-keys]: Default Principals are not removed
+    as result of deleting users with cert-auth enabled
+
+    Test Flow:
+    1. Use existing local_monitor_user with cert-auth enabled and principals configured
+    2. Verify principals file exists in /etc/ssh/principals/
+    3. Delete the user via 'nv unset system aaa user'
+    4. Verify principals file is removed from /etc/ssh/principals/
+    """
+    system = nv_command.system
+    ssh_cert_auth_helper, key_name = ssh_cert_auth_helper_with_cleanup
+    key_type = get_random_key_type()
+    random_principal = get_random_principal()
+
+    # Step 1: Configure cert-auth for local_monitor_user
+    ca_val, _ = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+        key_name=key_name, key_type=key_type, principals=[random_principal]
+    )
+
+    set_cert_auth(system=system, user=local_monitor_user, principal=random_principal, state="enabled")
+    set_trusted_ca_key(system, key_name, key_type, ca_val, apply=True)
+
+    # Step 2: Verify principals file EXISTS
+    _verify_principals_file(engines, local_monitor_user.username, principal=random_principal, should_exist=True)
+
+    # Step 3: Delete the user
+    system.aaa.user.user_id[local_monitor_user.username].unset(apply=True)
+
+    # Step 4: Verify principals file is REMOVED
+    _verify_principals_file(engines, local_monitor_user.username, should_exist=False)
 
 
 def _verify_show_commands(
@@ -366,3 +442,35 @@ def _verify_users_principals_and_state(system: System, users: List[UserInfo], ra
             else:
                 assert not out_principals, f"principals for user {user.username} are not set as expected. actual: {out}"
             assert out_state == expected_state, f"user {user.username} state is not set as expected. actual: {out}"
+
+
+def _verify_principals_file(engines, username: str, principal: str | None = None, should_exist: bool = True) -> None:
+    """
+    Verify the principals file in /etc/ssh/principals/{username} exists and contains expected principal.
+
+    Uses FilesTool with ResultObj pattern for clean verification.
+
+    Args:
+        engines: Test engines
+        username: Username to check principals file for
+        principal: Expected principal in the file (if None, just check existence)
+        should_exist: Whether the file should exist or not
+
+    Raises:
+        AssertionError: If file existence doesn't match expectation or content verification fails
+    """
+    principals_file_path = f"/etc/ssh/principals/{username}"
+
+    with allure.step(f"verify principals file for user {username}, should_exist={should_exist}"):
+        # Verify file existence using ResultObj pattern with should_succeed parameter
+        FilesTool.file_exists_sudo(engines.dut, principals_file_path).verify_result(should_succeed=should_exist)
+
+        # If file should exist and principal is specified, verify content
+        if should_exist and principal:
+            # Read content and verify it contains the expected principal
+            # If file can't be read, error message becomes content and verification fails
+            FilesTool.read_file_content(
+                engines.dut,
+                principals_file_path,
+                use_sudo=True
+            ).verify_result(expected_value=principal)
