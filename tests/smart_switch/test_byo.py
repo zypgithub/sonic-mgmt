@@ -97,8 +97,14 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
     with allure.step("Shutdown bgp to enable the access to the docker registry"):
         duthost.shell("config bgp shutdown all")
 
+    with allure.step("Config static route on dpu for the nameservers and docker harbor"):
+        dpuhost.shell(f"sudo ip route replace 10.0.0.0/8 via 169.254.200.254 dev eth0-midplane")
+
     yield
 
+
+    with allure.step("Remove the static route on dpu for the nameservers and docker harbor"):
+        dpuhost.shell(f"sudo ip route del 10.0.0.0/8 via 169.254.200.254 dev eth0-midplane")
     with allure.step("Start bgp"):
         duthost.shell("config bgp startup all")
     with allure.step("Disable byo on the dpu"):
