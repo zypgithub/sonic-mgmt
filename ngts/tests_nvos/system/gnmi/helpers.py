@@ -28,7 +28,7 @@ from ngts.tests_nvos.general.security.mtls.generic_testing.constants import CA_C
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.helpers.general_helpers import run_cmd
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
-from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr
+from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -444,6 +444,25 @@ def verify_msg_not_in_out_or_err(msg: str, out: str, err: str = None):
 
 def verify_msg_in_out_or_err(msg: str, out: str, err: str = None):
     verify_msg_existence_in_out_or_err(msg, True, out, err)
+
+
+def parse_gnmi_status(output):
+    """
+    Parse JSON output from 'nv show system gnmi-server status' (and variants).
+    Returns a dict with GnmiServerStatus keys: total-active-subscriptions,
+    received-subscription-requests, rejected-subscriptions, received-capabilities-requests, client (list).
+    If the CLI returns a nested structure (e.g. {"status": {...}}), unwraps to the inner status dict.
+    """
+    result = OutputParsingTool.parse_json_str_to_dictionary(output)
+    d = result.get_returned_value()
+    if not isinstance(d, dict):
+        return d
+    # Unwrap if single top-level key contains the status (e.g. {"status": {...}})
+    if len(d) == 1:
+        inner = next(iter(d.values()))
+        if isinstance(inner, dict) and (GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS in inner or GnmiServerStatus.CLIENT in inner):
+            return inner
+    return d
 
 
 def verify_gnmi_client(test_flow, server_host, server_port, username, password, skip_cert_verify: bool,

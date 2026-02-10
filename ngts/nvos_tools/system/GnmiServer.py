@@ -4,15 +4,28 @@ from typing import Dict
 from retry import retry
 
 from ngts.constants.constants import GnmiConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.MTLSableServerResource import MTLSableServerResource
 
 logger = logging.getLogger()
 
 
+class Status(BaseComponent):
+    """Sub-component for 'nv show system gnmi-server status' and 'nv action clear system gnmi-server status'."""
+
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/status')
+
+    def action_clear(self):
+        return self.action(ActionConsts.CLEAR)
+
+
 class GnmiServer(MTLSableServerResource):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/gnmi-server')
+        self.status = Status(self)
 
     def enable_gnmi_server(self, apply=True):
         return self.set(GnmiConsts.GNMI_STATE_FIELD, GnmiConsts.GNMI_STATE_ENABLED, apply=apply)

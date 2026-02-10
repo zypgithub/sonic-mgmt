@@ -27,6 +27,28 @@ DEFAULT_CERTIFICATE = 'self-signed'
 SERVER_REFLECTION_SUBSCRIBE_RESPONSE = '.gnmi.SubscribeResponse'
 
 
+# gNMI server status object model (system/gnmi-server/status)
+# +--ro total-active-subscriptions     uint64
+# +--ro received-subscription-requests uint64
+# +--ro rejected-subscriptions         uint64
+# +--ro received-capabilities-requests uint64
+# +--ro client*
+#     +--ro client-address              string
+#     +--ro client-port                 string
+#     +--ro client-type                 enumeration
+#     +--ro client-active-subscriptions uint64
+class GnmiServerStatus:
+    TOTAL_ACTIVE_SUBSCRIPTIONS = 'total-active-subscriptions'
+    RECEIVED_SUBSCRIPTION_REQUESTS = 'received-subscription-requests'
+    REJECTED_SUBSCRIPTIONS = 'rejected-subscriptions'
+    RECEIVED_CAPABILITIES_REQUESTS = 'received-capabilities-requests'
+    CLIENT = 'client'
+    CLIENT_ADDRESS = 'client-address'
+    CLIENT_PORT = 'client-port'
+    CLIENT_TYPE = 'client-type'
+    CLIENT_ACTIVE_SUBSCRIPTIONS = 'client-active-subscriptions'
+
+
 class GnmicErr:
     GNMIC_NOT_INSTALLED = 'gnmic: command not found'
     AUTH_FAIL = 'Authentication failed'
