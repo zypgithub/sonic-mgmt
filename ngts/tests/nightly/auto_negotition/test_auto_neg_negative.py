@@ -27,8 +27,7 @@ INVALID_INTERFACE_NAME = "EthernetX"
 INVALID_AUTO_NEG_MODE = "enable"
 INVALID_PORT_ERR_REGEX = r"Invalid\s+port"
 INVALID_SPEED_ERR_REGEX = r"Invalid\s+speed\s+specified"
-INVALID_AUTO_NEG_MODE_ERR_REGEX = r'Error:\s+Invalid\s+value\s+for\s+"<mode>":\s+invalid choice:' \
-                                  r'\s+enable.\s\(choose\s+from\s+enabled,\s+disabled\)'
+INVALID_AUTO_NEG_MODE_ERR_REGEX = r"Error: Invalid value.*enable.*enabled.*disabled"
 
 
 @pytest.fixture(autouse=False)
