@@ -17,7 +17,7 @@ SPC1_HWSKUS = ["ACS-MSN2700", "Mellanox-SN2700", "Mellanox-SN2700-D48C8", "ACS-M
 SPC2_HWSKUS = ["ACS-MSN3700", "ACS-MSN3700C", "ACS-MSN3800", "Mellanox-SN3800-D112C8", "ACS-MSN3420"]
 SPC3_HWSKUS = ["ACS-MSN4700", "Mellanox-SN4700-O28", "ACS-MSN4600C", "ACS-MSN4410", "ACS-MSN4600",
                "Mellanox-SN4600C-D112C8", "Mellanox-SN4600C-C64", "ACS-SN4280", "Mellanox-SN4280-O28",
-               "Mellanox-SN4280-O8C40", "Mellanox-SN4280-C48", "Mellanox-SN4280-O8V40", "Mellanox-SN4280-O8C80"]
+               "Mellanox-SN4280-O8C40", "Mellanox-SN4280-C48", "Mellanox-SN4280-O8V40", "Mellanox-SN4280-O8C80", "ACS-SN4700D"]
 SPC4_HWSKUS = ["ACS-SN5600", "Mellanox-SN5600-V256", "Mellanox-SN5600-C256S1", "Mellanox-SN5600-C224O8",
                'Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
 SPC5_HWSKUS = ["Mellanox-SN5640-C512S2", "Mellanox-SN5640-C448O16",  "Mellanox-SN5810_LD-O128A2"]
@@ -1199,6 +1199,55 @@ SWITCH_MODELS = {
             "psu": {
                 "start": 1,
                 "number": 2
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "asic_ambient": {
+                "number": 1
+            },
+            "port_ambient": {
+                "number": 1
+            },
+            "fan_ambient": {
+                "number": 1
+            },
+            "comex_ambient": {
+                "number": 1
+            }
+        }
+    },
+    "x86_64-nvidia_sn4700d-r0": {
+        "chip_type": "spectrum3",
+        "reboot": {
+            "cold_reboot": True,
+            "fast_reboot": False,
+            "warm_reboot": True
+        },
+        "fans": {
+            "number": 6,
+            "hot_swappable": True
+        },
+        "psus": {
+            "number": 0
+        },
+        "cpu_pack": {
+            "number": 1
+        },
+        "cpu_cores": {
+            "number": 4
+        },
+        "ports": {
+            "number": 32
+        },
+        "thermals": {
+            "cpu_core": {
+                "start": 0,
+                "number": 4
+            },
+            "module": {
+                "start": 1,
+                "number": 32
             },
             "cpu_pack": {
                 "number": 1

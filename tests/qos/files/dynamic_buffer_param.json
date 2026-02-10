@@ -62,6 +62,7 @@
 	"max_speed_8lane_platform": {
 		"x86_64-mlnx_msn4700-r0": "400000",
 		"x86_64-mlnx_msn4700_simx-r0": "400000",
+		"x86_64-nvidia_sn4700d-r0": "400000",
 		"x86_64-nvidia_sn4280_simx-r0": "400000",
 		"x86_64-nvidia_sn4280-r0": "400000",
 		"x86_64-nvidia_sn4800-r0": "400000",
