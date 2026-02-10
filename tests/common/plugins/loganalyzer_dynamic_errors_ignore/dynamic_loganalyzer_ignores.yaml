@@ -1925,3 +1925,12 @@
     - sn6600_simx
     Redmine:
     - 4836707
+
+# Ignore error message for RM ticket 4732296
+# The login attempts were all coming from a device from the ThreatOps team.
+# They are running brute force attempts on random devices in the company to try and find vulnerabilities in the network.
+- Errors_list:
+  - '.*ERR sshd-session.*auth fail: Password incorrect. user.*'
+  Conditions:
+  - Platform:
+    - sn
