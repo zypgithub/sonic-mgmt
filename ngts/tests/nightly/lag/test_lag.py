@@ -9,7 +9,6 @@ import pytest
 
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.config_templates.lag_lacp_config_template import LagLacpConfigTemplate
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.vlan_config_template import VlanConfigTemplate
@@ -370,6 +369,13 @@ def exclude_service_ports(interfaces_info, service_ports):
     return {iface: info for iface, info in interfaces_info.items() if iface not in service_ports}
 
 
+def exclude_dpu_interfaces(interfaces_info, platform):
+    if '4280' in platform:
+        dpu_interfaces = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
+        return {iface: info for iface, info in interfaces_info.items() if iface not in dpu_interfaces}
+    return interfaces_info
+
+
 @pytest.mark.reboot_reload
 @allure.title('LAG members scale Test')
 def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, platform_params):
@@ -390,6 +396,7 @@ def test_lag_members_scale(topology_obj, interfaces, engines, cleanup_list, plat
         all_ifaces_info = dut_cli.interface.parse_interfaces_status()
         service_ports = get_service_port(platform_params.platform)
         all_ifaces_info = exclude_service_ports(all_ifaces_info, service_ports)
+        all_ifaces_info = exclude_dpu_interfaces(all_ifaces_info, platform_params.platform)
         # We need to create bond on ifaces with the same type, choose list with ifaces with the same type
         interfaces_types_dict = get_interfaces_by_type_dict(all_ifaces_info)
         test_ifaces_type = get_ifaces_type_which_has_bigger_ifaces_list(interfaces_types_dict)
