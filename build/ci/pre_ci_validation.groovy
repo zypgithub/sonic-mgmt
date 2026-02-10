@@ -85,99 +85,10 @@ def set_sonic_bin(topic_map, project) {
             error "ERROR:SONiC bin file not found: ${sonic_bin_path}"
         }
     }
-    handleAirUpload("${env.README_PATH}")
+
     env.SONIC_BIN = sonic_bin_path
     print "SONIC_BIN = ${env.SONIC_BIN}"
 }
-
-
-
-/**
- * Validates the existence of an AIR image ID in the AIR system
- * 
- * This method checks if the provided AIR image ID exists in the AIR system
- * and logs a warning message if the image is not found. The method does not
- * perform any upload or update operations despite its name suggesting otherwise.
- * 
- * @param air_image_id The AIR image ID to validate (String)
- * @return void - No return value, only logs warnings for missing images
- * @throws None - Method handles missing images gracefully with warnings
- * 
- * @example
- * handleAirUpload("efce1b69-4b56-44c8-9715-8b1719032bc8")
- * 
- * @see devopsAir.getImageById() for the underlying AIR system query
- */
-def handleAirUpload(String readme_path) {
-    def readmeFullPath = "${readme_path}/README"
-    echo "readme_path: ${readmeFullPath}"
-    sh "cat ${readmeFullPath}"
-    def readme_properties = sonic_readme_to_map(readmeFullPath)
-    echo "readme_properties: ${readme_properties}"
-    def air_image_id = readme_properties.get("AIR_IMAGE_ID", null)
-    if(air_image_id == null) {
-        error "AIR_IMAGE_ID not found in readme file"
-    }
-    // First connect to sonic vault to get the air token
-    def vault_connection = [:]
-    vault_connection.put("vaultUrl",         "https://prod.vault.nvidia.com")
-    vault_connection.put("vaultNamespace",   "nbu-system-sw-sonic")
-    vault_connection.put("vaultCredentialId", "vault-sonic-approle-prod")
-    vault_connection.put("engineVersion", 1)
-
-    def vault_secrets = [[
-        path: "nvidia/nbu/mars/sonic/kv/air_ngc_sonic",
-        secretValues: [
-            [envVar: "AIR_TOKEN", vaultKey: "service_key"],
-        ]
-    ]]
-
-    withVault([configuration: vault_connection, vaultSecrets:  vault_secrets]) {
-        def image_info = devopsAir.getImageById([id: air_image_id])
-        echo "image_info: ${image_info}"
-        if(image_info) {
-            echo "AIR image id found: ${image_info.id}"
-            return
-        }
-        echo "AIR image id not found: ${air_image_id}, will upload it"
-        def name = "sonic-vm-${readme_properties.get("VERSION_NAME")}"
-        def version = "tmp_${env.JOB_NAME}_${currentBuild.number}"
-        def emulation_version = readme_properties.get("SIMX_VERSION")?.replaceFirst(/\s*\(.*$/, "")
-        def image_path = "${readme_path}/vm/sonic-mellanox.img.gz"
-        def new_local_file_path = "${pwd()}/${name}.img.gz".replace(".img.gz", ".qcow2")
-        echo "new_local_file_path: ${new_local_file_path}"
-        if (!fileExists(image_path)) {
-            error "ERROR: SONiC bin file not found: ${image_path}"
-        }
-        sh """
-           cp ${image_path} ${new_local_file_path}
-        """
-         
-        def imageConfig = [
-            cpu_arch : "x86",
-            name: name,
-            version: version,
-            emulation_type: ["SWITCH_ETHERNET"],
-            emulation_version : emulation_version,
-            provider : "VM",
-            default_username : "admin",
-            default_password : "YourPaSsWoRd",
-            includes_air_agent: true,
-            file_to_upload: new_local_file_path
-        ]
-        def upload_result = devopsAir.uploadAirImage(imageConfig)
-        sh "rm ${new_local_file_path}"
-        if(!upload_result) {
-            error "ERROR: Failed to upload AIR image"
-        }
-        echo "AIR image uploaded successfully ${upload_result.id}"
-
-        update_readme_file(readmeFullPath, [AIR_IMAGE_ID: upload_result.id])
-        echo "updated readme file: ${readmeFullPath}"
-        sh "cat ${readmeFullPath}"
-    }
-}
-
 
 def set_nvos_bin(topic_map, project){
     if (topic_map["IMAGE_NVOS_BRANCH"] && NGCITools().ciTools.is_parameter_contains_value(topic_map["IMAGE_NVOS_BRANCH"]) &&
@@ -218,56 +129,6 @@ def set_nvos_bin(topic_map, project){
     env.NVOS_BIN = nvos_bin_path
     print "NVOS_BIN = ${env.NVOS_BIN}"
 }
-
-def sonic_readme_to_map(String filePath) {
-    def result = [:]
-    if (!fileExists(filePath)) {
-        error "README file not found at: ${filePath}"
-    }
-    def content = readFile(filePath)
-    content.split('\n').each { line ->
-        def matcher = line =~ /^([^:]+):\s*(.+)$/
-        if (matcher.matches()) {
-            def key = matcher[0][1].trim()
-            def value = matcher[0][2].trim()
-            result[key] = value
-        }
-    }
-    return result
-}
-
-def update_readme_file(String filePath, Map updates) {
-    if (!fileExists(filePath)) {
-        error "README file not found at: ${filePath}"
-    }
-    def content = readFile(filePath)
-    def lines = content.split('\n')
-    def updatedLines = []
-    
-    lines.each { line ->
-        def matcher = line =~ /^([^:]+):\s*(.+)$/
-        if (matcher.matches()) {
-            def key = matcher[0][1].trim()
-            def originalValue = matcher[0][2].trim()
-            
-            // Update the value if the key exists in the updates map
-            if (updates.containsKey(key)) {
-                def newValue = updates[key]
-                updatedLines.add("${key}: ${newValue}")
-            } else {
-                // Keep the original line
-                updatedLines.add(line)
-            }
-        } else {
-            // Keep non-matching lines as-is (empty lines, comments, etc.)
-            updatedLines.add(line)
-        }
-    }
-    
-    // Write the updated content back to the file
-    writeFile file: filePath, text: updatedLines.join('\n')
-}
-
 
 def run_step(name) {
     try {

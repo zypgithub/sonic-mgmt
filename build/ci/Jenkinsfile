@@ -1,4 +1,5 @@
-@Library('common-lib@1.0.35') _
+@Library('common-lib@1.0.26') _
+
 pipeline {
     agent none
     options {
