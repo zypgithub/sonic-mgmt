@@ -94,7 +94,7 @@ KR_DEFAULT_CONFIG: Dict[str, str] = {
 KR_MODES_MAPPER: Dict[str, KrAttribute] = {
     "kr-algo": KrAttribute(values=('regular-lt', 'advanced-lt'), default='disable-lt'),
     'xdr-c2c-algo': KrAttribute(values=('disable-lt', 'enable-lt'), default='disable-lt'),
-    'num-iterations': KrAttribute(values=range(1, 16), default=5),
+    'num-iterations': KrAttribute(values=range(1, 31), default=5),
     'ber-window': KrAttribute(values=range(10, 3001, 10), default=1000),
     # 'ber-target-coef': KrAttribute(values=range(1, 10), default=1),  # XXX not supported in the current version
     # 'ber-target-mag': KrAttribute(values=range(1, 31), default=10),  # XXX not supported in the current version
