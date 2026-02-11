@@ -6,6 +6,7 @@ import pytest
 import logging
 
 from retry import retry
+from retry.api import retry_call
 from tests.common.utilities import wait_until
 from ngts.constants.constants import MarsConstants
 from ngts.helpers.json_file_helper import extract_fw_data
@@ -15,6 +16,7 @@ from infra.tools.general_constants.constants import DefaultConnectionValues
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
 from ngts.tests.nightly.secure.constants import SecureBootConsts, SonicSecureBootConsts, SecureUpgradeConsts
 
 logger = logging.getLogger()
@@ -167,6 +169,25 @@ class SonicSecureBootHelper(SecureBootHelper):
             logger.info(f"Restore kernel module {SonicSecureBootConsts.KERNEL_MODULE_NAME} original status")
             self.cli_objects.dut.general.install_module(kernel_module_path)
 
+    def _download_install_image(self, image_path):
+        """
+        This function will download and install the image on the switch
+        """
+        with allure.step("Download the image name"):
+            image_name = image_path.split('/')[-1]
+            local_image_file = '/tmp/' + image_name
+            full_image_path = DockerBringupConstants.HTTP_SERVER + image_path
+            logger.info('Starting download sonic image via http')
+            download_image_cmd = f"wget -O {local_image_file} {full_image_path}"
+            retry_call(self.serial_engine.run_cmd,
+                       fargs=[download_image_cmd, "100%"],
+                       fkwargs={"timeout": 300},
+                       tries=5, delay=2, logger=logger)
+
+        with allure.step(f"Install {local_image_file}"):
+            self.serial_engine.run_cmd(f'onie-nos-install {local_image_file}', 'Installed.*base image.*successfully',
+                                       SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
+
     def boot_from_onie(self, restore_image_path=None):
         """
         This function will boot the switch from ONIE to SONiC. If the restore_image_path is provided, it will install
@@ -178,10 +199,7 @@ class SonicSecureBootHelper(SecureBootHelper):
 
         if restore_image_path:
             with allure.step("Installing restore image {} on the switch".format(restore_image_path)):
-                self.serial_engine.run_cmd('onie-nos-install {}{}'.format(DockerBringupConstants.HTTP_SERVER,
-                                                                          restore_image_path),
-                                           'Installed.*base image.*successfully',
-                                           SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
+                self._download_install_image(restore_image_path)
         else:
             with allure.step("Reboot the switch in ONIE"):
                 self.serial_engine.run_cmd('reboot')
