@@ -113,7 +113,11 @@ master:
   SN4280: # Bobcat
     <<: *platform_defaults
     sx_sdk: 1500
-    syncd: 300
+    syncd: 350
+    dialout: 135
+    telemetry: 140
+    thermalctld: 60
+    redis: 70
     total: 8000
   MSN4600C: # Tigon
     <<: *platform_defaults
