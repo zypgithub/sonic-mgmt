@@ -795,4 +795,5 @@ class DeployDpuHelper:
             except AssertionError:
                 logger.warning("Failed to verify DPUs are up, checking if they can receive the new image")
                 cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
+                time.sleep(50) # Wait 50s to make sure the rshim will be ready
             cli_obj.save_configuration()
