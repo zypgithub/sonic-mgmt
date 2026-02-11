@@ -6,11 +6,18 @@ This script contains re-usable functions for checking status of hw-management re
 import logging
 import re
 from pkg_resources import parse_version
-from tests.common.mellanox_data import get_hw_management_version, get_platform_data
+from tests.common.mellanox_data import get_hw_management_version, get_platform_data, is_ld_system
 from tests.common.utilities import wait_until
 
 MAX_FAN_SPEED_THRESHOLD = 0.15
 
+def check_asic_thermal_sysfs(sysfs_facts):
+    """
+    @summary: Check asic thermal related sysfs under /var/run/hw-management/thermal
+    """
+    asic_temp = float(sysfs_facts['asic_info']['temp']) / 1000
+    assert 0 < asic_temp < 105, "Abnormal ASIC temperature: {}".format(
+        sysfs_facts['asic_info']['temp'])
 
 def skip_ignored_broken_symbolinks(broken_symbolinks):
     """
@@ -56,9 +63,10 @@ def check_sysfs(dut, expected_module_temp_fault_value=['0']):
 
     logging.info("Check ASIC related sysfs")
     try:
-        asic_temp = float(sysfs_facts['asic_info']['temp']) / 1000
-        assert 0 < asic_temp < 105, "Abnormal ASIC temperature: {}".format(
-            sysfs_facts['asic_info']['temp'])
+        if not is_ld_system(dut):
+            check_asic_thermal_sysfs(sysfs_facts)
+        else:
+            logging.info("LD system, skipping ASIC thermal sysfs check")
     except Exception as e:
         assert False, "Bad content in /var/run/hw-management/thermal/asic: {}".format(
             repr(e))
