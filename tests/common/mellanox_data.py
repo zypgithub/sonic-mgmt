@@ -223,7 +223,7 @@ SWITCH_MODELS = {
             "warm_reboot": True
         },
         "fans": {
-            "number": 10,
+            "number": 5,
             "hot_swappable": True
         },
         "psus": {
