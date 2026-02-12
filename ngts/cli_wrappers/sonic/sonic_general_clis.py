@@ -4,6 +4,7 @@ import os
 import re
 import time
 import traceback
+from typing import Any
 import xml.etree.ElementTree as ET
 
 import netmiko
@@ -2189,6 +2190,21 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                 assert dpu_status[dpu_name]['Oper-Status'] == 'Online' and dpu_status[dpu_name]['Admin-Status'] == 'up', \
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
         logger.info(f"all dpus:{dpu_index_list} are up")
+
+    # retry for ~200s if the dpus are up
+    @retry(Exception, tries=51, delay=5)
+    def verify_dpus_status_aligned(self, dpu_name_list, valid_aligned_statuses={('up', 'Online'), ('down', 'Offline')}):
+        """
+        For all DPUs
+        Verifying all Admin-Status are the same either up or down
+        and the Oper-Status (Online or Offline) matches the Admin-Status (up or down)
+        """
+        # accepted admin and oper statuses combinations
+        dpu_statuses = self.get_dpus_status()
+        dpu_statuses_set = {(dpu_statuses[dpu_name]['Admin-Status'], dpu_statuses[dpu_name]['Oper-Status']) for dpu_name in dpu_name_list}
+        assert len(dpu_statuses_set) == 1, f"DPUs statuses are not aligned: {dpu_statuses} for dpus: {dpu_name_list}"
+        assert list(dpu_statuses_set)[0] in valid_aligned_statuses, f"DPUs status is not valid: {dpu_statuses} for dpus: {dpu_name_list}"
+        logger.info(f"{len(dpu_name_list)} available dpus are aligned in admin status and oper status")
 
     def verify_dpu_boot_progress(self, dpu_index_list, bad_states):
         """

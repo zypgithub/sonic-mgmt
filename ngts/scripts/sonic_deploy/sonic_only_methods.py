@@ -18,7 +18,7 @@ from ngts.scripts.sonic_deploy.community_only_methods import get_generate_minigr
     config_y_cable_simulator, add_host_for_y_cable_simulator
 from retry.api import retry_call, retry
 from ngts.helpers.run_process_on_host import run_background_process_on_host
-from ngts.common.util import get_installed_dpu_info
+from ngts.common.util import get_installed_dpu_info, get_specified_installed_dpus_from_noga
 
 logger = logging.getLogger()
 
@@ -526,7 +526,18 @@ class SonicInstallationSteps:
         cli = SonicInstallationSteps.get_dut_cli(setup_info)
         for dut in setup_info['duts']:
             cli = dut['cli_obj']
+            # for the smartswitch, need to make sure all DPUs are aligned in admin status and oper status
             dut_alias = dut['dut_alias']
+            dut_name = dut['dut_name']
+            dpus_in_noga_str = get_specified_installed_dpus_from_noga(topology_obj, dut_alias, dut_name, default_dpus=None)
+            if dpus_in_noga_str:
+                with allure.step('Check if pmon is running'):
+                    cli.cli_obj.general.verify_dockers_are_up(['pmon'])
+                with allure.step('Check that the DPUs status is aligned'):
+                    cli.cli_obj.general.verify_dpus_status_aligned([dpu_name.strip() for dpu_name in dpus_in_noga_str.upper().split(',')])
+            else:
+                logger.info(f"Not a smartswitch or no DPUs are specified in noga for the dut: {dut_name}({dut_alias}). Skipping the DPU status alignment check")
+
             apply_base_config = (
                 True if deploy_chipless
                 else False if is_performance

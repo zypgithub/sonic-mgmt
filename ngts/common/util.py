@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from ngts.constants.constants import INSTALLED_DPUS
@@ -44,12 +45,23 @@ def save_specified_installed_dpus(installed_dpus, dut_alias, dut_name):
     logger.info(f"save installed_dpus of {dut_name}({dut_alias}): {installed_dpus} to:{output_filename}")
 
 
-def get_specified_installed_dpus_from_noga(topology_obj, dut_alias, dut_name):
+def extract_devdescription_from_noga(topology_obj, dut_alias):
+    try:
+        dev_description_str = topology_obj.players[dut_alias]['attributes'].noga_query_data['attributes']['Specific']['devdescription']
+        return json.loads(dev_description_str)
+    except KeyError:
+        logger.error(f"devdescription not found in noga for {dut_alias}")
+    except json.JSONDecodeError:
+        logger.error(f"Failed to parse devdescription from noga for {dut_alias}: {dev_description_str}")
+    return {}
+
+
+def get_specified_installed_dpus_from_noga(topology_obj, dut_alias, dut_name, default_dpus="dpu0,dpu1,dpu2,dpu3"):
     """
     Get specified installed dpus from noga
     """
-    dut_attr = eval(topology_obj.players[dut_alias]['attributes'].noga_query_data['attributes']['Specific']['devdescription'])
-    specified_installed_dpus = dut_attr.get("installed_dpus", "dpu0,dpu1,dpu2,dpu3")
+    dut_attr = extract_devdescription_from_noga(topology_obj, dut_alias)
+    specified_installed_dpus = dut_attr.get("installed_dpus", default_dpus)
     logger.info(f"specified installed dpus from noga on {dut_name}({dut_alias}) are :{specified_installed_dpus}")
     return specified_installed_dpus
 
