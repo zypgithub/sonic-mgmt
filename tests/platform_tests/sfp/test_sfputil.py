@@ -63,7 +63,6 @@ class LogicalInterfaceDisabler:
         self.logical_intf = logical_intf
         self.phy_intf = phy_intf
         self.skip_dom_polling_handle = skip_dom_polling_handle
-        self.wait_after_dom_config = 5
 
         self.namespace_cmd_opt = get_namespace_cmd_option(duthost,
                                                           enum_frontend_asic_index)
@@ -100,8 +99,7 @@ class DisablePhysicalInterface:
     def __init__(self, duthost, enum_frontend_asic_index, phy_intf, logical_intfs_dict):
         self.duthost = duthost
         self.phy_intf = phy_intf
-        self.original_lpmode_state = None
-        self.wait_after_dom_config = 1
+        self.wait_after_dom_config = 5
         self.logical_intf_disablers = \
             [LogicalInterfaceDisabler(duthost,
                                       enum_frontend_asic_index,
@@ -117,7 +115,7 @@ class DisablePhysicalInterface:
             * Disable DOM polling (batched)
             * Shutdown ports (batched)
         """
-        #Disable DOM polling for all logical interfaces
+        # Disable DOM polling for all logical interfaces
         dom_disabled = False
         for logical_intf_disabler in self.logical_intf_disablers:
             if not logical_intf_disabler.skip_dom_polling_handle:
@@ -133,7 +131,7 @@ class DisablePhysicalInterface:
                 dom_disabled = True
 
         if dom_disabled:
-            time.sleep(5)
+            time.sleep(self.wait_after_dom_config)
 
         # Batch shutdown all logical interfaces that are admin up
         interfaces_to_shutdown = []
@@ -188,9 +186,9 @@ class DisablePhysicalInterface:
                 else:
                     restore_dom_result = logical_intf_disabler.duthost.command(
                         db_cmd_dom_polling.format(logical_intf_disabler.namespace_cmd_opt,
-                                                 "HSET",
-                                                 logical_intf_disabler.logical_intf,
-                                                 logical_intf_disabler.orig_dom_polling_value))
+                                                  "HSET",
+                                                  logical_intf_disabler.logical_intf,
+                                                  logical_intf_disabler.orig_dom_polling_value))
                 assert restore_dom_result["rc"] == 0, \
                     "Restore DOM polling failed for {}".format(logical_intf_disabler.logical_intf)
 
