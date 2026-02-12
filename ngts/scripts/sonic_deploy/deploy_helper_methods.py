@@ -656,15 +656,25 @@ class DeployOrchestrator:
             base_version_dpu = self.context.base_version_dpu
             install_threads = []
             try:
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    for dut in self.context.setup_info['duts']:
-                        install_threads.append((f"DPU image install on {dut['dut_name']}",
-                                                executor.submit(DeployDpuHelper.bfb_install_dpu,
-                                                                self.context.topology_obj,
-                                                                base_version_dpu,
-                                                                dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
-                                                                self.context.setup_name)))
-                    DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
+                if len(self.context.setup_info['duts']) == 1:
+                    # run in the main thread for single DUT
+                    DeployDpuHelper.bfb_install_dpu(self.context.topology_obj, base_version_dpu,
+                                                    self.context.setup_info['duts'][0]['dut_alias'],
+                                                    self.context.setup_info['duts'][0]['dut_name'],
+                                                    self.context.setup_info['duts'][0]['cli_obj'],
+                                                    self.context.setup_name)
+                else:
+                    # for multiple DUTs, run in parallel
+                    with concurrent.futures.ThreadPoolExecutor() as executor:
+                        for dut in self.context.setup_info['duts']:
+                            install_threads.append((f"DPU image install on {dut['dut_name']}",
+                                                    executor.submit(DeployDpuHelper.bfb_install_dpu,
+                                                                    self.context.topology_obj,
+                                                                    base_version_dpu,
+                                                                    dut['dut_alias'], dut['dut_name'], dut['cli_obj'],
+                                                                    self.context.setup_name)))
+                        DeployOrchestrator.wait_until_deploy_background_process(install_threads, timeout=2000)
+
             except Exception as e:
                 raise Exception(f"Failed to install the DPU image on one of the DUTs: {e}")
 
@@ -795,5 +805,5 @@ class DeployDpuHelper:
             except AssertionError:
                 logger.warning("Failed to verify DPUs are up, checking if they can receive the new image")
                 cli_obj.verify_dpu_boot_progress(dpu_index_list, bad_states={0, 15})
-                time.sleep(50) # Wait 50s to make sure the rshim will be ready
+                time.sleep(50)  # Wait 50s to make sure the rshim will be ready
             cli_obj.save_configuration()
