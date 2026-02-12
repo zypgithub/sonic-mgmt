@@ -2944,6 +2944,25 @@ class RosalindSimx(RosalindSwitch):
         ]
 
 
+# -------------------------- PortiaSimx Switch ----------------------------
+
+
+class PortiaSimx(RosalindSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.asic_type = NvosConst.NVL7
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n7170_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N7170_LD",
+            "asic-model": self.asic_type,
+        })
+
+
 # -------------------------- Caiman Switch ----------------------------
 
 
