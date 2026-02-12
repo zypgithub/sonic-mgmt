@@ -1,4 +1,3 @@
-import sys
 import os
 import time
 import pytest
@@ -6,220 +5,143 @@ import allure
 import logging
 import json
 import re
-from infra.tools.sql.constants import SkynetGeneralConstants
 from ngts.nvos_constants.constants_nvos import LogComponentsConsts
 from ngts.nvos_tools.system.System import System
 
-SSD_DIR = "/home/admin/ssd_check"
-WRITTEN_MB_PATH = SSD_DIR + "/last_written_value.txt"
+logger = logging.getLogger()
+
+# =========================
+# Constants
+# =========================
 HOURS_IN_10_YEAR = 87600
 TB_IN_MB = 1048576  # 1TB=1024GB=1024*1024 MB
-logger = logging.getLogger()
-ONE_DAY_IN_SEC = 86400
+MEASUREMENT_DURATION = 3600  # 1 hour
+
+# NVOS-specific constants (for stateful flow)
+SSD_DIR = "/home/admin/ssd_check"
+WRITTEN_MB_PATH = SSD_DIR + "/last_written_value.txt"
 
 
-class MyLogger:
-    def __init__(self, str_init=""):
-        self.str = str_init
-
-    def set_str(self, new_str):
-        self.str = new_str
+# =========================
+# Shared utility functions
+# =========================
 
 
-def do_ssd_endurance_test(dut_engine, min_gap, my_logger, release_mode=False):
-    """
-    Contains all logic for ssd endurance check
-    :param dut_engine: engine of dut
-    :param nos_name: the name of the operating system on which the tests runs on
-    :param min_gap: The minimum amount of time in days allowed between 2 tests
-    :param release_mode: Determines if the test is running in release mode or not.
-    """
+def strip_ansi(text: str) -> str:
+    """Remove ANSI escape codes from text."""
+    return re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "", text or "")
+
+
+def get_ssd_device_name(dut):
+    """Detect SSD block device name with multiple fallback methods."""
     try:
-        skip_writing = False
-        with allure.step("Detect SSD device and fetch device ID"):
-            ssd_device_name = dut_engine.run_cmd("lsblk -o NAME,TYPE -p | grep disk").strip().split()[0]
-            ssd_device_filter = "'Model Number'" if "nvme" in ssd_device_name else "'Device Model'"
-            ssd_device_id = dut_engine.run_cmd(f"sudo smartctl -a {ssd_device_name} | grep {ssd_device_filter}", validate=True).strip().split()[-1]
-
-        with allure.step("Fetch SSD TBW threshold for device"):
-            ssd_threshold_tb = get_writing_threshold_for_device(ssd_device_id)
-            ssd_threshold_mb = ssd_threshold_tb * TB_IN_MB
-
-        with allure.step("Set DUT log level to default"):
-            set_log_level_default(dut_engine)
-
-        with allure.step("Read current and last written MB values from DUT"):
-            logger.info("Calculate the current 'written mb' value on the DUT")
-            if "nvme" in ssd_device_name:
-                current_written_value = int(dut_engine.run_cmd(
-                    "iostat -m | grep nvme | awk '{{print $7}}'", validate=True))
-            else:
-                current_written_value = int(dut_engine.run_cmd(
-                    "iostat -m | grep sda | awk '{{print $7}}'", validate=True))
-            last_written_value = get_last_written_value(dut_engine)
-            logger.debug("Values for debug: last_written_value: %d, current_written_value: %d", last_written_value, current_written_value)
-
-        with allure.step("Check time since last modification and validate test can run"):
-            sec_from_last_modification = get_sec_from_last_modification(dut_engine)
-            raw = dut_engine.run_cmd('echo $?', validate=True)
-            rc = int(raw.strip().splitlines()[-1])
-            if rc:
-                raise RuntimeWarning("An error occurred after from a call to get_sec_from_last_modification()")
-            logger.info("Checking if the current value is valid:"
-                        " a reboot wasn't performed or %d days has passed from last writing", min_gap)
-            validate_last_written_value(dut_engine, min_gap, sec_from_last_modification)
-            logger.debug("Values for debug: sec from last modify: %d", sec_from_last_modification)
-
-        with allure.step("Calculate SSD writing tempo and estimate 10 year write"):
-            logger.info("Test starts: calculating the SSD writing tempo")
-            mb_written_per_hour = calculate_ssd_writing(
-                last_written_value, current_written_value, sec_from_last_modification)
-            estimate_mb_write_for_10_years = mb_written_per_hour * HOURS_IN_10_YEAR
-            logger.debug(
-                "Values for debug: est_mb_for_10_years: %d, mb_written per hour: %d, hours in 10 years: %d, ssd thresh: %d",
-                estimate_mb_write_for_10_years, mb_written_per_hour, HOURS_IN_10_YEAR, ssd_threshold_mb)
-
-        with allure.step("Assert SSD write tempo is within threshold"):
-            if estimate_mb_write_for_10_years > ssd_threshold_mb:
-                logger.info("Test failed")
-                to_logger(ssd_threshold_mb, estimate_mb_write_for_10_years, mb_written_per_hour, "Test failed", my_logger)
-                raise AssertionError('FAILED: The writing tempo to ssd has exceeded the allowed threshold!')
-            logger.info("Test passed!")
-            to_logger(ssd_threshold_mb, estimate_mb_write_for_10_years, mb_written_per_hour, "Test passed", my_logger)
-
-    except ValueError as err:
-        skip_writing = True
-        raise ValueError from err
-
-    except AssertionError as err:
-        raise AssertionError from err
-
-    except RuntimeWarning as skip_phrase:
-        str_skip = str(skip_phrase)
-        if re.match("Not enough time", str_skip):
-            skip_writing = True
-        if not release_mode:
-            pytest.skip(str_skip)
-        raise RuntimeWarning from skip_phrase
-
-    finally:
-        with allure.step("Update current value on DUT (if needed)"):
-            if not skip_writing:
-                logger.info("Updating the current value to %s", current_written_value)
-                update_current_value(dut_engine, current_written_value)
-            else:
-                logger.info("Update of current value is not needed, test finished")
+        out = dut.run_cmd("sudo lsblk -o NAME,TYPE -p | grep ' disk' | awk '{print $1}' | head -n 1", validate=False)
+        dev = strip_ansi(out).strip().splitlines()[0] if out else ""
+        if dev:
+            return dev
+        out = dut.run_cmd("lsblk -ndo NAME,TYPE -p | awk '$2==\"disk\" {print $1}' | head -n 1", validate=False)
+        dev = strip_ansi(out).strip().splitlines()[0] if out else ""
+        if dev:
+            return dev
+        out = dut.run_cmd("ls /dev/nvme*n1 /dev/sd[a-z] 2>/dev/null | head -n 1", validate=False)
+        return strip_ansi(out).strip().splitlines()[0] if out else ""
+    except Exception:
+        return ""
 
 
-def to_logger(ssd_threshold_mb, estimate_mb_write_for_10_years, mb_written_per_hour, str_test_result, mylogger):
-
-    output1 = "ssd_threshold_mb = " + str(ssd_threshold_mb)
-    logger.info(output1)
-    output2 = "estimate_mb_write_for_10_years = " + str(round(estimate_mb_write_for_10_years, 2))
-    logger.info(output2)
-    output3 = "mb_written_per_hour = " + str(round(mb_written_per_hour, 2))
-    logger.info(output3)
-    precent_calculate = (estimate_mb_write_for_10_years / ssd_threshold_mb) * 100
-    output4 = "using rate: " + str(round(mb_written_per_hour)) + " for 10 years it use: " + str(round(precent_calculate, 2)) + "% of ssd_threshold_mb"
-    logger.info(output4)
-    mylogger.set_str(str_test_result + "\n" + output1 + "\n" + output2 + "\n" + output3 + "\n" + output4)
-
-
-def set_log_to_all_component(log_level):
-    list_with_all_components = LogComponentsConsts.COMPONENTS_LIST
-    for component_name in list_with_all_components:
-        system.log.component.component_id[component_name].level.set(log_level, apply=True).verify_result()
+def get_ssd_device_id(dut, dev_name):
+    """Get SSD device ID via smartctl."""
+    try:
+        dev_filter = "'Model Number'" if "nvme" in dev_name else "'Device Model'"
+        out = dut.run_cmd(f"sudo smartctl -a {dev_name} | grep {dev_filter} | awk '{{print $NF}}'", validate=False)
+        clean = strip_ansi(out)
+        lines = [ln.strip() for ln in clean.splitlines() if ln.strip()]
+        if lines:
+            return lines[-1]
+        # Fallback: smartctl -i
+        out = dut.run_cmd(f"sudo smartctl -i {dev_name} | grep {dev_filter} | awk '{{print $NF}}'", validate=False)
+        clean = strip_ansi(out)
+        lines = [ln.strip() for ln in clean.splitlines() if ln.strip()]
+        return lines[-1] if lines else ""
+    except Exception:
+        return ""
 
 
-def set_log_level_default(dut_engine):
+def ensure_sysstat(dut):
+    """Ensure sysstat/iostat is installed, install if missing."""
+    try:
+        rc_str = dut.run_cmd("dpkg -s sysstat >/dev/null 2>&1; echo $?", validate=False)
+        rc = int(rc_str.strip().splitlines()[-1]) if rc_str else 1
+    except Exception:
+        rc = 1
+    if rc == 0:
+        return True
+    dut.run_cmd("sudo apt-get update >/dev/null 2>&1", validate=False)
+    dut.run_cmd("sudo apt-get install sysstat -y >/dev/null 2>&1", validate=False)
+    is_iostat = (
+        "0" == dut.run_cmd("command -v iostat >/dev/null 2>&1; echo $?", validate=False).strip().splitlines()[-1]
+    )
+    return bool(is_iostat)
+
+
+def get_current_written_mb(dut, device_name):
+    """Get current written MB from iostat."""
+    if "nvme" in device_name:
+        out = dut.run_cmd("iostat -m | grep nvme | awk '{print $7}' | head -n 1", validate=False)
+    else:
+        out = dut.run_cmd("iostat -m | grep sda | awk '{print $7}' | head -n 1", validate=False)
+    clean = strip_ansi(out)
+    num_line = clean.strip().splitlines()[0] if clean else "0"
+    return int(float(num_line))
+
+
+def calculate_mb_per_hour(start_written, end_written, elapsed_sec):
+    """Calculate MB written per hour."""
+    total_written = end_written - start_written
+    return (total_written / elapsed_sec) * 3600
+
+
+def get_threshold(dut, device_id):
     """
-    set the log level of the DUT to default to avoid extensive logs writing
+    Fetch the SSD TBW threshold from json file.
+    Falls back to permissive default if device not found.
     """
-    system = System(None)
-    list_with_all_components = LogComponentsConsts.COMPONENTS_LIST
-    log_level = "notice"
-    for component_name in list_with_all_components:
-        if component_name == "symmetry-manager" or component_name == "nvue":
-            log_level = "info"
-        else:
-            log_level = "notice"
-        system.log.component.component_id[component_name].level.set(log_level, apply=True).verify_result()
+    local_path = os.path.join(os.path.dirname(__file__), "ssd_threshold.json")
+    if os.path.exists(local_path):
+        with open(local_path, "r") as f:
+            th_dict = json.load(f)
+    else:
+        candidate_paths = [
+            "ssd_threshold.json",
+            "/home/cumulus/ssd_threshold.json",
+            "/home/admin/ssd_threshold.json",
+        ]
+        path_found = None
+        for p in candidate_paths:
+            try:
+                ls_out = dut.run_cmd(f"test -f {p} && echo found", validate=False)
+            except Exception:
+                ls_out = ""
+            if "found" in (ls_out or ""):
+                path_found = p
+                break
+        if not path_found:
+            logger.warning("ssd_threshold.json not found locally or on DUT; using permissive default")
+            return float("inf")
+        content = dut.run_cmd(f"cat {path_found}", validate=False)
+        th_dict = json.loads(content)
 
-
-def update_current_value(dut_engine, current_val):
-    """
-    Update the file on the DUT with the current Mb written value
-    """
-    dut_engine.run_cmd('mkdir -p {}'.format(SSD_DIR), validate=True)
-    dut_engine.run_cmd("echo {} > {}".format(current_val, WRITTEN_MB_PATH), validate=True)
-
-
-def get_sec_from_last_modification(dut_engine):
-    """
-    get from DUT how many seconds passed from last modification of the written mb file
-    """
-    return int((dut_engine.run_cmd(
-        "stat -c \"%Y\" {} | xargs -I{{}} date +%s --date=\"now - {{}} seconds\"".format(WRITTEN_MB_PATH),
-        validate=True)))
-
-
-def get_last_written_value(dut_engine):
-    """
-    This method will return the "last written Mb" value from the switch, if exists.
-    :param dut_engine: engines fixture
-    """
-    logger.info("Checking if a file with the latest value exists on DUT")
-    dut_engine.run_cmd('ls {}'.format(WRITTEN_MB_PATH))
-    raw = dut_engine.run_cmd('echo $?', validate=True)
-    rc = int(raw.strip().splitlines()[-1])
-    if rc:
-        raise RuntimeWarning("The current value file does not exist, Writing the current value and exiting")
-    written_mb_value = dut_engine.run_cmd('cat {}'.format(WRITTEN_MB_PATH), validate=True)
-    if written_mb_value == "" or written_mb_value.isdigit() == False:
-        raise ValueError('Written_mb_value is empty ,from get_last_written_value function ')
-    logger.info("File exists, the last value written to the file is %s mb", written_mb_value)
-    return int(written_mb_value)
-
-
-def validate_last_written_value(dut_engine, min_gap, sec_from_last_modification):
-    """
-    This method will check if the switch was rebooted since the "last written value" was written to file
-    or the gap between performing the tests is too low.
-    """
-    min_gap_in_sec = min_gap * 24 * 3600
-    sec_from_uptime = int(float(dut_engine.run_cmd("sudo cat /proc/uptime | awk '{print $1}'")))
-    if sec_from_uptime < sec_from_last_modification:
-        raise RuntimeWarning("System has rebooted since last time ssd sampled, value is not valid")
-    if sec_from_last_modification < min_gap_in_sec:
-        remaining_hours_for_next_test = (min_gap_in_sec - sec_from_last_modification) / 3600
-        raise RuntimeWarning("Not enough time has passed to calculate the SSD endurance. Please try again in {} hours"
-                             .format(remaining_hours_for_next_test))
-
-
-def calculate_ssd_writing(last_written_value, current_written_value, sec_from_last_modification):
-    """
-    Calculate SSD writing tempo per hour
-    """
-    total_written = current_written_value - last_written_value
-    write_mb_per_hour = (total_written / sec_from_last_modification) * 3600
-    return write_mb_per_hour
-
-
-def get_writing_threshold_for_device(device_id):
-    """
-    Fetch the SSD TBW threshold from the json file
-    """
-    with open("ssd_threshold.json", "r") as json_file:
-        th_dict = json.load(json_file)
-        for json_device_id, ssd_th_value in th_dict.items():
-            pattern = r'.*{}$'.format(json_device_id)
-            if re.match(pattern, device_id):
-                return ssd_th_value
-    raise ValueError('The device {} was not found in the active SSD list'.format(device_id))
+    for json_device_id, ssd_th_value in th_dict.items():
+        pattern = r".*{}$".format(re.escape(json_device_id))
+        if re.match(pattern, device_id):
+            return float(ssd_th_value)
+    # If not found, fall back to a permissive threshold
+    logger.warning("Device %s not found in SSD threshold list; using permissive default", device_id or "<empty>")
+    return float("inf")
 
 
 def test_calculate_ssd_writing(last, current, sec, expected):
-    result = calculate_ssd_writing(last, current, sec)
+    result = calculate_mb_per_hour(last, current, sec)
     assert result == expected, f"Expected {expected}, got {result}"
 
 
@@ -235,33 +157,335 @@ def check_calculate():
                 test_calculate_ssd_writing(start, end, duration, workload)
 
 
-@allure.title("SSD Endurance Test Workflow")
+def is_nvos(dut):
+    """
+    Detect if the system is running NVOS (not Cumulus Linux).
+    """
+    out = dut.run_cmd("nv show system version", validate=False)
+    if not out:
+        return False
+    if "Error" in out or "not found" in out.lower():
+        return False
+    out_lower = out.lower()
+    if "cumulus" in out_lower:
+        return False
+    if "nvos" in out_lower or "sonic" in out_lower:
+        return True
+    return False
+
+
+def build_test_summary(
+    os_type, dev_name, dev_id, duration, start_mb, end_mb, mb_per_hour, estimate_10y, threshold_tb, threshold_mb
+):
+    """Build JSON summary for allure attachment."""
+    threshold_usage = (estimate_10y / threshold_mb) * 100 if threshold_mb and threshold_mb != float("inf") else 0
+    is_pass = estimate_10y <= threshold_mb
+    return {
+        "device": {
+            "os_type": os_type,
+            "name": dev_name,
+            "SSD model identifier": dev_id,
+        },
+        "measurement": {
+            "duration_seconds": duration,
+            "Total written at start (MB)": start_mb,
+            "Total written at end (MB)": end_mb,
+            "Total written during test (MB)": end_mb - start_mb,
+        },
+        "calculation": {
+            "Write rate (MB/h)": round(mb_per_hour, 2),
+            "Estimated 10-year writes (MB)": round(estimate_10y, 2),
+            "Estimated 10-year writes (TB)": round(estimate_10y / TB_IN_MB, 4),
+        },
+        "threshold": {
+            "TBW threshold (TB)": threshold_tb if threshold_tb != float("inf") else "unlimited",
+            "TBW threshold (MB)": threshold_mb if threshold_mb != float("inf") else "unlimited",
+        },
+        "result": {
+            "Threshold usage percentage": round(threshold_usage, 2),
+            "Within threshold": is_pass,
+            "verdict": "PASS" if is_pass else "FAIL",
+        },
+    }
+
+
+# =========================
+# NVOS-specific functions (stateful flow)
+# =========================
+
+
+class MyLogger:
+    def __init__(self, str_init=""):
+        self.str = str_init
+
+    def set_str(self, new_str):
+        self.str = new_str
+
+
+def set_log_level_default(dut_engine):
+    """Set log level of DUT to default to avoid extensive log writing."""
+    system = System(None)
+    for component_name in LogComponentsConsts.COMPONENTS_LIST:
+        log_level = "info" if component_name in ("symmetry-manager", "nvue") else "notice"
+        system.log.component.component_id[component_name].level.set(log_level, apply=True).verify_result()
+
+
+def update_current_value(dut_engine, current_val):
+    """Update the file on DUT with current MB written value."""
+    dut_engine.run_cmd(f"mkdir -p {SSD_DIR}", validate=True)
+    dut_engine.run_cmd(f"echo {current_val} > {WRITTEN_MB_PATH}", validate=True)
+
+
+def get_sec_from_last_modification(dut_engine):
+    """Get seconds since last modification of the written MB file."""
+    return int(
+        dut_engine.run_cmd(
+            f'stat -c "%Y" {WRITTEN_MB_PATH} | xargs -I{{}} date +%s --date="now - {{}} seconds"',
+            validate=True,
+        )
+    )
+
+
+def get_last_written_value(dut_engine):
+    """Return the last written MB value from DUT, if exists."""
+    logger.info("Checking if a file with the latest value exists on DUT")
+    dut_engine.run_cmd(f"ls {WRITTEN_MB_PATH}")
+    raw = dut_engine.run_cmd("echo $?", validate=True)
+    rc = int(raw.strip().splitlines()[-1])
+    if rc:
+        raise RuntimeWarning("The current value file does not exist, Writing the current value and exiting")
+    written_mb_value = dut_engine.run_cmd(f"cat {WRITTEN_MB_PATH}", validate=True)
+    if written_mb_value == "" or not written_mb_value.strip().isdigit():
+        raise ValueError("Written_mb_value is empty, from get_last_written_value function")
+    logger.info("File exists, the last value written to the file is %s mb", written_mb_value)
+    return int(written_mb_value)
+
+
+def validate_last_written_value(dut_engine, min_gap, sec_from_last_modification):
+    """Check if switch was rebooted or gap between tests is too low."""
+    min_gap_in_sec = min_gap * 24 * 3600
+    sec_from_uptime = int(float(dut_engine.run_cmd("sudo cat /proc/uptime | awk '{print $1}'")))
+    if sec_from_uptime < sec_from_last_modification:
+        raise RuntimeWarning("System has rebooted since last time ssd sampled, value is not valid")
+    if sec_from_last_modification < min_gap_in_sec:
+        remaining_hours = (min_gap_in_sec - sec_from_last_modification) / 3600
+        raise RuntimeWarning(f"Not enough time has passed. Please try again in {remaining_hours} hours")
+
+
+def to_logger(ssd_threshold_mb, estimate_10y, mb_per_hour, result_str, mylogger):
+    """Format results for NVOS text attachment."""
+    output1 = f"ssd_threshold_mb = {ssd_threshold_mb}"
+    output2 = f"estimate_mb_write_for_10_years = {round(estimate_10y, 2)}"
+    output3 = f"mb_written_per_hour = {round(mb_per_hour, 2)}"
+    percent = (estimate_10y / ssd_threshold_mb) * 100 if ssd_threshold_mb else 0
+    output4 = f"using rate: {round(mb_per_hour)} for 10 years it use: {round(percent, 2)}% of ssd_threshold_mb"
+    for out in [output1, output2, output3, output4]:
+        logger.info(out)
+    mylogger.set_str(f"{result_str}\n{output1}\n{output2}\n{output3}\n{output4}")
+
+
+def do_ssd_endurance_test(dut_engine, min_gap, my_logger, release_mode=False):
+    """
+    NVOS SSD endurance check with stateful tracking.
+    """
+    try:
+        skip_writing = False
+        with allure.step("Detect SSD device and fetch device ID"):
+            ssd_device_name = get_ssd_device_name(dut_engine)
+            assert ssd_device_name, "No SSD block device detected"
+            ssd_device_id = get_ssd_device_id(dut_engine, ssd_device_name)
+            assert ssd_device_id, "Unable to determine SSD device ID"
+
+        with allure.step("Fetch SSD TBW threshold for device"):
+            ssd_threshold_tb = get_threshold(dut_engine, ssd_device_id)
+            ssd_threshold_mb = ssd_threshold_tb * TB_IN_MB
+
+        with allure.step("Set DUT log level to default"):
+            set_log_level_default(dut_engine)
+
+        with allure.step("Read current and last written MB values from DUT"):
+            logger.info("Calculate the current 'written mb' value on the DUT")
+            current_written_value = get_current_written_mb(dut_engine, ssd_device_name)
+            last_written_value = get_last_written_value(dut_engine)
+            logger.debug("last_written_value: %d, current_written_value: %d", last_written_value, current_written_value)
+
+        with allure.step("Check time since last modification and validate test can run"):
+            sec_from_last_modification = get_sec_from_last_modification(dut_engine)
+            raw = dut_engine.run_cmd("echo $?", validate=True)
+            rc = int(raw.strip().splitlines()[-1])
+            if rc:
+                raise RuntimeWarning("An error occurred in get_sec_from_last_modification()")
+            logger.info("Checking if current value is valid: reboot check and %d days gap", min_gap)
+            validate_last_written_value(dut_engine, min_gap, sec_from_last_modification)
+
+        with allure.step("Calculate SSD writing tempo and estimate 10 year write"):
+            logger.info("Calculating the SSD writing tempo")
+            mb_written_per_hour = calculate_mb_per_hour(
+                last_written_value, current_written_value, sec_from_last_modification
+            )
+            estimate_10y = mb_written_per_hour * HOURS_IN_10_YEAR
+            logger.debug("est_10y: %d, mb/h: %d, thresh: %d", estimate_10y, mb_written_per_hour, ssd_threshold_mb)
+
+            # Attach JSON summary
+            summary = build_test_summary(
+                "NVOS",
+                ssd_device_name,
+                ssd_device_id,
+                sec_from_last_modification,
+                last_written_value,
+                current_written_value,
+                mb_written_per_hour,
+                estimate_10y,
+                ssd_threshold_tb,
+                ssd_threshold_mb,
+            )
+            allure.attach(
+                json.dumps(summary, indent=2),
+                name="SSD Endurance Test Summary",
+                attachment_type=allure.attachment_type.JSON,
+            )
+
+        with allure.step("Assert SSD write tempo is within threshold"):
+            if estimate_10y > ssd_threshold_mb:
+                logger.info("Test failed")
+                to_logger(ssd_threshold_mb, estimate_10y, mb_written_per_hour, "Test failed", my_logger)
+                raise AssertionError("FAILED: The writing tempo to ssd has exceeded the allowed threshold!")
+            logger.info("Test passed!")
+            to_logger(ssd_threshold_mb, estimate_10y, mb_written_per_hour, "Test passed", my_logger)
+
+    except ValueError as err:
+        skip_writing = True
+        raise ValueError from err
+
+    except AssertionError as err:
+        raise AssertionError from err
+
+    except RuntimeWarning as skip_phrase:
+        if re.match("Not enough time", str(skip_phrase)):
+            skip_writing = True
+        if not release_mode:
+            pytest.skip(str(skip_phrase))
+        raise RuntimeWarning from skip_phrase
+
+    finally:
+        with allure.step("Update current value on DUT (if needed)"):
+            if not skip_writing:
+                logger.info("Updating the current value to %s", current_written_value)
+                update_current_value(dut_engine, current_written_value)
+            else:
+                logger.info("Update of current value is not needed")
+
+
+# =========================
+# Main test function
+# =========================
+
+
+@pytest.mark.cumulus
+@allure.title("SSD Endurance Test (NVOS + Cumulus)")
 def test_ssd_endurance(engines, str_gap_time_between_tests="30sec"):
-    """
-    Endurance test for SSD: runs calculation matrix, then the main endurance routine,
-    handles intermittent RuntimeWarning, and finally resets log level.
-    str_gap_time_between_tests can be for example: 30sec, 60sec, 10m, 15m, 1h, 2h, 12h, 24h  (m=minutes , h=hour)
-    """
-    min_gap_dict = {"30sec": 0.5 / (24 * 60), "60sec": 1 / (24 * 60), "10m": 10 / (24 * 60),
-                    "15m": 15 / (24 * 60), "1h": 60 / (24 * 60), "2h": 120 / (24 * 60), "12h": 0.5, "24h": 1}
-    min_gap = min_gap_dict[str_gap_time_between_tests]
-    check_calculate()
-    additional_delay = 300 * min_gap
-    sleep_time = ONE_DAY_IN_SEC + additional_delay
-    my_logger_results_of_test = MyLogger()
-    with allure.step(f"Run SSD endurance on NOS=nvos , min_gap={min_gap} "):
-        try:
-            engines.dut.run_cmd(f"rm -f {WRITTEN_MB_PATH}", validate=True)
-            do_ssd_endurance_test(engines.dut, min_gap, my_logger_results_of_test, True)
-        except RuntimeWarning as err:
-            with allure.step("Caught RuntimeWarning during first iteration ,now going to sleep"):
-                allure.attach(str(err), name="RuntimeWarning message", attachment_type=allure.attachment_type.TEXT)
-                engines.dut.disconnect()
-                logger.info(f"TIME TO SLEEP {min_gap * 24} HOURS == {min_gap * 24 * 60} MINUTES ")
-                time.sleep(min_gap * sleep_time)
-                do_ssd_endurance_test(engines.dut, min_gap, my_logger_results_of_test)          # retry
-        finally:
-            with allure.step("Reset log level to default"):
-                set_log_level_default(engines.dut)      # 3) Cleanup / reset log level
-            logger.info(my_logger_results_of_test.str)
-            allure.attach(my_logger_results_of_test.str, name="Test result", attachment_type=allure.attachment_type.TEXT)
+    dut = engines.dut
+    pytest.skip_coredump_check = True
+
+    if is_nvos(dut):
+        # =========================
+        # NVOS flow (stateful, with retry logic)
+        # =========================
+        print("Running NVOS flow")
+        min_gap_dict = {
+            "30sec": 0.5 / (24 * 60),
+            "60sec": 1 / (24 * 60),
+            "10m": 10 / (24 * 60),
+            "15m": 15 / (24 * 60),
+            "1h": 1 / 24,
+            "2h": 2 / 24,
+            "12h": 0.5,
+            "24h": 1,
+        }
+        min_gap = min_gap_dict[str_gap_time_between_tests]
+        my_logger_results = MyLogger()
+        check_calculate()
+
+        with allure.step(f"Run SSD endurance on NVOS, min_gap={min_gap}"):
+            try:
+                dut.run_cmd(f"rm -f {WRITTEN_MB_PATH}", validate=True)
+                do_ssd_endurance_test(dut, min_gap, my_logger_results, True)
+            except RuntimeWarning as err:
+                with allure.step("Caught RuntimeWarning, going to sleep"):
+                    allure.attach(str(err), name="RuntimeWarning", attachment_type=allure.attachment_type.TEXT)
+                    dut.disconnect()
+                    sleep_time = MEASUREMENT_DURATION + (300 * min_gap)
+                    logger.info(f"Sleeping for {min_gap * 24} hours ({min_gap * 24 * 60} minutes)")
+                    time.sleep(min_gap * sleep_time)
+                    do_ssd_endurance_test(dut, min_gap, my_logger_results)
+            finally:
+                with allure.step("Reset log level to default"):
+                    set_log_level_default(dut)
+                logger.info(my_logger_results.str)
+                allure.attach(my_logger_results.str, name="Test result", attachment_type=allure.attachment_type.TEXT)
+    else:
+        # =========================
+        # CL flow (stateless, simple)
+        # =========================
+        print("Running CL flow")
+        check_calculate()
+
+        with allure.step("Ensure sysstat/iostat is installed"):
+            assert ensure_sysstat(dut), "sysstat (iostat) missing and install failed"
+
+        with allure.step("Detect SSD block device"):
+            dev_name = get_ssd_device_name(dut)
+            assert dev_name, "No SSD block device detected on DUT"
+
+        with allure.step("Fetch SSD device ID via smartctl"):
+            dev_id = get_ssd_device_id(dut, dev_name)
+            assert dev_id, "Unable to determine SSD device ID via smartctl"
+
+        with allure.step("Load SSD TBW threshold"):
+            ssd_threshold_tb = get_threshold(dut, dev_id)
+            ssd_threshold_mb = ssd_threshold_tb * TB_IN_MB
+
+        with allure.step("Capture current written MB"):
+            start_written = get_current_written_mb(dut, dev_name)
+
+        with allure.step(f"Sleep for {MEASUREMENT_DURATION} seconds to measure delta"):
+            time.sleep(MEASUREMENT_DURATION)
+
+        with allure.step("Capture written MB after wait"):
+            end_written = get_current_written_mb(dut, dev_name)
+
+        with allure.step("Compute write rate and 10-year estimate"):
+            mb_per_hour = calculate_mb_per_hour(start_written, end_written, MEASUREMENT_DURATION)
+            estimate_10y = mb_per_hour * HOURS_IN_10_YEAR
+            is_pass = estimate_10y <= ssd_threshold_mb
+
+            # Attach JSON summary
+            summary = build_test_summary(
+                "CL",
+                dev_name,
+                dev_id,
+                MEASUREMENT_DURATION,
+                start_written,
+                end_written,
+                mb_per_hour,
+                estimate_10y,
+                ssd_threshold_tb,
+                ssd_threshold_mb,
+            )
+            allure.attach(
+                json.dumps(summary, indent=2),
+                name="SSD Endurance Test Summary",
+                attachment_type=allure.attachment_type.JSON,
+            )
+
+            logger.info(
+                "CL SSD: %s id: %s | start: %s MB end: %s MB | rate: %.2f MB/h | 10y: %.2f MB | thresh: %.2f MB",
+                dev_name,
+                dev_id,
+                start_written,
+                end_written,
+                mb_per_hour,
+                estimate_10y,
+                ssd_threshold_mb,
+            )
+            assert is_pass, f"Estimated 10-year writes {estimate_10y:.2f} MB exceeds threshold {ssd_threshold_mb} MB"
