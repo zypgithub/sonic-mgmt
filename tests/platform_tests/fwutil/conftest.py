@@ -68,10 +68,11 @@ def component(request, duthost, fw_pkg):
 
 @pytest.fixture(scope='function')
 def host_firmware(localhost, duthost):
-    logger.info("Starting local python server to test URL firmware update....")
-    comm = "python3 -m http.server --directory {}".format(os.path.join(DEVICES_PATH, duthost.facts['platform']))
-    duthost.command(comm, module_ignore_errors=True, module_async=True)
-    yield "http://localhost:8000/"
+    port = 8081
+    logger.info("Starting local python server on port {} to test URL firmware update....".format(port))
+    comm = "python3 -m http.server {} --directory {}".format(port, os.path.join(DEVICES_PATH, duthost.facts['platform']))
+    duthost.command(comm, module_async=True)
+    yield "http://localhost:{}/".format(port)
     logger.info("Stopping local python server.")
     duthost.command('pkill -f "{}"'.format(comm), module_ignore_errors=True)
 
