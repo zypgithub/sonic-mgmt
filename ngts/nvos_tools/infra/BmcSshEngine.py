@@ -29,12 +29,20 @@ class BmcSshEngine:
         self.bmc_default_password = bmc_default_password
         self.bmc_another_password = bmc_another_password
 
-    def run_cmd(self, cmd) -> str:
+    def run_cmd(self, cmd, **kwargs) -> str:
+        """
+        Run command on BMC via pexpect SSH session.
+        :param cmd: command to execute
+        :param kwargs: accepts but does not implement validate, print_output, max_loops
+                       from the SSH engine interface
+        """
         exc: Exception = None
         try:
             if not self._session:
                 self.connect()
-            with allure.step(self._msg(f'run cmd: {cmd}')):
+            sanitized = kwargs.get('sanitized_cmd', None)
+            log_cmd = cmd if sanitized is None else sanitized
+            with allure.step(self._msg(f'run cmd: {log_cmd}')):
                 self._session.sendline(cmd)
                 res_index, out = self._session.expect_and_get_output(BMC_SELL_PROMPT_PATTERNS)
                 assert res_index < len(BMC_SELL_PROMPT_PATTERNS), f'{BMC_SESSION_ERR}: did not get bmc shell prompt'

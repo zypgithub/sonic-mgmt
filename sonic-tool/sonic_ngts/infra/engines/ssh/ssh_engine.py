@@ -38,35 +38,42 @@ class SSH:
         }
         return netmiko.ConnectHandler(**connection_details)
 
-    def run_cmd(self, cmd, validate=False, print_output=True, max_loops=500):
+    def run_cmd(self, cmd, validate=False, print_output=True, max_loops=500, sanitized_cmd=None):
         """
         Run command using SSH engine(run it on hosts)
         :param cmd: command which should be executed
         :param validate: if need validate that command executed successfully - True, else False
         :param print_output: True if user want to print the cmd output, else False
+        :param sanitized_cmd: optional redacted command string for logging (e.g. to hide credentials)
         :return: command execution output
         """
-        logger.info('Running CMD: {}'.format(cmd))
+        log_cmd = sanitized_cmd if sanitized_cmd is not None else cmd
+        logger.info('Running CMD: {}'.format(log_cmd))
         cmd_output = self.engine.send_command(cmd, max_loops=max_loops)
-        return self.handle_cmd_output(cmd_output, validate, print_output)
+        return self.handle_cmd_output(cmd_output, validate, print_output, log_cmd=log_cmd)
 
-    def handle_cmd_output(self, output, validate=True, print_output=True):
+    def handle_cmd_output(self, output, validate=True, print_output=True, log_cmd=None):
         """
         :param output: the command output
         :param validate: if need validate that command executed successfully - True, else False
         :param print_output: True if user want to print the cmd output, else False
+        :param log_cmd: optional command identifier for error messages (sanitized if credentials present)
         :return: the output
         """
         if print_output:
             logger.info('Player: {}, cmd output: {}'.format(self.ip, output))
         if validate:
-            self.validate_command()
+            self.validate_command(log_cmd=log_cmd)
         return output
 
-    def validate_command(self):
+    def validate_command(self, log_cmd=None):
         cmd_output = self.engine.send_command(LinuxConsts.get_exit_code)
-        if cmd_output != LinuxConsts.exit_code_zero:
-            raise Exception('Failed to execute command: {}, output: {}'.format(LinuxConsts.get_exit_code, cmd_output))
+        if cmd_output.strip() != LinuxConsts.exit_code_zero:
+            error_msg = 'Failed to execute command'
+            if log_cmd:
+                error_msg += f': {log_cmd}'
+            error_msg += f', exit code: {cmd_output}'
+            raise Exception(error_msg)
 
     def copy_file_to_host(self, src_path, dst_path, copy_to_tmp=False):
         """
