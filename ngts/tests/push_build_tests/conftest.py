@@ -328,6 +328,13 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
             logger.info('Doing config save')
             cli_objects.dut.general.save_configuration()
 
+        with allure.step('Config reload and verify services and links are up'):
+            cli_objects.dut.general.reboot_reload_flow(
+                r_type=SonicConst.CONFIG_RELOAD_CMD,
+                topology_obj=topology_obj,
+                ports_list=ports_list
+            )
+
         logger.info('PushGate Common configuration completed')
 
         if upgrade_params.is_upgrade_required:
