@@ -1284,23 +1284,83 @@ tacacs/test_authorization.py::test_send_remote_address:
 ########################## Community IGNORE END ##########################
 
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE START ############################
-tests/nightly/arp/test_arp.py:
+bgp/test_bgp_route_neigh_learning.py::test_bgp_neighbor_route_learnning:
   skip:
-    reason: "Testcase Skipped due to https://redmine.mellanox.com/issues/4499346 for sn6600 platform"
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4867442 and sn6600 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4499346 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4867442 and 'sn6600' in platform"
 
-tests/push_build_tests/L2/arp/test_arp.py::test_dut_reply_arp_response:
+crm/test_crm.py:
   skip:
-    reason: "Testcase Skipped due to https://redmine.mellanox.com/issues/4499346 for sn6600 platform"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4887769 for sn6600 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4499346 and 'sn6600' in platform"
+      - "https://redmine.mellanox.com/issues/4887769 and 'sn6600' in platform"
 
-tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
+crm/test_crm_available.py:
   skip:
-    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4887769 for sn6600 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
+      - "https://redmine.mellanox.com/issues/4887769 and 'sn6600' in platform"
+
+everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror:
+  skip:
+    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
+    conditions:
+    - "'sn6600' in platform"
+
+everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
+  skip:
+    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
+    conditions:
+    - "'sn6600' in platform"
+
+everflow/test_everflow_ipv6.py::TestIngressEverflowIPv6::test_icmpv6_.*:
+  skip:
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4827591 and sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4827591 and 'sn6600' in platform"
+
+high_frequency_telemetry/test_high_frequency_telemetry.py:
+  xfail:
+    reason: "xfail due to RM issue 4774921"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4774921"
+
+ip/test_ip_packet.py::TestIPPacket::test_drop_ip_packet_with_wrong_0xffff_chksum:
+  skip:
+    reason: "Skipped due to RM issue: https://redmine.mellanox.com/issues/4812867 and sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4812867 and 'sn6600' in platform"
+
+ip/test_ip_packet.py::TestIPPacket::test_forward_ip_packet_with_0xffff_chksum_drop:
+  skip:
+    reason: "Skipped due to RM issue: https://redmine.mellanox.com/issues/4812867 and sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4812867 and 'sn6600' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_serial:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790927"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4790927 and 'sn6600' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_model:
+  skip:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790935"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4790935 and 'sn6600' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
+  skip:
+    reason: "Test is skipped - watchdog not supported on simx platforms"
+    conditions:
+    - "'simx' in platform"
+
+platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
+  skip:
+    reason: "Test is skipped - thermals not supported on sn6600_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '5810_simx' in platform"
 
 platform_tests/api/test_fan_drawer.py:
   skip:
@@ -1368,12 +1428,6 @@ platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
     conditions:
     - "https://redmine.mellanox.com/issues/4817671 and '6600_simx' in platform"
 
-high_frequency_telemetry/test_high_frequency_telemetry.py:
-  xfail:
-    reason: "xfail due to RM issue 4774921"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4774921"
-
 platform_tests/mellanox/test_reboot_cause.py:
   skip:
     reason: "Test is skipped - reboot cause emulation not supported on sn6600_simx platforms"
@@ -1386,11 +1440,11 @@ platform_tests/cli/test_show_platform.py::test_platform_serial_no:
     conditions:
     - "https://redmine.mellanox.com/issues/4817680 and 'sn6600' in platform"
 
-srv6:
+push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
   skip:
-    reason: "Due to RM issue: https://redmine.mellanox.com/issues/4810128"
+    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4810128 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
 
 span/test_port_mirroring.py::test_mirroring_both:
   skip:
@@ -1402,61 +1456,31 @@ span/test_port_mirroring.py::test_mirroring_tx:
   skip:
     reason: "tx mirroring not supported on SPC6"
     conditions:
-      - "'sn6600' in platform"
-
-ip/test_ip_packet.py::TestIPPacket::test_drop_ip_packet_with_wrong_0xffff_chksum:
-  skip:
-    reason: "Skipped due to RM issue: https://redmine.mellanox.com/issues/4812867 and sn6600 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4812867 and 'sn6600' in platform"
-
-ip/test_ip_packet.py::TestIPPacket::test_forward_ip_packet_with_0xffff_chksum_drop:
-  skip:
-    reason: "Skipped due to RM issue: https://redmine.mellanox.com/issues/4812867 and sn6600 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4812867 and 'sn6600' in platform"
-
-platform_tests/api/test_chassis.py::TestChassisApi::test_get_serial:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790927"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4790927 and 'sn6600' in platform"
-
-platform_tests/api/test_chassis.py::TestChassisApi::test_get_model:
-  skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4790935"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4790935 and 'sn6600' in platform"
-
-platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
-  skip:
-    reason: "Test is skipped - watchdog not supported on simx platforms"
-    conditions:
-    - "'simx' in platform"
-
-platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
-  skip:
-    reason: "Test is skipped - thermals not supported on sn6600_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '5810_simx' in platform"
-
-everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror:
-  skip:
-    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
-    conditions:
     - "'sn6600' in platform"
 
-everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
+srv6:
   skip:
-    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
+    reason: "Due to RM issue: https://redmine.mellanox.com/issues/4810128"
     conditions:
-    - "'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4810128 and 'sn6600' in platform"
 
-everflow/test_everflow_ipv6.py::TestIngressEverflowIPv6::test_icmpv6_.*:
+tests/nightly/arp/test_arp.py:
   skip:
-    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4827591 and sn6600 platform"
+    reason: "Testcase Skipped due to https://redmine.mellanox.com/issues/4499346 for sn6600 platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4827591 and 'sn6600' in platform"
+    - "https://redmine.mellanox.com/issues/4499346 and 'sn6600' in platform"
+
+tests/push_build_tests/L2/arp/test_arp.py::test_dut_reply_arp_response:
+  skip:
+    reason: "Testcase Skipped due to https://redmine.mellanox.com/issues/4499346 for sn6600 platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4499346 and 'sn6600' in platform"
+
+tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
 
 tests/nightly/acl/test_acl.py::test_acl_config:
   skip:
@@ -1469,16 +1493,4 @@ tests/nightly/acl/test_acl_scale.py::test_acl_config_scale:
     reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
-
-push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
-  skip:
-    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4824903 and sn6600/sn5640 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4824903 and ('sn6600' in platform or 'sn5640' in platform)"
-
-bgp/test_bgp_route_neigh_learning.py::test_bgp_neighbor_route_learnning:
-  skip:
-    reason: "skipped due to RM issue: https://redmine.mellanox.com/issues/4867442 and sn6600 platform"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4867442 and 'sn6600' in platform"
 ########################## NVIDIA INTERNAL SALAMANDRA BRING UP IGNORE END ############################
