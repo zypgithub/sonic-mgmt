@@ -5,12 +5,13 @@ scripts/log_profiler/log_profiler.py:
 
 scripts/test_verify_secure_boot_enabled.py:
   skip:
-    reason: "Skip the secure boot checker on SPC1, SPC2, SPC3"
+    reason: "Skip the secure boot checker on SPC1, SPC2, SPC3 and simx platforms"
     conditions_logical_operator: or
     conditions:
     - "'sn2' in platform"
     - "'sn3' in platform"
     - "'sn4' in platform"
+    - "'simx' in platform"
 
 tests/nightly/route/test_async_route.py:
   skip:
@@ -19,6 +20,12 @@ tests/nightly/route/test_async_route.py:
     conditions:
     - "'simx' in platform"
     - "'ASAN' in build_version"
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
+  skip:
+    reason: "Testcase skipped on simx platforms"
+    conditions:
+    - "'simx' in platform"
 
 tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
   xfail:
