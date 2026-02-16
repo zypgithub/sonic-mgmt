@@ -212,12 +212,6 @@ def port_group_df(request, players, basic_setup_configuration, conf_args=None):
     return port_group_df
 
 
-@pytest.fixture(scope='function', autouse=True)
-def copy_sdk_changes_to_dut(cli_objects, basic_setup_configuration):
-    cli_objects['dut'].performance.copy_sdk_changes_to_dut()
-    yield
-
-
 @pytest.fixture(scope='session', autouse=True)
 def sdk_branch(players):
     """

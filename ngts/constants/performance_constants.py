@@ -124,20 +124,9 @@ class PerfConsts:
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
     REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
-    SDK_CHANGES_DIR = os.path.join(REQUIRMENTS_DIR, 'sdk_changes/')
     SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-11-2-amd64/"
     SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
-    SDK_VALIDATOR_DIR = "/root/sys_sdk/sx_sdk_py_tests/tests/multi_os_tests/"
-    SDK_VALIDATOR_FILE = "multi_nos_validator.py"
-    SDK_VALIDATOR_FILE_PATH = os.path.join(SDK_CHANGES_DIR, SDK_VALIDATOR_FILE)
-    SDK_CONSTANTS_DIR = "/root/sys_sdk/sx_sdk_py_tests/libs/base_classes/multi_nos/"
-    SDK_CONSTANTS_FILE = "multi_os_constants.py"
-    SDK_CONSTANTS_FILE_PATH = os.path.join(SDK_CHANGES_DIR, SDK_CONSTANTS_FILE)
-    SDK_CHANGES_DICT = {
-        SDK_VALIDATOR_FILE_PATH: (SDK_VALIDATOR_DIR, SDK_VALIDATOR_FILE),
-        SDK_CONSTANTS_FILE_PATH: (SDK_CONSTANTS_DIR, SDK_CONSTANTS_FILE)
-    }
     SDK_DUMP_FILE_SYSTEM = '/var/log/sdk_dbg'
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
     FW_BURN_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sdk_fw_burn.py"

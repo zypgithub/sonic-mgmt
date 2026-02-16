@@ -564,13 +564,6 @@ class PerformanceCommon:
         """
         pass
 
-    def copy_sdk_changes_to_dut(self):
-        """
-        This method is used to copy sdk changes
-        that are not yet on the sdk branch used by the OS to the dut
-        """
-        pass
-
     def set_shaper(self, speed, shaper_value, shaper_profile="default-global"):
         """
         This method is used to set the shaper on the traffic gen
