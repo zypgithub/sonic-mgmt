@@ -132,6 +132,8 @@ def restore_to_sonic(secure_boot_helper, restore_image_path):
     """
     yield
 
+    if secure_boot_helper.is_sonic_mode():
+        return
     secure_boot_helper.boot_from_onie(restore_image_path)
 
 
