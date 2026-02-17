@@ -13,6 +13,12 @@ scripts/test_verify_secure_boot_enabled.py:
     - "'sn4' in platform"
     - "'simx' in platform"
 
+tests/nightly/cpld/test_cpld.py:
+  skip:
+    reason: "Testcase skipped on simx platforms"
+    conditions:
+    - "'simx' in platform"
+
 tests/nightly/route/test_async_route.py:
   skip:
     reason: "Testcase skipped on simx platform or on ASAN image"
@@ -20,12 +26,6 @@ tests/nightly/route/test_async_route.py:
     conditions:
     - "'simx' in platform"
     - "'ASAN' in build_version"
-
-tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
-  skip:
-    reason: "Testcase skipped on simx platforms"
-    conditions:
-    - "'simx' in platform"
 
 tests/nightly/fec/test_fec.py::TestFec::test_fec_bug_2705016:
   xfail:
@@ -235,6 +235,12 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cable_connection_betwe
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
+
+tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
+  skip:
+    reason: "Testcase skipped on simx platforms"
+    conditions:
+    - "'simx' in platform"
 
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
@@ -571,12 +577,11 @@ drop_packets/test_wjh.py::test_ip_pkt_with_expired_ttl:
 
 drop_packets/test_wjh.py::test_l1_agg_fanout_port_down:
   skip:
-    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4079619 (leopard/moose/bobcat/bison) or 'air' in testbed or 'simx' in platform"
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4079619 (leopard/moose/bobcat/bison) or https://redmine.mellanox.com/issues/4887731 (air-6600)"
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4079619 and ('leopard' in testbed or 'moose' in testbed or 'bobcat' in testbed or 'bison' in testbed)"
-    - "'air' in testbed"
-    - "'simx' in platform"
+    - "https://redmine.mellanox.com/issues/4887731 and 'air-6600' in testbed"
 
 dut_console/test_console_baud_rate.py::test_baud_rate_boot_connect:
   skip:
