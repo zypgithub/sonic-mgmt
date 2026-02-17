@@ -24,7 +24,7 @@ FANOUTS_TO_SKIP = ["r-moose-06"]
 
 # Component version check constants
 COMPONENT_SCRIPT_NAME = "get_component_versions.py"
-README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'KERNEL']
+README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'KERNEL', 'RSHIM']
 FW_DEFAULT_VERSIONS = ['ONIE', 'SSD', 'BIOS', 'CPLD']  # Expected columns of the table if the setup is SIMX
 COMMANDS_FOR_ACTUAL = {
     "MFT": ["dpkg -l | grep -e 'mft '", "mft *([0-9.-]*)"],
@@ -34,6 +34,10 @@ COMMANDS_FOR_ACTUAL = {
     "FW": ["sudo mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "FW * [0-9]{2}\\.([0-9.]*)"],
     "KERNEL": ["uname -r", "(.*)-[a-z0-9]+$"]
 }
+OPTIONAL_COMMANDS_FOR_ACTUAL = {
+    "RSHIM": ["dpkg -l | grep -e 'rshim '", "rshim *([0-9.]*)"]
+}
+ALL_COMMANDS_FOR_ACTUAL = {**COMMANDS_FOR_ACTUAL, **OPTIONAL_COMMANDS_FOR_ACTUAL}
 
 # non-existent versions are versions that aren't supposed to appear, like BIOS compilation versions while unexpected
 # missing versions are components that aren't available on the current setup, like fw versions on simx setups.
@@ -569,6 +573,8 @@ def parse_readme_versions(sonic_image):
                 # Add only if the component is in the README_COVERED_COMPONENTS and not stored in readme_versions_dict
                 if component in README_COVERED_COMPONENTS and component not in readme_versions_dict:
                     version = str(match.group('version').strip())
+                    if component == 'RSHIM' and '@' in version:
+                        version = version.split('@')[-1]
                     readme_versions_dict[component] = version
                 break
 
@@ -586,22 +592,28 @@ def get_actual_version(dut_engine, component):
     dut_command_ind = 0
     command_regex_ind = 1
     required_regex_group = 1
-    cmd = COMMANDS_FOR_ACTUAL[component][dut_command_ind]
+    cmd = ALL_COMMANDS_FOR_ACTUAL[component][dut_command_ind]
     version = dut_engine.run_cmd(cmd)
-    parsed_version = re.search(COMMANDS_FOR_ACTUAL[component][command_regex_ind], str(version))
+    parsed_version = re.search(ALL_COMMANDS_FOR_ACTUAL[component][command_regex_ind], str(version))
     return parsed_version.group(required_regex_group) if parsed_version else UNEXPECTED_MISSING_VERSION
 
 
-def fetch_versions_from_dut(dut_engine, is_simx):
+def fetch_versions_from_dut(dut_engine, is_simx, expected_components=None):
     """
     The function fetches the versions installed on the dut in runtime
     :param dut_engine: the dut engine
     :param is_simx: is_simx fixture
+    :param expected_components: set of component names from the parsed version table,
+           used to determine which optional components to fetch
     :return: A dictionary, stating for each component what is the actual version of it, example - {"SDK", "4.6.2202"}
     """
     actual_versions_dict = dict()
     for component in COMMANDS_FOR_ACTUAL:
         actual_versions_dict[component] = get_actual_version(dut_engine, component)
+    if expected_components:
+        for component in OPTIONAL_COMMANDS_FOR_ACTUAL:
+            if component in expected_components:
+                actual_versions_dict[component] = get_actual_version(dut_engine, component)
     if not is_simx:
         actual_versions_dict.update(get_info_about_current_components_version_dict(dut_engine))
     else:
@@ -660,7 +672,8 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
     # Fetch actual versions from DUT
     with allure.step("Fetch actual versions from DUT"):
         try:
-            actual_versions = fetch_versions_from_dut(engines.dut, is_simx)
+            actual_versions = fetch_versions_from_dut(engines.dut, is_simx,
+                                                      expected_components=set(expected_component_versions.keys()))
         except Exception as e:
             err_msg = f"Failed to fetch actual versions: {e}"
             assert_failure_or_just_print_err(err_msg, is_in_deploy_image_flow)
@@ -710,7 +723,7 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
         # Check that actual version matches compilation version (for components in README)
         # This ensures deployed components match what was compiled into the image
         with allure.step(f"Validate {component} actual matches compilation"):
-            if component in readme_versions and actual_version != compilation_version:
+            if component in readme_versions and actual_version.replace('-', '.') != compilation_version.replace('-', '.'):
                 err_msg = (f"{component}: Actual version doesn't match compilation version. "
                            f"COMPILATION: {compilation_version}, "
                            f"ACTUAL: {actual_version}")
