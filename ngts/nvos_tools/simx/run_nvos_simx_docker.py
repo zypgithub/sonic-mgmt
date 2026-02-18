@@ -20,7 +20,8 @@ master_folder_name = "nvos-master"
 ci_chipsim_script_path = "{ci_temp_path}/scripts/run_nvos_in_chipsim.py"
 
 
-def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_image, use_master_script, is_regression_run):
+def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_image, use_master_script, is_regression_run,
+                              chip, platform, chipsim_version, custom_flags, chipsim_script_branch):
     with allure.step("Get server and dut details"):
         dut_engine = topology_obj.players['dut']['engine']
         server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
@@ -28,7 +29,8 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
         logger.info(f"DUT ip: {dut_engine.ip}({dut_name}) on server: {server_name}")
 
     with allure.step("Get path to chipsim script"):
-        path_to_chipsim_script = _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script)
+        path_to_chipsim_script = _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script,
+                                                             chipsim_script_branch)
         logger.info(f"Path to chipsim script: {path_to_chipsim_script}")
 
     with allure.step("Start the NVOS simx docker"):
@@ -43,15 +45,25 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
             dut_engine = player["engine"]
             server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"),
                                                            os.getenv("TEST_SERVER_PASSWORD")).returned_value
-            start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script)
+            start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script,
+                              chip, platform, chipsim_version, custom_flags)
             _wait_till_switch_is_ready(dut_engine)
 
 
-def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script):
+def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script,
+                      chip='', platform=None, chipsim_version=None, custom_flags=None):
     image_type = "--nos-image" if ".bin" in target_version else "--simulator-image"
-    cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version} "
+    cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version}"
+    if chip:
+        cmd += f" --chip {chip}"
+    if platform:
+        cmd += f" --platform {platform}"
+    if chipsim_version:
+        cmd += f" --chipsim-version {chipsim_version}"
+    if custom_flags:
+        cmd += f' --custom-flags " {custom_flags}"'
+    logger.debug('Running chipsim command: ' + cmd)
     output = server_engine.run_cmd(cmd)
-
     time.sleep(5)
     assert any(msg in output for msg in ["NOS installed successfully", "Serial connection: telnet"]), "Failed to start simx docker"
 
@@ -89,9 +101,9 @@ def wait_till_ssh_is_ready(dut_engine):
     dut_engine.run_cmd('nv show system version')
 
 
-def _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script):
+def _get_path_to_chipsim_script(is_regression_run, target_version, use_master_script, chipsim_script_branch):
     if is_regression_run:
-        return _get_path_to_chipsim_script_for_regression(target_version, use_master_script)
+        return _get_path_to_chipsim_script_for_regression(target_version, use_master_script, chipsim_script_branch)
     else:
         return _get_path_to_chipsim_script_for_ci(target_version)
 
@@ -113,8 +125,11 @@ def _get_path_to_chipsim_script_for_ci(target_version):
     return ci_path
 
 
-def _get_path_to_chipsim_script_for_regression(target_version, use_master_script):
-    if use_master_script:
+def _get_path_to_chipsim_script_for_regression(target_version, use_master_script, chipsim_script_branch):
+    if chipsim_script_branch:
+        version_name = chipsim_script_branch if chipsim_script_branch.startswith("nvos-") else f"nvos-{chipsim_script_branch}"
+        logging.info(f"Using overridden chipsim branch: {version_name}")
+    elif use_master_script:
         version_name = master_folder_name
         logging.info("Using master chipsim script")
     else:

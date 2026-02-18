@@ -1496,15 +1496,15 @@ class JulietSwitch(NvLinkSwitch):
 
         # SDN Configuration edit commands for Juliet (both FM and SM configs)
         self.sdn_fm_config_edits = [
-            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file} && \\",
-            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file} && \\",
-            "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file} && \\",
+            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file}",
+            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file}",
+            "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file}",
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ]
         # SM config edits for Juliet (only when has_loopbox)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
-            "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file} && \\",
+            "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file}",
             "sudo grep -q '^nvlink_enable' {file} || echo 'nvlink_enable FALSE' | sudo tee -a {file}",
             "# Comment plugin_name grpc_mgr",
             "sudo sed -i '/^[ ]*plugin_name[ ]\\+grpc_mgr/s/^/#/' {file}",

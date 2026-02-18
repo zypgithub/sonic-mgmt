@@ -1,3 +1,4 @@
+import subprocess
 from json.decoder import JSONDecodeError
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
@@ -189,7 +190,12 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             scp_engine = LinuxSshEngine(ssh_engine.ip,
                                         DefaultConnectionValues.ONIE_USERNAME,
                                         DefaultConnectionValues.ONIE_PASSWORD)
-            scp_file(scp_engine, image_path, file_name_on_switch, print_output=True)
+            try:
+                scp_file(scp_engine, image_path, file_name_on_switch, print_output=True)
+            except subprocess.SubprocessError:
+                logger.warning(f'Failed to scp image to switch: {image_path} -> {file_name_on_switch}, '
+                               f'forcing legacy scp.')
+                scp_file(scp_engine, image_path, file_name_on_switch, print_output=True, force_scp_protocol=True)
 
     def _install_image_on_onie(self, serial_engine, ssh_engine, image_path, image_url):
         wget_error = False

@@ -187,7 +187,7 @@ class TestToolkit:
         examples:
             from '/auto/sw_system_release/nos/nvos/25.02.5930-025/amd64/dev/nvos-amd64-25.02.5930-025.bin' to 'nvos-25-02-6000'
         """
-        pattern = r'(\d+\.\d+\.\d+)(?:-(\d+))?(?:\.bin)?$'
+        pattern = r'(\d+\.\d+\.\d+)(?:-(\d+))?(?:\.bin|\.img)?$'
         match = re.search(pattern, version)
         if match and match.group(0):
             version_num = match.group(1)
