@@ -389,6 +389,47 @@
 					}
 				]
 			}
+		},
+		"SN6600_LD": {
+			"component":{
+				"BIOS": [
+					{
+						"force_reboot": true,
+						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_bios/V3000/BU/0ACUZ_00.00.005-rc5/Release/0ACUZ.cab",
+						"version": "0ACUZ_00.00.005",
+						"reboot": ["cold"]
+					}
+				],
+				"ONIE": [
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0019/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"version": "2025.05-5.3.0019-115200-dev",
+						"reboot": ["cold"]
+					}
+				],
+				"CPLD2": [
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/hw_cpld/Approved_CPLDs/SN6600_LD/FUI_BURN_SALAMANDRA2/FUI_BURN_SALAMANDRA2.mpfa",
+						"version": "CPLD000439_REV0200",
+						"reboot": ["power off", "cold"]
+					}
+				],
+				"BMC": [
+					{
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0205/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0205.fwpkg",
+						"version": "88.0060.0205",
+						"reboot": ["power off"]
+					},
+					{
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0081/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0081.fwpkg",
+						"version": "88.0060.0081",
+						"reboot": ["power off"]
+					}
+				]
+
+			}
 		}
 	},
 	"host": {
