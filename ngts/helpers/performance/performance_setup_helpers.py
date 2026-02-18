@@ -22,10 +22,19 @@ from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.tools.infra import get_chip_type
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Callable, Tuple
-from collections import namedtuple
+from typing import Optional, List, Dict, Any, Callable
 
 logger = logging.getLogger()
+
+
+def get_is_simx(players):
+    """True when DUT is SimX. Uses lspci on DUT (OS-agnostic)."""
+    try:
+        engine = players[PerfConsts.DUT_ALIAS]['engine']
+        return 'simx' in engine.run_cmd("lspci -vv").lower()
+    except Exception as e:
+        logger.exception(f"get_is_simx failed: {e}")
+        raise
 
 
 # Type alias for validation functions that take Any, float, and List[str] parameters
@@ -39,6 +48,11 @@ class Validation:
     """
     func: ValidationFunc
     extra_args: Dict[str, Any] = field(default_factory=dict)
+
+
+def _validation_spec(name, func, get_extra_args, enabled_if):
+    """Builds a validation spec tuple for data-driven get_validations."""
+    return (name, func, get_extra_args, enabled_if)
 
 
 @dataclass
@@ -86,65 +100,65 @@ class ValidationConfig:
 
     def get_validations(self) -> Dict[str, Validation]:
         """
-        Returns a dictionary of enabled validation configurations.
+        Returns a dictionary of validation configurations. Never empty.
 
-        Each validation is only included if its corresponding threshold/flag is set.
-
-        Validation is of type (function_pointer, {'name of function argument': function argument value})
-        E.G: Validation(validate_counters, {'skip_first_counters_iteration': True})
+        Each validation is included; disabled ones are None (skipped at run time).
+        When running on Simx, normal validations are skipped (None) and only 'tx_rx_counters' runs.
 
         Returns:
-            Dict[str, Validation]: Dictionary mapping validation names to their configurations
+            Dict[str, Validation]: Dictionary mapping validation names to their configurations (or None if skipped)
         """
+        is_simx = get_is_simx(self.players)
+
+        specs = [
+            _validation_spec(
+                'counters', validate_counters,
+                lambda: {'skip_first_counters_iteration': self.skip_first_counters_iteration,
+                         ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list},
+                lambda: not is_simx and self.run_validate_counters,
+            ),
+            _validation_spec(
+                'bandwidth', validate_bw,
+                lambda: {'bw_threshold': self.bw_threshold, 'validate_bw_rx': self.validate_bw_rx},
+                lambda: not is_simx and self.bw_threshold is not None,
+            ),
+            _validation_spec(
+                'tc', validate_tc,
+                lambda: {'tc_occ_threshold': self.tc_occ_threshold},
+                lambda: not is_simx and self.tc_occ_threshold is not None,
+            ),
+            _validation_spec(
+                'temperature', validate_temperature,
+                lambda: {'temperature_threshold': self.temperature_threshold},
+                lambda: not is_simx and self.temperature_threshold is not None,
+            ),
+            _validation_spec(
+                'power', validate_power,
+                lambda: {'players': self.players, 'test_name': self.test_name,
+                         'chip_type': self.chip_type, 'power_threshold': self.power_threshold},
+                lambda: not is_simx and self.power_threshold is not None,
+            ),
+            _validation_spec(
+                'traffic_pattern', validate_no_drops_on_tg_ports,
+                lambda: {'players': self.players},
+                lambda: self.run_validate_no_drops_on_tg_ports,
+            ),
+            _validation_spec(
+                'performance_counters', validate_performance_counters,
+                lambda: {'cli_object': self.players['dut']['cli'],
+                         'allowed_deviation': self.allowed_deviation,
+                         'packet_size': self.packet_size, 'test_name': self.test_name},
+                lambda: not is_simx and self.run_validate_performance_counters and bool(self.packet_size),
+            ),
+            _validation_spec(
+                'tx_rx_counters', _validate_simx_tx_rx_validation,
+                lambda: {'players': self.players},
+                lambda: is_simx,
+            ),
+        ]
         validations = {
-
-            # Counter validation - checks for drops and other counters (such as POC)
-            'counters': Validation(
-                validate_counters,
-                {'skip_first_counters_iteration': self.skip_first_counters_iteration, ValidationConsts.IGNORE_COUNTER_LIST: self.ignore_counter_list}
-            ) if self.run_validate_counters else None,
-
-            # Bandwidth validation - ensures bandwidth meets threshold
-            'bandwidth': Validation(
-                validate_bw,
-                {'bw_threshold': self.bw_threshold, 'validate_bw_rx': self.validate_bw_rx}
-            ) if self.bw_threshold is not None else None,
-
-            # Traffic class validation - checks occupancy levels
-            'tc': Validation(
-                validate_tc,
-                {'tc_occ_threshold': self.tc_occ_threshold}
-            ) if self.tc_occ_threshold is not None else None,
-
-            # Temperature validation - ensures within limits
-            'temperature': Validation(
-                validate_temperature,
-                {'temperature_threshold': self.temperature_threshold}
-            ) if self.temperature_threshold is not None else None,
-
-            # Power consumption validation - checks power usage
-            'power': Validation(
-                validate_power,
-                {
-                    'players': self.players,
-                    'test_name': self.test_name,
-                    'chip_type': self.chip_type,
-                    'power_threshold': self.power_threshold
-                }
-            ) if self.power_threshold is not None else None,
-
-            # Traffic pattern validation - checks for dropped packets on mloop ports
-            'traffic_pattern': Validation(
-                validate_no_drops_on_tg_ports,
-                {'players': self.players}
-            ) if self.run_validate_no_drops_on_tg_ports else None,
-            'performance_counters': Validation(
-                validate_performance_counters,
-                {'cli_object': self.players['dut']['cli'],
-                 'allowed_deviation': self.allowed_deviation,
-                 'packet_size': self.packet_size,
-                 'test_name': self.test_name}) if self.run_validate_performance_counters and self.packet_size else None
-
+            name: Validation(func, get_extra_args()) if enabled() else None
+            for name, func, get_extra_args, enabled in specs
         }
         validations.update(self.additional_validations)
         return validations
@@ -215,15 +229,16 @@ def apply_test_configuration(players, scenario, conf_args,
             players[player_alias]['cli'].performance.apply_configuration_file(scenario, conf_args)
 
 
-def configure_mloops(players, validate_mloops=True, step="basic_test_configuration - configure_mloops", parallel_run=True):
+def configure_mloops(players, validate_mloops=True, is_simx=False,
+                     step="basic_test_configuration - configure_mloops", parallel_run=True):
     if parallel_run:
         call_performance_function_with_threads(players, players_aliases=PerfConsts.PERF_SETUP_TG_ALIASES,
                                                action="configure mloops",
                                                performance_clis_function_name="configure_mloops",
-                                               performance_clis_function_args=(validate_mloops,), step=step)
+                                               performance_clis_function_args=(validate_mloops, is_simx), step=step)
     else:
         for player_alias in PerfConsts.PERF_SETUP_TG_ALIASES:
-            players[player_alias]['cli'].performance.configure_mloops(validate_mloops)
+            players[player_alias]['cli'].performance.configure_mloops(validate_mloops, is_simx)
 
 
 def save_base_configuration(players, step="basic_test_configuration - save_base_configuration"):
@@ -325,6 +340,64 @@ def attach_json_to_allure(json_path, attachment_name, attach_to_allure=True):
     return json_obj
 
 
+def _validate_simx_tx_rx_validation(traffic_json, players, violations_list):
+    """
+    Validation entry point for Simx TX/RX cross-check. Uses validator output (tx_rx_per_port_group).
+    """
+    _validate_simx_tx_rx_cross_check(players, violations_list, traffic_json=traffic_json)
+
+
+def _validate_simx_tx_rx_cross_check(players, violations_list, traffic_json=None):
+    """
+    Simx-only: for each port group, RX of that group must equal sum of TX of all other port groups.
+    Fails if all port groups have RX of 0. Uses tx_rx_per_port_group from the validator JSON.
+    """
+    tx_rx_per_port_group = (traffic_json or {}).get(ValidationConsts.TX_RX_PER_PORT_GROUP)
+    if not tx_rx_per_port_group:
+        violations_list.append(
+            "Simx TX/RX validation requires validator to provide tx_rx_per_port_group. "
+            "Ensure multi_nos_validator is run and outputs TX/RX per port group.")
+        return
+    port_group_names = list(tx_rx_per_port_group.keys())
+    total_tx = sum(tx_rx_per_port_group[name].get("tx", 0) for name in port_group_names)
+    total_rx = sum(tx_rx_per_port_group[name].get("rx", 0) for name in port_group_names)
+    per_group_lines = [f"  {name}: TX={tx_rx_per_port_group[name].get('tx', 0)}, RX={tx_rx_per_port_group[name].get('rx', 0)}"
+                       for name in port_group_names]
+    summary = f"Overall: TX={total_tx}, RX={total_rx}\nPer port group:\n" + "\n".join(per_group_lines)
+    allure.attach(summary, "Simx TX/RX per port group", allure.attachment_type.TEXT)
+    with allure.step(f"Simx TX/RX validation: overall TX={total_tx}, RX={total_rx}"):
+        rx_counts = [tx_rx_per_port_group[name].get("rx", 0) for name in port_group_names]
+        if all(count == 0 for count in rx_counts):
+            violations_list.append("Simx TX/RX validation failed: all port groups have RX of 0.")
+            return
+        for port_group_name in port_group_names:
+            rx_count_this_group = tx_rx_per_port_group[port_group_name].get("rx", 0)
+            tx_count_from_other_groups = sum(
+                tx_rx_per_port_group[other].get("tx", 0) for other in port_group_names if other != port_group_name)
+            if rx_count_this_group != tx_count_from_other_groups:
+                violations_list.append(
+                    f"Simx TX/RX mismatch: RX({port_group_name})={rx_count_this_group} != "
+                    f"sum(TX of other groups)={tx_count_from_other_groups}")
+
+
+def get_expected_tx_packets_per_port_group(players, conf_args):
+    """
+    Returns expected number of packets to be sent per port group from traffic config (e.g. left_num_packets,
+    right_num_packets). Call before sending traffic when is_simx to log expected counts per port group.
+
+    Returns:
+        Dict[str, int]: port group name -> expected TX packet count
+    """
+    dut_alias = PerfConsts.DUT_ALIAS
+    perf = players[dut_alias]['cli'].performance
+    port_groups = getattr(perf, 'port_groups', None) or {}
+    result = {}
+    for group_name in port_groups:
+        key = group_name.replace('_ports', '_num_packets') if group_name.endswith('_ports') else f'{group_name}_num_packets'
+        result[group_name] = int(conf_args.get(key, 0) or 0)
+    return result
+
+
 def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_allure=True, add_validator_results_to_mongo_db=True):
     """
     Executes traffic validation based on the provided configuration.
@@ -339,7 +412,6 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
         TestIssue: If any validation violations are detected
     """
     with allure.step("Run traffic validation on Json results"):
-        # Get traffic validation results for the configured test
         traffic_validation_results = validate_traffic_results(players=config.players, test_name=config.test_name,
                                                               scenario=config.scenario,
                                                               samples_params_dict=config.samples_params_dict,
@@ -347,39 +419,27 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
                                                               attach_to_allure=attach_to_allure,
                                                               add_validator_results_to_mongo_db=add_validator_results_to_mongo_db)
 
-        # Process each traffic validation JSON result
         all_violations = []
+        all_validations = config.get_validations()
+        validations_to_run = {k: v for k, v in all_validations.items() if v is not None}
 
         for result in traffic_validation_results:
             player_alias = result['player_alias']
             traffic_json = result['traffic_json']
 
             player_violations = []
-            skipped_validations = []
-            validations = {}
-
-            # Separate enabled and disabled validations from config
-            for name, validation in config.get_validations().items():
-                if validation is None:
-                    # Track disabled/skipped validations
-                    skipped_validations.append(name)
-                else:
-                    # Store enabled validations
-                    validations[name] = validation
-
-            # Log validation execution plan
+            skipped_validations = [n for n, v in all_validations.items() if v is None]
             logging.info(f"[{player_alias}] Skipped validations: {skipped_validations}\n")
-            logging.info(f"[{player_alias}] Validations to run: {list(validations.keys())}\n")
+            logging.info(f"[{player_alias}] Validations to run: {list(validations_to_run.keys())}\n")
 
-            for name, validation in validations.items():
-                # Run validation function with its extra arguments and collect violations
+            for name, validation in validations_to_run.items():
                 validation.func(traffic_json, **(validation.extra_args or {}), violations_list=player_violations)
 
             if player_violations:
                 player_header = f"Validation failures on {player_alias}:"
                 all_violations.append(player_header)
                 all_violations.extend([f"  - {violation}" for violation in player_violations])
-                all_violations.append("")  # Add empty line for readability
+                all_violations.append("")
 
         if all_violations and not ignore_violations:
             raise TestIssue("\n".join(all_violations))

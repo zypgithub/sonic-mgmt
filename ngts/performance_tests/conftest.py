@@ -6,7 +6,7 @@ import os
 import logging
 import time
 from datetime import datetime
-from ngts.helpers.performance.performance_setup_helpers import configure_mloops, stop_traffic, unsplit_all_ports
+from ngts.helpers.performance.performance_setup_helpers import (configure_mloops, stop_traffic, unsplit_all_ports, get_is_simx)
 from ngts.helpers.performance.Performance_log_print import print_players_logs, remove_players_logs
 from ngts.constants.constants import PytestConst
 from ngts.constants.performance_constants import MongoDbConsts, PowerConsts, PerfConsts, ValidationConsts
@@ -86,7 +86,7 @@ def is_ipv6(request):
 def basic_test_configuration(request, players, basic_setup_configuration):
     try:
         with allure.step('Configure Mloops on Traffic Generators'):
-            configure_mloops(players)
+            configure_mloops(players, is_simx=get_is_simx(players))
         yield
         with allure.step('Stop Traffic on Traffic Generators'):
             stop_traffic(players)

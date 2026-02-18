@@ -206,12 +206,13 @@ class PerformanceCommon:
         return sdk_port_to_local_port_mapping, sdk_port_speed_mapping
 
     @retry(exceptions=TestIssue, tries=2, delay=2)
-    def configure_mloops(self, validate_mloops=True):
+    def configure_mloops(self, validate_mloops=True, is_simx=False):
         try:
             logging.info(f"Configure Mloop on {self.dut_alias}")
             self.logrotate("rsyslog")
+            env_variables = [f"{PerfConsts.SEND_FWS_ENV}={'false' if is_simx else 'true'}"]
             configure_mloops_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_MLOOP_CONFIGURATION}"
-            self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd))
+            self.execute_cmd(self.get_cmd_for_sdk(configure_mloops_cmd, env_variables=env_variables))
             if validate_mloops:
                 self.check_mloops_up()
         except Exception as e:

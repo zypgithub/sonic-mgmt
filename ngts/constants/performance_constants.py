@@ -14,6 +14,7 @@ class ValidationConsts:
     DUMP_GENERATION_TIME = "dumpGenerationTime"
     VALIDATION_KEY = "validation_key"
     PORT_GROUPS = "port_groups"
+    TX_RX_PER_PORT_GROUP = "tx_rx_per_port_group"
     SHARED_BUFFER_SIZE = "shared_buffer_size"
     COLLECTORS_LIST = "collectors_list"
     TC_DATAFRAME = "tc_dataframe"
@@ -101,6 +102,7 @@ class PerfConsts:
     }
     CLEAR_COUNTERS_ENV_VAR = "CLEAR_COUNTERS"
     SHAPER_VALUE_ENV_VAR = "SHAPER_VALUE"
+    SEND_FWS_ENV = "SEND_FWS"
     SRV6_SONIC_OS_SHAPER_VALUE = 0.99
     SRV6_NVUE_OS_SHAPER_VALUE = 0.96
     DVS_SHAPER_VALUE = 0.975

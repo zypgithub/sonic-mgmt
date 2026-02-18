@@ -45,8 +45,11 @@ class DvsPerformance(PerformanceCommon):
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
         Returns:
-        a cmd that is running on the sdk, in DVS it's simply the command it's self
+        a cmd that is running on the sdk. When env_variables (e.g. SEND_FWS=0 for Simx) is set, adds export.
         """
+        if env_variables:
+            export_part = " ".join(f"export {v}" for v in env_variables)
+            return f"{export_part} && {cmd}"
         return cmd
 
     def update_player_ports(self):
