@@ -428,11 +428,18 @@ def read_csv_file(csv_file):
         return [row for row in reader]
 
 
+def get_setup_dir_name(dut_name):
+    if "air" in dut_name.lower():
+        return dut_name.split("-dut")[0]
+    return f"{dut_name}_setup"
+
+
 def check_one_dut_to_fanout_cable_connection(cli_object, dut_engine):
     dut_name = dut_engine.run_cmd("hostname")
     hwsku = cli_object.chassis.get_platform_hwsku()
+    setup_dir_name = get_setup_dir_name(dut_name)
     dut_fanout_link_file = os.path.join(CURRENT_PATH,
-                                        f"../../../../ansible/files/hwsku_vars/{dut_name}_setup/{hwsku}/sonic_nvidia_links.csv")
+                                        f"../../../../ansible/files/hwsku_vars/{setup_dir_name}/{hwsku}/sonic_nvidia_links.csv")
     dut_fanout_link_data = read_csv_file(dut_fanout_link_file)
     logger.info(f"dut_fanout_link_data:\n {dut_fanout_link_data}")
 
