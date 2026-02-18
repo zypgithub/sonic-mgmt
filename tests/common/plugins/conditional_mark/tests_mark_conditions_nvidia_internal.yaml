@@ -374,6 +374,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
+    - "'sn6600_simx' in platform"
 
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status_wrong_check:
@@ -387,6 +388,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
+    - "'sn6600_simx' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
   skip:
@@ -399,6 +401,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
+    - "'sn6600_simx' in platform"
 
 tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_policer:
   skip:
