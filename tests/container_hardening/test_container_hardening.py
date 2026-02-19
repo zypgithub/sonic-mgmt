@@ -22,6 +22,11 @@ PRIVILEGED_CONTAINERS = [
     "gnmi",
 ]
 
+# The following containers are allowed to have block devices mounted.
+# This will be a superset of privileged containers
+CONTAINERS_WITH_BLOCKDEVICE_MOUNT = PRIVILEGED_CONTAINERS + [
+    "pmon",
+]
 
 def test_container_privileged(duthosts, enum_rand_one_per_hwsku_hostname, enum_rand_one_asic_index, enum_dut_feature):
     """
@@ -33,7 +38,7 @@ def test_container_privileged(duthosts, enum_rand_one_per_hwsku_hostname, enum_r
     disabled_containers = get_disabled_container_list(duthost)
 
     skip_condition = disabled_containers[:]
-    skip_condition.extend(PRIVILEGED_CONTAINERS)
+    skip_condition.extend(CONTAINERS_WITH_BLOCKDEVICE_MOUNT)
     # bgp0 -> bgp, bgp -> bgp, p4rt -> p4rt
     feature_name = ''.join(re.match(CONTAINER_NAME_REGEX, container_name).groups()[:-1])
     pytest_require(feature_name not in skip_condition, "Skipping test for container {}".format(feature_name))
