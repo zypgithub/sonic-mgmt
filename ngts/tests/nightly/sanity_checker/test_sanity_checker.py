@@ -28,6 +28,7 @@ README_COVERED_COMPONENTS = ['SDK', 'FW', 'SAI', 'HW_MANAGEMENT', 'MFT', 'KERNEL
 FW_DEFAULT_VERSIONS = ['ONIE', 'SSD', 'BIOS', 'CPLD']  # Expected columns of the table if the setup is SIMX
 COMMANDS_FOR_ACTUAL = {
     "MFT": ["dpkg -l | grep -e 'mft '", "mft *([0-9.-]*)"],
+    "RSHIM": ["dpkg -l | grep -e 'rshim '", "rshim *([0-9.-]*)"],
     "HW_MANAGEMENT": ["dpkg -l | grep hw", ".*1\\.mlnx\\.([0-9.]*)"],
     "SDK": ["docker exec -it syncd bash -c 'dpkg -l | grep sdk'", ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": ["docker exec -it syncd bash -c 'dpkg -l | grep mlnx-sai'", ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
@@ -566,10 +567,12 @@ def parse_readme_versions(sonic_image):
     readme_versions_dict = dict()
 
     # First match the version with the suffix "_VERSION_SWITCH"
+    # RSHIM_VERSION pattern uses a special version format, so we need to handle it separately
     # Then match the version with the suffix "_VERSION"
     patterns = [
-        re.compile(r"(?P<component>\w+)_VERSION_SWITCH:\s*(?P<version>[^\s]+)"),
-        re.compile(r"(?P<component>\w+)_VERSION:\s*(?P<version>[^\s]+)")
+        re.compile(r"(?P<component>\w+)_VERSION_SWITCH:\s*(?P<version>\S+)"),
+        re.compile(r"(?P<component>RSHIM)_VERSION:\s*(?:\S*@)?(?P<version>(\d+\.)+\d+)"),
+        re.compile(r"(?P<component>\w+)_VERSION:\s*(?P<version>\S+)")
     ]
 
     for line in image_readme_content.strip().split('\n'):
