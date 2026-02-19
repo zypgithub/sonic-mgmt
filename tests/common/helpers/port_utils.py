@@ -76,6 +76,7 @@ def get_cable_supported_speeds_helper(duthost):
 
 
 class MlnxCableSupportedSpeedsHelper(object):
+    from tests.platform_tests.mellanox.software_control_helper import ASIC_DETECT_GET_DEVICE_PATH_CMD
     # To avoid getting ports list again and again, use a class level variable to save
     # all sorted ports.
     # Key: dut host object, value: a sorted list of interface name
@@ -106,7 +107,7 @@ class MlnxCableSupportedSpeedsHelper(object):
             cls.sorted_ports[duthost] = ports
 
         if not cls.device_path:
-            cls.device_path = duthost.shell('ls /dev/mst/*_pci_cr0')['stdout'].strip()
+            cls.device_path = duthost.shell(ASIC_DETECT_GET_DEVICE_PATH_CMD)['stdout'].strip()
         port_index = cls.sorted_ports[duthost].index(dut_port_name) + 1
         cmd = 'mlxlink -d {} -p {} | grep "Supported Cable Speed"'.format(cls.device_path, port_index)
         output = duthost.shell(cmd)['stdout'].strip()

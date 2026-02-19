@@ -2,6 +2,7 @@ import re
 import logging
 import json
 from ngts.cli_wrappers.common.chassis_clis_common import ChassisCliCommon
+from ngts.constants.constants import SonicConst
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 
 logger = logging.getLogger()
@@ -53,8 +54,7 @@ class SonicChassisCli(ChassisCliCommon):
         return self.engine.run_cmd("sudo mst status")
 
     def get_pci_conf(self):
-        mst_status = self.show_mst_status()
-        return re.search("(.*mt5.*pciconf0)", mst_status).group(1)
+        return self.engine.run_cmd(SonicConst.ASIC_DETECT_GET_DEVICE_PATH_CMD).strip()
 
     def get_fw_info(self):
         return self.engine.run_cmd(f"sudo flint -d {self.get_pci_conf()} q")

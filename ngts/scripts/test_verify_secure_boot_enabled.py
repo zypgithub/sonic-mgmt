@@ -3,6 +3,7 @@ import logging
 import pytest
 
 from ngts.tests.nightly.secure.constants import SonicSecureBootConsts
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 
 
 logger = logging.getLogger()
@@ -23,10 +24,11 @@ def test_verify_secure_is_enabled(topology_obj):
     assert 'enabled' in secure_boot_state, "Secure boot not enabled as expected"
 
     logger.info("Check the secure boot is dev or prod")
-    device = engine.run_cmd('ls /dev/mst/ | egrep mt.*_pciconf0')
+    cli_obj = SonicCli(topology_obj)
+    device = cli_obj.chassis.get_pci_conf()
     if not device:
         pytest.fail(f"The mst device is not found.")
-    mst_info = engine.run_cmd(f'sudo flint -d /dev/mst/{device} q full')
+    mst_info = engine.run_cmd(f'sudo flint -d {device} q full')
     assert SonicSecureBootConsts.SECURE_FW_MSG in mst_info, "Secure fw is not enabled"
     if SonicSecureBootConsts.SECURE_FW_DEV_MSG in mst_info:
         logger.info("The system is dev secured")

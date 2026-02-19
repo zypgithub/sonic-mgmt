@@ -10,6 +10,9 @@ logger = logging.getLogger()
 
 SC_ENABLED = 1
 
+# Command to get ASIC device (PCI) path on DUT
+ASIC_DETECT_GET_DEVICE_PATH_CMD = '/usr/bin/asic_detect/asic_detect.sh -p'
+
 SAI_PROFILE_FILE_NAME = "sai.profile"
 PMON_DEAMON_CONTROL_FILE_NAME = "pmon_daemon_control.json"
 PLATFORM_FOLDER_PATH = "/usr/share/sonic/device/"
@@ -289,9 +292,7 @@ def parse_sc_transceiver_status(output_lines):
 
 @functools.lru_cache(maxsize=1)
 def get_mst_path(duthost):
-    mst_path_pciconf = duthost.shell('sudo ls /dev/mst/ | grep cr0')['stdout']
-    mst_path = f"/dev/mst/{mst_path_pciconf}"
-    return mst_path
+    return duthost.shell(ASIC_DETECT_GET_DEVICE_PATH_CMD)['stdout'].strip()
 
 
 def parse_mlxlink_interfaces_output(output, interfaces_physical_paths):

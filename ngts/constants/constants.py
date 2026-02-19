@@ -101,6 +101,9 @@ class SonicConst:
     CONFIG = '/usr/local/bin/config'
     SHOW = '/usr/local/bin/show'
 
+    # Mellanox: command to get ASIC device (PCI) path on DUT
+    ASIC_DETECT_GET_DEVICE_PATH_CMD = '/usr/bin/asic_detect/asic_detect.sh -p'
+
     TELEMETRY_PATH = "/etc/sonic/telemetry"
     TELEMETRY_SERVER_KEY = "/etc/sonic/telemetry/streamingtelemetryserver.key"
     TELEMETRY_SERVER_CER = "/etc/sonic/telemetry/streamingtelemetryserver.cer"
