@@ -88,11 +88,13 @@ def run_test(fanouthosts, duthost, conn_graph_facts, enum_fanout_graph_facts, le
         'ansible_facts']['int_status']
     """ We only test active physical interfaces """
     dpus = get_dpu_npu_ports_from_hwsku(duthost)
+    """ We only test active physical interfaces that have connection graph entries """
     active_phy_intfs = [intf for intf in int_status if
                         intf.startswith('Ethernet') and
                         int_status[intf]['admin_state'] == 'up' and
                         int_status[intf]['oper_state'] == 'up' and
                         intf not in dpus]
+                        intf in conn_facts]
     only_lossless_rx_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
     no_xon_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
     if only_lossless_rx_counters and asic_type != 'vs':
