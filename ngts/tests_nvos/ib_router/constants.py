@@ -21,6 +21,10 @@ class IbRouterConsts:
                     'hc': 1, 'hd': 1,
                     'he': 2, 'hf': 2,
                     'hg': 3, 'hh': 3}
+    SWID_TO_FLID = {0: 256,
+                    1: 270,
+                    2: 290,
+                    3: 300}
     OPERATIONAL_SWIDS = [0, 1, 2, 3]
     ROUTER_PORTS_TO_LEAFS = ['sw1p1', 'sw1p2', 'sw2p1', 'sw2p2', 'sw3p1', 'sw3p2', 'sw4p1', 'sw4p2']
 

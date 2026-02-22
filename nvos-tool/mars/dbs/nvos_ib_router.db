@@ -42,4 +42,9 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/ib_router/nvos_ib_router.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/ib_router/nvos_ib_router_checklist.cases </cases>
+	</test>
 </DBDEF>
+
+

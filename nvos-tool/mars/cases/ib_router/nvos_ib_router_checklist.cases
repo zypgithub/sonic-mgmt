@@ -16,16 +16,48 @@
   </global>
 
   <case>
-    <name> System Reset Factory </name>
+    <name> System Reset Factory without params </name>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_factory_reset.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900 --ib_router  --serial_logger=[[conf:extra_info.serial_logger:analyze_and_open_bugs]] \'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_factory_reset.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_reset_factory_without_params --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900 --ib_router  --serial_logger=[[conf:extra_info.serial_logger:analyze_and_open_bugs]] \'"</static_args>
       </params>
     </cmd>
   </case>
 
+  <case>
+    <name> System Reset Factory keep basic </name>
+    <info></info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_factory_reset.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_reset_factory_keep_basic --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900 --ib_router  --serial_logger=[[conf:extra_info.serial_logger:analyze_and_open_bugs]] \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+    <case>
+    <name> System Reset Factory keep config </name>
+    <info></info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_factory_reset.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_reset_factory_keep_all_config --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900 --ib_router  --serial_logger=[[conf:extra_info.serial_logger:analyze_and_open_bugs]] \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+    <case>
+    <name> System Reset Factory keep only files </name>
+    <info></info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/system/test_system_factory_reset.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_reset_factory_keep_only_files --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir  --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900 --ib_router  --serial_logger=[[conf:extra_info.serial_logger:analyze_and_open_bugs]] \'"</static_args>
+      </params>
+    </cmd>
+  </case>
 
   <case>
     <name> System Image - Release </name>
@@ -37,5 +69,6 @@
       </params>
     </cmd>
   </case>
+
 
 </CASEDEF>

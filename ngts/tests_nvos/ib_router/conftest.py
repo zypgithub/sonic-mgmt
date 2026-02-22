@@ -32,6 +32,17 @@ def init_extra_host_engines(topology_obj, engines):
     IbRouterTool.init_extra_host_engines(topology_obj, engines)
 
 
+@pytest.fixture(autouse=True, scope='session')
+def init_extra_host_interfaces(topology_obj, interfaces):
+    """
+    init interfaces data for extended amount of host nicknames - ha, hb, hc and so on
+    """
+    # ha, hb, hc and so on are the traffic dockers in XDR router setup
+    for host_nickname in IbRouterConsts.ALL_HOSTS_NICKNAMES:
+        if host_nickname in topology_obj.players:
+            interfaces[f"{host_nickname}_dut_1"] = topology_obj.ports[f'{host_nickname}-dut-1']
+
+
 @pytest.fixture(autouse=False, scope='session')
 def stop_sm(engines, init_extra_host_engines):
     """

@@ -45,6 +45,39 @@ class TrafficGeneratorTool:
                     return ResultObj(False, "IB traffic validation failed - check log for more info.")
 
     @staticmethod
+    def send_ib_traffic_with_params(players, should_success, traffic_params, common_flags=''):
+        """
+        Send ib traffic, but gives more control over the params used by the test
+        :param players: players fixture
+        :param should_success: True of False
+        :param traffic_params: dict in the form of
+
+        {'sender' : 'ha',
+        'sender_interface': interfaces.hb_dut_1
+        'sender_flags' : '--dlid 270 -x 1'        // optional
+        'receiver':  'hb'
+        receiver_interface': interfaces.hb_dut_1
+        'receiver_flags' :  '--dlid 250 -x 2'     // optional
+        }
+        :param common_flags: flags that are common for both sender and receiver processes, for example "-a --report_gbits"
+
+        """
+        with allure.step("Creating validation object in order to generate traffic"):
+            logger.info("Creating validation object")
+            validation_obj = {'type': IBTrafficConst.IB_SEND_BW,
+                              'expected_traffic_result': IBTrafficConst.SUCCESS if should_success else IBTrafficConst.FAILURE,
+                              }
+            validation_obj.update(traffic_params)
+
+        with allure.step("Send ib traffic"):
+            try:
+                logger.info("Sending ib traffic")
+                IBTrafficChecker(players, validation_obj).run_validation()
+                return ResultObj(True, "IB traffic validation ended successfully")
+            except BaseException as ex:
+                return ResultObj(False, "IB traffic validation failed - check log for more info.")
+
+    @staticmethod
     def send_ipoib_traffic(players, interfaces, should_success, reverse_direction=False):
         """
         Send IPoIB traffic

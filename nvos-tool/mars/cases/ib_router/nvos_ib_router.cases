@@ -25,6 +25,29 @@
     </cmd>
   </case>
 
+    <case>
+    <name> Ib router basic traffic test </name>
+    <info></info>
+    <tout> 1200 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib_router/test_ib_router_traffic.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_sanity_traffic --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1200  --skip_clear_config\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+   <case>
+    <name> Ib router traffic test after reboot</name>
+    <info></info>
+    <tout> 1200 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/ib_router/test_ib_router_traffic.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO -k test_traffic_after_reboot --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 1200  --skip_clear_config\'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+
  <case>
     <name> Ib router functional tests </name>
     <info></info>
