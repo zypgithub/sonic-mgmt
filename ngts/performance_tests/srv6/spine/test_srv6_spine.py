@@ -40,6 +40,7 @@ class TestSRv6Spine(TestSRv6Base):
         self.cli_object.trimming.configure_custom_dwrr_weights()
         self.shaper_value = shaper_value
 
+    @pytest.mark.skip(reason="This test is no longer supported on performance setup, due to infra limitation - Contact QA for test results using IXIA")
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
     def test_spine_round_robin_srv6(self, request, traffic_type):
         """
