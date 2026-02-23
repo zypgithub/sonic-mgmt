@@ -42,6 +42,12 @@
 		</Case>
 	</global>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/nvos_acl.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/acl/nvos_acl_basic.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/acl/nvos_acl_control_plane.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/acl/nvos_acl_functionality.cases </cases>
 	</test>
 </DBDEF>

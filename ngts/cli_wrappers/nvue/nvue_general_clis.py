@@ -321,7 +321,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return output
 
     @staticmethod
-    def config_patch(engine, filepath, apply=True, detach_first=True):
+    def config_patch(engine, filepath, apply=True, detach_first=True, apply_timeout=None):
         """
         Patch configuration from file with optional apply.
 
@@ -330,6 +330,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             filepath: Path to config file
             apply: If True, applies config and validates. If False, only creates revision
             detach_first: If True, detaches any pending config before patching (default: True)
+            apply_timeout: Timeout in seconds for the apply operation. If None, uses run_cmd default.
 
         Returns:
             ResultObj with success/failure status
@@ -349,7 +350,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         # Step 3: Apply if requested
         if apply:
             try:
-                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
+                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True, apply_timeout=apply_timeout)
                 return ResultObj(True, info="Patch and apply successful", returned_value=output)
             except Exception as e:
                 return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
@@ -357,7 +358,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             return ResultObj(True, info="Patch successful (revision created)", returned_value=output)
 
     @staticmethod
-    def config_replace(engine, filepath, apply=True):
+    def config_replace(engine, filepath, apply=True, apply_timeout=None):
         """
         Replace configuration from file with optional apply.
 
@@ -365,6 +366,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             engine: SSH engine
             filepath: Path to config file
             apply: If True, applies config and validates. If False, only creates revision
+            apply_timeout: Timeout in seconds for the apply operation. If None, uses run_cmd default.
 
         Returns:
             ResultObj with success/failure status
@@ -380,7 +382,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         # Step 2: Apply if requested
         if apply:
             try:
-                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True)
+                NvueGeneralCli.apply_config(engine, ask_for_confirmation=True, apply_timeout=apply_timeout)
                 return ResultObj(True, info="Replace and apply successful", returned_value=output)
             except Exception as e:
                 return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
@@ -396,49 +398,55 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
     @staticmethod
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
-                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None):
+                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None,
+                     apply_timeout=None):
         """
         Apply configuration
         :param option: could be [-y, --assume-yes, --assume-no, --confirm-yes, --confirm-no, --confirm-status]
         :param engine: ssh engine object
         :param ask_for_confirmation: True or False
+        :param apply_timeout: Timeout in seconds for the apply operation. If None, uses run_cmd default.
         """
         if verify_execution:
             return SendCommandTool.execute_command(NvueGeneralCli._apply_config, engine, ask_for_confirmation, option,
-                                                   validate_apply_message, rev_id, skip_no_config_diff_err).verify_result()
+                                                   validate_apply_message, rev_id, skip_no_config_diff_err, apply_timeout).verify_result()
         else:
-            return NvueGeneralCli._apply_config(engine, ask_for_confirmation, option, validate_apply_message, rev_id, skip_no_config_diff_err)
+            return NvueGeneralCli._apply_config(engine, ask_for_confirmation, option, validate_apply_message, rev_id, skip_no_config_diff_err, apply_timeout)
 
     @staticmethod
     def _apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
-                      skip_no_config_diff_err=True):
+                      skip_no_config_diff_err=True, apply_timeout=None):
         """
         Apply configuration
         :param option: could be [-y, --assume-yes, --assume-no, --confirm-yes, --confirm-no, --confirm-status]
         :param engine: ssh engine object
         :param ask_for_confirmation: True or False
+        :param apply_timeout: Timeout in seconds for the apply operation. If None, uses run_cmd default.
         """
         logging.info("Checking the config to be applied")
         NvueGeneralCli.diff_config(engine=engine)
 
+        timeout_kwargs = {'timeout': apply_timeout} if apply_timeout is not None else {}
+
         logging.info("Running 'nv {} config apply {} ' on dut".format(option, rev_id))
         if ask_for_confirmation:
+            # Serial engines don't support interactive prompts or explicit timeout
             if isinstance(engine, PexpectSerialEngine):
                 output = engine.run_cmd_and_get_output('nv config apply --assume-yes')
             else:
-                output = engine.run_cmd_set(['nv config apply', 'y'], patterns_list=[r"Are you sure?"],
-                                            tries_after_run_cmd=2)
+                output = engine.run_cmd('nv config apply --assume-yes', **timeout_kwargs)
             if NvosConst.DECLINED_APPLY_MSG in output:
                 output = "Error: " + output
             elif NvosConst.Y_COMMAND_NOT_FOUND in output and ConfState.APPLIED in output:
                 output = ConfState.APPLIED + NvueGeneralCli.get_rev_id(output)
             output = output.replace(NvosConst.Y_COMMAND_NOT_FOUND, "")
         elif validate_apply_message:
-            output = engine.run_cmd('nv {option} config apply'.format(option=option))
+            output = engine.run_cmd('nv {option} config apply'.format(option=option), **timeout_kwargs)
             assert validate_apply_message in output, 'Message {0} not exist in output {1}'. \
                 format(validate_apply_message, output)
         else:
-            output = engine.run_cmd('nv {option} config apply {rev}'.format(option=option, rev=rev_id))
+            output = engine.run_cmd('nv {option} config apply {rev}'.format(option=option, rev=rev_id),
+                                    **timeout_kwargs)
 
         if skip_no_config_diff_err and NvosConst.NO_CONFIG_DIFF_APPLY_MSG in output:
             output = ConfState.APPLIED

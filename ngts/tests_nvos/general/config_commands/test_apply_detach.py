@@ -1,4 +1,5 @@
 import pytest
+import time
 
 from ngts.tools.test_utils import allure_utils as allure
 import re
@@ -130,6 +131,8 @@ def test_apply_rev_id(engines):
 
     with allure.step('apply using rev id and verify output'):
         apply_output = NvueGeneralCli.apply_config(engine=engines.dut, rev_id=rev_id_1, option='-y')
+        if is_bug_active(4868603):
+            time.sleep(4)
         message_output = OutputParsingTool.parse_json_str_to_dictionary(system.message.show()).get_returned_value()
 
         with allure.step('Verify pre-login changed to TESTING_001 in show system'):

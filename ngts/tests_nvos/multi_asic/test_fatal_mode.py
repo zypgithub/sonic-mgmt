@@ -20,7 +20,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 
 logger = logging.getLogger()
 fatal_event_timestamps = []
@@ -29,6 +29,7 @@ SETTINGS = {"clear_time": 2}
 NUM_TRIES_TO_RECOVER_AT_TEARDOWN = 4
 SAI_LOG_STRING = 'Health-Check: new failure'
 SAI_LOG_TIME_WINDOW_SECONDS = 3
+WAIT_BETWEEN_EVENTS_SECONDS = 20
 
 FATAL_PROMPT = "[System_Fatal_State]"
 FATAL_FILE = "/etc/system_fatal"
@@ -375,14 +376,16 @@ def _simulate_events(number_of_events: Union[int, list], asic: int, verify_non_f
         event_list = (number_of_events if isinstance(number_of_events, list) else _get_random_event_list(number_of_events))
         for event_id in event_list:
             _simulate_event(event_id, asic)
-            _wait(0, 10)  # fatal doesn't work if we don't wait between events
+            _wait(0, WAIT_BETWEEN_EVENTS_SECONDS)  # fatal doesn't work if we don't wait between events
 
 
 def _simulate_event(event_id, asic):
     """Runs the command that simulates a health events and asserts that it worked (returned no output)."""
     with allure.step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
         cmd = FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic, asic_folder=asic - 1)
-        fatal_event_timestamps.append(datetime.now().isoformat(' '))
+        # Get time from switch to match log timestamps
+        switch_time = ClockTools.get_local_time_from_show_system_date_time_output(System().datetime.show())
+        fatal_event_timestamps.append(switch_time)
         _send_command_timing(TestToolkit.engines.dut, cmd)
 
 
@@ -435,18 +438,19 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
     with allure.step(f"{_assert_system_fatal_mode.__name__}: Verify fatal mode is {fatal}"):
         system = System()
         engine = TestToolkit.engines.dut
+        start_time = time.perf_counter()
         if fatal and state_just_changed:
             with allure.step("Check system health until it enters fatal mode"):
                 health_dict = retry_call(_assert_health_fatal, [system, True],
                                          exceptions=AssertionError, tries=6, delay=3)
         else:
             with allure.step("Check system health status"):
-                if is_bug_active(4380136):
-                    health_dict = retry_call(_assert_health_fatal, [system, True],
-                                             exceptions=AssertionError, tries=6, delay=10)
-                else:
-                    health_dict = retry_call(_assert_health_fatal, [system, fatal],
-                                             exceptions=AssertionError, tries=6, delay=3)
+                health_dict = retry_call(_assert_health_fatal, [system, fatal],
+                                         exceptions=AssertionError, tries=6, delay=5)
+        duration = time.perf_counter() - start_time
+        expected_status = 'FATAL' if fatal else 'OK'
+        OperationTime.save_manual_operation_duration_to_db(
+            f'health_status_to_{expected_status}', duration, pytest.test_name)
 
         with allure.step("Assert LED color"):
             expected_color = HealthConsts.LED_NOT_OK_STATUS if fatal else HealthConsts.LED_OK_STATUS

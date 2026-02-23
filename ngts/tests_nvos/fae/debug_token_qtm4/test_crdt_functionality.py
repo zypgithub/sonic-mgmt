@@ -11,8 +11,8 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import PlatformConsts, HealthConsts, RebootConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
 from ngts.tools.test_utils import allure_utils as allure
 
 from .helpers import (
@@ -178,4 +178,4 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
             DebugTokenFileHelper.verify_firmware_version(nv_command, original_firmware_version, 'after factory reset')
 
             expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
-            validate_reboot_reason_and_user(system, expected_reason, expected_user)
+            ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)

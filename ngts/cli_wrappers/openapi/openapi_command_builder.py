@@ -187,7 +187,7 @@ class OpenApiRequest:
             return {'verify': False}
 
     @staticmethod
-    @retry(Exception, tries=15, delay=3)
+    @retry(Exception, tries=40, delay=5)
     def _check_apply_status(request_data, changeset, client_certs_after_apply: CertInfo = None):
         with allure.step("Check the status of the apply"):
             logging.info("Check the status of the apply")

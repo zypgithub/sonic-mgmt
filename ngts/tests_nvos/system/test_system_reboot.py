@@ -13,6 +13,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, ping_device
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -20,6 +21,7 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
 
+@pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.check_log_size
 @pytest.mark.check_disk_usage
 @pytest.mark.system
@@ -62,12 +64,13 @@ def test_reboot_command(engines, devices, test_name):
             assert 'admin' in output["user"], f"reboot user is not 'admin' as expected (actual - {output['user']})"
 
         with allure.independent_step("Validate reboot reason and user"):
-            validate_reboot_reason_and_user(system, expected_reason, expected_user)
+            ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.independent_step("Verify reboot time is within expected range"):
             OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
 
+@pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
 def test_reboot_command_force(engines, devices, test_name, random_api):
     """
@@ -122,6 +125,7 @@ def test_reboot_command_bad_flow(engines, devices):
             ValidationTool.verify_expected_output(output, RebootConsts.POWER_CYCLE_NOT_SUPPORTED_ERR_MSG, True)
 
 
+@pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
 @pytest.mark.parametrize('mode', RebootConsts.DEFAULT_MODES)
 def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name, verify_no_kernel_errors):
@@ -139,7 +143,7 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
         expected_reason, expected_user = devices.dut.reboot_reason_dict[mode]
 
         with allure.step("Validate reboot reason and user"):
-            validate_reboot_reason_and_user(system, expected_reason, expected_user)
+            ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
         with allure.step("Verify reboot time is within expected range"):
             OperationTime.verify_operation_time(result_obj.duration, mode, devices).verify_result()
@@ -150,7 +154,9 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
             NvueGeneralCli(TestToolkit.engines.dut).remote_reboot_nvue(topology_obj)
 
 
+@pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
+@pytest.mark.timeout(6 * MINUTE)
 def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:
@@ -173,21 +179,7 @@ def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
     assert res_obj.result, 'System reboot failed'
 
-    validate_reboot_reason_and_user(system, expected_reason, expected_user)
-
-
-@retry(Exception, tries=6, delay=10)
-def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
-    with allure.step("Check reboot reason event in system events"):
-        reboot_reason, reboot_user = OutputParsingTool.get_reboot_reason_and_user_from_system_events(system)
-
-        with allure.independent_step("Validate reboot reason"):
-            assert expected_reason in reboot_reason, \
-                f"Reboot reason is '{reboot_reason}' instead of expected '{expected_reason}'"
-
-        with allure.independent_step("Validate reboot user"):
-            assert expected_user in reboot_user, \
-                f"Reboot user is '{reboot_user}' instead of expected '{expected_user}'"
+    ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
 
 def _reboot_system_by_mode(engines, devices, test_name, topology_obj, mode):

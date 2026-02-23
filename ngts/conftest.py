@@ -196,6 +196,7 @@ def pytest_addoption(parser):
                      help='Store techsupport dump on test fail during manual run')
     parser.addoption("--ipv6_add", action="store", default=None, help="Provide static ipv6 address")
     parser.addoption("--skip_coredump_check", action="store_true", default=False, help="Skip coredump check fixture")
+    parser.addoption("--ib_router", action="store_true", default=False, help="a boolean parameter to force ib router configuration")
 
 
 def pytest_runtest_call(item):
@@ -889,6 +890,12 @@ def engines(topology_obj):
     return engines_data
 
 
+@pytest.fixture(scope='session')
+def is_in_mec(engines):
+    """Check if DUT is in MEC network (10.220.12.x)"""
+    return engines.dut.ip.startswith("10.220.12.")
+
+
 @pytest.fixture(scope='function', autouse=True)
 def test_name(request):
     """
@@ -1064,6 +1071,15 @@ def skynet(request):
     :return: True or False, if run is skynet type
     """
     return request.config.getoption('--skynet')
+
+
+@pytest.fixture(scope='session')
+def is_ib_router(request, engines):
+    """
+    Method for get ib_router value from pytest arguments
+    :return: True or False, if run is ib_router type
+    """
+    return request.config.getoption('--ib_router')
 
 
 @pytest.fixture

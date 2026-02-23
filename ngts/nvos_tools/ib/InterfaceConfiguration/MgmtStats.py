@@ -16,5 +16,6 @@ class MgmtStats(BaseComponent):
             dut_engine = TestToolkit.get_engine()
 
         with allure.step('Clear stats for {port_name}'.format(port_name=self.parent_obj.parent_obj.parent_obj.name)):
-            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].clear_stats,
-                                                   dut_engine, self.parent_obj.parent_obj.parent_obj.name, fae_param)
+            port_name = self.parent_obj.parent_obj.parent_obj.name
+            return SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_clear_counters,
+                                                   dut_engine, f'interface {port_name}', fae_param)

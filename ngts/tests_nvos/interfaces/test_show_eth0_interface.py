@@ -112,10 +112,10 @@ def test_ib_show_interface_ip(engines, test_api):
 
     with allure.step('IPV6 - Run show command on selected port and verify that each field has an appropriate '
                      'value according to the state of the port'):
-        output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+        output_dictionary_ipv6 = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
             mgmt_port.interface.ipv6.show()).get_returned_value()
 
-        validate_ip_fields(output_dictionary, ipv4=False)
+        validate_ip_fields(output_dictionary_ipv6, ipv4=False)
 
 
 def check_dhcp(mgmt_port, ipv4=True):

@@ -124,18 +124,19 @@ class TpmTool:
     def _get_sed_password(self, tpm_bank_context: str, device: BaseDevice):
         with allure.step('get sed password from tpm'):
             if self._require_tpm_pass(device):
-                return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}' -p {self.tpm_pass}")
+                hex_pass = self.tpm_pass.encode().hex()
+                return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}' -p 'hex:{hex_pass}'")
             return self.engine.run_cmd(f"sudo tpm2_unseal -c '{tpm_bank_context}'")
 
     def _store_sed_password(self, tpm_bank_context: str, sed_password: str, device: BaseDevice):
         with allure.step('store sed password in tpm bank'):
             self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c "{tpm_bank_context}" > /dev/null 2>&1')
             self.engine.run_cmd('sudo tpm2_createprimary -C o --key-algorithm=rsa --key-context=prim.ctx > /dev/null 2>&1')
-            self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -i - > /dev/null 2>&1')
+            tpm2_create_cmd = "sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx"
             if self._require_tpm_pass(device):
-                self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -p {self.tpm_pass} -i - > /dev/null 2>&1')
+                self.engine.run_cmd(f"echo '{sed_password}' | {tpm2_create_cmd} -p '{self.tpm_pass}' -i - > /dev/null 2>&1")
             else:
-                self.engine.run_cmd(f'echo "{sed_password}" | sudo tpm2_create -g sha256 -u seal.pub -r seal.priv -C prim.ctx -i - > /dev/null 2>&1')
+                self.engine.run_cmd(f"echo '{sed_password}' | {tpm2_create_cmd} -i - > /dev/null 2>&1")
             self.engine.run_cmd('sudo tpm2_load -C prim.ctx -u seal.pub -r seal.priv -n seal.name -c seal.ctx')
             self.engine.run_cmd(f'sudo tpm2_evictcontrol -C o -c seal.ctx "{tpm_bank_context}"')
             self.engine.run_cmd('sudo rm -f seal.* prim.ctx')

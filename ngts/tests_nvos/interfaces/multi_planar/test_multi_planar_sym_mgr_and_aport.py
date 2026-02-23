@@ -19,6 +19,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.interfaces.test_ib_interface_state import wait_for_port_state
 from ngts.tools.test_utils import allure_utils as allure
 # from ngts.tests_nvos.interfaces.test_ib_interface_counters import test_ib_clear_counters, test_clear_all_counters
@@ -46,7 +47,7 @@ def test_internal_fnm_ports(devices):
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fae_interface_commands(engines, devices, test_api, start_sm):
+def test_fae_interface_commands(engines, devices, test_api, start_sm, setup_name):
     """
     validate all show fae interface commands.
 
@@ -67,7 +68,7 @@ def test_fae_interface_commands(engines, devices, test_api, start_sm):
 
     with allure.step("Select random ports"):
         with allure.step("Select a random aggregated port and plane"):
-            selected_port, selected_fae_port, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(dut_device)
+            selected_port, selected_fae_port, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(dut_device, setup_name)
 
         with (allure.step("Select random external fnm port and fnm plane port")):
             selected_fae_fnm_port, selected_fae_fnm_plane_port = (
@@ -210,9 +211,9 @@ class AggregatedPortConfigBaseTest(ABC):
     POSSIBLE_VALUES = tuple()
 
     @classmethod
-    def test_config(cls, engines, devices, test_api, test_name):
+    def test_config(cls, engines, devices, test_api, test_name, setup_name):
         TestToolkit.tested_api = test_api
-        selected_aggregated_port, _, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(devices.dut)
+        selected_aggregated_port, _, selected_fae_plane_port = MultiPlanarTool.select_random_port_and_plane(devices.dut, setup_name)
         try:
             new_value = cls.set_config(devices.dut, selected_aggregated_port, selected_fae_plane_port)
             cls.assert_aggregation(selected_aggregated_port, selected_fae_plane_port, new_value)
@@ -295,28 +296,31 @@ class AggregatedPortConfigStateTest(AggregatedPortConfigBaseTest):
 #     AggregatedPortConfigIbSpeedTest.test_config(engines, devices, test_api, test_name)
 
 
+@pytest.mark.timeout(5 * MINUTE)
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_aggregated_port_config_op_vls(engines, devices, start_sm, test_api, test_name):
-    AggregatedPortConfigOpVlsTest.test_config(engines, devices, test_api, test_name)
+def test_aggregated_port_config_op_vls(engines, devices, start_sm, test_api, test_name, setup_name):
+    AggregatedPortConfigOpVlsTest.test_config(engines, devices, test_api, test_name, setup_name)
 
 
+@pytest.mark.timeout(5 * MINUTE)
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_aggregated_port_config_mtu(engines, devices, start_sm, test_api, test_name):
-    AggregatedPortConfigMtuTest.test_config(engines, devices, test_api, test_name)
+def test_aggregated_port_config_mtu(engines, devices, start_sm, test_api, test_name, setup_name):
+    AggregatedPortConfigMtuTest.test_config(engines, devices, test_api, test_name, setup_name)
 
 
+@pytest.mark.timeout(5 * MINUTE)
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_aggregated_port_config_state(engines, devices, start_sm, test_api, test_name):
-    AggregatedPortConfigStateTest.test_config(engines, devices, test_api, test_name)
+def test_aggregated_port_config_state(engines, devices, start_sm, test_api, test_name, setup_name):
+    AggregatedPortConfigStateTest.test_config(engines, devices, test_api, test_name, setup_name)
 
 
 @pytest.mark.interface
@@ -610,7 +614,7 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
+def test_symmetry_manager_log_and_tech_support(engines, devices, test_api, setup_name):
     """
     validate:
     - Configuring commands are logged to system log
@@ -626,7 +630,7 @@ def test_symmetry_manager_log_and_tech_support(engines, devices, test_api):
     system = System(devices_dut=dut_device)
 
     with allure.step("Select random aggregated port and plane port"):
-        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(dut_device)
+        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(dut_device, setup_name)
         selected_aggregated_port = Port(selected_fae_aggregated_port.port.name)
         selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,
                                                                            dut_device.num_of_plane_ports)

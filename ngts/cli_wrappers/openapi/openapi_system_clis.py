@@ -384,9 +384,8 @@ class OpenApiSystemCli(OpenApiBaseCli):
         logging.info(f"Run action delete on: {resource_path} using OpenApi")
         params = {"state": "start", "parameters": {}}
 
-        return OpenApiCommandHelper.execute_action(
-            ActionType.DELETE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
-        )
+        return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
     def action_upload_platform_certificate(engine, resource_path, remote_url):

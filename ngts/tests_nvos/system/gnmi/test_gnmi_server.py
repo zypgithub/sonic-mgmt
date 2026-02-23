@@ -122,13 +122,13 @@ def test_simulate_gnmi_server_failure(random_api, engines):
     TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
+    gnmi_table_name = "FEATURE|nv-gnmi"
+    docker_to_stop = "nv-gnmi"
     validate_gnmi_is_running_and_stream_updates(system, gnmi_server_obj, engines, engines.dut.ip)
 
     try:
         with allure.step('Simulate gnmi server failure'):
-            Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
-                                                 "auto_restart", "disabled")
-            engines.dut.run_cmd("docker stop gnmi-server")
+            engines.dut.run_cmd(f"docker stop {docker_to_stop}")
             validate_show_gnmi(gnmi_server_obj, engines, gnmi_state=GnmiConsts.GNMI_STATE_DISABLED)
             sleep_time_for_health_issue = 6
             logger.info(f"sleep {sleep_time_for_health_issue} seconds until the health output will be updated")
@@ -137,10 +137,8 @@ def test_simulate_gnmi_server_failure(random_api, engines):
             logger.info(f"{GnmiConsts.GNMI_DOCKER} appears in the health issues as we expect, "
                         f"after the gnmi-server failure")
     finally:
-        with allure.step('re-enable gnmi server'):
-            Tools.DatabaseTool.sonic_db_cli_hset(engines.dut, '', DatabaseConst.CONFIG_DB_NAME, "FEATURE|gnmi-server",
-                                                 "auto_restart", "enabled")
-            engines.dut.run_cmd("docker start gnmi-server")
+        with allure.step(f're-enable {docker_to_stop}'):
+            engines.dut.run_cmd(f"docker start {docker_to_stop}")
             gnmi_server_obj.disable_gnmi_server()
             gnmi_server_obj.enable_gnmi_server()
             logger.info("sleep 90 sec until validate stream updates")

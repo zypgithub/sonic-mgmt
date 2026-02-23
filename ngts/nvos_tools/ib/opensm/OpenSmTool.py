@@ -18,6 +18,8 @@ DOCA_OPEN_SM_PATH = "opensm"  # Doca opensm - executed directly via Doca, not th
 SM_MASTER_OPEN_SM_PATH = "/labhome/juliav/workspace/sm_regression/sources/SM_MASTER/usr/sbin/opensm"  # SM Master path
 OPEN_SM_CFG_PATH = "/auto/sw_system_project/NVOS_INFRA/verification/issu/opensm.cfg"
 MISSING_HFNM_MESSAGE = "HA and HFNM can't be found in topology"
+MISSING_HOST = "Host {} is missing from topology"
+GET_OPENSM_CMD = "ps aux | grep opensm"
 
 
 class OpenSmTool:
@@ -40,13 +42,7 @@ class OpenSmTool:
 
     @staticmethod
     def start_open_sm(engines=None, multiplanar=False):
-        """
-        Start OpenSM.
-
-        Args:
-            engines: The engines object containing dut and hfnm.
-            multiplanar: Whether to use multiplanar mode.
-        """
+        """Start OpenSM."""
         return OpenSmTool.start_open_sm_on_server(engines, multiplanar)
 
     @staticmethod
@@ -54,23 +50,36 @@ class OpenSmTool:
         return OpenSmTool.stop_open_sm_on_server(engines)
 
     @staticmethod
-    def start_open_sm_on_server(engines, multiplanar=False):
-        """
-        Start OpenSM if it's not running.
+    def _get_opensm_process_lines(output):
+        """Filter ps aux output to get only opensm process lines (excludes grep)."""
+        return [line for line in output.split('\n') if 'grep' not in line and line.strip()]
 
-        Args:
-            engines: The engines object containing dut and hfnm.
-            multiplanar: Whether to use multiplanar mode.
-        """
+    @staticmethod
+    def start_open_sm_on_server(engines, multiplanar=False):
+        """Start OpenSM if it's not running, or restart if wrong version is detected."""
         if not hasattr(engines, "hfnm"):
             logging.warning(MISSING_HFNM_MESSAGE)
             return ResultObj(False, MISSING_HFNM_MESSAGE)
 
         is_running, port_name = OpenSmTool.is_sm_running_on_server(engines)
 
+        # Determine desired opensm path
+        if OpenSmTool.OPENSM_PATH == DOCA_OPEN_SM_PATH:
+            desired_path = DOCA_OPEN_SM_PATH
+        elif multiplanar:
+            desired_path = OPEN_SM_PATH
+        else:
+            desired_path = OpenSmTool.OPENSM_PATH
+
         if is_running:
-            logging.info("Open SM is already running")
-            return ResultObj(True, "Open SM is already running")
+            running_path = OpenSmTool.get_running_opensm_path(engines)
+            if running_path is None or running_path == desired_path:
+                logging.info(f"OpenSM already running (path: {running_path})")
+                return ResultObj(True, "OpenSM is already running")
+            # Wrong version - restart
+            logging.warning(f"Wrong OpenSM version ({running_path}), restarting with {desired_path}")
+            OpenSmTool.stop_open_sm_on_server(engines)
+            time.sleep(2)
         else:
             OpenSmTool.stop_open_sm_on_server(engines)
 
@@ -92,17 +101,7 @@ class OpenSmTool:
                     engines.hfnm.run_cmd(
                         f"/opt/mellanox/iproute2/sbin/rdma dev add smi2 type SMI parent {port_name}")
 
-            # Determine opensm path:
-            # - Doca opensm takes precedence (for doca traffic systems)
-            # - For non-doca multiplanar, use UFM opensm
-            # - Otherwise use the configured OPENSM_PATH
-            if OpenSmTool.OPENSM_PATH == DOCA_OPEN_SM_PATH:
-                opensm_path = DOCA_OPEN_SM_PATH
-            elif multiplanar:
-                opensm_path = OPEN_SM_PATH
-            else:
-                opensm_path = OpenSmTool.OPENSM_PATH
-            logging.info(f"Using opensm path: {opensm_path}")
+            logging.info(f"Using opensm path: {desired_path}")
 
             output = engines.hfnm.run_cmd("ibstat {}".format(port_name))
             guid = ''
@@ -114,8 +113,8 @@ class OpenSmTool:
             if not guid:
                 return ResultObj(False, "Failed to find GUID to start OpenSM")
 
-        with (allure.step("Start OpenSM")):
-            engines.hfnm.run_cmd(f"{opensm_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
+        with allure.step("Start OpenSM"):
+            engines.hfnm.run_cmd(f"{desired_path} -F {OPEN_SM_CFG_PATH} -g {guid} -B")
             time.sleep(5)
 
         with allure.step("Verify OpenSM is running"):
@@ -128,32 +127,61 @@ class OpenSmTool:
                 logging.warning(MISSING_HFNM_MESSAGE)
                 return ResultObj(False, MISSING_HFNM_MESSAGE)
 
-            with allure.step("Get opensm process ids to stop"):
-                output = engines.hfnm.run_cmd(f"ps aux | grep opensm")
-                lines = [line for line in output.split('\n') if 'grep' not in line]
-                if not lines:
-                    return ResultObj(True, "No opensm processes")
+            OpenSmTool.stop_open_sm_process_on_engine(engines.hfnm)
+            return ResultObj(True, "OpenSM stopped successfully")
 
-            with allure.step("Stop open sm process"):
-                process_ids = [line.split()[1] for line in lines]
-                cmd = "sudo kill -9"
-                for process_id in process_ids:
-                    cmd += f" {process_id}"
-                output = engines.hfnm.run_cmd(cmd)
-                return ResultObj(True, info=output)
         except BaseException as ex:
-            logging.error("Failed to stop opensm")
-            return False, 0
+            logging.error(f"Failed to stop opensm: {ex}")
+            return ResultObj(False, f"Failed to stop opensm: {ex}")
 
     @staticmethod
-    def is_sm_running_on_server(engines):
+    def stop_open_sm_on_non_fnm_hosts(engines, hosts_nicknames):
+        """
+        go over each host nickname - aka ha, hb and so on and kill openSM if its active on it
+        """
+        try:
+            for host_nickname in hosts_nicknames:
+                if not hasattr(engines, host_nickname):
+                    logging.warning(MISSING_HOST.format(host_nickname))
+                    return ResultObj(False, MISSING_HOST.format(host_nickname))
+
+                host_engine = getattr(engines, host_nickname)
+                OpenSmTool.stop_open_sm_process_on_engine(host_engine)
+
+        except BaseException as ex:
+            logging.error(f"Failed to stop opensm with error: {ex}")
+            return False, 0
+        return ResultObj(True)
+
+    @staticmethod
+    def stop_open_sm_process_on_engine(engine):
+        """Stop openSM process on given host engine if running."""
+        with allure.step(f"Stop opensm on {engine.ip}"):
+            output = engine.run_cmd(GET_OPENSM_CMD)
+            lines = OpenSmTool._get_opensm_process_lines(output)
+            if not lines:
+                logging.info(f"No opensm processes on {engine.ip}")
+                return
+
+            pids = [line.split()[1] for line in lines if len(line.split()) >= 2]
+            if pids:
+                engine.run_cmd("sudo kill -9 " + " ".join(pids))
+                logging.info(f"Killed SM processes {pids} on {engine.ip}")
+
+    @staticmethod
+    def is_sm_running_on_server(engines, host_nickname=None):
+        """
+        check on fnm host if it runs openSM
+        @param host_nickname - allows to override fnm host with another, for example 'ha' nickname
+        """
+        host_nickname = IbConsts.HFNM if not host_nickname else host_nickname
         with allure.step("Check if OpenSM is running on a server"):
             # check if open sm process is currently running
-            output = engines.hfnm.run_cmd(f"ps aux | grep opensm")
-            lines = [line for line in output.split('\n') if 'grep' not in line]
+            output = engines[host_nickname].run_cmd(GET_OPENSM_CMD)
+            lines = OpenSmTool._get_opensm_process_lines(output)
 
             # check if port is up
-            output = engines.hfnm.run_cmd("ibdev2netdev")
+            output = engines[host_nickname].run_cmd("ibdev2netdev")
             is_up = "(Up)" in output
             port_name = output.split()[0]
 
@@ -163,6 +191,27 @@ class OpenSmTool:
             return is_running, port_name
 
     @staticmethod
-    def verify_open_sm_is_running_on_server(engines):
-        is_running, port_name = OpenSmTool.is_sm_running_on_server(engines)
+    def get_running_opensm_path(engines, host_nickname=None):
+        """Detect which OpenSM binary is currently running."""
+        host_nickname = IbConsts.HFNM if not host_nickname else host_nickname
+        if not hasattr(engines, host_nickname):
+            return None
+
+        output = engines[host_nickname].run_cmd(GET_OPENSM_CMD)
+        lines = OpenSmTool._get_opensm_process_lines(output)
+        if not lines:
+            return None
+
+        # Check for known paths, otherwise assume DOCA (no path prefix)
+        for path in [SM_MASTER_OPEN_SM_PATH, OPEN_SM_PATH]:
+            if path in output:
+                return path
+        return DOCA_OPEN_SM_PATH
+
+    @staticmethod
+    def verify_open_sm_is_running_on_server(engines, host_nickname=None):
+        """
+        @param host_nickname - allows to override fnm host with another, for example 'ha' nickname
+        """
+        is_running, port_name = OpenSmTool.is_sm_running_on_server(engines, host_nickname)
         return is_running

@@ -44,6 +44,21 @@ class CurlCmdBuilder:
         self.options += f" -H 'Content-Type: application/json' -d '{json.dumps(payload, separators=(',', ':'))}'"
         return self
 
+    def header(self, header_name: str, header_value: str) -> 'CurlCmdBuilder':
+        """Add a custom HTTP header."""
+        self.options += f" -H '{header_name}: {header_value}'"
+        return self
+
+    def output_file(self, file_path: str) -> 'CurlCmdBuilder':
+        """Redirect output body to file using -o option."""
+        self.options += f' -o {file_path}'
+        return self
+
+    def dump_header(self, file_path: str) -> 'CurlCmdBuilder':
+        """Dump protocol headers to file using -D option."""
+        self.options += f' -D {file_path}'
+        return self
+
     def param(self, param_name: str, param_val) -> 'CurlCmdBuilder':
         self.parameters.append(f'{param_name}={param_val}')
         return self

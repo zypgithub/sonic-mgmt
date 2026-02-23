@@ -19,19 +19,21 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
 
 @pytest.mark.eth0
 @pytest.mark.system
+@pytest.mark.timeout(4 * MINUTE, func_only=True)
 def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
     """
     Connect via serial port, verify eth0 enable by default, can be disabled and enable it back
 
     flow:
     1. Verify eth0 is up and can ping
-    2. Disable interface, check it’s down and not reachable
+    2. Disable interface, check it's down and not reachable
     3. Negative test it  with random value and verify error
     4. Unset it back and verify
     """
@@ -39,22 +41,22 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
     try:
         mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
         mgmt_port = Port(mgmt_port_name)
-        serial_engine = topology_obj.players['dut_serial']['engine']
         with allure.step('Run show command on mgmt port and verify that each field has an appropriate value'):
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                mgmt_port.interface.link.show()).get_returned_value()
+                mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=IbInterfaceConsts.LINK_STATE,
                                                               expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
         with allure.step('Negative validation'):
-            mgmt_port.interface.link.state.set(op_param_name='invalid_value', apply=False).verify_result(False)
+            mgmt_port.interface.link.state.set(op_param_name='invalid_value', apply=False,
+                                               dut_engine=serial_engine).verify_result(False)
 
             logger.info('Check port status, should be up')
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                mgmt_port.interface.link.show()).get_returned_value()
+                mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=IbInterfaceConsts.LINK_STATE,
@@ -80,18 +82,19 @@ def test_interface_eth0_enable_disable(engines, topology_obj, serial_engine):
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
 
             output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-                mgmt_port.interface.link.show()).get_returned_value()
+                mgmt_port.interface.link.show(dut_engine=serial_engine)).get_returned_value()
 
             Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                               field_name=IbInterfaceConsts.LINK_STATE,
                                                               expected_value=NvosConsts.LINK_STATE_UP).verify_result()
 
 
+@pytest.mark.timeout(8 * MINUTE, func_only=True)
 @pytest.mark.cumulus
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
-def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
+def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj, serial_engine, is_in_mec):
     """
     Verify speed, duplex, autoneg configuration parameters can be changed
 
@@ -168,11 +171,17 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj):
     with allure.step('Set autoneg to off'):
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value=AutoNegotiateConsts.State.DISABLED.value, apply=True,
                                      ask_for_confirmation=True).verify_result()
-        Port.wait_for_port_state(mgmt_port, "up")
-        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, AutoNegotiateConsts.State.DISABLED.value)
+        if is_in_mec:
+            # Port is down, use serial to verify and re-enable
+            wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, AutoNegotiateConsts.State.DISABLED.value, dut_engine=serial_engine)
+        else:
+            Port.wait_for_port_state(mgmt_port, "up")
+            wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_AUTO_NEGOTIATE, AutoNegotiateConsts.State.DISABLED.value)
 
     with allure.step('Run show command on mgmt port and verify default values after unset'):
-        mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True).verify_result()
+        # Use serial to unset if port is down on MEC network
+        mgmt_port.interface.link.unset(op_param=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, apply=True, ask_for_confirmation=True,
+                                       dut_engine=serial_engine if is_in_mec else None).verify_result()
         check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
         Port.wait_for_port_state(mgmt_port, "up")
 
@@ -775,7 +784,7 @@ def validate_dhcp_option_60_tcpdump(dut, mgmt_port_name, regex):
     assert False, "Vendor-Class Identifier (Option 60) not found in dhcp packets"
 
 
-@retry(Exception, tries=2, delay=2)
+@retry(Exception, tries=6, delay=5)
 def validate_interface_ip_address(address, output_dictionary, validate_in=True):
     """
 
@@ -808,135 +817,88 @@ def wait_for_hostname_changed(system, dhcp_hostname):
 
 
 @retry(Exception, tries=25, delay=2)
-def wait_for_param_changed(port_obj, param, param_to_verify):
+def wait_for_param_changed(port_obj, param, param_to_verify, dut_engine=None):
     with allure.step(f"Waiting for {param} changed to {param_to_verify}"):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            port_obj.interface.link.show()).get_returned_value()
+            port_obj.interface.link.show(dut_engine=dut_engine)).get_returned_value()
         current_param = output_dictionary[f'{param}']
         assert current_param == param_to_verify, f"Current {current_param} is not as expected {param_to_verify}"
 
 
 @pytest.mark.eth0
 @pytest.mark.system
+@pytest.mark.timeout(8 * MINUTE, func_only=True)
 def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
     """
-    Verify eth0 interface configuration persists and is properly displayed after system reboot
+    Verify eth0 interface is properly displayed after reboot with saved static IP config.
 
     flow:
-    1. Verify default eth0 interface configuration and IP address
-    2. Disable DHCP client and configure static IP address
-    3. Save configuration to persistent storage
-    4. Reboot the system
-    5. Verify eth0 interface is properly displayed in show commands after reboot
-    6. Verify interface appears in LLDP show output after reboot
-    7. Restore original DHCP configuration
+    1. Disable DHCP, set static IP, save config
+    2. Reboot the system
+    3. Verify eth0 appears in interface show and lldp show
+    4. Restore DHCP configuration
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     logger.info(f"mgmt port: {mgmt_port_name}")
     mgmt_port = Port(mgmt_port_name)
+
     try:
-        with allure.step('Run show command on mgmt port and verify default description'):
-            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+        with allure.step('Get current IP address'):
+            ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
-            validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
-            switch_ip = [ip for ip in output_dictionary['address'].keys() if engines.dut.ip in ip][0]
-        with allure.step('Disable dhcp, check mgmt port unreachable'):
-            mgmt_port.interface.ipv4.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
-            with allure.step('Check port status, should be down'):
-                check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
-            with allure.step('Verify no static ip'):
-                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ipv4.show(dut_engine=serial_engine)).get_returned_value()
-                assert switch_ip not in output['address'].keys(), f"Static ip {switch_ip} found in interface ip address show"
-        with allure.step('Set static ip'):
-            mgmt_port.interface.ipv4.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
-            with allure.step('Verify static ip'):
-                serial_engine.serial_engine.sendline(f"nv show interface {mgmt_port_name}")
-                serial_engine.serial_engine.expect(switch_ip, timeout=120)
-            with allure.step('Save config'):
-                NvueGeneralCli.save_config(engine=serial_engine)
-        with allure.step('Reboot switch'):
-            system = System()
-            system.reboot.action_reboot()
-        with allure.step('Reconnect to serial'):
-            serial_engine.login_to_switch()
-        with allure.step('Verify mgmt eth interface is shown'):
-            interface = Interface(None)
-            with allure.step('Verify interface'):
-                output = list(filter(lambda x: mgmt_port_name in x, interface.show(dut_engine=serial_engine).splitlines()))
-                assert output, f"Mgmt port {mgmt_port_name} not found in interface show"
-            with allure.step('Verify interface lldp'):
-                output = list(filter(lambda x: mgmt_port_name in x, interface.lldp.show(dut_engine=serial_engine).splitlines()))
-                assert output, f"Mgmt port {mgmt_port_name} not found in interface lldp show"
+            validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
+            switch_ip = [ip for ip in ipv4_output['address'] if engines.dut.ip in ip][0]
+
+        with allure.step('Disable DHCP and set static IP'):
+            mgmt_port.interface.ipv4.dhcp_client.set(
+                op_param_name='state', op_param_value='disabled',
+                dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+            mgmt_port.interface.ipv4.address.set(
+                op_param_name=switch_ip, dut_engine=serial_engine,
+                apply=True, ask_for_confirmation=True).verify_result()
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+
+        with allure.step('Verify static IP, save and reboot'):
+            retry_call(lambda: validate_interface_ip_address(
+                switch_ip, Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                    mgmt_port.interface.ipv4.show()).get_returned_value(), True),
+                tries=10, delay=2)
+            NvueGeneralCli.save_config(engine=engines.dut)
+            System().reboot.action_reboot()
+            _reconnect_serial(serial_engine)
+
+            with allure.step('Wait for system to become ready after reboot'):
+                retry_call(lambda: mgmt_port.interface.ipv4.show(dut_engine=serial_engine),
+                           tries=60, delay=5)
+
+            with allure.step('Verify mgmt interface shown after reboot'):
+                interface = Interface(None)
+                assert mgmt_port_name in interface.show(dut_engine=serial_engine), \
+                    f"Mgmt port {mgmt_port_name} not found in interface show"
+                assert mgmt_port_name in interface.lldp.show(dut_engine=serial_engine), \
+                    f"Mgmt port {mgmt_port_name} not found in interface lldp show"
+
     finally:
-        with allure.step('Unset ipv4 and dhcp and check port reachable'):
-            mgmt_port.interface.ipv4.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
-            with allure.step('Check port status and verify default description'):
-                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
-                if is_bug_active(4569345):
-                    time.sleep(2)
-                output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                    mgmt_port.interface.ipv4.show()).get_returned_value()
-                validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
+        with allure.step('Restore DHCP configuration'):
+            _reconnect_serial(serial_engine)
+            mgmt_port.interface.ipv4.unset(
+                dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
+            ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ipv4.show()).get_returned_value()
+            validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
+            NvueGeneralCli.save_config(engine=serial_engine)
 
 
-@pytest.mark.eth0
-@pytest.mark.system
-def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
-    """
-    Verify eth0 interface configuration persists and is properly displayed after system reboot
-
-    flow:
-    1. Verify default eth0 interface configuration and IP address
-    2. Disable DHCP client and configure static IP address
-    3. Save configuration to persistent storage
-    4. Reboot the system
-    5. Verify eth0 interface is properly displayed in show commands after reboot
-    6. Verify interface appears in LLDP show output after reboot
-    7. Restore original DHCP configuration
-    """
-    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    logger.info(f"mgmt port: {mgmt_port_name}")
-    mgmt_port = Port(mgmt_port_name)
+def _reconnect_serial(serial_engine):
+    """Close stale serial connection and create a fresh one."""
     try:
-        with allure.step('Run show command on mgmt port and verify default description'):
-            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                mgmt_port.interface.ipv4.show()).get_returned_value()
-            validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
-            switch_ip = [ip for ip in output_dictionary['address'].keys() if engines.dut.ip in ip][0]
-        with allure.step('Disable dhcp, check mgmt port unreachable'):
-            mgmt_port.interface.ipv4.dhcp_client.set(op_param_name='state', op_param_value='disabled', dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
-            with allure.step('Check port status, should be down'):
-                check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
-            with allure.step('Verify no static ip'):
-                output = OutputParsingTool.parse_show_output_to_dict(mgmt_port.interface.ipv4.show(dut_engine=serial_engine)).get_returned_value()
-                assert switch_ip not in output['address'].keys(), f"Static ip {switch_ip} found in interface ip address show"
-        with allure.step('Set static ip'):
-            mgmt_port.interface.ipv4.address.set(op_param_name=switch_ip, apply=True, ask_for_confirmation=True, dut_engine=serial_engine).verify_result()
-            with allure.step('Verify static ip'):
-                serial_engine.serial_engine.sendline(f"nv show interface {mgmt_port_name}")
-                serial_engine.serial_engine.expect(switch_ip, timeout=120)
-            with allure.step('Save config'):
-                NvueGeneralCli.save_config(engine=serial_engine)
-        with allure.step('Reboot switch'):
-            system = System()
-            system.reboot.action_reboot()
-        with allure.step('Reconnect to serial'):
-            serial_engine.login_to_switch()
-        with allure.step('Verify mgmt eth interface is shown'):
-            interface = Interface(None)
-            with allure.step('Verify interface'):
-                output = list(filter(lambda x: mgmt_port_name in x, interface.show(dut_engine=serial_engine).splitlines()))
-                assert output, f"Mgmt port {mgmt_port_name} not found in interface show"
-            with allure.step('Verify interface lldp'):
-                output = list(filter(lambda x: mgmt_port_name in x, interface.lldp.show(dut_engine=serial_engine).splitlines()))
-                assert output, f"Mgmt port {mgmt_port_name} not found in interface lldp show"
-    finally:
-        with allure.step('Unset ipv4 and dhcp and check port reachable'):
-            mgmt_port.interface.ipv4.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
-            with allure.step('Check port status and verify default description'):
-                check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
-                if is_bug_active(4569345):
-                    time.sleep(2)
-                output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
-                    mgmt_port.interface.ipv4.show()).get_returned_value()
-                validate_interface_ip_address(engines.dut.ip, output_dictionary, True)
+        if serial_engine.serial_engine is not None:
+            if serial_engine.serial_engine.logfile:
+                serial_engine.serial_engine.logfile.close()
+            serial_engine.serial_engine.close()
+    except (OSError, IOError):
+        pass
+    serial_engine.serial_engine = None
+    serial_engine.create_serial_engine(disconnect_existing_login=True)

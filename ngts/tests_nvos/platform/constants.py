@@ -39,7 +39,7 @@ class TransceiversConsts:
                            'voltage'],
         TRANSCEIVERS_OE: ['channel', 'diagnostics-status', 'dp-fw-fault', 'els-mapping', 'error-status', 'fw-version',
                           'identifier', 'mod-fw-fault', 'port-mapping', 'status', 'temperature', 'vendor-date-code',
-                          'vendor-name', 'vendor-pn', 'vendor-rev', 'vendor-sn', 'voltage'],
+                          'vendor-name', 'vendor-pn', 'voltage'],
         TRANSCEIVERS_SW: ['cable-length', 'cable-type', 'diagnostics-status', 'dp-fw-fault', 'error-status',
                           'fw-version', 'identifier', 'mod-fw-fault', 'status', 'vendor-date-code', 'vendor-name',
                           'vendor-pn', 'vendor-rev', 'vendor-sn']

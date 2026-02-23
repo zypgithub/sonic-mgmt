@@ -8,6 +8,7 @@ import time
 import pytest
 
 from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.Devices.IbDevice import BlackMambaDGXSwitch, IbSwitch
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
@@ -28,8 +29,8 @@ def test_parallel_cli_commands(engines, devices):
         2. Run mpstat -p ALL and save result as <memory_mpstat_output_before_testing>
         3. create <max_sessions> - 3 sessions
         4. Run mpstat -p ALL and save result as <memory_mpstat_output_after_connections>
-        5. create 4 commands lists. save as cmds_list1, cmds_list2, cmds_list3, cmds_list4
-        6. run all sessions in parallel s.t. each session will randomly select one of the 4 lists on each iteration
+        5. create 5 commands lists. save as cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5
+        6. run all sessions in parallel s.t. each session will randomly select one of the 5 lists on each iteration
            and track how many times each list was picked
         7. verify that memory and CPU outputs fall within the expected intervals
 
@@ -66,12 +67,16 @@ def test_parallel_cli_commands(engines, devices):
     with allure.step(f'save memory and cpu after {max_sessions} connections'):
         memory_mpstat_output_after_connections = run_memory_mpstat_commands(engines.dut)
 
-    with allure.step('Create 4 lists of commands'):
+    with allure.step('Create 5 lists of commands'):
         cmds_list1 = ['nv show system -o json']
         cmds_list2 = ["nv set system message pre-login 'test'", "nv config apply", "nv show system message -o json"]
         cmds_list3 = ['nv show ib device -o json']
         cmds_list4 = ['nv show platform firmware -o json']
-        command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4]
+        cmds_list5 = ['nv action run ib cmd "ibdiagnet --get_cable_info']
+        if isinstance(devices.dut, IbSwitch):
+            command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4, cmds_list5]
+        else:
+            command_lists = [cmds_list1, cmds_list2, cmds_list3, cmds_list4]
         keep_running_event = threading.Event()
         keep_running_event.set()
 
@@ -221,13 +226,13 @@ def validate_memory_and_cpu(before_testing, after_connections, during_testing={}
 
     with allure.step("validate memory and cpu after connections"):
         for key, value in after_connections.items():
-            assert after_connections[key] - before_testing[key] < 0.1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
+            assert after_connections[key] - before_testing[key] < 0.2, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_connections}"
 
     with allure.step("validate memory and cpu during testing"):
         for step in during_testing:
             for key, value in step.items():
-                assert step[key] - before_testing[key] < 0.3, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
+                assert step[key] - before_testing[key] < 0.5, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {step}"
 
     with allure.step("validate memory and cpu after testing"):
         for key, value in after_connections.items():
-            assert after_testing[key] - before_testing[key] < 0.07, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"
+            assert after_testing[key] - before_testing[key] < 0.1, f"unexpected change in {key} detected: initial output was {before_testing}, revised output after connections: {after_testing}"

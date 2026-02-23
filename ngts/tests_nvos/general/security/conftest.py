@@ -191,30 +191,34 @@ def local_adminuser(engines, devices) -> UserInfo:
     return adminuser
 
 
-@pytest.fixture(scope='session', autouse=False)
+@pytest.fixture(scope="session", autouse=False)
 def prepare_scp(engines, devices):
     """
-    @summary: Upload a dummy text file to the switch, that will be used in tests for scp verification
+    @summary: Ensure SCP test files exist on the switch for verification.
+    Checks if files exist and only creates them if missing.
     """
-    admin_monitor_mutual_group = 'adm'
+    admin_monitor_mutual_group = "adm"
     admins_group = devices.dut.get_admins_group()
 
-    logging.info('Prepare directory for admin users only')
-    engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_ADMINS_DIR}')
-    engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'chgrp -R {admins_group} {AuthConsts.SWITCH_ADMINS_DIR}')
-    engines.dut.run_cmd(f'chmod -R 770 {AuthConsts.SWITCH_ADMINS_DIR}')
+    # Check and prepare directory for admin users only
+    result = engines.dut.run_cmd(f"test -f {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE} && echo exists")
+    if "exists" not in result:
+        logging.info("Prepare directory for admin users only")
+        engines.dut.run_cmd(f"mkdir -p {AuthConsts.SWITCH_ADMINS_DIR}")
+        engines.dut.run_cmd(f'echo "SCP test content" > {AuthConsts.SWITCH_ADMIN_SCP_DOWNLOAD_TEST_FILE}')
+        engines.dut.run_cmd(f"chgrp -R {admins_group} {AuthConsts.SWITCH_ADMINS_DIR}")
+        engines.dut.run_cmd(f"chmod -R 770 {AuthConsts.SWITCH_ADMINS_DIR}")
 
-    logging.info('Prepare non-privileged directory')
-    engines.dut.run_cmd(f'mkdir -p {AuthConsts.SWITCH_MONITORS_DIR}')
-    engines.dut.run_cmd(f'echo "Alon The King" > {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
-    engines.dut.run_cmd(f'sudo chgrp -R {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}')
-    engines.dut.run_cmd(f'chmod -R 770 {AuthConsts.SWITCH_MONITORS_DIR}')
+    # Check and prepare non-privileged directory
+    result = engines.dut.run_cmd(f"test -f {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE} && echo exists")
+    if "exists" not in result:
+        logging.info("Prepare non-privileged directory")
+        engines.dut.run_cmd(f"mkdir -p {AuthConsts.SWITCH_MONITORS_DIR}")
+        engines.dut.run_cmd(f'echo "SCP test content" > {AuthConsts.SWITCH_MONITOR_SCP_DOWNLOAD_TEST_FILE}')
+        engines.dut.run_cmd(f"sudo chgrp -R {admin_monitor_mutual_group} {AuthConsts.SWITCH_MONITORS_DIR}")
+        engines.dut.run_cmd(f"chmod -R 770 {AuthConsts.SWITCH_MONITORS_DIR}")
 
     yield
-
-    logging.info('Clean scp test files')
-    engines.dut.run_cmd(f'rm -rf {AuthConsts.SWITCH_SCP_TEST_DIR}')
 
 
 @pytest.fixture(scope='session')

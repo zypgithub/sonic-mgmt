@@ -87,7 +87,6 @@ def test_range_clear_counters_negative(engines, players, interfaces, start_sm, r
 
 
 @pytest.mark.ib_interfaces
-# todo openapi - need to implement OpenApiIbInterfaceCli.clear_stats
 def test_range_clear_counters_positive(engines, devices, players, interfaces, start_sm, setup_name, fae_param=""):
     """
     verify all these commands fail with the right error message.

@@ -34,8 +34,6 @@ class Counters(BaseComponent):
 
         with allure.step('Clear counters for {port_name}'.format(port_name=port_name)):
             try:
-                # Build resource path: "interface <port_name>" for NVUE or "interface/<port_name>/counters" for OpenAPI
-                # The action_clear_counters function expects the resource path
                 resource_path = f'interface {port_name}'
                 result_obj = SendCommandTool.execute_command(
                     self.api_obj[TestToolkit.tested_api].action_clear_counters,

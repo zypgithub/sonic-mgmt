@@ -36,6 +36,13 @@
     - Affected_test_cases:
       - tests_nvos
 
+# NVOS - mst_pci out-of-tree module warning (known benign, applies to all nvos tests). ref: http://nvbugspro.nvidia.com/bug/5884401
+- Errors_list:
+    - '.*WARNING kernel: \[.*\] mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos
+
 - Errors_list:
     - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
     - '.* ERR watchdogutil: Failed to get watchdog module'
@@ -1257,6 +1264,14 @@
     - Affected_test_cases:
       - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
 
+# NVOS - expected errors during simulating docker health issue - lldp
+- Errors_list:
+    - '.*ERR health-statsd#health_history: lldp:lldpd: Process .*lldpd.* in container .*lldp.* is not running.*'
+    - '.*ERR health-statsd#health_history: lldp:lldpmgrd: Process .* in container .*lldp.* is not running.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos/system/test_system_health.py::test_simulate_health_problem_with_docker_stop
+
 # NVOS
 - Errors_list:
     - '.*failed to get COUNTERS_PORT_NAME_MAP with: Unable to connect to redis: Cannot assign requested address.*'
@@ -1498,12 +1513,15 @@
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_server_unreachable[NVUE-BadFlow]
         - tests_nvos/general/security/tacacs/test_aaa_tacacs.py::test_tacacs_server_unreachable[OpenApi-BadFlow]
 
-# NVOS ldap bad flow
+# NVOS ldap bad flow. ref: https://redmine.mellanox.com/issues/4793639
 - Errors_list:
     - '.*WARNING systemd\[1\]: nvued\.service: Failed with result.*'
     - '.*WARNING nslcd\[\d+\]: \[\w+\].*Invalid credentials.*'
     - '.*ERR nslcd\[\d+\]: \[\w+\].*no available LDAP server found.*'
     - '.*WARNING nslcd\[\d+\]: \[\w+\].*ldap_start_tls_s\(\) failed.*Connect error.*The TLS connection was non-properly terminated.*'
+    - '.*gunicorn\[\d+\]:.*File "\/usr\/lib\/python.*\/dist-packages\/gunicorn\/glogging\.py".*in warning.*'
+    - '.*gunicorn\[\d+\]:.*self\.error_log\.warning\(msg,.*'
+    - '.*gunicorn\[\d+\]:.*File "\/usr\/lib\/python.*\/logging\/__init__\.py".*in warning.*'
   Conditions:
     - Affected_test_cases:
         - tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_auth[ipv4-NVUE-BadFlow]
@@ -2249,4 +2267,36 @@
   Conditions:
     - Redmine:
         - 4735499
+# --------------------------------------------------
+
+- Errors_list:
+    - '.*ERR nvued:.*ERROR:.*translated.py.*failed to get cleared stats Working outside of request context.*'
+  Conditions:
+    - Redmine:
+        - 4735499
+
+# NVOS - IB port state change warnings with null VID translation
+# These WARNING messages occur during port state changes when the port RID cannot be translated to a VID.
+# This is a known issue that will not be fixed (status: Won't fix).
+# The warnings appear for multiple syncd-ibv instances (ibv00, ibv01, ibv02, ibv03) and related multicast join failures.
+- Errors_list:
+    - '.*WARNING syncd-ibv\d+#SDK: :- process_on_port_state_change: Port RID oid:0x\w+ transalted to null VID!!!.*'
+    - '.*WARNING syncd-ibv\d+#SDK: :- process_on_port_logical_state_change: Port RID oid:0x\w+ transalted to null VID!!!.*'
+    - '.*WARNING syncd-ibv\d+#SDK: :- process_on_port_sdn_admin_state_change: Port RID oid:0x\w+ transalted to null VID!!!.*'
+    - '.*WARNING kernel:.*ib\d+: multicast join failed for.*status -22.*'
+  Conditions:
+    - Redmine:
+        - 4486721
+
+# NVOS - Expected errors during ELS (External Laser Source) unplug/plug tests
+# During ELS unplug/plug events, PMPE (Port Module Plug Event) errors are expected when transceivers are physically removed/inserted.
+# The "No ports mapped to ELS" error occurs when checking unmapped ELS instances during the test.
+- Errors_list:
+    - '.*ERR pmon#xcvrd: SFP index \d+ got PMPE error None with error code \d+.*'
+    - '.*ERR els_fiber_tuning: No ports mapped to ELS els\d+.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/platform/test_platform_els_fiber_tuning.py::test_els_unplug_plug_event
+    - Redmine:
+        - 4710115
 # --------------------------------------------------

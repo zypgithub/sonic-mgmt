@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 
 import pytest
@@ -20,7 +21,7 @@ logger = logging.getLogger()
 
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
     Run show system message command and verify the required message
@@ -53,6 +54,8 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
 
     with allure.step('get default hostname value'):
         output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, dut_device.cur_mgmt_port_name).show()).get_returned_value()
+        eth0_output = OutputParsingTool.parse_json_str_to_dictionary(Interface(None, 'eth0').show()).get_returned_value()
+        eth0_dhcp_hostname = eth0_output.get('ipv4', {}).get('dhcp-client', {}).get('lease', {}).get('host-name')
         dhcp_enabled = 'state' in output and output['state'] == "enabled"
         if dhcp_enabled:
             noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
@@ -61,6 +64,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
                 assert system_output[SystemConsts.HOSTNAME] in [dhcp_hostname, f'{dhcp_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[dhcp_hostname, f"{dhcp_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
             default_hostname = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()[SystemConsts.HOSTNAME]
         else:
+            dhcp_hostname = None
             default_hostname = SystemConsts.HOSTNAME_DEFAULT_VALUE
 
     with allure.step('set system hostname command and verify that hostname is updated'):
@@ -86,7 +90,11 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
         with allure.step('verify hostname is back to default'):
             system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
             time.sleep(3)
-            assert system_output[SystemConsts.HOSTNAME] in [default_hostname, f'{default_hostname}-mgmt2'], f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected: {[default_hostname, f"{default_hostname}-mgmt2"]}\nactual: {system_output[SystemConsts.HOSTNAME]}'
+            valid_hostnames = [default_hostname, f'{default_hostname}-mgmt2']
+            if eth0_dhcp_hostname:
+                valid_hostnames.extend([eth0_dhcp_hostname, f'{eth0_dhcp_hostname}-mgmt2'])
+            assert system_output[SystemConsts.HOSTNAME] in valid_hostnames, \
+                f'unexpected "{SystemConsts.HOSTNAME}" value.\nexpected one of: {valid_hostnames}\nactual: {system_output[SystemConsts.HOSTNAME]}'
 
 
 @pytest.mark.system

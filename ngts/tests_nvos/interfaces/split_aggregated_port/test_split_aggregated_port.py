@@ -41,7 +41,7 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
     system = System(None)
 
     with allure_step("Select random aggregated port and validate planarized ports"):
-        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(devices.dut)
+        selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(devices.dut, setup_name)
         fae_interface_output = OutputParsingTool.parse_show_interface_output_to_dictionary(
             selected_fae_aggregated_port.port.interface.show()).get_returned_value()
         # [TBD] doesn't work on simulation, need to verify on real system

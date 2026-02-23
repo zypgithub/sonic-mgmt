@@ -33,9 +33,12 @@ requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 logger = logging.getLogger()
 
 
+LARGE_CONFIG_APPLY_TIMEOUT = 600    # 10 minutes - for large configs (e.g., 30K ACL rules)
+
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def cleanup_pending_config(engines):
     """
@@ -1220,8 +1223,8 @@ def test_patch_30k_acl_prefixes_performance(engines, random_api):
     TestToolkit.tested_api = random_api
     acl_name = 'test_30k_acl'
     num_rules = 30000
-    # Apply timeout: 10 minutes (600 seconds) for large config
-    APPLY_TIMEOUT = 600
+    # Use large config timeout for 30K ACL rules
+    APPLY_TIMEOUT = LARGE_CONFIG_APPLY_TIMEOUT
 
     try:
         with allure.step(f'Generate 30K ACL rules with unique IP prefixes'):
@@ -1268,43 +1271,16 @@ def test_patch_30k_acl_prefixes_performance(engines, random_api):
                     start_time = time.time()
                     start_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
 
-                    logger.info(f"Starting patch operation at {start_timestamp}")
+                    logger.info(f"Starting patch+apply operation at {start_timestamp}")
                     logger.info(f"This may take several minutes for 30K rules...")
-                    logger.info(f"Using apply timeout: {APPLY_TIMEOUT} seconds (10 minutes)")
 
-                    # Step 1: Patch without apply (create revision only)
-                    logger.info(f"Step 1: Creating config revision via patch...")
-                    result_obj = TestToolkit.GeneralApi[random_api].config_patch(
-                        engines.dut,
-                        filepath,
-                        apply=False  # Don't apply yet - we'll do it manually with timeout
+                    # Use same pattern as all other tests in this file
+                    # Pass APPLY_TIMEOUT for large config operations
+                    result_obj = TestToolkit.GeneralApi[TestToolkit.tested_api].config_patch(
+                        engines.dut, filepath, apply=True, apply_timeout=APPLY_TIMEOUT
                     )
                     result_obj.verify_result()
-                    logger.info("✓ Config revision created successfully")
-
-                    # Step 2: Apply with explicit Linux timeout command to enforce timeout at OS level
-                    logger.info(f"Step 2: Applying config with {APPLY_TIMEOUT}s timeout using Linux timeout command...")
-
-                    # Use Linux timeout command to enforce timeout (bypasses SSH engine limitations)
-                    # timeout command format: timeout <seconds> <command>
-                    # --preserve-status: return the command's exit status
-                    apply_cmd = f'timeout --preserve-status {APPLY_TIMEOUT} bash -c "echo y | nv config apply"'
-
-                    try:
-                        apply_output = engines.dut.run_cmd(apply_cmd)
-                        logger.info(f"Apply output: {apply_output}")
-
-                        # Check if apply was successful
-                        if 'applied' in apply_output.lower():
-                            logger.info("✓ Config applied successfully")
-                        else:
-                            raise AssertionError(f"Apply command completed but didn't show 'applied' status: {apply_output}")
-                    except Exception as e:
-                        error_msg = str(e)
-                        if 'timeout' in error_msg.lower() or '124' in error_msg:
-                            raise AssertionError(f"Apply operation timed out after {APPLY_TIMEOUT}s. Config may be too large or system too slow.")
-                        else:
-                            raise AssertionError(f"Apply failed: {error_msg}")
+                    logger.info(f"✓ Config patch and apply completed successfully")
 
                     # Calculate elapsed time
                     elapsed_time = time.time() - start_time

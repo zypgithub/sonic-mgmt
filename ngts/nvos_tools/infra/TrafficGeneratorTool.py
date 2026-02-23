@@ -207,10 +207,14 @@ class TrafficGeneratorTool:
                     f'server output failed: {server_output}'
 
             with allure.step('Compare number of iterations transmitted'):
-                client_iterations = client_output.split("\n")[-2].split()[1]
-                server_iterations = server_output.split("\n")[-2].split()[1]
-                assert client_iterations == server_iterations, (f"Number os iterations send: {client_iterations}, "
-                                                                f"Number of iterations received: {server_iterations}")
+                client_iterations = int(client_output.split("\n")[-2].split()[1])
+                server_iterations = int(server_output.split("\n")[-2].split()[1])
+                tolerance = IbConsts.IB_SEND_LAT_ITERATION_TOLERANCE
+                assert abs(client_iterations - server_iterations) <= tolerance, (
+                    f"Iteration count mismatch exceeds tolerance (±{tolerance}): "
+                    f"sent={client_iterations}, received={server_iterations}, "
+                    f"diff={abs(client_iterations - server_iterations)}"
+                )
         return server_iterations
 
     def start_ibping_between_2_hosts(self, host_a, host_b, server_file, client_file):

@@ -10,7 +10,6 @@ from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
 from ngts.tools.test_utils import allure_utils as allure
 
 from .helpers import (

@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil import parser
 
 from ngts.constants.constants import LinuxConsts
@@ -10,6 +10,7 @@ from ngts.nvos_constants.constants_nvos import HealthConsts, NvosConst, ApiType,
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
+from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
@@ -143,11 +144,11 @@ def add_verification_data(engine, system):
         return username
 
 
-def verify_cleanup_done(engine, time_before_rf, system, username, param=''):
+def verify_cleanup_done(engine, time_before_rf, system, username, param='', ib_router=False):
     logging.info("Verify cleanup done as expected")
     errors = ""
     device = TestToolkit.devices.dut
-    time_before_rf = time_before_rf.replace(tzinfo=None)
+    time_before_rf = time_before_rf.astimezone(timezone.utc).replace(tzinfo=None)
     with allure.step("Verify NVUE reset done"):
         if param != KEEP_ONLY_FILES:
             output = engine.run_cmd("stat /etc/sonic/nvue.d/platform/immutables.yaml | grep Birth")
@@ -300,6 +301,17 @@ def verify_cleanup_done(engine, time_before_rf, system, username, param=''):
                         errors += "\n'{}' is not running after reset factory".format(docker_name)
                     elif orig_create_time == create_time:
                         errors += "\n'{}' was not stopped during reset factory".format(docker_name)
+
+    if ib_router:
+        with allure.step("Check ib router profile status"):
+            expect_disabled = param != KEEP_ALL_CONFIG
+            expected_swid_number = 4 if not expect_disabled else 1
+            expected_profile = SystemConsts.PROFILE_STATE_DISABLED if expect_disabled else SystemConsts.PROFILE_STATE_ENABLED
+            try:
+                IbRouterTool.verify_profile_status(expected_profile_status=expected_profile, expected_swid_number=expected_swid_number)
+                IbRouterTool.verify_leaf_port_mapping(expect_disabled=expect_disabled)
+            except AssertionError as err:
+                errors += f"ib router profile/config check failed with error: {str(err)}"
 
     assert not errors, errors
 

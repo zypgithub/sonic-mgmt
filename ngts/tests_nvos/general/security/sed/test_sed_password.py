@@ -7,14 +7,14 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.ngts_types import DevicesT
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
+from ngts.tests_nvos.helpers.general_helpers import run_ssh_cmd_with_rc
 from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.system
 @pytest.mark.security
-def test_change_sed_password(engines, devices: DevicesT, sed_default_password, random_api):
+def test_change_sed_password(engines, devices: DevicesT, sed_default_password, random_api, tpm_tool):
     """
     @summary:
         Verify that change SED password works via nv action both for NVUE and OpenAPI
@@ -28,14 +28,13 @@ def test_change_sed_password(engines, devices: DevicesT, sed_default_password, r
     """
     TestToolkit.tested_api = random_api
     switch: LinuxSshEngine = engines.dut
-    tpm_tool = TpmTool(switch)
     system = System()
     new_sed_password = "test_sed_password"
 
     _verify_tpm_banks_password(tpm_tool, sed_default_password, device=devices.dut)
 
     with allure.step(f"Set new SED password via nv action change system security sed-password {new_sed_password}"):
-        system.security.action_change_sed_password(new_sed_password)
+        system.security.action_change_sed_password(new_sed_password).verify_result()
 
     with allure.step("Get disk name for current device"):
         disk_name_output = switch.run_cmd("sudo sedutil-cli --scan")
@@ -56,7 +55,7 @@ def test_change_sed_password(engines, devices: DevicesT, sed_default_password, r
 
 @pytest.mark.system
 @pytest.mark.security
-def test_back_old_pass(engines, devices: DevicesT, sed_default_password):
+def test_back_old_pass(engines, devices: DevicesT, sed_default_password, tpm_tool):
     """
     @summary:
         Verify that change SED password works when flow was broken during the action flow
@@ -69,7 +68,6 @@ def test_back_old_pass(engines, devices: DevicesT, sed_default_password):
         4. Check that tpm primary and secondary bank have old SED password.
     """
     switch: LinuxSshEngine = engines.dut
-    tpm_tool = TpmTool(switch)
     system = System()
     new_sed_password = "old_password"
 
@@ -86,7 +84,7 @@ def test_back_old_pass(engines, devices: DevicesT, sed_default_password):
 
 @pytest.mark.system
 @pytest.mark.security
-def test_back_new_pass(engines, devices: DevicesT, sed_default_password):
+def test_back_new_pass(engines, devices: DevicesT, sed_default_password, tpm_tool):
     """
     @summary:
         Verify that change SED password works with new password when banks don't match
@@ -100,7 +98,6 @@ def test_back_new_pass(engines, devices: DevicesT, sed_default_password):
     TestToolkit.tested_api = ApiType.OPENAPI
 
     switch: LinuxSshEngine = engines.dut
-    tpm_tool = TpmTool(switch)
     system = System()
     new_sed_password = "Another_pass"
 
@@ -121,7 +118,7 @@ def test_back_new_pass(engines, devices: DevicesT, sed_default_password):
 
 @pytest.mark.system
 @pytest.mark.security
-def test_password_length_negative(engines, devices: DevicesT, sed_default_password):
+def test_password_length_negative(engines, devices: DevicesT, sed_default_password, tpm_tool):
     """
     @summary:
         Verify that change SED password works only with passwords from 8 to 250 chars
@@ -130,8 +127,6 @@ def test_password_length_negative(engines, devices: DevicesT, sed_default_passwo
         1. Try to set a new SED password via nv action
         2. See it fails
     """
-    switch: LinuxSshEngine = engines.dut
-    tpm_tool = TpmTool(switch)
     system = System()
     long_pass = generate_random_string_with_length(251, 502)
     short_pass = generate_random_string_with_length(1, 7)
@@ -162,8 +157,7 @@ def _verify_tpm_banks_password(tpm_tool, expected_password, device):
 def _verify_sed_password_works(switch: LinuxSshEngine, password: str, disk_name: str):
     with allure.step("Verify SED is working with provided password"):
         cmd = f"sudo sedutil-cli --listLockingRanges '{password}' '{disk_name}'"
-        output = switch.run_cmd(cmd)
-        exit_code = int(switch.run_cmd("echo $?").split("\n")[-1])
+        _, exit_code = run_ssh_cmd_with_rc(switch, cmd)
         assert exit_code == 0, "The sed list locking ranges should be successful"
 
 

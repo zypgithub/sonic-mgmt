@@ -45,7 +45,7 @@ def wait_for_partition_update():
 @pytest.mark.nvl_ci
 @pytest.mark.nmx
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-def test_simulated_cluster_partition(engines, devices, test_api, check_device_type_for_partition):
+def test_simulated_cluster_partition(engines, devices, test_api):
 
     output_format = OutputFormat.json
 
@@ -104,7 +104,7 @@ def test_simulated_cluster_partition(engines, devices, test_api, check_device_ty
 @pytest.mark.nmx
 @pytest.mark.disable_loganalyzer
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name, check_device_type_for_partition):
+def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
 
     output_format = OutputFormat.json
     with allure.step("Create Cluster object"):

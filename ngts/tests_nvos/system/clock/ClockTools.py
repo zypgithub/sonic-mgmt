@@ -517,22 +517,23 @@ class ClockTools:
             if 'T' not in last_log_datetime:
                 last_log_datetime = ' '.join(last_log_datetime.split())
             show_datetime = ClockTools.get_local_time_from_show_system_date_time_output(show_system_datetime)
-            # Log may be in UTC (ISO); show is local. Get DUT timezone so we can convert log timestamp to local.
-            show_dic = OutputParsingTool.parse_json_str_to_dictionary(show_system_datetime).get_returned_value()
-            dut_timezone = ClockTools.normalize_timezone(show_dic[ClockConsts.TIMEZONE]) if ClockConsts.TIMEZONE in show_dic else None
-            log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime, local_timezone=dut_timezone)
+            # Extract year from system datetime to use for log timestamp parsing
+            # (log timestamps don't include the year, so we must infer it from the system datetime)
+            system_year = datetime.strptime(show_datetime, StatsConsts.SYSTEM_TIME_FORMAT).year
+            log_datetime = ClockTools.get_datetime_of_system_log_line(last_log_datetime, system_year)
             logging.info('show date-time: {}\nlogs date-time: {}'.format(show_datetime, log_datetime))
 
         with allure.step('Verify log timestamp similar to show date-time'):
             ClockTools.verify_same_datetimes(show_datetime, log_datetime)
 
     @staticmethod
-    def get_datetime_of_system_log_line(log_line, local_timezone=None):
+    def get_datetime_of_system_log_line(log_line, system_year=None):
         """
         @summary:
             Return the timestamp from a log line in the format "YYYY-MM-DD hh:mm:ss"
-        @param log_line: a line from system log (syslog-style e.g. "Jan  1 12:34:56" or ISO-style e.g. "2026-02-18T10:25:11.674358+00:00")
-        @param local_timezone: optional DUT timezone (e.g. "America/New_York"); when set, ISO log timestamps (UTC) are converted to this timezone for comparison with show (local). Used only for ISO-style lines; syslog-style is unchanged (safe for devices like IbDevice that use syslog).
+        @param log_line: a line from system log
+        @param system_year: the year to use for the log timestamp (from system datetime).
+                           If None, falls back to current real-world year (not recommended).
         @return: the timestamp (str)
         """
         with allure.step('Take timestamp from a single log line'):
@@ -547,10 +548,21 @@ class ClockTools:
                 return res
             log_timestamp = log_line.split('.')[0].split(' ')  # remove .<microseconds>
             log_timestamp = ' '.join([substr for substr in log_timestamp if substr != ''])  # clean from double spaces
-            current_year = datetime.now().year
-            # convert date string to datetime object (syslog-style)
-            datetime_obj = datetime.strptime(log_timestamp, "%b %d %H:%M:%S")
-            new_datetime_obj = datetime_obj.replace(year=current_year)
+            logging.info('Take timestamp from a single log line: {}'.format(log_timestamp))
+
+            # Use the system year if provided, otherwise fall back to real-world year
+            # Note: Using datetime.now().year can cause failures when system time differs from real time
+            # (e.g., year boundaries or far-future/past dates)
+            year_to_use = system_year if system_year is not None else datetime.now().year
+            logging.info('Using year: {} (system_year provided: {})'.format(year_to_use, system_year is not None))
+
+            # convert date string to datetime object
+            datetime_obj = datetime.strptime(log_timestamp, "%b %d %H:%M:%S")  # [.%f] if need .<microseconds> optional
+
+            # replace year in datetime object
+            new_datetime_obj = datetime_obj.replace(year=year_to_use)
+
+            # format datetime object to string
             res = new_datetime_obj.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
             return res

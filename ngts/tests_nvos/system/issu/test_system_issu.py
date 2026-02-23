@@ -12,6 +12,7 @@ from ngts.nvos_constants.constants_nvos import (ActionConsts, ApiType, DatabaseC
                                                 IssuConsts, NvosConst, PlatformConsts, SystemConsts)
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
@@ -87,7 +88,8 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
 
     with allure.step("Perform install image with ISSU skip-sm flag"):
         system.image.files.file_name[target_filename].action(
-            ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM, send_user_confirmation='y', reboot_params=True). \
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM, send_user_confirmation='y', reboot_params=True,
+            read_timeout=IssuConsts.ISSU_READ_TIMEOUT). \
             verify_result(should_succeed=True)
 
     issu_end = time.time()
@@ -172,7 +174,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
             player, dut_engine, dut_device, target_version)
 
     with allure.step('Pre issu installation steps'):
-        traffic_start_time, interface_dict, ip_list, ssd_should_auto_update = pre_issu_installation_steps(
+        traffic_start_time, interface_dict, ip_list, mtu_info = pre_issu_installation_steps(
             engines, devices, target_version, scp_host_creds)
 
     issu_start = time.time()
@@ -180,7 +182,8 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
 
     with allure.step("Perform install image with ISSU flag"):
         system.image.files.file_name[target_filename].action(
-            ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y', reboot_params=True). \
+            ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y', reboot_params=True,
+            read_timeout=IssuConsts.ISSU_READ_TIMEOUT). \
             verify_result(should_succeed=True)
 
     issu_end = time.time()
@@ -190,7 +193,8 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
 
     with allure.step('Post issu installation steps'):
         post_issu_installation_steps(engines, devices, target_version, fw_version,
-                                     interface_dict, traffic_start_time, ip_list, test_name, ssd_should_auto_update)
+                                     interface_dict, traffic_start_time, ip_list, test_name,
+                                     mtu_info=mtu_info)
 
 
 # @pytest.mark.system
@@ -405,7 +409,8 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y').\
+                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
+                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
@@ -417,7 +422,8 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
     with allure.step("Perform ISSU with “no reboot” flag"):
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU_NO_REBOOT, send_user_confirmation='y').\
+                ActionConsts.INSTALL, flags=IssuConsts.ISSU_NO_REBOOT, send_user_confirmation='y',
+                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_SYSTEM_MUST_BE_REBOOTED in output, \
@@ -430,7 +436,8 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y').\
+                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
+                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_CONFIG_MUST_BE_SAVED in output, \
@@ -447,7 +454,8 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[base_filename].action(
-                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y').\
+                ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
+                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
@@ -779,6 +787,9 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
         NvosInstallationSteps.fetch_apply_save_config(config_filename, config_file_path, dut_engine,
                                                       scp_host_creds, system)
 
+    with allure.step('Configure MTU on a random port'):
+        mtu_info = InterfaceConfigurationTool.change_mtu_on_random_port(devices)
+
     # with allure.step('Run management services'):
     #     with allure.step("Enable snmp"):
     #         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED,
@@ -841,11 +852,12 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     # TODO: add ipoib test (random)
 
-    return traffic_start_time, interface_output, ip_list, ssd_should_auto_update
+    return traffic_start_time, interface_output, ip_list, mtu_info
 
 
 def post_issu_installation_steps(engines, devices, target_version, fw_expected,
-                                 interface_dict, traffic_start_time, ip_list, test_name='', ssd_should_auto_update=False):
+                                 interface_dict, traffic_start_time, ip_list, test_name='',
+                                 mtu_info=None):
     """
     - Stop Ping mgmt. port 0 and mgmt. port 1 and analyze both logs
     - Stop sending data packets from Host A to Host B and analyze log
@@ -948,6 +960,9 @@ def post_issu_installation_steps(engines, devices, target_version, fw_expected,
                 interface_output = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
                     interface.show()).get_returned_value()
                 ValidationTool.compare_dictionaries(interface_output, interface_dict).verify_result()
+
+            with allure.independent_step('Verify MTU preserved after ISSU and cleanup'):
+                InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
 
             # with allure.step('Validate management services'):
             #     with allure.step("Verify ntp state"):
@@ -1113,7 +1128,7 @@ def run_install_system_image_issu(dut_engine, dut_device, recovery_engine, image
         #     should_succeed=should_succeed)
         output = system.image.files.file_name[image_filename].action(
             ActionConsts.INSTALL, flags=param_value, send_user_confirmation='y', engine=dut_engine, device=dut_device,
-            reboot_params=True).verify_result(should_succeed=should_succeed)
+            reboot_params=True, read_timeout=IssuConsts.ISSU_READ_TIMEOUT).verify_result(should_succeed=should_succeed)
 
     return output
 

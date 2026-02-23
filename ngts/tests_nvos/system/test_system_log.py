@@ -292,30 +292,24 @@ def _log_files_set_unset_log_rotation_size_disk_percentage(engines, system_log_o
         system_log_obj.rotation.set('disk-percentage', '100.001').verify_result(False)
 
     with allure.step("Validate disk percentage configuration"):
-        logging.info("Validate disk percentage configuration")
-        system_log_obj.rotation.set('disk-percentage', '50.0')
-        NvueGeneralCli.apply_config(engines.dut)
-        show_output = system_log_obj.rotation.show()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '1750.0').verify_result()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '50.0').verify_result()
-        system_log_obj.rotation.unset(op_param='disk-percentage')
+        disk_percentage_cases = [
+            ('50.0', '1750.0', None),       # (percentage, expected_size, label) - None means use default label
+            ('0.001', '0.035', 'lowest'),
+            ('100.0', '3500.0', 'highest'),
+        ]
+        for pct, expected_size, label in disk_percentage_cases:
+            desc = "Validate disk percentage configuration" + (f" with {label} value" if label else "")
+            logging.info(desc)
+            system_log_obj.rotation.set('disk-percentage', pct, apply=True)
 
-        logging.info("Validate disk percentage configuration with lowest value")
-        system_log_obj.rotation.set('disk-percentage', '0.001')
-        NvueGeneralCli.apply_config(engines.dut)
-        show_output = system_log_obj.rotation.show()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '0.035').verify_result()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '0.001').verify_result()
+            def _verify_disk_percentage(exp_size=expected_size, exp_pct=pct):
+                show_output = system_log_obj.rotation.show()
+                output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output_dictionary, 'size', exp_size).verify_result()
+                ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', exp_pct).verify_result()
 
-        logging.info("Validate disk percentage configuration with highest value")
-        system_log_obj.rotation.set('disk-percentage', '100.0')
-        NvueGeneralCli.apply_config(engines.dut)
-        show_output = system_log_obj.rotation.show()
-        output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'size', '3500.0').verify_result()
-        ValidationTool.verify_field_value_in_output(output_dictionary, 'disk-percentage', '100.0').verify_result()
+            ValidationTool.retry_until_valid(_verify_disk_percentage,
+                                             description=f"Waiting for size to reflect disk-percentage {pct}%")
 
     with allure.step("Validate unset log rotation"):
         logging.info("Validate unset log rotation")
@@ -684,8 +678,32 @@ def _delete_log_files(engines, system_log_obj, file_name):
 @pytest.mark.log
 @pytest.mark.simx
 def test_log_idle(engines):
+    """
+    Verify system generates minimal logs during idle state.
+
+    Test flow:
+        1. Check IPv6 status and configure DHCP pattern if needed
+        2. Renew DHCP on all eth interfaces
+        3. Rotate logs and record initial size
+        4. Wait 10 minutes (idle period)
+        5. Verify no unexpected log entries
+        6. Verify log file size growth is within threshold
+    """
+    # Maximum allowed syslog growth during idle period (in bytes)
     expected_file_size_diff = 9000
-    rotate_sleep_time_sec = 600
+    # Duration to wait in idle state
+    idle_duration_sec = 10 * MINUTE
+    # Time to wait for interface lock release after DHCP action (in seconds)
+    interface_lock_release_time = 3
+    # Time to wait for DHCP configuration to stabilize (in seconds)
+    dhcp_stabilization_time = 60
+
+    # DHCP solicit pattern for when IPv6 is not working
+    dhcp_solicit_pattern = (
+        r'\w{3}\s+\d+\s+\d+:\d+:[\d.]+\s+[\w-]+\s+INFO dhclient\[\d+\]: XMT: Solicit on eth\d+, interval \d+ms\.[\n]?',
+        30
+    )
+
     list_of_expected_patterns: List[tuple[str, int | None]] = [
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(Starting system activity accounting tool|Starting Rotate log files\.\.\.|logrotate\.service: Succeeded\.|Finished Rotate log files\.)[^\n]*[\n]?', 4),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO\s*.+\s*(sysstat-collect\.service: Succeeded|Finished system activity accounting tool\.)[^\n]*[\n]?', 2),
@@ -696,47 +714,84 @@ def test_log_idle(engines):
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+DEBUG nvued.+[\n]?', None),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: sysstat-collect.service: Deactivated successfully.*[\n]?', 1),
         (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd\[\d+\]\: logrotate.service: Deactivated successfully.*[\n]?', 1),
-        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd*Deactivated successfully.*[\n]?', 3),
-        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO healthd\[\d+\]\: System health takes [\d\.]+ seconds for one iteration[\n]?', math.ceil(rotate_sleep_time_sec / 3))
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO systemd.*Deactivated successfully.*[\n]?', 10),
+        # healthd runs approximately every 3 seconds, calculate expected iterations
+        (r'\w{3}\s+\d+\s+\d+\:\d+\:[\d\.]+\s+[\w\-]+\s+INFO healthd\[\d+\]\: System health takes [\d\.]+ seconds for one iteration[\n]?', math.ceil(idle_duration_sec / 3))
     ]
 
     with allure.step("Create System object"):
         system = System(None)
 
-    with allure.step("Renew DHCP"):
+    with allure.step("Check IPv6 status and add DHCP pattern if not working"):
         interface = Interface(None)
         eth_port_list = [Port(interface_name) for interface_name in re.findall(r'eth\d+', interface.show())]
         for port in eth_port_list:
+            ipv6_output = port.interface.ipv6.get_primary_ip_address()
+            logger.info(f"IPv6 output from get_primary_ip_address: {ipv6_output}")
+            if not ipv6_output:
+                # If IPv6 is not working, add DHCP solicit pattern to expected logs
+                # [NVOS - Design] Bug SW #4715286: [Non-Functional] [Syslog] | unexpected logs found during idle
+                logger.info(f"DEBUG: get_primary_ip_address returned empty for port {port.name}")
+                logger.info(f"IPv6 not working, adding DHCP solicit pattern to expected logs")
+                list_of_expected_patterns.append(dhcp_solicit_pattern)
+                break
+
+    with allure.step("Renew DHCP"):
+        for port in eth_port_list:
             port.interface.ipv4.action_renew_dhcp_client().verify_result()
-            time.sleep(3)  # Allow interface lock to be released before IPv6 renewal
+            time.sleep(interface_lock_release_time)
             port.interface.ipv6.action_renew_dhcp_client().verify_result()
-            time.sleep(3)  # Allow interface lock to be released before next interface
-        time.sleep(60)
+            time.sleep(interface_lock_release_time)
+        time.sleep(dhcp_stabilization_time)
 
     with allure.step("Rotate the log"):
         system.log.rotate_logs()
         syslog_size_before_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
 
     with allure.step("Do nothing for 10 min"):
-        time.sleep(rotate_sleep_time_sec)
+        time.sleep(idle_duration_sec)
 
-    with allure.step("Check the log file content"):
+    with allure.step("Verify log file content and size"):
+        max_unexpected_lines_to_show = 50
+
+        with allure.independent_step("Verify log file size"):
+            syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
+            assert syslog_size_before_idle >= 0, f"Failed to get syslog size before idle: {syslog_size_before_idle}"
+            assert syslog_size_after_idle >= 0, f"Failed to get syslog size after idle: {syslog_size_after_idle}"
+            assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
+                f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b, " \
+                f"after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff}"
+
         syslog_idle_output: str = engines.dut.run_cmd(f'cat {SyslogConsts.SYSLOG_LOG_PATH}')
         logs_after_check: str = syslog_idle_output
-        for pattern, max_count in list_of_expected_patterns:
-            with allure.independent_step("check pattern count"):
-                if max_count is not None:
-                    actual_count = len(re.findall(pattern, logs_after_check))
-                    assert actual_count <= max_count, f'Pattern "{pattern}" matched {actual_count} times, maximum allowed {max_count}'
-            logs_after_check = re.sub(pattern, '', logs_after_check)
-        assert len(logs_after_check.splitlines()) == 0, f'These unexpected logs found during idle: \n {logs_after_check} \n \
-            No logs should be recorded during idle'
 
-    with allure.step("Check the log file size"):
-        syslog_size_after_idle = FilesTool.get_file_size_in_bytes(engines.dut, SyslogConsts.SYSLOG_LOG_PATH)
-        assert syslog_size_after_idle - syslog_size_before_idle <= expected_file_size_diff, \
-            f"The size of the log file is more than expected threshold, before: {syslog_size_before_idle}b , \
-                after: {syslog_size_after_idle}b, expected_threshold value: {expected_file_size_diff} \n "
+        # First pass: check pattern counts and collect failures
+        pattern_count_failures = []
+        for pattern, max_count in list_of_expected_patterns:
+            if max_count is not None:
+                actual_count = len(re.findall(pattern, logs_after_check))
+                if actual_count > max_count:
+                    pattern_count_failures.append(f'Pattern "{pattern}" matched {actual_count} times, maximum allowed {max_count}')
+            logs_after_check = re.sub(pattern, '', logs_after_check)
+
+        with allure.independent_step("Verify expected pattern counts"):
+            assert not pattern_count_failures, '\n'.join(pattern_count_failures)
+
+        with allure.independent_step("Verify no unexpected log lines"):
+            unexpected_lines = [line for line in logs_after_check.splitlines() if line.strip()]
+            if unexpected_lines:
+                lines_to_show = unexpected_lines[:max_unexpected_lines_to_show]
+                logger.info("=" * 80)
+                logger.info(f"UNEXPECTED LOG LINES FOUND DURING IDLE ({len(unexpected_lines)} total, showing first {len(lines_to_show)}):")
+                logger.info("=" * 80)
+                for i, line in enumerate(lines_to_show, 1):
+                    logger.info(f"  [{i}] {line}")
+                if len(unexpected_lines) > max_unexpected_lines_to_show:
+                    logger.info(f"  ... and {len(unexpected_lines) - max_unexpected_lines_to_show} more lines")
+                logger.info("=" * 80)
+            assert len(unexpected_lines) == 0, \
+                f'Found {len(unexpected_lines)} unexpected log lines during idle (showing first {min(len(unexpected_lines), max_unexpected_lines_to_show)}):\n' + \
+                '\n'.join(f'  [{i}] {line}' for i, line in enumerate(unexpected_lines[:max_unexpected_lines_to_show], 1))
 
 
 def get_random_component(system):

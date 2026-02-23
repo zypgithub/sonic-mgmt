@@ -48,6 +48,12 @@ def set_unset_ps_redundancy_ps():
 
 
 @pytest.fixture(scope='function')
+def reset_health_service(engines):
+    yield
+    HWSimulator.reset_health_service(engines.dut)
+
+
+@pytest.fixture(scope='function')
 def validate_health_history():
     system = System()
     system.health.history.retry_get_health_history_file_summary_line()
@@ -200,7 +206,7 @@ def test_system_health_files_with_rotation(engines):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_ignore_health_issue(engines, devices, loganalyzer):
+def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service):
     """
     Validate we can ignore all health issue and status will change to OK
     steps:
@@ -294,7 +300,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_ps):
+def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_ps_redundancy_ps, reset_health_service):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -353,7 +359,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
+def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_service):
     """
     Validate health monitoring when having a fan speed fault.
         Test flow:
@@ -403,7 +409,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer):
 @pytest.mark.disable_loganalyzer
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
+def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_health_service):
     """
     Validate health monitoring when having a fan speed fault.
         Test flow:
@@ -482,7 +488,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer):
 @pytest.mark.disable_loganalyzer
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
+def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_service):
     """
     Validate health monitoring when having a fan speed fault.
         Test flow:
@@ -590,7 +596,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_user_config_file(devices, engines):
+def test_simulate_health_problem_with_user_config_file(devices, engines, reset_health_service):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -623,7 +629,7 @@ def test_simulate_health_problem_with_user_config_file(devices, engines):
 
 @pytest.mark.system
 @pytest.mark.health
-def test_simulate_health_problem_with_docker_stop(devices, engines):
+def test_simulate_health_problem_with_docker_stop(devices, engines, reset_health_service):
     """
     Validate health monitoring.
     Health status should change to "Not OK" when we simulate a problem and return to "OK" if status fixed or ignored.
@@ -644,7 +650,7 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
     system.health.history.files.file_name[HealthConsts.HEALTH_FIRST_FILE].action_delete().verify_result()
     time.sleep(1)
     system.validate_health_status(OK)
-    docker_to_stop = NvosConst.NV_GNMI_DOCKER
+    docker_to_stop = 'lldp'
     docker_not_running_log_str = "Container '" + docker_to_stop + "' is not running"
 
     try:
@@ -653,7 +659,6 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
                                            db_config="FEATURE|{}".format(docker_to_stop),
                                            param=NvosConst.DOCKER_AUTO_RESTART,
                                            value=NvosConst.DOCKER_STATUS_DISABLED)
-            # DatabaseTool.redis_cli_hset(engines.dut, DatabaseConst.CONFIG_DB_NAME, "FEATURE|{}".format(docker_to_stop), NvosConst.DOCKER_AUTO_RESTART, NvosConst.DOCKER_STATUS_DISABLED)
 
         with allure.step("Get the latest event"):
             last_event = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_LAST_EVENT)).get_returned_value()
@@ -665,7 +670,10 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
             assert docker_to_stop in output, "Failed to stop docker"
 
         with allure.step("Validate docker not running in health issues"):
-            health_issue_dict = {docker_to_stop: f"Container '{docker_to_stop}' is not running"}
+            health_issue_dict = {
+                "lldp:lldpd": "Process 'lldpd' in container 'lldp' is not running",
+                "lldp:lldpmgrd": "Process 'lldpmgrd' in container 'lldp' is not running"
+            }
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False, False)
 
         with allure.step("validate docker not running event in system events"):
@@ -678,13 +686,12 @@ def test_simulate_health_problem_with_docker_stop(devices, engines):
         with allure.step("Fix the health issue"):
             with allure.step("restart docker"):
                 output = engines.dut.run_cmd("docker start {}".format(docker_to_stop))
-                with allure.step("restart docker auto start"):
-                    DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
-                                                   db_config="FEATURE|{}".format(docker_to_stop),
-                                                   param=NvosConst.DOCKER_AUTO_RESTART,
-                                                   value=NvosConst.DOCKER_STATUS_ENABLED)
-                    # DatabaseTool.redis_cli_hset(engines.dut, 4, "FEATURE|{}".format(docker_to_stop), NvosConst.DOCKER_AUTO_RESTART, NvosConst.DOCKER_STATUS_ENABLED)
                 assert docker_to_stop in output, "Failed to start docker"
+            with allure.step("restart docker auto start"):
+                DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
+                                               db_config="FEATURE|{}".format(docker_to_stop),
+                                               param=NvosConst.DOCKER_AUTO_RESTART,
+                                               value=NvosConst.DOCKER_STATUS_ENABLED)
             validate_docker_is_up(engines.dut, docker_to_stop)
             time.sleep(10)
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)

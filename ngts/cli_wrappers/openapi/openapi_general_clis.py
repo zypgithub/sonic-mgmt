@@ -19,7 +19,8 @@ class OpenApiGeneralCli:
 
     @staticmethod
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
-                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None):
+                     skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None,
+                     apply_timeout=None):
         """
         Apply configuration
         :param engine: ssh engine object
@@ -98,7 +99,7 @@ class OpenApiGeneralCli:
             return res
 
     @staticmethod
-    def config_patch(engine, filepath, apply=True, detach_first=True):
+    def config_patch(engine, filepath, apply=True, detach_first=True, apply_timeout=None):
         """
         Patch configuration from file with optional apply.
 
@@ -108,6 +109,7 @@ class OpenApiGeneralCli:
             apply: If True, applies config and validates. If False, only creates revision
             detach_first: If True, detaches any pending config before patching (default: True)
                          Note: OpenAPI detach may not be fully supported yet
+            apply_timeout: Timeout in seconds for the apply operation (default: None uses engine's default)
 
         Returns:
             ResultObj with success/failure status
@@ -161,7 +163,7 @@ class OpenApiGeneralCli:
             return ResultObj(False, info=f"Apply failed: {str(e)}", returned_value=str(e))
 
     @staticmethod
-    def config_replace(engine, filepath, apply=True):
+    def config_replace(engine, filepath, apply=True, apply_timeout=None):
         """
         Replace configuration from file with optional apply.
 
@@ -169,6 +171,7 @@ class OpenApiGeneralCli:
             engine: SSH engine
             filepath: Path to config file
             apply: If True, applies config and validates. If False, only creates revision
+            apply_timeout: Timeout in seconds for the apply operation (default: None uses engine's default)
 
         Returns:
             ResultObj with success/failure status

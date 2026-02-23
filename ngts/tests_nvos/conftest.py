@@ -65,6 +65,7 @@ from ngts.ngts_types import EnginesT
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.AirTool import get_internal_ip_for_oob_server
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 
 logger = logging.getLogger()
 
@@ -76,6 +77,34 @@ EXPECTED_KERNEL_PATTERNS = [
 pytest_plugins = [
     "ngts.common.plugins.valgrind.plugin",
 ]
+
+
+def pytest_configure(config):
+    """
+    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
+    This hook runs before session start and any fixtures.
+
+    For MARS runs, secrets are already provided via environment variables.
+    For local runs, we fetch secrets from Vault.
+
+    This only runs when NVOS tests are being executed.
+    """
+    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
+    args = config.args if hasattr(config, 'args') else config.invocation_params.args
+    if not args or not any('tests_nvos' in str(arg) for arg in args):
+        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
+        return
+
+    mars_key_id = config.getoption("--mars_key_id", default=None)
+    session_id = config.getoption("--session_id", default=None)
+    if mars_key_id or session_id:
+        logger.info("MARS run detected - secrets already in environment, skipping Vault")
+        return
+
+    from ngts.nvos_tools.infra.VaultClient import VaultClient
+
+    logger.info("Local run detected - loading secrets from Vault...")
+    VaultClient.fetch_and_export_secrets()
 
 
 def pytest_configure(config):
@@ -292,10 +321,8 @@ def engines(topology_obj, devices, request, is_ipv6):
     for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
         engine = player['engine']
         engines_data[player_name] = engine
-        if not is_ipv6 and hasattr(devices, player_name):
-            device = devices[player_name]
-            update_engine_dut_mgmt_port(topology_obj, engine, device)
-            logger.info(f'Updated engine management port for {player_name}')
+    if not is_ipv6:
+        update_engine_dut_mgmt_port(topology_obj, engines_data.dut, devices.dut)
 
     # ha and hb are the traffic dockers
     if "ha" in topology_obj.players:
@@ -615,7 +642,9 @@ def start_sm(engines, devices, traffic_available):
     if traffic_available:
         RegressionConfigurations.configure_ports_to_legacy(engine=engines.dut, apply=True, throw_exception=False)
         result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
-        if not result.result:
+        if result is not None:
+            result.ignore_result()
+        if result is None or not result.result:
             with allure.step('open_sm failed to start (possibly due to #4088479), attempting to recover'):
                 with allure.step('Rebooting all traffic VMs'):
                     executor = concurrent.futures.ThreadPoolExecutor()
@@ -646,8 +675,17 @@ def stop_sm(engines, devices):
     Stops OpenSM for the duration of the test, then restarts it after.
     """
     result = OpenSmTool.stop_open_sm(engines)
-    if not result.result:
-        logging.warning("Failed to stop openSM")
+    if result is None or not result.result:
+        logging.warning(f"Failed to stop openSM: {result.info if result else 'No result returned'}")
+
+    yield  # Test runs here with SM stopped
+
+    # Cleanup: restart OpenSM after test completes
+    logging.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
+    restart_result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
+    if restart_result is None or not restart_result.result:
+        logging.error(f"Failed to restart OpenSM in stop_sm fixture cleanup: "
+                      f"{restart_result.info if restart_result else 'No result returned'}")
 
     yield  # Test runs here with SM stopped
 
@@ -1281,6 +1319,7 @@ def disable_els_init_state_for_taipan(engines, devices, nv_command):
     This fixture is used for Taipan devices only.
     """
     if devices.dut.switch_class != NvosConst.TAIPAN_SWITCH:
+        yield
         return
 
     with allure.step("Disable ELS init state"):
@@ -1292,6 +1331,19 @@ def disable_els_init_state_for_taipan(engines, devices, nv_command):
     with allure.step("Re-enable ELS init state"):
         nv_command.fae.system.cpo.set(CpoConsts.ELS_INITIALIZATION_STATE, CpoConsts.State.ENABLED.value, apply=True).verify_result()
         NvueGeneralCli.save_config(engines.dut)
+
+
+@pytest.fixture(scope='session')
+def ib_router(is_ib_router, engines):
+    """
+    Method for get ib_router value from pytest arguments and change profile on the switch if needed
+    :param request: pytest builtin
+    :return: True or False, if run is ib_router type
+    """
+    if is_ib_router:
+        IbRouterTool.enable_ib_router_profile()
+        IbRouterTool.configure_leaf_port_mapping(engines)
+    return is_ib_router
 
 
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)

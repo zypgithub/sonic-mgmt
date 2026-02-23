@@ -46,6 +46,16 @@
         <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
     </test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx_rbac.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+	</test>
+    <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_api.cases </cases>
+    </test>
+	 <test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_certificates.cases </cases>
+    </test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_gnmi.cases </cases>
 	</test>
 	<test>
@@ -61,6 +71,13 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_certificates.cases </cases>
     </test>
 	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_trusted_auth.cases </cases>
+	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_crl.cases </cases>
+	</test>
+	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
 </DBDEF>

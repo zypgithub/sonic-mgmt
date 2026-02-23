@@ -44,15 +44,13 @@ import os
 import pytest
 import re
 import time
-import random
+from collections.abc import Callable, Generator
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Callable, Dict, Generator, List, Optional, Union
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.ngts_types import DevicesT, EnginesT
 from ngts.nvos_constants.constants_nvos import (
-    ApiType,
     ClusterApps,
     ClusterConsts,
     RbacConsts,
@@ -74,6 +72,7 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.nmx.Apps import ClusterApp
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.system.System import System
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.helpers import (
     get_tmp_revision_number_for_test_only,
@@ -163,13 +162,12 @@ from ngts.tests_nvos.general.security.test_ssh_cert_auth.helpers import (
 )
 from ngts.tests_nvos.system.aaa.helpers import create_new_user
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
+from ngts.tests_nvos.system.test_system_api_compression import verify_api_compression_state
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import (
     wait_for_ldap_nvued_restart_workaround,
 )
 from ngts.tools.test_utils.switch_recovery import generate_strong_password
-from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 
 from .helpers import Result, SystemPackage
 
@@ -186,7 +184,7 @@ class Skipped(Exception):
         self.reason = reason
 
 
-def run_checkers(*, engines: EnginesT, devices: DevicesT, base: SystemPackage, target: SystemPackage) -> Generator[List[Result], None, List[Result]]:
+def run_checkers(*, engines: EnginesT, devices: DevicesT, base: SystemPackage, target: SystemPackage) -> Generator[list[Result], None, list[Result]]:
     """
         Run the feature checkers.
 
@@ -199,7 +197,7 @@ def run_checkers(*, engines: EnginesT, devices: DevicesT, base: SystemPackage, t
             A generator that yields a list of results.
     """
     errors, checkers = [], []
-    errors: List[Result]
+    errors: list[Result]
     min_ver = _get_min_version(base.nvos, target.nvos)
     max_ver = target.nvos.name if min_ver == base.nvos.name else base.nvos.name
     for checker in _CHECKERS:
@@ -254,7 +252,7 @@ def _parse_nvos_version(nvos: str) -> float:
     return ver
 
 
-def _is_valid_version(checker_minimal_version: Union[str, int], nvos_minimal_version: Union[str, int]) -> bool:
+def _is_valid_version(checker_minimal_version: str | int, nvos_minimal_version: str | int) -> bool:
     """
         Check if the nvos version is greater or equal to the checker minimal version.
 
@@ -273,7 +271,7 @@ def _is_valid_version(checker_minimal_version: Union[str, int], nvos_minimal_ver
     return checker_minimal_version <= nvos_minimal_version
 
 
-def _get_min_version(nvos_ver_1: Optional[Path], nvos_ver_2: Optional[Path]) -> Optional[str]:
+def _get_min_version(nvos_ver_1: Path | None, nvos_ver_2: Path | None) -> str | None:
     """
     Get the minimum version of two nvos versions.
     """
@@ -287,7 +285,7 @@ def _get_min_version(nvos_ver_1: Optional[Path], nvos_ver_2: Optional[Path]) -> 
     return nvos_ver_2.name
 
 
-def _requires_compatibility(*valid_devices: IbDevice, minimal_version: Union[str, int] = 0, maximal_version: Optional[Union[str, int]] = None):
+def _requires_compatibility(*valid_devices: IbDevice, minimal_version: str | int = 0, maximal_version: str | int | None = None):
     """
         Decorator to check if the checker is compatible with the devices and the minimal version.
 
@@ -362,7 +360,7 @@ def _check_nmx_cert(
             tmp_certs_dir, nmx_certs, encryption_mode = (
                 setup_cluster_app_mngr_security_checker(engines)
             )
-            certs: Dict[str, CertInfo] = {
+            certs: dict[str, CertInfo] = {
                 ClusterApps.NMX_CONTROLLER: nmx_certs[0],
                 ClusterApps.NMX_TELEMETRY: nmx_certs[1],
             }
@@ -585,29 +583,26 @@ def _check_gnmi_mtls_spiffe_id_and_crl(
 
     yield  # upgrade to the target nvos
 
-    try:
-        with allure.step("Make request via client application and see it fails"):
-            crl_validator.run_client(
-                setup.user1,
-                expect_success=False,
-                client_cert=client_cert,
-                client_cacert=server_cert,
-            )
+    with allure.step("Make request via client application and see it fails"):
+        crl_validator.run_client(
+            setup.user1,
+            expect_success=False,
+            client_cert=client_cert,
+            client_cacert=server_cert,
+        )
 
-        crl_validator.unbind_crl()
+    crl_validator.unbind_crl()
 
-        with allure.step("Make request via client application and see it succeeds"):
-            crl_validator.run_client(
-                setup.user1,
-                expect_success=True,
-                client_cert=client_cert,
-                client_cacert=server_cert,
-            )
+    with allure.step("Make request via client application and see it succeeds"):
+        crl_validator.run_client(
+            setup.user1,
+            expect_success=True,
+            client_cert=client_cert,
+            client_cacert=server_cert,
+        )
 
-        with allure.step("verify spiffe works after upgrade"):
-            check_spiffe_positive_gnmi(engines, setup)
-    finally:
-        crl_validator.cleanup()
+    with allure.step("verify spiffe works after upgrade"):
+        check_spiffe_positive_gnmi(engines, setup)
 
 
 @_requires_compatibility(minimal_version="25.02.4200")
@@ -676,31 +671,29 @@ def _check_api_mtls_spiffe_id_and_crl(
 
     yield  # upgrade to the target nvos
 
-    try:
-        with allure.step("Make request via client application and see it fails"):
-            crl_validator.run_client(
-                setup.user1,
-                expect_success=False,
-                client_cert=client_cert,
-                client_cacert=server_cert,
-            )
+    with allure.step("Make request via client application and see it fails"):
+        crl_validator.run_client(
+            setup.user1,
+            expect_success=False,
+            client_cert=client_cert,
+            client_cacert=server_cert,
+        )
 
-        crl_validator.unbind_crl()
+    crl_validator.unbind_crl()
 
-        with allure.step("verify spiffe works after upgrade"):
-            with allure.step("take new revision number for testing admin permissions"):
-                revision_num = get_tmp_revision_number_for_test_only(
-                    CertInfo(
-                        "",
-                        "",
-                        setup.cert_spif_of_user1_1.private,
-                        setup.cert_spif_of_user1_1.public,
-                        "",
-                        "",
-                        setup.cert_spif_of_user1_1.ip,
-                        setup.cert_spif_of_user1_1.ip,
-                        setup.server_cert.cacert,
-                    )
+    with allure.step("verify spiffe works after upgrade"):
+        with allure.step("take new revision number for testing admin permissions"):
+            revision_num = get_tmp_revision_number_for_test_only(
+                CertInfo(
+                    "",
+                    "",
+                    setup.cert_spif_of_user1_1.private,
+                    setup.cert_spif_of_user1_1.public,
+                    "",
+                    "",
+                    setup.cert_spif_of_user1_1.ip,
+                    setup.cert_spif_of_user1_1.ip,
+                    setup.server_cert.cacert,
                 )
             check_spiffe_positive_api(engines, revision_num, setup)
 
@@ -708,7 +701,7 @@ def _check_api_mtls_spiffe_id_and_crl(
         crl_validator.cleanup()
 
 
-@_requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
+@ _requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
 def _check_nmx_controller_rbac(
     engines: EnginesT, devices: DevicesT, **kwargs
 ) -> Generator[None, None, None]:
@@ -725,20 +718,20 @@ def _check_nmx_controller_rbac(
         8. Restore rbac file
         9. Run app client with bad user - Should succeed
     """
-    cluster = Cluster()
-    dut_hostname = engines.dut.ip
-    scp_player = get_scp_player(engines)
+    cluster=Cluster()
+    dut_hostname=engines.dut.ip
+    scp_player=get_scp_player(engines)
     verify_gnmi_client_tools_installed()
 
     with allure.step('enable cluster'):
         enable_cluster()
 
     with allure.step("prepare rbac"):
-        cluster_app_nmx_c: ClusterApp = cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
-        rbac_tool_nmx_c = NmxRbacTool(cluster, engines.dut, cluster_app_nmx_c)
-        rbac_file_name = "controller_rbac_upgrade"
-        certs_location = get_test_certs_dir_location("controller_rbac_upgrade", dut_hostname)
-        certs_location, certs = setup_certs_for_tests(
+        cluster_app_nmx_c: ClusterApp=cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
+        rbac_tool_nmx_c=NmxRbacTool(cluster, engines.dut, cluster_app_nmx_c)
+        rbac_file_name="controller_rbac_upgrade"
+        certs_location=get_test_certs_dir_location("controller_rbac_upgrade", dut_hostname)
+        certs_location, certs=setup_certs_for_tests(
             certs_dirname_prefix=certs_location,
             certs_names=["client_nmx_c", "server_nmx_c"],
             engines=engines,
@@ -747,16 +740,16 @@ def _check_nmx_controller_rbac(
             dut_ip=engines.dut.ip,
             create_chain=False,
         )
-        client_cert_nmx_c = certs[0]
-        server_cert_nmx_c = certs[1]
+        client_cert_nmx_c=certs[0]
+        server_cert_nmx_c=certs[1]
         rbac_tool_nmx_c.prepare_nmx_certs([server_cert_nmx_c], [client_cert_nmx_c])
 
-    rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
+    rbac_file_path=RbacConsts.NMX_RBAC_FILE_USER_PATH
     try:
         rbac_tool_nmx_c.import_rbac_file(rbac_file_name, rbac_file_path)
 
-        rbac_user = UserInfo("sasha", "sasha_rbac", "admin")
-        bad_rbac_user = UserInfo("bad_user", "bad_password", "admin")
+        rbac_user=UserInfo("sasha", "sasha_rbac", "admin")
+        bad_rbac_user=UserInfo("bad_user", "bad_password", "admin")
 
         rbac_tool_nmx_c.run_app_client(dut_hostname, rbac_user, client_cert_nmx_c, server_cert_nmx_c, expect_success=True)
 
@@ -782,7 +775,7 @@ def _check_nmx_controller_rbac(
         rbac_tool_nmx_c.restore_rbac_file()
 
 
-@_requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
+@ _requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
 def _check_nmx_telemetry_rbac(
     engines: EnginesT, devices: DevicesT, **kwargs
 ) -> Generator[None, None, None]:
@@ -799,20 +792,20 @@ def _check_nmx_telemetry_rbac(
         8. Restore rbac file
         9. Run app client with bad user - Should succeed
     """
-    cluster = Cluster()
-    dut_hostname = engines.dut.ip
-    scp_player = get_scp_player(engines)
+    cluster=Cluster()
+    dut_hostname=engines.dut.ip
+    scp_player=get_scp_player(engines)
     verify_gnmi_client_tools_installed()
 
     with allure.step('enable cluster'):
         enable_cluster()
 
     with allure.step("prepare rbac"):
-        cluster_app_nmx_t: ClusterApp = cluster.apps.app_name[ClusterConsts.NMX_TELEMETRY]
-        rbac_tool_nmx_t = NmxRbacTool(cluster, engines.dut, cluster_app_nmx_t)
-        rbac_file_name = "telemetry_rbac_upgrade"
-        certs_location = get_test_certs_dir_location("telemetry_rbac_upgrade", dut_hostname)
-        certs_location, certs = setup_certs_for_tests(
+        cluster_app_nmx_t: ClusterApp=cluster.apps.app_name[ClusterConsts.NMX_TELEMETRY]
+        rbac_tool_nmx_t=NmxRbacTool(cluster, engines.dut, cluster_app_nmx_t)
+        rbac_file_name="telemetry_rbac_upgrade"
+        certs_location=get_test_certs_dir_location("telemetry_rbac_upgrade", dut_hostname)
+        certs_location, certs=setup_certs_for_tests(
             certs_dirname_prefix=certs_location,
             certs_names=["client_nmx_t", "server_nmx_t"],
             engines=engines,
@@ -821,17 +814,17 @@ def _check_nmx_telemetry_rbac(
             dut_ip=engines.dut.ip,
             create_chain=False,
         )
-        client_cert_nmx_t = certs[0]
-        server_cert_nmx_t = certs[1]
+        client_cert_nmx_t=certs[0]
+        server_cert_nmx_t=certs[1]
         rbac_tool_nmx_t.prepare_nmx_certs([server_cert_nmx_t], [client_cert_nmx_t])
 
-    rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
+    rbac_file_path=RbacConsts.NMX_RBAC_FILE_USER_PATH
     try:
         rbac_tool_nmx_t.import_rbac_file(rbac_file_name, rbac_file_path)
         rbac_tool_nmx_t.update_rbac_file(rbac_file_name)
         rbac_tool_nmx_t.update_rbac_mode(RbacConsts.RBAC_MODE_USERNAME_PASSWORD)
-        rbac_user = UserInfo("sasha", "sasha_rbac", "admin")
-        bad_rbac_user = UserInfo("bad_user", "bad_password", "admin")
+        rbac_user=UserInfo("sasha", "sasha_rbac", "admin")
+        bad_rbac_user=UserInfo("bad_user", "bad_password", "admin")
 
         rbac_tool_nmx_t.run_app_client(dut_hostname, rbac_user, client_cert_nmx_t, server_cert_nmx_t, expect_success=True)
         rbac_tool_nmx_t.run_app_client(dut_hostname, bad_rbac_user, client_cert_nmx_t, server_cert_nmx_t, expect_success=False)
@@ -858,7 +851,7 @@ def _check_nmx_telemetry_rbac(
         rbac_tool_nmx_t.restore_rbac_file()
 
 
-@_requires_compatibility(minimal_version="25.02.2100")
+@ _requires_compatibility(minimal_version="25.02.2100")
 def _check_tacacs_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
     Verify TACACS authentication upgrade works as expected.
@@ -882,7 +875,7 @@ def _check_tacacs_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Genera
     )
 
 
-@_requires_compatibility(minimal_version="25.02.2100")
+@ _requires_compatibility(minimal_version="25.02.2100")
 def _check_radius_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
     Verify RADIUS authentication upgrade works as expected.
@@ -894,7 +887,7 @@ def _check_radius_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Genera
         5. Do upgrade
         6. Test RADIUS auth through auth modes after upgrade
     """
-    server_config = {
+    server_config={
         AddressingType.IPV4: RadiusPhysicalServer.SERVER_IPV4,
         AddressingType.IPV6: RadiusVmServer.SERVER_IPV6,
         AddressingType.DN: RadiusVmServer.SERVER_DN,
@@ -911,7 +904,7 @@ def _check_radius_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Genera
     )
 
 
-@_requires_compatibility(minimal_version="25.02.2100")
+@ _requires_compatibility(minimal_version="25.02.2100")
 def _check_ldap_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
     Verify LDAP authentication upgrade works as expected.
@@ -936,7 +929,7 @@ def _check_ldap_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
     )
 
 
-@_requires_compatibility(minimal_version="25.02.6000")
+@ _requires_compatibility(minimal_version="25.02.6000")
 def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
     Verify SSH certificate authentication upgrade works as expected.
@@ -950,20 +943,20 @@ def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
         7. Do upgrade
         8. Verify user can still login with certificate after upgrade
     """
-    system = System()
-    ssh_cert_auth_helper = SshCertAuthHelper()
-    key_name = "upgrade_cert_test_key"
-    key_type = get_random_key_type()
-    principal = get_random_principal()
-    admin_user = UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
-    hostname = engines.dut.ip
+    system=System()
+    ssh_cert_auth_helper=SshCertAuthHelper()
+    key_name="upgrade_cert_test_key"
+    key_type=get_random_key_type()
+    principal=get_random_principal()
+    admin_user=UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
+    hostname=engines.dut.ip
 
     try:
         with allure.step("Setup SSH certificate authentication"):
             ssh_cert_auth_helper.ensure_keys_directory()
 
             with allure.step("Generate keys and sign certificate"):
-                ca_val, key_private_path = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+                ca_val, key_private_path=ssh_cert_auth_helper.generate_keys_and_sign_certificate(
                     key_name=key_name, key_type=key_type, principals=[principal]
                 )
 
@@ -995,6 +988,34 @@ def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
             ssh_cert_auth_helper.cleanup_generated_keys(key_name)
 
 
+@ _requires_compatibility(minimal_version="25.02.4500")
+def _check_api_compression(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify API compression upgrade works as expected.
+    Test flow:
+        1. Set API compression to gzip
+        2. Verify API compression is set to gzip
+        3. Save configuration
+        4. Do upgrade
+        5. Verify API compression is set to gzip after upgrade
+    """
+    system=System()
+    with allure.step('Set API compression to gzip'):
+        system.api.set(op_param_name=SystemConsts.ApiConsts.COMPRESSION, op_param_value=SystemConsts.ApiConsts.CompressionT.GZIP, apply=True).verify_result()
+        verify_api_compression_state(system, SystemConsts.ApiConsts.CompressionT.GZIP)
+    with allure.step('Save configuration'):
+        NvueGeneralCli.save_config(engines.dut)
+
+    yield  # Do upgrade
+
+    try:
+        with allure.step('Verify API compression is set to gzip after upgrade'):
+            verify_api_compression_state(system, SystemConsts.ApiConsts.CompressionT.GZIP)
+    finally:
+        with allure.step('Unset API compression'):
+            system.api.unset(op_param=SystemConsts.ApiConsts.COMPRESSION, apply=True).verify_result()
+            verify_api_compression_state(system, None)
+
 # #################### End of Feature Checkers ###################
 
 
@@ -1003,7 +1024,7 @@ def _run_authentication_test(
     devices: DevicesT,
     server_type: str,
     server_config: dict,
-    auth_modes: List[str],
+    auth_modes: list[str],
     update_auth_mode_func,
     aaa_obj,
     remote_aaa_type: str,
@@ -1026,22 +1047,22 @@ def _run_authentication_test(
         extra_setup_func: Optional extra setup function to call
         extra_cleanup_func: Optional extra cleanup function to call
     """
-    skip_auth_mediums = [AuthMedium.OPENAPI, AuthMedium.SCP]  # skip openapi and scp, as we have certificates configured
-    test_flow = TestFlowType.GOOD_FLOW
-    addressing_type = AddressingType.IPV4
-    topology_obj = TestToolkit.topology_obj
+    skip_auth_mediums=[AuthMedium.OPENAPI, AuthMedium.SCP]  # skip openapi and scp, as we have certificates configured
+    test_flow=TestFlowType.GOOD_FLOW
+    addressing_type=AddressingType.IPV4
+    topology_obj=TestToolkit.topology_obj
 
-    adminuser = _prepare_local_admin_user(engines, devices)
-    server_active_conf = SimpleNamespace()
+    adminuser=_prepare_local_admin_user(engines, devices)
+    server_active_conf=SimpleNamespace()
 
     try:
         with allure.step(f"Configure {remote_aaa_type} server"):
-            server = server_config[addressing_type].copy()
+            server=server_config[addressing_type].copy()
             assert getattr(server, "users_per_auth_medium", None) is not None, (
                 f'given server must have "users_per_auth_medium" attr\n'
                 f"server: {server.hostname} - {server.port} - {server.docker_name}"
             )
-            server_resource = aaa_obj.server.server_id[server.hostname]
+            server_resource=aaa_obj.server.server_id[server.hostname]
             server.configure(engines)
 
         with allure.step(f"Enable {remote_aaa_type}"):
@@ -1123,8 +1144,8 @@ def _prepare_local_admin_user(engines, devices) -> UserInfo:
         RuntimeError: If user creation fails
     """
     try:
-        adminrole = devices.dut.aaa_admin_role
-        adminuser = UserInfo(
+        adminrole=devices.dut.aaa_admin_role
+        adminuser=UserInfo(
             username=AaaConsts.LOCALADMIN,
             password=generate_strong_password(),
             role=adminrole,
@@ -1136,7 +1157,7 @@ def _prepare_local_admin_user(engines, devices) -> UserInfo:
         raise RuntimeError(f"User creation failed: {e}")
 
 
-@_requires_compatibility(minimal_version="25.02.2100")
+@ _requires_compatibility(minimal_version="25.02.2100")
 def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: SystemPackage, target: SystemPackage, **kwargs) -> Generator[None, None, None]:
     """
     Verify that interface speed configuration is preserved across upgrade.
@@ -1150,11 +1171,11 @@ def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: Syste
     Note: This replaces the speed testing from the deprecated test_downgrade_upgrade
     in test_system_image.py
     """
-    speed_info = None
+    speed_info=None
 
     with allure.step("Configure and test interface speeds"):
         try:
-            speed_info = InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
+            speed_info=InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
 
             if speed_info:
                 logger.info(f"Speed testing configured successfully on port: {speed_info[0].name}")
@@ -1170,7 +1191,7 @@ def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: Syste
             NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
 
 
-@_requires_compatibility(minimal_version="25.02.2351")
+@ _requires_compatibility(minimal_version="25.02.2351")
 def _check_ssd_firmware_auto_upgrade(
     engines: EnginesT, devices: DevicesT, **kwargs
 ) -> Generator[None, None, None]:
@@ -1184,10 +1205,10 @@ def _check_ssd_firmware_auto_upgrade(
     4. Verify SSD firmware is at latest version after upgrade
 
     """
-    ssd_component = Platform().firmware.ssd
+    ssd_component=Platform().firmware.ssd
 
     try:
-        _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+        _, _, latest_version_name=FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
     except pytest.skip.Exception as e:
         # SSD part number not in firmware versions JSON - skip this checker gracefully
         raise Skipped(f"SSD firmware checker skipped: {str(e)}")
@@ -1206,7 +1227,7 @@ def _check_ssd_firmware_auto_upgrade(
 
 
 # the checker must be called e.g. test_rbac
-_CHECKERS: List[CheckerFn] = [
+_CHECKERS: List[CheckerFn]=[
     _check_ssd_firmware_auto_upgrade,
     _check_nmx_cert,
     _check_api_mtls_old,
@@ -1219,6 +1240,7 @@ _CHECKERS: List[CheckerFn] = [
     _check_nmx_telemetry_rbac,
     _check_speed_configuration,
     _check_ssh_cert_auth,
+    _check_api_compression,
 ]
 
 _CHECKERS.append(random.choice([_check_tacacs_auth, _check_radius_auth, _check_ldap_auth]))  # This is intended to be random, as two AAA checkers can't run together

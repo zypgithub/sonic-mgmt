@@ -20,8 +20,9 @@ class OpenApiBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device):
+               send_user_confirmation, expected_output, device, read_timeout=None):
         """See documentation of BaseComponent.action()"""
+        # Note: read_timeout is not used for OpenAPI actions (HTTP requests have their own timeout handling)
         if send_user_confirmation:
             logger.warning(f'The following argument is ignored for OpenAPI commands: {send_user_confirmation=}')
 

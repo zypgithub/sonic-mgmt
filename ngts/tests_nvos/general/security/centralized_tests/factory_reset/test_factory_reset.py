@@ -19,7 +19,7 @@ from ngts.tests_nvos.general.security.centralized_tests.helpers.checker_skip_rul
     SkipCheckerBySetup,
     should_skip_checker,
 )
-from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates
+from ngts.tests_nvos.general.security.certificate.helpers import delete_certificates, delete_crl
 from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import (
     certs_mgmt_factory_reset_keep_only_files_check,
     certs_mgmt_factory_reset_no_params_check,
@@ -224,9 +224,10 @@ def test_reset_factory(factory_reset_type, engines, devices, topology_obj, platf
 
     finally:
         with allure.step("cleanup"):
-            with allure.independent_step("delete ca/certs"):
+            with allure.independent_step("delete ca/certs/crls"):
                 delete_certificates()
                 delete_certificates(True)
+                delete_crl()
 
 
 def do_factory_reset(devices, flag, topology_obj):

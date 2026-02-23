@@ -211,10 +211,16 @@ def test_set_sysrq_capabilities(engines):
                                                     SystemConsts.SERIAL_CONSOLE_DEFAULT_SYSRQ_CAPABILITIES
                                                     ).verify_result()
 
-    with allure.step("Open serial connection to check if we can send sysrq commands"):
-        logger.info("Open serial connection to check if we can send sysrq commands")
-        sysrq_output = engines.dut.run_cmd('cat /proc/sys/kernel/sysrq')
-        assert not sysrq_output or "0" in sysrq_output, "Kernel value isn't as we expected"
+    def _assert_sysrq_kernel_value(expected_val):
+        """Fetch sysrq kernel param and assert it matches expected value."""
+        output = engines.dut.run_cmd('cat /proc/sys/kernel/sysrq')
+        assert not output or expected_val in output, \
+            f"Kernel sysrq value is '{output}', expected '{expected_val}'"
+
+    with allure.step("Verify kernel sysrq is disabled by default"):
+        ValidationTool.retry_until_valid(
+            lambda: _assert_sysrq_kernel_value("0"),
+            description="Verify kernel sysrq is disabled")
 
     with allure.step("Change sysrq to enabled"):
         logger.info("Change sysrq to enabled")
@@ -222,9 +228,10 @@ def test_set_sysrq_capabilities(engines):
                                   SystemConsts.SERIAL_CONSOLE_ENABLED_SYSRQ_CAPABILITIES, apply=True,
                                   ask_for_confirmation=True).verify_result()
 
-    with allure.step("Verify default values"):
-        sysrq_output = engines.dut.run_cmd('cat /proc/sys/kernel/sysrq')
-        assert not sysrq_output or "1" in sysrq_output, "Kernel value isn't as we expected"
+    with allure.step("Verify sysrq is enabled"):
+        ValidationTool.retry_until_valid(
+            lambda: _assert_sysrq_kernel_value("1"),
+            description="Verify kernel sysrq is enabled")
         serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show())\
             .get_returned_value()
         ValidationTool.verify_field_value_in_output(serial_output, SystemConsts.SERIAL_CONSOLE_SYSRQ_CAPABILITIES,
@@ -233,8 +240,9 @@ def test_set_sysrq_capabilities(engines):
 
     with allure.step("Verify default values after unset"):
         system.serial_console.unset(apply=True, ask_for_confirmation=True).verify_result()
-        sysrq_output = engines.dut.run_cmd('cat /proc/sys/kernel/sysrq')
-        assert not sysrq_output or "0" in sysrq_output, "Kernel value isn't as we expected"
+        ValidationTool.retry_until_valid(
+            lambda: _assert_sysrq_kernel_value("0"),
+            description="Verify kernel sysrq is disabled after unset")
         serial_output = OutputParsingTool.parse_json_str_to_dictionary(system.serial_console.show())\
             .get_returned_value()
         ValidationTool.verify_field_value_in_output(serial_output, SystemConsts.SERIAL_CONSOLE_SYSRQ_CAPABILITIES,

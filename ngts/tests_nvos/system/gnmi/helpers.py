@@ -31,7 +31,6 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -187,10 +186,7 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
         cmd = f"gnmic -a {target_ip} --port {target_port} --skip-verify subscribe --prefix '{prefix_and_path[0]}'" \
             f" --path '{prefix_and_path[1]}' --target nvos -u {username} " \
             f"-p {password} {mode_flag} --format flat"
-        if is_redmine_issue_active([4782619])[0]:
-            cmd = "timeout -s INT 4s " + cmd
-        else:
-            raise Exception(f"4782619 fixed, need to update the test")
+        cmd = "timeout -s INT 4s " + cmd
         logger.info(f"run on the sonic mgmt docker {sonic_mgmt_engine.ip}: {cmd}")
         if "poll" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd_set([cmd, '\n', '\n', '\x03', '\x03'],
@@ -200,16 +196,11 @@ def run_gnmi_client_and_parse_output(engines, devices, xpath, target_ip, target_
             gnmi_client_output = re.findall(f"{re.escape(xpath)}:\\s+\\w+", gnmi_client_output)[0]
         elif "once" == mode:
             gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
-            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
             gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         else:
-            # add this line after fixing the issue 4782619
-            # gnmi_client_output = sonic_mgmt_engine.run_cmd_after_cmd([cmd, '\x03']).replace(cmd, '') - need to use this after fixing the issue 4782619
-            # delete the line below after fixing the issue 4782619
             gnmi_client_output = sonic_mgmt_engine.run_cmd(cmd)
             gnmi_client_output = re.sub(r"\^C(.*\n.*)*", '', gnmi_client_output)
-            # Workaround: since we use timeout until fixing bug 4782619, gnmic appends "received signal 'interrupt'. terminating..." on Ctrl-C.
             gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
             gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
 
@@ -379,6 +370,7 @@ def validate_redis_cli_and_gnmi_commands_results(engines, devices, gnmi_list, al
                                                                            mode='once', flat=True,
                                                                            skip_cert_verify=True)
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, gnmi_client_output, gnmi_client_err)
+        gnmi_client_output = re.split(r"received\s+signal.*", gnmi_client_output, flags=re.IGNORECASE)[0]
         gnmi_client_output = re.sub(r'(\\["\\n]+|\s+)', '', gnmi_client_output.split(":")[-1])
         redis_output = Tools.DatabaseTool.sonic_db_cli_hget(engine=engines.dut, asic="",
                                                             db_name=command[GnmiConsts.REDIS_CMD_DB_NAME],

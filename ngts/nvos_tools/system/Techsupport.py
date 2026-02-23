@@ -62,15 +62,37 @@ class TechSupport(BaseComponent):
 
             # Verify file size if requested
             if verify_size:
-                with allure.step('Verify tech-support file size'):
-                    # Round output to MB by -m flag and trim white spaces with column to receive int like output
-                    output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
-                    size_in_MB = int(output.split(" ")[0])
-                    size_limit = device.constants.techsupport_size_limit_mb
-                    assert size_in_MB < size_limit, f"{tech_support_folder} size ({size_in_MB}MB)" \
-                        f" should be less than {size_limit}MB"
+                self.verify_size(engine, tech_support_folder, device)
 
             return tech_support_folder, duration
+
+    def verify_size(self, engine, tech_support_folder: str = '', device=None):
+        """
+        Verify that tech-support folder size is within the expected limit.
+
+        Args:
+            engine: SSH engine to run commands on
+            tech_support_folder: Path to tech-support folder (uses self.file_name if not provided)
+            device: Device object (uses TestToolkit.get_device() if not provided)
+
+        Raises:
+            ValueError: If no tech_support_folder provided and self.file_name is empty
+        """
+        if not tech_support_folder:
+            if not self.file_name:
+                raise ValueError("tech_support_folder not provided and self.file_name is empty")
+            tech_support_folder = SystemConsts.TECHSUPPORT_FILES_PATH + self.file_name
+        if not device:
+            device = TestToolkit.get_device()
+
+        with allure.step('Verify tech-support file size'):
+            # Round output to MB by -m flag and trim white spaces with column to receive int like output
+            output = engine.run_cmd(f"sudo du -sm {tech_support_folder} | column -t")
+            size_in_MB = int(output.split(" ")[0])
+            size_limit = device.constants.techsupport_size_limit_mb
+            logger.info(f"Tech-support size: {size_in_MB}MB (limit: {size_limit}MB)")
+            assert size_in_MB < size_limit, \
+                f"{tech_support_folder} size ({size_in_MB}MB) should be less than {size_limit}MB"
 
     def action_upload(self, upload_path, file_name):
         with allure.step("Upload techsupport {file} to '{path}".format(file=file_name, path=upload_path)):

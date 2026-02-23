@@ -23,7 +23,7 @@ def config_management_interface_verify_logs(engine, mgmt_interface, state, expec
     mgmt_port = Port(mgmt_interface)
 
     with allure.step(f"config {mgmt_interface} state to {state}"):
-        mgmt_port.interface.link.state.set(dut_engine=engine, op_param_value=state, apply=True, ask_for_confirmation=True).verify_result()
+        mgmt_port.interface.link.state.set(state, apply=True, ask_for_confirmation=True, dut_engine=engine).verify_result()
 
     time.sleep(20)
     with allure.step("check cable connection note in the logs"):

@@ -16,3 +16,4 @@ class Ib(BaseComponent):
         self.ibdiagnet = Ibdiagnet(self)
         self.sm = Sm(self)
         self.device = BaseComponent(self, path='/device')
+        self.router = BaseComponent(self, path='/router')

@@ -6,7 +6,7 @@ from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.system.test_system_reboot import validate_reboot_reason_and_user
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
@@ -43,7 +43,7 @@ def test_system_power_button(engines, devices, topology_obj):
                 assert RebootConsts.POWER_BUTTON in reboot_output['reason'], \
                     "Expected reason: power button is not observed: {0}".format(reboot_output['reason'])
 
-            validate_reboot_reason_and_user(system, expected_reason, expected_user)
+            ValidationTool.validate_reboot_reason_and_user(system, expected_reason, expected_user)
 
 
 def _simulate_power_button_press(engines):

@@ -1,6 +1,7 @@
 import logging
 import sys
 import pathlib
+import base64
 import random
 import re
 import shlex
@@ -70,3 +71,42 @@ def run_cmd(cmd: Union[str, list], timeout=10, validate: bool = True, stdout_fun
         raise ValueError(f'error has occurred\nout: {result.stdout}\nerr: {result.stderr}')
 
     return result.stdout
+
+
+def run_ssh_cmd_with_rc(engine: LinuxSshEngine, cmd: str) -> tuple:
+    """
+    Run a command via SSH and capture both output and exit code in a single call.
+
+    This avoids the common bug where 'echo $?' is run as a separate SSH command,
+    which doesn't capture the exit code of the previous command.
+
+    Uses base64 encoding to avoid special characters in the command causing
+    netmiko output parsing issues (e.g., '?' is a regex meta character).
+
+    Args:
+        engine: SSH engine to run the command on
+        cmd: Command to execute
+
+    Returns:
+        tuple: (output, exit_code) where output is the command output (str)
+               and exit_code is the integer return code
+    """
+
+    marker = "EXIT_CODE_MARKER:"
+    wrapped_cmd = f"{cmd}; echo {marker}$?"
+    b64_cmd = base64.b64encode(wrapped_cmd.encode()).decode()
+    safe_cmd = f"echo '{b64_cmd}' | base64 -d | sh"
+    output = engine.run_cmd(safe_cmd)
+
+    lines = output.strip().split("\n")
+    exit_code_line = [line for line in lines if line.startswith(marker)]
+
+    if exit_code_line:
+        exit_code = int(exit_code_line[-1].replace(marker, ""))
+        cmd_output = "\n".join(line for line in lines if not line.startswith(marker))
+    else:
+        logging.warning(f"Could not parse exit code from output: {output}")
+        exit_code = -1
+        cmd_output = output
+
+    return cmd_output, exit_code

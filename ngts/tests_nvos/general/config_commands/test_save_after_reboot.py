@@ -266,13 +266,16 @@ def test_save_reboot(engines, devices):
                 assert dscp_output['set']['dscp'] == 1, \
                     "The configured dscp is not present after reboot"
 
-            with allure.step("Validate health component unhealthy counters and timestamps are retained post reboot"):
-                health = OutputParsingTool.parse_json_str_to_dictionary(
-                    system.health.component.show()).get_returned_value()
-                fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
-                fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
-                assert fan_unhealthy_count == 1, "Fan unhealthy counter is not retained"
-                assert fan_last_unhealthy != "", "Fan last-unhealthy time is not retained"
+            with allure.step("Validate health component unhealthy counters and timestamps are retained post reboot if setup with fans"):
+                if 'hw-management-tc.service' in devices.dut.available_services:
+                    health = OutputParsingTool.parse_json_str_to_dictionary(
+                        system.health.component.show()).get_returned_value()
+                    fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
+                    fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
+                    assert fan_unhealthy_count == 1, "Fan unhealthy counter is not retained"
+                    assert fan_last_unhealthy != "", "Fan last-unhealthy time is not retained"
+                else:
+                    logger.info("No fan available, skip")
 
             if nmx_log_stream_test:
                 with allure.step("Verify cluster is enabled"):
@@ -301,7 +304,7 @@ def test_save_reboot(engines, devices):
                 system.health.component.action(ActionConsts.CLEAR)
 
             with allure.step('Cleanup - Run unset system DNS server and apply config'):
-                system.dns.unset(SystemConsts.DNS_SERVER, apply=True, dut_engine=engines.dut).verify_result()
+                system.dns.unset(SystemConsts.DNS_SERVER, apply=True, ask_for_confirmation=True, dut_engine=engines.dut).verify_result()
 
             with allure.step('Cleanup - set hostname to be {hostname} - with apply'.format(hostname=old_hostname)):
                 system.unset(SystemConsts.HOSTNAME, apply=True, ask_for_confirmation=True)

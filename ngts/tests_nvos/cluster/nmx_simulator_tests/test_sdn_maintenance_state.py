@@ -25,7 +25,7 @@ logger = logging.getLogger()
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_maintenance_state_show_cmd(test_api, setup_name, check_device_and_system_type_for_sdn):
+def test_maintenance_state_show_cmd(test_api, setup_name):
     """
     Test the SDN maintenance state show commands functionality.
 
@@ -62,7 +62,7 @@ def test_maintenance_state_show_cmd(test_api, setup_name, check_device_and_syste
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_change_maintenance_state(test_api, check_device_and_system_type_for_sdn):
+def test_change_maintenance_state(test_api):
     """
     Test the ability to change and restore maintenance state for SDN transceivers.
 
@@ -114,7 +114,7 @@ def test_change_maintenance_state(test_api, check_device_and_system_type_for_sdn
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_bad_params(test_api, check_device_and_system_type_for_sdn):
+def test_bad_params(test_api):
     """
     Test error handling for invalid parameters in SDN maintenance state commands.
 
@@ -142,7 +142,7 @@ def test_bad_params(test_api, check_device_and_system_type_for_sdn):
 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_port_state_change_according_to_maintenance_state(engines, devices, test_api, check_device_and_system_type_for_sdn):
+def test_port_state_change_according_to_maintenance_state(engines, devices, test_api):
     """
     Test that port states change correctly based on maintenance state changes.
 

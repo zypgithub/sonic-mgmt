@@ -1472,7 +1472,7 @@ def test_syslog_rate_limit_burst(random_api):
         with allure.step("Create server and selector"):
             system.syslog.servers.set_server(remote_server_ip, apply=True)
             system.syslog.selectors.set_selector(selector_id, apply=True)
-            system.syslog.selectors.selectors_dict[selector_id].set_severity(SyslogSeverityLevels.INFO, apply=True)
+            system.syslog.selectors.selectors_dict[selector_id].set_severity(SyslogSeverityLevels.CRITICAL, apply=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, selector_id, apply=True)
 
         with allure.step(f"Configure rate limit with interval={interval} and burst={burst}"):
@@ -1486,29 +1486,41 @@ def test_syslog_rate_limit_burst(random_api):
             }
             system.syslog.selectors.selectors_dict[selector_id].verify_rate_limit_config(expected_selector)
 
-        with allure.step("Send 10 messages in quick succession"):
-            # Send first 3 messages (within burst limit)
-            for i in range(3):
+        with allure.step("Send messages until rate limiting kicks in, then verify drops"):
+            # Send messages continuously until rate limiting is detected
+            rate_limit_triggered = False
+            max_messages = 20  # Safety limit to avoid infinite loop
+            messages_sent = 0
+
+            for i in range(max_messages):
                 test_message = f"burst_test_message_{i}"
                 send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
-            # Send 10 messages without checking message received to expire burst limit
-            for i in range(3, 10):
-                test_message = f"burst_test_message_{i}"
-                send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO)
-            time.sleep(10)
-            # Send next 5 messages and verify they are not received (past burst limit)
-            for i in range(11, 15):
-                test_message = f"burst_test_message_{i}"
-                send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO, verify_msg_didnt_received=True)
+                                   priority=SyslogSeverityLevels.CRITICAL)
+                messages_sent += 1
+                time.sleep(1)
+
+                # Check if rate limiting message appears in switch logs
+                syslog_output = TestToolkit.engines.dut.run_cmd('tail -20 /var/log/syslog | grep "rate-limiting"')
+                if "begin to drop messages due to rate-limiting" in syslog_output:
+                    rate_limit_triggered = True
+                    logger.info(f"✓ Rate limiting detected after sending {messages_sent} messages")
+                    break
+
+            assert rate_limit_triggered, f"Rate limiting was not triggered after {messages_sent} messages (expected within burst limit of {burst})"
+
+            # Now send additional messages and verify they are being dropped
+            with allure.step("Verify messages are dropped after rate limit"):
+                for j in range(3):
+                    drop_test_message = f"burst_test_drop_verify_{j}"
+                    send_msg_to_server(drop_test_message, remote_server_ip, remote_server_engine,
+                                       priority=SyslogSeverityLevels.CRITICAL, verify_msg_didnt_received=True)
+                    logger.info(f"✓ Confirmed message {j} was dropped as expected")
 
         with allure.step("Wait for interval reset and send new message"):
             time.sleep(80)  # Wait for interval reset with buffer time
             test_message = "burst_test_message_after_interval"
             send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                               priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
+                               priority=SyslogSeverityLevels.CRITICAL, verify_msg_received=True)
 
         with allure.step("Unset rate limit"):
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.unset(apply=True)
@@ -1518,7 +1530,7 @@ def test_syslog_rate_limit_burst(random_api):
         with allure.step("Send new message after unset"):
             test_message = "burst_test_message_after_unset"
             send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                               priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
+                               priority=SyslogSeverityLevels.CRITICAL, verify_msg_received=True)
         with allure.step("Configure rate limit with interval=60 and burst=10"):
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_interval(interval, apply=True)
             system.syslog.selectors.selectors_dict[selector_id].rate_limit.set_burst(burst, apply=True)
@@ -1530,7 +1542,7 @@ def test_syslog_rate_limit_burst(random_api):
         with allure.step("Send new message after unset"):
             test_message = "burst_test_message_after_unset"
             send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                               priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
+                               priority=SyslogSeverityLevels.CRITICAL, verify_msg_received=True)
 
     finally:
         with allure.step("Clean up configurations"):
@@ -1905,9 +1917,11 @@ def test_syslog_logging_during_system_reboot(engines, random_api):
     try:
         with allure.step("Configure remote syslog server"):
             system.syslog.servers.set_server(remote_server_ip, apply=True)
+            # Save configuration to persist across reboot so logs can be forwarded
+            TestToolkit.GeneralApi[random_api].save_config(engines.dut)
 
         with allure.step("Perform reboot"):
-            system.reboot.action_reboot(send_user_confirmation='y')
+            system.action_reboot()
 
             # Wait for system to come back online
             max_wait = 300

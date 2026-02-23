@@ -4,8 +4,9 @@ import random
 import time
 import re
 
-from ngts.nvos_constants.constants_nvos import SystemConsts, FansConsts
+from ngts.nvos_constants.constants_nvos import HealthConsts, SystemConsts, FansConsts
 from ngts.nvos_tools.infra.FilesTool import FilesTool
+from ngts.nvos_tools.system.System import System
 
 logger = logging.getLogger()
 
@@ -136,8 +137,14 @@ class HWSimulator:
 
     @staticmethod
     def create_health_component_error_fan(devices, engines):
-        thermal_directory = devices.dut.fan_direction_dir
-        fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+        with allure.step("Check whether the setup has fans"):
+            if 'hw-management-tc.service' not in devices.dut.available_services:
+                logger.info("No fan available, skip")
+                return
+
+        with allure.step("get random fan id from fans folder"):
+            thermal_directory = devices.dut.fan_direction_dir
+            fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
 
         with allure.step("Simulate fan error"):
             real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
@@ -146,3 +153,11 @@ class HWSimulator:
         with allure.step("Fix fan error"):
             HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
             time.sleep(10)
+
+    @staticmethod
+    def reset_health_service(engine):
+        with allure.step("Restart health-statsd to clear issues history"):
+            logger.info("Restarting health-statsd to clear accumulated issues after test")
+            engine.run_cmd("sudo systemctl restart health-statsd")
+            time.sleep(10)
+            System().health.wait_until_health_status_change_after_reboot(HealthConsts.OK)

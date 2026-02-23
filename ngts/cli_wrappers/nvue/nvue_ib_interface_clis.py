@@ -12,21 +12,6 @@ class NvueIbInterfaceCli(NvueBaseCli):
 
     @staticmethod
     @check_output
-    def clear_stats(engine, port_name, fae_param=""):
-        """
-        Clears the interface counters
-        :param engine: ssh engine object
-        :param port_name: the name of the port/ports
-        :param fae_param: optional - run the command with fae
-        """
-        cmd = 'nv action clear {fae_param} interface {port_name} counters'.\
-            format(fae_param=fae_param, port_name=port_name)
-        cmd = " ".join(cmd.split())
-        logging.info('Running ' + cmd)
-        return engine.run_cmd(cmd)
-
-    @staticmethod
-    @check_output
     def action_clear_counters(engine, resource_path, fae_param=""):
         """
         Clear counters for all interfaces

@@ -74,4 +74,5 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/interfaces/nvos_nvl5_port.cases </cases>
 	</test>
+	
 </DBDEF>

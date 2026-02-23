@@ -13,6 +13,7 @@ from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import DatabaseConst
@@ -1024,15 +1025,28 @@ def clear_all_internal_and_external_files(engine, system, category_list):
     engine.run_cmd("sudo rm -f /var/stats/*.old")
 
 
-def check_category_internal_files_exist(engine, category_list):
-    output = engine.run_cmd("ls /var/stats")
-    output_list = list(filter(None, output.strip().split()))
+def check_category_internal_files_exist(engine, category_list, retries=10, interval=3):
     expected_files = [f"{cat}.csv" for cat in category_list]
-    missing = [file for file in expected_files if file not in output_list]
+    start_time = time.perf_counter()
+    for attempt in range(1, retries + 1):
+        output = engine.run_cmd("ls /var/stats")
+        output_list = list(filter(None, output.strip().split()))
+        missing = [file for file in expected_files if file not in output_list]
+        if not missing:
+            duration = time.perf_counter() - start_time
+            logger.info("All {} category files generated in {:.1f}s ({} attempts)".format(
+                len(expected_files), duration, attempt))
+            OperationTime.save_manual_operation_duration_to_db(
+                'stats category files generation', duration, pytest.test_name)
+            break
+        logger.info("Attempt {}/{}: still missing {} files: {}".format(attempt, retries, len(missing), missing))
+        time.sleep(interval)
+    else:
+        duration = time.perf_counter() - start_time
+        assert False, "After {:.1f}s ({} retries), still missing files: {}".format(duration, retries, missing)
     extra = [file for file in output_list if file not in expected_files]
     if "mgmt-interface.csv.old" in extra:
         extra.remove("mgmt-interface.csv.old")
-    assert not missing, f"Missing expected files: {missing}"
     assert not extra, f"Unexpected extra files found: {extra}"
 
 
@@ -1278,11 +1292,11 @@ def check_sample_timestamp(row, prev_sample_time, category):
 
 def check_in_range(col, value, min_val, max_val, sample, category):
     if value != 'N/A':
-        assert min_val <= int(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
+        assert min_val <= float(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
 
 
 def check_in_range_without_na(col, value, min_val, max_val, sample, category):
-    assert min_val <= int(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
+    assert min_val <= float(value) <= max_val, f"{category} {col} not in range ({value} in sample #{sample}"
 
 
 def get_header_number_of_lines(engines, category):

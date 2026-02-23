@@ -7,13 +7,15 @@ from retry import retry
 
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, SystemConsts
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionLinks
+from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -62,11 +64,30 @@ class MultiPlanarTool:
                 system.reboot.action_reboot(params='force').verify_result()
 
     @staticmethod
-    def select_random_aggregated_port(device):
+    def select_random_aggregated_port(device, setup_name):
         with allure.step("Select a random aggregated port"):
             if isinstance(device, CrocodileSwitch):
-                # TODO: update PortSelectionTool to support this case
-                port_name = 'swB10p1'
+                with allure.step("Get random aggregated port for Crocodile systems"):
+                    with allure.step("Get all aggregated ports"):
+                        port_requirements = PortRequirements()
+                        port_requirements.set_port_ib_speed(IbInterfaceConsts.XDR)
+                        selected_up_ports = Tools.RandomizationTool.select_random_ports(
+                            requested_ports_state=NvosConsts.LINK_STATE_UP,
+                            requested_ports_type=device.switch_type.lower(),
+                            port_requirements_object=port_requirements,
+                            num_of_ports_to_select=0)
+                        with allure.step('Assert XDR ports found'):
+                            assert selected_up_ports, 'No XDR ports are currently UP or available for selection'
+                            selected_up_ports = selected_up_ports.get_returned_value()
+                        ports_connected = RegressionLinks.get_filtered_ports_list(setup_name=setup_name, is_loopback=True)
+                        assert ports_connected, 'Aggregated_port ports not found'
+                    with allure.step('Pick random port from ports_connected that are UP'):
+                        up_port_names = {p.name for p in selected_up_ports}
+                        ports_connected_and_up = {k: v for k, v in ports_connected.items()
+                                                  if k in up_port_names and v in up_port_names}
+                        assert ports_connected_and_up, 'No UP ports connected in loopback found'
+                    port_name = Tools.RandomizationTool.select_random_value(
+                        ports_connected_and_up).get_returned_value()
             else:
                 port_name = RandomizationTool.select_random_port(
                     requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE
@@ -104,9 +125,9 @@ class MultiPlanarTool:
         return result
 
     @staticmethod
-    def select_random_port_and_plane(device) -> Tuple[Port, Port, Port]:
+    def select_random_port_and_plane(device, setup_name) -> Tuple[Port, Port, Port]:
         with allure.step("Select a random aggregated port (connected in loop back to another port)"):
-            selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(device)
+            selected_fae_aggregated_port = MultiPlanarTool.select_random_aggregated_port(device, setup_name)
             selected_aggregated_port = Port(selected_fae_aggregated_port.port.name)
         with allure.step("Select a random plane port"):
             selected_fae_plane_port = MultiPlanarTool.select_random_plane_port(selected_fae_aggregated_port,

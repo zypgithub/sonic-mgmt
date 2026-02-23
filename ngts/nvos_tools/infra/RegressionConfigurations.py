@@ -4,6 +4,7 @@ from typing import Dict, Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts, PlatformConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -38,6 +39,10 @@ class Configurations:
         "10.7.148.248": ['sw61p1', 'sw67p1'],
         "10.7.148.249": ['sw61p1', 'sw67p1'],
 
+        # Black Mamba DGX
+        "10.7.145.81": ['sw1p1', 'sw2p1'],
+        "10.7.145.82": ['sw1p1', 'sw2p1'],
+
         # Crocodile
         "10.7.148.94": ['swA1p1', 'swA2p1'],
         "10.7.148.95": ['swA1p1', 'swA2p1'],
@@ -50,8 +55,8 @@ class Configurations:
         "10.7.144.58": ['sw1p1', 'sw1p2', 'sw2p1'],
 
         # Taipan
-        "10.7.145.34": ['sw5p1', 'sw6p1'],
-        "10.7.145.39": ['sw5p1', 'sw6p1'],
+        "10.7.145.34": ['sw14p1', 'sw43p1'],
+        "10.7.145.39": ['sw14p1', 'sw43p1'],
     }
 
     juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_136", "NVOS_juliet_10_7_148_184",
@@ -81,7 +86,7 @@ class Configurations:
         for ip in ["10.245.21.67", "10.7.148.160", "10.7.148.161", "10.7.145.61", "10.7.145.62"]
     }
 
-    devices_missing_psus = {}
+    devices_missing_psus = {"10.7.148.138"}
     devices_to_configure_ndr_ports = ndr_ports.keys()
     devices_requested_factory_reset = []  # ['10.7.148.248']
 
@@ -167,10 +172,11 @@ class RegressionConfigurations:
                 RegressionConfigurations.configure_ports_to_legacy(engine=engine, apply=False)
             if apply:
                 with allure.independent_step('Applying base configuration (if there is a diff)'):
-                    config_diff = OutputParsingTool.parse_json_str_to_dictionary(NvueGeneralCli.show_config(engine)
+                    general_cli = TestToolkit.GeneralApi[TestToolkit.tested_api]
+                    config_diff = OutputParsingTool.parse_json_str_to_dictionary(general_cli.show_config(engine)
                                                                                  ).get_returned_value()
                     if config_diff:
-                        NvueGeneralCli.apply_config(engine=engine, option='-y', verify_execution=True)
+                        general_cli.apply_config(engine=engine, option='-y', verify_execution=True)
 
     @staticmethod
     def configure_ps_redundancy_policy(engine: LinuxSshEngine):
@@ -198,8 +204,9 @@ class RegressionConfigurations:
 
                     if apply and port_updated:
                         with allure.step("Apply configuration"):
-                            output = NvueGeneralCli.apply_config(engine=engine, option='--assume-yes')
-                            assert "applied" in output, "Failed to apply config"
+                            general_cli = TestToolkit.GeneralApi[TestToolkit.tested_api]
+                            output = general_cli.apply_config(engine=engine, option='--assume-yes')
+                            assert "applied" in str(output).lower(), "Failed to apply config"
 
                         if wait_till_port_up:
                             ndr_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP,

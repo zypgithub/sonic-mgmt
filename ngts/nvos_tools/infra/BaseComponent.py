@@ -4,7 +4,8 @@ import time
 
 from typing import Dict, Iterable, Tuple, Union
 
-from infra.tools.validations.traffic_validations.port_check.port_checker import validate_port_in_expected_state
+from infra.tools.validations.traffic_validations.port_check.port_checker import validate_port_in_expected_state, \
+    check_port_status_till_alive
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -415,7 +416,7 @@ class BaseComponent:
                reboot_params: Union[bool, RebootParams, None] = None,  # set True if reboot is expected
                send_user_confirmation: str = None,  # e.g. 'y' or 'n' if NVUE asks for confirmation
                expected_output: Union[str, Iterable[str]] = '',  # string or list of possible strings
-               # todo: timeout parameter
+               read_timeout: int = None,  # timeout in seconds for long-running operations (e.g. ISSU)
                device=None) -> ResultObj:
         """
         :param action_str: e.g. 'install', 'reboot', ...
@@ -449,7 +450,8 @@ class BaseComponent:
         with allure.step("Execute " + BaseCli.get_nv_action_string(action_str, resource_path, main_param, flags,
                                                                    additional_params)):
             result = self._cli_wrapper.action(action_str, resource_path, main_param, flags, additional_params, engine,
-                                              reboot_params, send_user_confirmation, expected_output, device)
+                                              reboot_params, send_user_confirmation, expected_output, device,
+                                              read_timeout=read_timeout)
             logger.info(result)
 
         if reboot_params and result:  # if reboot is expected and the action returned a success message: wait on reboot
@@ -459,9 +461,8 @@ class BaseComponent:
         else:
             try:
                 with allure.step('Assert that no reboot happened'):
-                    time.sleep(3)
-                    validate_port_in_expected_state(engine.ip, engine.ssh_port)
-            except AssertionError:
+                    check_port_status_till_alive(True, engine.ip, engine.ssh_port, tries=5, delay=3)
+            except (AssertionError, Exception):
                 logger.error(f'Action {"succeeded" if result else "failed"} and caused an unexpected reboot. '
                              f'Failure information:\n{result.info}')
                 with allure.step('Waiting for system to recover from unexpected reboot'):

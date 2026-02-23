@@ -1,5 +1,6 @@
 import logging
 
+from netmiko.exceptions import ReadTimeout
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.infra import ExceptionTool
@@ -38,7 +39,7 @@ class NvueBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device) -> ResultObj:
+               send_user_confirmation, expected_output, device, read_timeout=None) -> ResultObj:
         """See documentation of BaseComponent.action()"""
         cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
@@ -48,7 +49,11 @@ class NvueBaseCli(BaseCli):
             #  response. Also, find a way to keep getting input from the shell if the action takes a long time
             #  ("Action executing...") and print it to the log, instead of waiting for the action to finish and only
             #  then printing everything all at once.
-            response: str = netmiko_engine.send_command_timing(cmd)
+            # Use custom read_timeout for long-running operations (e.g., ISSU)
+            timing_kwargs = {}
+            if read_timeout is not None:
+                timing_kwargs['read_timeout'] = read_timeout
+            response: str = netmiko_engine.send_command_timing(cmd, **timing_kwargs)
             logger.info(response)
 
         # todo refactor: extract prompt-handling to another function (because it will be useful in other places too)
@@ -56,7 +61,8 @@ class NvueBaseCli(BaseCli):
         expect_prompt = bool(send_user_confirmation)
         if prompt_is_shown and expect_prompt:
             with allure.step(f'Sending "{send_user_confirmation}" in response'):
-                response = netmiko_engine.send_command_timing(send_user_confirmation)
+                # Use custom read_timeout for long-running operations after user confirmation (e.g., ISSU)
+                response = netmiko_engine.send_command_timing(send_user_confirmation, **timing_kwargs)
                 logger.info(response)
         elif prompt_is_shown:  # we see a confirmation-prompt that we didn't expect; it's an error
             with allure.step('Encountered unexpected prompt; sending Ctrl+C'):
@@ -84,7 +90,7 @@ class NvueBaseCli(BaseCli):
                 logger.error(f'{return_code=}')
                 result.update(False, returned_value=response, issue_type=IssueType.PossibleBug,
                               info=f'Command finished with {return_code=} and output:\n{response}')
-            except (OSError, TimeoutError) as e:  # OSError("Socket is closed")
+            except (OSError, TimeoutError, ReadTimeout) as e:  # OSError("Socket is closed"), ReadTimeout on prompt
                 result.update(False, returned_value=response, issue_type=IssueType.PossibleBug,
                               info=(f'Possible connection loss: {ExceptionTool.format_exception(e)}.\n'
                                     f'This is probably due to a reboot or port configuration change. Command output '

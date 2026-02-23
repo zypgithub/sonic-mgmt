@@ -16,3 +16,4 @@ class LinkMgmt(BaseComponent):
         self.phy_recovery = BaseComponent(self, path='/phy-recovery')
         self.kr = BaseComponent(self, path='/link-training')
         self.plr = BaseComponent(self, path='/plr')
+        self.ib_subnet = BaseComponent(self, path='/ib-subnet')

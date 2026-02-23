@@ -516,6 +516,18 @@ def rollback(current_build: Optional[str] = None, other_build: Optional[str] = N
     return current_partition_id
 
 
+def _extract_leaf_paths(d, prefix=""):
+    """Extract dotted paths to leaf values from a nested dict for readable diff summaries."""
+    paths = []
+    for key, value in d.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict) and value:
+            paths.extend(_extract_leaf_paths(value, path))
+        else:
+            paths.append(f"{path} = {value}")
+    return paths
+
+
 def compare_configs(engines: EnginesT, config_file: Path) -> None:
     """
     Compare the system config with the expected config.
@@ -524,8 +536,15 @@ def compare_configs(engines: EnginesT, config_file: Path) -> None:
         engines: Engines object containing the engine to update.
         config_file: Path to the configuration file.
     """
-    dicts_diff = NvosInstallationSteps.verify_config_after_upgrade(config_file, engines.dut, normalize_config=False)
-    assert not dicts_diff, f"The following configs were expected but weren't found:\n{yaml.dump(dicts_diff)}"
+    dicts_diff = NvosInstallationSteps.verify_config_after_upgrade(config_file, engines.dut)
+    if dicts_diff:
+        missing_keys = _extract_leaf_paths(dicts_diff)
+        summary = "\n".join(f"  - {path}" for path in missing_keys)
+        assert False, (
+            f"Configuration was not preserved across upgrade.\n"
+            f"Missing/mismatched settings ({len(missing_keys)}):\n{summary}\n\n"
+            f"Full diff:\n{yaml.dump(dicts_diff, default_flow_style=False)}"
+        )
 
 
 def remove_added_fw_files(devices: DevicesT) -> None:

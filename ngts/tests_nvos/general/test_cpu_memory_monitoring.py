@@ -207,8 +207,9 @@ def test_high_memory_usage_simulation(engines, devices, test_api):
             simulate_and_verify_high_memory_usage(engines, devices, docker, warning_phase=True)
 
         with allure.step(f"Change {MEMORY_RESTART_THRESHOLD} and start another high memory simulation"):
-            new_memory_threshold = 15
-            set_value_and_verify(limit=MEMORY_RESTART_THRESHOLD, new_value=new_memory_threshold)
+            # Restart threshold must be greater than warning threshold
+            new_memory_restart_threshold = new_memory_threshold + 1
+            set_value_and_verify(limit=MEMORY_RESTART_THRESHOLD, new_value=new_memory_restart_threshold)
             changed_configurations.append(MEMORY_RESTART_THRESHOLD)
             simulate_and_verify_high_memory_usage(engines, devices, docker)
 
@@ -222,7 +223,9 @@ def test_high_memory_usage_simulation(engines, devices, test_api):
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
         with allure.step(f"Set thresholds to default values"):
-            for limit in changed_configurations:
+            # Restore in reverse order: restart threshold (95) before warning threshold (90)
+            # to ensure restart > warning constraint is never violated
+            for limit in reversed(changed_configurations):
                 set_value_and_verify(limit=limit, new_value=DEFAULT_VALUES[limit])
 
 

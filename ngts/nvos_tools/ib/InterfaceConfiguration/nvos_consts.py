@@ -112,8 +112,8 @@ class IbInterfaceConsts:
     LINK_STATS_UNICAST_OUT_PKTS = "unicast-out-pkts"
     LINK_STATS_MULTICAST_OUT_PKTS = "multicast-out-pkts"
     LINK_STATS_OUT_WAIT = "out-wait"
-    MAX_BYTE_COUNTER_AFTER_CLEAR = 2500
-    MAX_PKT_COUNTER_AFTER_CLEAR = 9
+    MAX_BYTE_COUNTER_AFTER_CLEAR = 4000
+    MAX_PKT_COUNTER_AFTER_CLEAR = 15
     LINK_STATS_RCV_ICRC_ERRORS = 'rcv-icrc-errors'
     LINK_STATS_TX_PARITY_ERRORS = 'tx-parity-errors'
     LINK_PLR_RCV_CODES_ERRORS = 'plr-rcv-codes-err'
@@ -161,6 +161,7 @@ class IbInterfaceConsts:
     ASIC = "asic"
     PRIMARY_ASIC = "primary-asic"
     PRIMARY_ASIC_DEVICE = "primary-asic-device"
+    LOCAL_PORT = "local-port"
     IP_VRF = "vrf"
     IP_ADDRESS = "address"
     IP_GATEWAY = "gateway"
@@ -195,6 +196,7 @@ class IbInterfaceConsts:
     PC_XMT_DISCARDS_F = "SAI_PORT_STAT_INFINIBAND_PC_XMT_DISCARDS_F"
     XMT_DISCARD_EXTERNAL_CONTAIN = "SAI_PORT_STAT_INFINIBAND_XMT_DISCARD_EXTERNAL_CONTAIN"
     TOTAL_OUT_DROPS = "PORT_STAT_INFINIBAND_TOTAL_OUT_DROPS"
+    DEFAULT_SWID = "infiniband-default"
 
     # IB counters expected fields list (defined at end to reference constants defined above)
     IB_COUNTERS_EXPECTED_OPTIONS = [COUNTERS_ERRORS, COUNTERS_DROPS, COUNTERS_FAST_RECOVERY]

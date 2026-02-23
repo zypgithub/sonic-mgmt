@@ -640,10 +640,9 @@ def crl_factory_reset_keep_only_files_check():
             _verify_cmd_success(engines.dut, f"ls {crl_file_path}", should_succeed=True)
 
         with allure.step("Verify CRL is not bound to application (config reset)"):
-            api_crl_output = system.api.mtls.crl.parse_show()
-            assert not api_crl_output or api_crl_output.get("crl-id", "") == "", (
-                f"CRL should not be bound after factory reset: {api_crl_output}"
-            )
+            api_mtls_output = system.api.mtls.parse_show()
+            crl_value = api_mtls_output.get("crl", "") if api_mtls_output else ""
+            assert not crl_value, f"CRL should not be bound after factory reset: {api_mtls_output}"
 
         with allure.step("Re-setup mTLS for verification"):
             crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[client_cert])

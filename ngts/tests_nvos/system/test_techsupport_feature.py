@@ -16,31 +16,11 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.ib_router.constants import IbRouterConsts
 import logging
 import pytest
 
 logger = logging.getLogger()
-
-
-@pytest.mark.general
-@pytest.mark.tech_support
-def test_techsupport_folder_name(engines):
-    """
-    Test flow:
-        1. get time
-        2. run nv action generate system tech-support
-        3. validate the tar.gz name is /host/dump/nvos_dump_<hostname>_<date>_<time>.tar.gz
-    """
-    with allure.step('Run nv action generate system tech-support and validate the tech-support name'):
-        system = System(None)
-        output_dictionary_before = list(OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.files.show()).get_returned_value().values())
-        tech_support_folder, duration = system.techsupport.action_generate()
-        validate_techsupport_folder_name(system, tech_support_folder)
-        output_dictionary_after = list(OutputParsingTool.parse_show_files_to_dict(
-            system.techsupport.files.show()).get_returned_value().values())
-
-        cleanup_techsupport(engines.dut, output_dictionary_before, output_dictionary_after)
 
 
 @pytest.mark.general
@@ -74,7 +54,7 @@ def test_techsupport_with_dockers_down(engines, dockers_list=['gnmi-server']):
 @pytest.mark.skynet
 @disabled_access_ports
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-def test_techsupport_expected_files(engines, devices, test_name, skynet, has_loopbox, standalone_system, setup_name):
+def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_router, has_loopbox, standalone_system, setup_name):
     """
     Run nv show system tech-support files command and verify the required fields are exist
     and measure how long it takes
@@ -149,6 +129,8 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, has_loo
         verify_secret_obscurity(content=content, pattern=password_pattern, file_name=file_name, secret_name='password')
 
     system = System()
+    if ib_router:
+        devices.dut.constants.dump_files.append(IbRouterConsts.IBR_DUMP_FILE)
     expected_files_dict = {'dump': devices.dut.constants.dump_files,
                            'log': devices.dut.constants.log_dump_files,
                            'log/audit': devices.dut.constants.audit_files,

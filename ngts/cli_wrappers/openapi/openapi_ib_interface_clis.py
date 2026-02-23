@@ -11,23 +11,6 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
         self.cli_name = "interface"
 
     @staticmethod
-    def clear_stats(engine, port_name, fae_param=""):
-        """
-        Clears the interface counters
-        :param engine: ssh engine object
-        :param port_name: the name of the port/ports
-        :param fae_param: optional - run the command with fae
-        """
-        resource_path = f'/interface/{port_name}/counters'
-        logging.info("Running action: 'clear' on dut using OpenApi, resource: {rsrc}".format(rsrc=resource_path))
-        params = {
-            "state": "start",
-        }
-
-        return OpenApiCommandHelper.execute_action(ActionType.CLEAR, engine.engine.username, engine.engine.password,
-                                                   engine.ip, engine.open_api_port, resource_path, params)
-
-    @staticmethod
     def show_interface(engine, port_name, interface_hierarchy="", fae_param="", output_format=OutputFormat.json):
         """
         Displays the configuration and the status of the interface
@@ -49,15 +32,22 @@ class OpenApiIbInterfaceCli(OpenApiBaseCli):
 
     @staticmethod
     def action_clear_counters(engine, resource_path, fae_param='', params_dict=None):
-        resource_path = '/' + resource_path
+        """
+        Clears interface counters. Supports both single port and all ports.
+        - Single port (e.g. "interface sw1p1"): POST @clear on /interface/{port}/counters
+        - All ports ("interface"): POST @clear on /interface with counters in params
+        """
+        resource_path = '/' + resource_path.replace(' ', '/')
+        if fae_param:
+            resource_path = '/' + fae_param + resource_path
+        # Single port: append /counters to the URL path
+        # All ports (/interface only): keep path as-is, counters go in body params
+        if not resource_path.endswith('/interface'):
+            resource_path += '/counters'
+            params = {"state": "start"}
+        else:
+            params = {"state": "start", "parameters": params_dict or {"counters": "counters"}}
         logging.info("Running action: 'clear' on dut using OpenApi, resource: {rsrc}".format(rsrc=resource_path))
-        params = {
-            "state": "start",
-            "parameters":
-            {
-                "counters": "counters"
-            }
-        }
 
         return OpenApiCommandHelper.execute_action(ActionType.CLEAR, engine.engine.username, engine.engine.password,
                                                    engine.ip, engine.open_api_port, resource_path, params)

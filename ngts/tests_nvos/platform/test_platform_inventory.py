@@ -76,6 +76,23 @@ class InventoryPsuTest(InventoryItemBaseTest):
 class InventoryFanTest(InventoryItemBaseTest):
     ITEM_TYPE = 'fan'
 
+    @classmethod
+    def choose_item(cls, engines, devices, test_api) -> str:
+        """Choose a fan that is not absent (filter out absent fans)."""
+        platform = Platform()
+        output_format = OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
+        output = OutputParsingTool.parse_show_output_to_dict(
+            platform.inventory.show(output_format=output_format),
+            output_format=output_format, field_name_dict={'HW Version': 'hardware-version'}).get_returned_value()
+
+        # Filter fans where state is not 'absent'
+        fan_list = [fan for fan in devices.dut.platform_inventory_items_dict[cls.ITEM_TYPE]
+                    if output.get(fan, {}).get('state') != 'absent']
+        logger.info(f"Will choose randomly from present fans: {fan_list}")
+        ret = random.choice(fan_list)
+        logger.info(f"Chosen {ret}")
+        return ret
+
 
 class InventorySwitchTest(InventoryItemBaseTest):
     ITEM_TYPE = 'switch'

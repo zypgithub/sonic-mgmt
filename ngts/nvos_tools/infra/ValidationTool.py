@@ -6,6 +6,7 @@ from typing import Iterable, Dict, Union
 
 from ngts.tools.test_utils import allure_utils as allure
 from .ResultObj import ResultObj, IssueType
+from .OutputParsingTool import OutputParsingTool
 from retry import retry
 
 from ...nvos_constants.constants_nvos import NvosConst
@@ -667,3 +668,31 @@ class ValidationTool:
                 return {}
 
         return _diff(before_dict, after_dict, [])
+
+    @staticmethod
+    def retry_until_valid(validate_fn, tries=5, delay=3, description="Waiting for expected value"):
+        """
+        Retry a validation function until it passes or retries are exhausted.
+        The function should fetch fresh data and raise on validation failure.
+
+        :param validate_fn: callable() that fetches output AND validates it (raises on failure)
+        :param tries: max number of attempts (default 5)
+        :param delay: seconds between retries (default 3)
+        :param description: allure step description
+        """
+        with allure.step(description):
+            retry(Exception, tries=tries, delay=delay)(validate_fn)()
+
+    @staticmethod
+    @retry(Exception, tries=6, delay=10)
+    def validate_reboot_reason_and_user(system, expected_reason: str, expected_user: str):
+        with allure.step("Check reboot reason event in system events"):
+            reboot_reason, reboot_user = OutputParsingTool.get_reboot_reason_and_user_from_system_events(system)
+
+            with allure.independent_step("Validate reboot reason"):
+                assert expected_reason in reboot_reason, \
+                    f"Reboot reason is '{reboot_reason}' instead of expected '{expected_reason}'"
+
+            with allure.independent_step("Validate reboot user"):
+                assert expected_user in reboot_user, \
+                    f"Reboot user is '{reboot_user}' instead of expected '{expected_user}'"

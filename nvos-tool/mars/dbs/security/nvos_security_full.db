@@ -111,11 +111,12 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
 	</test>
     <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_factory_reset.cases </cases>
     </test>
 </DBDEF>

@@ -1,4 +1,5 @@
 import allure
+import time
 
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -27,6 +28,7 @@ class Ztp(BaseComponent):
             if reboot_expected:
                 DutUtilsTool.wait_on_system_reboot(TestToolkit.get_engine())
                 DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+            time.sleep(3)
             return res
 
     def action_abort_ztp(self, engine=None, device=None, params_dict={}):

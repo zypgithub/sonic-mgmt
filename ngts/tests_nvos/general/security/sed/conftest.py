@@ -1,16 +1,21 @@
 import pytest
-
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+
 from ngts.ngts_types import DevicesT
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 
-@pytest.fixture(scope='function')
-def sed_default_password(engines, devices: DevicesT):
+@pytest.fixture(scope='session')
+def tpm_tool(engines):
+    """TpmTool instance with cached TPM password for reuse across test functions."""
     switch: LinuxSshEngine = engines.dut
-    tpm_tool = TpmTool(switch)
+    return TpmTool(switch)
+
+
+@pytest.fixture(scope='function')
+def sed_default_password(tpm_tool, devices: DevicesT):
     with allure.step("Get SED password from tpm"):
         sed_password: str = tpm_tool.get_sed_password_primary_bank(device=devices.dut).strip()
     try:

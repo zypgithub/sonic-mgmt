@@ -37,6 +37,10 @@ def test_interface_transceiver_diagnostics_basic_optical(engines, devices):
 
     with allure.step("Run diagnostics for optical cable and verify fields in output"):
         list_of_transceivers = list(platform.transceiver.get_dict_of_transceivers(cable_type=PlatformConsts.TRANSCEIVER_CABLE_OPTICAL_MODULE))
+
+        if not list_of_transceivers:
+            pytest.skip(f"test skipped - no {PlatformConsts.TRANSCEIVER_CABLE_OPTICAL_MODULE} transceivers found")
+
         optical_transceiver_name = Tools.RandomizationTool.select_random_value(list_of_transceivers).get_returned_value()
         optical_output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(
             platform.transceiver.show(optical_transceiver_name)).get_returned_value()
@@ -75,10 +79,14 @@ def test_interface_transceiver_diagnostics_basic_no_cable(engines, devices):
             platform.transceiver.show(transceiver_name)).get_returned_value()
         fields_to_check = ["diagnostics-status"]
         Tools.ValidationTool.verify_field_exist_in_json_output(output_dictionary, fields_to_check).verify_result()
+        # Use platform-specific expected value with fallback to default
+        expected_status_dict = getattr(devices.dut, 'expected_module_status_dict', {})
+        expected_value = expected_status_dict.get('transceiver_no_cable_diagnostic_status',
+                                                  PlatformConsts.HARDWARE_TRANCEIVER_NOT_EXIST)
         Tools.ValidationTool.verify_field_value_in_output(output_dictionary=output_dictionary,
                                                           field_name=PlatformConsts.
                                                           HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS,
-                                                          expected_value=PlatformConsts.HARDWARE_TRANCEIVER_NOT_EXIST)\
+                                                          expected_value=expected_value)\
             .verify_result()
 
 
@@ -175,13 +183,18 @@ def test_interface_link_diagnostics_basic_down_ports(engines, devices):
     down_ports = Tools.RandomizationTool.select_random_ports(requested_ports_state=NvosConsts.LINK_STATE_DOWN,
                                                              requested_ports_type=devices.dut.switch_type.lower(),
                                                              num_of_ports_to_select=0).get_returned_value()
+    # Use platform-specific expected value with fallback to default
+    expected_status_dict = getattr(devices.dut, 'expected_module_status_dict', {})
+    expected_value = expected_status_dict.get('link_diagnostics_unplugged_port',
+                                              IbInterfaceConsts.LINK_DIAGNOSTICS_UNPLUGGED_PORT)
+
     with allure.step('Run nv show interface for unplugged port'):
         for port in down_ports:
             if port.name == 'sw32p1' or port.name == 'swA32p1':
                 unplugged_port_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                     port.interface.link.diagnostics.show()).get_returned_value()
-                assert unplugged_port_output == IbInterfaceConsts.LINK_DIAGNOSTICS_UNPLUGGED_PORT, \
-                    "Status code isn't 1024"
+                assert unplugged_port_output == expected_value, \
+                    f"Unexpected diagnostics output: {unplugged_port_output}, expected: {expected_value}"
 
 
 @pytest.mark.ib

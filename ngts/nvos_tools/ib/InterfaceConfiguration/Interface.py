@@ -110,26 +110,40 @@ class Interface(BaseComponent):
             assert current_mtu == mtu_to_verify, "Current mtu {} is not as expected {}".\
                 format(current_mtu, mtu_to_verify)
 
+    def action_clear_counters(self, interface_name=None, engine=None, fae_param="",
+                              expected_str="Cleared counters successfully"):
+        """
+        Clear interface counters.
+        :param interface_name: specific port name/range to clear, or None for all ports.
+        :param engine: ssh engine object, defaults to DUT engine.
+        :param fae_param: optional - run the command with fae.
+        :param expected_str: expected output string for validation.
+        """
+        if not engine:
+            engine = TestToolkit.get_engine()
+        cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
+
+        if interface_name:
+            with allure.step("Clear counters for interface {}".format(interface_name)):
+                return SendCommandTool.execute_command_expected_str(
+                    cli_wrapper.action_clear_counters, expected_str, engine,
+                    f'interface {interface_name}', fae_param)
+        else:
+            with allure.step("Clear counters for all interfaces"):
+                logging.info("Clear counters for all interfaces")
+                return SendCommandTool.execute_command(
+                    cli_wrapper.action_clear_counters, engine, self.mgmt_path, fae_param)
+
+    # Backward-compatible wrappers
     def action_clear_counter_for_all_interfaces(self, engine=None, fae_param=""):
-        with allure.step("Clear counters for all interfaces"):
-            logging.info("Clear counters for all interfaces")
+        return self.action_clear_counters(engine=engine, fae_param=fae_param)
 
-            if not engine:
-                engine = TestToolkit.get_engine()
-            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
-            result_obj = SendCommandTool.execute_command(cli_wrapper.action_clear_counters, engine, self.mgmt_path, fae_param)
-
-            return result_obj
-
-    def action_clear_counter_for_interface(self, dut_engine=None, interface_name="", fae_param="", expected_str="Cleared counters successfully"):
-        with allure.step("Clear counters for interface {}".format(interface_name)):
-            if not dut_engine:
-                dut_engine = TestToolkit.get_engine()
-            cli_wrapper = self.port_obj._cli_wrapper if self.port_obj else self._cli_wrapper
-            result_obj = SendCommandTool.execute_command_expected_str(
-                cli_wrapper.clear_stats, expected_str, dut_engine, interface_name, fae_param)
-            # The expected_str is only necessary for overcoming https://redmine.mellanox.com/issues/4079803
-            return result_obj
+    def action_clear_counter_for_interface(self, dut_engine=None, interface_name=None, fae_param="",
+                                           expected_str="Cleared counters successfully"):
+        if not interface_name:
+            raise ValueError("interface_name must be provided for per-interface clear")
+        return self.action_clear_counters(interface_name=interface_name, engine=dut_engine,
+                                          fae_param=fae_param, expected_str=expected_str)
 
     def filter(self, dut_engine=None, filter_name="", value=""):
         with allure.step(f"filter using {filter_name}={value}"):

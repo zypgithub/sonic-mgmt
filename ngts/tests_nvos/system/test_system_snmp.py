@@ -225,6 +225,7 @@ def test_system_snmp_functional(engines, topology_obj):
     with allure.step("Enable snmp server"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address=ip_address)
+        HostMethods.wait_for_snmp_is_running(system)
 
         with allure.step("Check snmpget with listening eth0 ip address"):
             host_output = HostMethods.host_snmp_get(host_engine, ip_address)
@@ -283,6 +284,7 @@ def test_system_snmp_redis_crash(engines, topology_obj):
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step("Rewrite value for snmp community with redis db"):
         with allure.step('Write value to snmp community via redis cli'):
@@ -317,6 +319,7 @@ def test_system_snmp_load_test(engines, topology_obj):
     with allure.step("Enable snmp"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address='all')
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step("Enable snmp"):
         ip_address = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific'][
@@ -353,6 +356,7 @@ def test_system_snmp_mismtach_system_image(engines):
     with allure.step("Enable SNMP"):
         HostMethods.start_snmp_server(engine=engines.dut, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                       listening_address=ip_address)
+        HostMethods.wait_for_snmp_is_running(system)
 
     with allure.step("Get Version Via SNMP sysDescr"):
         snmpget_output: str = HostMethods.host_snmp_get(engines.sonic_mgmt, ip_address, get_param=sysDescr_OID)

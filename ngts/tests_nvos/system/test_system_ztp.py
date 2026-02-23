@@ -110,6 +110,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.DUMMY_JSON)
 
             with allure.step("Run nv action run system ztp"):
+                _apply_empty_config_and_save(engines)
                 system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Validate ztp error in ztp log file"):
@@ -121,6 +122,7 @@ def test_ztp_json(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.POSITIVE_JSON)
 
             with allure.step("Run nv action run system ztp"):
+                _apply_empty_config_and_save(engines)
                 system.ztp.action_run_ztp().verify_result()
 
             with allure.step("Run show ztp and verify default values"):
@@ -329,6 +331,7 @@ def test_ztp_connectivity_check(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.CONNECTIVITY_IPV4_IPV6)
 
             with allure.step("Run nv action run system ztp"):
+                _apply_empty_config_and_save(engines)
                 system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
@@ -340,6 +343,7 @@ def test_ztp_connectivity_check(engines, devices):
             _download_ztp_json_config(engines, SystemConsts.NEGATIVE_CONNECTIVITY)
 
             with allure.step("Run nv action run system ztp"):
+                _apply_empty_config_and_save(engines)
                 system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
@@ -378,6 +382,7 @@ def test_ztp_json_complex(engines, devices):
             _download_ztp_json_config(engines, image_json)
 
             with allure.step("Run nv action run system ztp"):
+                _apply_empty_config_and_save(engines)
                 system.ztp.action_run_ztp().verify_result()
 
                 with allure.step("Check ztp status"):
@@ -546,6 +551,7 @@ def test_ztp_provisioning_script_negative(engines, devices):
     finally:
         system.ztp.action_abort_ztp().verify_result()
         engines.dut.run_cmd('sudo rm -f /host/ztp/ztp_data_local.json')
+        _apply_empty_config_and_save(engines)
         system.ztp.action_run_ztp().verify_result()
 
 
@@ -656,7 +662,7 @@ def test_ztp_fetch_asic_debug_config(engines, devices):
     """
     Test flow:
         1. Check default values for ztp
-        2. Apply json file with asic-debug-config
+        2. Apply json file with asic-debug-config (ZTP fetches YAML from URL in server JSON).
         3. Verify config fetched
     """
     system = System(None)
@@ -703,10 +709,15 @@ def _download_file_and_run_ztp(engines, system, file='', step='', step_status_co
             _wait_until_ztp_status(system, ztp_status_code)
 
 
+def _apply_empty_config_and_save(engines):
+    """Apply empty config and save so next ZTP run is not bypassed (config already applied/saved)."""
+    NvueGeneralCli.apply_config(engine=engines.dut, rev_id='empty', option='-y')
+    NvueGeneralCli.save_config(engine=engines.dut)
+
+
 def _run_system_ztp_with_empty_config(engines, system):
     with allure.step("Run nv action run system ztp"):
-        NvueGeneralCli.apply_config(engine=engines.dut, rev_id='empty', option='-y')
-        NvueGeneralCli.save_config(engine=engines.dut)
+        _apply_empty_config_and_save(engines)
         system.ztp.action_run_ztp().verify_result()
 
 

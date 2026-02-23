@@ -20,6 +20,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -132,7 +133,7 @@ def test_show_system_image(original_version):
 @pytest.mark.system
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_downgrade_upgrade(release_name, random_api, original_version, devices, engines, downgrade_version_realpath,
-                           target_version_realpath, dut_ipv6_addr):
+                           target_version_realpath, dut_ipv6_addr, ib_router):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -146,7 +147,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     7. Delete the new image name , success
     """
     config_file_path = ''
-    speed_info = None  # Initialize to avoid UnboundLocalError in finally block
+    mtu_info = None
 
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
@@ -154,6 +155,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     orig_engine: LinuxSshEngine = TestToolkit.engines.dut
     system = System()
     verify_current_version(original_version, system, devices.dut)
+    has_active_ports = InterfaceConfigurationTool.has_active_ports(devices.dut)
+    logger.info(f"Active ports available for MTU testing: {has_active_ports}")
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
         get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
@@ -186,17 +189,16 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             with allure.step('run curl via ipv6, customer bug #4318552'):
                 send_open_api_request(dut_ipv6_addr, engines.dut)
 
-        player = engines.sonic_mgmt
+        _run_post_downgrade_cheks(ib_router)
+        player = engines['sonic_mgmt']
         scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
         with allure.step('Get config file and path for target version'):
             config_file_path, config_filename = devices.dut.get_test_config_file_by_version(original_version)
 
         TestToolkit.tested_api = ApiType.NVUE
-        # Setup test environment with configuration and speed testing
-        # Configuration files will not attempt to set acp/sw ports anymore. This way its much more generic.
-        speed_info = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
+        mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
             config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
-            include_speed_testing=True, verify_result=True)
+            include_mtu_testing=has_active_ports, verify_result=True)
 
         logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
         engines.dut.disconnect()
@@ -211,11 +213,13 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             send_open_api_request(dut_ipv6_addr, engines.dut)
         target_fetched_image = target_version_realpath.split('/')[-1]
 
-        # Check if speed configuration is preserved after upgrade and clean up
-        NvosInstallationSteps.cleanup_speed_testing_if_performed(speed_info, devices.dut)
+        with allure.step('Verify configuration preserved after upgrade and cleanup'):
 
-        # cleanup - boot back with orig image, uninstall new image, and restore to orig engine
-        cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
+            with allure.independent_step('cleanup test'):
+                cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
+
+            with allure.independent_step('Verify MTU preserved after upgrade'):
+                InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
 
 
 @pytest.mark.checklist
@@ -811,6 +815,18 @@ def get_next_partition_id(partition_id):
     return ImageConsts.PARTITION2_IMG if partition_id == ImageConsts.PARTITION1_IMG else ImageConsts.PARTITION1_IMG
 
 
+def _extract_leaf_paths(d, prefix=""):
+    """Extract dotted paths to leaf values from a nested dict for readable diff summaries."""
+    paths = []
+    for key, value in d.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict) and value:
+            paths.extend(_extract_leaf_paths(value, path))
+        else:
+            paths.append(f"{path} = {value}")
+    return paths
+
+
 def cleanup_test(system, original_images, original_image_partition, fetched_image_files, config_file_path='', orig_engine=None, target_version_realpath=''):
     with allure.step("Cleanup step"):
         configuration_diff = {}
@@ -839,7 +855,16 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
             system.image.files.delete_files(fetched_image_files).verify_result()
             system.image.files.verify_show_files_output(unexpected_files=fetched_image_files)
 
-        assert configuration_diff == {}, f'Configuration was not preserved across image upgrade. \nDiff: {configuration_diff}'
+        if configuration_diff:
+            import json
+            diff_pretty = json.dumps(configuration_diff, indent=2, default=str)
+            missing_keys = _extract_leaf_paths(configuration_diff)
+            summary = "\n".join(f"  - {path}" for path in missing_keys)
+            assert False, (
+                f"Configuration was not preserved across image upgrade.\n"
+                f"Missing/mismatched settings ({len(missing_keys)}):\n{summary}\n\n"
+                f"Full diff:\n{diff_pretty}"
+            )
 
 
 def get_image_data(system) -> tuple[dict, str, str, str]:
@@ -1106,3 +1131,16 @@ def verify_current_version(original_version, system, device):
     with allure.step(f"Verify that current image is {original_version}"):
         current_version = system.version.get_nvos_image_version()
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
+
+
+def _run_post_downgrade_cheks(ib_router):
+    """run various optional checks after the machine finish downgrade"""
+    with allure.step(f"Running post downgrade checks if there's any"):
+        if ib_router:
+            verify_ib_router_post_downgrade()
+
+
+def verify_ib_router_post_downgrade():
+    """run various checks on ib router machine state after downgrade took place"""
+    IbRouterTool.verify_leaf_port_mapping(expect_disabled=True)
+    IbRouterTool.verify_profile_status(SystemConsts.PROFILE_STATE_DISABLED, 1)

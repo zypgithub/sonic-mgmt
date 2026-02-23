@@ -12,6 +12,7 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
+from ngts.nvos_tools.infra.PhotonicsTool import PhotonicsTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.system.System import System
@@ -224,7 +225,7 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
 
         with allure.step(f"Simulate plug out event for {random_els} using PMAOS"):
             # Use PMAOS to simulate unplug event
-            mst_device = get_mst_device_for_els_index(els_index)
+            mst_device = PhotonicsTool.get_mst_device_for_els_index(els_index)
             IbInterfaceTool.simulate_unplug_module_event(
                 engines.dut, devices.dut, els_index + CpoConsts.PMAOS_MODULE_OFFSET, mst_device, sleep=8
             )
@@ -242,7 +243,7 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
     finally:
         with allure.step(f"Simulate plug in event for {random_els} using PMAOS"):
             # Use PMAOS to simulate plug in event
-            mst_device = get_mst_device_for_els_index(els_index)
+            mst_device = PhotonicsTool.get_mst_device_for_els_index(els_index)
             IbInterfaceTool.simulate_plugin_module_event(
                 engines.dut, devices.dut, els_index + CpoConsts.PMAOS_MODULE_OFFSET, mst_device, sleep=50
             )
@@ -303,33 +304,6 @@ def test_els_init_reboot(engines, devices, nv_command, random_api, get_els_list)
 
         with allure.independent_step(f"Validate ports are in up state"):
             retry_call(validate_ports_state, [baseline_up_ports], exceptions=AssertionError, tries=6, delay=30)
-
-
-def get_mst_device_for_els_index(els_index):
-    """
-    Get the MST device path for a given ELS index based on GA mapping.
-
-    Args:
-        els_index (int): The ELS index (1-18)
-
-    Returns:
-        str: MST device path in format '/dev/mst/mt54004_pciconf{i}' where i = (ga+1)%4
-
-    Raises:
-        ValueError: If els_index is not in valid range (1-18)
-    """
-    # ELS index to GA mapping for MST device selection
-    els_index_to_ga_mapping = {
-        1: 1, 2: 2, 3: 1, 4: 2, 5: 1, 6: 2, 7: 1, 8: 2,
-        9: 1, 10: 3, 11: 0, 12: 3, 13: 0, 14: 3, 15: 0, 16: 3, 17: 0, 18: 3
-    }
-
-    if els_index not in els_index_to_ga_mapping:
-        raise ValueError(f"Invalid ELS index: {els_index}. Valid range is 1-18")
-
-    ga_value = els_index_to_ga_mapping[els_index]
-    pciconf_value = (ga_value + 1) % 4
-    return f"/dev/mst/mt54004_pciconf{pciconf_value}"
 
 
 def _get_completed_els(fae_system):

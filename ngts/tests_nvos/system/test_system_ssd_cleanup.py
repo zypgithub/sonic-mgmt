@@ -80,6 +80,7 @@ def test_ssd_cleanup_positive_flow(engines, devices):
         fae = Fae()
         system = System()
 
+    MONIT_UPDATE_TIME = 180
     with allure.step("save all system events before testing"):
         system_events_before_testing = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).verify_result()
 
@@ -97,12 +98,9 @@ def test_ssd_cleanup_positive_flow(engines, devices):
 
         files_to_delete = _add_files(engines.dut, 4, df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE])
 
-        with allure.step("health issue will be reported after 150 seconds"):
-            time.sleep(150)
-
         with allure.step("check health status is not ok"):
-            with allure.step("health issue will be reported after 120 seconds"):
-                time.sleep(120)
+            with allure.step(f"health issue will be reported after {MONIT_UPDATE_TIME} seconds"):
+                time.sleep(MONIT_UPDATE_TIME)
 
             _check_disk_issue_with_retry(system, no_disk_issue=False)
 
@@ -121,8 +119,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 verify_deleted_folders_list(engines.dut, files_to_delete[:-2])
 
             with allure.independent_step("check no disk issue"):
-                with allure.step("waiting for 120 seconds, for monit and healthD"):
-                    time.sleep(120)
+                with allure.step(f"waiting for {MONIT_UPDATE_TIME} seconds, for monit and healthD"):
+                    time.sleep(MONIT_UPDATE_TIME)
                 _check_disk_issue(system)
 
             with allure.independent_step("check system events - two events expected "):
@@ -142,8 +140,8 @@ def test_ssd_cleanup_positive_flow(engines, devices):
                 assert "No such file or directory" in engines.dut.run_cmd(f"cat {paths_order[0]}/{files_to_delete[0]}"), f"{files_to_delete[0]} should be deleted"
 
             with allure.step("check no disk issue"):
-                with allure.step("waiting for 170 seconds, for monit and healthD"):
-                    time.sleep(170)
+                with allure.step(f"waiting for {MONIT_UPDATE_TIME} seconds, for monit and healthD"):
+                    time.sleep(MONIT_UPDATE_TIME)
                 _check_disk_issue(system)
     finally:
         _delete_all_files(engines.dut)
@@ -193,7 +191,7 @@ def test_ssd_cleanup_reboot_with_high_ssd_usage(engines, devices):
     df_output = _get_df_output(engines.dut)
     path = '/host/nos-images/'
     file_name = 'new_file'
-    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - (0.05 * df_output[SystemConsts.SSD_SPACE_TOTAL_SIZE])
+    file_size = df_output[SystemConsts.SSD_SPACE_AVAILABLE_SIZE] - 2
 
     try:
         engines.dut.run_cmd('sudo fallocate -l {size}G /{path}/{file}'.format(size=file_size, path=path, file=file_name))

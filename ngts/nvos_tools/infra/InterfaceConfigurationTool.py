@@ -5,6 +5,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 
 logger = logging.getLogger()
 
@@ -205,6 +206,8 @@ class InterfaceConfigurationTool:
 
             # Save configuration to make speed change persistent
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(TestToolkit.get_engine())
+            # Wait for port to come back up after speed change (port goes down during speed reconfiguration)
+            selected_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP, timeout=30).verify_result()
 
             # Verify the speed is configured
             verify_dict = parser_func(selected_port.interface.link.show()).get_returned_value()
@@ -279,6 +282,62 @@ class InterfaceConfigurationTool:
             logger.info(f"Speed verification successful: {current_speed} for port {selected_port.name}")
 
     @staticmethod
+    def change_mtu_on_random_port(devices):
+        """
+        Select a random ACTIVE port and change its MTU to a different value.
+
+        Used to verify that interface configuration survives upgrades (downgrade/upgrade, ISSU).
+        Unlike speed changes, MTU changes are safe across all system types.
+
+        Args:
+            devices: Test devices object containing device configuration
+
+        Returns:
+            tuple: (Port object, original_mtu, new_mtu)
+        """
+        from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+
+        with allure.step("Configure MTU on a random port"):
+            _, selected_port, port_name = InterfaceConfigurationTool._detect_system_type_and_select_active_port(devices.dut)
+            link_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            original_mtu = link_output[IbInterfaceConsts.LINK_MTU]
+            new_mtu = RandomizationTool.select_random_value(
+                IbInterfaceConsts.MTU_VALUES, [original_mtu]).get_returned_value()
+            logger.info(f"Setting MTU on {port_name}: {original_mtu} -> {new_mtu}")
+            selected_port.interface.link.set(
+                op_param_name='mtu', op_param_value=str(new_mtu), apply=True,
+                ask_for_confirmation=True).verify_result()
+            from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+            NvueGeneralCli.save_config(TestToolkit.engines.dut)
+            return selected_port, original_mtu, new_mtu
+
+    @staticmethod
+    def verify_and_cleanup_mtu(mtu_info):
+        """
+        Verify MTU is preserved (e.g. after upgrade/ISSU) and restore to default.
+
+        Args:
+            mtu_info: tuple of (Port, original_mtu, new_mtu) or None
+        """
+        if not mtu_info:
+            logger.info("No MTU testing was performed - skipping verification")
+            return
+        selected_port, original_mtu, new_mtu = mtu_info
+        with allure.step(f"Verify MTU preserved on {selected_port.name} and cleanup"):
+            link_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            current_mtu = link_output[IbInterfaceConsts.LINK_MTU]
+            assert current_mtu == new_mtu, \
+                f"MTU not preserved on {selected_port.name}: expected {new_mtu}, got {current_mtu}"
+            logger.info(f"MTU preserved on {selected_port.name}: {current_mtu}")
+            selected_port.interface.link.unset(
+                op_param='mtu', apply=True, ask_for_confirmation=True).verify_result()
+            from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+            NvueGeneralCli.save_config(TestToolkit.engines.dut)
+            logger.info(f"MTU restored to default on {selected_port.name}")
+
+    @staticmethod
     def choose_random_port_and_test_speed_configuration(engines, devices):
         """
         Orchestrate complete interface speed configuration testing for system upgrade validation.
@@ -321,6 +380,33 @@ class InterfaceConfigurationTool:
             InterfaceConfigurationTool._test_speed_configuration_cycle(selected_port, current_speed, new_speed, system_type, port_name)
 
             return selected_port, current_speed, new_speed, supported_speeds
+
+    @staticmethod
+    def has_active_ports(device):
+        """
+        Check if the device has any active ports available for interface testing.
+
+        Returns:
+            bool: True if active ports exist, False otherwise
+        """
+        from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+        from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+
+        try:
+            if hasattr(device, 'interface_list') and device.interface_list:
+                RandomizationTool.select_random_port(
+                    requested_ports_state=NvosConsts.LINK_STATE_UP,
+                    requested_ports_logical_state=IbInterfaceConsts.LINK_LOGICAL_PORT_STATE_ACTIVE,
+                    interface_type='sw'
+                ).get_returned_value()
+                return True
+            elif hasattr(device, 'nvl_access_ports_list') or hasattr(device, 'nvl_trunk_ports_list'):
+                if (hasattr(device, 'nvl_trunk_ports_list') and device.nvl_trunk_ports_list) or \
+                   (hasattr(device, 'nvl_access_ports_list') and device.nvl_access_ports_list):
+                    return True
+        except Exception as e:
+            logger.info(f"No active ports found: {e}")
+        return False
 
     @staticmethod
     def _detect_system_type_and_select_active_port(device):

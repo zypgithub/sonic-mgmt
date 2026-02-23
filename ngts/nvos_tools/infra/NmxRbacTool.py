@@ -11,7 +11,7 @@ from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_c
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode
 from ngts.tests_nvos.general.security.nmx_cert.helpers import enable_cluster_app_manager_state
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.helpers.general_helpers import run_cmd
+from ngts.tests_nvos.helpers.general_helpers import run_cmd, run_ssh_cmd_with_rc
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import BAD_RESPONSE_KEYWORDS
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
@@ -149,10 +149,9 @@ class NmxRbacTool:
 
     def _verify_cmd_success(self, cmd: str, should_succeed: bool = True):
         with allure.step("Verify the command is successful"):
-            output = self.engine.run_cmd(cmd)
-        exit_code = int(self.engine.run_cmd("echo $?").split("\n")[-1])
+            cmd_output, exit_code = run_ssh_cmd_with_rc(self.engine, cmd)
         if should_succeed:
-            assert exit_code == 0, "The command should be successful"
+            assert exit_code == 0, f"The command should be successful: {cmd}"
         else:
-            assert exit_code != 0, "The command should fail"
-        return output
+            assert exit_code != 0, f"The command should fail: {cmd}"
+        return cmd_output

@@ -19,6 +19,7 @@ import ipaddress
 import time
 import crypt
 from infra.tools.connection_tools.utils import generate_strong_password
+from retry.api import retry_call
 
 logger = logging.getLogger()
 
@@ -119,8 +120,9 @@ def test_set_system_dns_functionality(engines, test_api, target_version, dns_ser
     TestToolkit.tested_api = test_api
     system = System()
     dns_server_id = SystemConsts.DNS_SERVER_IDS[dns_server_type]
+
     try:
-        verify_dns_in_resolv_file(engines, [dns_server_id], is_present=False)
+        retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id], False], exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step("Fetch an image {}".format(target_version)):
             system.image.action_fetch(path=target_version, expected_output=devices.dut.fetch_success_message)
@@ -129,7 +131,7 @@ def test_set_system_dns_functionality(engines, test_api, target_version, dns_ser
             system.dns.set(SystemConsts.DNS_SERVER, dns_server_id,
                            apply=True, dut_engine=engines.dut, ask_for_confirmation=devices.dut.ask_for_confirmation).verify_result()
 
-        verify_dns_in_resolv_file(engines, [dns_server_id])
+        retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id]], exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step("Attempt fetching the image which should fail"):
             system.image.action_fetch(path=target_version, expected_output=devices.dut.fetch_error_message).verify_result(False)
@@ -173,7 +175,8 @@ def test_unset_system_dns_server(engines, devices, dns_config_backup_and_restore
             assert dns_server_id_ipv4 in dns_output, "The configured DNS server ipv4 is not present in show system dns"
             assert dns_server_id_ipv6 in dns_output, "The configured DNS server ipv6 is not present in show system dns"
 
-        verify_dns_in_resolv_file(engines, [dns_server_id_ipv4, dns_server_id_ipv6])
+        retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id_ipv4, dns_server_id_ipv6]],
+                   exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step('Run unset system dns server command and apply config'):
             system.dns.unset(SystemConsts.DNS_SERVER, apply=True, dut_engine=engines.dut).verify_result()
@@ -184,7 +187,8 @@ def test_unset_system_dns_server(engines, devices, dns_config_backup_and_restore
             assert dns_server_id_ipv4 not in dns_output, "The configured DNS server ipv4 is present in show system dns"
             assert dns_server_id_ipv6 not in dns_output, "The configured DNS server ipv6 is present in show system dns"
 
-        verify_dns_in_resolv_file(engines, [dns_server_id_ipv4, dns_server_id_ipv6], is_present=False)
+        retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id_ipv4, dns_server_id_ipv6], False],
+                   exceptions=AssertionError, tries=2, delay=2)
 
     finally:
         clear_system_dns(system, engines)
@@ -225,7 +229,8 @@ def test_unset_system_dns_server_ip(engines, devices, dns_config_backup_and_rest
             assert dns_server_id_ipv4 in dns_output, "The configured DNS server ipv4 is not present in show system dns"
             assert dns_server_id_ipv6 in dns_output, "The configured DNS server ipv6 is not present in show system dns"
 
-        verify_dns_in_resolv_file(engines, [dns_server_id_ipv4, dns_server_id_ipv6])
+        retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id_ipv4, dns_server_id_ipv6]],
+                   exceptions=AssertionError, tries=2, delay=2)
 
         with allure.step('Run unset system dns server <server-id> ipv4 command and apply config'):
             arg = SystemConsts.DNS_SERVER + " " + dns_server_id_ipv4
@@ -238,8 +243,10 @@ def test_unset_system_dns_server_ip(engines, devices, dns_config_backup_and_rest
             assert dns_server_id_ipv6 in dns_output, "The configured DNS server ipv6 is not present in show system dns"
 
         with allure.step('Verify in resolv.conf file that it is updated with ipv6 but not ipv4'):
-            verify_dns_in_resolv_file(engines, [dns_server_id_ipv6])
-            verify_dns_in_resolv_file(engines, [dns_server_id_ipv4], is_present=False)
+            retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id_ipv6]], exceptions=AssertionError, tries=2,
+                       delay=2)
+            retry_call(verify_dns_in_resolv_file, [engines, [dns_server_id_ipv4], False], exceptions=AssertionError,
+                       tries=2, delay=2)
 
     finally:
         clear_system_dns(system, engines)

@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 import time
 from collections import namedtuple
@@ -26,7 +27,7 @@ from ngts.nvos_tools.infra.ValidationTool import ExpectedString
 from ngts.nvos_tools.system.Spdm import SPDMComponents
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA, FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA
+from ngts.tests_nvos.constants import MINUTE, FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA, FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA, FW_COMPONENT_SSD, FW_COMPONENT_ASIC
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
@@ -45,6 +46,11 @@ class IbSwitch(BaseSwitch):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
         self.documents_path = None
         self.documents_files = None
+        # Default firmware components list for IB switches (can be overridden by subclasses)
+        self.components_list = [FW_COMPONENT_CPLD,
+                                FW_COMPONENT_BIOS,
+                                FW_COMPONENT_SSD,
+                                FW_COMPONENT_ASIC]
         self._init_sensors_dict()
         self._init_gnmi_consts()
         self.open_api_port = "443"
@@ -60,6 +66,44 @@ class IbSwitch(BaseSwitch):
         self._init_interface_lists()
         self._init_interface_attributes_mapping_dict()
         self._init_link_error_counters()
+
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        version_num, _ = get_version_info(version)
+        if version_num:
+            build_num = int(version_num.split('.')[-1])
+            relevant_ga_num = math.ceil(build_num / 1000) * 1000
+            return f'nvos_config_ga_{relevant_ga_num}.yml'
+        return super()._relevant_config_filename_by_version(version)
+
+    def get_test_config_file_by_version(self, version: str):
+        config_file_path, config_filename = super().get_test_config_file_by_version(version)
+        if os.path.isfile(config_file_path):
+            return config_file_path, config_filename
+
+        version_num, _ = get_version_info(version)
+        if not version_num:
+            raise FileNotFoundError(f"Test config file not found: {config_file_path}")
+
+        target_num = int(version_num.split('.')[-1])
+        ngts_path = os.path.join(os.path.abspath(__file__).split('ngts', 1)[0], 'ngts')
+        resources_dir = os.path.join(ngts_path, 'tools', 'test_utils', 'nvos_resources')
+
+        import glob
+        ga_files = glob.glob(os.path.join(resources_dir, 'nvos_config_ga_*.yml'))
+        ga_numbers = []
+        for f in ga_files:
+            ga_str = os.path.basename(f).replace('nvos_config_ga_', '').replace('.yml', '')
+            if ga_str.isdigit():
+                ga_numbers.append(int(ga_str))
+
+        if not ga_numbers:
+            raise FileNotFoundError(f"No GA config files found in {resources_dir}")
+
+        closest_ga = min(ga_numbers, key=lambda ga: abs(ga - target_num))
+        config_filename = f'nvos_config_ga_{closest_ga}.yml'
+        config_file_path = os.path.join(resources_dir, config_filename)
+        logging.info(f'No exact GA config for version {target_num}, using closest: {config_filename}')
+        return config_file_path, config_filename
 
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
@@ -327,6 +371,7 @@ class IbSwitch(BaseSwitch):
         self.multi_planar = False
         self.login_pattern = NvosConst.INSTALL_SUCCESS_PATTERN
         self.install_patterns = {self.login_pattern: 0, "NOS install successful": 1}
+        self.ib_host_player = 'ha'
         self.install_success_patterns = list(self.install_patterns.keys())
         self.mst_dev_name = ('/dev/mst/mt54002_pciconf0')
         self.category_list = ['temperature', 'cpu', 'disk', 'power', 'fan', 'mgmt-interface', 'voltage']
@@ -356,11 +401,12 @@ class IbSwitch(BaseSwitch):
         self.reboot_reason_dict = {
             RebootConsts.HALT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
             RebootConsts.PSU_OFF: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
-            RebootConsts.REMOTE_REBOOT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA)
+            RebootConsts.REMOTE_REBOOT: (SystemConsts.REBOOT_REASON_POWER_LOSS, RebootConsts.REBOOT_USER_NA),
+            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN)
         }
 
         self.category_default_disabled_dict = {
@@ -492,6 +538,20 @@ class IbSwitch(BaseSwitch):
             "nv show sdn",
             "nv sh fae interface swA10p1 link link-training",
             "nv show interface swA10p1 link plr",
+            # IB (croc+mamba) uses logic-relock-*, NOT serdes-eq-* for PHY recovery
+            "nv set fae interface swA1p1 link phy-recovery serdes-eq-mode",
+            "nv set fae interface swA1p1 link phy-recovery serdes-eq-timeout",
+            # Rosalind-only PHY recovery commands (not supported on croc+mamba)
+            "nv set fae interface swA1p1 link phy-role",
+            "nv set fae interface swA1p1 link constant-role",
+            "nv set fae interface swA1p1 link phy-recovery link-down-timeout",
+            "nv set fae interface swA1p1 link phy-recovery recovery-neg-type",
+            "nv set fae interface swA1p1 link phy-recovery recovery-status",
+            "nv set fae interface swA1p1 link phy-recovery step-1",
+            "nv set fae interface swA1p1 link phy-recovery step-2",
+            "nv show fae interface swA1p1 link low-power",
+            "nv set fae interface swA1p1 link low-power state",
+            "nv unset fae interface swA1p1 link low-power state",
         ]
 
         self.memory_size: List[float] = [15.0]
@@ -499,9 +559,6 @@ class IbSwitch(BaseSwitch):
             SSDConsts.SFSA160GM2AK2TO_I_8C_22K_NVI,
             SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006
         ]
-        self.fetch_success_message = NvosConst.FETCH_SUCCESS_MESSAGE
-        self.fetch_error_message = NvosConst.FETCH_ERROR_MESSAGE
-        self.ask_for_confirmation = False
 
         # Initialize link error counters for traffic validation
 
@@ -799,6 +856,7 @@ class BlackMambaSwitch(IbSwitch):
         self.cpld_amount = 6
         self.asic_type = NvosConst.QTM3
         self.multi_planar = True
+        self.ib_host_player = 'hfnm'
         self.platform_file_path = MultiPlanarConsts.PLATFORM_FILE_FULL_PATH.format("x86_64-mlnx_qm8790-r0")
         self.show_platform_output.update({
             PlatformConsts.SYSTEM_TYPE: "Q3400_RA",
@@ -848,7 +906,6 @@ class BlackMambaSwitch(IbSwitch):
             'ISSU CPU max downtime': 135,
         })
         self.memory_speed = 2667  # in MT/s
-
         self.memory_size: List[float] = [30.73]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VIRTIUM_VTPM24CEXI08_BM110006]
 
@@ -890,6 +947,7 @@ class BlackMambaSwitch(IbSwitch):
 
     def _init_interface_lists(self):
         super()._init_interface_lists()
+        self.ib_ports_num = 2 * 72
         self.mgmt_ports = ['eth0']  # 'eth1' disabled for now
         ib_ports = self.fnm_external_port_list + [f'sw{a + 1}p{b}' for a in range(self.ib_ports_num) for b in (1, 2)]
         # = ['fnm1', 'sw1p1', 'sw1p2', ..., 'sw72p1', 'sw72p2']
@@ -929,9 +987,6 @@ class BlackMambaSwitch(IbSwitch):
         super()._init_interfaces_ib_lanes()
         self.supported_fnm_lanes = '4X'  # BlackMamba regular FNM
         self.supported_internal_fnm_lanes = '1X'  # BlackMamba internal FNM
-
-    def _relevant_config_filename_by_version(self, version: str) -> str:
-        return 'nvos_config_xdr.yml'
 
     def _init_boot_time_timeouts(self):
         super()._init_boot_time_timeouts()
@@ -1067,6 +1122,11 @@ class TaipanSwitch(BlackMambaSwitch):
             PlatformConsts.SYSTEM_TYPE: "Q3450_LD",
             "asic-model": self.asic_type,
         })
+        # Taipan-specific expected module status values
+        self.expected_module_status_dict = {
+            'transceiver_no_cable_diagnostic_status': PlatformConsts.HARDWARE_TRANCEIVER_DIAGNOSTIC_DATA_AVAILABLE,
+            'link_diagnostics_unplugged_port': IbInterfaceConsts.LINK_DIAGNOSTICS_SIGNAL_NOT_DETECTED,
+        }
         self.voltage_sensors = [
             "HSC-1-VinDC-In", "HSC-1-VinDC-Out", "HSC-2-VinDC-In", "HSC-2-VinDC-Out", "HSCC-1-Conv-In-1",
             "HSCC-1-Conv-Out-1", "HSCC-2-Conv-In-1", "HSCC-2-Conv-Out-1", "PMIC-1-12V-VDD-ASIC1-In-1",
@@ -1220,9 +1280,6 @@ class CrocodileSwitch(IbSwitch):
         self.supported_fnm_lanes = '1X,2X'  # Crocodile FNM
         self.supported_internal_fnm_lanes = '1X,2X'  # Crocodile internal FNM
 
-    def _relevant_config_filename_by_version(self, version: str) -> str:
-        return 'nvos_config_xdr_crocodile.yml'
-
     def _init_platform_lists(self):
         super()._init_platform_lists()
         self.platform_environment_fan_values = {
@@ -1374,7 +1431,23 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show ib device ASIC3",
                                           "nv show ib device ASIC4",
                                           "nv show system profile",
-                                          "nv show ib ibdiagnet"]
+                                          "nv show ib ibdiagnet",
+                                          # NVLink (juliet) uses serdes-eq-*, NOT logic-relock-* for PHY recovery
+                                          "nv set fae interface acp1 link phy-recovery logic-relock-mode",
+                                          "nv set fae interface acp1 link phy-recovery logic-relock-timeout",
+                                          # delayed-recovery only supported on croc+mamba
+                                          "nv set fae interface acp1 link delayed-recovery",
+                                          # Rosalind-only PHY recovery commands (not supported on juliet)
+                                          "nv set fae interface acp1 link phy-role",
+                                          "nv set fae interface acp1 link constant-role",
+                                          "nv set fae interface acp1 link phy-recovery link-down-timeout",
+                                          "nv set fae interface acp1 link phy-recovery recovery-neg-type",
+                                          "nv set fae interface acp1 link phy-recovery recovery-status",
+                                          "nv set fae interface acp1 link phy-recovery step-1",
+                                          "nv set fae interface acp1 link phy-recovery step-2",
+                                          "nv show fae interface acp1 link low-power",
+                                          "nv set fae interface acp1 link low-power state",
+                                          "nv unset fae interface acp1 link low-power state"]
         self.mgmt_ports = ['eth0', 'eth1']
         self.default_phy_recovery_counters = {
             PhyRecoveryConsts.UNINTENTIONAL_LINK_DOWN_EVENTS: 0,
@@ -1516,10 +1589,11 @@ class JulietSwitch(NvLinkSwitch):
             RebootConsts.HALT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.POWER_CYCLE: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.COLD: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
-            RebootConsts.IMMEDIATE: ("Platform reset", RebootConsts.REBOOT_USER_ADMIN),
+            RebootConsts.IMMEDIATE: ("reboot", RebootConsts.REBOOT_USER_ADMIN),
             RebootConsts.FACTORY_RESET: ("reboot", RebootConsts.REBOOT_USER_SYSTEM),
             RebootConsts.POWER_BUTTON: (SystemConsts.REBOOT_REASON_POWER_BUTTON, RebootConsts.REBOOT_USER_NA),
-            RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA)
+            RebootConsts.REMOTE_REBOOT: (RebootConsts.REBOOT_REASON_POWER_CYCLE, RebootConsts.REBOOT_USER_NA),
+            RebootConsts.INSTALL_FW: ("reboot", RebootConsts.REBOOT_USER_ADMIN)
         }
 
         self.power_cycle_type = 'juliet-power-cycle'
@@ -2473,7 +2547,16 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.unsupported_commands_list = ["nv show platform ps-redundancy",
                                           "nv show platform environment psu",
                                           "nv show system profile",
-                                          "nv show sdn transceivers"]
+                                          "nv show sdn transceivers",
+                                          # Rosalind doesn't support serdes-eq or logic-relock PHY recovery
+                                          "nv set fae interface acp1 link phy-recovery serdes-eq-mode",
+                                          "nv set fae interface acp1 link phy-recovery serdes-eq-timeout",
+                                          "nv set fae interface acp1 link phy-recovery logic-relock-mode",
+                                          "nv set fae interface acp1 link phy-recovery logic-relock-timeout",
+                                          # delayed-recovery only supported on croc+mamba
+                                          "nv set fae interface acp1 link delayed-recovery",
+                                          # link-training only supported on juliet
+                                          "nv set fae interface acp1 link link-training"]
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled

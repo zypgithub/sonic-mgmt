@@ -484,6 +484,7 @@ class ActionType:
 
 
 class ActionConsts:
+    START = 'start'
     CLEANUP = "cleanup"
     RUN = "run"
     CHANGE = 'change'
@@ -895,6 +896,10 @@ class SystemConsts:
         "is successfully installed",
     )
 
+    ACTION_INSTALL_SUCCESS_MESSAGES = (
+        "is successfully installed",
+    )
+
     LOCALHOST = "127.0.0.1"
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
@@ -941,6 +946,16 @@ class SystemConsts:
     CLUSTER_APP_STATE_UP = 'up'
 
     DISK: str = 'disk'
+
+    class ApiConsts:
+        class CompressionT:
+            GZIP = 'gzip'
+
+            @classmethod
+            def all(cls):
+                return [v for k, v in vars(cls).items() if k.isupper()]
+
+        COMPRESSION = 'compression'
 
 
 class EventConsts:
@@ -1074,6 +1089,7 @@ class PlatformConsts:
     HARDWARE_TRANCEIVER_DIAGNOSTIC_STATUS = "diagnostics-status"
     HARDWARE_TRANCEIVER_NOT_EXIST = "Non present module"
     HARDWARE_TRANCEIVER_NOT_DDMI = "No Diagnostic Data Available. Module is not DDMI capable"
+    HARDWARE_TRANCEIVER_DIAGNOSTIC_DATA_AVAILABLE = "Diagnostic Data Available"
     ENV_CPU = "CPU"
     ENV_FAN = "fan"
     ENV_LED = "led"
@@ -1401,7 +1417,9 @@ class IbConsts:
                           '{traffic_duration}' + ' -d {ib_device} > ' + '{server_output}' + ' &')
     IB_SEND_LAT_CLIENT = ('ib_send_lat -F -s ' + MAX_NUM_OF_BYTES + ' -D ' +
                           '{traffic_duration}' + ' {server_ip} -d {ib_device} > ' + '{client_output}' + ' &')
+    IB_SEND_LAT_ITERATION_TOLERANCE = 1  # Allowed difference between sent and received iterations
     GET_JOB_IB = 'jobs -l'
+    HFNM = 'hfnm'
 
 
 class ImageConsts:
@@ -1725,6 +1743,7 @@ class RebootConsts:
     PSU_OFF = "psu-off"
     REBOOT_REASON_POWER_CYCLE = 'Power Cycle'
     REMOTE_REBOOT = "remote-reboot"
+    INSTALL_FW = "install-fw"
 
     DEFAULT_MODES = [POWER_CYCLE, HALT, COLD, IMMEDIATE]
     REBOOT_USER_NA = "N/A"
@@ -2452,6 +2471,9 @@ class IssuConsts:
                     'issue: ISSU does not support downgrade']
     SNMP_READ_ONLY_COMMUNITY = 'qwerty12'
     REDUCED_TIMEOUT = '20'  # [sec]
+    # Read timeout for ISSU operations (Netmiko send_command_timing)
+    # Typical ISSU takes ~3 minutes, 600 seconds provides ~3x safety margin
+    ISSU_READ_TIMEOUT = 600  # [sec] - 10 minutes to handle long ISSU operations
 
 
 class RemarkableLogsConsts:

@@ -6,7 +6,8 @@ from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 
 class Profile(BaseComponent):
-    PROFILE_CHANGE_RESPONSE_MESSAGES = ['System will be rebooted', 'Action succeeded']
+    PROFILE_CHANGE_RESPONSE_MESSAGES = ['System will be rebooted', 'Action succeeded',
+                                        'Disconnecting from NVOS, system is offline during reboot']
 
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/profile')

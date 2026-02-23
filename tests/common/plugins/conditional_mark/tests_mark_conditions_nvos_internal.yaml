@@ -13,12 +13,6 @@ tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
     conditions:
       - "'gorilla' in testbed"
 
-tests_nvos/general/security/nmx_cert:
-  skip:
-    reason: "NMX tests should run only on Juliet"
-    conditions:
-      - "'juliet' not in testbed"
-
 tests_nvos/general/security/bmc:
   skip:
     reason: "BMC tests should run only on Juliet"
@@ -495,5 +489,35 @@ tests_nvos/multi_asic/test_fatal_mode.py:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4780661"
     conditions:
       - https://redmine.mellanox.com/issues/4780661
+
+tests_nvos/system/gnmi/test_gnmi_server.py::test_simulate_gnmi_server_failure:
+  skip:
+    reason: "[NVOS - Design] Bug SW #4841879: [nv-gNMI] No system health events when nv-gnmi container stops (no feature table)"
+    conditions:
+      - https://redmine.mellanox.com/issues/4841879
+
+tests_nvos/cluster/nmx_simulator_tests/test_simulated_cluster_partition.py:
+  skip:
+    reason: "Skip partition tests if device is not JulietSwitch or if it's not a standalone system."
+    conditions_logical_operator: or
+    conditions:
+      - "'juliet' not in testbed"
+      - "'juliet-148' in testbed"
+
+tests_nvos/cluster/nmx_simulator_tests/test_sdn_maintenance_state.py:
+  skip:
+    reason: "SDN tests are supported only on DEV JulietScaleoutSwitch in standalone mode"
+    conditions_logical_operator: and
+    conditions:
+      - "'juliet-126' not in testbed"
+      - "'juliet-142' not in testbed"
+      - "'juliet-1221' not in testbed"
+      - "'juliet-52' not in testbed"
+
+tests_nvos/ib_router/test_ib_router_functional.py::test_port_migration:
+  skip:
+    reason: "[XDR ib router] SAI error when changing SWID mapping for active ports"
+    conditions:
+      - https://redmine.mellanox.com/issues/4886106
 
 ########################## NVOS IGNORE END ##########################

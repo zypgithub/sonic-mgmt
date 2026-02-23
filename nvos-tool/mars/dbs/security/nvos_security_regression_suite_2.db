@@ -58,14 +58,10 @@
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_tpm_attestation.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
 	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_bmc.cases </cases>
         <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
-    </test>
-    <test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_api.cases </cases>
     </test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_ssh_pka.cases </cases>
@@ -77,21 +73,17 @@
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_rbac.cases </cases>
     </test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_crl.cases </cases>
-	</test>
-	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_nmx_rbac.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_sed_password.cases </cases>
 	</test>
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_grub_password.cases </cases>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
+        <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
 	</test>
 	<test>
-		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_sed_password.cases </cases>
-        <ignore><condition> <key>dut_type</key> <op> in </op> <value>[gorilla]</value> </condition></ignore>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_secure_boot_and_upgrade.cases </cases>
 	</test>
     <test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_centralized_flows.cases </cases>

@@ -15,6 +15,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 
 @pytest.mark.system
@@ -185,6 +186,8 @@ def test_configure_ntp_server(random_api):
                            apply=True).verify_result()
 
         with allure.step("Validate show system ntp output"):
+            if is_bug_active(4868603):
+                time.sleep(4)
             ntp_show = OutputParsingTool.parse_json_str_to_dictionary(system.ntp.show()).get_returned_value()
             ntp_dict[NtpConsts.SERVER] = {server_name: {}}
             ntp_dict[NtpConsts.STATE] = NtpConsts.State.DISABLED.value
@@ -935,7 +938,7 @@ def test_ntp_log(engines):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
+def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine):
     """
     validate:
     - NTP synchronization when listening to each of the mgmt ports.
@@ -964,7 +967,8 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
     12. Verify ntp status is synchronized, listen to eth0, and stable for 5 min
     13. Clear ntp and mgmt-ports configuration
     """
-    serial_engine = topology_obj.players['dut_serial']['engine']
+    # serial_engine is a pytest fixture that provides a serial console connection
+    # Use it when SSH might be unavailable (e.g., when bringing down network interfaces)
 
     try:
         with allure.step("Clear all ntp configurations"):
@@ -977,7 +981,7 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
         with allure.step("Set ntp listen to eth1"):
             nv_command.system.ntp.set(op_param_name=NtpConsts.LISTEN, op_param_value=NtpConsts.Listen.ETH1.value,
                                       apply=True).verify_result()
-            time.sleep(NtpConsts.SYNCHRONIZE_NEW_LISTEN_TIME)
+            time.sleep(NtpConsts.SYNCHRONIZE_TIME)  # Use SYNCHRONIZE_TIME (80s) instead of SYNCHRONIZE_NEW_LISTEN_TIME (20s)
 
         with allure.step("Verify ntp status is synchronized, listen to eth1"):
             verify_ntp_status_and_listen(nv_command, NtpConsts.Listen.ETH1.value, NtpConsts.Status.SYNCHRONISED.value)
@@ -988,11 +992,15 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
             time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Verify ntp status is unsynchronized, listen to eth1"):
-            verify_ntp_status_and_listen(nv_command, NtpConsts.Listen.ETH1.value, NtpConsts.Status.UNSYNCHRONISED.value)
+            # eth1 is down, use serial_engine
+            verify_ntp_status_and_listen(nv_command, NtpConsts.Listen.ETH1.value, NtpConsts.Status.UNSYNCHRONISED.value, engine_dut=serial_engine)
 
         with allure.step("Set interface eth0 state to down and eth1 state to up (SSH connection will be lost)"):
-            nv_command.port['eth0'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_DOWN).verify_result()
-            nv_command.port['eth1'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_UP, apply=True,
+            # eth1 is already down from step 5; use serial to avoid SSH to unreachable eth1
+            nv_command.port['eth0'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_DOWN,
+                                                             dut_engine=serial_engine).verify_result()
+            nv_command.port['eth1'].interface.link.state.set(op_param_name=NvosConst.PORT_STATUS_UP,
+                                                             dut_engine=serial_engine, apply=True,
                                                              ask_for_confirmation=True).verify_result()
             time.sleep(NtpConsts.SYNCHRONIZE_TIME)
 
@@ -1007,6 +1015,7 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
             time.sleep(NtpConsts.CONFIG_TIME)
 
         with allure.step("Verify ntp status is unsynchronized, listen to eth0"):
+            # eth0 is down, use serial_engine
             verify_ntp_status_and_listen(nv_command, NtpConsts.Listen.ETH0.value,
                                          NtpConsts.Status.UNSYNCHRONISED.value, engine_dut=serial_engine)
 
@@ -1021,13 +1030,15 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command):
         # Connection in SSH is back
 
         with allure.step("Verify ntp status is synchronized, listen to eth0, and stable for 5 min"):
-            DutUtilsTool.run_cmd_with_disconnect(serial_engine, 'nv show system')
-            verify_ntp_sync_stabilization(nv_command, NtpConsts.Listen.ETH0.value, 300)
+
+            # eth0 is now up, eth1 is down
+            # Use serial_engine to avoid connection issues during transition
+            verify_ntp_sync_stabilization(nv_command, NtpConsts.Listen.ETH0.value, 300, serial_engine)
 
     finally:
         with allure.step("Clear ntp and mgmt-ports configuration"):
-            nv_command.port['eth0'].interface.link.state.unset(dut_engine=serial_engine).verify_result()
-            nv_command.port['eth1'].interface.link.state.unset(dut_engine=serial_engine).verify_result()
+            nv_command.port['eth0'].interface.link.state.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
+            nv_command.port['eth1'].interface.link.state.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
             nv_command.system.ntp.unset(dut_engine=serial_engine, apply=True, ask_for_confirmation=True).verify_result()
 
 
