@@ -12,16 +12,23 @@ import copy
 import os
 import ipaddress
 from dataclasses import dataclass
+from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.helpers.performance.performance_setup_helpers import (save_base_configuration,
                                                                 restore_basic_configuration,
-                                                                apply_test_configuration)
+                                                                apply_test_configuration,
+                                                                skip_test_on_unsupported_os)
 from ngts.performance_tests.conftest import get_all_players_ports
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, MultiNosSharedData
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
-from ngts.constants.constants import BugHandlerConst
 from ngts.helpers.performance.traffic_helpers import generate_incremental_addresses
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
 
 
 @dataclass(frozen=True)
