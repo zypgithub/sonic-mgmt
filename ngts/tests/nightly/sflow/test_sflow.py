@@ -9,6 +9,7 @@ from ngts.constants.constants import SflowConsts
 from ngts.helpers.sflow_helper import verify_sflow_configuration, verify_sflow_sample_agent_id, \
     kill_sflowtool_process, remove_tmp_sample_file, verify_sflow_sample_polling_interval, verify_flow_sample_received, \
     verify_sflow_interface_configuration, get_agent_id_from_hsflowd
+from tests.common.utilities import wait_until
 
 logger = logging.getLogger()
 allure.logger = logger
@@ -155,6 +156,13 @@ def test_sflow_agent_id(engines, cli_objects):
     :param engines: engines fixture
     :param cli_objects: cli_objects fixture
     """
+    def _hsflowd_synced_after_agent_delete(engines, previous_agent_ip=SflowConsts.LOOPBACK_0_IP):
+        """Return True when hsflowd has synced with DB."""
+        logger.info(f"Checking if hsflowd has synced with DB after agent delete. Previous agent IP: {previous_agent_ip}")
+        agent = get_agent_id_from_hsflowd(engines)
+        if agent == previous_agent_ip:
+            return False
+        return True
     try:
         cli_obj = cli_objects.dut
         with allure.step('Configure the Loopback interface as agent'):
@@ -171,6 +179,8 @@ def test_sflow_agent_id(engines, cli_objects):
             verify_sflow_configuration(cli_obj, status=SflowConsts.SFLOW_UP, agent_id=SflowConsts.AGENT_ID_DEFAULT)
         with allure.step('Validate that agent value in sflow sample is previously configured agent IP'):
             random_collector = random.choice(SflowConsts.COLLECTOR_LIST)
+            assert wait_until(10, 1, 0, _hsflowd_synced_after_agent_delete, engines), \
+                "hsflowd is not synced after agent deleted"
             selected_agent_ip = get_agent_id_from_hsflowd(engines)
             verify_sflow_sample_agent_id(engines, random_collector, selected_agent_ip)
 
