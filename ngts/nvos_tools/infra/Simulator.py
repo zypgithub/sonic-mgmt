@@ -3,6 +3,7 @@ import allure
 import random
 import time
 import re
+from contextlib import contextmanager
 
 from ngts.nvos_constants.constants_nvos import HealthConsts, SystemConsts, FansConsts
 from ngts.nvos_tools.infra.FilesTool import FilesTool
@@ -153,6 +154,53 @@ class HWSimulator:
         with allure.step("Fix fan error"):
             HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
             time.sleep(10)
+
+    @staticmethod
+    def find_sensor_dir(engine, base_path, sensor_name):
+        """Find the filesystem directory for a sensor by its CLI display name.
+
+        The filesystem uses '+' separators and includes extra tokens like '+Vol',
+        '+Volt', '+VinDC' that don't appear in the CLI name. We strip those tokens
+        and compare only lowercase alphanumeric characters to find the match.
+        """
+        output = engine.run_cmd(f'find {base_path} -maxdepth 3 -name input')
+        dirs = [line.strip().rsplit('/input', 1)[0] for line in output.splitlines() if line.strip()]
+
+        def normalize(name):
+            for token in ('+VinDC', '+Volt', '+Vol'):
+                name = name.replace(token, '')
+            return re.sub(r'[^a-z0-9]', '', name.lower())
+
+        target = normalize(sensor_name)
+        for d in dirs:
+            dir_name = d.rstrip('/').split('/')[-1]
+            if normalize(dir_name) == target:
+                return d
+
+        raise FileNotFoundError(
+            f"No directory found for sensor '{sensor_name}' under {base_path}. "
+            f"Available: {[d.split('/')[-1] for d in dirs]}"
+        )
+
+    @staticmethod
+    @contextmanager
+    def simulate_sensor(engine, input_path, fake_value, stabilize_delay):
+        """Context manager: inject a fake sensor value, yield, then restore the original symlink."""
+        original_target = engine.run_cmd(f'readlink {input_path}').strip()
+        logger.info(f"Saving original symlink: {input_path} -> {original_target}")
+        try:
+            with allure.step(f"Inject fake value '{fake_value}' into {input_path}"):
+                engine.run_cmd(
+                    f"sudo sh -c 'unlink {input_path} && echo {fake_value} > {input_path}'"
+                )
+                time.sleep(stabilize_delay)
+            yield
+        finally:
+            with allure.step(f"Restore original symlink for {input_path}"):
+                engine.run_cmd(
+                    f"sudo sh -c 'rm -f {input_path} && ln -s {original_target} {input_path}'"
+                )
+                time.sleep(stabilize_delay)
 
     @staticmethod
     def reset_health_service(engine):
