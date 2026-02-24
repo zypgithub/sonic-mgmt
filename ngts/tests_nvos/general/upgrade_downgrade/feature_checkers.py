@@ -42,6 +42,7 @@ import functools
 import logging
 import os
 import pytest
+import random
 import re
 import time
 from collections.abc import Callable, Generator
@@ -695,13 +696,13 @@ def _check_api_mtls_spiffe_id_and_crl(
                     setup.cert_spif_of_user1_1.ip,
                     setup.server_cert.cacert,
                 )
+            )
             check_spiffe_positive_api(engines, revision_num, setup)
 
-    finally:
-        crl_validator.cleanup()
+    crl_validator.cleanup()
 
 
-@ _requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
+@_requires_compatibility(IbDevice.JulietSwitch, minimal_version="25.02.4200")
 def _check_nmx_controller_rbac(
     engines: EnginesT, devices: DevicesT, **kwargs
 ) -> Generator[None, None, None]:
@@ -718,20 +719,20 @@ def _check_nmx_controller_rbac(
         8. Restore rbac file
         9. Run app client with bad user - Should succeed
     """
-    cluster=Cluster()
-    dut_hostname=engines.dut.ip
-    scp_player=get_scp_player(engines)
+    cluster = Cluster()
+    dut_hostname = engines.dut.ip
+    scp_player = get_scp_player(engines)
     verify_gnmi_client_tools_installed()
 
     with allure.step('enable cluster'):
         enable_cluster()
 
     with allure.step("prepare rbac"):
-        cluster_app_nmx_c: ClusterApp=cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
-        rbac_tool_nmx_c=NmxRbacTool(cluster, engines.dut, cluster_app_nmx_c)
-        rbac_file_name="controller_rbac_upgrade"
-        certs_location=get_test_certs_dir_location("controller_rbac_upgrade", dut_hostname)
-        certs_location, certs=setup_certs_for_tests(
+        cluster_app_nmx_c: ClusterApp = cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
+        rbac_tool_nmx_c = NmxRbacTool(cluster, engines.dut, cluster_app_nmx_c)
+        rbac_file_name = "controller_rbac_upgrade"
+        certs_location = get_test_certs_dir_location("controller_rbac_upgrade", dut_hostname)
+        certs_location, certs = setup_certs_for_tests(
             certs_dirname_prefix=certs_location,
             certs_names=["client_nmx_c", "server_nmx_c"],
             engines=engines,
@@ -740,16 +741,16 @@ def _check_nmx_controller_rbac(
             dut_ip=engines.dut.ip,
             create_chain=False,
         )
-        client_cert_nmx_c=certs[0]
-        server_cert_nmx_c=certs[1]
+        client_cert_nmx_c = certs[0]
+        server_cert_nmx_c = certs[1]
         rbac_tool_nmx_c.prepare_nmx_certs([server_cert_nmx_c], [client_cert_nmx_c])
 
-    rbac_file_path=RbacConsts.NMX_RBAC_FILE_USER_PATH
+    rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
     try:
         rbac_tool_nmx_c.import_rbac_file(rbac_file_name, rbac_file_path)
 
-        rbac_user=UserInfo("sasha", "sasha_rbac", "admin")
-        bad_rbac_user=UserInfo("bad_user", "bad_password", "admin")
+        rbac_user = UserInfo("sasha", "sasha_rbac", "admin")
+        bad_rbac_user = UserInfo("bad_user", "bad_password", "admin")
 
         rbac_tool_nmx_c.run_app_client(dut_hostname, rbac_user, client_cert_nmx_c, server_cert_nmx_c, expect_success=True)
 
@@ -792,20 +793,20 @@ def _check_nmx_telemetry_rbac(
         8. Restore rbac file
         9. Run app client with bad user - Should succeed
     """
-    cluster=Cluster()
-    dut_hostname=engines.dut.ip
-    scp_player=get_scp_player(engines)
+    cluster = Cluster()
+    dut_hostname = engines.dut.ip
+    scp_player = get_scp_player(engines)
     verify_gnmi_client_tools_installed()
 
     with allure.step('enable cluster'):
         enable_cluster()
 
     with allure.step("prepare rbac"):
-        cluster_app_nmx_t: ClusterApp=cluster.apps.app_name[ClusterConsts.NMX_TELEMETRY]
-        rbac_tool_nmx_t=NmxRbacTool(cluster, engines.dut, cluster_app_nmx_t)
-        rbac_file_name="telemetry_rbac_upgrade"
-        certs_location=get_test_certs_dir_location("telemetry_rbac_upgrade", dut_hostname)
-        certs_location, certs=setup_certs_for_tests(
+        cluster_app_nmx_t: ClusterApp = cluster.apps.app_name[ClusterConsts.NMX_TELEMETRY]
+        rbac_tool_nmx_t = NmxRbacTool(cluster, engines.dut, cluster_app_nmx_t)
+        rbac_file_name = "telemetry_rbac_upgrade"
+        certs_location = get_test_certs_dir_location("telemetry_rbac_upgrade", dut_hostname)
+        certs_location, certs = setup_certs_for_tests(
             certs_dirname_prefix=certs_location,
             certs_names=["client_nmx_t", "server_nmx_t"],
             engines=engines,
@@ -814,17 +815,17 @@ def _check_nmx_telemetry_rbac(
             dut_ip=engines.dut.ip,
             create_chain=False,
         )
-        client_cert_nmx_t=certs[0]
-        server_cert_nmx_t=certs[1]
+        client_cert_nmx_t = certs[0]
+        server_cert_nmx_t = certs[1]
         rbac_tool_nmx_t.prepare_nmx_certs([server_cert_nmx_t], [client_cert_nmx_t])
 
-    rbac_file_path=RbacConsts.NMX_RBAC_FILE_USER_PATH
+    rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
     try:
         rbac_tool_nmx_t.import_rbac_file(rbac_file_name, rbac_file_path)
         rbac_tool_nmx_t.update_rbac_file(rbac_file_name)
         rbac_tool_nmx_t.update_rbac_mode(RbacConsts.RBAC_MODE_USERNAME_PASSWORD)
-        rbac_user=UserInfo("sasha", "sasha_rbac", "admin")
-        bad_rbac_user=UserInfo("bad_user", "bad_password", "admin")
+        rbac_user = UserInfo("sasha", "sasha_rbac", "admin")
+        bad_rbac_user = UserInfo("bad_user", "bad_password", "admin")
 
         rbac_tool_nmx_t.run_app_client(dut_hostname, rbac_user, client_cert_nmx_t, server_cert_nmx_t, expect_success=True)
         rbac_tool_nmx_t.run_app_client(dut_hostname, bad_rbac_user, client_cert_nmx_t, server_cert_nmx_t, expect_success=False)
@@ -887,7 +888,7 @@ def _check_radius_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Genera
         5. Do upgrade
         6. Test RADIUS auth through auth modes after upgrade
     """
-    server_config={
+    server_config = {
         AddressingType.IPV4: RadiusPhysicalServer.SERVER_IPV4,
         AddressingType.IPV6: RadiusVmServer.SERVER_IPV6,
         AddressingType.DN: RadiusVmServer.SERVER_DN,
@@ -943,20 +944,20 @@ def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
         7. Do upgrade
         8. Verify user can still login with certificate after upgrade
     """
-    system=System()
-    ssh_cert_auth_helper=SshCertAuthHelper()
-    key_name="upgrade_cert_test_key"
-    key_type=get_random_key_type()
-    principal=get_random_principal()
-    admin_user=UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
-    hostname=engines.dut.ip
+    system = System()
+    ssh_cert_auth_helper = SshCertAuthHelper()
+    key_name = "upgrade_cert_test_key"
+    key_type = get_random_key_type()
+    principal = get_random_principal()
+    admin_user = UserInfo(SystemConsts.DEFAULT_USER_ADMIN, SystemConsts.DEFAULT_USER_ADMIN, UserRole.ADMIN)
+    hostname = engines.dut.ip
 
     try:
         with allure.step("Setup SSH certificate authentication"):
             ssh_cert_auth_helper.ensure_keys_directory()
 
             with allure.step("Generate keys and sign certificate"):
-                ca_val, key_private_path=ssh_cert_auth_helper.generate_keys_and_sign_certificate(
+                ca_val, key_private_path = ssh_cert_auth_helper.generate_keys_and_sign_certificate(
                     key_name=key_name, key_type=key_type, principals=[principal]
                 )
 
@@ -999,7 +1000,7 @@ def _check_api_compression(engines: EnginesT, devices: DevicesT, **kwargs) -> Ge
         4. Do upgrade
         5. Verify API compression is set to gzip after upgrade
     """
-    system=System()
+    system = System()
     with allure.step('Set API compression to gzip'):
         system.api.set(op_param_name=SystemConsts.ApiConsts.COMPRESSION, op_param_value=SystemConsts.ApiConsts.CompressionT.GZIP, apply=True).verify_result()
         verify_api_compression_state(system, SystemConsts.ApiConsts.CompressionT.GZIP)
@@ -1047,22 +1048,22 @@ def _run_authentication_test(
         extra_setup_func: Optional extra setup function to call
         extra_cleanup_func: Optional extra cleanup function to call
     """
-    skip_auth_mediums=[AuthMedium.OPENAPI, AuthMedium.SCP]  # skip openapi and scp, as we have certificates configured
-    test_flow=TestFlowType.GOOD_FLOW
-    addressing_type=AddressingType.IPV4
-    topology_obj=TestToolkit.topology_obj
+    skip_auth_mediums = [AuthMedium.OPENAPI, AuthMedium.SCP]  # skip openapi and scp, as we have certificates configured
+    test_flow = TestFlowType.GOOD_FLOW
+    addressing_type = AddressingType.IPV4
+    topology_obj = TestToolkit.topology_obj
 
-    adminuser=_prepare_local_admin_user(engines, devices)
-    server_active_conf=SimpleNamespace()
+    adminuser = _prepare_local_admin_user(engines, devices)
+    server_active_conf = SimpleNamespace()
 
     try:
         with allure.step(f"Configure {remote_aaa_type} server"):
-            server=server_config[addressing_type].copy()
+            server = server_config[addressing_type].copy()
             assert getattr(server, "users_per_auth_medium", None) is not None, (
                 f'given server must have "users_per_auth_medium" attr\n'
                 f"server: {server.hostname} - {server.port} - {server.docker_name}"
             )
-            server_resource=aaa_obj.server.server_id[server.hostname]
+            server_resource = aaa_obj.server.server_id[server.hostname]
             server.configure(engines)
 
         with allure.step(f"Enable {remote_aaa_type}"):
@@ -1144,8 +1145,8 @@ def _prepare_local_admin_user(engines, devices) -> UserInfo:
         RuntimeError: If user creation fails
     """
     try:
-        adminrole=devices.dut.aaa_admin_role
-        adminuser=UserInfo(
+        adminrole = devices.dut.aaa_admin_role
+        adminuser = UserInfo(
             username=AaaConsts.LOCALADMIN,
             password=generate_strong_password(),
             role=adminrole,
@@ -1171,11 +1172,11 @@ def _check_speed_configuration(engines: EnginesT, devices: DevicesT, base: Syste
     Note: This replaces the speed testing from the deprecated test_downgrade_upgrade
     in test_system_image.py
     """
-    speed_info=None
+    speed_info = None
 
     with allure.step("Configure and test interface speeds"):
         try:
-            speed_info=InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
+            speed_info = InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
 
             if speed_info:
                 logger.info(f"Speed testing configured successfully on port: {speed_info[0].name}")
@@ -1205,10 +1206,10 @@ def _check_ssd_firmware_auto_upgrade(
     4. Verify SSD firmware is at latest version after upgrade
 
     """
-    ssd_component=Platform().firmware.ssd
+    ssd_component = Platform().firmware.ssd
 
     try:
-        _, _, latest_version_name=FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
+        _, _, latest_version_name = FWComponentsTool.get_fw_component_version_latest(FW_COMPONENT_SSD)
     except pytest.skip.Exception as e:
         # SSD part number not in firmware versions JSON - skip this checker gracefully
         raise Skipped(f"SSD firmware checker skipped: {str(e)}")
@@ -1227,7 +1228,7 @@ def _check_ssd_firmware_auto_upgrade(
 
 
 # the checker must be called e.g. test_rbac
-_CHECKERS: List[CheckerFn]=[
+_CHECKERS: list[CheckerFn] = [
     _check_ssd_firmware_auto_upgrade,
     _check_nmx_cert,
     _check_api_mtls_old,
