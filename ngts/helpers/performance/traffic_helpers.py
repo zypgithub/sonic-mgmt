@@ -284,6 +284,12 @@ def _get_rx_tx_thresholds(bw_threshold, port_group_name, is_global_threshold):
         return bw_threshold, bw_threshold, tx_validation_key, rx_validation_key
     group_threshold = bw_threshold.get(port_group_name)
     if group_threshold is None:
+        port_group_lower = port_group_name.lower()
+        for key, value in bw_threshold.items():
+            if isinstance(key, str) and key.lower() == port_group_lower:
+                group_threshold = value
+                break
+    if group_threshold is None:
         return None, None, tx_validation_key, rx_validation_key
     if isinstance(group_threshold, dict):
         tx_threshold, rx_threshold = group_threshold.get(ValidationConsts.TX), group_threshold.get(ValidationConsts.RX)
