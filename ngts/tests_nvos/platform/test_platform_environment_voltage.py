@@ -318,6 +318,7 @@ FAULT_SCENARIOS = [
 
 
 @pytest.mark.platform
+@pytest.mark.disable_loganalyzer
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_simulate_voltage_faults(engines, devices):
     """
