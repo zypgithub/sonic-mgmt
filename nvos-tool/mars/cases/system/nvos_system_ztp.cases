@@ -97,7 +97,7 @@
   </case>
   <case>
     <name> System ztp nmx negative </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -108,7 +108,7 @@
   </case>
   <case>
     <name> System ztp nmx positive </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -119,7 +119,7 @@
   </case>
   <case>
     <name> System ztp hashed password </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, portia]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>
@@ -130,7 +130,7 @@
   </case>
   <case>
     <name> System ztp fetch asic debug config </name>
-    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+    <ignore><condition> <key>dut_type</key> <op> not in </op> <value>[juliet, rosalind, rosalind-surrogate, rosalind-chipless, portia]</value> </condition></ignore>
     <info></info>
     <tout> 10800 </tout>
     <cmd>

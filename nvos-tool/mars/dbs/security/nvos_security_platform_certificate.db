@@ -42,7 +42,7 @@
 		</Case>
 	</global>
 	<test>
-		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind, rosalind-surrogate, rosalind-chipless]</value> </condition></ignore>
+		<ignore><condition> <key>dut_type</key> <op> not in </op> <value>[rosalind, rosalind-surrogate, rosalind-chipless, portia]</value> </condition></ignore>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/security/cases/nvos_security_platform_certificate.cases </cases>
 	</test>
 </DBDEF>
