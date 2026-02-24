@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from ngts.constants.constants import InfraConst
 from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, RosalindSimx
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
@@ -169,9 +169,9 @@ class IbInterfaceTool:
             >>> if success:
             ...     logger.info("RosalindSimx MLOOP workaround configured successfully")
         """
-        # Check if this is a RosalindSimx device
-        if not isinstance(devices.dut, RosalindSimx):
-            logger.info("Not a RosalindSimx device, skipping MLOOP workaround configuration")
+        # Check if this device requires MLOOP setup (RosalindSimx/PortiaSimx and future compatible platforms)
+        if not getattr(devices.dut, 'require_mloop_setup', False):
+            logger.info("Device does not require MLOOP setup, skipping MLOOP workaround configuration")
             return False
 
         logger.info("RosalindSimx detected, configuring MLOOP workaround")
@@ -244,8 +244,8 @@ class IbInterfaceTool:
             >>> if not success:
             ...     logger.warning("No UP links found on device")
         """
-        if not isinstance(devices.dut, RosalindSimx):
-            logger.info("Not a RosalindSimx device, skipping link verification")
+        if not getattr(devices.dut, 'require_mloop_setup', False):
+            logger.info("Device does not require MLOOP setup, skipping link verification")
             return True
 
         with allure.step("Verify RosalindSimx links are up"):

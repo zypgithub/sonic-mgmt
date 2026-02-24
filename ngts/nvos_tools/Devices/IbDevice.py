@@ -2925,6 +2925,7 @@ class RosalindSimx(RosalindSwitch):
 
     def __init__(self):
         super().__init__(asic_amount=4)
+        self.require_mloop_setup = True
 
     def _init_constants(self):
         super()._init_constants()
@@ -3033,7 +3034,8 @@ class RosalindSimx(RosalindSwitch):
 class PortiaSimx(RosalindSwitch):
 
     def __init__(self):
-        super().__init__(asic_amount=1)
+        super().__init__(asic_amount=4)
+        self.require_mloop_setup = True
 
     def _init_constants(self):
         super()._init_constants()

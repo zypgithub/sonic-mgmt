@@ -4,7 +4,7 @@ import time  # TODO: Remove when XDR workaround is removed
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.Devices.IbDevice import RosalindSimx, RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
+from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tools.test_utils import allure_utils as allure
@@ -36,9 +36,9 @@ def rosalind_simx_setup(engines, devices):
         yield
         return
 
-    # Check if this is a RosalindSimx device
-    if not isinstance(devices.dut, RosalindSimx):
-        logger.info("Not a RosalindSimx device, skipping special configuration")
+    # Check if this device requires MLOOP setup (RosalindSimx/PortiaSimx and future compatible platforms)
+    if not getattr(devices.dut, 'require_mloop_setup', False):
+        logger.info("Device does not require MLOOP setup, skipping special configuration")
         yield
         return
 
