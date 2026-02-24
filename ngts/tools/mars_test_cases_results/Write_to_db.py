@@ -34,6 +34,12 @@ class MarsRespondDB(ConnectMSSQL):
             self.insert_row(row)
         self.disconnect_db()
 
+    def _escape_sql_string(self, value):
+        """Escape single quotes for SQL Server ('' is the escape for ')."""
+        if value is None:
+            return ''
+        return str(value).replace("'", "''")
+
     def insert_row(self, row):
         columns_string = ""
         values_string = ""
@@ -47,8 +53,8 @@ class MarsRespondDB(ConnectMSSQL):
                 # session_id is an int
                 values_string += f"{value}, "
             else:
-                # all the other fields are varchar
-                values_string += f"'{value}', "
+                # all the other fields are varchar; escape single quotes for SQL
+                values_string += f"'{self._escape_sql_string(value)}', "
         columns_string = columns_string.rstrip(", ")
         values_string = values_string.rstrip(", ")
 
