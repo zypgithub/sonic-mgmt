@@ -171,7 +171,9 @@ def pre_configure_for_interface_vlan_vrf(request, engines, topology_obj, interfa
 
     ping_info_list = [{"host": "ha", "src_intf": interfaces.ha_dut_1, "dst_intf": 'dut_ha_1'},
                       {"host": "ha", "src_intf": interfaces.ha_dut_2, "dst_intf": 'dut_ha_2'},
-                      {"host": "hb", "src_intf": interfaces.hb_dut_1, "dst_intf": 'dut_hb_1'}]
+                      {"host": "hb", "src_intf": interfaces.hb_dut_1, "dst_intf": 'dut_hb_1'},
+                      {"host": "hb", "src_intf": interfaces.hb_dut_2, "dst_intf": 'dut_hb_2',
+                       "ping_ip_v4": V4_CONFIG['dut_hb_1'], "ping_ip_v6": V6_CONFIG['dut_hb_1']}]
 
     VlanConfigTemplate.configuration(topology_obj, vlan_config_dict, request)
     VrfConfigTemplate.configuration(topology_obj, vrf_config_dict, request)
@@ -180,6 +182,9 @@ def pre_configure_for_interface_vlan_vrf(request, engines, topology_obj, interfa
 
     # generate arp by pinging from host
     gen_arp_table_via_ping(players, ping_info_list)
+    logger.info("Collecting arp and mac table")
+    engines.dut.run_cmd("show arp")
+    engines.dut.run_cmd("show mac")
 
 
 @pytest.fixture(scope='class', autouse=False)
@@ -483,7 +488,13 @@ def get_lag_test_static_route_config():
 def gen_arp_table_via_ping(players, ping_info_list, only_ping_v4=False):
     def ping_ports(ip_config):
         for ping_info in ping_info_list:
-            generate_arp(players, ping_info["src_intf"], ping_info["host"], ip_config[ping_info["dst_intf"]])
+            if "ping_ip_v4" in ping_info:
+                ping_ip = ping_info["ping_ip_v4"]
+            elif "ping_ip_v6" in ping_info:
+                ping_ip = ping_info["ping_ip_v6"]
+            else:
+                ping_ip = ip_config[ping_info["dst_intf"]]
+            generate_arp(players, ping_info["src_intf"], ping_info["host"], ping_ip)
 
     ping_ports(V4_CONFIG)
     if not only_ping_v4:
