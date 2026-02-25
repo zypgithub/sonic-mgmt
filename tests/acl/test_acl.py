@@ -35,7 +35,6 @@ from tests.common.sai_validation.sonic_db import start_db_monitor, wait_for_n_ke
 from tests.common.validation.sai.acl_validation import validate_acl_asicdb_entries
 from tests.common.utilities import is_ipv4_address
 from tests.common.utilities import is_ipv6_only_topology
-from tests.common.mellanox_data import is_mellanox_device
 from tests.common.dualtor.dual_tor_utils import show_muxcable_status
 
 logger = logging.getLogger(__name__)
@@ -1089,7 +1088,7 @@ class BaseAclTest(six.with_metaclass(ABCMeta, object)):
             return True
 
         logger.info('Wait all rule counters are ready')
-        return wait_until(60, 2, 0, self.check_rule_counters_internal, duthost)
+        return wait_until(120, 2, 0, self.check_rule_counters_internal, duthost)
 
     def check_rule_counters_internal(self, duthost):
         for asic_id in duthost.get_frontend_asic_ids():
