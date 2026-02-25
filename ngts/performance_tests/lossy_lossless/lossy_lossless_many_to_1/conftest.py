@@ -197,11 +197,23 @@ def get_many_to_1_traffic(conf_args, num_lossy_packets, num_lossless_packets, nu
 
 
 @pytest.fixture(scope='class', autouse=True)
-def conf_args(players, split_left, split_right, num_of_traffic_ports, packet_size, auto_buffer_mode, fboss_enabled, num_downlink_ports, adjust_buffer_config):
+def conf_args(players, chip_type, test_config, split_left, split_right, num_of_traffic_ports, packet_size,
+              auto_buffer_mode, fboss_enabled, num_downlink_ports, adjust_buffer_config):
     """
     This function alters all of the jinja template files.
+
+    Note: SPC5 doesn't support 800G. In that case, uses doubled splits and adds effective_test_id with 400G_on_SPC5.
     """
-    all_ports_after_split = get_all_players_ports(players, split_right, split_left)
+    if chip_type == "SPC5" and (split_left == 1 or split_right == 1):
+        effective_split_left = split_left * 2
+        effective_split_right = split_right * 2
+        effective_test_id = f"{test_config.test_id}_400G_on_SPC5"
+    else:
+        effective_split_left = split_left
+        effective_split_right = split_right
+        effective_test_id = test_config.test_id
+
+    all_ports_after_split = get_all_players_ports(players, effective_split_right, effective_split_left)
     num_of_left_ports = min(num_of_traffic_ports, len(all_ports_after_split[PerfConsts.LEFT_TG_ALIAS]["unconnected_ports"]))
     num_of_right_ports = 0 if num_of_traffic_ports == num_of_left_ports else num_of_traffic_ports - num_of_left_ports
 
@@ -216,8 +228,9 @@ def conf_args(players, split_left, split_right, num_of_traffic_ports, packet_siz
                  "adjust_buffer_config": adjust_buffer_config,
                  "num_of_left_ports": num_of_left_ports,
                  "num_of_right_ports": num_of_right_ports,
-                 "split_right": split_right,
-                 "split_left": split_left,
+                 "split_right": effective_split_right,
+                 "split_left": effective_split_left,
+                 "effective_test_id": effective_test_id,
                  "num_of_traffic_ports": num_of_traffic_ports,
                  "num_of_downlink_ports": num_of_downlink_ports,
                  "two_sided_ar": False,

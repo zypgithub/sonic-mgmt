@@ -46,8 +46,8 @@ class TestLossyLosslessManyToOne:
         self.is_ipv6 = is_ipv6
 
     @pytest.fixture
-    def scenario_name(self, test_config):
-        return test_config.test_id
+    def scenario_name(self, test_config, conf_args):
+        return conf_args.get("effective_test_id", test_config.test_id)
 
     @allure.title('Lossy lossless scenario 4. Many to 1')
     @allure.description('Lossy lossless scenario 4. Send many to 1 one sided traffic')
@@ -63,7 +63,7 @@ class TestLossyLosslessManyToOne:
         num_lossy_packets = test_config.num_of_lossy_packets
         num_lossless_packets = test_config.num_of_lossless_packets
         num_of_traffic_ports = test_config.num_of_traffic_ports
-        test_id = test_config.test_id
+        test_id = self.conf_args.get("effective_test_id", test_config.test_id)
 
         with allure.step(f"Change test name and description"):
             description = (
