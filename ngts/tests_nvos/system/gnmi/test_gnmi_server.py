@@ -21,16 +21,37 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr
+from ngts.tests_nvos.system.gnmi.constants import GnmiMode, MAX_GNMI_SUBSCRIBERS, GnmicErr, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.helpers import gnmi_basic_flow, validate_gnmi_is_running_and_stream_updates, \
     validate_show_gnmi, validate_gnmi_server_in_health_issues, run_gnmi_client_in_the_background, \
     verify_description_value, run_gnmi_client_and_parse_output, validate_gnmi_enabled_and_running, \
     validate_memory_and_cpu_utilization, get_infiniband_name_from_port_name, get_port_oid_from_infiniband_port, \
     create_gnmi_infiniband_list, validate_redis_cli_and_gnmi_commands_results, create_interface_state_commands_list, \
     create_gnmi_counter_list, create_platform_general_commands_list, change_interface_description, \
-    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err
+    verify_msg_not_in_out_or_err, verify_msg_in_out_or_err, parse_gnmi_status
 
 logger = logging.getLogger()
+
+# Wait after stopping subscriptions before re-checking gnmi-server status
+WAIT_AFTER_STOP_SUBSCRIPTION_SEC = 3
+
+
+def _get_counter(status_dict, key, default=0):
+    """Get counter value from status dict; handle nested or flat structure."""
+    if isinstance(status_dict, dict) and key in status_dict:
+        val = status_dict[key]
+        return int(val) if val is not None else default
+    return default
+
+
+def _get_clients(status_dict):
+    """Get client list from status dict."""
+    clients = status_dict.get(GnmiServerStatus.CLIENT)
+    if clients is None:
+        return []
+    if isinstance(clients, dict) and len(clients) == 0:
+        return []
+    return clients if isinstance(clients, list) else [clients]
 
 
 @pytest.mark.system
@@ -254,9 +275,12 @@ def test_gnmi_performance(engines, devices):
     """
     Run 10 gnmi-client process to the same switch, validate stream updates and switch state.
         Test flow:
-            1. create 10 gnmi_clients
-            2. change port description
-            3. validate gnmi-server stream updates
+            1. show gnmi-server status (no clients)
+            2. create 10 gnmi_clients
+            3. show gnmi-server status (10 clients, 10 active subscriptions)
+            4. change port description
+            5. validate gnmi-server stream updates
+            6. stop clients, show gnmi-server status (no clients)
     """
     num_engines = 10
     gnmi_clients_without_updates = 0
@@ -264,12 +288,32 @@ def test_gnmi_performance(engines, devices):
     result = []
     port_description = Tools.RandomizationTool.get_random_string(7)
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).returned_value
+    system = System()
+    gnmi_status = system.gnmi_server.status
+    dut = engines.dut
+
+    with allure.step("Show gnmi-server status before clients are set up - expect no clients"):
+        out_before = gnmi_status.show(dut_engine=dut)
+        status_before = parse_gnmi_status(out_before)
+        with allure.independent_step("Expect no clients before setup"):
+            assert len(_get_clients(status_before)) == 0
+        with allure.independent_step("Expect total-active-subscriptions 0 before setup"):
+            assert _get_counter(status_before, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 
     with allure.step(f"run {num_engines} gnmi_client sessions in the background"):
         for engine_id in range(num_engines):
             threads.append(run_gnmi_client_in_the_background(engines.dut.ip,
                                                              f"interfaces/interface[name={selected_port.name}]/state/description",
                                                              devices.dut))
+
+    with allure.step("Show gnmi-server status after all clients are set up - expect 10 clients"):
+        time.sleep(2)
+        out_after_setup = gnmi_status.show(dut_engine=dut)
+        status_after_setup = parse_gnmi_status(out_after_setup)
+        with allure.independent_step(f"Expect {num_engines} clients"):
+            assert len(_get_clients(status_after_setup)) == num_engines
+        with allure.independent_step(f"Expect total-active-subscriptions {num_engines}"):
+            assert _get_counter(status_after_setup, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == num_engines
 
     with allure.step("validate memory and CPU utilization"):
         validate_memory_and_cpu_utilization()
@@ -289,6 +333,15 @@ def test_gnmi_performance(engines, devices):
             if port_description not in str(output):
                 gnmi_clients_without_updates += 1
         assert gnmi_clients_without_updates == 0, f"{gnmi_clients_without_updates} gnmi clients didn't get updates..{output}"
+
+    with allure.step("Show gnmi-server status after all clients torn down - expect no clients"):
+        time.sleep(WAIT_AFTER_STOP_SUBSCRIPTION_SEC)
+        out_after_teardown = gnmi_status.show(dut_engine=dut)
+        status_after_teardown = parse_gnmi_status(out_after_teardown)
+        with allure.independent_step("Expect no clients after teardown"):
+            assert len(_get_clients(status_after_teardown)) == 0
+        with allure.independent_step("Expect total-active-subscriptions 0 after teardown"):
+            assert _get_counter(status_after_teardown, GnmiServerStatus.TOTAL_ACTIVE_SUBSCRIPTIONS) == 0
 
 
 @pytest.mark.system
