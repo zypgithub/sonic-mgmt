@@ -209,11 +209,34 @@ class BaseDevice(ABC):
         """
         pass
 
-    def _relevant_config_filename_by_version(self, version: str) -> str:
+    @staticmethod
+    def _version_to_global_build(version: str) -> int:
+        """
+        Convert version string to a global build number that preserves ordering across releases.
+
+        Before 25.03, build numbers were continuous across releases (e.g., 25.01.3932, 25.02.6079).
+        From 25.03 onward, build numbers reset each release cycle (e.g., 25.03.0106).
+        We offset 25.03+ builds above the 25.02 range so config file selection stays correct.
+
+        Examples:
+            25.01.3932 → 3932   (unchanged, maps to ga_4000)
+            25.02.6079 → 6079   (unchanged, maps to ga_7000)
+            25.03.0106 → 8106   (offset, maps to ga_7000 as closest)
+            25.04.0500 → 8500   (offset, maps to ga_7000 as closest)
+        """
         version_num, _ = get_version_info(version)
-        if version_num:
-            version_num = int(version_num.split('.')[-1])
-            relevant_ga_num_for_conf = (version_num // 1000) * 1000
+        if not version_num:
+            return 0
+        parts = version_num.split('.')
+        major, minor, build = int(parts[0]), int(parts[1]), int(parts[2])
+        if (major, minor) >= (25, 3):
+            return 8000 + build
+        return build
+
+    def _relevant_config_filename_by_version(self, version: str) -> str:
+        global_build = self._version_to_global_build(version)
+        if global_build:
+            relevant_ga_num_for_conf = (global_build // 1000) * 1000
             if relevant_ga_num_for_conf == 0:
                 relevant_ga_num_for_conf = 4000
             return f'nvos_config_ga_{relevant_ga_num_for_conf}.yml'

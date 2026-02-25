@@ -68,10 +68,9 @@ class IbSwitch(BaseSwitch):
         self._init_link_error_counters()
 
     def _relevant_config_filename_by_version(self, version: str) -> str:
-        version_num, _ = get_version_info(version)
-        if version_num:
-            build_num = int(version_num.split('.')[-1])
-            relevant_ga_num = math.ceil(build_num / 1000) * 1000
+        global_build = self._version_to_global_build(version)
+        if global_build:
+            relevant_ga_num = math.ceil(global_build / 1000) * 1000
             return f'nvos_config_ga_{relevant_ga_num}.yml'
         return super()._relevant_config_filename_by_version(version)
 
@@ -80,11 +79,10 @@ class IbSwitch(BaseSwitch):
         if os.path.isfile(config_file_path):
             return config_file_path, config_filename
 
-        version_num, _ = get_version_info(version)
-        if not version_num:
+        global_build = self._version_to_global_build(version)
+        if not global_build:
             raise FileNotFoundError(f"Test config file not found: {config_file_path}")
 
-        target_num = int(version_num.split('.')[-1])
         ngts_path = os.path.join(os.path.abspath(__file__).split('ngts', 1)[0], 'ngts')
         resources_dir = os.path.join(ngts_path, 'tools', 'test_utils', 'nvos_resources')
 
@@ -99,10 +97,10 @@ class IbSwitch(BaseSwitch):
         if not ga_numbers:
             raise FileNotFoundError(f"No GA config files found in {resources_dir}")
 
-        closest_ga = min(ga_numbers, key=lambda ga: abs(ga - target_num))
+        closest_ga = min(ga_numbers, key=lambda ga: abs(ga - global_build))
         config_filename = f'nvos_config_ga_{closest_ga}.yml'
         config_file_path = os.path.join(resources_dir, config_filename)
-        logging.info(f'No exact GA config for version {target_num}, using closest: {config_filename}')
+        logging.info(f'No exact GA config for global_build={global_build}, using closest: {config_filename}')
         return config_file_path, config_filename
 
     def get_default_password_by_version(self, version: str):

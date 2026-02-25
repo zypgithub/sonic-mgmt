@@ -447,9 +447,12 @@ def _verify_lldp_is_sending_frames(lldp, engine, device):
 
 
 def _verify_lldp_not_running(lldp, engine, device):
-    with allure.step("Verify lldp container is not running"):
+    def _check_lldp_container_stopped():
         lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
-        assert lldp_running == 'false', 'The lldp docker container is up'
+        assert lldp_running == 'false', f'The lldp docker container is still up (state: {lldp_running})'
+
+    ValidationTool.retry_until_valid(_check_lldp_container_stopped,
+                                     description="Verify lldp container is not running")
     with allure.step("Verify lldp is not running and not enabled"):
         cli_output = lldp.parsed_show()
         assert cli_output[SystemConsts.LLDP_STATE] == NvosConst.DISABLED, 'The lldp is enabled'

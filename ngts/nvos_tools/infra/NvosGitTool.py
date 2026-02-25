@@ -199,10 +199,18 @@ class NvosGitTool:
             >>> print(prefix)
             'nvos-25-03-0300'
         """
-        # Try to find tag ending with this version
+        # Try to find tag ending with this exact version
         tag_output = self._git_output(["tag", "-l", f"*_{version}"])
         if tag_output:
             return tag_output.split('\n')[0].split('_')[0]
+
+        # Try same base version with any sub-build (e.g., 25.03.0106-*)
+        # Handles cases where the exact sub-build isn't tagged yet but earlier ones are
+        if '-' in version:
+            base_version = version.rsplit('-', 1)[0]
+            tag_output = self._git_output(["tag", "-l", f"*_{base_version}-*"])
+            if tag_output:
+                return tag_output.split('\n')[0].split('_')[0]
 
         # Fallback: construct from version pattern
         parts = version.split('.')
@@ -348,6 +356,10 @@ class NvosGitTool:
         """
         version, image_type = self._parse_target_version(target_version)
 
+        # Fetch tags before searching so branch prefix lookup has up-to-date data
+        if fetch:
+            self.fetch_tags()
+
         # Find branch prefix
         branch_prefix = self.find_branch_prefix_for_version(version)
         if not branch_prefix:
@@ -355,10 +367,12 @@ class NvosGitTool:
 
         logger.info(f"Target: {version} ({image_type}), branch: {branch_prefix}")
 
-        # Fetch and get tags
-        if fetch:
-            self.fetch_tags()
-        tags = self.list_tags(f"{branch_prefix}_*", sort_by_version=True)
+        # Get tags for branch, narrowed by version major.minor to avoid unrelated tags
+        # (e.g., 'master' prefix has 900+ tags including non-version ones)
+        version_major_minor = '.'.join(version.split('.')[:2])
+        tags = self.list_tags(f"{branch_prefix}_{version_major_minor}.*", sort_by_version=True)
+        if not tags:
+            tags = self.list_tags(f"{branch_prefix}_*", sort_by_version=True)
         if not tags:
             raise ValueError(f"No tags found for {branch_prefix}")
 
