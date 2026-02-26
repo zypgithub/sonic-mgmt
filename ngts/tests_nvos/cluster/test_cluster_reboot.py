@@ -28,8 +28,10 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     Test flow:
         1. Enabled Cluster
         2. run nv action reboot system
-        3. After reboot, make sure cluster is still enabled.
-        4. cleanup - disabled cluster.
+        3. Verify LIDs > 0 and links Active prior to reboot
+        4. After reboot, verify cluster is still enabled
+        5. Verify LIDs > 0 and links Active after reboot
+        6. Cleanup - disable cluster
     """
     system = System(None)
     cluster = Cluster()
@@ -40,6 +42,12 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
         logger.info("Setting cluster state to enabled")
         ClusterTools.start_cluster(cluster, setup_name, output_format)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+
+        if has_loopbox or not standalone_system:
+            with allure.step("Verify LIDs bigger than 0 prior to reboot"):
+                ClusterTools.verify_lid_value(devices)
+            with allure.step("Verify links Active prior to reboot"):
+                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
 
         if not standalone_system:
             with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):
@@ -54,6 +62,12 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
                                                              nmx_c_expected_state='up')
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+
+        if has_loopbox or not standalone_system:
+            with allure.step("Verify LIDs bigger than 0 after reboot"):
+                ClusterTools.verify_lid_value(devices)
+            with allure.step("Verify links Active after reboot"):
+                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
 
         OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
 
