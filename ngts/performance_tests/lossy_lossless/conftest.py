@@ -3,11 +3,18 @@ import pytest
 import logging
 import os
 from ngts.constants.performance_constants import MongoDbConsts, PerfConsts
-from ngts.constants.constants import BugHandlerConst
+from ngts.constants.constants import BugHandlerConst, CliType
+from ngts.helpers.performance.performance_setup_helpers import skip_test_on_unsupported_os
 from ngts.helpers.performance.traffic_helpers import create_json_traffic_file_with_stream_list, create_json_traffic_stream, dscp_to_tc
 
 logger = logging.getLogger()
 TESTS_SCENARIO = "lossy_lossless"
+
+
+@pytest.fixture(scope='module', autouse=True)
+def skip_test_conditionally(players):
+    skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
+    yield
 
 
 def create_lossy_lossless_json_traffic_file(player_alias, traffic_parameters, json_path, num_lossy_packets, num_lossless_packets):
