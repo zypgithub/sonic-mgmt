@@ -155,7 +155,9 @@ def neighbor_vm_restore(duthost, nbrhosts, tbinfo, result=None):
                 logger.debug('Results of restoring neighbor VMs: {}'.format(unhealthy_nbrs))
         else:
             results = parallel_run(_neighbor_vm_recover_bgpd, (), {}, list(nbrhosts.values()), timeout=300)
-            logger.debug('Results of restoring neighbor VMs: {}'.format(json.dumps(_make_results_serializable(dict(results)))))
+            logger.debug(
+                'Results of restoring neighbor VMs: {}'.format(
+                    json.dumps(_make_results_serializable(dict(results)))))
     return 'config_reload'  # May still need to do a config reload
 
 
