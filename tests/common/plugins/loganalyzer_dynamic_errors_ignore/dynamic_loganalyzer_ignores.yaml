@@ -191,7 +191,8 @@
 # “0000:01:00.1” is the DPU SOC device, which we never use for image installation, as we are only interested in the ConnectX-7 device used to push the image.
 # From my point of view, it is safe to add this message to the ignore list.
 - Errors_list:
-  - '.*WARNING kernel:.*uio_pci_generic: probe of 0000:01:00.1 failed with error -17.*'
+  - '.*WARNING kernel:.*uio_pci_generic: probe of 0000:0\d:00.1 failed with error -17.*'
+  - '.*ERR kernel:.*uio_pci_generic 0000:0\d:00.1: probe with driver uio_pci_generic failed with error -17.*'
   Conditions:
   - Affected_test_cases:
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
