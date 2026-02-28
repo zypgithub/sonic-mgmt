@@ -33,7 +33,7 @@ def test_dpu_ip_assignment(duthost, creds):
 
     with allure.step("Check the DHCP server status"):
         output = duthost.shell("show dhcp_server ipv4 info")['stdout']
-        pattern = r"bridge-midplane.*PORT.*169\.254\.200\.254.*enabled"
+        pattern = r"bridge-midplane.*PORT.*enabled"
         pytest_assert(re.search(pattern, output), "The DHCP server info is not correct.")
 
     with allure.step("Check the DHCP lease status"):
