@@ -728,6 +728,8 @@ def test_l1_agg_drop(engines, cli_objects):
         pytest.skip("Could not find port in active state. Skipping the test.")
     with allure.step('Shutting down {} interface'.format(port)):
         cli_objects.dut.interface.disable_interface(port)
+    with allure.step('Checking for port to be down'):
+        cli_objects.dut.interface.check_link_state([port], 'down')
     drop_reason_message = 'Port admin down - Validate port configuration'
     try:
         with allure.step('Validating WJH L1 Aggregated table output with down port'):
