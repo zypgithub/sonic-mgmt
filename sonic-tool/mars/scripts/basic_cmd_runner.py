@@ -5,6 +5,7 @@ import sys
 import os
 import re
 
+from lib.constants import NGTS_PATH_PYTHON
 from reg2_wrapper.common.error_code import ErrorCode
 from reg2_wrapper.utils.parser.cmd_argument import RunningStage
 from reg2_wrapper.test_wrapper.standalone_wrapper import StandaloneWrapper
@@ -37,14 +38,13 @@ class RunPython(TermHandlerMixin, StandaloneWrapper):
                 module_path = self.test_script[len(base_path):].lstrip('/').replace('/', '.')
                 if module_path.endswith('.py'):
                     module_path = module_path[:-3]
-                cmd = f'cd {base_path} && python3 -m {module_path}'
+                cmd = f'cd {base_path} && {NGTS_PATH_PYTHON} -m {module_path}'
             else:
                 # If path doesn't start with base_path, run it directly
-                cmd = f'python3 {self.test_script}'
+                cmd = f'{NGTS_PATH_PYTHON} {self.test_script}'
         else:
             # For relative paths, use module format
-            cmd_template = 'python3 -m {}'
-            cmd = cmd_template.format(self.test_script)
+            cmd = f'{NGTS_PATH_PYTHON} -m {self.test_script}'
 
         for epoint in self.EPoints:
             dic_args = self._get_dic_args_by_running_stage(RunningStage.RUN)
@@ -52,9 +52,9 @@ class RunPython(TermHandlerMixin, StandaloneWrapper):
             for _ in range(self.num_of_processes):
                 epoint.Player.putenv("PYTHONPATH", "/devts/")
                 # Change to the correct directory before running the command
-                epoint.Player.run_process(f'cd /root/mars/workspace/sonic-mgmt && {cmd}', 
-                                        shell=True, 
-                                        disable_realtime_log=False, 
+                epoint.Player.run_process(f'cd /root/mars/workspace/sonic-mgmt && {cmd}',
+                                        shell=True,
+                                        disable_realtime_log=False,
                                         delete_files=False)
 
         for player in self.Players:
