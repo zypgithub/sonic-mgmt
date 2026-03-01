@@ -69,7 +69,7 @@ def rm_route_from_nbr(data, name, prefix, mask, afi_cmd_eos):
             "router bgp {}".format(bgp_as_num),
             "vrf {}".format(vrf),
             afi_cmd_eos,
-             f"no network {prefix}/{mask}",
+            f"no network {prefix}/{mask}",
             "no interface loopback {}".format(loopback),
             "exit",
             ]
@@ -80,7 +80,7 @@ def rm_route_from_nbr(data, name, prefix, mask, afi_cmd_eos):
 @pytest.fixture(name="setUp", scope="module")
 def fixture_setUp(nbrhosts, duthosts, enum_frontend_dut_hostname, ip_version):
     '''
-    This fixture setup filters the T1 neighbor names from the nbrhosts. and T the end cleans up the routes
+    This fixture setup filters the T1 neigbor names from the nbrhosts. and T the end cleans up the routes
     from the T1 neighbors.
     '''
     duthost = duthosts[enum_frontend_dut_hostname]
