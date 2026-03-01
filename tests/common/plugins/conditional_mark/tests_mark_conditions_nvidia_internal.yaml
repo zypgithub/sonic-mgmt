@@ -428,6 +428,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
     conditions:
     - "https://redmine.mellanox.com/issues/4486371 and '4280' in platform"
     - "https://redmine.mellanox.com/issues/4727346 and 'trixie' in build_version"
+    - "https://redmine.mellanox.com/issues/4894819 and 'air' in testbed"
 
 scripts/sonic_deploy/test_deploy_and_upgrade.py::test_core_dump_file_in_var_core_check:
   skip:
