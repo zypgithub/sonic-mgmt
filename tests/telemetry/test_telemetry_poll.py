@@ -17,7 +17,8 @@ METHOD_SUBSCRIBE = "subscribe"
 SUBSCRIBE_MODE_POLL = 2
 
 
-def verify_route_table_status(duthost, namespace, expected_status="1", is_ipv6_only=False):  # status 0 for down, 1 for up
+def verify_route_table_status(duthost, namespace, expected_status="1", is_ipv6_only=False):
+    # status 0 for down, 1 for up
     cmd_prefix = "sonic-db-cli"
     if duthost.is_multi_asic:
         cmd_prefix = "sonic-db-cli -n {}".format(namespace)
@@ -182,9 +183,9 @@ def test_poll_mode_default_route(duthosts, enum_rand_one_per_hwsku_hostname, ptf
     if duthost.is_multi_asic:
         namespace = "asic0"
     if is_ipv6_only:
-        xpath = "\"FAKE_APPL_DB_TABLE_0\" \"ROUTE_TABLE/::\/0\""
+        xpath = "\"FAKE_APPL_DB_TABLE_0\" \"ROUTE_TABLE/::\\/0\""
     else:
-        xpath = "\"FAKE_APPL_DB_TABLE_0\" \"ROUTE_TABLE/0.0.0.0\/0\""
+        xpath = "\"FAKE_APPL_DB_TABLE_0\" \"ROUTE_TABLE/0.0.0.0\\/0\""
 
     logger.info('Start telemetry poll mode testing')
     cmd = generate_client_cli(duthost=duthost, gnxi_path=gnxi_path, method=METHOD_SUBSCRIBE,
