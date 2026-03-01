@@ -17,7 +17,7 @@ tests_nvos/general/security/bmc:
   skip:
     reason: "BMC tests should run only on Juliet"
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/general/security/test_aaa_ldap/test_aaa_ldap.py::test_ldap_bad_connection:
   skip:
@@ -110,7 +110,7 @@ tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon). Also skipped on juliet-160, juliet-146 and juliet-195 due to hardware issues"
     conditions_logical_operator: or
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
       - "'juliet-195' in testbed"
@@ -120,7 +120,7 @@ tests_nvos/checklist/test_bios_manual_update.py:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow. Also skipped on juliet-160, juliet-146 due to hardware issues"
     conditions_logical_operator: or
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
       - "'juliet-146' in testbed"
       - "'juliet-160' in testbed"
       - "'juliet-195' in testbed"
@@ -129,7 +129,7 @@ tests_nvos/interfaces/nvl_port/test_nvl_port.py:
   skip:
     reason: "Testcase skipped on XDR systems"
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_shared_led:
   skip:
@@ -147,7 +147,7 @@ tests_nvos/system/test_techsupport_feature.py::test_techsupport_bmc_badflow:
   skip:
     reason: "Testcase skipped on non Juliet systems, only Juliet has BMC"
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/system/gnmi/test_gnmi_server.py::test_gnmi_mapping_table:
   skip:
@@ -157,7 +157,7 @@ tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.p
   skip:
     reason: "BMC ERoT Attestation tests should run only on Juliet"
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::test_password_hardening_apply_new_password_and_expiration_settings_together:
   skip:
@@ -209,44 +209,44 @@ tests_nvos/checklist/test_fpga_install.py:
   skip:
     reason: "Testcase skipped on Systems without FPGA - Surrogate and Rosalind"
     conditions:
-      - "'surrogate' in testbed or 'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'surrogate' in testbed or 'rosalind' in testbed or 'portia' in testbed"
 
 tests_nvos/checklist/test_sma_install.py:
   skip:
     reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
     conditions:
-      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/checklist/test_firmware_install_same_version.py::test_fae_sma_firmware_install:
   skip:
     reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
     conditions:
-      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/checklist/test_sma_info.py:
   skip:
     reason: "Testcase skipped on Systems without SMA - Any system that is not Surrogate or Rosalind"
     conditions:
-      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'surrogate' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/interfaces/test_ib_show_interface.py::test_ib_show_interface_all_state_up:
   skip:
     reason: "Testcase skipped on Juliet systems, ability is not implemented in Juliet"
     conditions:
-      - "'juliet' in testbed or 'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed or 'portia' in testbed"
 
 tests_nvos/platform/test_platform_firmware_bios/test_platform_firmware_bios.py:
   skip:
     reason: "Testcase skipped on Juliet or Rosalind systems, feature is pruned in Juliet"
     conditions:
-      - "'juliet' in testbed or 'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed or 'portia' in testbed"
 
 tests_nvos/fae/test_debug_token.py::test_debug_token_upload_good_flow:
   skip:
     reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4682596"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed or 'surrogate' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed or 'surrogate' in testbed"
       - https://redmine.mellanox.com/issues/4682596
 
 tests_nvos/fae/test_debug_token.py::test_debug_token_upload_bad_flow:
@@ -254,7 +254,7 @@ tests_nvos/fae/test_debug_token.py::test_debug_token_upload_bad_flow:
     reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4682596"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed or 'surrogate' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed or 'surrogate' in testbed"
       - https://redmine.mellanox.com/issues/4682596
 
 tests_nvos/fae/test_debug_token.py::test_debug_info_generate_mulitple:
@@ -262,7 +262,7 @@ tests_nvos/fae/test_debug_token.py::test_debug_info_generate_mulitple:
     reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4682596"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed or 'surrogate' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed or 'surrogate' in testbed"
       - https://redmine.mellanox.com/issues/4682596
 
 tests_nvos/fae/test_debug_token.py::test_debug_info_rename_good_flow:
@@ -270,7 +270,7 @@ tests_nvos/fae/test_debug_token.py::test_debug_info_rename_good_flow:
     reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4682596"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed or 'surrogate' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed or 'surrogate' in testbed"
       - https://redmine.mellanox.com/issues/4682596
 
 tests_nvos/fae/test_debug_token.py::test_debug_info_rename_bad_flow:
@@ -278,7 +278,7 @@ tests_nvos/fae/test_debug_token.py::test_debug_info_rename_bad_flow:
     reason: "Debug token v2 not supported on Rosalind/Surrogate - blocked by RM #4682596"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed or 'surrogate' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed or 'surrogate' in testbed"
       - https://redmine.mellanox.com/issues/4682596
 
 tests_nvos/interfaces/test_eth0_interface_dhcp.py::test_interface_eth0_speed_duplex_autoneg:
@@ -291,7 +291,7 @@ tests_nvos/checklist/test_bios_upgrade.py::test_bios_manual_update:
   skip:
     reason: "Testcase skipped on non Juliet systems since they has 'auto-update' which changes the upgrade's flow"
     conditions:
-      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed and 'chipsim-63' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
 
 tests_nvos/interfaces/test_ib_interface_configuration.py::test_ib_interface_lanes:
   skip:
@@ -304,7 +304,7 @@ tests_nvos/general/security/bmc/bmc_creds/test_bmc_creds.py::test_bmc_creds_flow
     reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed"
       - https://redmine.mellanox.com/issues/4742847
 
 tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_root_password_while_bmc_down:
@@ -312,7 +312,7 @@ tests_nvos/general/security/bmc/test_reset_bmc_root_password.py::test_reset_bmc_
     reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed"
       - https://redmine.mellanox.com/issues/4742847
 
 tests_nvos/platform/test_recover_from_bmc_reset.py::test_recover_from_bmc_reset:
@@ -320,7 +320,7 @@ tests_nvos/platform/test_recover_from_bmc_reset.py::test_recover_from_bmc_reset:
     reason: "[SWITCH BMC - Design] Bug SW #4742847: [Rosalind] - After BMC reset - nvos account is missing from bmc failing all communications of cpu to bmc | Assignee: Vadim Pasternak | Status: Assigned"
     conditions_logical_operator: and
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed"
       - https://redmine.mellanox.com/issues/4742847
 
 tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
@@ -456,7 +456,7 @@ tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_phy_recovery
   skip:
     reason: "Feature in not fully supported, remove ignore once support is applied. (If Rosalind-Surrogate: test will not be supported for QTM3)"
     conditions:
-      - "'rosalind' in testbed or 'portia' in testbed or 'chipsim-63' in testbed"
+      - "'rosalind' in testbed or 'portia' in testbed"
 
 tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_access_ports:
   skip:
