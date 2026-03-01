@@ -327,6 +327,7 @@ def lookup_operstatus(int_operstatus):
     }
     return operstatus_options.get(int_operstatus, "")
 
+
 def is_ipv6_address(host):
     try:
         return ipaddress.ip_address(host).version == 6
@@ -343,6 +344,7 @@ def is_ipv6_address(host):
                 return True
             except (socket.error, socket.gaierror):
                 return False
+
 
 async def _create_transport_target_async(host, port=161, timeout=20):
     """Create appropriate transport target based on address family."""
