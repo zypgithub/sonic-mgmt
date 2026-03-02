@@ -106,9 +106,7 @@ class Inventory:
         """
         buff = ""
         serial = SerialConsts.PLATFORM_SERIAL_NUM_MAP.get(topology_type, None)
-        model_match = re.search(r'SN(\d+)', hwsku)
-        if model_match:
-            model = model_match.group(0)
+        model = SerialConsts.PLATFORM_MODEL_MAP.get(topology_type, None)
         host_entry_ptf_any = f"{dut_name}-ptf-any ansible_host={ansible_host} ansible_port={ansible_port} sonic_hwsku={hwsku}"
         host_entry = f"{dut_name} ansible_host={ansible_host} ansible_port={ansible_port} sonic_hwsku={hwsku}"
         if serial:

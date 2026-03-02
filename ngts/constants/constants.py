@@ -1799,6 +1799,10 @@ class SerialConsts:
         "x86_64-nvidia_sn6600_ld_simx-r0": "MT25116050YD",
         "x86_64-nvidia_sn5640_simx-r0": "MT25116050YD"
     }
+    PLATFORM_MODEL_MAP = {
+        "x86_64-nvidia_sn6600_simx-r0": "SN6600_LD",
+        "x86_64-nvidia_sn5640_simx-r0": "SN5640"
+    }
 
 
 class SimxCommunityConsts:
