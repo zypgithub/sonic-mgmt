@@ -42,8 +42,8 @@ def option(request):
 
 def check_byo_status(status, dpuhost):
     dockers_up = {"enabled": ["byo-app-container", "database"],
-                  "disabled": ["snmp", "pmon", "lldp", "gnmi", "bgp", "swss", "syncd", "eventd", "database"]}
-    dockers_down = {"enabled": ["snmp", "pmon", "lldp", "gnmi", "bgp", "swss", "syncd", "eventd"],
+                  "disabled": ["pmon", "gnmi", "bgp", "swss", "syncd", "eventd", "database"]}
+    dockers_down = {"enabled": ["pmon", "gnmi", "bgp", "swss", "syncd", "eventd"],
                     "disabled": ["byo-app-container"]}
     output = dpuhost.shell("docker ps")['stdout']
     for docker in dockers_down[status]:
