@@ -596,7 +596,7 @@ class SonicInstallationSteps:
             hwskus = ['Mellanox-SN5610N-C256S2', 'Mellanox-SN5610N-C224O8']
             need_gen_mingraph = True
         if "air-6600" in setup_name:
-            hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600']
+            hwskus = ['Mellanox-SN6600-C512S4', 'ACS-SN6600', 'Mellanox-SN6600-V448P16S2']
             need_gen_mingraph = True
 
         for hwsku in hwskus:

@@ -334,7 +334,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_psu_status_check:
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
-    - "'sn6600_simx' in platform"
+    - "'sn6600' in platform and 'simx' in platform"
 
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status_wrong_check:
@@ -348,7 +348,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_more_then_2_fan_status
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
-    - "'sn6600_simx' in platform"
+    - "'sn6600' in platform and 'simx' in platform"
 
 tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
   skip:
@@ -361,7 +361,7 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_fan_status_check:
     - "'r-bison-18' in testbed"
     - "'r-bison-20' in testbed"
     - "'r-bison-22' in testbed"
-    - "'sn6600_simx' in platform"
+    - "'sn6600' in platform and 'simx' in platform"
 
 tests/push_build_tests/system/test_reboot_reload.py::test_push_gate_reboot_policer:
   skip:
@@ -1003,37 +1003,79 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
     conditions:
     - "'simx' in platform"
 
+platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
+  skip:
+    reason: "Test is skipped - thermals not supported on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_fan_drawer.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_fan_drawer_fans.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_psu.py:
+  skip:
+    reason: "Test is skipped - no psu emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_psu_fans.py:
+  skip:
+    reason: "Test is skipped - no fan/psu emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
+platform_tests/api/test_chassis_fans.py:
+  skip:
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
+    conditions:
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+
 platform_tests/api/test_thermal.py:
   skip:
-    reason: "Test is skipped - no thermal emulation on sn6600_simx platforms"
+    reason: "Test is skipped - no thermal emulation on sn6600_simx/sn6600_ld_simx platforms"
     conditions:
-    - "'6600_simx' in platform"
+    - "'6600_simx' in platform or '6600_ld_simx' in platform"
 
 platform_tests/mellanox/test_psu_power_threshold.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support PSU Power Threshold"
+    reason: "sn5810/sn6600 don't support PSU Power Threshold or have no PSU emulation on sn6600_simx/sn6600_ld_simx platforms"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
-    - "'6600' in platform"
+    - "'6600' in platform and 'simx' in platform"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_psustatus:
   skip:
-    reason: "Test is skipped - no psu emulation on sn6600_simx platforms"
+    reason: "Test is skipped - no psu emulation on sn6600_simx/sn6600_ld_simx platforms"
     conditions:
-    - "'6600_simx' in platform"
+    - "'6600_simx' in platform or '6600_ld_simx' in platform"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_psustatus_json:
   skip:
-    reason: "Test is skipped - no psu emulation on sn6600_simx platforms"
+    reason: "Test is skipped - no psu emulation on sn6600_simx/sn6600_ld_simx platforms"
     conditions:
-    - "'6600_simx' in platform"
+    - "'6600_simx' in platform or '6600_ld_simx' in platform"
 
 platform_tests/cli/test_show_platform.py::test_show_platform_fan:
   skip:
-    reason: "Test is skipped - no fan emulation on sn6600_simx platforms"
+    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx platforms"
     conditions:
-    - "'6600_simx' in platform"
+    - "'6600_simx' in platform or '6600_ld_simx' in platform"
+
+platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
+  skip:
+    reason: "Skipped on SPC6 due to RM 4817671"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4817671 and ('6600_simx' in platform or '6600_ld_simx' in platform)"
 
 span/test_port_mirroring.py::test_mirroring_both:
   skip:

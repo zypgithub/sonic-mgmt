@@ -1,0 +1,13 @@
+StartDevice,StartPort,EndDevice,EndPort,BandWidth,VlanID,VlanMode,AutoNeg
+{%- for block in range(8) %}
+{%-   for port in [block * 64, block * 64 + 4] %}
+{{ setup_name }}-dut,Ethernet{{ port }},{{ setup_name }}-fanout,Ethernet{{ port }},400000,{{ 10 + (port // 4) * 4 }},Access,off
+{%-   endfor %}
+{%-   for port in range(block * 64 + 8, block * 64 + 64) %}
+{{ setup_name }}-dut,Ethernet{{ port }},{{ setup_name }}-fanout,Ethernet{{ port }},100000,{{ 10 + (port // 4) * 4 }},Access,off
+{%-   endfor %}
+{%- endfor %}
+{%- for port in [512, 513] %}
+{{ setup_name }}-dut,Ethernet{{ port }},{{ setup_name }}-fanout,Ethernet{{ port }},100000,{{ 10 + (port // 4) * 4 }},Access,off
+{%- endfor %}
+{{ setup_name }}-fanout,Ethernet508,{{ setup_name }}-hypervisor,eth1,400000,10-522,Trunk,off

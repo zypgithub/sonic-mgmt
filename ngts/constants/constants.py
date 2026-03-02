@@ -1324,7 +1324,7 @@ class SonicDeployConstants:
     ADD_TOPO_TIMEOUT_SCALE = 14400
     REMOVE_TOPO_TIMEOUT = 600
     REMOVE_TOPO_TIMEOUT_SCALE = 3600
-    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2']
+    SCALE_TOPOLOGIES_LIST = ['t0-isolated-d128u128s1', 't0-isolated-d128u128s2', 't1-isolated-d224u8', 't0-isolated-d2u510s2', 't1-isolated-d510u2', 't1-isolated-v6-d56u1-lag']
 
 
 class RebootTestConstants:
@@ -1741,6 +1741,7 @@ class FanoutVersionConsts:
 class SerialConsts:
     PLATFORM_SERIAL_NUM_MAP = {
         "x86_64-nvidia_sn6600_simx-r0": "MT25116050YD",
+        "x86_64-nvidia_sn6600_ld_simx-r0": "MT25116050YD",
         "x86_64-nvidia_sn5640_simx-r0": "MT25116050YD"
     }
 
@@ -1755,3 +1756,5 @@ class SimxCommunityConsts:
     HYPERVISOR_FILE_NAME = "HYPERVISOR.j2"
     HOST_VARS_PATH = os.path.join(ANSIBLE_DIR, "host_vars")
     FILES_TO_TEMPLATE = {'sonic_nvidia_devices.j2', 'sonic_nvidia_links.j2', 'fanout_port_config.ini', 'lab.j2', 'testbed.j2', 'inventory.j2'}
+    # HwSKU -> simx_community platform subdir when different from filtered_platform (e.g. V448P16S2 uses SN6600_LD)
+    HWSKU_PLATFORM_DIR_OVERRIDE = {"Mellanox-SN6600-V448P16S2": "SN6600_LD"}
