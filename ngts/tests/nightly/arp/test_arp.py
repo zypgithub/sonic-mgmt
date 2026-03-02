@@ -7,7 +7,7 @@ import copy
 
 from retry.api import retry_call
 from ngts.helpers.arp_helper import verify_arp_entry_in_arp_table, \
-    verify_arp_entry_not_in_arp_table, arp_request_traffic_validation, INTERFACE_TYPE_LIST, \
+    verify_arp_entry_not_in_ip_neigh_table, arp_request_traffic_validation, INTERFACE_TYPE_LIST, \
     clear_dynamic_arp_table_and_check_the_specified_arp_entry_deleted, \
     send_arp_request_and_check_update_corresponding_entry_into_arp_table
 from ngts.helpers.network import gen_new_mac_based_old_mac
@@ -58,8 +58,8 @@ def test_corresponding_dynamic_arp_is_cleaned_after_dut_interface_down(players, 
                 cli_objects.dut.interface.disable_interface(interface_data["dut_interface"])
 
         with allure.step("Check the corresponding arp related to {}  has been cleaned".format(interface_data["dut_interface"])):
-            retry_call(verify_arp_entry_not_in_arp_table, fargs=[cli_objects.dut, interface_data["host_ip"]], tries=3,
-                       delay=10, logger=logger)
+            retry_call(verify_arp_entry_not_in_ip_neigh_table, fargs=[cli_objects.dut, interface_data["host_ip"]],
+                       tries=3, delay=10, logger=logger)
 
         with allure.step("DUT startup interface:".format(interface_data["dut_interface"])):
             cli_objects.dut.interface.enable_interface(interface_data["dut_interface"])
@@ -152,7 +152,7 @@ def test_src_ip_dst_ip_not_in_one_subnet(players, cli_objects, pre_test_interfac
                                            dst_mac="FF:FF:FF:FF:FF:FF", receive_packet_count=0)
 
         with allure.step("Verify DUT not add Host's IP and MAC into the ARP table"):
-            retry_call(verify_arp_entry_not_in_arp_table,
+            retry_call(verify_arp_entry_not_in_ip_neigh_table,
                        fargs=[cli_objects.dut, interface_data["host_ip"]],
                        tries=3,
                        delay=10,
@@ -224,7 +224,7 @@ def test_static_arp(players, cli_objects, pre_test_interface_data, interface_typ
             cli_objects.dut.ip.del_ip_neigh(interface_data["host_ip"], old_mac, dev)
 
         with allure.step('DUT check static arp is deleted from the arp table'):
-            retry_call(verify_arp_entry_not_in_arp_table, fargs=[cli_objects.dut, interface_data["host_ip"]],
+            retry_call(verify_arp_entry_not_in_ip_neigh_table, fargs=[cli_objects.dut, interface_data["host_ip"]],
                        tries=3, delay=10, logger=logger)
 
     except Exception as err:
@@ -257,9 +257,8 @@ def test_arp_gratuitous_without_arp_update(players, cli_objects, pre_test_interf
                                            receive_packet_count=0, is_garp=True)
 
         with allure.step("Verify DUT not add Host's IP and MAC into the ARP table"):
-            retry_call(verify_arp_entry_not_in_arp_table, fargs=[cli_objects.dut, interface_data["host_ip"]], tries=3,
-                       delay=10,
-                       logger=logger)
+            retry_call(verify_arp_entry_not_in_ip_neigh_table, fargs=[cli_objects.dut, interface_data["host_ip"]],
+                       tries=3, delay=10, logger=logger)
 
     except Exception as err:
         raise AssertionError(err)
@@ -344,9 +343,8 @@ def test_arp_proxy(players, cli_objects, interfaces, pre_test_interface_data):
                                                dst_mac="FF:FF:FF:FF:FF:FF",
                                                receive_packet_count=1)
             with allure.step("Verify DUT not add Host's IP and MAC into the ARP table"):
-                retry_call(verify_arp_entry_not_in_arp_table, fargs=[cli_objects.dut, interface_data["host_ip"]], tries=3,
-                           delay=10,
-                           logger=logger)
+                retry_call(verify_arp_entry_not_in_ip_neigh_table, fargs=[cli_objects.dut, interface_data["host_ip"]],
+                           tries=3, delay=10, logger=logger)
 
         with allure.step('Enable arp proxy and check arp behavior'):
             with allure.step('Enable arp proxy'):

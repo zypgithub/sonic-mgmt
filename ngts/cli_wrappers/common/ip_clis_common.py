@@ -36,6 +36,13 @@ class IpCliCommon(IpCliInterface):
         for index, _ in enumerate(neighbor_list):
             self.add_ip_neigh(neighbor_list[index], neigh_mac_addr_list[index], dev, action)
 
+    def show_ip_neigh(self):
+        """
+        This method shows the ip neigh table
+        :return: command output
+        """
+        return self.engine.run_cmd("sudo ip neigh")
+
     def del_ip_neigh(self, neighbor, neigh_mac_addr, dev):
         """
         This method delete an neighbor entry to the ARP table
