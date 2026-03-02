@@ -38,6 +38,12 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         self.cli_obj = cli_obj
         self.dut_alias = dut_alias
 
+    def get_sdk_version(self):
+        with allure.step('Get SDK version'):
+            sdk_version_output = self.engine.run_cmd(InfraConst.CMD_GET_SDK_VERSION, validate=True)
+            sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
+            return sdk_version
+
     @retry(Exception, tries=5, delay=30)
     def generate_techsupport(self, duration=60):
         """
