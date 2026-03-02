@@ -53,6 +53,7 @@ def test_nasa_debug_enabled(dpuhost, entity):
     assert get_nasa_entity_debug_enabled(dpuhost, entity), f"Expected {entity.value.title} to be enabled"
     debug_file = get_nasa_entity_debug_file(dpuhost, entity)
     assert debug_file is not None and debug_file != debug_files[0], f"Expected {entity.value.title} debug file to be set and different from the previous one"
+    debug_files[-1] = debug_file
 
     # finally disable the NASA debug for the entity
     nasa_entity_debug_set(dpuhost, entity, False)
@@ -61,14 +62,19 @@ def test_nasa_debug_enabled(dpuhost, entity):
 
     # finally check for the extra files present along the reported debug files
     debug_dir = os.path.dirname(debug_file)
-    # Get the last 2 files from the debug directory, catch any extra empty files, that should not be there
-    result = dpuhost.shell(f"ls {quote(debug_dir)}/* | tail -2")
+    # Get the last 2 or 4 files(2 for packet_drop, 4 for config_record) from the debug directory, catch any extra empty files, that should not be there
+    if entity == NASA_DEBUG_ENTITY.PACKET_DROP:
+        expected_files_number = 2
+    else:
+        expected_files_number = 4
+    result = dpuhost.shell(f"ls {quote(debug_dir)}/* | tail -{expected_files_number}")
     found_files = result['stdout_lines']
-    from infra.tools.redmine.redmine_api import is_redmine_issue_active
-    if not is_redmine_issue_active([4545888])[0]:
-        assert len(found_files) == 2, f"Expected at least 2 files in the debug directory, but got {len(found_files)}"
-        assert found_files[0] == debug_files[0], f"Expected the first file to be the first debug file"
-        assert found_files[1] == debug_file, f"Expected the second file to be the debug file after disabling and re-enabling"
+    for i in range(2):
+        if entity == NASA_DEBUG_ENTITY.PACKET_DROP:
+            assert found_files[i] == debug_files[i], f"Expected the {i+1} file to be the {i+1} debug file"
+        else:
+            assert found_files[i * 2] == debug_files[i], f"Expected the {i*2+1} found file to be the {i+1} debug file"
+            assert found_files[i * 2 + 1] == debug_files[i].replace('.bin', '_recorded.cli'), f"Expected the {i*2+2} found file to be the recorded.cli file"
 
 
 @pytest.mark.nasa_debuggability_tests
@@ -233,7 +239,8 @@ def test_nasa_debug_tech_support(dpuhost, eni_counter_test_params_debug):
         temp_before_files = before_files_list[entity]
         temp_after_files = after_files_list[entity]
         temp_new_files = temp_after_files - temp_before_files
-        assert len(temp_new_files) == 1, f"Expected exactly one new file in {entity.value.title} folder, but got {len(temp_new_files)}: {temp_new_files}"
+        expected_files_number = 1 if entity == NASA_DEBUG_ENTITY.PACKET_DROP else 2
+        assert len(temp_new_files) == expected_files_number, f"Expected exactly one new file in {entity.value.title} folder, but got {len(temp_new_files)}: {temp_new_files}"
         new_filename = temp_new_files.pop()
         file_epoch = int(dpuhost.shell(f"stat -c %W {quote(new_filename)}")['stdout'].strip())
         assert file_epoch > host_epoch, "Expecting the nasa debug file to be created recently"
