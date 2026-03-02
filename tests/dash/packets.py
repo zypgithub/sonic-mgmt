@@ -176,7 +176,7 @@ def inbound_pl_packets(
         ip_id=0,
         udp_dport=vxlan_udp_dport,
         udp_sport=vxlan_udp_base_src_port,
-        vxlan_vni=expected_vni,
+        vxlan_vni=pl.ENCAP_VNI if floating_nic else int(pl.VM_VNI),
         inner_frame=exp_inner_packet,
     )
 
