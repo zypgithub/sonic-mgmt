@@ -430,6 +430,49 @@
 				]
 
 			}
+		},
+		"SN6810_LD": {
+			"component":{
+				"BIOS": [
+					{
+					
+					},
+					{
+				
+					}
+				],
+				"ONIE": [
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0020-rc2/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2025.05-5.3.0020-rc2-115200-dev",
+						"reboot": ["cold"]
+					},
+					{
+						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0019-dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+						"force_reboot": true,
+						"version": "2025.05-5.3.0019-115200-dev",
+						"reboot": ["cold"]
+					}
+				],
+				"CPLD2": [
+					{
+					
+					}
+				],
+				"BMC": [
+					{
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0204/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0204.fwpkg",
+						"version": "88.0060.0204",
+						"reboot": ["power off"]
+					},
+					{
+						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0206/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0206.fwpkg",
+						"version": "88.0060.0206",
+						"reboot": ["power off"]
+					}
+				]
+			}
 		}
 	},
 	"host": {
@@ -583,6 +626,34 @@
                     }
 				]
 			}
-		}
+		},
+		"SN6810_LD": {
+			"component": {
+				"ONIE": [
+				{
+					"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/prod/115200/onie-updater-x86_64-mlnx_x86-r0",
+					"version": "2025.05-5.3.0017-115200",
+					"type": "prod"
+				},
+				{
+					"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0017/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+					"version": "2025.05-5.3.0017-115200-dev",
+					"type": "dev"
+				}
+				],
+				"BIOS": [
+				{
+					"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.012_unsigned/Release/0ACTV.cab",
+					"version": "0ACTV_00.01.012_unsigned",
+					"type": "dev"
+				},
+				{
+					"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/SnowyOwl/0ACTV_00.01.012_unsigned/Release/0ACTV.cab",
+					"version": "0ACTV_00.01.012_unsigned",
+					"type": "prod"
+				}
+				]
+			}
+        }
     }
 }
