@@ -206,6 +206,17 @@
   Conditions:
   - Platform: sn4280
 
+# Ignore thermalctld fan_dir FileNotFoundError on Bobcat platform
+# The fan_dir sysfs file does not exist on sn4280 (Bobcat), causing thermalctld to log errors
+# Issue already tracked by [SONIC - Design] Bug SW #4902985
+- Errors_list:
+  - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/thermal/fan\d+_dir - FileNotFoundError.*'
+  Conditions:
+  - Redmine:
+    - 4902985
+    Platform:
+    - sn4280
+
 # Due to limitation of SAI, this err msg seems can not be avoided, add it to ignore, details please refer to #3565127
 - Errors_list:
   - '.* ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- get_dispatch_attribs_handler: Failed Get #\d+, EGRESS_ACL, key:PORT \[OID:.*\].*'
