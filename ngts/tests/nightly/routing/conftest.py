@@ -128,6 +128,16 @@ def configuration(topology_obj, cli_objects, engines, interfaces, platform_param
     cli_objects.dut.bgp.restart_bgp_service()
     cli_objects.dut.general.verify_dockers_are_up(dockers_list=['bgp'], running_config=False, platform_params=platform_params)
 
+    # Wait for zebra to be ready to accept connections inside BGP container after restart
+    retry_call(
+        engines.dut.run_cmd,
+        fargs=['sudo vtysh -c "show zebra"'],
+        fkwargs={'validate': True},
+        tries=5,
+        delay=3,
+        logger=logger
+    )
+
     # config below for ARP must be removed later, it's temporary workaround
     dut_ip_cli.ip_neigh_flush(interfaces.dut_ha_1)
     dut_ip_cli.ip_neigh_flush(interfaces.dut_hb_1)
