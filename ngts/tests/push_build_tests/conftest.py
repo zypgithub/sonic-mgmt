@@ -350,6 +350,18 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                                                          platform_params=platform_params, apply_base_config=False,
                                                          deploy_type='sonic', configure_dns=True)
 
+                # After sonic-to-sonic upgrade, the DUT may not be fully operational
+                # even though it has booted. Verify docker containers and ports are up,
+                # then confirm L3 reachability from HA to DUT via ping with retries
+                # (up to 10 attempts, 10s apart) to tolerate post-upgrade settling time.
+                with allure.step('Verify DUT is ready after sonic-to-sonic upgrade'):
+                    from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+                    cli_objects.dut.general.port_reload_reboot_checks(ports_list)
+                    ping_validation = {'sender': 'ha', 'args': {'count': 3,
+                                                                'dst': ip_config_dict['dut'][1]['ips'][0][0]}}
+                    retry_call(PingChecker(topology_obj.players, ping_validation).run_validation,
+                               fargs=[], tries=10, delay=10, logger=logger)
+
                 # Update CLI classes based on current SONiC branch
                 update_branch_in_topology(topology_obj)
                 update_sanitizer_in_topology(topology_obj)
