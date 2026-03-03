@@ -22,13 +22,30 @@
                 <value> yes </value>
             </condition>
         </ignore>
-        <info> Interface naming mode Case </info>
-        <name> iface_namingmode </name>
+        <info> Interface naming mode Case - alias mode </info>
+        <name> iface_namingmode_alias </name>
         <cmd>
             <params>
-                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 3000 --session-timeout 3000 --allure_server_addr=\"10.215.11.120\"\'" --test-scripts iface_namingmode/test_iface_namingmode.py </static_args>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 3000 -k "alias" --allure_server_addr=\"10.215.11.120\"\'" --test-scripts iface_namingmode/test_iface_namingmode.py </static_args>
             </params>
         </cmd>
     </case>
 
+    <case>
+        <ignore>
+            <!-- weekend case  -->
+            <condition>
+                <key> skip_weekend_cases </key>
+                <op> == </op>
+                <value> yes </value>
+            </condition>
+        </ignore>
+        <info> Interface naming mode Case - default mode </info>
+        <name> iface_namingmode_default </name>
+        <cmd>
+            <params>
+                <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug --show-capture=no -ra --showlocals -v --clean-alluredir --alluredir=/tmp/allure-results --timeout 900 --session-timeout 3000 -k "default" --allure_server_addr=\"10.215.11.120\"\'" --test-scripts iface_namingmode/test_iface_namingmode.py </static_args>
+            </params>
+        </cmd>
+    </case>
 </CASEDEF>
