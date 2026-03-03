@@ -13,7 +13,8 @@ from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, Cl
 from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
 
 pytestmark = [
-    pytest.mark.disable_loganalyzer
+    pytest.mark.disable_loganalyzer,
+    pytest.mark.skip_config_check
 ]
 
 logger = logging.getLogger()
