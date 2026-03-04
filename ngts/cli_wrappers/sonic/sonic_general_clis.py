@@ -1668,9 +1668,42 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         config_db_json = self.engine.run_cmd('cat {} ; echo'.format(SonicConst.CONFIG_DB_JSON_PATH), print_output=False)
         return json.loads(config_db_json)
 
+    def wait_for_frr_daemons_ready(self, tries=10, delay=3, timeout=30):
+        """
+        Wait for FRR daemons (zebra) to be ready to accept vtysh connections.
+        BGP container being up does not guarantee FRR daemons are initialized.
+        Raises the last exception if FRR daemons are not ready after all retry attempts.
+        :param tries: Number of retry attempts
+        :param delay: Delay between retries in seconds
+        :param timeout: Timeout in seconds for each vtysh command
+        """
+        retry_call(
+            self.engine.run_cmd,
+            fargs=['sudo vtysh -c "show zebra"'],
+            fkwargs={'validate': True, 'print_output': False, 'timeout': timeout},
+            tries=tries,
+            delay=delay,
+            logger=logger
+        )
+
     def get_config_db_from_running_config(self):
+        """
+        Get the running configuration from the DUT.
+        show runningconfiguration all uses vtysh internally, which may fail if FRR daemons
+        are not yet ready (e.g. after config reload/reboot). Retry on FRR connection errors.
+        """
         config = self.engine.run_cmd('sudo show runningconfiguration all', print_output=False)
-        return json.loads(config)
+        try:
+            return json.loads(config)
+        except (json.JSONDecodeError, ValueError):
+            if 'failed to connect to any daemons' in config:
+                logger.warning('FRR daemons not ready, waiting for FRR to initialize before retrying')
+            else:
+                logger.warning('Running config returned non-JSON output, retrying after FRR readiness check: %s',
+                               config[:200])
+            self.wait_for_frr_daemons_ready()
+            config = self.engine.run_cmd('sudo show runningconfiguration all', print_output=False)
+            return json.loads(config)
 
     def is_spc1(self):
         """
