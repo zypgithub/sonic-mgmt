@@ -6,7 +6,7 @@ import random
 from retry.api import retry_call
 from ngts.helpers.run_process_on_host import run_process_on_host
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
-from ngts.constants.constants import SonicConst, RebootTestConstants
+from ngts.constants.constants import SonicConst, RebootTestConstants, PlatformTypesConstants
 from dateutil.parser import parse as time_parse
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_container_up_and_repo_status_installed
 from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_list, add_to_pytest_args_skip_tests, \
@@ -27,7 +27,13 @@ expected_traffic_loss_dict = {'fast-reboot': {'data': 30, 'control': 90},
 
 @pytest.fixture()
 def validation_type(platform_params, is_simx, reboot_type):
-    supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform_params.platform)
+    platform = platform_params.platform
+    if platform == PlatformTypesConstants.PLATFORM_PANTHER:
+        # WA for https://github.com/sonic-net/sonic-buildimage/issues/25263
+        # Trixie causes ~7s increase in control plane disruption time during fast-reboot and warm-reboot
+        expected_traffic_loss_dict['fast-reboot']['control'] = 97
+        expected_traffic_loss_dict['warm-reboot']['control'] = 97
+    supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform)
     validation_type = random.choice(supported_reboot_reload_list)
 
     if reboot_type:
