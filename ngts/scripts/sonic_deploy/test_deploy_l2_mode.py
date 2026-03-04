@@ -7,7 +7,7 @@ from collections import defaultdict
 import allure
 import pytest
 
-from ngts.constants.constants import SonicConst
+from ngts.constants.constants import SonicConst, SonicDeployConstants
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
 from ngts.scripts.test_rpc_check_and_set_topology import run_testbed_cli_script
 
@@ -19,6 +19,9 @@ logger = logging.getLogger()
 def confirm_setup_ready(cli_objects):
 
     admin_up_ports = cli_objects.dut.interface.get_admin_up_ports()
+    dut_name = cli_objects.dut.chassis.get_hostname()
+    if 'bobcat' in dut_name:
+        admin_up_ports = [port for port in admin_up_ports if port not in SonicDeployConstants.DPU_DATA_INTERFACES]
 
     yield
 
@@ -61,7 +64,7 @@ def read_csv_config(csv_path, dut_name):
     return port_config
 
 
-def update_config_db(dut_engine, csv_port_config, passive_ports):
+def update_config_db(dut_engine, csv_port_config, passive_ports, is_smartswitch=False):
     """
     Update the config_db json file on PORT config part
     1.Update the port speed based on the link csv file
@@ -81,6 +84,12 @@ def update_config_db(dut_engine, csv_port_config, passive_ports):
                 config_data['PORT'][port]['speed'] = csv_port_config[port]['speed']
                 config_data['PORT'][port]['autoneg'] = csv_port_config[port]['autoneg']
 
+    if is_smartswitch:
+        logger.info("Set DPU data port admin status to down for smartswitch dark mode")
+        for port in SonicDeployConstants.DPU_DATA_INTERFACES:
+            if port in config_data.get('PORT', {}):
+                config_data['PORT'][port]['admin_status'] = 'down'
+
     with open(f'/tmp/{SonicConst.CONFIG_DB_JSON}', 'w') as config_file:
         json.dump(config_data, config_file, indent=4)
 
@@ -99,6 +108,7 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
     """
 
     dut_name = cli_objects.dut.chassis.get_hostname()
+    is_smartswitch = 'bobcat' in dut_name
     setup_info = DeployTopologyHelper.get_info_from_topology(topology_obj, workspace_path)
     csv_path = setup_info['ansible_path'] + 'files/sonic_nvidia_links.csv'
     ansible_cmd = f"ansible-playbook -i lab testbed_set_l2_mode.yml --vault-password-file=vault -l {dut_name} -vvv"
@@ -109,7 +119,7 @@ def test_deploy_l2_mode(cli_objects, engines, topology_obj, workspace_path):
         run_testbed_cli_script(ansible_cmd, setup_info['ansible_path'])
 
     with allure.step("Update port speed and autoneg configuration based on link csv file"):
-        update_config_db(engines.dut, csv_port_config, passive_phy_ports)
+        update_config_db(engines.dut, csv_port_config, passive_phy_ports, is_smartswitch=is_smartswitch)
         cli_objects.dut.general.reload_configuration(force=True)
 
 

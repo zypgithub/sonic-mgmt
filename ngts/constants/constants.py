@@ -1317,6 +1317,7 @@ class PerformanceSetupConstants:
 class SonicDeployConstants:
     DEFAULT_HWSKU_FILE_PATH = 'ansible/files/hwsku_vars/default_hwsku.json'
     PRODUCTION_DUTS = ["bobcat-10", "mtvr-moose-11"]
+    DPU_DATA_INTERFACES = ['Ethernet224', 'Ethernet232', 'Ethernet240', 'Ethernet248']
     ADD_TOPO_TIMEOUT = 3600
     ADD_TOPO_TIMEOUT_FACTOR = 1
     ADD_TOPO_TIMEOUT_SCALE = 14400
