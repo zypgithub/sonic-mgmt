@@ -143,6 +143,9 @@ def recover_switch_after_secure_boot_violation_message(secure_boot_helper, resto
     This function will recover the switch after receiving a secure boot violation message appear
     """
     yield
+    # Skip recovery when the test was skipped
+    if getattr(request.node, 'rep_call', None) and request.node.rep_call.skipped:
+        return
     if not secure_boot_helper.restore_vmlinuz_signature():
         with allure.step("Recovering the switch"):
             logger.info("Disconnect engine connection")
