@@ -395,8 +395,8 @@
 				"BIOS": [
 					{
 						"force_reboot": true,
-						"firmware": "http://fit69.mtl.labs.mlnx//auto/sw_system_release/sx_mlnx_bios/V3000/BU/0ACUZ_00.00.005-rc5/Release/0ACUZ.cab",
-						"version": "0ACUZ_00.00.005",
+						"firmware": "http://fit69.mtl.labs.mlnx/auto/sw_system_release/sx_mlnx_bios/V3000/0ACUZ_00.01.001/Release/0ACUZ.cab",
+						"version": "0ACUZ_00.01.001",
 						"reboot": ["cold"]
 					}
 				],
