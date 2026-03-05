@@ -186,7 +186,7 @@
         "del_route": "0.42",
         "add_po": "0.446",
         "del_po": "0.422",
-        "show_ifaces_status": "0.772",
+        "show_ifaces_status": "1.2",
         "show_iface_tr_eeprom": "0.719",
         "show_pl_fan": "0.535",
         "show_pl_psustatus": "0.499",
