@@ -10,7 +10,7 @@ from collections import defaultdict
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.portstat_utilities import parse_portstat
 from tests.common.helpers.dut_utils import is_mellanox_fanout
-from tests.common.utilities import parse_rif_counters
+from tests.common.utilities import parse_rif_counters, wait_until
 from tests.ip.ip_util import parse_interfaces, sum_ifaces_counts, random_mac
 
 
@@ -30,87 +30,11 @@ class TestIPPacket(object):
     PKT_NUM_ZERO = PKT_NUM * 0.1
 
     @staticmethod
-    def sum_ifaces_counts(counter_out, ifaces, column):
-        if len(ifaces) == 0:
-            return 0
-        if len(ifaces) == 1:
-            return int(counter_out[ifaces[0]][column].replace(",", ""))
-        return sum([int(counter_out[iface][column].replace(",", "")) for iface in ifaces])
-
-    @staticmethod
-    def parse_interfaces(output_lines, pc_ports_map):
-        """
-        Parse the interfaces from 'show ip route' into an array
-        """
-        route_targets = []
-        ifaces = []
-        output_lines = output_lines[3:]
-
-        for item in output_lines:
-            match = re.search(r"(Ethernet\d+|PortChannel\d+)", item)
-            if match:
-                route_targets.append(match.group(0))
-
-        for route_target in route_targets:
-            if route_target.startswith("Ethernet"):
-                ifaces.append(route_target)
-            elif route_target.startswith("PortChannel") and route_target in pc_ports_map:
-                ifaces.extend(pc_ports_map[route_target])
-
-        return route_targets, ifaces
-
-    @staticmethod
-    def parse_rif_counters(output_lines):
-        '''Parse the output of "show interfaces counters rif" command
-        Args:
-            output_lines (list): The output lines of "show interfaces counters rif" command
-        Returns:
-            list: A dictionary, key is interface name, value is a dictionary of fields/values
-        '''
-
-        header_line = ''
-        separation_line = ''
-        separation_line_number = 0
-        for idx, line in enumerate(output_lines):
-            if line.find('----') >= 0:
-                header_line = output_lines[idx-1]
-                separation_line = output_lines[idx]
-                separation_line_number = idx
-                break
-
-        try:
-            positions = parse_column_positions(separation_line)
-        except Exception:
-            logger.error('Possibly bad command output')
-            return {}
-
-        headers = []
-        for pos in positions:
-            header = header_line[pos[0]:pos[1]].strip().lower()
-            headers.append(header)
-
-        if not headers:
-            return {}
-
-        results = {}
-        for line in output_lines[separation_line_number+1:]:
-            portstats = []
-            for pos in positions:
-                portstat = line[pos[0]:pos[1]].strip()
-                portstats.append(portstat)
-
-            intf = portstats[0]
-            results[intf] = {}
-            for idx in range(1, len(portstats)):    # Skip the first column interface name
-                results[intf][headers[idx]] = portstats[idx]
-
-        return results
-
-    @staticmethod
-    def random_mac():
-        return "02:00:00:%02x:%02x:%02x" % (random.randint(0, 255),
-                                            random.randint(0, 255),
-                                            random.randint(0, 255))
+    def check_rx_ok(duthost, ingress_iface, pkt_num_min):
+        """Check if the ingress port has received enough packets."""
+        portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
+        rx_ok = int(portstat_out[ingress_iface]["rx_ok"].replace(",", ""))
+        return rx_ok >= pkt_num_min
 
     @pytest.fixture(scope="class")
     def common_param(self, duthosts, enum_rand_one_per_hwsku_frontend_hostname, tbinfo):
@@ -233,7 +157,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
@@ -306,7 +232,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
@@ -383,6 +311,8 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
+        # Drop test: on some platforms packets are dropped at L2 so rx_ok never reaches PKT_NUM_MIN.
+        # Use a short fixed sleep instead of wait_until to avoid a 30s timeout regression.
         time.sleep(5)
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
@@ -465,7 +395,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
@@ -537,7 +469,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
@@ -602,7 +536,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
         match_cnt = testutils.count_matched_packets_all_ports(ptfadapter, exp_pkt, ports=list(out_ptf_indices))
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
@@ -660,7 +596,9 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
-        time.sleep(5)
+        # Wait for port counters to update (non-asserting, real checks follow below)
+        if not wait_until(30, 1, 0, self.check_rx_ok, duthost, peer_ip_ifaces_pair[0][1][0], self.PKT_NUM_MIN):
+            logger.warning("Port counter polling timed out for %s", peer_ip_ifaces_pair[0][1][0])
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
         if rif_support:
@@ -719,6 +657,8 @@ class TestIPPacket(object):
         ptfadapter.dataplane.flush()
 
         testutils.send(ptfadapter, ptf_port_idx, pkt, self.PKT_NUM)
+        # Drop test: on some platforms packets are dropped at L2 so rx_ok never reaches PKT_NUM_MIN.
+        # Use a short fixed sleep instead of wait_until to avoid a 30s timeout regression.
         time.sleep(5)
 
         portstat_out = parse_portstat(duthost.command("portstat")["stdout_lines"])
