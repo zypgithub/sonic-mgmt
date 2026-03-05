@@ -2,14 +2,14 @@
 <CASEDEF>
     <global>
         <Test>
-            <info> DASH Private Link test </info>
-            <name> test_dash_private_link </name>
+            <info> DASH ENI Based Forwarding test </info>
+            <name> test_eni_based_forwarding </name>
             <owner> </owner>
             <pre></pre>
             <post></post>
         </Test>
         <Case>
-            <tags> DASH PRIVATE LINK</tags>
+            <tags> DASH ENI BASED FORWARDING</tags>
             <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/community_mars_pytest_runner.py  </wrapper>
             <tout> 55555 </tout>
         </Case>
