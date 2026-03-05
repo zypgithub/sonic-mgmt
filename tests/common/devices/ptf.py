@@ -69,8 +69,9 @@ class PTFHost(AnsibleHostBase):
         @param lag_ip: ip of lag
         @param lag_mode: mode of lag
         """
-        self.command("ip link add {} type bond".format(lag_name))
-        self.command("ip link set {} type bond miimon 100 mode {}".format(lag_name, lag_mode))
+        # TODO: use team instead of bond to create lag, this is a temp WA for the environment issue that bond is not
+        # TODO: working on the ptf of r-r640-15, revert this after the issue is resolved
+        self.command("teamd -t {} -d -c '{{\"runner\": {{\"name\": \"lacp\"}}}}'".format(lag_name))
         self.add_ip_to_dev(lag_name, lag_ip)
 
     def add_intf_to_lag(self, lag_name, intf_name):
