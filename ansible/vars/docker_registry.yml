@@ -3,3 +3,4 @@ docker_registry_host: nbu-harbor.gtm.nvidia.com/sonic
 docker_registry_username: sonicdev
 docker_registry_password: Dev12345
 
+debian_docker_registry_host: publicmirror.azurecr.io:443
