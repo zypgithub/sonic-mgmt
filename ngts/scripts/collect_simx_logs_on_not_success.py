@@ -12,6 +12,34 @@ logger = logging.getLogger()
 READ_LINE_STEP = 10000
 
 
+def collect_hypervisor_logs(topology_obj, dumps_folder, name_prefix=None):
+    dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
+    logs_location = '/tmp/hypervisor_logs'
+    dest_file = f'{dumps_folder}/{name_prefix}_hypervisor_logs.tar.gz'
+
+    if not name_prefix:
+        name_prefix = time.strftime('%Y_%b_%d_%H_%M_%S')
+
+    hyper_engine = topology_obj.players['hypervisor']['engine']
+    hyper_engine.run_cmd(f'mkdir -p {logs_location}')
+    hyper_engine.run_cmd(f'sudo dmesg --ctime > {logs_location}/dmesg.log')
+    hyper_engine.run_cmd(f'sudo journalctl -S "-10 min" -U "now" > {logs_location}/journal.log')
+    hyper_engine.run_cmd(f'sudo journalctl -u libvirtd -u virtlogd -S "-10 min" -U "now" > {logs_location}/libvirt.log')
+    hyper_engine.run_cmd(f'docker ps -a > {logs_location}/docker_ps.log')
+    hyper_engine.run_cmd(f'docker logs {dut_name} --since=10m > {logs_location}/simx_container.log')
+    hyper_engine.run_cmd(f'top -b -n 3 > {logs_location}/top.log')
+    hyper_engine.run_cmd(f'free -h > {logs_location}/free.log')
+    hyper_engine.run_cmd(f'df -h > {logs_location}/df.log')
+    hyper_engine.run_cmd(f'ip addr show > {logs_location}/ip_addr.log')
+    hyper_engine.run_cmd(f'ip route show > {logs_location}/ip_route.log')
+
+    with allure.step(f'Collect hypervisor logs: {dest_file}'):
+        hyper_engine.run_cmd(f'sudo tar -czvf {dest_file} {logs_location}')
+
+    hyper_engine.run_cmd(f'sudo rm -rf {logs_location}')
+    return dest_file
+
+
 def dump_simx_data(topology_obj, dumps_folder, name_prefix=None):
     dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
     if not name_prefix:

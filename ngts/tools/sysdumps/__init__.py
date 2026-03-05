@@ -8,6 +8,7 @@ import shlex
 import time
 
 import allure
+from ngts.scripts.collect_simx_logs_on_not_success import collect_hypervisor_logs
 from ngts.scripts.sonic_deploy.community_only_methods import is_dualtor_topo
 import pytest
 
@@ -103,6 +104,77 @@ def collect_dualtor_logs(hypervisor_engine, dumps_folder):
                 hypervisor_engine.run_cmd(f"rm -f {tar_file_path}")
 
 
+def _collect_one_neighbor_dump_nbrhost(neighbor_name, host, dumps_folder, duration, item_clean_name):
+    """
+    Generate dump on one neighbor using community nbrhosts host (SonicHost: shell + fetch).
+    Mirrors collect_techsupport_on_dut(request, nbrhosts[nbr]['host']) from tests/conftest.py.
+    """
+    res = host.shell('sudo generate_dump -s "-{} seconds"'.format(duration))
+    if res.get('rc') != 0:
+        logger.error(f"generate_dump failed on {neighbor_name}: {res}")
+        return
+    remote_dump_path = res.get('stdout_lines', [])[-1] if res.get('stdout_lines') else None
+    if not remote_dump_path:
+        logger.error(f"No dump path in output for {neighbor_name}: {res}")
+        return
+    dest_file = os.path.join(dumps_folder, f'sysdump_{neighbor_name}_{item_clean_name}.tar.gz')
+    try:
+        host.fetch(src=remote_dump_path, dest=f'{dumps_folder}/', flat=True)
+        local_fetched = os.path.join(dumps_folder, os.path.basename(remote_dump_path))
+        if os.path.isfile(local_fetched) and local_fetched != dest_file:
+            os.rename(local_fetched, dest_file)
+        os.chmod(dest_file, 0o777)
+        complete_msg = f"Completed {neighbor_name} sysdump: {dest_file}"
+        with allure.step(complete_msg):
+            logger.info(complete_msg)
+    except Exception as err:
+        logger.error(f"Failed to fetch dump from {neighbor_name}: {err}")
+    try:
+        host.shell('sudo rm -rf {}'.format(remote_dump_path))
+    except Exception as err:
+        logger.warning(f"Failed to remove remote dump on {neighbor_name}: {err}")
+
+
+def _get_nbrhosts_for_item(item):
+    """
+    Get nbrhosts: first from funcargs; if missing, try to build from tbinfo + ansible_adhoc + creds
+    (only works when those fixtures are in the test's request closure, e.g. test has localhost/duthost).
+    """
+    nbrhosts = item.funcargs.get('nbrhosts', None)
+    if nbrhosts is not None:
+        return nbrhosts
+    logger.warning("nbrhosts not available, skipping neighbor dumps")
+
+
+def collect_neighbor_logs(item, dumps_folder, duration):
+    """
+    Collect dumps from all neighbor VMs in parallel. Only used for tests under tests/upgrade_path
+    with sonic neighbor_type.
+    """
+    item_clean_name = item.name.replace('/', '_').replace('[', '_').replace(']', '_')
+
+    nbrhosts = _get_nbrhosts_for_item(item)
+    if not nbrhosts:
+        logger.warning("nbrhosts not available, skipping neighbor dumps")
+        return
+
+    num_workers = min(len(nbrhosts), 8)
+    with ThreadPoolExecutor(max_workers=num_workers) as executor:
+        futures = {}
+        for neighbor_name, device in nbrhosts.items():
+            host = device['host']
+            futures[executor.submit(
+                _collect_one_neighbor_dump_nbrhost,
+                neighbor_name, host, dumps_folder, duration, item_clean_name
+            )] = neighbor_name
+        for future in as_completed(futures):
+            neighbor_name = futures[future]
+            try:
+                future.result()
+            except Exception as err:
+                logger.error(f"Failed to collect dump from {neighbor_name}: {err}")
+
+
 def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
     switch_type = get_switch_type(topology_obj)
     dut_engine = topology_obj.players['dut']['engine']
@@ -116,6 +188,8 @@ def generate_and_copy_dump(item, dumps_folder, topology_obj, duration):
             collect_ptf_logs(hypervisor_engine, dumps_folder, setup_name)
         if is_dualtor_topo(testbed):
             collect_dualtor_logs(hypervisor_engine, dumps_folder)
+        if 'upgrade_path' in item.name and 'sonic' in item.config.option.neighbor_type:
+            collect_neighbor_logs(item, dumps_folder, duration)
 
 
 def is_performance_setup(item):
@@ -383,6 +457,8 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
     if is_simx and not is_air:
         with allure.step('Dump SIMX VM logs'):
             dump_simx_data(topology_obj, dumps_folder, name_prefix=item_clean_name)
+        with allure.step('Collect hypervisor logs'):
+            collect_hypervisor_logs(topology_obj, dumps_folder, name_prefix=item_clean_name)
     logger.debug(f"Storing the DUT sysdump {dut_dump_file}")
     store_dest_file_path(dut_dump_file, item_clean_name)
 
