@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 import re
+from dateutil import parser as dateutil_parser
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.system.clock.ClockConsts import ClockConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -538,32 +539,13 @@ class ClockTools:
         """
         with allure.step('Take timestamp from a single log line'):
             logging.info('Take timestamp from a single log line: {}'.format(log_line))
-            if 'T' in log_line:
-                # ISO-style e.g. 2026-02-18T10:25:11.674358+00:00 (typically UTC); convert to local if timezone given
-                dt = datetime.fromisoformat(log_line.replace('Z', '+00:00'))
-                if local_timezone:
-                    dt = dt.astimezone(pytz.timezone(local_timezone))
-                res = dt.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
-                logging.info('Result date-time: {}'.format(res))
-                return res
-            log_timestamp = log_line.split('.')[0].split(' ')  # remove .<microseconds>
-            log_timestamp = ' '.join([substr for substr in log_timestamp if substr != ''])  # clean from double spaces
-            logging.info('Take timestamp from a single log line: {}'.format(log_timestamp))
-
-            # Use the system year if provided, otherwise fall back to real-world year
-            # Note: Using datetime.now().year can cause failures when system time differs from real time
-            # (e.g., year boundaries or far-future/past dates)
-            year_to_use = system_year if system_year is not None else datetime.now().year
-            logging.info('Using year: {} (system_year provided: {})'.format(year_to_use, system_year is not None))
-
-            # convert date string to datetime object
-            datetime_obj = datetime.strptime(log_timestamp, "%b %d %H:%M:%S")  # [.%f] if need .<microseconds> optional
-
-            # replace year in datetime object
-            new_datetime_obj = datetime_obj.replace(year=year_to_use)
-
-            # format datetime object to string
-            res = new_datetime_obj.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
+            parsed_dt = dateutil_parser.parse(log_line, fuzzy=True)
+            if parsed_dt.year == 1900:
+                year_to_use = system_year if system_year is not None else datetime.now().year
+                parsed_dt = parsed_dt.replace(year=year_to_use)
+            if local_timezone and parsed_dt.tzinfo:
+                parsed_dt = parsed_dt.astimezone(pytz.timezone(local_timezone))
+            res = parsed_dt.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
             return res
 

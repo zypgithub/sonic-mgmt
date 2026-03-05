@@ -10,7 +10,7 @@ from retry.api import retry_call
 from ngts.nvos_constants.constants_nvos import ApiType, HealthConsts, NvosConst, ActionConsts, SystemConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra import ExceptionTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, wait_until_cli_is_up, wait_on_systemctl_initialization
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, wait_until_cli_is_up, wait_on_systemctl_initialization
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -601,5 +601,6 @@ def _send_command_timing(engine, cmd):
     netmiko_engine = engine.engine
     logger.info(f"Running cmd: {cmd}")
     response = netmiko_engine.send_command_timing(cmd, cmd_verify=True, delay_factor=4).strip()
+    response = netmiko_engine.strip_command(cmd, response)
     logger.info(response)
     return response
