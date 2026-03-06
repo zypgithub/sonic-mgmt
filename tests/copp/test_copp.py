@@ -137,11 +137,10 @@ class TestCOPP(object):
                     pytest_assert(not trap_installed,
                                   f"Trap {trap_ids[0]} for protocol {protocol} is unexpectedly installed")
 
+        is_smartswitch_light_mode = False
         if duthost.dut_basic_facts()['ansible_facts']['dut_basic_facts'].get("is_smartswitch"):
             if "dhcp_server" in duthost.critical_services_status():
                 is_smartswitch_light_mode = True
-            else:
-                is_smartswitch_light_mode = False
 
         _copp_runner(duthost,
                      ptfhost,
