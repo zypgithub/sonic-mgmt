@@ -3,7 +3,6 @@ import logging
 import pytest
 import random
 import os
-import re
 from retry.api import retry_call
 from ngts.constants.constants import InfraConst, PytestConst
 from ngts.common.util import get_specified_installed_dpus
@@ -11,14 +10,29 @@ from ngts.common.util import get_specified_installed_dpus
 logger = logging.getLogger()
 
 
-@pytest.fixture(scope="function", params=['dpu', 'switch'])
-def device_type(request):
+def generate_test_flavors(config):
+    """Generate test flavors based on setup name."""
+    hwsku = config.getoption("--dut_hwsku", default="")
+    if hwsku and "4280" in hwsku:
+        return ["dpu", "switch-ignore_dpu_errors", "switch-dpu_errors_only"]
+    return ["switch"]
+
+
+def pytest_generate_tests(metafunc):
+    """Parametrize flavor from setup name."""
+    if "flavor" in metafunc.fixturenames:
+        params = generate_test_flavors(metafunc.config)
+        metafunc.parametrize("flavor", params)
+
+
+@pytest.fixture(scope="function")
+def flavor(request):
     return request.param
 
 
 @pytest.fixture()
-def dut_host(engines, request, device_type, topology_obj):
-    if device_type == 'dpu':
+def dut_host(engines, flavor, topology_obj):
+    if flavor == 'dpu':
         dut_alias = 'dut'
         dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         specified_installed_dpus = get_specified_installed_dpus(dut_alias, dut_name)
@@ -37,7 +51,7 @@ def dut_host(engines, request, device_type, topology_obj):
 
 
 @pytest.mark.loganalyzer_hosts(include='dpu')
-def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer):
+def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer, flavor, topology_obj):
     """
     Test checks errors in logs which happen during deploy SONiC image.
     This test must be executed as first test case after deploy SONiC image.
@@ -63,6 +77,19 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
         logger.info(f'Found install image log in {syslog_file} at line {line_number}')
         new_start_string = ' '.join([timestamp, log_analyzer_start_string_line])
         insert_start_string_before_line(dut_host, syslog_file, line_number, new_start_string)
+    elif flavor == 'switch-dpu_errors_only':
+        is_dark_mode = topology_obj.players['dut']['cli'].general.is_dark_mode()
+        if is_dark_mode:
+            pytest.skip("Skip the [switch-dpu_errors_only] test while it's dark mode")
+        # Find the log of bfb installation success and insert start_string after it
+        bfb_installation_success_pattern = "sonic-bfb-installer.sh.*Installation Successful"
+        bfb_installation_success_log = find_install_image_log(dut_host, bfb_installation_success_pattern, 'tail')
+        if not bfb_installation_success_log:
+            assert False, "BFB installation success log is not found."
+        syslog_file, line_number, timestamp = bfb_installation_success_log
+        logger.info(f'Found bfb installation success log in {syslog_file} at line {line_number}')
+        new_start_string = ' '.join([timestamp, log_analyzer_start_string_line])
+        insert_start_string_before_line(dut_host, syslog_file, line_number, new_start_string)
     else:
         # Fallback to original logic: create new oldest syslog file
         logger.warning('Install image log not found, falling back to oldest syslog')
@@ -86,9 +113,19 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
         r".*ERR configmgrd: Failed to get primary ASIC for.*",
     ]
 
+    ignore_regex_dpu_errors = [
+        r".*kernel.*mlx5_core.*err.*",
+    ]
+    if flavor == 'switch-ignore_dpu_errors':
+        ignore_regex.extend(ignore_regex_dpu_errors)
+
     logger.info('Adding end_marker in syslog')
     for analyzer in loganalyzer.values():
+        if 'switch' in flavor and 'dpu' in analyzer.ansible_host.hostname:
+            continue
         analyzer.ignore_regex.extend(ignore_regex)
+        if flavor == 'switch-dpu_errors_only':
+            analyzer.match_regex = ignore_regex_dpu_errors
         # Logic below is required to overcome the issue the when end_marker is not present in syslog - in this case,
         # the end_marker will be added forcefully
         run_id = analyzer.ansible_loganalyzer.run_id
@@ -100,18 +137,20 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
                    logger=logger)
 
 
-def find_install_image_log(engine):
+def find_install_image_log(engine, search_pattern=None, match_rule='head'):
     """
-    Find the 'sonic-installer: Installing image SONiC-OS-' log in syslog files.
+    Find the 'sonic-installer: Installing image SONiC-OS-' log or the specified log in syslog files.
     :param engine: dut engine object
+    :param search_pattern: search pattern to use, default is "sonic-installer: Installing image SONiC-OS-"
+    :param match_rule: match the first or last line if there are multiple matches, default is 'head'
     :return: tuple (syslog_file, line_number, timestamp) or None if not found
     """
-    search_pattern = "sonic-installer: Installing image SONiC-OS-"
+    search_pattern = "sonic-installer: Installing image SONiC-OS-" if search_pattern is None else search_pattern
 
     with allure.step('Finding sonic-installer log for upgrade start point'):
         logger.info(f'Searching for pattern: {search_pattern}')
         # Search all syslog files including .gz files, get first match
-        cmd = f'sudo zgrep -Hn "{search_pattern}" /var/log/syslog* 2>/dev/null | head -1'
+        cmd = f'sudo zgrep -Hn "{search_pattern}" /var/log/syslog* 2>/dev/null | {match_rule} -1'
         result = engine.run_cmd(cmd, validate=False)
 
         if result:
@@ -122,7 +161,7 @@ def find_install_image_log(engine):
             timestamp = ' '.join(columns[2].split()[:4])
             return (syslog_file, line_number, timestamp)
 
-        logger.warning('Install image log not found in any syslog file')
+        logger.warning(f'"{search_pattern}" log not found in any syslog file')
         return None
 
 

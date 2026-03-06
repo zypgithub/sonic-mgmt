@@ -129,6 +129,7 @@ def pytest_addoption(parser):
     logger.info('Parsing pytest options')
     parser.addoption('--setup_name', action='store', required=True, default=None,
                      help='Setup name, example: sonic_tigris_r-tigris-06')
+    parser.addoption('--dut_hwsku', action='store', required=False, default=None, help='DUT hwsku')
     parser.addoption('--base_version', action='store', default=None, help='Path to base SONiC version')
     parser.addoption('--downgrade_version', action='store', default=None, help='Path to downgrade SONiC version')
     parser.addoption('--issu_version', action='store', default=None, help='Path to issu SONiC version')

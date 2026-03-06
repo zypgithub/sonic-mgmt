@@ -2239,6 +2239,15 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         assert list(dpu_statuses_set)[0] in valid_aligned_statuses, f"DPUs status is not valid: {dpu_statuses} for dpus: {dpu_name_list}"
         logger.info(f"{len(dpu_name_list)} available dpus are aligned in admin status and oper status")
 
+    def is_dark_mode(self):
+        """
+        Decide whether the SmartSwitch is running in dark mode based on the DPU admin status
+        """
+        chassis_module_status = self.engine.run_cmd('show chassis module status')
+        dpu_count = len(re.findall(r'DPU\d+', chassis_module_status))
+        admin_down_dpu_count = len(re.findall(r'DPU\d+.*down', chassis_module_status))
+        return admin_down_dpu_count == dpu_count
+
     def verify_dpu_boot_progress(self, dpu_index_list, bad_states):
         """
         Parses the output of the command 'dpuctl dpu-status' and verifies the boot progress of the specified DPUs,
