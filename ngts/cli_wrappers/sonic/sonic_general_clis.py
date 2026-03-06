@@ -1233,7 +1233,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         elif not self.is_performance_setup(setup_name):
             self.upload_port_config_ini(platform, hwsku, shared_path)
 
-        config_db = self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, config_db)
+        config_db = self.upload_config_db_file(topology_obj, setup_name, hwsku, platform, config_db, deploy_chipless)
         if not is_air:
             config_file_prefix = self.get_config_file_prefix(setup_name)
             config_db_file_name = f"{self.get_image_sonic_version()}_{config_file_prefix}config_db.json"
@@ -1259,12 +1259,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             prefix = self.hostname() + '_'
         return prefix
 
-    def upload_config_db_file(self, topology_obj, setup_name, hwsku, platform, config_db=None):
+    def upload_config_db_file(self, topology_obj, setup_name, hwsku, platform, config_db=None, deploy_chipless=False):
         config_file_prefix = self.get_config_file_prefix(setup_name)
         if config_db is None:
             config_db = self.get_config_db_json_obj(setup_name, config_file_prefix + SonicConst.CONFIG_DB_JSON)
         if not self.is_performance_setup(setup_name):
-            config_db = self.get_updated_config_db(topology_obj, setup_name, hwsku, platform, config_db)
+            config_db = self.get_updated_config_db(topology_obj, setup_name, hwsku, platform, config_db, deploy_chipless)
 
         save_config_db_json(self.engine, config_db)
         if self.is_performance_setup(setup_name):
@@ -1335,7 +1335,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         # ET.indent(tree, space="\t", level=0)
         tree.write(filepath, encoding="utf-8")
 
-    def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform, config_db):
+    def get_updated_config_db(self, topology_obj, setup_name, hwsku, platform, config_db, deploy_chipless=False):
         self.update_config_db_metadata_router(config_db)
         self.update_config_db_metadata_mgmt_port(config_db)
         self.update_config_db_metadata_hwsku(hwsku, config_db)
@@ -1344,7 +1344,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         self.update_config_db_feature_config("database", "auto_restart", "always_enabled", config_db)
         default_mtu = "9100"
         self.update_config_db_port_mtu_config(default_mtu, config_db)
-        self.update_config_db_breakout_cfg(topology_obj, setup_name, hwsku, platform, config_db)
+        if not deploy_chipless:
+            self.update_config_db_breakout_cfg(topology_obj, setup_name, hwsku, platform, config_db)
         self.update_config_db_simx_setup_metadata_mac(setup_name, config_db)
         self.restore_container_autorestart(config_db)
         return config_db
