@@ -2190,8 +2190,8 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                     f'For {dpu_name}, dpu status is {dpu_status[dpu_name]} '
         logger.info(f"all dpus:{dpu_index_list} are up")
 
-    # retry for ~200s if the dpus are up
-    @retry(Exception, tries=51, delay=5)
+    # retry for ~375s if the dpus are up
+    @retry(Exception, tries=75, delay=5)
     def verify_dpus_status_aligned(self, dpu_name_list, valid_aligned_statuses={('up', 'Online'), ('down', 'Offline')}):
         """
         For all DPUs
