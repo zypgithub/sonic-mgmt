@@ -527,6 +527,10 @@ class ClockTools:
         with allure.step('Verify log timestamp similar to show date-time'):
             ClockTools.verify_same_datetimes(show_datetime, log_datetime)
 
+    # Regex patterns for extracting timestamps from log lines
+    _SYSLOG_TS_RE = re.compile(r'^(\w{3}\s{1,2}\d{1,2}\s+\d{2}:\d{2}:\d{2})')
+    _ISO_TS_RE = re.compile(r'(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})')
+
     @staticmethod
     def get_datetime_of_system_log_line(log_line, system_year=None):
         """
@@ -539,12 +543,25 @@ class ClockTools:
         """
         with allure.step('Take timestamp from a single log line'):
             logging.info('Take timestamp from a single log line: {}'.format(log_line))
-            parsed_dt = dateutil_parser.parse(log_line, fuzzy=True)
-            if parsed_dt.year == 1900:
-                year_to_use = system_year if system_year is not None else datetime.now().year
-                parsed_dt = parsed_dt.replace(year=year_to_use)
-            if local_timezone and parsed_dt.tzinfo:
-                parsed_dt = parsed_dt.astimezone(pytz.timezone(local_timezone))
+            # Extract just the timestamp portion to avoid confusing the parser
+            # with kernel uptime values, hex values, etc. in the rest of the line
+            iso_match = ClockTools._ISO_TS_RE.search(log_line)
+            if iso_match:
+                timestamp_str = iso_match.group(1)
+            else:
+                syslog_match = ClockTools._SYSLOG_TS_RE.match(log_line)
+                if syslog_match:
+                    timestamp_str = syslog_match.group(1)
+                else:
+                    raise ValueError(f"No recognizable timestamp in log line: {log_line}")
+            iso_sep = 'T' if 'T' in timestamp_str else None
+            if iso_sep or timestamp_str[0].isdigit():
+                parsed_dt = datetime.strptime(timestamp_str.replace('T', ' '), StatsConsts.SYSTEM_TIME_FORMAT)
+            else:
+                parsed_dt = dateutil_parser.parse(timestamp_str)
+                if parsed_dt.year == 1900:
+                    year_to_use = system_year if system_year is not None else datetime.now().year
+                    parsed_dt = parsed_dt.replace(year=year_to_use)
             res = parsed_dt.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
             return res

@@ -94,12 +94,19 @@ def assert_fatal_logs(engines, request):
     with allure.step(f'Find lines for fatal events in {FATAL_LOG_FILE}'):
         engines.dut.engine.set_base_prompt('$')  # Let the engine find the current prompt
         log_lines = engine.run_cmd(f'grep -ah "{SAI_LOG_STRING}" {FATAL_LOG_FILE}*', validate=True).splitlines()
+        # Derive system_year from the first event timestamp (format "YYYY-MM-DD HH:MM:SS")
+        system_year = None
+        if fatal_event_timestamps:
+            try:
+                system_year = datetime.strptime(fatal_event_timestamps[0], '%Y-%m-%d %H:%M:%S').year
+            except ValueError:
+                pass
         log_timestamps = []
         for line in reversed(log_lines):
             try:
-                log_timestamps.append(ClockTools.get_datetime_of_system_log_line(line))
+                log_timestamps.append(ClockTools.get_datetime_of_system_log_line(line, system_year=system_year))
             except ValueError:
-                pass
+                logger.warning(f'Could not parse timestamp from fatal.log line: {line}')
         logger.info(f'Fatal event log-lines found at {log_timestamps}')
 
     with allure.step('Assert each event we simulated appears in the logs'):
