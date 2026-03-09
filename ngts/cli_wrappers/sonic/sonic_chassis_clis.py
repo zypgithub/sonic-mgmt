@@ -142,3 +142,12 @@ class SonicChassisCli(ChassisCliCommon):
             platform_json_dict = json.load(f)
         logger.info(f"platform json dict:\n {platform_json_dict}")
         return platform_json_dict
+
+    def get_supported_hwsku_platform_dir(self):
+        platform = self.get_platform()
+        platform_dir = SonicConst.PLATFORM_FOLDER_PATH.format(PLATFORM=platform)
+        supported_hwsku_dir = self.engine.run_cmd(f"find {platform_dir} -mindepth 1 -maxdepth 1 -type d -exec sh -c 'test -f \"$1/hwsku.json\" && basename \"$1\"' _ {{}} \\;")
+        logger.info(f"supported hwsku dir: {supported_hwsku_dir}")
+        if not supported_hwsku_dir:
+            raise Exception(f"No supported hwsku found for platform {platform}")
+        return supported_hwsku_dir.splitlines()

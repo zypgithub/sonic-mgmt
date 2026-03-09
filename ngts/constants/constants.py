@@ -78,6 +78,7 @@ class SonicConst:
     CONFIG_DB_JSON = 'config_db.json'
     EXTENDED_CONFIG_DB_PATH = "extended_config_db.json"
     CONFIG_DB_JSON_PATH = SONIC_CONFIG_FOLDER + CONFIG_DB_JSON
+    PLATFORM_FOLDER_PATH = "/usr/share/sonic/device/{PLATFORM}"
     PLATFORM_JSON_PATH = "/usr/share/sonic/device/{PLATFORM}/platform.json"
     PMON_DAEMON_CONTROL_JSON_PATH = "/usr/share/sonic/device/{PLATFORM}/pmon_daemon_control.json"
     SAI_PROFILE_FILE_PATH = "/usr/share/sonic/device/{PLATFORM}/{HWSKU}/sai.profile"

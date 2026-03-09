@@ -13,6 +13,7 @@ from ngts.tools.test_utils.nvos_config_utils import set_base_configurations
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
+from ngts.cli_wrappers.sonic.sonic_chassis_clis import SonicChassisCli
 from ngts.scripts.sonic_deploy.simx_community_helper import prepare_air_community_directory
 
 
@@ -30,6 +31,13 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
         cli_obj = setup_info['duts'][0]['cli_obj']
         dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         update_hosts_file(dut_ip=dut['engine'].ip, dut_name=dut_name, sonic_topo=sonic_topo, setup_name=setup_name)
+
+        sonic_chassis_cli = SonicChassisCli(engine=dut['engine'])
+        supported_hwsku = sonic_chassis_cli.get_supported_hwsku_platform_dir()
+        hwsku = destination_hwsku if destination_hwsku else platform_params['hwsku']
+        if hwsku not in supported_hwsku:
+            raise Exception(f"Unsupported hwsku provided: {hwsku}, "
+                            f"the supported hwsku: {supported_hwsku} for platform: {platform_params['platform']}")
         if isinstance(cli_obj, SonicGeneralCliDefault) and is_community(sonic_topo):
             prepare_air_community_directory(setup_name=setup_name, topology=topology_obj, hwsku=destination_hwsku, platform_params=platform_params)
             threads_dict = {}
