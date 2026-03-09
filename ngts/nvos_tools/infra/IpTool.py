@@ -228,7 +228,7 @@ class IpTool:
     @staticmethod
     def get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(eth_interface_name: str, dut_engine: LinuxSshEngine = None) -> str:
         try:
-            out = dut_engine.run_cmd(f'nv show interface {eth_interface_name} ip address -o json', validate=True)
+            out = dut_engine.run_cmd(f'nv show interface {eth_interface_name} ipv6 address -o json', validate=True)
             no_cli_msgs = ['Error', 'NVOS CLI is unavailable', 'System is initializing', 'This may take a few minutes']
             if any(msg in out for msg in no_cli_msgs):
                 return ''

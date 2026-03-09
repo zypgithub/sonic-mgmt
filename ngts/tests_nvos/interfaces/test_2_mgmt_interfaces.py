@@ -405,12 +405,12 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
     @_checker_with_expected_traffic(serial_engine)
     def curl_outside_eth0():
         curl_cmd = CurlCmdBuilder(method="GET", host=domain_for_dns, resource="/").interface("eth0").build()
-        engines.dut.run_cmd(curl_cmd, validate=True)
+        engines.dut.run_cmd(curl_cmd)
 
     @_checker_with_no_traffic(serial_engine)
     def curl_outside_eth1():
         curl_cmd = CurlCmdBuilder(method="GET", host=domain_for_dns, resource="/").interface("eth1").build()
-        engines.dut.run_cmd(curl_cmd, validate=True)
+        engines.dut.run_cmd(curl_cmd)
 
     with allure.step("Run switch as client DNS checkers"):
         _tcpdump_checkers_wrapper(
@@ -488,9 +488,9 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
 
         @_checker_with_expected_traffic(serial_engine)
         def renew_eth1_dhcp():
-            eth1_port.interface.ip.action_renew_dhcp_client(
-                dut_engine=connection,
-                ipv6=ip_type == InfraConst.IPV6
+            ip_obj = eth1_port.interface.ipv4 if ip_type == InfraConst.IPV4 else eth1_port.interface.ipv6
+            ip_obj.action_renew_dhcp_client(
+                dut_engine=connection
             ).verify_result()
 
         _tcpdump_checkers_wrapper(
@@ -502,10 +502,7 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
         )
 
         with allure.step("Verify eth1 dhcp lease was renewed"):
-            if ip_type == InfraConst.IPV4:
-                dhcp_client_obj = eth1_port.interface.ip.dhcp_client
-            else:
-                dhcp_client_obj = eth1_port.interface.ip.dhcp_client6
+            dhcp_client_obj = eth1_port.interface.ipv4.dhcp_client if ip_type == InfraConst.IPV4 else eth1_port.interface.ipv6.dhcp_client
             eth1_dhcp_output = OutputParsingTool.parse_json_str_to_dictionary(
                 dhcp_client_obj.show(dut_engine=connection)
             ).get_returned_value()
