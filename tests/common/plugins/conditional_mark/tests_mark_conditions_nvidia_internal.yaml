@@ -410,6 +410,20 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_core_dump_file_in_var_
     conditions:
     - "https://redmine.mellanox.com/issues/4894819 and 'air' in testbed"
 
+tests/push_build_tests/L3/rocev2_acl_counter/test_rocev2_acl_counter_basic.py::TestRocev2AclCounter::test_rocev2_acl_counter_basic:
+  xfail:
+    reason: "xfail due to bobcat does not support rocev2 acl counters"
+    # see https://redmine.mellanox.com/issues/4834399, won't fix
+    conditions:
+    - "'sn4280' in platform and https://redmine.mellanox.com/issues/4834399"
+
+tests/push_build_tests/general/wjh/test_wjh.py::test_acl_ingress_router:
+  xfail:
+    reason: "xfail due to bobcat does not support rocev2 acl counters"
+    # see https://redmine.mellanox.com/issues/4834399, won't fix
+    conditions:
+    - "'sn4280' in platform and https://redmine.mellanox.com/issues/4834399"
+
 autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-26-None-teamd]:
   skip:
     reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/3587377"
