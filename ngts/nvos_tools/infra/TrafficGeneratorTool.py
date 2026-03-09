@@ -45,7 +45,7 @@ class TrafficGeneratorTool:
                     return ResultObj(False, "IB traffic validation failed - check log for more info.")
 
     @staticmethod
-    def send_ib_traffic_with_params(players, should_success, traffic_params, common_flags=''):
+    def send_ib_traffic_with_params(players, should_success, traffic_params):
         """
         Send ib traffic, but gives more control over the params used by the test
         :param players: players fixture
@@ -59,7 +59,6 @@ class TrafficGeneratorTool:
         receiver_interface': interfaces.hb_dut_1
         'receiver_flags' :  '--dlid 250 -x 2'     // optional
         }
-        :param common_flags: flags that are common for both sender and receiver processes, for example "-a --report_gbits"
 
         """
         with allure.step("Creating validation object in order to generate traffic"):
@@ -72,7 +71,9 @@ class TrafficGeneratorTool:
         with allure.step("Send ib traffic"):
             try:
                 logger.info("Sending ib traffic")
-                IBTrafficChecker(players, validation_obj).run_validation()
+                traffic_checker_obj = IBTrafficChecker(players, validation_obj)
+                traffic_checker_obj.process_init_delay = 3
+                traffic_checker_obj.run_validation()
                 return ResultObj(True, "IB traffic validation ended successfully")
             except BaseException as ex:
                 return ResultObj(False, "IB traffic validation failed - check log for more info.")

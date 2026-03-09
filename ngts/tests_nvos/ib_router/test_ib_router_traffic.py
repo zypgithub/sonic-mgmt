@@ -3,7 +3,6 @@ import logging
 import random
 import time
 import itertools
-
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
@@ -15,8 +14,6 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.tests_nvos.ib_router.constants import IbRouterConsts
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
-
-
 logger = logging.getLogger()
 
 
@@ -30,7 +27,6 @@ def test_sanity_traffic(engines, players, interfaces, devices, verify_sm_running
     hosts_pairs = list(itertools.combinations(IbRouterConsts.ALL_HOSTS_NICKNAMES, 2))
     same_swid_hosts_pairs = [(host_a, host_b) for host_a, host_b in hosts_pairs if IbRouterConsts.HOST_TO_SWID[host_a] == IbRouterConsts.HOST_TO_SWID[host_b]]
     different_swid_hosts_pairs = [(host_a, host_b) for host_a, host_b in hosts_pairs if IbRouterConsts.HOST_TO_SWID[host_a] != IbRouterConsts.HOST_TO_SWID[host_b]]
-
     traffic_fails_lists = []
     with allure.step(f"Sending traffic between all hosts on the same SWID"):
         for (sender_host, receiver_host) in same_swid_hosts_pairs:
@@ -51,7 +47,6 @@ def test_sanity_traffic(engines, players, interfaces, devices, verify_sm_running
                     traffic_fails_lists.append(f"Traffic between host {sender_host} - {sender_ip} and host {receiver_host} - {receiver_ip}, both on SWID{sender_swid} failed")
         if traffic_fails_lists:
             raise Exception(traffic_fails_lists)
-
     with allure.step(f"Sending traffic between all hosts on the same SWID"):
         for (sender_host, receiver_host) in different_swid_hosts_pairs:
             sender_swid = IbRouterConsts.HOST_TO_SWID[sender_host]
@@ -99,7 +94,6 @@ def test_traffic_after_leaf_reboot(engines, players, interfaces, devices, verify
     valid_reboot_types = ["", "force"]
     reboot_type = random.choice(valid_reboot_types)
     logger.info(f"Randomly choose {reboot_type} from {valid_reboot_types}")
-
     chosen_leaf = random.choice(IbRouterConsts.CROC_SWITCHES_NICKNAMES)
     leaf_engine = engines[chosen_leaf]
     leaf_device = devices[chosen_leaf]
