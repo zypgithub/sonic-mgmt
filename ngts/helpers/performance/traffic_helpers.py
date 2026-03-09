@@ -525,6 +525,7 @@ def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validat
                        ValidationConsts.PG_BUFFER_DATAFRAME (REQUIRED - must be explicitly specified)
     """
     buffer_type_name = "headroom" if pg_buffer_type == ValidationConsts.PG_HEADROOM_DATAFRAME else "buffer"
+    pg_index_key = pg_buffer_type.replace("_dataframe", "")
     with allure.step(f"Compare PG {buffer_type_name} occupancy to reference for {pg_to_validate}"):
         pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
         pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
@@ -532,7 +533,7 @@ def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validat
             for port_group_name, port_group_data in port_groups.items():
                 pg_df = port_group_data[pg_buffer_type]
                 for pg_dict in pg_df:
-                    pg_name = pg_dict[ValidationConsts.PG_NAME]
+                    pg_name = pg_dict[pg_index_key]
                     if pg_name in pg_to_validate:
                         for key in pg_keys:
                             pg_occ = pg_dict[key]
@@ -571,13 +572,14 @@ def get_pg_occ_from_traffic_json(traffic_json, port_group_name, pg_key, pg, pg_b
     Returns:
         PG occupancy value or None if not found
     """
+    pg_index_key = pg_buffer_type.replace("_dataframe", "")
     pg_samples = traffic_json[ValidationConsts.TC_PG_SAMPLES]
     pg_samples.pop(ValidationConsts.SAMPLES_PARAMS, None)
     pg_occ = None
     for sample_id, port_groups in pg_samples.items():
         pg_df = port_groups[port_group_name][pg_buffer_type]
         for pg_dict in pg_df:
-            pg_name = pg_dict[ValidationConsts.PG_NAME]
+            pg_name = pg_dict[pg_index_key]
             if pg_name == pg:
                 pg_occ = pg_dict[pg_key]
     return pg_occ

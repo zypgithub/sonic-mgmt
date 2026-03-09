@@ -429,7 +429,22 @@ class SonicPerformanceCli(PerformanceCommon):
 
     def restore_basic_configuration(self, dst_dut_dir="/tmp"):
         self.cleanup_shared_json_file()
+        self.restore_im_on_tg()
         return
+
+    def restore_im_on_tg(self):
+        """
+        Re-enable Independent Module (IM) on traffic generators after test finishes.
+        During setup, IM is disabled on TGs. This restores it by
+        writing the SAI attribute back, reloading config, and verifying dockers.
+        Only runs on traffic generators.
+        """
+        if self.dut_alias in PerfConsts.TG_ALIAS_LIST:
+            with allure.step(f'Restore IM on {self.dut_alias}'):
+                logging.info(f"Re-enabling IM on {self.dut_alias}")
+                self.cli_obj.im.enable_im_in_sai()
+                self.cli_obj.general.reload_configuration(force=True)
+                self.cli_obj.general.verify_dockers_are_up()
 
     def get_tg_unconnected_ports(self):
         return self.unconnected_ports
@@ -472,10 +487,19 @@ class SonicPerformanceCli(PerformanceCommon):
         Returns: a dict of port number and a list of sdk hex ports sorted by lane mapping.
         i.e,
         { 1: ['0x100f1', '0x100f2', '0x100f3',...], 2: [...], ... }
+
+        Parses the output of sx_api_ports_mapping_dump.py which has the following table format:
+        | log_port  | dev_id | phy_port | label_port | admin_st | phy_mod | lane_bmap | width |
+        | 0x100f1   |   1    |    1     |     1      | ENABLED  |    0    |   0x01    |   1   |
+
+        The regex captures three groups from ENABLED rows:
+            Group 1 (hex_port):    SDK logical port hex   (e.g., 0x100f1)
+            Group 2 (port_number): label port number      (e.g., 1)
+            Group 3 (lane_map):    lane bitmap hex        (e.g., 0x01)
         """
         sdk_port_mapping_cmd = f"sx_api_ports_mapping_dump.py"
         sdk_port_mapping_info = self.execute_cmd(self.get_cmd_for_sdk(sdk_port_mapping_cmd))
-        regex = r"\|\s+(0x[\d|\w]*)\|\s+\d+\|\s+\d+\|\s+(\d+)\|\s+ENABLED\|\s+\d+\|\s+(.*)\|\s+\d+\|"
+        regex = r"\|\s+(0x[\d|\w]*)\|\s+\d+\|\s+\d+\|\s+(\d+)\|\s+ENABLED\|\s+\d+\|\s+(0x[\da-fA-F]+)\|\s+\d+\|"
         sdk_port_mapping = re.findall(regex, sdk_port_mapping_info)
         sdk_port_mapping_dict = defaultdict(list)
 
@@ -640,8 +664,14 @@ class SonicPerformanceCli(PerformanceCommon):
         self.dut_interfaces_ipv6_configuration_dict = dut_interfaces_ipv6_configuration_dict
         return dut_interfaces_ipv6_configuration_dict
 
+    def start_mst(self):
+        """Start MST on host and syncd container for temperature collection via mget_temp."""
+        self.execute_cmd("sudo mst start 2>&1 || true")
+        self.execute_cmd(f"docker exec {InfraConst.SYNCD_DOCKER} mst start 2>&1 || true")
+
     def validate_traffic(self, json_path, samples_params_dict, dst_dut_dir="/tmp"):
         logging.info("Running traffic validator on the dut")
+        self.start_mst()
         samples_params = []
         for env_var_name, param_val in samples_params_dict.items():
             samples_params.append(f"{env_var_name}={param_val}")

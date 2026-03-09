@@ -56,10 +56,11 @@ class SonicImClis:
         hwsku = parse_platform_summary["HwSKU"]
 
         if not self.is_im_enabled():
-            logger.info(f'Set {IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME} to 1 in '
-                        f'{SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platfrom, HWSKU=hwsku)}')
-            self.engine.run_cmd(f'sudo bash -c \'echo "{IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME}=1" >> '
-                                f'{SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platfrom, HWSKU=hwsku)}\'')
+            sai_profile_path = SonicConst.SAI_PROFILE_FILE_PATH.format(PLATFORM=platfrom, HWSKU=hwsku)
+            logger.info(f'Set {IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME} to 1 in {sai_profile_path}')
+            attr = IndependentModuleConst.IM_SAI_ATTRIBUTE_NAME
+            self.engine.run_cmd(f'sudo sed -i \'/^{attr}=/d\' {sai_profile_path}')
+            self.engine.run_cmd(f'sudo bash -c \'echo "{attr}=1" >> {sai_profile_path}\'')
 
     def is_ms_hwsku(self):
         """

@@ -126,7 +126,7 @@ class PerfConsts:
     DEFAULT_PERF_TEMPLATES_DIR = "performance_config_templates"
     CONFIG_FILES_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'tests/performance/config_files')
     REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
-    SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-11-2-amd64/"
+    SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/"
     SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
     SDK_DUMP_FILE_SYSTEM = '/var/log/sdk_dbg'
@@ -140,6 +140,17 @@ class PerfConsts:
 
     # Export Python Path
     EXPORT_PYTHONPATH = (
+        'export SDK_ROOT=/root/sys_sdk; '
+        'export APP_LIB_PATH=$SDK_ROOT/applibs; '
+        'export SDK_INCLUDE=$SDK_ROOT/applibs; '
+        'export SXD_INCLUDE=$SDK_ROOT/sxd_libs; '
+        'export INCLUDES="-I$SDK_ROOT/applibs/include '
+        '-I$SDK_ROOT/sxd_libs/include '
+        '-I$SDK_ROOT/sx_complib/include '
+        '-I$SDK_ROOT/sx_gen_utils/include '
+        '-I/usr/include/python3.11 '
+        '-I/usr/lib/python3.11/config-3.11-x86_64-linux-gnu/"; '
+        'export LD_LIBRARY_PATH=$SDK_ROOT/applibs/lib:$SDK_ROOT/sxd_libs/lib:$SDK_ROOT/sx_complib/lib:$LD_LIBRARY_PATH; '
         'export PYTHONPATH=/root/sys_sdk/sx_sdk_py_tests/:'
         '/root/sys_sdk/sx_sdk_py_tests/tests/:'
         '/root/sys_sdk/sx_sdk_py_tests/tools/bpf_api_tracer/:'
