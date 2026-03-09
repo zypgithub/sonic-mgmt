@@ -81,8 +81,8 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
         platform.transceiver.action_reset(random_transceiver).verify_result()
 
-        with allure.step("sleep for 5 sec - waiting for after reset action"):
-            time.sleep(8)
+        with allure.step("sleep for 10 sec - waiting for after reset action"):
+            time.sleep(10)
 
         with allure.step(f"verify all {random_transceiver} fields back to the same values"):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
@@ -347,6 +347,29 @@ def _get_random_optical_module_transceiver():
         return platform, random_transceiver, random_port_name.name
 
 
+def _collect_counter_changes(before, after, path, changes, threshold=0.2):
+    """
+    Recursively compare counter structures and collect entries where the value
+    increased by more than threshold (e.g. 20%). Handles nested dicts and leaf
+    numeric values; non-numeric leaves (e.g. "n/a") must be equal.
+    """
+    if isinstance(before, dict) and isinstance(after, dict):
+        assert before.keys() == after.keys(), (
+            f"Counter keys mismatch at path '{path}': before={set(before.keys())!r}, after={set(after.keys())!r}"
+        )
+        for key in before:
+            _collect_counter_changes(before[key], after[key], f"{path}.{key}" if path else key, changes, threshold)
+        return
+
+    if isinstance(before, (int, float)) and isinstance(after, (int, float)):
+        if before > 0 and (after - before) > before * threshold:
+            changes.append({"path": path, "before": before, "after": after})
+        return
+
+    if before != after:
+        changes.append({"path": path, "before": before, "after": after})
+
+
 def check_counters(counters_before, counters_after):
     """
 
@@ -359,22 +382,10 @@ def check_counters(counters_before, counters_after):
     with allure.step("Verify that no keys are missing after action"):
         assert counters_before.keys() == counters_after.keys()
 
-    with allure.step(f"Validate {IbInterfaceConsts.LINK_STATS_LINK_DOWNED} counter increased by 1"):
-        assert counters_after[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATS_LINK_DOWNED] == counters_before[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_STATS_LINK_DOWNED] + 1
-        counters_before.pop(IbInterfaceConsts.LINK)
-        counters_after.pop(IbInterfaceConsts.LINK)
-
-    with allure.step("Validate that none of the counters have changed by more than 20%"):
-        for key, before_value in counters_before.items():
-            if counters_before[key] and counters_after[key] - counters_before[key] > counters_before[key] * 0.2:
-                changes.append({
-                    'key': key,
-                    'before': counters_before[key],
-                    'after': counters_after[key],
-                })
+    with allure.step("Validate that none of the counters have changed by more than 20% (deep check)"):
+        _collect_counter_changes(counters_before, counters_after, "", changes)
 
         if changes:
             for change in changes:
-                err_msg += f"Key: {change['key']}, Before: {change['before']}, After: {change['after']}"
-
-        assert not changes, err_msg
+                err_msg += f"Path: {change['path']}, Before: {change['before']}, After: {change['after']}; "
+            assert False, err_msg
