@@ -860,7 +860,7 @@ class DeployDpuHelper:
     @staticmethod
     def disable_dark_mode(topology_obj, cli_obj, dpu_index_list, dut_alias):
         with allure.step('Disable dark mode by config chassis modules startup DPU'):
-            cli_obj.startup_dpu(dpu_index_list)
+            cli_obj.startup_dpus(dpu_index_list)
             try:
                 cli_obj.verify_dpus_up(dpu_index_list)
             except AssertionError:

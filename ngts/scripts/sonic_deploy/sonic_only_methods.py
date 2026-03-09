@@ -732,7 +732,7 @@ class SonicInstallationSteps:
                         cli_obj = dut['cli_obj']
                         # TODO parallelize this
                         _, dpu_index_list, _ = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
-                        cli_obj.shutdown_dpu(dpu_index_list)
+                        cli_obj.shutdown_dpus(dpu_index_list)
                         cli_obj.shutdown_dpu_data_interfaces(setup_name)
                         cli_obj.save_configuration()
             if deploy_chipless:

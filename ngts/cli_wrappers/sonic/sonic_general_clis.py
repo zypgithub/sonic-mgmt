@@ -2181,13 +2181,23 @@ class SonicGeneralCliDefault(GeneralCliCommon):
         sdk_version = re.search(r"SX-SDK ETH (\d+\.\d+\.\d+)", sdk_version_output).group(1)
         return sdk_version
 
-    def startup_dpu(self, dpu_index_list):
+    def startup_dpus(self, dpu_index_list):
         for dpu_index in dpu_index_list:
-            self.engine.run_cmd(f'sudo config chassis modules startup DPU{dpu_index}')
+            self.set_dpu_state_with_retry(dpu_index, True)
 
-    def shutdown_dpu(self, dpu_index_list):
+    def shutdown_dpus(self, dpu_index_list):
         for dpu_index in dpu_index_list:
-            self.engine.run_cmd(f'sudo config chassis modules shutdown DPU{dpu_index}')
+            self.set_dpu_state_with_retry(dpu_index, False)
+
+    @retry(Exception, tries=36, delay=10)
+    def set_dpu_state_with_retry(self, dpu_index, state: bool):
+        if state:
+            action = 'startup'
+        else:
+            action = 'shutdown'
+        output = self.engine.run_cmd(f'sudo config chassis modules {action} DPU{dpu_index}', validate=True, timeout=3)
+        if "state transition is already in progress" in output:
+            raise Exception(f"DPU{dpu_index} state transition is already in progress")
 
     def shutdown_dpu_data_interfaces(self, setup_name):
         if 'bobcat' in setup_name:
