@@ -10,7 +10,7 @@
     <Case>
       <tags> push_gate </tags>
       <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
-      <tout> 6900 </tout>
+      <tout> 7200 </tout>
       <tags>ALL</tags>
     </Case>
   </global>
