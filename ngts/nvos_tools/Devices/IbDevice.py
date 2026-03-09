@@ -35,7 +35,7 @@ from ngts.tools.test_utils.nvos_general_utils import get_version_info
 from ngts.nvos_tools.infra.FilesTool import FilesTool
 from ngts.nvos_tools.Devices.SwitchCapabilities import SwitchCapabilityHandler, NoPSUCapability
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class IbSwitch(BaseSwitch):
@@ -119,11 +119,11 @@ class IbSwitch(BaseSwitch):
     def get_default_password_by_version(self, version: str):
         version_num, _ = get_version_info(version)
         if self.prev_default_password and version_num:
-            logging.info(f'detected version: {version_num}')
+            logger.info(f'detected version: {version_num}')
             if version_num.startswith('25.01.') and int(version_num.split('.')[-1]) <= 3000:
-                logging.info('using prev default password')
+                logger.info('using prev default password')
                 return self.prev_default_password
-        logging.info('using regular default password')
+        logger.info('using regular default password')
         return self.default_password
 
     def get_voltage_sensors(self, dut_engine=None):
@@ -145,7 +145,7 @@ class IbSwitch(BaseSwitch):
         return '\n'.join(res)
 
     def verify_ib_ports_state(self, dut_engine, expected_port_state):
-        logging.info(f"number of ports: {self.ib_ports_num}")
+        logger.info(f"number of ports: {self.ib_ports_num}")
         output_dict = OutputParsingTool.parse_json_str_to_dictionary(
             Port.show_interface(dut_engine, '--applied')).returned_value
         err_msg = ""
@@ -162,12 +162,12 @@ class IbSwitch(BaseSwitch):
 
     def handle_exception(self, dut_engine):
         try:
-            logging.info("Handle ib exception")
+            logger.info("Handle ib exception")
             dut_engine.run_cmd("docker ps")
             dut_engine.run_cmd("systemctl --type=service")
             dut_engine.run_cmd("nv show system version")
         except BaseException as err:
-            logging.warning(err)
+            logger.warning(err)
 
     def get_default_config_yml(self, engine, root_dir):
         try:
@@ -175,9 +175,9 @@ class IbSwitch(BaseSwitch):
                 default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
                 path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
 
-                logging.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
-                logging.info(f"engine.ip:{engine.ip}")
-                logging.info(f"switch_class:{self.switch_class}")
+                logger.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
+                logger.info(f"engine.ip:{engine.ip}")
+                logger.info(f"switch_class:{self.switch_class}")
 
                 for file_name in os.listdir(path_to_config_ymls):
                     if self.switch_class in file_name:
@@ -189,7 +189,7 @@ class IbSwitch(BaseSwitch):
             yml_file_path = f"{NvosConst.PATH_TO_CONFIG_FILES_ON_DUT}/{default_config_name}"
 
             if FilesTool.file_exists(engine, yml_file_path):
-                logging.info(f"Config file {yml_file_path} already exists on the switch")
+                logger.info(f"Config file {yml_file_path} already exists on the switch")
             else:
                 with allure.step(f"Copy {default_config_name} to the switch"):
                     scp_file(player=engine,
@@ -202,7 +202,7 @@ class IbSwitch(BaseSwitch):
                 with allure.step(f"Copy {tmp_file_path} to {yml_file_path}"):
                     engine.run_cmd(f"sudo cp {tmp_file_path} {yml_file_path}")
 
-            logging.info(f"Using default yml file: {yml_file_path}")
+            logger.info(f"Using default yml file: {yml_file_path}")
             return yml_file_path
 
         except BaseException as ex:
@@ -1702,10 +1702,10 @@ class JulietSwitch(NvLinkSwitch):
         }
         for juliet_num, available_erots in available_erots_per_juliet_number.items():
             if setup_name.endswith(juliet_num):
-                logging.info(f'available ERoTs for {setup_name} - {available_erots}')
+                logger.info(f'available ERoTs for {setup_name} - {available_erots}')
                 return available_erots
         # Default: Standard Juliet systems have all SPDM components
-        logging.info(f'Using default (all) SPDM components for {setup_name}')
+        logger.info(f'Using default (all) SPDM components for {setup_name}')
         return SPDMComponents.juliet_components()
 
 
@@ -2373,7 +2373,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         Get available SPDM components for Rosalind devices.
         Rosalind: BMC, CPU, MCUs (SMA), and 4 NVSwitches.
         """
-        logging.info(f'Rosalind available SPDM components for {setup_name}')
+        logger.info(f'Rosalind available SPDM components for {setup_name}')
         return SPDMComponents.rosalind_components()
 
     def _init_dockers(self):
@@ -2387,7 +2387,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         super()._init_constants()
         self.asic_type = NvosConst.NVL5
         self.supported_nvl_speeds = ['200G', '400G']
-        self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage']
+        self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage', 'asic-power']
         # Override mst device names for Rosalind Surrogate (4 ASICs) to mt54008 devices
         self.mst_dev_name = tuple(f'/dev/mst/mt54008_pciconf{i}' for i in range(self.asic_amount))
         self.sma_amount = 2
@@ -2425,14 +2425,16 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             self.category_list[1]: self.category_default_disabled_dict,
             self.category_list[2]: self.category_disk_default_disable_dict,
             self.category_list[3]: self.category_default_disabled_dict,
-            self.category_list[3]: self.category_default_disabled_dict
+            self.category_list[4]: self.category_default_disabled_dict,
+            self.category_list[5]: self.category_default_disabled_dict,
         }
         self.category_list_default_dict = {
             self.category_list[0]: self.category_default_dict,
             self.category_list[1]: self.category_default_dict,
             self.category_list[2]: self.category_disk_default_dict,
             self.category_list[3]: self.category_default_dict,
-            self.category_list[4]: self.category_default_dict
+            self.category_list[4]: self.category_default_dict,
+            self.category_list[5]: self.category_default_dict,
         }
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/surrogate_versions.json"
@@ -2448,8 +2450,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.memory_speed = 2667  # in MT/s (Rosalind/Surrogate use 2667, not 2400)
         # Rosalind Surrogate has an extra whitelist rule enabling nvbridge communication
         self.expected_acl_rule_counts['acl-default-whitelist'] = 26
-        stats_dump_files = ["cpu.csv.gz", "disk.csv.gz", "mgmt-interface.csv.gz",
-                            "temperature.csv.gz", "voltage.csv.gz"]
+        stats_dump_files = [f'{category}.csv.gz' for category in self.category_list]
         self.constants = self.constants._replace(stats_dump_files=stats_dump_files)
         self.constants.erots.clear()
         self.constants.erots.extend([PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME])
@@ -2887,9 +2888,6 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         """
         from ngts.nvos_constants.constants_nvos import SystemConsts
         from ngts.tools.test_utils import allure_utils as allure
-        import logging
-
-        logger = logging.getLogger()
 
         with allure.step("Set cluster node primary server"):
             logger.info(f"Setting cluster node primary server to {SystemConsts.NV_BRIDGE_NODE_IP}")
@@ -2905,9 +2903,6 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         """
         from ngts.tools.test_utils import allure_utils as allure
         from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-        import logging
-
-        logger = logging.getLogger()
 
         # Only apply workaround if bug is active
         if is_bug_active(4731969):

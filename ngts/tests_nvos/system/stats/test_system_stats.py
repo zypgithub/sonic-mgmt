@@ -18,7 +18,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import DatabaseConst
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.system
@@ -1045,8 +1045,11 @@ def check_category_internal_files_exist(engine, category_list, retries=10, inter
         duration = time.perf_counter() - start_time
         assert False, "After {:.1f}s ({} retries), still missing files: {}".format(duration, retries, missing)
     extra = [file for file in output_list if file not in expected_files]
-    if "mgmt-interface.csv.old" in extra:
-        extra.remove("mgmt-interface.csv.old")
+
+    for allowed_extra_file in ("mgmt-interface.csv.old", "asic-power.csv.old"):
+        if allowed_extra_file in extra:
+            extra.remove(allowed_extra_file)
+
     assert not extra, f"Unexpected extra files found: {extra}"
 
 
