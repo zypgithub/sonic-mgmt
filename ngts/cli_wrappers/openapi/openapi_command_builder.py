@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 from retry import retry
 import requests_cache
 
-from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst, SystemConsts
+from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
@@ -199,6 +199,8 @@ class OpenApiRequest:
             OpenApiRequest.print_response(r, OpenApiReqType.GET)
             res = OpenApiRequest._validate_response(r, OpenApiReqType.GET)
             if not res.result:
+                if r.status_code == 401:
+                    return res
                 assert all(err not in res.info for err in ERRORS_TO_RETRY_APPLY_CHECK), res.info
                 if any(err in res.info for err in SSL_ERRORS):
                     OpenApiRequest.update_client_certs_info(client_certs_after_apply)
@@ -264,6 +266,8 @@ class OpenApiRequest:
         res = OpenApiRequest._check_html_response(r)
         if not res.result:
             return res
+        if r.status_code == 401:
+            return ResultObj(False, f"HTTP {r.status_code} Error: {r.text}", None)
         if req_type == OpenApiReqType.DELETE:
             if r.status_code != 204:
                 return ResultObj(False, f"Error. Response code is: {r.status_code}, instead of 204")

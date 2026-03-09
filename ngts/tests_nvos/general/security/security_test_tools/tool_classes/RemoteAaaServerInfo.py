@@ -1,5 +1,6 @@
 import copy
 import logging
+import re
 import socket
 import subprocess
 from typing import Dict, List
@@ -43,7 +44,8 @@ def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None)
 
         if dut_engine:
             result = dut_engine.run_cmd(cmd_str)
-            is_reachable = "0% packet loss" in result or "0 received" not in result
+            match = re.search(r"(\d+)\s+packets transmitted,\s+(\d+)\s+(?:packets\s+)?received", result)
+            is_reachable = bool(match and int(match.group(2)) > 0)
         else:
             cmd = [ping_cmd, "-c", str(count), "-W", str(timeout), address]
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout * count + 5)
@@ -173,15 +175,13 @@ class RemoteAaaServerInfo:
 
     def get_ping_address(self) -> str:
         """
-        Get the best address to use for pinging/checking availability.
-        Prefers ipv4_addr if available, otherwise uses hostname.
+        Get the address to use for pinging/checking availability.
+        Uses the address provided by the test.
 
         Returns:
             Address string suitable for ping
         """
-        if self.ipv4_addr:
-            return self.ipv4_addr
-        return self.hostname
+        return self.hostname or self.ipv4_addr
 
     def verify_availability(self, check_service: bool = True, dut_engine=None) -> ResultObj:
         """

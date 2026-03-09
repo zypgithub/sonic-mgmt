@@ -73,13 +73,18 @@ def cleanup_after_aaa(topology_obj, engines, request, devices):
         item = request.node
         item.security_pexpect_ssh_session = ssh_session
 
-    yield
+    try:
+        yield
+    finally:
+        try:
+            skip_rr = security_cleanup(ssh_session)
 
-    skip_rr = security_cleanup(ssh_session)
-
-    if engines and topology_obj and not skip_rr:
-        with allure.step('try recover with remote reboot'):
-            recover_dut_with_remote_reboot(topology_obj, engines)  # TODO: there was another clear config (try without for now)
+            if engines and topology_obj and not skip_rr:
+                with allure.step('try recover with remote reboot'):
+                    recover_dut_with_remote_reboot(topology_obj, engines)  # TODO: there was another clear config (try without for now)
+        finally:
+            ssh_session.close()
+            request.node.security_pexpect_ssh_session = None
 
 
 def create_ssh_login_engine(dut_ip, username, port=22, custom_ssh_options=None):
