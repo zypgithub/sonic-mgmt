@@ -734,6 +734,9 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
         # Check that actual version matches compilation version (for components in README)
         # This ensures deployed components match what was compiled into the image
         with allure.step(f"Validate {component} actual matches compilation"):
+            if component == 'FW' and is_simx:
+                logger.info(f"Skip FW version check for simx platform")
+                continue
             if component in readme_versions and actual_version.replace('-', '.') != compilation_version.replace('-', '.'):
                 err_msg = (f"{component}: Actual version doesn't match compilation version. "
                            f"COMPILATION: {compilation_version}, "
