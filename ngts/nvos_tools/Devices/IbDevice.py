@@ -97,7 +97,16 @@ class IbSwitch(BaseSwitch):
         if not ga_numbers:
             raise FileNotFoundError(f"No GA config files found in {resources_dir}")
 
-        closest_ga = min(ga_numbers, key=lambda ga: abs(ga - global_build))
+        # Round up global_build to the next GA boundary (multiple of 1000),
+        # then pick the lowest available GA config at or above that boundary.
+        # Falls back to the highest available GA if none are higher.
+        # Examples (available GAs: [7000, 8000]):
+        #   version=25.03.0106-035 -> global_build=8106 -> target_ga=9000 -> no match -> closest_ga=8000 (fallback)
+        #   version=25.02.7001     -> global_build=7001 -> target_ga=8000 -> closest_ga=8000
+        #   version=25.02.7000     -> global_build=7000 -> target_ga=8000 -> closest_ga=8000
+        target_ga = (global_build // 1000 + 1) * 1000
+        higher_or_equal = [ga for ga in ga_numbers if ga >= target_ga]
+        closest_ga = min(higher_or_equal) if higher_or_equal else max(ga_numbers)
         config_filename = f'nvos_config_ga_{closest_ga}.yml'
         config_file_path = os.path.join(resources_dir, config_filename)
         logging.info(f'No exact GA config for global_build={global_build}, using closest: {config_filename}')
