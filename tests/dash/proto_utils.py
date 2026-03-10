@@ -85,14 +85,14 @@ def parse_value_or_range(orig):
     if isinstance(orig, list):
         if len(orig) == 1:
             val = int(orig[0])
-            return {"value": val}
+            return [{"value": val}]
         elif len(orig) == 2:
             min = int(orig[0])
             max = int(orig[1])
-            return {"range": {"min": min, "max": max}}
+            return [{"range": {"min": min, "max": max}}]
     else:
         val = int(orig)
-        return {"value": val}
+        return [{"value": val}]
 
 
 def parse_dash_proto(key: str, proto_dict: dict):
