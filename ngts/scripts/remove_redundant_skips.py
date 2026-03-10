@@ -123,6 +123,8 @@ def remove_closed_issues_from_test_data(test_data, closed_issues):
                 if conditions_logical_operator == "or" and len(conditions) > 1:
                     updated_test_data[script][statement_action]["conditions"].remove(elem)
                     updated_test_data[script][statement_action]["reason"] = "Needs to be updated"
+                    if updated_test_data[script][statement_action]["conditions"] == []:
+                        del updated_test_data[script]
                 else:
                     try:
                         del updated_test_data[script]
