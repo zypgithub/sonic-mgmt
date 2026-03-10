@@ -2919,11 +2919,19 @@
   group-name: vm-t1
   topo: t0-isolated-v6-d32u32s2
   ptf_image_name: docker-ptf-mlnx
-  ptf: ptf-r-bison-01
-  ptf_ip: 10.215.45.3/20
-  ptf_ipv6:
-  server: server_88
-  vm_base: VM5301
+  servers:
+    server_88:
+      ptf: ptf-r-bison-01-1
+      ptf_ip: 10.215.45.3/20
+      ptf_ipv6:
+      vm_base: VM5301
+      dut_interfaces: 0-257
+    server_89:
+      ptf: ptf-r-bison-01-2
+      ptf_ip: 10.215.47.22/20
+      ptf_ipv6:
+      vm_base: VM5813
+      dut_interfaces: 258-513
   dut:
     - r-bison-01
   inv_name: lab
