@@ -119,7 +119,7 @@ class TestEcmpCalcBase:
             with allure.step(f'calculate egress port'):
                 egress_ports = calculate_ecmp_egress_port(self.engines.dut, self.interfaces.dut_ha_1,
                                                           packet_json_file_name, vrf)
-                if egress_ports[0] in [self.interfaces.dut_hb_1, self.interfaces.dut_hb_1]:
+                if egress_ports[0] in [self.interfaces.dut_hb_1, self.interfaces.dut_hb_2]:
                     return test_data, egress_ports
         raise Exception("Not find egress port which is one member in lag or vlan")
 
