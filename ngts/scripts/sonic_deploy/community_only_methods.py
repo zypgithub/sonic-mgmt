@@ -46,7 +46,7 @@ def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False):
     if dark_mode:
         # when dut is smartswitch and dark mode,
         # we need to deploy the minigraph with the light mode flag set to false
-        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault -e is_light_mode=false -vvvvv"
+        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault -e is_lit_mode=false -vvvvv"
     else:
         # When dut is smartswitch and light mode, in testbed-cli.sh by default
         # the light mode is set to true, so we don't need to set it
