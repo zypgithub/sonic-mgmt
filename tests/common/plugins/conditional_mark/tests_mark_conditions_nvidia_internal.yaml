@@ -977,6 +977,13 @@ high_frequency_telemetry/test_high_frequency_telemetry.py:
     conditions:
     - "https://redmine.mellanox.com/issues/4774921"
 
+high_frequency_telemetry/test_high_frequency_telemetry.py:
+  skip:
+    reason: "Test is skipped due to RM issue 4924461 for sn6600_ld_simx platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4924461"
+    - "'sn6600_ld_simx' in platform"
+
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
   skip:
     reason: "Test is skipped - watchdog not supported on simx platforms"
