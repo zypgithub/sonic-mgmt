@@ -40,7 +40,7 @@ def basic_setup_configuration(players, conf_args):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def conf_args():
+def conf_args(skip_test_conditionally):
     """
     This function alters all of the jinja template files.
     """

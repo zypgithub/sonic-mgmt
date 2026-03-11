@@ -11,8 +11,9 @@ logger = logging.getLogger()
 TESTS_SCENARIO = "lossy_lossless"
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def skip_test_conditionally(players):
+    """Run first: session-scoped fixtures in sub-folders should depend on this to avoid expensive setup on NVUE."""
     skip_test_on_unsupported_os(players['dut']['cli'], CliType.NVUE)
     yield
 

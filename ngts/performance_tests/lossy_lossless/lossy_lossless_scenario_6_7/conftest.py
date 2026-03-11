@@ -128,7 +128,7 @@ def get_conf_args(scenario_name, players, all_ports_after_split):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def all_ports_after_split(players, split_right=2, split_left=2):
+def all_ports_after_split(skip_test_conditionally, players, split_right=2, split_left=2):
     return get_all_players_ports(players, split_right, split_left)
 
 
