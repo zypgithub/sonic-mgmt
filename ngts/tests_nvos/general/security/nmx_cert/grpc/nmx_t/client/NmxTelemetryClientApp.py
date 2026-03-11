@@ -1,4 +1,5 @@
 import time
+import logging
 
 import grpc
 
@@ -9,14 +10,15 @@ from ngts.tests_nvos.general.security.helpers import remove_etc_host_mapping_to_
 from ngts.tests_nvos.general.security.nmx_cert.constants import EncryptionMode, DEFAULT_NMX_T_MGMT_PORT
 from ngts.tests_nvos.general.security.nmx_cert.grpc.config import NMX_T_CONFIG, GrpcConfig, GrpcServerConfig, \
     GrpcClientConfig
-from ngts.tests_nvos.general.security.nmx_cert.grpc.utils.logs import standalone_logger
+
+logger = logging.getLogger(__name__)
 
 
 class NmxTelemetryClientApp:
-    def __init__(self, config: GrpcConfig, logger=standalone_logger):
+    def __init__(self, config: GrpcConfig):
         self.name = 'NMX-T CLIENT'
         self.config = config
-        self.logger = logger or standalone_logger
+        self.logger = logger.getChild(self.__class__.__name__)
 
     def run(self) -> str:
         responses = []
@@ -84,16 +86,16 @@ class NmxTelemetryClientApp:
         self.logger.info(f'[{self.name}] {msg}')
 
 
-def run_grpc_client_app(config: GrpcConfig, logger=None) -> str:
-    return NmxTelemetryClientApp(config, logger).run()
+def run_grpc_client_app(config: GrpcConfig) -> str:
+    return NmxTelemetryClientApp(config).run()
 
 
-def run_nmx_t_grpc_client(config, remote_host_addr='127.0.0.1', logger=None, skip_etc_mapping=False):
+def run_nmx_t_grpc_client(config, remote_host_addr='127.0.0.1', skip_etc_mapping=False):
     if not skip_etc_mapping:
         remove_etc_host_mapping_to_dn(config.server.address)
         add_etc_host_mapping_to_dn(config.server.address, remote_host_addr)
 
-    return run_grpc_client_app(config, logger)
+    return run_grpc_client_app(config)
 
 
 def local_main():
