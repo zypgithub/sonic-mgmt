@@ -718,11 +718,9 @@ configlet/test_add_rack.py:
     conditions:
       - "is_multi_asic==True"
   xfail:
-    reason: "Reason1: Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20672 issue. Reason2: xfail for IPv6-only topologies, need to add support for IPv6-only - https://github.com/sonic-net/sonic-mgmt/issues/20728"
-    conditions_logical_operator: or
+    reason: "Testcase fails for smartswitch platform in the light mode due to https://github.com/sonic-net/sonic-mgmt/issues/20672 issue"
     conditions:
       - "https://github.com/sonic-net/sonic-mgmt/issues/20672 and is_smartswitch==True and topo_name.startswith('t1-')"
-      - "https://github.com/sonic-net/sonic-mgmt/issues/20728 and '-v6-' in topo_name"
 
 container_hardening/test_container_hardening.py::test_container_privileged:
   skip:
