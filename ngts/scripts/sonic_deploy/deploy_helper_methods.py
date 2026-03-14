@@ -2,17 +2,13 @@ import concurrent.futures
 import copy
 import logging
 import os
-import subprocess
-import netmiko
 import json
 import re
 import shutil
 import time
-from retry.api import retry_call
 import yaml
 
 import allure
-import pytest
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 try:
     from netmiko.ssh_exception import NetmikoAuthenticationException
@@ -34,7 +30,7 @@ from ngts.cli_wrappers.dvs.dvs_general_clis import DvsGeneralCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.helpers.run_process_on_host import wait_until_background_procs_done
-from ngts.common.util import save_specified_installed_dpus, get_installed_dpu_info
+from ngts.common.util import download_file_to_dut, save_specified_installed_dpus, get_installed_dpu_info
 from ngts.tools.infra import get_dumps_folder
 
 logger = logging.getLogger()
@@ -805,14 +801,12 @@ class DeployDpuHelper:
         rshim_value, dpu_index_list, installed_dpus = get_installed_dpu_info(topology_obj, dut_alias, dut_name)
         dut_engine = topology_obj.players[dut_alias]['engine']
 
-        with allure.step('Copying image to switch dut'):
+        with allure.step('Downloading image to switch dut'):
             dut_engine.run_cmd("sudo config bgp shutdown all")
             try:
                 dpu_image_url = MarsConstants.HTTP_SERVER_NBU_NFS + base_version_dpu
                 dest_file = "/tmp/" + base_version_dpu.split('/')[-1]
-                retry_call(lambda: dut_engine.run_cmd(
-                    f"sudo curl -C - --retry 5 {dpu_image_url} --output {dest_file}", validate=True, retry_run=True),
-                    tries=5, delay=2)
+                download_file_to_dut(dut_engine, dpu_image_url, dest_file)
             finally:
                 dut_engine.run_cmd("sudo config bgp startup all")
 
