@@ -71,8 +71,7 @@ def verify_values_and_duration(concrete_external_path: str, event_id: str, field
 
         gnmi_converted = _convert_value_by_type(gnmi_value, ext_type)
         db_converted = _convert_value_by_type(db_value, int_type)
-        equal = gnmi_converted == db_converted
-        equal = duration_sec < 9
+        equal = (gnmi_converted == db_converted) and (duration_sec < 9)
         returned_result: Dict[str, dict] = {}
         entry = {
             "gnmi_value": gnmi_converted,
