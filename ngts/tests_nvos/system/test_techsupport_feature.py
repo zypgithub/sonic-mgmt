@@ -246,7 +246,7 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_rout
                     if expected_files_dict[folder]:  # skip empty folders if files are not expected for a specific system
                         files_list = system.techsupport.get_techsupport_empty_files(engines.dut, tech_folder=folder)
                         with allure.independent_step(f'validate files sizes for {folder}'):
-                            verify_techsupport_files_sizes(files_list, folder, skynet)
+                            verify_techsupport_files_sizes(files_list, folder, devices, skynet)
     finally:
         if devices.dut.has_nmx and not skynet:
             Cluster().unset(apply=True)
@@ -324,17 +324,17 @@ def verify_techsupport_files_names(files_list, expected_files):
     ValidationTool.validate_subset_in_superset(expected_files_set, actual_files_set).verify_result()
 
 
-def verify_techsupport_files_sizes(files_list, folder, skynet=False):
+def verify_techsupport_files_sizes(files_list, folder, devices, skynet=False):
     if folder == 'dump':
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in devices.dut.techsupport_dump_empty_files_to_ignore]
     elif folder == 'etc':
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in devices.dut.techsupport_etc_empty_files_to_ignore]
     elif folder == 'cluster':
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in devices.dut.techsupport_cluster_empty_files_to_ignore]
     elif folder == 'hw-mgmt':
-        files_list = [file for file in files_list if file not in SystemConsts.TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE]
+        files_list = [file for file in files_list if file not in devices.dut.techsupport_hw_mgmt_empty_files_to_ignore]
         if skynet:
-            files_list += [file for file in files_list if file not in SystemConsts.TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE]
+            files_list += [file for file in files_list if file not in devices.dut.techsupport_skynet_hw_mgmt_empty_files_to_ignore]
 
     assert len(files_list) == 0, f"the following files are empty {files_list}"
 

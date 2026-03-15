@@ -560,20 +560,6 @@ class SystemConsts:
     LIST_OF_COMMANDS_FILE_PATH = '/var/tmp/list_of_executed_commands.txt'
     TECHSUPPORT_SIZE_LIMIT = 135  # DEPRECATED: Use devices.dut.constants.techsupport_size_limit_mb instead
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
-    TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
-                                              'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
-                                              'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
-                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
-                                              'verification_test.gz']
-    TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
-                                             'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
-                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
-                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
-                                             'empty.sh', 'nv-bridge_reconcile']
-    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
-                                                 'nvlink_domain_telemetry.csv']
-    TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
-    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'

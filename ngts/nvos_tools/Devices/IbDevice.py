@@ -406,6 +406,20 @@ class IbSwitch(BaseSwitch):
         self.techsupport_file_not_found_message = SystemConsts.TECHSUPPORT_FILE_NOT_FOUND_MESSAGE
         # Note: techsupport_threshold is set after _init_expected_operation_durations() is called
 
+        self.techsupport_dump_empty_files_to_ignore = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
+                                                       'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
+                                                       'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
+                                                       'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
+                                                       'verification_test.gz', 'cpu-debug-config', 'bmc-debug-config', 'asic-debug-config']
+        self.techsupport_etc_empty_files_to_ignore = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
+                                                      'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
+                                                      'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
+                                                      'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
+                                                      'empty.sh', 'nv-bridge_reconcile']
+        self.techsupport_cluster_empty_files_to_ignore = ['redis.log', 'config_storage.json', 'user_config_changed',
+                                                          'nvlink_domain_telemetry.csv']
+        self.techsupport_hw_mgmt_empty_files_to_ignore = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
+        self.techsupport_skynet_hw_mgmt_empty_files_to_ignore = ['udev_events.log']
         # System message constants for IB devices - set after pre/post login messages are initialized
         self.default_user_name = SystemConsts.DEFAULT_USER_ADMIN
 
@@ -2555,6 +2569,12 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.nvl_internal_fnm_ports = ["fnma0p1", "fnma0p2", "fnma1p1", "fnma1p2", "fnma2p1", "fnma2p2", "fnma3p1", "fnma3p2"]
         self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports + self.nvl_internal_fnm_ports
         self.nvl_port = ['acp1']
+
+        self.techsupport_dump_empty_files_to_ignore = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
+                                                       'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
+                                                       'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
+                                                       'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
+                                                       'verification_test.gz']
 
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '375G'

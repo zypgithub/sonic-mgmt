@@ -95,6 +95,11 @@ class BaseDevice(ABC):
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
         self.allow_cpld_update = False
         self.reboot_reason_dict = {}
+        self.techsupport_dump_empty_files_to_ignore = []
+        self.techsupport_etc_empty_files_to_ignore = []
+        self.techsupport_cluster_empty_files_to_ignore = []
+        self.techsupport_hw_mgmt_empty_files_to_ignore = []
+        self.techsupport_skynet_hw_mgmt_empty_files_to_ignore = []
 
     def _init_fan_list(self):
         self.fan_list = []

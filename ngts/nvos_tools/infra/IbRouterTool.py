@@ -74,8 +74,8 @@ class IbRouterTool:
                     swid_name = IbRouterTool.get_swid_name(idx)
                     for port_name in port_list:
                         port_obj = Port(port_name)
-                        port_obj.interface.link.ib_subnet.set(op_param_name=swid_name, apply=False).verify_result()
-                    NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation=True)
+                        port_obj.interface.link.set(op_param_name=IbInterfaceConsts.LINK_IB_SUBNET, op_param_value=swid_name, apply=False).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config(TestToolkit.engines.dut, True)
             time.sleep(PORT_CONFIG_APPLY_TIME)
             NvueGeneralCli.save_config(engines.dut)
 
