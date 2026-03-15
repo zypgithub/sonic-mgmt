@@ -977,7 +977,7 @@ platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[CPLD:
 
 platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
-    reason: "Test flow is covered by push gate with upgrade flow"
+    reason: "There is no plan to cover this test flow as not in use"
 
 platform_tests/test_reboot.py:
   skip:

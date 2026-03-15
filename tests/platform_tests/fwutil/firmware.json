@@ -57,6 +57,12 @@
 						"firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_release/sw_system/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release_9600/0ACLH004.rom",
 						"version": "0ACLH004_02.02.010_9600",
 						"reboot": ["cold"]
+					},
+					{
+						"force_reboot": true,
+						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x09/Release_9600/0ACLH004.rom",
+						"version": "0ACLH004_02.02.009_9600",
+						"reboot": ["cold"]
 					}
 				],
 				"ONIE": [
@@ -124,7 +130,6 @@
 						"reboot": ["power off","cold"]
 					}
 				]
-
 			}
 		},
 		"SN4280": {
@@ -319,14 +324,25 @@
 						"force_reboot": true,
 						"version": "2025.05-5.3.0017-115200-dev",
 						"reboot": ["cold"]
-					}
+					},
+					{
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "force_reboot": true,
+                        "version": "2024.08-5.3.0015-115200-dev",
+                        "reboot": ["cold"]
+                    }
 				],
 				"CPLD2": [
 					{
 						"firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000289/FUI000289.mpfa",
 						"version": "CPLD000330_REV0804",
 						"reboot": ["power off", "cold"]
-					}
+					},
+					{
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN5600/FUI000239/FUI000239.mpfa",
+                        "version": "CPLD000330_REV0700",
+                        "reboot": ["power off", "cold"]
+                    }
 				]
 			}
 		},
@@ -352,7 +368,13 @@
 						"force_reboot": true,
 						"version": "2025.05-5.3.0017-115200-dev",
 						"reboot": ["cold"]
-					}
+					},
+					{
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/dev/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "force_reboot": true,
+                        "version": "2024.08-5.3.0015-115200-dev",
+                        "reboot": ["cold"]
+                    }
 				],
 				"CPLD2": [
 					{
