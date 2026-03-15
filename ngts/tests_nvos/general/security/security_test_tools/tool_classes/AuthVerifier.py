@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import random
@@ -7,27 +9,61 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
 
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.security_test_tools.constants import AuthConsts, AuthMedium
+from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.System import System
+from ..constants import AuthConsts, AuthMedium
+
+logger = logging.getLogger(__name__)
 
 
 class AuthVerifier:
     def __init__(self, username, password, engines, topology_obj):
         self.api = ApiType.NVUE
-        logging.info(f"Create proxy ssh engine for user: {username}")
+        self._log = logger.getChild(self.__class__.__name__)
+        self._log.info(f"Create proxy ssh engine for user: {username}")
         self.engine = LinuxSshEngine(engines.dut.ip, username, password)
+
+    def __enter__(self) -> "AuthVerifier":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.cleanup()
+
+    def __del__(self):
+        try:
+            self.cleanup()
+        except Exception:
+            pass
+
+    def cleanup(self) -> None:
+        """Release any long-lived transport opened by the verifier."""
+        if (engine := getattr(self, "engine", None)) is None:
+            return
+
+        try:
+            if callable(disconnect := getattr(engine, "disconnect", None)):
+                disconnect()
+            elif callable(close := getattr(engine, "close", None)):
+                close()
+        except Exception as err:
+            self._log.info(
+                "Failed to clean up auth verifier engine for user %s: %s",
+                getattr(engine, "username", "unknown"),
+                err,
+            )
+        finally:
+            self.engine = None
 
     def change_test_api(self, api=None):
         api = self.api if api is None else api
-        logging.info(f"Change test api to: {api}")
+        self._log.info(f"Change test api to: {api}")
         TestToolkit.tested_api = api
 
     def verify_authentication(self, expect_success=True):
@@ -37,7 +73,7 @@ class AuthVerifier:
         try:
             self._authenticate(expect_success)
         except Exception as e:
-            logging.info(f"Authentication failed\nException:\n{e}")
+            self._log.info(f"Authentication failed\nException:\n{e}")
             authentication_success = False
         finally:
             self.change_test_api(orig_test_api)
@@ -89,7 +125,8 @@ class SshAuthVerifier(AuthVerifier):
 
 class OpenApiAuthVerifier(AuthVerifier):
     def __init__(self, username, password, engines, topology_obj):
-        super().__init__(username, password, engines, topology_obj)
+        # Don't call super().__init__ to avoid creating SSH connection that generates accounting logs
+        self._log = logger.getChild(self.__class__.__name__)
         self.api = ApiType.OPENAPI
 
     def _authenticate(self, expect_success):
@@ -100,16 +137,29 @@ class OpenApiAuthVerifier(AuthVerifier):
 class RconAuthVerifier(AuthVerifier):
     def __init__(self, username, password, engines, topology_obj):
         super().__init__(username, password, engines, topology_obj)
-        logging.info(f"Create pexpect serial engine for user: {username}")
+        self._log.info(f"Create pexpect serial engine for user: {username}")
         self.engine: PexpectSerialEngine = ConnectionTool.create_serial_engine(
             topology_obj=topology_obj, ip=engines.dut.ip, username=username, password=password
         )
 
     def __del__(self):
+        self.cleanup()
+
+    def cleanup(self) -> None:
         if self.engine:
-            with allure.step("Logout rcon login before delete auth verifier"):
-                logging.info("send ctrl+D to logout")
-                self.engine.run_cmd("\x04", DefaultConnectionValues.LOGIN_REGEX)
+            serial_engine = getattr(self.engine, "serial_engine", None)
+            if serial_engine is not None:
+                try:
+                    self._log.info("send ctrl+D to logout rcon session")
+                    serial_engine.sendline("\x04")
+                except Exception as err:
+                    self._log.info("Failed to logout rcon auth verifier cleanly: %s", err)
+            try:
+                self.engine._close_serial_engine()
+            except Exception as err:
+                self._log.info("Failed to close rcon auth verifier engine: %s", err)
+            finally:
+                self.engine = None
 
     def _authenticate(self, expect_success):
         with allure.step("For RCON - start rcon connection and force new login"):
@@ -132,20 +182,20 @@ class ScpAuthVerifier(AuthVerifier):
         scp_success = True
         try:
             scp_file(player=self.engine, src_path=src_path, dst_path=dst_path, download_from_remote=download_from_remote, print_output=True)
-            logging.info("SCP success")
+            self._log.info("SCP success")
 
             if download_from_remote:
-                logging.info("Remove downloaded file")
+                self._log.info("Remove downloaded file")
                 os.remove(dst_path)
-                logging.info("Downloaded file successfully removed")
+                self._log.info("Downloaded file successfully removed")
             else:
-                logging.info("Remove uploaded file")
+                self._log.info("Remove uploaded file")
                 self.engine.run_cmd(f"rm -f {dst_path}")
-                logging.info("Uploaded file successfully removed")
+                self._log.info("Uploaded file successfully removed")
         except Exception as e:
-            logging.info("SCP failed")
+            self._log.info("SCP failed")
             if expect_success:
-                logging.info(f"Exception:\n{e}")
+                self._log.info(f"Exception:\n{e}")
             scp_success = False
             if check_result_in_caller_func:
                 raise e
@@ -197,11 +247,15 @@ class PKAAuthVerifier(AuthVerifier):
         self.private_key_path = private_key_path
         self.hostname = hostname
 
+    def _spawn_pka_engine(self) -> None:
+        ssh_pka_connection_cmd = SshCmdBuilder(self.username, self.hostname).set_ssn().use_auth_key(self.private_key_path).build()
+        self.cleanup()
+        self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+
     def _authenticate(self, expect_success):
         with allure.step(f"SSH PKA authentication - {expect_success}"):
-            logging.info(f"Create PKA engine for user: {self.username}")
-            ssh_pka_connection_cmd = SshCmdBuilder(self.username, self.hostname).set_ssn().use_auth_key(self.private_key_path).build()
-            self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+            self._log.info(f"Create PKA engine for user: {self.username}")
+            self._spawn_pka_engine()
             timeout = 5 if not expect_success else None
             self.engine.expect(f"{self.username}@.*~", error_message="Expected login success, but failed", timeout=timeout)
             self.engine.expect(".*", timeout=timeout)
@@ -211,8 +265,7 @@ class PKAAuthVerifier(AuthVerifier):
         timeout = 10 if not user_is_admin else None
         try:
             with allure.step("Run show command. Expect success: True"):
-                ssh_pka_connection_cmd = SshCmdBuilder(self.username, self.hostname).set_ssn().use_auth_key(self.private_key_path).build()
-                self.engine = PexpectTool(spawn_cmd=ssh_pka_connection_cmd)
+                self._spawn_pka_engine()
                 self.engine.expect(DefaultConnectionValues.DEFAULT_PROMPTS, error_message="Expected login success, but failed")
                 self.engine.sendline("nv show system")
                 self.engine.expect(f"{self.username}@.*~")
@@ -226,10 +279,14 @@ class PKAAuthVerifier(AuthVerifier):
                 self.engine.expect(expected_msg, timeout=timeout)
         finally:
             with allure.step("cleanup"):
-                self.engine.sendline("nv config detach")
+                if self.engine is not None:
+                    try:
+                        self.engine.sendline("nv config detach")
+                    except Exception as err:
+                        self._log.info("Failed to detach config before closing PKA session: %s", err)
 
 
-AUTH_VERIFIERS = {
+AUTH_VERIFIERS: dict[AuthMedium, type[AuthVerifier]] = {
     AuthMedium.SSH: SshAuthVerifier,
     AuthMedium.OPENAPI: OpenApiAuthVerifier,
     AuthMedium.RCON: RconAuthVerifier,

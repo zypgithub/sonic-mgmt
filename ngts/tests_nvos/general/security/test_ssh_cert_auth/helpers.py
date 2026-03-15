@@ -1,17 +1,18 @@
 import logging
-import os
 import random
+import os
 
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ..security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
+from ..security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.security_test_tools.constants import UserRole
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import PKAAuthVerifier
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.SecuritySshTool import SecuritySshTool
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
-from ngts.tests_nvos.general.security.test_ssh_cert_auth.constants import CERT_VALIDITY_PERIODS, SSH_CERT_AUTH_KEYS_PATH, TEST_PRINCIPALS
+from ..security_test_tools.tool_classes.UserInfo import UserInfo
+from ..ssh_hardening.constants import SshHardeningConsts
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ..security_test_tools.constants import UserRole
+from ngts.nvos_tools.system.System import System
+
+from .constants import CERT_VALIDITY_PERIODS, SSH_CERT_AUTH_KEYS_PATH, TEST_PRINCIPALS
 
 logger = logging.getLogger(__name__)
 
@@ -178,10 +179,10 @@ def cleanup_user_cert_auth(system: System, username: str):
 
 def verify_user_login(user: UserInfo, key_private_path: str, hostname: str, engines, expect_success: bool = True):
     with allure.step(f"log in with certificate for user {user.username} with role {user.role}, expect success: {expect_success}"):
-        session_obj = PKAAuthVerifier(username=user.username, private_key_path=key_private_path, hostname=hostname, engines=engines)
-        session_obj.verify_authentication(expect_success=expect_success)
-        if expect_success:
-            session_obj.verify_authorization(user_is_admin=user.role == UserRole.ADMIN)
+        with PKAAuthVerifier(username=user.username, private_key_path=key_private_path, hostname=hostname, engines=engines) as session_obj:
+            session_obj.verify_authentication(expect_success=expect_success)
+            if expect_success:
+                session_obj.verify_authorization(user_is_admin=user.role == UserRole.ADMIN)
 
 
 def set_cert_auth(system: System, user: UserInfo, principal: str, state: str, apply: bool = False):

@@ -20,6 +20,7 @@ from ngts.tests_nvos.general.security.security_test_tools.security_test_utils im
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import generate_strong_password, recover_dut_with_remote_reboot
+from ngts.ngts_types import EnginesT
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,23 @@ def security_cleanup(ssh_session: PexpectTool) -> bool:
                 success = i < len(DefaultConnectionValues.DEFAULT_PROMPTS) and any(
                     msg in ssh_session.last_output for msg in ['applied', 'config apply executed with no config diff'])
     return success
+
+
+@pytest.fixture(autouse=True)
+def check_ssh_connections(engines: EnginesT):
+    # check number of SSH connections before test
+    who_output = engines.dut.run_cmd("who")
+    result = engines.dut.run_cmd("who | wc -l")
+    logger.debug(f"Number of SSH connections before test: {result.strip()}")
+    logger.debug("who output before test:\n%s", who_output)
+
+    yield
+
+    # check number of SSH connections after test
+    who_output = engines.dut.run_cmd("who")
+    result = engines.dut.run_cmd("who | wc -l")
+    logger.debug(f"Number of SSH connections after test: {result.strip()}")
+    logger.debug("who output after test:\n%s", who_output)
 
 
 @pytest.fixture()

@@ -1,22 +1,23 @@
-import pytest
 import logging
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.nmx.Cluster import Cluster
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
-from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
-from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels, ActionConsts
-from retry import retry
-from ngts.tests_nvos.constants import MINUTE
-from ngts.nvos_tools.infra.Tools import Tools
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+import pytest
+import retry
+
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import SshAuthVerifier
+from ngts.nvos_constants.constants_nvos import OutputFormat, ClusterAppsLogLevels, ActionConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.nvos_tools.infra.Tools import Tools
+from .. import constants
 
 logger = logging.getLogger(__name__)
 
@@ -512,7 +513,7 @@ def test_ztp_nmx_positive(engines, devices, setup_name):
 
 @pytest.mark.ztp
 @pytest.mark.system
-@pytest.mark.timeout(6 * MINUTE, func_only=True)
+@pytest.mark.timeout(6 * constants.MINUTE, func_only=True)
 def test_ztp_provisioning_script_negative(engines, devices):
     """
     Test flow:
@@ -613,41 +614,8 @@ def test_ztp_hashed_password(engines, devices, topology_obj):
                                        '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Verify that SSH authentication is successful with hashed password"):
-            ssh_connection = SshAuthVerifier(username='sasha', password='sasha',
-                                             engines=engines, topology_obj=topology_obj)
-            ssh_connection.verify_authentication(True)
-
-    except Exception as e:
-        logger.info(f"Received Exception during test_ztp_hashed_password: {e}")
-        raise e
-    finally:
-        _ztp_cleanup(engines, system)
-
-
-@pytest.mark.ztp
-@pytest.mark.system
-def test_ztp_hashed_password(engines, devices, topology_obj):
-    """
-    Test flow:
-        1. Check default values for ztp
-        2. Apply json file with hashed password script
-        3. Verify that SSH authentication is successful with hashed password
-    """
-    system = System(None)
-
-    try:
-        _run_system_ztp_with_empty_config(engines, system)
-
-        _wait_until_ztp_values_fields_changed(system, SystemConsts.ZTP_OUTPUT_FIELDS, SystemConsts.ZTP_DEFAULT_VALUES)
-
-        with allure.step("Running hashed password ztp provisioning script"):
-            _download_file_and_run_ztp(engines, system, SystemConsts.SCRIPT_HASHED_PASSWORD,
-                                       '01-startup-file', SystemConsts.ZTP_STATUS_SUCCESS)
-
-        with allure.step("Verify that SSH authentication is successful with hashed password"):
-            ssh_connection = SshAuthVerifier(username='sasha', password='sasha',
-                                             engines=engines, topology_obj=topology_obj)
-            ssh_connection.verify_authentication(True)
+            with SshAuthVerifier(username='sasha', password='sasha', engines=engines, topology_obj=topology_obj) as ssh_connection:
+                ssh_connection.verify_authentication(True)
 
     except Exception as e:
         logger.info(f"Received Exception during test_ztp_hashed_password: {e}")
@@ -726,7 +694,7 @@ def _validate_ztp_log_file(engines, string_to_validate=''):
     assert string_to_validate in output, 'String not in ztp log'
 
 
-@retry(Exception, tries=30, delay=2)
+@retry.retry(Exception, tries=30, delay=2)
 def _wait_until_ztp_status(system, ztp_status=''):
     with allure.step("Waiting for ztp status changed to status {}".format(ztp_status)):
         ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()
@@ -734,7 +702,7 @@ def _wait_until_ztp_status(system, ztp_status=''):
 
 
 def _wait_until_ztp_step_status(system, ztp_step='', ztp_status='', tries=30, delay=2):
-    @retry(Exception, tries=tries, delay=delay)
+    @retry.retry(Exception, tries=tries, delay=delay)
     def _retry_decorator(system_obj, ztp_step_name='', ztp_status_name=''):
         with allure.step("Waiting for ztp status changed to status {}".format(ztp_status_name)):
             ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system_obj.ztp.show()).get_returned_value()
@@ -752,7 +720,7 @@ def _validate_interface_description_field(selected_port, description_value, shou
 
 
 def _wait_until_ztp_values_fields_changed(system, ztp_output_fields, ztp_output_values, tries=30, delay=3):
-    @retry(Exception, tries=tries, delay=delay)
+    @retry.retry(Exception, tries=tries, delay=delay)
     def _retry_decorator(system_obj, ztp_step_name='', ztp_status_name=''):
         with allure.step("Run show ztp and verify default values"):
             system_ztp_output = OutputParsingTool.parse_json_str_to_dictionary(system.ztp.show()).get_returned_value()

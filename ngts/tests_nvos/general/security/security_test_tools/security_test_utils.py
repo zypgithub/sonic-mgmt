@@ -1,33 +1,36 @@
+from __future__ import annotations
+
+from datetime import datetime
+import subprocess
 import logging
 import time
-import json
-import subprocess
-from datetime import datetime
-from typing import List
-
 import pytz
 
+from infra.tools.validations.traffic_validations.ping import send as send_ping
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, AclConsts, TestFlowType
-from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.IpTool import IpTool
+
+from ngts.nvos_constants.constants_nvos import AclConsts, ApiType, TestFlowType, SystemConsts
+from .tool_classes.AaaServerManager import AaaAccountingLogsFileContent, AaaServerManager
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from .tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AaaServerManager import \
-    AaaAccountingLogsFileContent, AaaServerManager
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.AuthVerifier import *
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.tools.test_utils import nvos_general_utils
+from ngts.nvos_tools.system.System import System
 from ngts.constants.constants import GnmiConsts
+from ngts.nvos_tools.infra.IpTool import IpTool
+from .constants import AuthConsts, AuthMedium
+from .tool_classes.UserInfo import UserInfo
+from ngts.nvos_tools.acl.acl import Acl
+from .constants import AaaConsts
+
+from .tool_classes.AuthVerifier import AUTH_VERIFIERS
 
 logger = logging.getLogger(__name__)
 
@@ -70,27 +73,26 @@ def sleep_before_auth(sleep_time: int = 3):
 
 
 def verify_auth_with_medium(medium, user: UserInfo, expect_login_success: bool, verify_authorization: bool, engines,
-                            topology_obj):
+                            topology_obj) -> None:
     with allure.step(f'Verify auth with medium: {medium}'):
         user_is_admin = user.role == AaaConsts.ADMIN
-        medium_obj = AUTH_VERIFIERS[medium](user.username, user.password, engines, topology_obj)
+        with AUTH_VERIFIERS[medium](user.username, user.password, engines, topology_obj) as medium_obj:
+            with allure.step(f'Verify authentication. Expect login success: {expect_login_success}'):
+                medium_obj.verify_authentication(expect_login_success)
 
-        with allure.step(f'Verify authentication. Expect login success: {expect_login_success}'):
-            medium_obj.verify_authentication(expect_login_success)
-
-        if verify_authorization and expect_login_success:
-            with allure.step(f'Verify authorization. Role: {user.role}'):
-                medium_obj.verify_authorization(user_is_admin=user_is_admin)
+            if verify_authorization and expect_login_success:
+                with allure.step(f'Verify authorization. Role: {user.role}'):
+                    medium_obj.verify_authorization(user_is_admin=user_is_admin)
 
 
-def clear_accounting_logs_on_servers(accounting_server_mngrs: List[AaaServerManager]):
+def clear_accounting_logs_on_servers(accounting_server_mngrs: list[AaaServerManager]):
     with allure.step('Clear accounting logs on servers'):
         for mngr in accounting_server_mngrs:
             mngr.clear_accounting_logs()
 
 
 def check_accounting(after_time: str, switch_hostname: str, client_username: str,
-                     accounting_server_mngrs: List[AaaServerManager], expect_accounting_logs: List[bool]):
+                     accounting_server_mngrs: list[AaaServerManager], expect_accounting_logs: list[bool]):
     with allure.step('Verify accounting logs on given servers'):
         for i, mngr in enumerate(accounting_server_mngrs):
             expect_logs = expect_accounting_logs[i]
@@ -106,8 +108,8 @@ def check_accounting(after_time: str, switch_hostname: str, client_username: str
 
 
 def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success: bool = True,
-                     verify_authorization: bool = True, skip_auth_mediums: List[str] = None,
-                     accounting_servers: List[RemoteAaaServerInfo] = [], expect_accounting_logs: List[bool] = [],
+                     verify_authorization: bool = True, skip_auth_mediums: list[str] = None,
+                     accounting_servers: list[RemoteAaaServerInfo] = [], expect_accounting_logs: list[bool] = [],
                      switch_hostname: str = ''):
     """
     @summary: Verify authentication and authorization for the given user.
@@ -136,7 +138,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
         assert switch_hostname, f'Must give "switch_hostname" argument when should check accounting.\n' \
             f'Given hostname: {switch_hostname}'
 
-    with loganalyzer_ignore(False and (not expect_login_success)):
+    with nvos_general_utils.loganalyzer_ignore(False and (not expect_login_success)):
         with allure.step(f'Verify auth: User: {user.username} , Password: {user.password} , Role: {user.role} , '
                          f'Expect login success: {expect_login_success}'):
             sleep_before_auth()
@@ -163,9 +165,9 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
 def verify_auth_mediums(test_flow: str, engines, topology_obj,
                         remote_should_work: bool, local_should_work: bool,
                         server: RemoteAaaServerInfo = None,
-                        remote_users_roles_to_check: List[str] = None, local_users: List[UserInfo] = None,
-                        verify_authorization: bool = True, skip_auth_mediums: List[str] = None,
-                        accounting_servers: List[RemoteAaaServerInfo] = [], expect_accounting_logs: List[bool] = [],
+                        remote_users_roles_to_check: list[str] = None, local_users: list[UserInfo] = None,
+                        verify_authorization: bool = True, skip_auth_mediums: list[str] = None,
+                        accounting_servers: list[RemoteAaaServerInfo] = [], expect_accounting_logs: list[bool] = [],
                         switch_hostname: str = ''):
     '''
     if should check accounting:
@@ -223,8 +225,8 @@ def verify_auth_mediums(test_flow: str, engines, topology_obj,
                                          expect_accounting_logs)
 
 
-def verify_users_auth(engines, topology_obj, users: List[UserInfo], expect_login_success: List[bool] = None,
-                      verify_authorization: bool = True, skip_auth_mediums: List[str] = None):
+def verify_users_auth(engines, topology_obj, users: list[UserInfo], expect_login_success: list[bool] = None,
+                      verify_authorization: bool = True, skip_auth_mediums: list[str] = None):
     """
     @summary: Verify authentication and authorization for the given users.
         Authentication will be verified via all possible mediums - SSH, OpenApi, rcon, SCP.
@@ -712,11 +714,11 @@ def _reboot_and_wait_for_system(engines, reboot_timeout=300, system_ready_timeou
         # Wait for system to go down
         with allure.step('Wait for system to go down'):
             time.sleep(30)  # Give time for reboot to start
-            ping_till_alive(should_be_alive=False, destination_host=engines.dut.ip, tries=reboot_timeout)
+            send_ping.ping_till_alive(should_be_alive=False, destination_host=engines.dut.ip, tries=reboot_timeout)
 
         # Wait for system to come back up
         with allure.step('Wait for system to come back up'):
-            ping_till_alive(should_be_alive=True, destination_host=engines.dut.ip, tries=system_ready_timeout)
+            send_ping.ping_till_alive(should_be_alive=True, destination_host=engines.dut.ip, tries=system_ready_timeout)
 
         # Disconnect and reconnect to refresh connection
         with allure.step('Reconnect to system'):
@@ -967,7 +969,7 @@ def change_ssh_limits(engines, max_sessions: int = 100, max_unauthenticated: int
         max_unauthenticated: Maximum unauthenticated session count (default: 500)
         throttle_percent: Throttle percent for unauthenticated (default: 30)
         throttle_start: Throttle start for unauthenticated (default: 500)
-        additional_ports: List of additional ports to add (default: None)
+        additional_ports: list of additional ports to add (default: None)
 
     Example:
         >>> change_ssh_limits(engines, additional_ports=[40, 41])
@@ -1050,12 +1052,12 @@ def configure_non_default_vrf(engines, vrf_name='RED', interface='swp1', ip_addr
 
         # Step 5: Apply the NVUE configuration
         NvueGeneralCli.apply_config(engines.dut, ask_for_confirmation='-y')
-        logger.info(f"Applied VRF configuration")
+        logger.info("Applied VRF configuration")
 
         # Step 5b: Save the configuration to persist across reboots
         # This is important because FIPS enable triggers a reboot
         engines.dut.run_cmd("nv config save -y", validate=False)
-        logger.info(f"Saved VRF configuration to persist across reboots")
+        logger.info("Saved VRF configuration to persist across reboots")
 
         # Step 6: Verify VRF configuration
         vrf_show_output = engines.dut.run_cmd(f"nv show vrf {vrf_name}", validate=False)
@@ -1131,7 +1133,7 @@ def get_gnmi_subscription_count(engines):
             logger.warning(f"Failed to get gNMI server status via object: {e}")
             # Fallback to SS command if NVUE fails or output is invalid
             tcp_output = engines.dut.run_cmd("ss -tn 'sport = :9339' | grep ESTAB || true")
-            return len([l for l in tcp_output.strip().split('\n') if 'ESTAB' in l]) if tcp_output.strip() else 0
+            return len([line for line in tcp_output.strip().split('\n') if 'ESTAB' in line]) if tcp_output.strip() else 0
 
 
 def verify_gnmi_connections_active(engines, expected_subscriptions=1):
@@ -1314,7 +1316,7 @@ def create_gnmi_subscription(gnmi_client, user, streaming=True, path='/', prefix
             # Process terminated - get error output
             stdout, stderr = gnmi_subscription_process.communicate()
             logger.error(f"gNMI subscription failed to start. stdout: {stdout}, stderr: {stderr}")
-            raise Exception(f"gNMI subscription process terminated immediately. Check gNMI server configuration.")
+            raise Exception("gNMI subscription process terminated immediately. Check gNMI server configuration.")
 
         logger.info(f"GNMI subscription started for user {user}")
         return gnmi_subscription_process
