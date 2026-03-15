@@ -12,6 +12,7 @@ from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts, HealthCons
 from ngts.nvos_constants.constants_nvos import OutputFormat
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
+from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.ResultObj import ResultObj
@@ -173,6 +174,7 @@ class Events(BaseComponent):
 class Documentation(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/documentation')
+        self.files = Files(self)
 
     def action_upload(self, upload_path, file_name):
         with allure.step("Upload {file} to '{path}".format(file=file_name, path=upload_path)):

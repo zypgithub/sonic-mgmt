@@ -11,6 +11,15 @@ from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
 
+@pytest.fixture
+def rotate_logs(scope='function', autouse=True):
+    """
+    Rotate logs before running the test
+    """
+    system = System(None)
+    system.log.rotate_logs()
+
+
 @pytest.mark.system
 @pytest.mark.tech_support
 @pytest.mark.cumulus

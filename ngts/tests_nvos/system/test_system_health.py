@@ -228,7 +228,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service
 
     try:
         with allure.step("Simulate PSU and FAN health issue"):
-            psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
+            psu_id, fan_id, psu_symlink, fan_symlink = simulate_fan_and_psu_health_issue(engines, devices)
             psu_display_name = "PSU{}".format(psu_id)
             psu_config_name = "PSU {}".format(psu_id)
             psu_fan_config_name = "psu{}_fan1".format(psu_id)
@@ -291,8 +291,8 @@ def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service
     finally:
 
         with allure.step("Fix PSU and FAN health issue"):
-            HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
-            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+            HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id, fan_symlink)
+            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_symlink)
             health_config_file.revert_to_original()
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
@@ -335,7 +335,7 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
 
     try:
         with allure.step("Simulate PSU and FAN health issue"):
-            psu_id, fan_id = simulate_fan_and_psu_health_issue(engines, devices)
+            psu_id, fan_id, psu_symlink, fan_symlink = simulate_fan_and_psu_health_issue(engines, devices)
             logger.info("sleep 5 sec after simulating HW issue")
             time.sleep(5)
             psu_display_name = "PSU{}".format(psu_id)
@@ -351,9 +351,9 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
         time.sleep(1)
         with allure.step("Cleanup - Fix the health issues"):
             with allure.step("Fix the Fan fault issue"):
-                HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id)
+                HWSimulator.simulate_fix_fan_fault(engines.dut, thermal_directory, fan_id, fan_symlink)
             with allure.step("Fix the PSU fault issue"):
-                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_symlink)
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
@@ -385,7 +385,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_se
     logger.info("Chosen fan : {}  - {}".format(fan_id, get_fan_display_name(fan_id)))
     fan_display_name = get_fan_display_name(fan_id)
     health_issue_dict = {fan_display_name: [FansConsts.FAN_SPEED_OUT_OF_RANGE, FansConsts.FAN_NOT_WORKING]}
-    real_speed = 0
+    symlink_target = None
     if loganalyzer:
         for hostname in loganalyzer.keys():
             loganalyzer[hostname].ignore_regex.extend([f"\\.*Fan low speed warning: fan{fan_id} current speed\\.*",
@@ -393,7 +393,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_se
                                                        f"\\.*Insufficient number of working fans warning\\.*"])
 
     try:
-        real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
+        symlink_target = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
         speed_changed = True
         retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, False)
 
@@ -402,7 +402,7 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_se
             with allure.step("Fix the health issues"):
                 date_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
                 time.sleep(1)
-                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, real_speed)
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, symlink_target)
                 retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
 
@@ -430,8 +430,7 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
     for key in show_output:
         if re.search("^FAN.*", key):
             no_of_fans += 1
-    fan_ids = random.sample([i for i in range(1, no_of_fans)], 3)
-    stable_fan = fan_ids.pop()  # Choose(and remove from list) a fan which remains stable during the test
+    fan_ids = random.sample([i for i in range(1, no_of_fans)], 2)
     logger.info("Chosen fans : {}".format(fan_ids))
     fan_info = dict()
     fan_fault_events = [FansConsts.FAN_SPEED_OUT_OF_RANGE, "is " + FansConsts.FAN_NOT_WORKING]
@@ -452,8 +451,8 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
         with allure.step("Simulate fan speed fault for chosen fans:{}".format(fan_ids)):
             for fan_id in fan_ids:
                 fan_display_name = get_fan_display_name(fan_id)
-                real_speed = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
-                fan_info[fan_id] = [fan_display_name, real_speed]
+                symlink_target = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
+                fan_info[fan_id] = [fan_display_name, symlink_target]
                 time.sleep(2)
 
         with allure.step("Validate system event for fan speed fault for chosen fans:{}".format(fan_ids)):
@@ -464,10 +463,8 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
                            exceptions=AssertionError, tries=24, delay=5)
 
         with allure.step("Simulate fix fan speed fault for chosen fans:{}".format(fan_ids)):
-            # Get the stable fan speed value
-            stable_fan_speed = HWSimulator.fan_fw_file_value_get(engines.dut, thermal_directory, stable_fan)
             for fan_id in fan_ids:
-                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, stable_fan_speed)
+                HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
             fan_speed_fixed = True
 
         with allure.step("Validate system clear event for speed fault for chosen fans:{}".format(fan_ids)):
@@ -480,9 +477,9 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
         time.sleep(2)
         if not fan_speed_fixed:
             with allure.step("Fix the fan speed fault"):
-                stable_fan_speed = HWSimulator.fan_fw_file_value_get(engines.dut, thermal_directory, stable_fan)
                 for fan_id in fan_ids:
-                    HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, stable_fan_speed)
+                    if fan_id in fan_info:
+                        HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
 
 
 @pytest.mark.disable_loganalyzer
@@ -540,8 +537,8 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
             latest_event_id = list(last_event)[0]
 
         with allure.step("Simulate PSU temperature fault for chosen PSU:{}".format(psu_id)):
-            real_temp = HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id)
-            psu_info[psu_id] = [psu_display_name, real_temp]
+            temp_symlink = HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id)
+            psu_info[psu_id] = [psu_display_name, temp_symlink]
             temp_fault = True
             time.sleep(2)
 
@@ -551,7 +548,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
                        exceptions=AssertionError, tries=12, delay=5)
 
         with allure.step("Simulate PSU absent fault for chosen PSU:{}".format(psu_id)):
-            HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
+            psu_status_symlink = HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
             psu_status_fault = True
             time.sleep(2)
 
@@ -565,7 +562,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
             latest_event_id = list(last_event)[0]
 
         with allure.step("Simulate fix PSU absent for chosen PSU:{}".format(psu_id)):
-            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+            HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_status_symlink)
             psu_status_fixed = True
 
         with allure.step("Validate system event for PSU temperature fault for chosen PSU:{}".format(psu_id)):
@@ -574,7 +571,7 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
                        exceptions=AssertionError, tries=12, delay=5)
 
         with allure.step("Simulate PSU temperature fault fix for chosen PSU:{}".format(psu_id)):
-            HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
+            HWSimulator.simulate_fix_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
             time.sleep(2)
             temp_fixed = True
 
@@ -587,11 +584,11 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
         time.sleep(1)
         if temp_fault and not temp_fixed:
             with allure.step("Fix the PSU temperature fault for PSU:{}".format(psu_id)):
-                HWSimulator.simulate_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
+                HWSimulator.simulate_fix_psu_temp_fault(engines.dut, thermal_directory, psu_id, psu_info[psu_id][1])
 
         if psu_status_fault and not psu_status_fixed:
             with allure.step("Fix PSU absent fault for chosen PSU:{}".format(psu_id)):
-                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id)
+                HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_status_symlink)
 
 
 @pytest.mark.system
@@ -785,9 +782,9 @@ def simulate_fan_and_psu_health_issue(engines, devices):
     else:
         fan_id = None
     logger.info("Chosen PSU : {}\n Chosen fan : {}  - {}".format(psu_id, fan_id, get_fan_display_name(fan_id)))
-    HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
-    HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
-    return psu_id, fan_id
+    fan_symlink = HWSimulator.simulate_fan_fault(engines.dut, thermal_directory, fan_id)
+    psu_symlink = HWSimulator.simulate_psu_fault(engines.dut, thermal_directory, psu_id)
+    return psu_id, fan_id, psu_symlink, fan_symlink
 
 
 def get_fan_display_name(fan_id):

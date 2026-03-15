@@ -22,8 +22,8 @@ def test_show_document(engines, devices):
             2. for each file validate: the right path and type
     """
     system = System()
-    with allure.step('Run nv show system documentation'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.show()).verify_result()
+    with allure.step('Run nv show system documentation files'):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.files.show()).verify_result()
 
     with allure.step('Verify all the documents paths'):
         verify_documents_path(output, 'path', devices.dut)
