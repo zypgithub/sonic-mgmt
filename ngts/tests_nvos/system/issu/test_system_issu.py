@@ -174,7 +174,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
             player, dut_engine, dut_device, target_version)
 
     with allure.step('Pre issu installation steps'):
-        traffic_start_time, interface_dict, ip_list, mtu_info = pre_issu_installation_steps(
+        traffic_start_time, interface_dict, ip_list, mtu_info, ssd_should_auto_update = pre_issu_installation_steps(
             engines, devices, target_version, scp_host_creds)
 
     issu_start = time.time()
@@ -194,7 +194,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
     with allure.step('Post issu installation steps'):
         post_issu_installation_steps(engines, devices, target_version, fw_version,
                                      interface_dict, traffic_start_time, ip_list, test_name,
-                                     mtu_info=mtu_info)
+                                     mtu_info=mtu_info, ssd_should_auto_update=ssd_should_auto_update)
 
 
 # @pytest.mark.system
@@ -816,8 +816,8 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     ssd_should_auto_update = False
     with allure.step('Downgrade SSD firmware to test auto-upgrade during ISSU'):
-        if is_bug_active(4874171):
-            logger.info("Bug 4874171 is active - skipping SSD firmware testing during ISSU (https://redmine.mellanox.com/issues/4874171)")
+        if is_bug_active(4929749):
+            logger.info("Bug 4929749 is active - skipping SSD firmware testing during ISSU (https://redmine.mellanox.com/issues/4929749)")
         else:
             try:
                 ssd_component = Platform().firmware.ssd
@@ -852,12 +852,12 @@ def pre_issu_installation_steps(engines, devices, target_version, scp_host_creds
 
     # TODO: add ipoib test (random)
 
-    return traffic_start_time, interface_output, ip_list, mtu_info
+    return traffic_start_time, interface_output, ip_list, mtu_info, ssd_should_auto_update
 
 
 def post_issu_installation_steps(engines, devices, target_version, fw_expected,
                                  interface_dict, traffic_start_time, ip_list, test_name='',
-                                 mtu_info=None):
+                                 mtu_info=None, ssd_should_auto_update=False):
     """
     - Stop Ping mgmt. port 0 and mgmt. port 1 and analyze both logs
     - Stop sending data packets from Host A to Host B and analyze log
