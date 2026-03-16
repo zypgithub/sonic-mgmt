@@ -33,7 +33,7 @@ def get_alibaba_leaf_traffic(players, conf_args, template_suite="traffic_packets
 
 
 def get_multiple_ip_stream_list(spine_tg, traffic_parameters, json_path, conf_args):
-    direction_from = "left" if spine_tg == "left_tg" else "right"
+    direction_from = "left" if spine_tg == PerfConsts.LEFT_TG_ALIAS else "right"
     stream_list = []
 
     ports_from = f'{direction_from} {"host" if conf_args["host"] == spine_tg else "spine"}'
@@ -99,7 +99,7 @@ def get_spine_multiple_ip_stream_list(player_alias, traffic_parameters, json_pat
         - Leaf to Super Spine: 4 packets
 
     Args:
-        player_alias (str): The traffic generator alias (e.g., "left_tg", "right_tg").
+        player_alias (str): The traffic generator alias (e.g., "left-tg", "right-tg").
         traffic_parameters (dict): Dictionary containing traffic configuration parameters including:
             - IP: Nested dict with 'src' and 'dst' IP addresses
             - is_ipv6: Boolean flag for IPv6 traffic
@@ -206,7 +206,7 @@ def get_spine_2_packet_types_traffic(spine_tg, traffic_parameters, conf_args, js
     responses (200B), and RoCE data packets (configurable size, default 4K).
 
     Args:
-        spine_tg (str): The traffic generator alias (e.g., "left_tg", "right_tg").
+        spine_tg (str): The traffic generator alias (e.g., "left-tg", "right-tg").
         traffic_parameters (dict): Dictionary containing traffic configuration parameters.
         conf_args (dict): Configuration arguments containing:
             - is_ipv4: Boolean flag to enable IPv4 traffic
@@ -220,7 +220,7 @@ def get_spine_2_packet_types_traffic(spine_tg, traffic_parameters, conf_args, js
         None. Writes the generated traffic streams to a JSON file at json_path.
     """
     tc = dscp_to_tc(PerfConsts.DVS_LOSSY_TC, 2)
-    direction_from = "left" if spine_tg == "left_tg" else "right"
+    direction_from = "left" if spine_tg == PerfConsts.LEFT_TG_ALIAS else "right"
     direction_to = "right" if direction_from == "left" else "left"
     port_pattern = f"_from_{direction_from}_to_{direction_to}"
     stream_list = []
@@ -240,7 +240,7 @@ def get_spine_2_packet_types_traffic(spine_tg, traffic_parameters, conf_args, js
         ("RoCE_data_", 42, PerfConsts.PACKET_SIZE_LIST[0])
     ]
 
-    split_num = conf_args['split_right'] if spine_tg == 'right_tg' else conf_args['split_left']
+    split_num = conf_args['split_right'] if spine_tg == PerfConsts.RIGHT_TG_ALIAS else conf_args['split_left']
     num_packets_adjust = (1.0 / split_num) * 2
 
     for (traffic_type, traffic_enabled) in zip(["ipv4", "ipv6"], [conf_args["is_ipv4"], conf_args["is_ipv6"]]):

@@ -85,8 +85,10 @@ class ValidationConsts:
 class PerfConsts:
     # Performance Setup Aliases
     RESERVED_BUFFER_SIZE_WITH_NO_DROPS = [54]
-    LEFT_TG_ALIAS = "left_tg"
-    RIGHT_TG_ALIAS = "right_tg"
+    LEFT_TG_ALIAS = "left-tg"
+    RIGHT_TG_ALIAS = "right-tg"
+    TG_REGEX = r"(left|right)-tg"
+    TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     DUT_ALIAS = "dut"
     PERF_SETUP_PLAYERS_ALIASES = [LEFT_TG_ALIAS, DUT_ALIAS, RIGHT_TG_ALIAS]
     PERF_SETUP_TG_ALIASES = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
@@ -169,10 +171,6 @@ class PerfConsts:
     DVS_CREATE_INCREMENTAL_DIPS = "MultiDipsTG"
     DVS_MODIFY_PG_BUFFER_CONNECTED_PORTS = "ModifyPGBufferConnectedPorts"
 
-    # Traffic Generator Aliases
-    LEFT_TG_ALIAS = "left_tg"
-    RIGHT_TG_ALIAS = "right_tg"
-    TG_ALIAS_LIST = [LEFT_TG_ALIAS, RIGHT_TG_ALIAS]
     CL_ROCE_LOSSLESS_DEFAULT_TC = 96
     DVS_LOSSLESS_TC = 26
     DVS_LOSSY_TC = 34

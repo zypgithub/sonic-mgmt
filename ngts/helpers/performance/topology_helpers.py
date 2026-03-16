@@ -25,7 +25,7 @@ def get_dvs_topology_obj(players):
         ports.update(tg_connected_port_aliases)
         players_all_ports.update({tg_alias: {'unconnected_ports': list(tg_unconnected_port_aliases.values()),
                                              'connected_ports': list(tg_connected_port_aliases.values())}})
-        tg_regex = r"(left|right)_tg"
+        tg_regex = PerfConsts.TG_REGEX
         tg_place = re.search(tg_regex, tg_alias).group(1)
         for tg_port_alias, tg_port in tg_port_aliases['connected_ports']:
             port_index = tg_ports.index(tg_port) % len(dut_left_right_ports_aliases[f'{tg_place}_ports'])

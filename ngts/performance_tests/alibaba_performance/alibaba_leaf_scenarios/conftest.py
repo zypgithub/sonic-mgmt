@@ -204,7 +204,7 @@ def get_super_spine_to_leaf_port_groups(players, conf_args, split_right=2, split
     Note that in this scenario, for every super spine port, there are 3 leaf ports.
 
     Args:
-        players (dict): Dictionary containing the test players (left_tg, right_tg, dut) with their port information.
+        players (dict): Dictionary containing the test players (left-tg, right-tg, dut) with their port information.
         conf_args (dict): Configuration arguments dictionary that will be updated with port group assignments.
         split_right (int, optional): Number of splits for right-side ports. Defaults to 2.
         split_left (int, optional): Number of splits for left-side ports. Defaults to 2.
@@ -244,8 +244,8 @@ def conf_args(players, test_id, shaper_value, ar_enabled, split_host_ports, spli
                  "ar_enabled": ar_enabled,
                  "split_right": split_host_ports,
                  "split_left": split_left,
-                 "host": "right_tg",
-                 "spine": "left_tg",
+                 "host": PerfConsts.RIGHT_TG_ALIAS,
+                 "spine": PerfConsts.LEFT_TG_ALIAS,
                  "get_acl_dump": False,
                  "scenario": TESTS_SCENARIO,
                  "packet_size": get_packet_size_for_test(test_id, ipv4_enabled == "ipv4_enabled", ipv6_enabled == "ipv6_enabled"),

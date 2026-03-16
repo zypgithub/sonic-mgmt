@@ -587,7 +587,7 @@ class DvsPerformance(PerformanceCommon):
         with open(conf_path) as f:
             conf_json = json.load(f)
 
-        tg_regex = r"(left|right)_tg"
+        tg_regex = PerfConsts.TG_REGEX
         tg_alias = re.search(tg_regex, self.dut_alias).group(1)
         traffic_parameters = {
             "ports": self.get_tg_unconnected_ports(),

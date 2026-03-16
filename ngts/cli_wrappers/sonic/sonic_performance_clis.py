@@ -385,9 +385,9 @@ class SonicPerformanceCli(PerformanceCommon):
         if len(ports_list) % 2 == 1:
             raise TestIssue(f"Expected port number should be even, actual port number {len(ports_list)}")
         middle = len(ports_list) // 2
-        if self.dut_alias == "left_tg":
+        if self.dut_alias == PerfConsts.LEFT_TG_ALIAS:
             self.connected_ports, self.unconnected_ports = ports_list[:middle], ports_list[middle:]
-        elif self.dut_alias == "right_tg":
+        elif self.dut_alias == PerfConsts.RIGHT_TG_ALIAS:
             self.unconnected_ports, self.connected_ports = ports_list[:middle], ports_list[middle:]
         else:
             self.connected_ports, self.unconnected_ports = ports_list, []

@@ -265,7 +265,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             raise Exception('ports_list or topology_obj must be passed to reload_flow method')
         if not ports_list:
             ports_list = topology_obj.players_all_ports[self.dut_alias]
-        # in perf setup, expected ports in up state are left_tg: (Ethernet0::252, 4), right_tg: (Ethernet256::508, 4)
+        # in perf setup, expected ports in up state are left-tg: (Ethernet0::252, 4), right-tg: (Ethernet256::508, 4)
         if self.cli_obj.dut_alias in [PerfConsts.LEFT_TG_ALIAS, PerfConsts.RIGHT_TG_ALIAS]:
             ports_list = self.get_performance_ports_list(topology_obj)
         return ports_list
@@ -368,7 +368,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             elif config_db['DEVICE_METADATA']['localhost']['type'] == 'ToRRouter':
                 dockers_list = SonicConst.DOCKERS_LIST_TOR
             # in performance setup the docker dhcp_relay is disabled on TG switches to exclude multicast
-            if self.cli_obj.dut_alias in ['left_tg', 'right_tg']:
+            if self.cli_obj.dut_alias in [PerfConsts.LEFT_TG_ALIAS, PerfConsts.RIGHT_TG_ALIAS]:
                 if 'dhcp_relay' in dockers_list:
                     dockers_list.remove('dhcp_relay')
         except json.JSONDecodeError:

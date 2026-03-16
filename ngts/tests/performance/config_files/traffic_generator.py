@@ -15,9 +15,9 @@ def SetPacketSize(p, size):
 
 
 def get_route_from_tg_type(tg_type):
-    if tg_type == "left_tg":
+    if tg_type == 'left-tg':
         route_ip = "130.130.130.0/24"
-    elif tg_type == "right_tg":
+    elif tg_type == 'right-tg':
         route_ip = "110.110.110.0/24"
     else:
         raise AssertionError(f"Wrong traffic generator type was provided - {tg_type} is invalid traffic generator")
@@ -26,9 +26,9 @@ def get_route_from_tg_type(tg_type):
 
 
 def get_ids_from_tg_type(tg_type):
-    if tg_type == "left_tg":
+    if tg_type == 'left-tg':
         start_id = 256
-    elif tg_type == "right_tg":
+    elif tg_type == 'right-tg':
         start_id = 0
     else:
         raise AssertionError(f"Wrong traffic generator type was provided - {tg_type} is invalid traffic generator")

@@ -16,6 +16,7 @@ import re
 import random
 
 import allure
+from ngts.constants.performance_constants import PerfConsts
 import pytest
 from dotted_dict import DottedDict
 from paramiko.ssh_exception import SSHException
@@ -616,7 +617,7 @@ def update_topology_with_cli_class(topology, request=None, is_performance=False)
     nvos_setup = False
     for player_key, player_info in topology.players.items():
         cli_type = player_info['attributes'].noga_query_data['attributes']['Topology Conn.']['CLI_TYPE']
-        if player_key == 'dut' or player_key == 'left_tg' or player_key == 'right_tg':
+        if player_key == 'dut' or player_key == PerfConsts.LEFT_TG_ALIAS or player_key == PerfConsts.RIGHT_TG_ALIAS:
             if cli_type in NvosCliTypes.NvueCliTypes:
                 update_nvos_topology(topology, player_key, player_info, request)
                 nvos_setup = True

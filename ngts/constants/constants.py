@@ -1324,7 +1324,7 @@ class AppExtensionInstallationConstants:
 class PlayersAliases:
     Aliases_list = ['sl']
     SL = 'sl'
-    duts_list = ['dut', 'dut-b', 'left_tg', 'right_tg', 'dpu0', 'dpu1', 'dpu2', 'dpu3']
+    duts_list = ['dut', 'dut-b', 'left-tg', 'right-tg', 'dpu0', 'dpu1', 'dpu2', 'dpu3']
     fanouts_list = ['fanout']
 
 

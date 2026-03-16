@@ -43,11 +43,11 @@ def pytest_cmdline_main(config):
 def _filter_duthosts_for_loganalyzer(duthosts, request):
     """
     Args:
-        duthosts (list[str]): list of dut hostnames, e.g. ['dut', 'dut-b', 'left_tg', 'right_tg', 'dpu0', 'dpu1', ...]
+        duthosts (list[str]): list of dut hostnames, e.g. ['dut', 'dut-b', 'left-tg', 'right-tg', 'dpu0', 'dpu1', ...]
         request (pytest.FixtureRequest): pytest request object
 
     Returns:
-        list[str]: list of dut hostnames for loganalyzer, e.g. ['dut', 'dut-b', 'left_tg', 'right_tg']
+        list[str]: list of dut hostnames for loganalyzer, e.g. ['dut', 'dut-b', 'left-tg', 'right-tg']
     """
     # by default, filter out all dpus hosts
     hosts_without_dpus = set([dut for dut in duthosts if 'dpu' not in dut])

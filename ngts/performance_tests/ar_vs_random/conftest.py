@@ -37,7 +37,8 @@ def get_ar_vs_random_traffic(players, conf_args, bisection_traffic, template_sui
 
 def get_spine_to_leaf_stream_list(players, spine_tg, conf_args, traffic_parameters, json_path, tc=PerfConsts.CL_ROCE_LOSSLESS_DEFAULT_TC):
     dut_configuration = players['dut']['cli'].performance.get_device_configuration(conf_args=conf_args)
-    left_tg_configuration = players['left_tg']['cli'].performance.get_device_configuration(conf_args=conf_args)
+    left_tg_configuration = players[PerfConsts.LEFT_TG_ALIAS]['cli'].performance.get_device_configuration(
+        conf_args=conf_args)
     leaf_dst_ips = list(dut_configuration["right_side_ports_to_ip_dict"].values())
     stream_list = []
 

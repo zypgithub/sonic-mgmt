@@ -644,8 +644,9 @@ class ArPerfHelper(ArHelper):
             mac_dict[engine] = self.get_switch_mac(topology_obj, engine)
         logger.info("Config permanent ip neighbors on DUT")
         self.copy_ip_neighbor_cmds_to_dut(dut_engine)
-        ip_neigh_cmd = " ".join([PerfConsts.IP_NEIGH_SCRIPT, mac_dict["left_tg"], mac_dict["right_tg"],
-                                 PerfConsts.L_IP_NEIGH, PerfConsts.R_IP_NEIGH, str(iterations_num)])
+        ip_neigh_cmd = " ".join([PerfConsts.IP_NEIGH_SCRIPT, mac_dict[PerfConsts.LEFT_TG_ALIAS],
+                                 mac_dict[PerfConsts.RIGHT_TG_ALIAS], PerfConsts.L_IP_NEIGH, PerfConsts.R_IP_NEIGH,
+                                 str(iterations_num)])
         ip_neigh_cmd = "sudo ./" + ip_neigh_cmd
         dut_engine.run_cmd(ip_neigh_cmd, validate=True)
 

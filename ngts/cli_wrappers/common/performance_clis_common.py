@@ -216,7 +216,7 @@ class PerformanceCommon:
     def execute_cmd(self, cmd, print_output=False):
         """
         All functions on the inheritance classes (DVS, SONiC, Cumulus) will be executed
-        by a thread running on 'left_tg', 'dut' and 'right_tg' switch.
+        by a thread running on 'left-tg', 'dut' and 'right-tg' switch.
         to have each thread write it's log into individualise file we are setting the logging
         class prior and post the thread run using redirect_thread_stdout.
         since run_cmd use logger and not logging we use this wrapper to get the output

@@ -262,18 +262,18 @@ class NvuePerformanceCli(PerformanceCommon):
                 "is_ipv6": conf_args["is_ipv6"],
             }
         else:
-            tg_regex = r"(left|right)_tg"
+            tg_regex = PerfConsts.TG_REGEX
             tg_alias = re.search(tg_regex, self.dut_alias).group(1)
             is_ipv6 = conf_args.get("is_ipv6", False)
             ip_key = "IPV6" if is_ipv6 else "IP"
             ip_dict = {
                 "IP": {
-                    "left_tg": {"src": "4.4.4.4", "dst": "130.130.130.1"},
-                    "right_tg": {"src": "4.4.4.4", "dst": "110.110.110.1"}
+                    PerfConsts.LEFT_TG_ALIAS: {"src": "4.4.4.4", "dst": "130.130.130.1"},
+                    PerfConsts.RIGHT_TG_ALIAS: {"src": "4.4.4.4", "dst": "110.110.110.1"}
                 },
                 "IPV6": {
-                    "left_tg": {"src": "4::4", "dst": "130::1"},
-                    "right_tg": {"src": "4::4", "dst": "110::1"}
+                    PerfConsts.LEFT_TG_ALIAS: {"src": "4::4", "dst": "130::1"},
+                    PerfConsts.RIGHT_TG_ALIAS: {"src": "4::4", "dst": "110::1"}
                 }
             }
             self.logrotate("rsyslog")
