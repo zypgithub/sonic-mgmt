@@ -20,8 +20,7 @@ def skip_if_missing_data(has_loopbox, standalone_system):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_cable_cartridge(engines, devices, test_api):
+def test_show_platform_cable_cartridge(engines, devices, random_api):
     """
      Tests the 'nv show platform cable cartridge' command to validate the data integrity
      and alignment of cable cartridge information.
@@ -37,7 +36,6 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
          - All Slot IDs and Tray IDs should be consistent and aligned across cartridges.
 
      """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
         platform = Platform()
@@ -81,8 +79,7 @@ def test_show_platform_cable_cartridge(engines, devices, test_api):
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_validate_cable_cartridge_chassis_location(engines, devices, test_api):
+def test_validate_cable_cartridge_chassis_location(engines, devices, random_api):
     """
     Validates that the chassis location data matches the leftmost cartridge's data
     fetched from the 'nv show platform cable cartridge' command.
@@ -96,7 +93,6 @@ def test_validate_cable_cartridge_chassis_location(engines, devices, test_api):
         - serial-number matches the chassis-sn.
 
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
         platform = Platform()

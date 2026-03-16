@@ -383,9 +383,34 @@ class OpenApiSystemCli(OpenApiBaseCli):
     def action_delete_certificate(engine, resource_path):
         logging.info(f"Run action delete on: {resource_path} using OpenApi")
         params = {"state": "start", "parameters": {}}
+        return OpenApiCommandHelper.execute_action(
+            ActionType.DELETE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
+        )
 
-        return OpenApiCommandHelper.execute_action(ActionType.DELETE, engine.engine.username, engine.engine.password,
-                                                   engine.ip, engine.open_api_port, resource_path, params)
+    @staticmethod
+    def action_update_system_internal_property(engine, resource_path, param_name="", param_val=""):
+        logging.info(f"Run action import on: {resource_path} using OpenApi")
+        parameters = {} if not param_name and not param_val else {param_name: param_val}
+        params = {"state": "start", "parameters": parameters}
+        return OpenApiCommandHelper.execute_action(
+            ActionType.UPDATE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
+        )
+
+    @staticmethod
+    def action_restore_system_internal_property(engine, resource_path):
+        logging.info(f"Run action delete on: {resource_path} using OpenApi")
+        params = {"state": "start", "parameters": {}}
+        return OpenApiCommandHelper.execute_action(
+            ActionType.RESTORE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
+        )
+
+    @staticmethod
+    def action_rotate_system_internal_property(engine, resource_path):
+        logging.info(f"Run action rotate on: {resource_path} using OpenApi")
+        params = {"state": "start", "parameters": {}}
+        return OpenApiCommandHelper.execute_action(
+            ActionType.ROTATE, engine.engine.username, engine.engine.password, engine.ip, engine.open_api_port, resource_path, params
+        )
 
     @staticmethod
     def action_upload_platform_certificate(engine, resource_path, remote_url):

@@ -21,16 +21,14 @@ def test_only_aik_file_at_first(engines):
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_upload_bad_tpm_filename(test_api, engines, remote_engine):
+def test_upload_bad_tpm_filename(random_api, engines, remote_engine):
     """
     Verify that upload with bad filename param fails
 
     1. upload with bad filename param
     2. verify upload fail
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('upload with bad filename param'):
         bad_filename = 'zz'
@@ -40,16 +38,14 @@ def test_upload_bad_tpm_filename(test_api, engines, remote_engine):
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_upload_aik(test_api, engines, remote_engine):
+def test_upload_aik(random_api, engines, remote_engine):
     """
     Verify that upload AIK action works
 
     1. upload AIK file
     2. sanity check for uploaded file
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('upload AIK file'):
         System().security.tpm.action_upload(AIK_FILENAME, get_scp_url(remote_engine, AIK_FILENAME)).verify_result()
@@ -59,16 +55,14 @@ def test_upload_aik(test_api, engines, remote_engine):
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_upload_quote_before_generate(test_api, engines, remote_engine):
+def test_upload_quote_before_generate(random_api, engines, remote_engine):
     """
     Verify that upload quote fails when there is no generated quote
 
     1. upload quote
     3. verify failure
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('upload quote'):
         res = System().security.tpm.action_upload(QUOTE_FILENAME, get_scp_url(remote_engine, QUOTE_FILENAME))
@@ -77,9 +71,8 @@ def test_upload_quote_before_generate(test_api, engines, remote_engine):
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_generate_quote_bad_param(test_api, engines):
+def test_generate_quote_bad_param(random_api, engines):
     """
     Verify that generate quote with bad param fails and not producing any quote file
 
@@ -87,7 +80,6 @@ def test_generate_quote_bad_param(test_api, engines):
     2. verify error
     3. verify no quote file generated
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('attempt generate quote with bad param, expect error'):
         tpm = System().security.tpm
@@ -117,9 +109,8 @@ def test_generate_quote_bad_param(test_api, engines):
 
 @pytest.mark.nvos_ci
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_generate_quote(test_api, engines, devices):
+def test_generate_quote(random_api, engines, devices):
     """
     Verify that generate quote works
 
@@ -128,7 +119,6 @@ def test_generate_quote(test_api, engines, devices):
     3. verify quote file generated
     4. sanity check for generated file
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('generate quote'):
         tpm = System().security.tpm
@@ -145,9 +135,8 @@ def test_generate_quote(test_api, engines, devices):
 
 
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.tpm
-def test_upload_quote(test_api, engines, remote_engine):
+def test_upload_quote(random_api, engines, remote_engine):
     """
     Verify that upload quote works
 
@@ -155,7 +144,6 @@ def test_upload_quote(test_api, engines, remote_engine):
     2. upload quote
     3. sanity check for uploaded file
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('generate quote'):
         tpm = System().security.tpm

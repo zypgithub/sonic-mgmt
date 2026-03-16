@@ -14,6 +14,13 @@ from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbCons
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
+from ngts.tests_nvos.general.security.nmx_cert.constants import (
+    ALTERNATE_CERTIFICATE,
+    CA_CERTIFICATE,
+    CERTIFICATE,
+    ENCRYPTION,
+    Defaults,
+)
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, PhyRecoveryConsts
 from ngts.tests_nvos.system.gnmi.constants import GnmiConstants
@@ -561,24 +568,19 @@ class IbSwitch(BaseSwitch):
             "nv show platform chassis-location",
             "nv show cluster",
             "nv show sdn",
-            "nv sh fae interface swA10p1 link link-training",
             "nv show interface swA10p1 link plr",
-            # IB (croc+mamba) uses logic-relock-*, NOT serdes-eq-* for PHY recovery
-            "nv set fae interface swA1p1 link phy-recovery serdes-eq-mode",
-            "nv set fae interface swA1p1 link phy-recovery serdes-eq-timeout",
-            # Rosalind-only PHY recovery commands (not supported on croc+mamba)
-            "nv set fae interface swA1p1 link phy-role",
-            "nv set fae interface swA1p1 link constant-role",
-            "nv set fae interface swA1p1 link phy-recovery link-down-timeout",
-            "nv set fae interface swA1p1 link phy-recovery recovery-neg-type",
-            "nv set fae interface swA1p1 link phy-recovery recovery-status enabled",
-            "nv set fae interface swA1p1 link phy-recovery recovery-status disabled",
-            "nv set fae interface swA1p1 link phy-recovery recovery-status auto",
-            "nv set fae interface swA1p1 link phy-recovery step-1",
-            "nv set fae interface swA1p1 link phy-recovery step-2",
-            "nv show fae interface swA1p1 link low-power",
-            "nv set fae interface swA1p1 link low-power state",
-            "nv unset fae interface swA1p1 link low-power state",
+            "nv set fae interface {port} link phy-recovery serdes-eq-mode",
+            "nv set fae interface {port} link phy-recovery serdes-eq-timeout",
+            "nv set fae interface {port} link link-training",
+            "nv set fae interface {port} link constant-role",
+            "nv set fae interface {port} link phy-recovery link-down-timeout",
+            "nv set fae interface {port} link phy-recovery recovery-neg-type",
+            "nv set fae interface {port} link phy-recovery recovery-status",
+            "nv set fae interface {port} link phy-recovery step-1",
+            "nv set fae interface {port} link phy-recovery step-2",
+            "nv show fae interface {port} link low-power",
+            "nv set fae interface {port} link low-power state",
+            "nv unset fae interface {port} link low-power state"
         ]
 
         self.memory_size: List[float] = [15.0]
@@ -735,8 +737,12 @@ class IbSwitch(BaseSwitch):
         return DutUtilsTool.wait_for_nvos_to_become_functional(engine)
 
     def reload_device(self, engine, cmd_list, validate=False, enter_config_mode=False):
-        return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False,
-                                      enter_config_mode=enter_config_mode)
+        if any("action install platform firmware" in cmd for cmd in cmd_list):
+            return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False,
+                                          enter_config_mode=enter_config_mode, read_timeout=900)
+        else:
+            return engine.send_config_set(cmd_list, exit_config_mode=False, cmd_verify=False,
+                                          enter_config_mode=enter_config_mode)
 
     def get_bios_file_name(self):
         return self.current_bios_version_path.split('/')[-1]
@@ -1469,21 +1475,16 @@ class NvLinkSwitch(IbSwitch):
                                           "nv show ib device ASIC4",
                                           "nv show system profile",
                                           "nv show ib ibdiagnet",
-                                          # NVLink (juliet) uses serdes-eq-*, NOT logic-relock-* for PHY recovery
-                                          "nv set fae interface acp1 link phy-recovery logic-relock-mode",
-                                          "nv set fae interface acp1 link phy-recovery logic-relock-timeout",
-                                          # delayed-recovery only supported on croc+mamba
-                                          "nv set fae interface acp1 link delayed-recovery",
-                                          # Rosalind-only PHY recovery commands (not supported on juliet)
-                                          "nv set fae interface acp1 link phy-role",
-                                          "nv set fae interface acp1 link constant-role",
-                                          "nv set fae interface acp1 link phy-recovery link-down-timeout",
-                                          "nv set fae interface acp1 link phy-recovery recovery-neg-type",
-                                          "nv set fae interface acp1 link phy-recovery recovery-status enabled",
-                                          "nv set fae interface acp1 link phy-recovery recovery-status disabled",
-                                          "nv set fae interface acp1 link phy-recovery recovery-status auto",
-                                          "nv set fae interface acp1 link phy-recovery step-1",
-                                          "nv set fae interface acp1 link phy-recovery step-2",
+                                          "nv set fae interface {port} link delayed-recovery",
+                                          "nv set fae interface {port} link phy-recovery logic-relock-mode",
+                                          "nv set fae interface {port} link phy-recovery logic-relock-timeout",
+                                          "nv set fae interface {port} link phy-role",
+                                          "nv set fae interface {port} link constant-role",
+                                          "nv set fae interface {port} link phy-recovery link-down-timeout",
+                                          "nv set fae interface {port} link phy-recovery recovery-neg-type",
+                                          "nv set fae interface {port} link phy-recovery recovery-status",
+                                          "nv set fae interface {port} link phy-recovery step-1",
+                                          "nv set fae interface {port} link phy-recovery step-2",
                                           "nv show fae interface acp1 link low-power",
                                           "nv set fae interface acp1 link low-power state",
                                           "nv unset fae interface acp1 link low-power state"]
@@ -1576,6 +1577,7 @@ class JulietSwitch(NvLinkSwitch):
             ClusterConsts.NMX_CONTROLLER: ['fabricmanager.log.gz', 'gwapi.log.gz', 'nvlsm.log.gz'],
             ClusterConsts.NMX_TELEMETRY: []  # TBD: Add telemetry-specific logs when identified
         }
+        self.cluster_standalone_excluded_files = ['fabricmanager.log.gz']
         # Backward compatibility: extend generic log_nmx_files with all app logs
         for app_logs in self.cluster_log_files_by_app.values():
             if app_logs:  # Only extend if list is not empty
@@ -1607,12 +1609,13 @@ class JulietSwitch(NvLinkSwitch):
                 'date': '08/21/2024'})
 
         # SDN Configuration edit commands for Juliet (both FM and SM configs)
-        self.sdn_fm_config_edits = [
+        self.sdn_fm_config_edits_standalone = [
             "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' {file}",
             "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=gb200_nvl8r1_c2g4_etf_topology' | sudo tee -a {file}",
             "sudo sed -i '/^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=/c\\MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' {file}",
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ]
+        self.sdn_fm_config_edits = self.sdn_fm_config_edits_standalone
         # SM config edits for Juliet (only when has_loopbox)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
@@ -1657,6 +1660,8 @@ class JulietSwitch(NvLinkSwitch):
         self.mst_dev_name = tuple(f'/dev/mst/mt54004_pciconf{i}' for i in [0, 1])
         self.memory_speed = 2400  # in MT/s
         self.show_platform_chassis_location_standalone_values = ChassisLocationConsts.EXPECTED_STANDALONE_DICT
+
+        self.unsupported_commands_list.extend(['nv show interface {port} link low-power'])
 
     def _init_fan_list(self):
         super()._init_fan_list()
@@ -2411,6 +2416,8 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.sma_amount = 2
         self.sma_components = list(f"{PlatformConsts.FW_SMA}{i if i else ''}" for i in range(0, self.sma_amount + 1))
         self._extend_firmware_by_sma_amount()
+        # Rosalind/Surrogate platforms require nv-bridge configuration
+        self.requires_nv_bridge_config = True
         # Rosalind/Surrogate platforms have nvbridge capability - update only the controller definition
         self.cluster_app_nmx_controller = {'addition-info': ExpectedString(regex=".*"), 'app-id': 'nmx-c-nvos', 'app-ver': None, 'capabilities': 'sm, nvbridge, gfm, fib, gw-api', 'components-ver': None, 'reason': '', 'status': 'ok'}
         # Rebuild cluster_app dictionaries with updated nmx_controller (inherits telemetry from parent)
@@ -2426,6 +2433,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                 "rbac": {"rbac-file": "", "rbac-mode": ""}
             }
         }
+
         self.cluster_app_installed = {
             ClusterConsts.NMX_CONTROLLER: {key: value for key, value in self.cluster_app_nmx_controller.items() if key not in ['reason', 'status', 'addition-info']},
             ClusterConsts.NMX_TELEMETRY: {key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in ['reason', 'status', 'addition-info']}
@@ -2537,6 +2545,11 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
 
         self.leakage_sensors_count = 2
         self.list_of_leakages = [f"LEAKAGE-{i}" for i in range(1, self.leakage_sensors_count + 1)]
+        self.expected_operation_durations.update({
+            self.generate_tech_support: 165,
+            'julietscaleout generate_tech_support': 165,
+            'reboot with new user FW': 450 if is_bug_active(4854038) else 390,
+        })
         self.nvl_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
@@ -2577,7 +2590,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                                        'verification_test.gz']
 
         self.nvl_trunk_port_speed = '400G'
-        self.access_port_speed = '375G'
+        self.access_port_speed = '200G'  # Updated default for Rosalind systems
         self.fnm_link_speed = '200G'
         self.fnm_fae_link_speed = '200G'
         self.nvl_port_type = 'nvl'
@@ -2594,15 +2607,28 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                           "nv show platform environment psu",
                                           "nv show system profile",
                                           "nv show sdn transceivers",
-                                          # Rosalind doesn't support serdes-eq or logic-relock PHY recovery
-                                          "nv set fae interface acp1 link phy-recovery serdes-eq-mode",
-                                          "nv set fae interface acp1 link phy-recovery serdes-eq-timeout",
-                                          "nv set fae interface acp1 link phy-recovery logic-relock-mode",
-                                          "nv set fae interface acp1 link phy-recovery logic-relock-timeout",
-                                          # delayed-recovery only supported on croc+mamba
-                                          "nv set fae interface acp1 link delayed-recovery",
-                                          # link-training only supported on juliet
-                                          "nv set fae interface acp1 link link-training"]
+                                          "nv set fae interface {port} link delayed-recovery",
+                                          "nv set fae interface {port} link phy-recovery logic-relock-mode",
+                                          "nv set fae interface {port} link phy-recovery logic-relock-timeout",
+                                          "nv set fae interface {port} link phy-recovery serdes-eq-mode",
+                                          "nv set fae interface {port} link phy-recovery serdes-eq-timeout",
+                                          "nv set fae interface {port} link link-training",
+                                          "nv set fae interface {port} link low-power state",
+                                          "nv unset fae interface {port} link low-power state"]
+
+        # Rosalind does not have fans, PSUs, or transceivers (liquid cooled)
+        self.fan_list = []
+        self.fan_led_list = []
+        self.psu_list = []
+        self.psu_fan_list = []
+        self.transceiver_list = []
+
+    def _init_gnmi_consts(self):
+        super()._init_gnmi_consts()
+        self.sma1_xpath = 'components/component[name=SMA1]/state/firmware-version'
+        self.sma2_xpath = 'components/component[name=SMA2]/state/firmware-version'
+        self.components_gnmi_xpath = [self.bmc_xpath, self.bios_xpath, self.erot_xpath, self.sma1_xpath, self.sma2_xpath,
+                                      self.cpld1_xpath, self.cpld2_xpath]
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled
@@ -2769,14 +2795,32 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.supported_nvl_speeds = ['200G', '400G', '360G', '328G']  # Rosalind supports all speeds
         # Note: Rosalind has no regular FNM (nvl_fnm_ports is empty), only internal FNM
 
+        # Rosalind cluster apps expose additional internal defaults in show output.
+        internal_defaults = {
+            ALTERNATE_CERTIFICATE: Defaults.ALTERNATE_CERTIFICATE,
+            CA_CERTIFICATE: Defaults.CACERT,
+            CERTIFICATE: Defaults.CERT,
+            ENCRYPTION: Defaults.ENCRYPTION,
+        }
+        for app_name, app_data in self.cluster_app.items():
+            self.cluster_app[app_name] = {**app_data, "internal": internal_defaults.copy()}
+
+        # Rosalind has nmx-telemetry-agent
+        self.has_nmx_telemetry_agent = True
+
         # Expected ACL rule counts after migration (device-specific, can be overridden)
         self.expected_acl_rule_counts.update({
             'acl-default-whitelist': 27,
             'acl-default-whitelist-ipv6': 26})
 
         # SDN Configuration edit commands for Rosalind
-        # Rosalind does NOT edit FM config (no fm_config_edits needed)
-        self.sdn_fm_config_edits = None  # Rosalind doesn't modify FM config
+        # Rosalind does NOT need FM config edits (no fm_config_edits needed)
+        self.sdn_fm_config_edits_standalone = None
+        # Rosalind-RTF needs FM config edits (fm_config_edits needed)
+        self.sdn_fm_config_edits = [
+            "sudo sed -i '/^MNNVL_TOPOLOGY=/c\\MNNVL_TOPOLOGY=vr_nvl8r1_c2g4_rtf_topology' {file}",
+            "sudo grep -q '^MNNVL_TOPOLOGY=' {file} || echo 'MNNVL_TOPOLOGY=vr_nvl8r1_c2g4_rtf_topology' | sudo tee -a {file}"
+        ]
         # Rosalind ONLY edits SM config (and only when cluster is enabled, not loopbox-dependent)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
@@ -2791,13 +2835,25 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.sdn_needs_pre_cluster_setup = True
 
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0100_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0400_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6100_ld-r0")
         self.show_platform_output.update({
             PlatformConsts.SYSTEM_TYPE: "N6100_LD",
             "asic-model": self.asic_type,
+        })
+
+        # Rosalind does not have fans, PSUs, or transceivers (liquid cooled) - must be set AFTER super()
+        self.fan_list = []
+        self.fan_led_list = []
+        self.psu_list = []
+        self.psu_fan_list = []
+        self.transceiver_list = []
+
+        self.expected_operation_durations.update({
+            InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE: 10 * MINUTE,
+            InstallSteps.SYSTEM_IS_READY_AFTER_UPGRADE: 10 * MINUTE,
         })
 
         self.nvl_access_ports_list = [
@@ -2904,6 +2960,16 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.memory_size: List[float] = [30.77, 31.21]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
 
+    def _init_fan_list(self):
+        """Rosalind does not have fans (100% liquid cooled)"""
+        self.fan_list = []
+        self.fan_led_list = []
+
+    def _init_psu_list(self):
+        """Rosalind does not have PSUs (100% liquid cooled)"""
+        self.psu_list = []
+        self.psu_fan_list = []
+
     def setup_cluster_for_sdn_config(self, cluster, engines):
         """
         Rosalind-specific: Setup cluster before generating SDN configs.
@@ -2914,14 +2980,13 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         from ngts.tools.test_utils import allure_utils as allure
 
         with allure.step("Set cluster node primary server"):
-            logger.info(f"Setting cluster node primary server to {SystemConsts.NV_BRIDGE_NODE_IP}")
-            cluster.set(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
-                        op_param_value=SystemConsts.NV_BRIDGE_NODE_IP,
-                        apply=True)
+            logger.info(f"Setting cluster node primary server to {engines.dut.ip}")
+            cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                                                  op_param_value=engines.dut.ip, apply=True)
 
     def wa_restart_nv_bridge_after_sm_config(self, cluster, engines):
         """
-        Rosalind-specific workaround for Bug SW #4731969.
+        Rosalind-specific workaround for Bug SW #4910763.
         After loading SM config on Rosalind, restart nv-bridge to recover connections.
         This should be called after SM config is installed.
         """
@@ -2929,18 +2994,18 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
         # Only apply workaround if bug is active
-        if is_bug_active(4731969):
-            with allure.step("WA for Bug 4731969: Restart nv-bridge after SM config"):
+        if is_bug_active(4910763):
+            with allure.step("WA for Bug 4910763: Restart nv-bridge after SM config"):
                 logger.info("Stopping nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
 
-                logger.info("Restarting nv-bridge container")
-                engines.dut.run_cmd("sudo systemctl restart nv-bridge")
+                # logger.info("Restarting nv-bridge container")
+                # engines.dut.run_cmd("sudo systemctl restart nv-bridge")
 
                 logger.info("Starting nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
         else:
-            logger.info("Bug 4731969 is not active, skipping nv-bridge restart workaround")
+            logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 
     def _init_ib_speeds(self):
         super()._init_ib_speeds()
@@ -2955,7 +3020,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         super()._init_platform_lists()
         self.platform_environment_fan_values = {}
         self.platform_inventory_switch_values.update({"hardware-version": None,
-                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|920-9K42W-00L6-TS1")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|920-9K42W-00L6-TS1|920-9K42W-00L6-TS2")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
 
 
 # -------------------------- RosalindSimx Switch ----------------------------

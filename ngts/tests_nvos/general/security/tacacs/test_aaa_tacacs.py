@@ -1,17 +1,16 @@
+import random
+
 import pytest
 
 from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
-from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingConsts, \
-    AuthMode
+from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingConsts, AuthMode
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_accounting_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
 from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
 from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts, TacacsDockerServer1, \
-    TacacsDockerServer2, TacacsPhysicalServer
-from ngts.tests_nvos.general.security.tacacs.tacacs_test_utils import update_tacacs_server_auth_mode, \
-    get_two_different_tacacs_servers
+from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts, TacacsDockerServer1, TacacsDockerServer2, TacacsPhysicalServer
+from ngts.tests_nvos.general.security.tacacs.tacacs_test_utils import get_two_different_tacacs_servers, update_tacacs_server_auth_mode
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -23,7 +22,7 @@ def prepare_scp_test(prepare_scp):
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_tacacs_set_unset_show(test_api, engines):
     tacacs_obj = System().aaa.tacacs
     generic_aaa_test_set_unset_show(
@@ -62,7 +61,7 @@ def test_tacacs_set_unset_show(test_api, engines):
 
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_tacacs_set_invalid_param(test_api, engines):
     """
     @summary: Verify failure for invalid param values
@@ -440,7 +439,7 @@ def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
             _, timestamp2 = authenticator.attempt_login_success(restart_session_process=False)
             engines.dut.disconnect()
 
-        with allure.step(f'Verify respond time >= timeout'):
+        with allure.step('Verify respond time >= timeout'):
             assert timestamp2 - timestamp1 >= rand_timeout, f'Timeout was too short. Expected: {rand_timeout}'
 
         with allure.step('Set another unreachable server with timeout'):

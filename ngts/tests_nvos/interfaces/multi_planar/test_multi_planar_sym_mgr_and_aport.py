@@ -46,8 +46,7 @@ def test_internal_fnm_ports(devices):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fae_interface_commands(engines, devices, test_api, start_sm, setup_name):
+def test_fae_interface_commands(engines, devices, random_api, start_sm, setup_name):
     """
     validate all show fae interface commands.
 
@@ -326,8 +325,7 @@ def test_aggregated_port_config_state(engines, devices, start_sm, test_api, test
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
+def test_aggregated_port_mismatch_between_planes(engines, devices, random_api):
     """
     validate correct aggregation in Aport while there is a mismatch in fields values between port’s planes.
 
@@ -342,7 +340,6 @@ def test_aggregated_port_mismatch_between_planes(engines, devices, test_api):
     """
     pytest.skip('Test needs to be restructured and fixed (how can we change config for a single plane?)')
 
-    TestToolkit.tested_api = test_api
     dut_device = devices.dut
 
     try:
@@ -714,8 +711,7 @@ def test_fae_invalid_commands(engines, devices, test_api):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_verify_sm_commands_not_exist(engines, test_api):
+def test_verify_sm_commands_not_exist(engines, random_api):
     """
     Validate the following sm commands are not exist nor supported:
     nv show ib sm
@@ -735,7 +731,6 @@ def test_verify_sm_commands_not_exist(engines, test_api):
     2. check if any "sm" command exists
     3. validate all "sm" commands don't work.
     """
-    TestToolkit.tested_api = test_api
     engines_dut = engines.dut
     ib = Ib(None)
 

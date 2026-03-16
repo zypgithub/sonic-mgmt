@@ -25,8 +25,7 @@ from ngts.tools.test_utils.nvos_general_utils import loganalyzer_ignore
 @pytest.mark.simx
 @pytest.mark.security
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_authentication_show_commands(test_api, engines):
+def test_authentication_show_commands(random_api, engines):
     """
     @summary: Validate output of relevant show commands
 
@@ -36,7 +35,6 @@ def test_authentication_show_commands(test_api, engines):
         3. Run show authentication command (more general)
         4. Validate output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Run show restrictions command'):
         auth_obj = System().aaa.authentication
@@ -71,7 +69,6 @@ def test_auth_restrictions_set_unset(random_api, engines):
         7. Run unset to system, aaa, authentication, restrictions (not specific field)
         8. Verify default configuration
     """
-    TestToolkit.tested_api = random_api
     system = System()
     restrictions = system.aaa.authentication.restrictions
 
@@ -120,8 +117,7 @@ def test_auth_restrictions_set_unset(random_api, engines):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_fail_delay(test_api, engines, test_user):
+def test_auth_restrictions_fail_delay(random_api, engines, test_user):
     """
     @summary: Verify the functionality of the fail-delay configuration
 
@@ -130,7 +126,6 @@ def test_auth_restrictions_fail_delay(test_api, engines, test_user):
         2. Make authentication failures and sample time in between
         3. Verify sample is higher or equal to fail-delay
     """
-    TestToolkit.tested_api = test_api
     fail_delay = random.choice(RestrictionsConsts.VALID_VALUES[RestrictionsConsts.FAIL_DELAY])
     margin = int(max(RestrictionsConsts.ALLOWED_MARGIN, 0.1 * fail_delay))
 
@@ -156,8 +151,7 @@ def test_auth_restrictions_fail_delay(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_lockout(test_api, engines, test_user):
+def test_auth_restrictions_lockout(random_api, engines, test_user):
     """
     @summary: Validate the functionality of the lockout mechanism and its configurations.
 
@@ -169,7 +163,6 @@ def test_auth_restrictions_lockout(test_api, engines, test_user):
         5. Make <lockout-attempts> auth failures
         6. Verify user is blocked
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Set lockout-attempts and high lockout-reattempt, and disable lockout-state'):
         restrictions = System().aaa.authentication.restrictions
@@ -229,8 +222,7 @@ def test_auth_restrictions_lockout(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_auth_restrictions_action_clear_user(test_api, engines, test_user):
+def test_auth_restrictions_action_clear_user(random_api, engines, test_user):
     """
     @summary: Verify the functionality of action clear command
 
@@ -240,7 +232,6 @@ def test_auth_restrictions_action_clear_user(test_api, engines, test_user):
         3. Unblock user using action clear command
         4. Verify user unblocked
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Enable lockout'):
         restrictions = System().aaa.authentication.restrictions
@@ -277,8 +268,7 @@ def test_auth_restrictions_action_clear_user(test_api, engines, test_user):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
+def test_auth_restrictions_action_clear_all(random_api, engines, test_users):
     """
     @summary: Verify the functionality of action clear command
 
@@ -293,7 +283,6 @@ def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
 
     Do not use random_api fixture for this test, as it breaks it, because user set does not work via OpenApi
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Enable lockout'):
         restrictions = System().aaa.authentication.restrictions
@@ -360,8 +349,7 @@ def test_auth_restrictions_action_clear_all(test_api, engines, test_users):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_multi_user(test_api, engines):
+def test_auth_restrictions_multi_user(random_api, engines):
     """
     @summary: Verify that users don't affect each other, from auth restrictions perspective.
 
@@ -371,7 +359,6 @@ def test_auth_restrictions_multi_user(test_api, engines):
         3. Make one of the users blocked
         4. Verify one is blocked and the other is not
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Set 2 users (test_admin and TEST_ADMIN)'):
         TestToolkit.tested_api = ApiType.NVUE  # todo: remove after fix set user with password in openapi
@@ -383,7 +370,7 @@ def test_auth_restrictions_multi_user(test_api, engines):
         test_admin_lower[AaaConsts.PASSWORD] = password
         _, password = system.aaa.user.set_new_user(test_admin_upper[AaaConsts.USERNAME], apply=True)
         test_admin_upper[AaaConsts.PASSWORD] = password
-        TestToolkit.tested_api = test_api  # todo: remove after fix set user with password in openapi
+        TestToolkit.tested_api = random_api  # todo: remove after fix set user with password in openapi
 
     with allure.step('Enable lockout'):
         lockout_attempts = 3
@@ -433,8 +420,7 @@ def test_auth_restrictions_multi_user(test_api, engines):
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user):
+def test_auth_restrictions_auth_success_clears_user(random_api, engines, test_user):
     """
     @summary: Verify that authentication success clears the user from being blocked.
 
@@ -444,7 +430,6 @@ def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user
         3. Make authentication success
         4. Verify user is not blocked
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Enable lockout'):
         lockout_attempts = 3
@@ -487,8 +472,7 @@ def test_auth_restrictions_auth_success_clears_user(test_api, engines, test_user
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user, devices, topology_obj):
+def test_auth_restrictions_ssh_and_openapi_counting(random_api, engines, test_user, devices, topology_obj):
     """
     @summary: Verify that both authentication through ssh and through openapi request are both count as auth attempts.
 
@@ -498,7 +482,6 @@ def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user
         3. Make (another) 2 ssh authentication failures
         4. Verify user is blocked
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Configure lockout-attempts to 4'):
         restrictions = System().aaa.authentication.restrictions
@@ -553,8 +536,7 @@ def test_auth_restrictions_ssh_and_openapi_counting(test_api, engines, test_user
 
 @pytest.mark.simx
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_auth_restrictions_remote_counting(test_api, engines, request, devices, test_user):
+def test_auth_restrictions_remote_counting(random_api, engines, request, devices, test_user):
     """
     @summary: Verify that when there are more than <lockout-attempts> remote authentication servers configured,
         an authentication failure still counts as 1 attempt.
@@ -566,7 +548,6 @@ def test_auth_restrictions_remote_counting(test_api, engines, request, devices, 
         4. Verify user is not blocked
     """
     item = request.node
-    TestToolkit.tested_api = test_api
 
     with allure.step('Configure remote auth with more than <lockout-attempts> servers'):
         servers_info = [TacacsPhysicalServer.SERVER_IPV4.copy(), TacacsDockerServer0.SERVER_IPV4.copy(),

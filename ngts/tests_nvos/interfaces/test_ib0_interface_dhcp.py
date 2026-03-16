@@ -13,7 +13,6 @@ logger = logging.getLogger()
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_dhcp_default_values(engines, topology_obj, random_api):
-    TestToolkit.tested_api = random_api
     """
         Verify default values for dhcp-client and dhcp-client6.
 
@@ -45,7 +44,6 @@ def test_interface_ib0_dhcp_default_values(engines, topology_obj, random_api):
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_dhcp_set_hostname(engines, topology_obj, random_api):
-    TestToolkit.tested_api = random_api
     """
         check that we can configure the set-hostname value (interdependent between IPv4 and IPv6)
 
@@ -156,7 +154,6 @@ def test_interface_ib0_set_dhcp_state(engines, topology_obj):
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_dhcp_ipv6_state(engines, topology_obj, random_api):
-    TestToolkit.tested_api = random_api
     """
     Test IPv6 DHCP client state configuration
 

@@ -3,7 +3,7 @@ import json
 from enum import Enum
 from pathlib import Path
 from tokenize import Double
-from typing import Literal, TypedDict
+from typing import List, Literal, TypedDict
 import re
 
 from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import ADMIN
@@ -371,6 +371,8 @@ class NvosConst:
     FETCH_SUCCESS_MESSAGE = "File fetched successfully"
     FETCH_ERROR_MESSAGE = "Failed to create file"
 
+    STATE = "state"
+
 
 class TopologyConsts:
     MTL = "MTL"
@@ -560,6 +562,20 @@ class SystemConsts:
     LIST_OF_COMMANDS_FILE_PATH = '/var/tmp/list_of_executed_commands.txt'
     TECHSUPPORT_SIZE_LIMIT = 135  # DEPRECATED: Use devices.dut.constants.techsupport_size_limit_mb instead
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "is not a"
+    TECHSUPPORT_DUMP_EMPTY_FILES_TO_IGNORE = ['queue.counters_2', 'queue.counters_1.0', 'swapon', 'queue.counters_1',
+                                              'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
+                                              'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
+                                              'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
+                                              'verification_test.gz']
+    TECHSUPPORT_ETC_EMPTY_FILES_TO_IGNORE = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
+                                             'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
+                                             'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
+                                             'verification_test', 'opasswd.old', 'opasswd', 'sbin.dhclient', 'reload.lock',
+                                             'empty.sh', 'nv-bridge_reconcile', 'gpu_telemetry_enable']
+    TECHSUPPORT_CLUSTER_EMPTY_FILES_TO_IGNORE = ['redis.log', 'config_storage.json', 'user_config_changed',
+                                                 'nvlink_domain_telemetry.csv']
+    TECHSUPPORT_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['hw-management-fixup.sh', 'hw-management-bmc-fixup.sh']
+    TECHSUPPORT_SKYNET_HW_MGMT_EMPTY_FILES_TO_IGNORE = ['udev_events.log']
 
     PATH_KEY = 'path'
     LATEST_KEY = 'latest'
@@ -734,7 +750,8 @@ class SystemConsts:
     CPU_PERCENT_THRESH_MIN = 0.0
     CPU_PERCENT_THRESH_MAX = 60.0
 
-    HEALTH = "health"
+    LEGACY_HEALTH_STATUS = "health-status"  # as in 25.02.2500 branch
+    HEALTH = "health"  # current
 
     EXTERNAL_API_STATE = 'state'
     EXTERNAL_API_STATE_ENABLED = 'enabled'
@@ -825,6 +842,8 @@ class SystemConsts:
     ASIC_DEBUG_CONFIG_ERROR = 'asic-debug-config.service: Failed'
     VERIFICATION_ASIC_DEBUG_PATH = '/auto/sw_system_project/dev_test/asic_debug_config'
     ASIC_DEBUG_CONFIG_LOG_FILE = '/var/log/asic_debug_config.log'
+    PGCB_PASS_CONFIG = 'pgcb_simple.yaml'
+    SIMULATE_PGRSS_TRAP = 'simulate_pgrrs_trap.sh'
 
     SUCCESS_STATUS_DEBUG_CONFIG = 'success'
     FAILED_STATUS_DEBUG_CONFIG = 'failed'
@@ -845,6 +864,10 @@ class SystemConsts:
     CPU_CONFIG_CREATED_FOLDER = '/tmp/cpu-config'
     VERIFICATION_CPU_DEBUG_PATH = '/auto/sw_system_project/dev_test/cpu_debug_config'
     VERIFICATION_BMC_DEBUG_PATH = '/auto/sw_system_project/dev_test/bmc_debug_config'
+    DEFAUL_ASIC_DEBUG_CONFIG_DEFAULT_VALUES = {
+        CURRENT_DEBUG_CONFIG: NA,
+        NEXT_DEBUG_CONFIG: NA
+    }
 
     PYTHON_PATH = 'PYTHONPATH=/ngts_venv/ /ngts_venv/bin/python'
     CONTAINER_BU_SCRIPT = '/devts/scripts/docker/containers_bringup.py'
@@ -926,8 +949,14 @@ class SystemConsts:
     NV_BRIDGE_GREP = '| grep nv-bridge'
     NV_BRIDGE_NODE_IP = '127.0.0.1'
     NV_BRIDGE_NODE_NEGATIVE_IP = '1.1.1.1'
-    NV_BRIDGE_NODE_SERVER = 'node primary server'
     NODE = 'node'
+    NV_BRIDGE_NODE_SERVER = 'server'
+    ACL_DEFAULT_WHITELIST = 'acl-default-whitelist'
+    ACL_DEFAULT_WHITELIST_IPV6 = 'acl-default-whitelist-ipv6'
+    NV_BRIDGE_IPV4_ACL_RULE = 260
+    NV_BRIDGE_IPV6_ACL_RULE = 250
+    NV_BRIDGE_PORT = 50052
+    NV_BRIDGE_CLIENT_STATE = 'nv-bridge-state-report'
 
     CLUSTER_STATE_DISABLED = 'disabled'
     CLUSTER_STATE_ENABLED = 'enabled'
@@ -937,6 +966,16 @@ class SystemConsts:
     GLOBAL = 'global'
     DNS = 'dns'
     FQDN = 'fqdn'
+
+    class ApiConsts:
+        class CompressionT:
+            GZIP = 'gzip'
+
+            @classmethod
+            def all(cls):
+                return [v for k, v in vars(cls).items() if k.isupper()]
+
+        COMPRESSION = 'compression'
 
     class ApiConsts:
         class CompressionT:
@@ -1052,6 +1091,8 @@ class PlatformConsts:
     FW_FPGA = "FPGA"
     FW_SMA = "SMA"
     FW_BMC = "BMC"
+    FW_EROT = "EROT"
+    FW_COMPONENTS = [FW_BMC, FW_EROT, FW_CPLD, FW_BIOS, FW_SMA]
     FW_FIELD_NAME_DICT = {"Actual FW": "actual-firmware"}
     FW_ACTUAL = "actual-firmware"
     FW_BACKGROUND_COPY_STATUS = 'background-copy-status'
@@ -1166,7 +1207,7 @@ class PlatformConsts:
     BMC_COMPONENT_VERSION_PATTERN = r'"Version":\s*"([^"]+)"'
     BMC_LOGIN = ADMIN
     BMC_INTERNAL_IP = '10.0.1.1'
-    BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS = '0penBmcTempPass!'
+    BMC_DEFAULT_ROOT_PASSWORD_AFTER_RESET_VIA_NOS = '0penBmc'
 
     PSU_STATE = 'state'
     PS_REDUNDANCY_POLICY = 'policy'
@@ -1411,6 +1452,64 @@ class IbConsts:
     IB_SEND_LAT_ITERATION_TOLERANCE = 1  # Allowed difference between sent and received iterations
     GET_JOB_IB = 'jobs -l'
     HFNM = 'hfnm'
+
+
+class PhyRoleConsts:
+    PHY_ROLE: str = 'phy-role'
+
+    class PhyRole(Enum):
+        PRIMARY: str = 'primary'
+        SECONDARY: str = 'secondary'
+        FW_DEFAULT: str = 'fw-default'
+        AUTO: str = 'auto'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.PRIMARY.value, cls.SECONDARY.value]
+
+    PHY_ROLE_OPERATIONAL_DEFAULT_VALUES = (PhyRole.PRIMARY, PhyRole.SECONDARY)
+    PHY_ROLE_APPLIED_DEFAULT: str = PhyRole.FW_DEFAULT
+
+    CONSTANT_ROLE: str = 'constant-role'
+
+    class ConstantRole(Enum):
+        ENABLED: str = 'enabled'
+        DISABLED: str = 'disabled'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    CONSTANT_ROLE_DEFAULT: str = ConstantRole.ENABLED
+
+
+class LowPowerConsts:
+    PEC_DURATION: str = 'peq-duration'
+    PEC_RECAL_PERIOD: str = 'peq-recal-period'
+    PEC_RECAL_FORCE_PERIOD: str = 'peq-recal-force-period'
+    FAE_ALL_PARAMS: List[str] = [PEC_DURATION, PEC_RECAL_PERIOD, PEC_RECAL_FORCE_PERIOD]
+
+    class PecRecalPeriodForce(Enum):
+        USE_AGREED_FUNCTION = 'use-agreed-function'
+        FORCE_PERIOD = 'force-period'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    FAE_FIELDS = {
+        PEC_DURATION: {"values": range(0, 65535), "default": 379},
+        PEC_RECAL_PERIOD: {"values": range(0, 65535), "default": 8008},
+        PEC_RECAL_FORCE_PERIOD: {"values": PecRecalPeriodForce.all(), "default": PecRecalPeriodForce.USE_AGREED_FUNCTION}
+    }
+
+    L1_TOTAL_ENTRIES: str = 'l1-total-entries'
+    AVERAGE_LOCAL_FULL_BW_EXIT: str = 'average-local-full-bw-exit'
+    ALL_COUNTERS: List[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
 
 
 class ImageConsts:
@@ -1722,6 +1821,7 @@ class NtpConsts:
 
 
 class RebootConsts:
+    WAIT_TIME_BEFORE_REBOOT = 120
     HALT = "halt"
     COLD = "cold"
     IMMEDIATE = "immediate"
@@ -1943,20 +2043,21 @@ class HealthConsts:
     # more constants found at test_fatal_mode.py
 
     class Component:
-        FAN = "Fan"
-        ASIC = "ASIC"
-        CPU = "CPU"
-        PSU = "PSU"
-        Transceiver = "Transceiver"
-        Switch = "Switch"
-        Leakage_Sensor = "Leakage-sensor"
-        Software = "Software"
+        FAN = "fan"
+        ASIC = "asic"
+        CPU = "cpu"
+        PSU = "psu"
+        Transceiver = "transceiver"
+        Switch = "switch"
+        Leakage_Sensor = "leakage-sensor"
+        Software = "software"
         COMPONENTS = [FAN, ASIC, CPU, PSU, Transceiver, Switch, Leakage_Sensor, Software]
         LAST_HEALTHY = 'last-unhealthy'
         UNHEALTHY_COUNT = 'unhealthy-count'
         STATE = 'state'
         HEALTHY = 'HEALTHY'
         UNHEALTHY = 'UNHEALTHY'
+        INSTANCE = 'instance'
 
 
 class OperationTimeConsts:
@@ -2180,10 +2281,18 @@ class FastRecoveryConsts:
 
 
 class LogComponentsConsts:
-    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd"]
-    LOG_LEVEL_LIST = ["critical", "debug", "error", "info", "notice", "warn"]
+    COMPONENTS_LIST = ["nvue", "orchagent", "portsyncd", "sai_api_port", "sai_api_switch", "syncd", "gpu_telemetry"]
+    CRITICAL = "critical"
+    DEBUG = "debug"
+    ERROR = "error"
+    INFO = "info"
+    NOTICE = "notice"
+    WARN = "warn"
+    ALERT = "alert"
+    EMERGENCY = "emergency"
+    LOG_LEVEL_LIST = [CRITICAL, DEBUG, ERROR, INFO, NOTICE, WARN]
+    LOG_LEVEL_DEFAULT = NOTICE
     LEVEL = 'level'
-    NOTICE = 'notice'
     NVUE = 'nvue'
     NVUE_LOG = 'nvued.log'
     NVUE_CLI_LOG = 'nv-cli.log'
@@ -2688,3 +2797,24 @@ class PackageConsts:
     VRF = 'vrf'
     TRIES = 'tries'
     REMOTE_URL = 'remote-url'
+
+
+class PeerPortConsts:
+    GPU_TELEMETRY_SERVICE = "gpu-telemetry"
+    NMX_T_LITE_SERVICE = "nmx-t-lite"
+    PEER_PORT = "peer-port"
+    STATE = "state"
+    INTERVAL = "interval"
+    STATE_ENABLED = "enabled"
+    STATE_DISABLED = "disabled"
+    INTERVAL_DEFAULT = 5
+    INTERVAL_UNDERLIMIT = 0
+    INTERVAL_OVERLIMIT = 3601
+    INVALID_INTERVAL_ERR_MSG = "Valid range for interval is"
+    LOWER_INTERVAL_ERR_MSG = "is less than the minimum of"
+    HIGHER_INTERVAL_ERR_MSG = "is greater than the maximum of"
+    SET_INVALID_INTERVAL_ERR_MSGS = {ApiType.NVUE: {"under_limit": INVALID_INTERVAL_ERR_MSG,
+                                                    "over_limit": INVALID_INTERVAL_ERR_MSG},
+                                     ApiType.OPENAPI: {"under_limit": LOWER_INTERVAL_ERR_MSG,
+                                                       "over_limit": HIGHER_INTERVAL_ERR_MSG}}
+    ASSOCIATED_SWITCH_PORT = "associated-switch-port"

@@ -18,8 +18,7 @@ logger = logging.getLogger()
 
 @pytest.mark.interface
 @pytest.mark.link_detection
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_port_xdr(engines, devices, test_api):
+def test_port_xdr(engines, devices, random_api):
     """
     Validate the link detection is handled correctly for xdr connected port.
 
@@ -28,7 +27,6 @@ def test_port_xdr(engines, devices, test_api):
     2. Switch it to legacy mode.
     3. Switch back to xdr mode.
     """
-    TestToolkit.tested_api = test_api
 
     port_name = "swB9p2"
 
@@ -45,8 +43,7 @@ def test_port_xdr(engines, devices, test_api):
 
 @pytest.mark.interface
 @pytest.mark.link_detection
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_port_legacy(engines, devices, test_api):
+def test_port_legacy(engines, devices, random_api):
     """
     Validate the link detection is handled correctly for legacy port.
 
@@ -57,7 +54,6 @@ def test_port_legacy(engines, devices, test_api):
     4. Switch back to legacy mode.
     5. Verify port is up and planarized.
     """
-    TestToolkit.tested_api = test_api
 
     port_name = "swB10p2"
 
@@ -75,8 +71,7 @@ def test_port_legacy(engines, devices, test_api):
 
 @pytest.mark.interface
 @pytest.mark.link_detection
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_port_loop_out(engines, devices, test_api):
+def test_port_loop_out(engines, devices, random_api):
     """
     Validate the link detection is handled correctly for ports connected via loop-out.
 
@@ -87,7 +82,6 @@ def test_port_loop_out(engines, devices, test_api):
     4. Switch back to legacy mode.
     5. Verify port is up and planarized.
     """
-    TestToolkit.tested_api = test_api
 
     p1_name = "swB9p2"
     p2_name = "swB10p2"

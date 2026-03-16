@@ -26,6 +26,7 @@ from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, summarize_switch_ports
+from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
@@ -97,8 +98,57 @@ def test_nvl_fnm_ports_up(devices, has_loopbox, standalone_system):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, standalone_system):
+def test_nvl_ports_up(devices, has_loopbox, standalone_system):
+    """
+    Validate that all NVL access (acp) ports are UP and at the expected default speed.
+
+    Test flow:
+        1. Get expected acp ports from device model (nvl_access_ports_list)
+        2. Run 'nv show interface' and parse output
+        3. Verify all expected acp ports exist in the output
+        4. Verify all acp ports have state 'up'
+        5. Verify all acp ports have the expected default speed (access_port_speed)
+    """
+    if not has_loopbox and standalone_system:
+        pytest.skip("Standalone system without loopbox - ports will not link up")
+
+    expected_ports = devices.dut.nvl_access_ports_list
+    if not expected_ports:
+        pytest.skip("No NVL access (acp) ports defined for this device")
+
+    output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+        Port.show_interface()).get_returned_value()
+
+    missing_ports = [port for port in expected_ports if port not in output_dictionary]
+    assert not missing_ports, (
+        f"Expected ports missing from 'nv show interface' output: {missing_ports}"
+    )
+
+    down_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_STATE]
+                  for port in expected_ports
+                  if output_dictionary[port][IbInterfaceConsts.LINK_STATE] != NvosConsts.LINK_STATE_UP}
+
+    assert not down_ports, (
+        f"Expected all ports to be UP, but {len(down_ports)}/{len(expected_ports)} ports are not UP: {down_ports}"
+    )
+    logger.info(f"All {len(expected_ports)} NVL access (acp) ports are UP")
+
+    expected_speed = devices.dut.access_port_speed
+    wrong_speed_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_SPEED]
+                         for port in expected_ports
+                         if output_dictionary[port].get(IbInterfaceConsts.LINK_SPEED) != expected_speed}
+
+    assert not wrong_speed_ports, (
+        f"Expected all ports at {expected_speed}, but {len(wrong_speed_ports)}/{len(expected_ports)} "
+        f"ports have wrong speed: {wrong_speed_ports}"
+    )
+    logger.info(f"All {len(expected_ports)} NVL access (acp) ports are at expected default speed: {expected_speed}")
+
+
+@pytest.mark.interface
+@pytest.mark.multiplanar
+@pytest.mark.simx
+def test_show_nvl_interface_commands(engines, devices, random_api, has_loopbox, standalone_system):
     """
     validate all show fae interface nvl commands.
 
@@ -110,7 +160,6 @@ def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, st
     5. Clear counters
     """
 
-    TestToolkit.tested_api = test_api
     dut_device = devices.dut
     platform = Platform()
 
@@ -122,10 +171,19 @@ def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, st
         port_name = RandomizationTool.select_random_value(devices.dut.nvl_access_ports_list + devices.dut.nvl_trunk_ports_list).get_returned_value()
         selected_port = Port(port_name)
         selected_fae_port = Fae(port_name=port_name)
-        fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl_fnm_ports).get_returned_value()
-        fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl_internal_fnm_ports).get_returned_value()
-        fnm_port = Port(fnm_port_name)
-        fnm_fae_port = Fae(port_name=fnm_fae_port_name)
+
+        # Handle FNM ports - set to None if not available
+        fnm_port_name = None
+        fnm_port = None
+        if hasattr(devices.dut, 'nvl_fnm_ports') and devices.dut.nvl_fnm_ports:
+            fnm_port_name = RandomizationTool.select_random_value(devices.dut.nvl_fnm_ports).get_returned_value()
+            fnm_port = Port(fnm_port_name)
+
+        fnm_fae_port_name = None
+        fnm_fae_port = None
+        if hasattr(devices.dut, 'nvl_internal_fnm_ports') and devices.dut.nvl_internal_fnm_ports:
+            fnm_fae_port_name = RandomizationTool.select_random_value(devices.dut.nvl_internal_fnm_ports).get_returned_value()
+            fnm_fae_port = Fae(port_name=fnm_fae_port_name)
 
     with allure_step("Validate show interface command with all nvl interfaces"):
         show_interface_and_validate(engines, devices, devices.dut.all_nvl_ports_list)
@@ -163,7 +221,7 @@ def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, st
                 f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify fnm port speed"):
-        if has_loopbox or not standalone_system:
+        if fnm_port_name and (has_loopbox or not standalone_system):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 fnm_port.interface.link.show()).get_returned_value()
             assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_link_speed, \
@@ -171,11 +229,12 @@ def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, st
                 f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
     with allure_step("Verify fae fnm port speed"):
-        output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-            fnm_fae_port.interface.link.show()).get_returned_value()
-        assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_fae_link_speed, \
-            f"port speed should be {dut_device.fnm_fae_link_speed} instead of" \
-            f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
+        if fnm_fae_port_name:
+            output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                fnm_fae_port.interface.link.show()).get_returned_value()
+            assert output_dictionary[IbInterfaceConsts.LINK_SPEED] == dut_device.fnm_fae_link_speed, \
+                f"port speed should be {dut_device.fnm_fae_link_speed} instead of" \
+                f"{output_dictionary[IbInterfaceConsts.LINK_SPEED]}"
 
         # ValidationTool.compare_values(output_fae_port['link']['speed'], devices.dut.nvl_trunk_port_speed).verify_result()
         # [TBD] will work only on real system,  when system arrived, bug 3730650
@@ -188,12 +247,13 @@ def test_show_nvl_interface_commands(engines, devices, test_api, has_loopbox, st
 
     with allure_step("Validate all multi planar fields exist and port {} type fnm, port speed 400G"
                      .format(selected_port.name)):
-        output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
-            fnm_fae_port.port.interface.show()).get_returned_value()
-        fae_port_keys = list(output_fae_port.keys())
-        ValidationTool.validate_all_values_exists_in_list(MultiPlanarConsts.MULTI_PLANAR_KEYS, fae_port_keys). \
-            verify_result()
-        ValidationTool.compare_values(output_fae_port['type'], devices.dut.fnm_port_type).verify_result()
+        if fnm_fae_port_name:
+            output_fae_port = OutputParsingTool.parse_show_interface_output_to_dictionary(
+                fnm_fae_port.port.interface.show()).get_returned_value()
+            fae_port_keys = list(output_fae_port.keys())
+            ValidationTool.validate_all_values_exists_in_list(MultiPlanarConsts.MULTI_PLANAR_KEYS, fae_port_keys). \
+                verify_result()
+            ValidationTool.compare_values(output_fae_port['type'], devices.dut.fnm_port_type).verify_result()
 
     with allure_step("Clear counters and validate"):
         selected_port.interface.action_clear_counter_for_all_interfaces(engines.dut).verify_result()
@@ -278,7 +338,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.nvl_ci
-def test_nvl_port_configuration(engines, devices, test_api):
+def test_nvl_port_configuration(engines, devices, random_api):
     """
     Validate configuration applied on interface
 
@@ -305,7 +365,7 @@ def test_nvl_port_configuration(engines, devices, test_api):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-def test_nvl_negative(engines, devices, test_api):
+def test_nvl_negative(engines, devices, random_api):
     """
     Validate negative testing on nvl port
 
@@ -385,7 +445,6 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
     4. Unset all ports speed.
     5. Verify the default value (400G) is restored.
     """
-    TestToolkit.tested_api = test_api
     with allure.step(f"Select {devices.dut.nvl_port_type} ports"):
         port_names = [port.name for port in RandomizationTool.select_random_ports(requested_ports_type=devices.dut.nvl_port_type, num_of_ports_to_select=0).get_returned_value() if port.name.startswith(prefix)]
         up_ports = [Port(port_name) for port_name in port_names]
@@ -414,7 +473,7 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
                            delay=30)
                 time.sleep(30)  # GNMI 30 seconds pulling interval
 
-    # Unset port speed and verify default (400G trunk / 375G access) is restored
+    # Unset port speed and verify default (device-specific: access_port_speed or nvl_trunk_port_speed) is restored
     finally:
         with allure.step(f"Test unset xdr slow speed"):
             all_ports.interface.link.unset(op_param=IbInterfaceConsts.LINK_SPEED, apply=True, ask_for_confirmation=True).verify_result()
@@ -561,7 +620,7 @@ def _test_port_state_change_with_speeds(selected_port, expected_speeds_set):
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-def test_nvl_supported_speeds_validation(engines, devices, test_api, has_loopbox, standalone_system):
+def test_nvl_supported_speeds_validation(engines, devices, random_api, has_loopbox, standalone_system):
     """
     Validate supported-speed field matches expected device supported speeds
 
@@ -592,6 +651,22 @@ def test_nvl_supported_speeds_validation(engines, devices, test_api, has_loopbox
             pytest.skip("No supported_nvl_speeds available on device")
         expected_supported_speeds = devices.dut.supported_nvl_speeds
         logger.info(f"Expected supported speeds: {expected_supported_speeds}")
+
+        # Get current configured speed - if port is configured at lower speed,
+        # supported-speeds should only show speeds up to and including configured speed
+        interface_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+            selected_port.interface.link.show()).get_returned_value()
+        current_speed = interface_output.get(IbInterfaceConsts.LINK_SPEED)
+
+        if current_speed:
+            current_speed_value = int(current_speed.replace('G', ''))
+            # Filter expected speeds to only those <= current configured speed
+            expected_supported_speeds = sorted(
+                [speed for speed in expected_supported_speeds
+                 if int(speed.replace('G', '')) <= current_speed_value],
+                key=lambda x: int(x.replace('G', ''))
+            )
+            logger.info(f"Port configured at {current_speed}, expecting speeds up to {current_speed}: {expected_supported_speeds}")
 
         # Validate speeds match
         _validate_supported_speeds_match(displayed_speeds_list, expected_supported_speeds, selected_port.name)
@@ -696,7 +771,7 @@ def test_nvl_invalid_speed_configuration_negative(engines, devices, test_api, ha
         logger.info(f"Error message: {error_message}")
 
         # Validate error message contains key components (order-independent)
-        # Expected pattern: "Error: 9999G not in ['375G', '337G', '307G', '200G']"
+        # Expected pattern example: "Error: 9999G not in ['200G', '400G', '360G', '328G']" (device-dependent)
         assert f"Error: {invalid_speed}" in error_message, f"Error message should start with 'Error: {invalid_speed}'"
         assert "not in" in error_message, "Error message should indicate value is 'not in' supported list"
 
@@ -712,7 +787,7 @@ def test_nvl_invalid_speed_configuration_negative(engines, devices, test_api, ha
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-def test_nvl_speed_configuration(engines, devices, test_api, has_loopbox, standalone_system):
+def test_nvl_speed_configuration(engines, devices, random_api, has_loopbox, standalone_system):
     """
     Validate speed configuration on nvl port
 
@@ -770,6 +845,9 @@ def test_nvl_speed_configuration(engines, devices, test_api, has_loopbox, standa
             ).verify_result()
             logger.info(f"✓ Link successfully toggled and returned to UP state")
 
+            # Wait 1 minute before verifying speed (allows speed to stabilize)
+            time.sleep(MINUTE)
+
             # Verify speed changed
             json_output = selected_port.interface.link.show(output_format=OutputFormat.json)
             output_dict = OutputParsingTool.parse_json_str_to_dictionary(json_output).get_returned_value()
@@ -825,6 +903,9 @@ def test_nvl_speed_configuration(engines, devices, test_api, has_loopbox, standa
                 ).verify_result()
                 logger.info(f"✓ Link toggled after unset")
 
+                # Wait 1 minute before verifying speed restoration (allows speed to stabilize)
+                time.sleep(MINUTE)
+
                 # Verify restoration
                 restored_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                     selected_port.interface.link.show()).get_returned_value()
@@ -836,7 +917,7 @@ def test_nvl_speed_configuration(engines, devices, test_api, has_loopbox, standa
 @pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
-def test_nvl_200g_simplex_lanes_validation(engines, devices, test_api, has_loopbox):
+def test_nvl_200g_simplex_lanes_validation(engines, devices, random_api, has_loopbox):
     """
     Validate supported-lanes includes "1X" for 200G speed (simplex mode) on QTM4+ ASICs
 

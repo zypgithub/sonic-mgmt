@@ -14,8 +14,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_chassis_location(engines, test_api, devices, has_loopbox, standalone_system):
+def test_show_platform_chassis_location(engines, random_api, devices, has_loopbox, standalone_system):
     """
     Validates the output of nv show platform chassis-location.
     The OpenAPI test checks the JSON output while the NVUE test checks the auto output.

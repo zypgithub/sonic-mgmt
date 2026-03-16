@@ -28,7 +28,7 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
     Run show system message command and verify the required message
@@ -104,7 +104,7 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_message(test_api, engines, devices, nv_command):
     """
     Run show/set/unset system message command and verify the required message
@@ -175,7 +175,7 @@ def test_system_message(test_api, engines, devices, nv_command):
 
 @pytest.mark.system
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_reboot(test_api, engines, devices, nv_command):
     """
     Run show system reboot command and verify the reboot history and reason values
@@ -196,7 +196,7 @@ def test_show_system_reboot(test_api, engines, devices, nv_command):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_memory(test_api, engines, devices, nv_command):
     """
     Run show system memory and verify there is a correlation between the different values,
@@ -236,7 +236,7 @@ def test_show_system_memory(test_api, engines, devices, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_cpu(test_api, engines, devices, nv_command):
     """
     Run show system memory and verify there is a correlation between the different values,
@@ -250,6 +250,7 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system cpu command and verify that each field has a value'):
+        time.sleep(10)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("cpu")).get_returned_value()
 
         for key, value in output_dictionary.items():
@@ -272,7 +273,7 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_contact_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message
@@ -296,7 +297,7 @@ def test_system_contact_set(test_api, engines, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_location_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message

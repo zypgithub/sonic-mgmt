@@ -25,14 +25,12 @@ def test_sonic_cli_disabled(engines):
 
 
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.parametrize('state', [ActionConsts.ENABLE, ActionConsts.DISABLE])
-def test_change_sonic_cli_state(engines, test_api, state):
+def test_change_sonic_cli_state(engines, random_api, state):
     """
         1. Disable sonic_cli through action
         2. Check sonic_cli is unresponsive
     """
-    TestToolkit.tested_api = test_api
     switch: ProxySshEngine = engines.dut
     sonic_cmd = 'show clock'
     fae = Fae()

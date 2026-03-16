@@ -1,5 +1,6 @@
 import logging
 import allure
+import time
 
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -209,10 +210,9 @@ class InterfaceConfigurationTool:
             # Wait for port to come back up after speed change (port goes down during speed reconfiguration)
             selected_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP, timeout=30).verify_result()
 
-            # Verify the speed is configured
-            verify_dict = parser_func(selected_port.interface.link.show()).get_returned_value()
-            current_configured_speed = verify_dict[speed_field]
-            assert current_configured_speed == speed, f"Failed to configure speed. Expected: {speed}, Got: {current_configured_speed}"
+            # Wait for port to come back up after speed change (port goes down during speed reconfiguration)
+            selected_port.interface.wait_for_port_speed(selected_port, system_type, speed)
+
             logger.info(f"Successfully configured speed {speed} for port {port_name}")
 
     @staticmethod
@@ -275,7 +275,13 @@ class InterfaceConfigurationTool:
                 parser_func = OutputParsingTool.parse_show_interface_link_output_to_dictionary
                 speed_field = IbInterfaceConsts.LINK_SPEED
 
-            current_dict = parser_func(selected_port.interface.link.show()).get_returned_value()
+            for _ in range(10):
+                current_dict = parser_func(selected_port.interface.link.show()).get_returned_value()
+                if speed_field not in current_dict:
+                    time.sleep(3)
+                else:
+                    break
+            assert speed_field in current_dict, "Speed can't be found in output"
             current_speed = current_dict[speed_field]
 
             assert current_speed == expected_speed, f"Speed verification failed. Expected: {expected_speed}, Got: {current_speed}"

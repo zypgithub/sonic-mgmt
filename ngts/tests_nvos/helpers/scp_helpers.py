@@ -1,5 +1,6 @@
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 
-def get_player_scp_host_creds(player: LinuxSshEngine) -> str:
-    return f'{player.username}:{player.password}@{player.ip}'
+def get_player_scp_host_creds(player) -> str:
+    ip = IpTool.format_ip_for_uri(player)
+    return f'{player.username}:{player.password}@{ip}'

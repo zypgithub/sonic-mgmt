@@ -18,6 +18,7 @@ from ngts.tests_nvos.general.security.certificate.helpers import import_test_cer
 from ngts.tests_nvos.general.security.helpers import cleanup_certs_for_tests, optional_cacert_types, setup_certs_for_tests
 from ngts.tests_nvos.general.security.nmx_cert.conftest import clear_manager_config
 from ngts.tests_nvos.general.security.nmx_cert.constants import APP_CONSTS, DISABLED, ENABLED, STATE, Defaults, EncryptionMode
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.general.security.nmx_cert.helpers import (
     disable_cluster,
     disable_cluster_app_manager_state,
@@ -187,7 +188,10 @@ def test_cluster_app_mngr_security_cli(test_api, app_name, engines, ca_type):
             with allure.independent_step("verify encryption show - expect item does not exist"):
                 verify_encryption_show(app_name, expect_item_not_exist=True)
         with allure.independent_step("verify files and fields in json deleted"):
-            verify_files(app_name, engines.dut)
+            if is_bug_active(4902360):
+                verify_files(app_name, engines.dut, expected_user_config_json_values=None)
+            else:
+                verify_files(app_name, engines.dut, {consts.user_config_json_fields.state: DISABLED})
 
 
 @pytest.mark.nmx

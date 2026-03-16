@@ -1,5 +1,4 @@
 import logging
-import random
 import time
 import pytest
 
@@ -46,10 +45,8 @@ def clear_platform_ps_redundancy(platform, engines):
 
 @pytest.mark.platform
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_ps_redundancy(test_api, devices, engines, min_psu_not_available_eth):
+def test_show_platform_ps_redundancy(random_api, devices, engines, min_psu_not_available_eth):
     """nv show platform ps-redundancy"""
-    TestToolkit.tested_api = test_api
 
     if min_psu_not_available_eth:
         with allure.step("Verify testcase applicable for cumulus devices"):
@@ -72,10 +69,8 @@ def test_show_platform_ps_redundancy(test_api, devices, engines, min_psu_not_ava
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.timeout(6 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy, devices, min_psu_not_available_eth):
+def test_set_platform_ps_redundancy(engines, random_api, required_for_redundancy, devices, min_psu_not_available_eth):
     """nv set platform ps-redundancy"""
-    TestToolkit.tested_api = test_api
 
     if min_psu_not_available_eth:
         with allure.step("Verify testcase applicable for cumulus devices"):
@@ -112,10 +107,8 @@ def test_set_platform_ps_redundancy(engines, test_api, required_for_redundancy, 
 @pytest.mark.platform
 @pytest.mark.disable_loganalyzer
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, test_api, required_for_redundancy, min_psu_not_available_eth):
-    TestToolkit.tested_api = test_api
+def test_platform_ps_redundancy_functionality(engines, devices, topology_obj, random_api, required_for_redundancy, min_psu_not_available_eth):
 
     if min_psu_not_available_eth:
         with allure.step("Verify testcase applicable for cumulus devices"):

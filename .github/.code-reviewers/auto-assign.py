@@ -88,8 +88,8 @@ if reviewer_candidates:
         reviewers_to_add.append(reviewer)
         for reviewer, change_count in it_cand:
             if (
-                len(reviewers_to_add) >= NEEDED_REVIEWER_COUNT
-                and change_count < prev_change_count
+                len(reviewers_to_add) >= NEEDED_REVIEWER_COUNT and
+                change_count < prev_change_count
             ):
                 # stop when enough reviewers found and the tie is broken
                 break
@@ -113,4 +113,3 @@ if reviewer_candidates:
         print(f"An error occurred: {e}")
 else:
     print("No reviewers found for this PR!")
-

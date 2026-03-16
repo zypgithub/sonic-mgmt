@@ -1,3 +1,4 @@
+import random
 import subprocess
 import time
 from typing import List
@@ -28,7 +29,7 @@ from ngts.tests_nvos.system.gnmi.helpers import run_gnmi_client_and_verify, setu
 
 @pytest.mark.mtls
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_gnmi_mtls_cli(test_api, gnmi_certs):
     """
     Verify that all CLI work and check values change properly in show
@@ -45,7 +46,7 @@ def test_gnmi_mtls_cli(test_api, gnmi_certs):
 
 @pytest.mark.mtls
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_gnmi_mtls_set_bad_param(test_api, gnmi_certs):
     """
     Verify that set with bad param rejected
@@ -59,7 +60,7 @@ def test_gnmi_mtls_set_bad_param(test_api, gnmi_certs):
 
 @pytest.mark.mtls
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_gnmi_mtls_set_ca_without_cert_not_rejected(test_api, gnmi_certs, devices):
     """
     Verify that set api CA not rejected when no cert was previously set

@@ -284,6 +284,9 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             DutUtilsTool.wait_for_system_ready_in_serial(topology_obj, serial_engine, self.device.timeout_system_is_ready)
             InstallStepsTimer.add_timestamp(InstallSteps.SYSTEM_IS_READY_AFTER_MANUFACTURE)
 
+        # Validate system health after ONIE install
+        DutUtilsTool.wait_for_nvos_to_become_functional(engine).verify_result()
+
     @staticmethod
     def diff_config(engine, revision_1='', revision_2='', output_type='json'):
         logging.info("Running 'nv config diff' on dut")

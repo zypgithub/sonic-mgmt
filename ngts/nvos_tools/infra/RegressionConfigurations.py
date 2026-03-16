@@ -61,9 +61,10 @@ class Configurations:
 
     juliet_systems_with_loopbox = ["NVOS_juliet_10_7_148_136", "NVOS_juliet_10_7_148_184",
                                    "NVOS_juliet_10_7_145_85", "NVOS_juliet_10_7_148_142", "NVOS_surrogate_10_7_145_54", "NVOS_rosalind_spil_1",
-                                   "NVOS_rosalind_skt_1", "NVOS_rosalind_eb1_10", "NVOS_rosalind_eb2_2102", "NVOS_juliet_10_7_148_126"]
+                                   "NVOS_rosalind_skt_1", "NVOS_rosalind_eb1_10", "NVOS_rosalind_eb2_2102", "NVOS_juliet_10_7_148_126",
+                                   "NVOS_rosalind_eb1_2152", "NVOS_rosalind_eb2_164", "NVOS_rosalind_eb2_2124"]
 
-    non_standalone_systems = ['NVOS_juliet_10_7_148_148']
+    non_standalone_systems = ['NVOS_juliet_10_7_148_148', 'NVOS_sws_rtf2_rosalind_198']
 
     doca_traffic_systems = ['NVOS_taipan_10_7_145_34']
 
@@ -71,11 +72,15 @@ class Configurations:
 
     compute_nodes_per_system = {
         'NVOS_juliet_10_7_148_148': [{'ip_address': '10.7.34.145', 'username': 'nvidia', 'password': 'nvidia'},
-                                     {'ip_address': '10.7.34.192', 'username': 'nvidia', 'password': 'nvidia'}]}
+                                     {'ip_address': '10.7.34.192', 'username': 'nvidia', 'password': 'nvidia'}],
+        'NVOS_sws_rtf2_rosalind_198': [{'ip_address': '10.220.9.22', 'username': 'nvidia', 'password': 'nvidia'},
+                                       {'ip_address': '10.220.9.23', 'username': 'nvidia', 'password': 'nvidia'}]}
 
-    ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72']}
+    ports_to_disable = {'NVOS_juliet_10_7_148_148': ['acp17-20', 'acp69-72'],
+                        'NVOS_sws_rtf2_rosalind_198': []}
 
-    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8'}
+    oberon_num_of_gpus = {'NVOS_juliet_10_7_148_148': '8',
+                          'NVOS_sws_rtf2_rosalind_198': '8'}
 
     # Map IPs to their post-install commands
     post_install_commands = {

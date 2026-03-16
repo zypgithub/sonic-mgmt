@@ -17,8 +17,7 @@ logger = logging.getLogger()
 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, engines, nv_command):
+def test_platform_asic_power_telemetry_default_fields_values(random_api, devices, engines, nv_command):
     """
     Validate ASIC Power Telemetry feature.
         Test flow:
@@ -27,7 +26,6 @@ def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, 
             3. Validate nv show platform asic ASIC power counters output
             4. Validate GNMI output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Check gnmi is installed and running"):
         GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
@@ -90,8 +88,7 @@ def test_platform_asic_power_telemetry_default_fields_values(test_api, devices, 
 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devices, nv_command, wrong_shunt_resistor_system):
+def test_platform_asic_power_telemetry_counters_updates(engines, random_api, devices, nv_command, wrong_shunt_resistor_system):
     """
     Validate ASIC Power Telemetry feature counters updates.
         Test flow:
@@ -101,8 +98,6 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
     """
     if wrong_shunt_resistor_system:
         pytest.skip('system has wrong shunt resistor - part number is 692-9K33R-00MV-JQS, causing unexpected behavior like wrong power reads - https://nvbugspro.nvidia.com/bug/5242705')
-
-    TestToolkit.tested_api = test_api
 
     with allure.step("Check gnmi is installed and running"):
         GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
@@ -160,16 +155,13 @@ def test_platform_asic_power_telemetry_counters_updates(engines, test_api, devic
 
 @pytest.mark.platform
 @pytest.mark.power_telemetry
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_negative_platform_asic_power_telemetry_not_supported(engines, devices, topology_obj, test_api, nv_command):
+def test_negative_platform_asic_power_telemetry_not_supported(engines, devices, topology_obj, random_api, nv_command):
     """
     Validate ASIC Power Telemetry feature not working on not supported systems.
         Test flow:
             1. Validate nv show platform asic command
             2. Validate nv show platform asic ASIC command
     """
-
-    TestToolkit.tested_api = test_api
 
     with allure.step("Check nv show platform asic, on not gb300 device"):
         asic_output = nv_command.platform.asic.show(should_succeed=False)

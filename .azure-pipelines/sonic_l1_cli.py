@@ -10,7 +10,7 @@ import sys
 import logging
 import traceback
 
-logging.basicConfig(level=logging.INFO,  format="[%(levelname)s] (SONiC L1 CLI) %(asctime)s %(name)s: %(message)s")
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s] (SONiC L1 CLI) %(asctime)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 _self_dir = os.path.dirname(os.path.abspath(__file__))

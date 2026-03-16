@@ -1,7 +1,8 @@
 import random
 import pytest
-
-from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch
+from typing import Tuple
+import logging
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
@@ -12,7 +13,12 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.ngts_types import DevicesT, EnginesT
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.nvos_tools.infra.IbnetdiscoverTool import IbnetdiscoverTool
 from ngts.tools.test_utils import allure_utils as allure
+
+logger = logging.getLogger()
 
 
 def show_interface_and_validate(engines, devices, ports_list, command=''):
@@ -90,3 +96,38 @@ def reset_gpus_if_needed(setup_name):
     if setup_name in Configurations.non_standalone_systems:
         with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
             ClusterTools.reboot_compute_nodes_gpus(setup_name)
+
+
+def is_qtm3_device(devices: DevicesT) -> bool:
+    return isinstance(devices.dut, JulietSwitch) and devices.dut.asic_type in [NvosConst.QTM3, NvosConst.NVL5]
+
+
+def is_qtm4_device(devices: DevicesT) -> bool:
+    return isinstance(devices.dut, RosalindSurrogateSwitch) and devices.dut.asic_type in [NvosConst.QTM4, NvosConst.NVL6]
+
+
+def is_nvl_device(devices: DevicesT) -> bool:
+    return is_qtm3_device(devices) or is_qtm4_device(devices)
+
+
+def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> Tuple[str, str]:
+    switches_list = IbnetdiscoverTool.run_ibnetdiscover(engines)
+    with allure.step("Get a pair of linked port names"):
+        random_switch = random.choice(switches_list)
+        num_of_ports_in_switch = min(len(random_switch['ports']) - 1, 72)  # Last port is FNM port
+        valid_access_ports = [p for p in random_switch['ports'] if 1 <= p['port_num'] <= num_of_ports_in_switch]
+        assert valid_access_ports, f"No valid access ports (1-{num_of_ports_in_switch}) found in switch {random_switch['switch_guid']}"
+        src_port = random.choice(valid_access_ports)
+        remote_switch_guid = src_port['remote_switch_guid']
+        remote_port_num = src_port['remote_port_num']
+
+        remote_switch = next((switch for switch in switches_list if switch['switch_guid'] == remote_switch_guid), None)
+        assert remote_switch is not None, f"Remote switch {remote_switch_guid} not found in {switches_list}"
+        remote_port = next((port for port in remote_switch['ports'] if port['port_num'] == remote_port_num), None)
+        assert remote_port is not None, f"Remote port {remote_port_num} not found in {remote_switch['ports']}"
+        acp_port_src_name = f"acp{src_port['port_num'] + (num_of_ports_in_switch * (random_switch['order'] - 1))}"
+        assert acp_port_src_name in devices.dut.nvl_access_ports_list, f"Source port {acp_port_src_name} not found in {devices.dut.nvl_access_ports_list}"
+        acp_port_dst_name = f"acp{remote_port['port_num'] + (num_of_ports_in_switch * (remote_switch['order'] - 1))}"
+        assert acp_port_dst_name in devices.dut.nvl_access_ports_list, f"Destination port {acp_port_dst_name} not found in {devices.dut.nvl_access_ports_list}"
+        logger.info(f"Linked ports pair: {acp_port_src_name} <-> {acp_port_dst_name}")
+        return (acp_port_src_name, acp_port_dst_name)

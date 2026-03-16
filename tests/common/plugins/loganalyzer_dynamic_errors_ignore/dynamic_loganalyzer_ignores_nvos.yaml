@@ -43,6 +43,13 @@
     - Affected_test_cases:
       - tests_nvos
 
+# NVOS - mst_pci out-of-tree module warning (known benign, applies to all nvos tests). ref: http://nvbugspro.nvidia.com/bug/5884401
+- Errors_list:
+    - '.*WARNING kernel: \[.*\] mst_pci: loading out-of-tree module taints kernel.*'
+  Conditions:
+    - Affected_test_cases:
+      - tests_nvos
+
 - Errors_list:
     - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
     - '.* ERR watchdogutil: Failed to get watchdog module'
@@ -1010,14 +1017,8 @@
 - Errors_list:
     - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
     - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
-  Conditions:
-    - Affected_test_cases:
-        - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_negative
-
-# NVOS : Errors which should be ignored in tests nvl5 ports
-- Errors_list:
-    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 800G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
-    - '.*ERR nvued:   ERROR: lifecycle.py:846 interface sw18p1s2 speed 100G is not part of the supported speeds (supported speeds: [200000, 400000], preset: nvl)'
+    - ".*ERR nvued:.*ERROR: JobsThread nos.funits.cue_netlink_v1.lifecycle lifecycle.py:884 interface acp269 speed 800G is not part of the supported speeds (supported speeds: ['NVL_2X_400G', 'NVL_2X_360G', 'NVL_2X_328G', 'NVL_1X_200G']"
+    - ".*ERR nvued:.*ERROR: JobsThread nos.funits.cue_netlink_v1.lifecycle lifecycle.py:884 interface acp269 speed 100G is not part of the supported speeds (supported speeds: ['NVL_2X_400G', 'NVL_2X_360G', 'NVL_2X_328G', 'NVL_1X_200G']"  
   Conditions:
     - Affected_test_cases:
         - tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_nvl_negative
@@ -2300,3 +2301,15 @@
     - Redmine:
         - 4710115
 # --------------------------------------------------
+
+- Errors_list:
+    - '.*Health-Check.*FW CR Space timeout.*'
+    - '.*Unexpected health cause*'
+    - '.*mlnx_switch_health_event_handle.*Health event happened.*'
+    - '.*NLDF.*failed.*'
+    - '.*sxd_kernel.*error.*'
+    - '.*log_address.*0x15500f8.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_pgrss
+

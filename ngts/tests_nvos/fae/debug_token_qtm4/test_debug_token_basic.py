@@ -27,7 +27,7 @@ from .token_signing import CRCSTokenSigner, CRDTTokenSigner
 
 def _test_crcs_file_management(engines, test_name, manager: CRCSTokenManager):
     """Test CRCS file management commands."""
-    file_ext = '.xml'
+    file_ext = DebugTokenConsts.XML_EXTENSION
 
     with allure.step('Generate CRCS token info file'):
         filename = f'crcs_test{file_ext}'
@@ -72,7 +72,7 @@ def _test_crcs_file_management(engines, test_name, manager: CRCSTokenManager):
 
 def _test_crcs_generate_multiple(test_name, manager: CRCSTokenManager):
     """Test generating multiple CRCS files."""
-    file_ext = '.xml'
+    file_ext = DebugTokenConsts.XML_EXTENSION
     filenames = []
 
     with allure.step('Generate 3 CRCS token info files sequentially'):
@@ -91,11 +91,12 @@ def _test_crcs_generate_multiple(test_name, manager: CRCSTokenManager):
 
 def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
     """Test CRDT file management commands."""
-    file_ext = '.xml'
-    debug_fw_bin = DebugTokenConsts.DEBUG_FW_FILENAME
+    file_ext = DebugTokenConsts.XML_EXTENSION
+    fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+    debug_fw_bin = fw_info['bin_filename']
 
     with allure.step('Fetch debug BIN firmware for CRDT token generation'):
-        manager.fetch_debug_fw().verify_result()
+        manager.fetch_debug_fw(debug_fw_filename=debug_fw_bin, bin_path=fw_info['bin_path']).verify_result()
 
     with allure.step('Generate CRDT token info file'):
         filename = f'crdt_test{file_ext}'
@@ -141,12 +142,13 @@ def _test_crdt_file_management(engines, test_name, manager: CRDTTokenManager):
 
 def _test_crdt_generate_multiple(test_name, manager: CRDTTokenManager):
     """Test generating multiple CRDT files."""
-    file_ext = '.xml'
-    debug_fw_bin = DebugTokenConsts.DEBUG_FW_FILENAME
+    file_ext = DebugTokenConsts.XML_EXTENSION
+    fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+    debug_fw_bin = fw_info['bin_filename']
     filenames = []
 
     with allure.step('Fetch debug BIN firmware for CRDT token generation'):
-        manager.fetch_debug_fw().verify_result()
+        manager.fetch_debug_fw(debug_fw_filename=debug_fw_bin, bin_path=fw_info['bin_path']).verify_result()
 
     with allure.step('Generate 3 CRDT token info files sequentially'):
         for i in range(1, 4):
@@ -165,8 +167,7 @@ def _test_crdt_generate_multiple(test_name, manager: CRDTTokenManager):
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crcs
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crcs_file_management_commands(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crcs_file_management_commands(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 5.1: Test CRCS File Management Commands
 
@@ -178,7 +179,6 @@ def test_crcs_file_management_commands(engines, test_name, test_api, cleanup_deb
     5. Delete specific file
     6. Generate multiple files and delete all
     """
-    TestToolkit.tested_api = test_api
     manager = CRCSTokenManager()
     _test_crcs_file_management(engines, test_name, manager)
 
@@ -186,12 +186,10 @@ def test_crcs_file_management_commands(engines, test_name, test_api, cleanup_deb
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crcs
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crcs_generate_multiple_files(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crcs_generate_multiple_files(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 8.1: Test generating multiple CRCS files.
     """
-    TestToolkit.tested_api = test_api
     manager = CRCSTokenManager()
     _test_crcs_generate_multiple(test_name, manager)
 
@@ -201,8 +199,7 @@ def test_crcs_generate_multiple_files(engines, test_name, test_api, cleanup_debu
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crdt
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crdt_file_management_commands(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crdt_file_management_commands(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 5.2: Test CRDT File Management Commands
 
@@ -215,7 +212,6 @@ def test_crdt_file_management_commands(engines, test_name, test_api, cleanup_deb
     6. Delete specific file
     7. Generate multiple files and delete all
     """
-    TestToolkit.tested_api = test_api
     manager = CRDTTokenManager()
     _test_crdt_file_management(engines, test_name, manager)
 
@@ -223,12 +219,10 @@ def test_crdt_file_management_commands(engines, test_name, test_api, cleanup_deb
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crdt
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crdt_generate_multiple_files(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crdt_generate_multiple_files(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 8.2: Test generating multiple CRDT files.
     """
-    TestToolkit.tested_api = test_api
     manager = CRDTTokenManager()
     _test_crdt_generate_multiple(test_name, manager)
 
@@ -293,12 +287,10 @@ def _test_error_flows(test_name, manager):
 @pytest.mark.debug_token
 @pytest.mark.crcs
 @pytest.mark.error_flow
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crcs_error_flows(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crcs_error_flows(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 7.1: CRCS (Customer Support Token) error handling.
     """
-    TestToolkit.tested_api = test_api
     manager = CRCSTokenManager()
     _test_error_flows(test_name, manager)
 
@@ -307,12 +299,10 @@ def test_crcs_error_flows(engines, test_name, test_api, cleanup_debug_tokens_fun
 @pytest.mark.debug_token
 @pytest.mark.crdt
 @pytest.mark.error_flow
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_crdt_error_flows(engines, test_name, test_api, cleanup_debug_tokens_function):
+def test_crdt_error_flows(engines, test_name, random_api, cleanup_debug_tokens_function):
     """
     Test Plan Section 7.2: CRDT (Debug Image Token) error handling.
     """
-    TestToolkit.tested_api = test_api
     manager = CRDTTokenManager()
 
     with allure.step("Setup: Fetch debug FW for CRDT token generation"):

@@ -20,8 +20,7 @@ logger = logging.getLogger()
 @pytest.mark.multiplanar
 @pytest.mark.simx_xdr
 @pytest.mark.system_profile_cleanup
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_interface_aggregated_port_split(engines, devices, test_api, players, interfaces, start_sm, setup_name):
+def test_interface_aggregated_port_split(engines, devices, random_api, players, interfaces, start_sm, setup_name):
     """
     validate all show fae interface commands.
 
@@ -37,7 +36,6 @@ def test_interface_aggregated_port_split(engines, devices, test_api, players, in
     9. Unset a port
     """
 
-    TestToolkit.tested_api = test_api
     system = System(None)
 
     with allure_step("Select random aggregated port and validate planarized ports"):

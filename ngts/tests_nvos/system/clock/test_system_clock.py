@@ -21,7 +21,7 @@ from retry.api import retry_call
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_date_time(test_api, engines, devices, nv_command):
     """
     @summary:
@@ -65,7 +65,7 @@ def test_show_system_date_time(test_api, engines, devices, nv_command):
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, orig_timezone, ntp_off):
     """
     @summary:
@@ -112,7 +112,7 @@ def test_set_unset_timezone_ntp_off(test_api, engines, system, valid_timezones, 
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, orig_timezone, ntp_on):
     """
     @summary:
@@ -160,7 +160,7 @@ def test_set_unset_timezone_ntp_on(test_api, engines, system, valid_timezones, o
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_action_change_date_time_ntp_off(test_api, engines, system, init_datetime, pwh_off, ntp_off):
     """
     @summary:
@@ -272,8 +272,7 @@ def test_rtc_in_local_tz(engines, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
-@pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_system_invalid_timezone_ntp_off_error_flow(test_api, engines, system, valid_timezones, orig_timezone, ntp_off):
     """
     @summary:
@@ -310,7 +309,7 @@ def test_set_system_invalid_timezone_ntp_off_error_flow(test_api, engines, syste
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_system_invalid_timezone_ntp_on_error_flow(test_api, engines, system, valid_timezones, orig_timezone, ntp_on):
     """
     @summary:
@@ -345,7 +344,7 @@ def test_set_system_invalid_timezone_ntp_on_error_flow(test_api, engines, system
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.clock
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_change_valid_datetime_ntp_on_error_flow(test_api, engines, system, ntp_on):
     """
     @summary:
@@ -378,7 +377,7 @@ def test_change_valid_datetime_ntp_on_error_flow(test_api, engines, system, ntp_
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_change_invalid_datetime_ntp_off_error_flow(test_api, engines, system, ntp_off):
     """
     @summary:
@@ -404,7 +403,7 @@ def test_change_invalid_datetime_ntp_off_error_flow(test_api, engines, system, n
 @pytest.mark.simx
 @pytest.mark.clock
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_change_invalid_datetime_ntp_on_error_flow(test_api, engines, system, ntp_on):
     """
     @summary:

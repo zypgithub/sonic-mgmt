@@ -33,8 +33,7 @@ logger = logging.getLogger()
 @pytest.mark.nvos_ci
 @pytest.mark.ib
 @pytest.mark.air
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_show_interface(engines, devices, test_api):
+def test_ib_show_interface(engines, devices, random_api):
     """
     Run show interface command and verify the required fields are exist
     command: nv show interface <name>
@@ -44,7 +43,6 @@ def test_ib_show_interface(engines, devices, test_api):
     2. Run 'nv show interface <name>' on selected port
     3. Verify the required fields are presented in the output
     """
-    TestToolkit.tested_api = test_api
     try:
         selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
     except Exception:
@@ -89,7 +87,6 @@ def test_ib_show_interface_all_state_up(engines, devices, start_sm, test_api):
     7. Verify the port state as up
 
     """
-    TestToolkit.tested_api = test_api
 
     output_dictionary = Tools.OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
         Port.show_interface()).get_returned_value()
@@ -182,15 +179,14 @@ def test_ib_show_interface_all_state_down(engines, devices, has_loopbox, setup_n
         link_physical_port_state = output_dictionary[IbInterfaceConsts.LINK][IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE]
         assert link_physical_port_state in [IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING,
                                             IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_DISABLED,
-                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_POLLING_XDR], \
+                                            IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_CONFIGURATION_TRAINING], \
             "Link physical port state {} isn't as we expected".format(link_physical_port_state)
 
 
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_ci
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_show_interface_name_link(engines, devices, test_api):
+def test_ib_show_interface_name_link(engines, devices, random_api):
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link
@@ -201,7 +197,6 @@ def test_ib_show_interface_name_link(engines, devices, test_api):
     3. Verify the required fields are presented in the output
     4. Verify state based on logical & physical state
     """
-    TestToolkit.tested_api = test_api
 
     try:
         selected_port = Tools.RandomizationTool.select_random_port(requested_ports_type=devices.dut.switch_type.lower()).get_returned_value()
@@ -221,8 +216,7 @@ def test_ib_show_interface_name_link(engines, devices, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.air
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_show_interface_name_stats(engines, devices, test_api):
+def test_ib_show_interface_name_stats(engines, devices, random_api):
     """
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
@@ -325,8 +319,7 @@ def test_show_interface_filter(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_validate_discard_counters_fields(engines, test_api):
+def test_validate_discard_counters_fields(engines, random_api):
     """
     Run show interface command and verify the required fields are exist
     command: nv show interface <name>
@@ -338,7 +331,6 @@ def test_validate_discard_counters_fields(engines, test_api):
     4. Validate that in-drops and out-drops fields are present in Sonic DB
     5. Validate that in-drops and out-drops fields are present in GNMI
     """
-    TestToolkit.tested_api = test_api
     plane_suffix = "pl1"
     server = 'fit-build-240'
     server_user = os.getenv("BUILD_SERVER_USER")
@@ -378,8 +370,7 @@ def test_validate_discard_counters_fields(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_validate_total_counters_in_out_drops(engines, test_api):
+def test_validate_total_counters_in_out_drops(engines, random_api):
     """
     Validate that total in and out drops counters are a sum of two other counters
 
@@ -389,7 +380,6 @@ def test_validate_total_counters_in_out_drops(engines, test_api):
     3. Validate total in drop counters are a sum of two counters in Sonic-DB
     4. Validate total out drop counters are a sum of two counters in Sonic-DB
     """
-    TestToolkit.tested_api = test_api
     plane_suffix = "pl1"
     selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
@@ -422,8 +412,7 @@ def test_validate_total_counters_in_out_drops(engines, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
+def test_validate_total_in_out_counters_show_db_gnmi(engines, random_api):
     """
     Validate total in drop and out drop counters are same across show, Sonic DB and GNMI
 
@@ -435,7 +424,6 @@ def test_validate_total_in_out_counters_show_db_gnmi(engines, test_api):
     5. Retrieve the required fields: in-drops and out-drops are present from GNMI
     6. Compare in/out drops counters across show CLI, Sonic DB and GNMI server
     """
-    TestToolkit.tested_api = test_api
     plane_suffix = "pl1"
     server = 'fit-build-240'
     server_user = os.getenv("BUILD_SERVER_USER")
@@ -643,8 +631,7 @@ def extract_non_dict_keys(output_dict):
 @pytest.mark.ib
 @pytest.mark.air
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_counters_cli_structure(engines, devices, test_api):
+def test_ib_interface_counters_cli_structure(engines, devices, random_api):
     """
     Test to verify CLI structure for IB interface counters
 
@@ -662,7 +649,6 @@ def test_ib_interface_counters_cli_structure(engines, devices, test_api):
     5. Get available options under 'nv show interface <name> counters ib'
     6. Verify errors, drops, and fast-recovery are present
     """
-    TestToolkit.tested_api = test_api
 
     if devices.dut.switch_type == NvosConst.IB_SWITCH_TYPE:
         verify_ib_interface_counters_cli_structure_ib(devices)
@@ -776,8 +762,7 @@ def verify_ib_interface_counters_cli_structure_ib(devices):
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_ci
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_non_ib_interface_missing_counters(engines, devices, test_api):
+def test_show_non_ib_interface_missing_counters(engines, devices, random_api):
     """
     Test to verify that non-IB interfaces (ib0, eth0, eth1) do not have ib/nvl/link sub-options under counters
 
@@ -791,7 +776,6 @@ def test_show_non_ib_interface_missing_counters(engines, devices, test_api):
        - Verify counters show actual counter fields
        - Verify 'ib', 'nvl', and 'link' sub-options are NOT present
     """
-    TestToolkit.tested_api = test_api
 
     non_ib_interfaces = ['ib0', 'eth0', 'eth1']
 

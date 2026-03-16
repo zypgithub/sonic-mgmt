@@ -1,3 +1,4 @@
+import random
 import pytest
 import logging
 import time
@@ -55,7 +56,6 @@ def test_system_stats_configuration(engines, devices, random_api):
     18.	Check internal and external files
     """
 
-    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     category_list = devices.dut.category_list
@@ -200,7 +200,6 @@ def test_system_stats_generation(engines, devices, random_api):
     11.	Validate sample timestamps
     """
 
-    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     player = engines['sonic_mgmt']
@@ -557,7 +556,8 @@ def test_stats_reliability(engines, devices, test_api):
             assert stats_show[StatsConsts.STATE] == StatsConsts.State.ENABLED.value, \
                 "stats state parameter is expected to be 'enabled'"
             system.log.rotate_logs()
-            show_output = system.log.file.show_log(exit_cmd='q')
+            # Exempt 'Not Found': benign PCIe/pmon messages in log (e.g. "PCIe Device: ... Not Found") are not failures.
+            show_output = system.log.file.show_log(exit_cmd='q', exempted_err_msgs=('Not Found',))
             # TODO: update StatsConsts.LOG_MSG_ERROR_DB
             # ValidationTool.verify_expected_output(show_output, StatsConsts.LOG_MSG_ERROR_DB).verify_result()
 
@@ -787,7 +787,6 @@ def test_system_stats_big_files(engines, devices, random_api):
     9. Replace category internal file with a corrupted file (over 600MB) and validate creation of a new file
     """
 
-    TestToolkit.tested_api = random_api
     system = System(devices_dut=devices.dut)
     engine = engines.dut
     player_engine = engines['sonic_mgmt']
@@ -991,7 +990,7 @@ def test_validate_category_file_values(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.stats
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_stats_on_skynet(test_api):
     """
     (Dedicated test will be added later to skynet to check some of the functionalities once a month)

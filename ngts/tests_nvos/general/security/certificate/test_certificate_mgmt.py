@@ -1,4 +1,5 @@
 import logging
+import random
 
 import pytest
 
@@ -86,7 +87,7 @@ def test_certificate_commands(engines, test_api, test_flow, clear_certs):
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_ca_certificate_commands(engines, test_api, clear_certs):
     TestToolkit.tested_api = test_api
     system = System()

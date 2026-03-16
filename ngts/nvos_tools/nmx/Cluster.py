@@ -11,6 +11,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.nmx.App import App
 from ngts.nvos_tools.nmx.Apps import Apps
 from ngts.nvos_tools.nmx.RbacCluster import Rbac
+from ngts.nvos_tools.nmx.Node import Node
 
 logger = logging.getLogger()
 
@@ -23,6 +24,7 @@ class Cluster(BaseComponent):
         self.app = App(self)
         self.apps = Apps(self)
         self.rbac = Rbac(self)
+        self.node = Node(self)
 
     def action_update_chassis_id(self, mapping_id: int = '', dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action update for {self.get_resource_path()} with chassis-id {mapping_id}'):

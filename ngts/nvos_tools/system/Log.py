@@ -134,12 +134,14 @@ class File(BaseComponent):
         self.file_id: Dict[str, FileId] = DefaultDict(
             lambda file_id: FileId(parent=self, file_id=file_id))
 
-    def show_log(self, param='', exit_cmd='', expected_str=''):
+    def show_log(self, param='', exit_cmd='', expected_str='', exempted_err_msgs=()):
+        """Show system log file. exempted_err_msgs: optional tuple of keywords to allow in output (e.g. 'Not Found')."""
         with allure.step('Show logs'):
             resource_path = self.get_resource_path()
-            return SendCommandTool.execute_command_expected_str(self.api_obj[TestToolkit.tested_api].show_log,
-                                                                expected_str, TestToolkit.get_engine(), resource_path,
-                                                                param, exit_cmd).get_returned_value()
+            return SendCommandTool.execute_command_expected_str(
+                self.api_obj[TestToolkit.tested_api].show_log,
+                expected_str, TestToolkit.get_engine(), resource_path,
+                param, exit_cmd, exempted_err_msgs=exempted_err_msgs).get_returned_value()
 
 
 class FileId(BaseComponent):

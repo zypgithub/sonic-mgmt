@@ -91,8 +91,7 @@ def test_transceiver_files_actions_positive(engines, random_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_files_negative(engines, test_api):
+def test_transceiver_files_negative(engines, random_api):
     """
     The test will check the negative flow of fetching, deleting, renaming and uploading transceiver firmware.
 

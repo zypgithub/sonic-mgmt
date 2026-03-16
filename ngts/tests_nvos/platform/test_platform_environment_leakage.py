@@ -54,15 +54,13 @@ def test_platform_environment_bmc_leakage(engines, nv_command, devices):
             _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_LEAK)
 
             with allure.step("Validate output"):
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    nv_command.platform.environment.leakage.show()).get_returned_value()
-                ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
-                                              PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
+                retry_validate_leakage_state(nv_command, random_selected_leakage,
+                                             PlatformConsts.LEAKAGE_STATUS_LEAK)
 
             with allure.step("Validate system health"):
                 retry_validate_health_fix_or_issue(nv_command.system, NOT_OK)
-                ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
-                                              PlatformConsts.LEAKAGE_STATUS_LEAK).verify_result()
+                retry_validate_leakage_state(nv_command, random_selected_leakage,
+                                             PlatformConsts.LEAKAGE_STATUS_LEAK)
                 health_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.health.show())\
                     .get_returned_value()
                 ValidationTool.compare_values(health_output[HealthConsts.STATUS_LED],
@@ -71,29 +69,21 @@ def test_platform_environment_bmc_leakage(engines, nv_command, devices):
 
             with allure.step("Return leakage status to default"):
                 _simulate_leakage(engines, random_selected_leakage, PlatformConsts.LEAK_STATUS_OK)
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    nv_command.platform.environment.leakage.show()).get_returned_value()
-                ValidationTool.compare_values(leakage_output[random_selected_leakage]['state'],
-                                              PlatformConsts.LEAKAGE_STATUS_OK).verify_result()
+                retry_validate_leakage_state(nv_command, random_selected_leakage,
+                                             PlatformConsts.LEAKAGE_STATUS_OK)
 
         with allure.step("Simulate leakage on all sensors and validate output"):
             _simulate_leakage(engines, devices.dut.list_of_leakages)
 
             with allure.step("Verify output of all sensors"):
-                leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
-                    nv_command.platform.environment.leakage.show()).get_returned_value()
-                ValidationTool.validate_fields_values_in_output(devices.dut.list_of_leakages,
-                                                                PlatformConsts.LEAKAGE_ALL_SENSOR_NOT_OK,
-                                                                leakage_output).verify_result()
+                retry_validate_all_leakages(nv_command, devices.dut.list_of_leakages,
+                                            PlatformConsts.LEAKAGE_ALL_SENSOR_NOT_OK)
 
     finally:
         _link_back_sysfs_files(engines, devices.dut.list_of_leakages, leakage_folder_name)
         retry_validate_health_fix_or_issue(nv_command.system, OK)
-        leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
-            nv_command.platform.environment.leakage.show()).get_returned_value()
-        ValidationTool.validate_fields_values_in_output(devices.dut.list_of_leakages,
-                                                        PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_VALUES,
-                                                        leakage_output).verify_result()
+        retry_validate_all_leakages(nv_command, devices.dut.list_of_leakages,
+                                    PlatformConsts.LEAKAGE_DEFAULT_OUTPUT_VALUES)
 
 
 def _simulate_leakage(engines, leakage, leakage_status=PlatformConsts.LEAK_STATUS_LEAK):
@@ -130,10 +120,43 @@ def retry_validate_health_fix_or_issue(system, status):
     system.validate_health_status(status)
 
 
-@retry(Exception, tries=2, delay=1)
+@retry(Exception, tries=5, delay=1)
 def retry_validate_health_history(nv_command, random_selected_leakage):
     history_line = nv_command.system.health.history.search_line(line_to_search=random_selected_leakage)
     assert random_selected_leakage in history_line, 'Cant find leakage in health history'
+
+
+@retry(Exception, tries=5, delay=1)
+def retry_validate_leakage_state(nv_command, leakage_name, expected_state):
+    """
+    Validate leakage state with retry mechanism to allow time for state propagation.
+
+    Args:
+        nv_command: Command object for executing NVUE commands
+        leakage_name: Name of the leakage sensor (e.g., 'LEAKAGE-1')
+        expected_state: Expected state value (e.g., 'ok' or 'leak')
+    """
+    leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+        nv_command.platform.environment.leakage.show()).get_returned_value()
+    ValidationTool.compare_values(leakage_output[leakage_name]['state'],
+                                  expected_state).verify_result()
+
+
+@retry(Exception, tries=5, delay=1)
+def retry_validate_all_leakages(nv_command, leakage_list, expected_values_dict):
+    """
+    Validate multiple leakage states with retry mechanism to allow time for state propagation.
+
+    Args:
+        nv_command: Command object for executing NVUE commands
+        leakage_list: List of leakage sensor names
+        expected_values_dict: Dictionary of expected field values
+    """
+    leakage_output = OutputParsingTool.parse_json_str_to_dictionary(
+        nv_command.platform.environment.leakage.show()).get_returned_value()
+    ValidationTool.validate_fields_values_in_output(leakage_list,
+                                                    expected_values_dict,
+                                                    leakage_output).verify_result()
 
 
 def convert_string(input_string):

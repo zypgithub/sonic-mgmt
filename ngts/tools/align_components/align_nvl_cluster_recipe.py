@@ -8,73 +8,148 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.tools.align_components.align_fw_components import get_switch_info, create_json_dict
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.cluster.ansible_playbooks_tool import AnsiblePlaybooksTool
-from ngts.tests_nvos.cluster.cluster_consts import AnsbilePlaybooksConsts as Ansible
+from ngts.tests_nvos.cluster.cluster_consts import AnsiblePlaybooksConsts as Ansible
 from ngts.nvos_tools.infra.DutUtilsTool import run_ssh_command
 
 logger = logging.getLogger()
 
 
 def test_align_cluster_recipe(setup_name, fw_versions_json_file, ansible_inventory_file):
-    with allure.step("Extract switch provisioning info - Prod/Dev"):
+    """
+    NEW IMPLEMENTATION: Align cluster using new nvidia.nvlink Ansible collections.
+
+    Executes all alignment playbooks in sequence. JSON file must have both
+    'prod' and 'dev' sections. Firmware playbooks automatically extract from
+    correct sections.
+    """
+    with allure.step("Load component versions from JSON"):
         switch_info = get_switch_info(setup_name)
         json_dict = create_json_dict(fw_versions_json_file)
-        provisioning = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][
+
+        # Determine provisioning type from BIOS (for logging)
+        bios_version = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.HARDWARE_COMPONENTS][
             NogaConstants.BIOS_VERSION]
-        provisioning = 'prod' if provisioning == 'OPN' else 'dev'
+        provisioning_type = 'prod' if bios_version == 'OPN' else 'dev'
 
-    inventory_file = ansible_inventory_file
+        logger.info(f"Switch provisioning type: {provisioning_type}")
+        logger.info(f"Inventory file: {ansible_inventory_file}")
+        logger.info("NOTE: Firmware playbooks will use BOTH prod and dev versions")
+
+    # Select ansible machine
     ansible_machine = random.choice(Ansible.ANSIBLE_MACHINES)
-    # SSH connection information
     username = Ansible.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['user']
-    password = Ansible.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine][
-        'pass']  # It's better to use SSH keys
-    failed_components = []
-    for component in Ansible.COMPONENTS:
-        package_path = json_dict[provisioning][component]['latest']['path']
-        package_name = json_dict[provisioning][component]['latest']['filename']
+    password = Ansible.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['pass']
+
+    logger.info(f"Ansible machine: {ansible_machine}")
+    logger.info(f"User: {username}")
+
+    # Track failed playbooks
+    failed_playbooks = []
+
+    # Execute playbooks in order
+    for playbook_key in Ansible.ALIGNMENT_PLAYBOOKS_ORDER[setup_name]:
         try:
-            logger.info("Sleeping for 20 seconds between playbooks execution")
-            time.sleep(20)
-            fetch_and_install(component, package_path, package_name, inventory_file, ansible_machine, username, password)
+            with allure.step(f"Executing playbook: {playbook_key}"):
+                logger.info(f"\n{'=' * 80}")
+                logger.info(f"Starting playbook: {playbook_key}")
+                logger.info(f"{'=' * 80}\n")
+
+                # Sleep between playbooks
+                logger.info("Sleeping for 20 seconds between playbooks execution")
+                time.sleep(20)
+
+                # Execute playbook
+                fetch_and_install(
+                    playbook_key,
+                    json_dict,
+                    ansible_inventory_file,
+                    ansible_machine,
+                    username,
+                    password
+                )
+
+                logger.info(f"Playbook '{playbook_key}' completed successfully\n")
+
         except Exception as e:
-            failed_components.append(component)
-            logger.info(e)
+            failed_playbooks.append(playbook_key)
+            logger.error(f"Playbook '{playbook_key}' failed: {e}")
 
-    assert failed_components == [], f"Components {failed_components} align failed - see logs."
+    # Final assertion
+    assert failed_playbooks == [], f"Playbooks {failed_playbooks} failed - see logs"
+
+    logger.info("\n" + "=" * 80)
+    logger.info("CLUSTER ALIGNMENT COMPLETED SUCCESSFULLY")
+    logger.info("=" * 80 + "\n")
 
 
-def fetch_and_install(component, package_path, package_name, inventory_file, ansible_machine, username, password):
+def fetch_and_install(playbook_key, json_dict, inventory_file, ansible_machine, username, password):
+    """
+    NEW IMPLEMENTATION: Download components and run playbook.
+
+    Handles BOTH prod and dev provisioning sections.
+    Firmware components (BMC/CPLD/HMC) require both prod AND dev versions.
+
+    Args:
+        playbook_key: Key from PLAYBOOKS dict (e.g., 'SOFTWARE_INSTALL')
+        json_dict: Parsed JSON with 'prod' and 'dev' sections
+        inventory_file: Path to inventory file
+        ansible_machine: Ansible server hostname/IP
+        username: SSH username
+        password: SSH password
+    """
+    downloaded_files = []
+    component_paths = {}
+
     try:
-        package_download_full_path = None
-        # RM and CUDA does not need downloading the packages.
-        if package_path.startswith("http") and ("cuda" not in component):
-            with allure.step(f"Downloading package - {package_path} For Component {component}"):
-                # ROBUST DOWNLOAD IMPLEMENTATION
-                # Previous curl command was flaky due to:
-                # 1. Not following redirects (Artifactory often returns 302 to S3)
-                # 2. Only checking HTTP code, not curl exit status
-                # 3. No protection against partial downloads
-                # 4. No built-in retry for network hiccups
-                #
-                # New approach:
-                # - Downloads to .part file first, only moves on complete success
-                # - Follows redirects (-L) and fails fast on HTTP errors (-f)
-                # - Built-in curl retry (3x) + app-level retry (3x) = up to 9 total attempts
-                # - Proper timeouts to prevent hanging
-                # - Checks both curl exit code AND HTTP status for reliable error detection
-                download_package = f"""
-url="{package_path}"
-out="/tmp/{package_name}"
-temp_out="/tmp/{package_name}.part"
+        # Get component mappings for this playbook
+        component_mappings = Ansible.get_component_mappings(playbook_key)
 
-# Remove any existing partial file
+        logger.info(f"Processing playbook: {playbook_key}")
+        logger.info(f"Number of parameters: {len(component_mappings)}")
+
+        # Step 1: Download/prepare all components
+        for mapping in component_mappings:
+            component = mapping['component']
+            prov_section = mapping['provisioning']
+            param = mapping['param']
+
+            with allure.step(f"Prepare: json['{prov_section}']['{component}'] → {param}"):
+                # Extract from correct JSON section
+                package_path = json_dict[prov_section][component]['latest']['path']
+                package_name = json_dict[prov_section][component]['latest']['filename']
+
+                logger.info(f"Parameter: {param}")
+                logger.info(f"  Source: json['{prov_section}']['{component}']")
+                logger.info(f"  Path: {package_path}")
+                logger.info(f"  Filename: {package_name}")
+
+                # SMART LOGIC: Auto-detect if we need to download based on path
+                # If path starts with http:// or https:// → download to /tmp
+                # Otherwise → use as local file path directly
+
+                if package_path.startswith("http://") or package_path.startswith("https://"):
+                    # HTTP/HTTPS URL - download to /tmp
+                    download_path = f"/tmp/{package_name}"
+
+                    with allure.step(f"Downloading {package_name} to /tmp"):
+                        # SOLUTION: Use base64 auth header to avoid special character issues
+                        # Password contains: } ' ) which get mangled through SSH layers
+                        # Base64 has ONLY safe characters: A-Z a-z 0-9 + / =
+                        import base64
+                        auth_string = f"{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}"
+                        auth_b64 = base64.b64encode(auth_string.encode()).decode()
+
+                        download_package = f"""
+url="{package_path}"
+out="{download_path}"
+temp_out="{download_path}.part"
+
 rm -f "$temp_out"
 
-# Robust curl with built-in retry, redirect following, and proper error handling
 code=$(curl -fL -sS \\
   --retry 3 --retry-delay 2 --retry-all-errors \\
   --connect-timeout 15 --max-time 1800 \\
-  -u "{NvosConst.SONIC_SERVICE_ACCOUNT}:{NvosConst.SONIC_SERVICE_ACCOUNT_API_KEY}" \\
+  -H "Authorization: Basic {auth_b64}" \\
   -o "$temp_out" -w '%{{http_code}}' "$url")
 rc=$?
 
@@ -86,63 +161,72 @@ else
   echo "Download failed (curl_rc=$rc http_code=$code)"
 fi
 """
-                logger.info(f"Running robust curl command for {package_name}")
+                        # LOG THE COMMAND (with credentials redacted for security)
+                        safe_command = download_package.replace(auth_b64, "***REDACTED***")
+                        logger.info(f"Download command to execute:\n{safe_command}")
+                        logger.info(f"Using base64 auth (redacted)")
 
-                # Application-level retry (in addition to curl's built-in retry)
-                download_successful = False
-                for attempt in range(1, 4):  # Reduced to 3 since curl has its own retry
-                    logger.info(f"Download attempt {attempt}/3")
-                    output = run_ssh_command(download_package, ansible_machine, username, password)
-                    logger.info(f"Attempt {attempt} output: {output}")
+                        download_successful = False
+                        for attempt in range(1, 4):
+                            logger.info(f"Download attempt {attempt}/3 for {package_name}")
+                            output = run_ssh_command(download_package, ansible_machine, username, password)
 
-                    if "Download successful" in output:
-                        logger.info(f"Download successful on attempt {attempt}")
-                        download_successful = True
-                        break
-                    else:
-                        logger.warning(f"Download failed on attempt {attempt}: {output}")
-                        if attempt < 3:
-                            logger.info("Waiting 10 seconds before retry...")
-                            time.sleep(10)
+                            # FIX: Check for None output before string operations
+                            if output is None:
+                                logger.error(f"SSH command failed - no output received")
+                                continue
 
-                assert download_successful, f"Curl command failed after 3 attempts with built-in retries - {package_name}"
+                            if "Download successful" in output:
+                                logger.info(f"Download successful on attempt {attempt}")
+                                download_successful = True
+                                break
+                            else:
+                                logger.warning(f"Download failed on attempt {attempt}: {output}")
+                                if attempt < 3:
+                                    time.sleep(10)
 
-            logger.info("Verify package is downloaded successfully")
-            package_download_full_path = f"/tmp/{package_name}"
-            verify_cmd = f'ls -lh {package_download_full_path}'
-            logger.info(f"Running cmd {verify_cmd}")
-            output = run_ssh_command(verify_cmd, ansible_machine, username, password)
-            logger.info(output)
-            assert f'/tmp/{package_name}' in output, "File not found after download"
+                        assert download_successful, f"Download failed: {package_name}"
 
-        with allure.step(f"Adjust {Ansible.CONFIG_FILE} content"):
-            replace_yaml_value_remote(Ansible.CONFIG_FILE_UPDATE_PER_COMPONENT[component], package_download_full_path if package_download_full_path else package_path, Ansible.CONFIG_FILE, ansible_machine, username, password)
+                        # Verify
+                        verify_cmd = f'ls -lh {download_path}'
+                        output = run_ssh_command(verify_cmd, ansible_machine, username, password)
+                        assert download_path in output, f"File not found: {download_path}"
+                        logger.info(f"Verified: {output}")
 
-        playbook = Ansible.PLAYBOOKS_NAMES[component]
-        with allure.step(f"Updating component {component} - Running playbook {playbook}"):
-            status = AnsiblePlaybooksTool.run_playbook_and_check_result(inventory_file, playbook, Ansible.PLAYBOOKS_ARGUMENTS[component])
-            assert status, f'Playbook {playbook} failed - Check logs'
+                        downloaded_files.append(download_path)
+                        component_paths[param] = download_path
+
+                else:
+                    # Local file path - use directly (no download)
+                    logger.info(f"Using local file path: {package_path}")
+                    component_paths[param] = package_path
+
+        # Step 2: Run playbook with all parameters
+        with allure.step(f"Running playbook '{playbook_key}' with {len(component_paths)} parameters"):
+            logger.info(f"Playbook parameters: {component_paths}")
+
+            # FIX: Pass ansible_machine to ensure playbook runs on same host as downloads
+            status = AnsiblePlaybooksTool.run_playbook_by_key(
+                playbook_key,
+                inventory_file,
+                component_paths,
+                ansible_machine=ansible_machine,
+                username=username,
+                password=password
+            )
+
+            assert status, f"Playbook '{playbook_key}' failed - Check logs"
+            logger.info(f"Playbook '{playbook_key}' completed successfully")
+
+        return status
 
     finally:
-        if package_download_full_path:
-            logger.info("Delete downloaded file")
-            try:
-                run_ssh_command(f"rm -rf {package_download_full_path}", ansible_machine, username, password)
-            except Exception as e:
-                logger.info(f"Failed to delete with the following issue {e}")
-
-
-def replace_yaml_value_remote(key, new_value, file_path_remote, ansible_machine, username, password):
-    sed_cmd = f"sed -i 's|^{key}:.*|{key}: \"{new_value}\"|' {file_path_remote}"
-    return run_ssh_command(sed_cmd, ansible_machine, username, password)
-
-
-def check_curl_status(output):
-    known_errors = {
-        "unauthorized": "Curl failed due to unauthorized access",
-        "no such file or directory": "Curl failed to create output file",
-        "could not resolve": "Curl failed due to DNS resolution",
-        "error": "Curl failed due to general error"
-    }
-    for substring, message in known_errors.items():
-        assert substring not in output.lower(), message
+        # Step 3: Cleanup
+        if downloaded_files:
+            with allure.step("Cleanup downloaded files"):
+                for file_path in downloaded_files:
+                    try:
+                        logger.info(f"Deleting {file_path}")
+                        run_ssh_command(f"rm -rf {file_path}", ansible_machine, username, password)
+                    except Exception as e:
+                        logger.warning(f"Failed to delete {file_path}: {e}")

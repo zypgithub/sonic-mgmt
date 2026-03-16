@@ -1,3 +1,4 @@
+import random
 import pytest
 
 from ngts.nvos_tools.system.System import System
@@ -20,7 +21,7 @@ def prepare_scp_test(prepare_scp):
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_radius_set_unset_show(test_api, engines):
     radius_obj = System().aaa.radius
     generic_aaa_test_set_unset_show(
@@ -53,7 +54,7 @@ def test_radius_set_unset_show(test_api, engines):
 
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_radius_set_invalid_param(test_api, engines):
     """
     @summary: Verify failure for invalid param values

@@ -107,4 +107,4 @@ class SkynetJulietConfig(SkynetConfig):
             cluster = Cluster()
             logger.info("Setting cluster state to enabled")
             output_format = OutputFormat.json
-            ClusterTools.start_cluster(cluster, setup_name, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)

@@ -14,6 +14,7 @@ from ngts.nvos_tools.infra.LLDPTool import LLDPTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.nvos_tools.system.System import System
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -44,7 +45,6 @@ def test_lldp_enabled(engines, devices, random_api):
     1. Verify lldp is running.
     2. Verify lldp is sending and receiving frames.
     """
-    TestToolkit.tested_api = random_api
     system = System()
     lldp = system.lldp
     _verify_lldp_is_sending_frames(lldp=lldp, engine=engines.dut, device=devices.dut)
@@ -94,7 +94,6 @@ def test_lldp_disabled(engines, devices, random_api):
     4. Verify neighbors table is empty
     5. Enable back lldp and verify it is working.
     """
-    TestToolkit.tested_api = random_api
     system = System()
     lldp = system.lldp
 
@@ -119,7 +118,6 @@ def test_lldp_with_custom_interval(engines, devices, random_api):
     1. Verify lldp is running with custom interval.
     2. Verify lldp information is the same as in tcpdump.
     """
-    TestToolkit.tested_api = random_api
 
     system = System()
     lldp = system.lldp
@@ -141,8 +139,7 @@ def test_lldp_with_custom_interval(engines, devices, random_api):
 @pytest.mark.system
 @pytest.mark.interface
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_custom_hostname(engines, devices, test_api):
+def test_lldp_custom_hostname(engines, devices, random_api):
     """
     Check that lldp frames have correct custom hostname.
     1. Verify lldp is running.
@@ -150,7 +147,6 @@ def test_lldp_custom_hostname(engines, devices, test_api):
     3. Verify lldp is sending correct hostname.
     4. Change hostname back to default.
     """
-    TestToolkit.tested_api = test_api
     system = System()
     _verify_lldp_running(system.lldp, engine=engines.dut)
 
@@ -174,15 +170,13 @@ def test_lldp_custom_hostname(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.interface
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_one_neighbor(engines, devices, test_api):
+def test_lldp_one_neighbor(engines, devices, random_api):
     """
     Check that interfaces have only one lldp neighbor.
     1. Verify lldp is running.
     2. For each mgmt interface verify it has only one neighbor.
     3. Verify neighbor's output is not empty
     """
-    TestToolkit.tested_api = test_api
     system = System()
     _verify_lldp_running(system.lldp, engine=engines.dut)
 
@@ -207,15 +201,13 @@ def test_lldp_one_neighbor(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.interface
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_lldp_incorrect_values(engines, devices, test_api):
+def test_lldp_incorrect_values(engines, devices, random_api):
     """
     Check that lldp set commands are not working for values outside the range.
     1. Verify lldp is running.
     2. Try to set incorrect interval.
     3. Try to set incorrect multiplier.
     """
-    TestToolkit.tested_api = test_api
     system = System()
     lldp = system.lldp
 
@@ -526,10 +518,14 @@ def _verify_lldp_running_and_neighbors_present(lldp, engine, device):
 
 
 def _verify_lldp_not_running(lldp, engine, device):
-    if TestToolkit.devices.dut.is_ib():
-        def _check_lldp_container_stopped():
-            lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
-            assert lldp_running == 'false', f'The lldp docker container is still up (state: {lldp_running})'
+    with allure.step("Verify lldp container is not running"):
+        if TestToolkit.devices.dut.is_ib():
+            if is_redmine_issue_active(4868603):
+                time.sleep(5)
+
+            def _check_lldp_container_stopped():
+                lldp_running = engine.run_cmd('docker inspect --format \'{{.State.Running}}\' lldp')
+                assert lldp_running == 'false', f'The lldp docker container is still up (state: {lldp_running})'
 
         ValidationTool.retry_until_valid(_check_lldp_container_stopped,
                                          description="Verify lldp container is not running")

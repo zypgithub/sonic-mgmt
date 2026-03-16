@@ -29,7 +29,6 @@ def test_import_rbac_file(random_api, cluster_rbac_tools):
         2. Verify rbac file is imported successfully
         3. Verify rbac file is deleted successfully
     """
-    TestToolkit.tested_api = random_api
     rbac_file_name = "test_rbac_file"
     rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
     rbac_tool: NmxRbacTool = cluster_rbac_tools
@@ -52,7 +51,6 @@ def test_rbac_user_auth(random_api, dut_hostname, engines, cluster_rbac_tools):
         7. Restore rbac file
         8. Run app client with bad user - Should succeed
     """
-    TestToolkit.tested_api = random_api
     ip = engines.dut.ip
     rbac_tool: NmxRbacTool = cluster_rbac_tools
     rbac_file_name = "rbac_user_auth"
@@ -167,7 +165,6 @@ def test_bad_rbac_file(random_api, dut_hostname, engines, cluster_rbac_tools):
         5. Run app client with good user - Should succeed
     """
     ip = engines.dut.ip
-    TestToolkit.tested_api = random_api
     rbac_tool: NmxRbacTool = cluster_rbac_tools
     rbac_file_name = "bad_rbac_file"
     certs_location = get_test_certs_dir_location("bad_rbac_file", dut_hostname)
@@ -205,7 +202,6 @@ def test_update_rbac_file_without_encryption(random_api, cluster_rbac_tools):
         2. Update rbac file without encryption first - Should fail
         3. Delete rbac file
     """
-    TestToolkit.tested_api = random_api
     rbac_file_name = "bad_flow_rbac_file"
     rbac_file_path = RbacConsts.NMX_RBAC_FILE_USER_PATH
     rbac_tool: NmxRbacTool = cluster_rbac_tools

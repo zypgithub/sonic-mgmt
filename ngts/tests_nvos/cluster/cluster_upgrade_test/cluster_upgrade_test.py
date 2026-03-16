@@ -16,6 +16,7 @@ from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 logger = logging.getLogger()
 
@@ -70,11 +71,13 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{NvosConst.DISABLED}"
 
         with allure.step("Enable cluster and perform configurations"):
-            ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False)  # remove verify=False once base version for regression is different than 1638.
+            ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False, devices=devices)  # remove verify=False once base version for regression is different than 1638.
 
             interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
             next(interfaces_wa)
             interface_wa_called = True
+
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
 
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in devices.dut.expected_cluster_apps:
@@ -142,11 +145,15 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
+        with allure.step("Before upgrade, verify apps are running"):
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format,
+                                             standalone_system, has_loopbox)
+
         with allure.step("Performing upgrade:"):
             bin_filename = target_version_realpath.split('/')[-1]
             system = System()
             sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
-            scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{sonic_mgmt_engine.ip}'
+            scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{IpTool.format_ip_for_uri(sonic_mgmt_engine)}'
             NvosInstallationSteps.upgrade_to_target_version(bin_filename, cli_obj.engine, cli_obj.device, scp_host_creds,
                                                             system,
                                                             target_version_realpath, topology_obj)

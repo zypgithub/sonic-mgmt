@@ -33,7 +33,7 @@ from ngts.nvos_tools.infra.CmdRunner import CmdRunner
 @pytest.mark.nvos_ci
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
     """
     Verify that all CLI work and check values change properly in show
@@ -140,7 +140,7 @@ def test_cert_mgmt_cert_cli(test_api, engines, scp_player, clear_certs):
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_import_cert_data_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that import cert with bad params rejected
@@ -174,7 +174,7 @@ def test_cert_mgmt_import_cert_data_bad_param(test_api, engines, scp_player, cle
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_import_cert_uri_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that import cert with bad params rejected
@@ -226,7 +226,7 @@ def test_cert_mgmt_import_cert_uri_bad_param(test_api, engines, scp_player, clea
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_import_cert_bundle_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that import cert with bad params rejected
@@ -278,7 +278,7 @@ def test_cert_mgmt_import_cert_bundle_bad_param(test_api, engines, scp_player, c
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_delete_cert_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that delete cert with bad params rejected and doesn't affect other imported certs
@@ -305,7 +305,7 @@ def test_cert_mgmt_delete_cert_bad_param(test_api, engines, scp_player, clear_ce
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_import_cert_unique_id(test_api, engines, scp_player, clear_certs):
     """
     Verify that must use unique cert id
@@ -491,7 +491,7 @@ def test_local_cert_generated_after_timezone_change(engines, dut_hostname):
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cert_mgmt_import_raw_chain(test_api, engines, clear_certs):
     """
     Verify that importing a certificate chain raw with system security import data works

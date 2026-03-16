@@ -22,8 +22,7 @@ from ngts.tests_nvos.constants import MINUTE
 @pytest.mark.system
 @pytest.mark.fae
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_system_remarkable_logs_default_values(test_api, engines, devices):
+def test_system_remarkable_logs_default_values(random_api, engines, devices):
     """
     check the expected default values when the feature is enabled
         Test flow:
@@ -37,7 +36,6 @@ def test_system_remarkable_logs_default_values(test_api, engines, devices):
             9. Run ls -l /var/log/remarkable_logs_1
             10. verify at least [boot_log.1.gz] exist
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Test default values'):
         fae = Fae()

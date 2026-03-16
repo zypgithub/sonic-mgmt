@@ -760,7 +760,7 @@ class DeployOrchestrator:
                 logger.info("Sequential mode: installation completed inline, "
                             "centralized timeout not applied (command-level timeouts still active)")
             else:
-                self.wait_until_deploy_background_process(results['install_threads'], timeout=1500)
+                self.wait_until_deploy_background_process(results['install_threads'], timeout=2400)
 
         # Phase 3: Verify pre-installation processes (background mode)
         if not self.context.deploy_sequential:

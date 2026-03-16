@@ -8,8 +8,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 @pytest.mark.system
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_sed_erase(engines, devices, serial_engine, test_api):
+def test_sed_erase(engines, devices, serial_engine, random_api):
     """
     @summary:
         Verify that SED erase performs full disk wipe via NVUE and OpenAPI

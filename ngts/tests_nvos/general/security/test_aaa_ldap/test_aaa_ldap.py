@@ -1,3 +1,4 @@
+import random
 import pytest
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
@@ -25,7 +26,7 @@ def prepare_scp_test(prepare_scp):
 @pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_ldap_set_unset_show(test_api, engines):
     ldap_obj = System().aaa.ldap
     random_str = RandomizationTool.get_random_string(6)
@@ -98,7 +99,7 @@ def test_ldap_set_unset_show(test_api, engines):
 @pytest.mark.cumulus
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_ldap_set_invalid_param(test_api, engines):
     """
     @summary: Verify failure for invalid param values

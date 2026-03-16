@@ -507,7 +507,8 @@ def get_loopback_plane_ports(engine, setup_name, num_of_planes=1, forbidden_tran
 
 def validate_qtm4_non_existent_attributes(phy_detail_output: Dict, asic_gen: str):
     """
-    Validate that certain attributes do NOT exist on QTM4+ ASICs.
+    Validate that certain attributes are None/null on QTM4+ ASICs.
+    These attributes should either be absent or have a null value.
     Collects ALL violations before failing.
 
     :param phy_detail_output: Parsed output from 'nv show interface <port> link phy detail'
@@ -517,23 +518,29 @@ def validate_qtm4_non_existent_attributes(phy_detail_output: Dict, asic_gen: str
 
     for attr_name in PhyDetailConsts.QTM4_NON_EXISTENT_ATTRS:
         if attr_name in phy_detail_output:
-            violations.append((attr_name, phy_detail_output[attr_name]))
-            logger.error(f"  ✗ Attribute '{attr_name}' should NOT exist on {asic_gen}, but found value: '{phy_detail_output[attr_name]}'")
+            value = phy_detail_output[attr_name]
+            # None/null is expected - that's correct behavior
+            if value is None:
+                logger.info(f"  ✓ Attribute '{attr_name}' is null on {asic_gen} (expected)")
+            else:
+                # Has a real value - that's the violation!
+                violations.append((attr_name, value))
+                logger.error(f"  ✗ Attribute '{attr_name}' should be null on {asic_gen}, but found value: '{value}'")
         else:
-            logger.info(f"  ✓ Attribute '{attr_name}' correctly absent on {asic_gen}")
+            logger.info(f"  ✓ Attribute '{attr_name}' is absent on {asic_gen} (expected)")
 
     if violations:
         error_msg = (
             f"\n{'=' * 80}\n"
-            f"ATTRIBUTES SHOULD NOT EXIST ON QTM4+!\n"
+            f"ATTRIBUTES SHOULD BE NULL ON QTM4+!\n"
             f"{'=' * 80}\n"
             f"ASIC Generation: {asic_gen}\n"
-            f"Found {len(violations)} attribute(s) that should NOT be present:\n"
+            f"Found {len(violations)} attribute(s) with unexpected values:\n"
         )
         for attr_name, value in violations:
             error_msg += f"  - '{attr_name}': {value}\n"
         error_msg += (
-            f"\nThese attributes should NOT exist at all on QTM4 and newer ASICs\n"
+            f"\nThese attributes should be null/absent on QTM4 and newer ASICs\n"
             f"{'=' * 80}\n"
         )
         assert False, error_msg
@@ -550,16 +557,27 @@ def validate_phy_attribute_types(phy_detail_output: Dict, expected_types: Dict, 
     """
     for attr_name, expected_type in expected_types.items():
         with allure.step(f"Validate '{attr_name}' type"):
+            # For QTM4+, skip attributes that should NOT exist (they're validated separately)
+            if not is_qtm3 and attr_name in PhyDetailConsts.QTM4_NON_EXISTENT_ATTRS:
+                logger.info(f"  {attr_name}: skipping type validation (attribute should not exist on QTM4+)")
+                continue
+
             if attr_name not in phy_detail_output:
                 logger.warning(f"Attribute '{attr_name}' not found in output. Available: {list(phy_detail_output.keys())}")
                 continue
 
             value = phy_detail_output[attr_name]
-            actual_type = determine_attribute_type(str(value))
 
-            logger.info(f"  {attr_name}: value='{value}', detected_type={actual_type}, expected={expected_type}")
+            # Skip validation for None/null values - we can't determine SAI type from a null value
+            if value is None:
+                logger.info(f"  {attr_name}: value is None/null, skipping type validation (no type inference possible)")
+                continue
 
-            if actual_type != expected_type:
+            is_compatible, error_reason = is_value_compatible_with_type(str(value), expected_type)
+
+            if is_compatible:
+                logger.info(f"  {attr_name}: value='{value}' is compatible with {expected_type}")
+            else:
                 error_msg = (
                     f"\n{'=' * 80}\n"
                     f"TYPE MISMATCH DETECTED!\n"
@@ -568,51 +586,59 @@ def validate_phy_attribute_types(phy_detail_output: Dict, expected_types: Dict, 
                     f"ASIC Generation: {asic_gen}\n"
                     f"Value: '{value}'\n"
                     f"Expected Type: {expected_type}\n"
-                    f"Actual Type:   {actual_type}\n"
+                    f"Reason: {error_reason}\n"
                     f"{'=' * 80}\n"
                 )
                 logger.error(error_msg)
                 assert False, error_msg
 
 
-def determine_attribute_type(value: str) -> str:
+def is_value_compatible_with_type(value: str, expected_type: str) -> tuple:
     """
-    Determine attribute type from value format.
+    Check if a value is compatible with an expected SAI type.
 
-    Type patterns:
-    - sai_u32_list_t: "count:val1:val2..." e.g. "1:3825206960" or "2:100:200"
-    - sai_s32_list_t: list with negative values e.g. "2:-100:200" or null/None values
-    - sai_uint32_t: single integer > 255, e.g. "256" or "1000"
-    - sai_uint8_t: single integer 0-255, e.g. "42" or "0"
+    Note: We can't determine exact SAI type from value alone (e.g., 0 could be uint8 or uint32).
+    Instead, we check if the value VIOLATES the expected type's constraints.
+
+    Compatibility rules:
+    - sai_uint8_t: single integer 0-255
+    - sai_uint32_t: single integer 0-4294967295 (any non-negative int is fine)
+    - sai_u32_list_t: list format "count:val1:val2..." with non-negative values
+    - sai_s32_list_t: list format "count:val1:val2..." (can have negative values)
+
+    Args:
+        value: The string value from JSON output
+        expected_type: The expected SAI type
 
     Returns:
-        str: The determined type (sai_u32_list_t, sai_s32_list_t, sai_uint32_t, or sai_uint8_t)
+        tuple: (is_compatible: bool, error_reason: str or None)
     """
     value = value.strip()
+    is_list_format = ":" in value
 
-    # Check for list format: "count:value1:value2:..."
-    if ":" in value:
+    # List types
+    if expected_type in ("sai_u32_list_t", "sai_s32_list_t"):
+        if not is_list_format:
+            return False, f"Expected list format (count:val1:val2...) but got single value '{value}'"
+        # For list types, just verify format is correct
         parts = value.split(":")
-        # First part must be a count (integer)
-        if len(parts) >= 2 and parts[0].isdigit():
-            # Check if any value in the list is negative or not a valid u32
-            for val in parts[1:]:
-                try:
-                    if int(val) < 0:
-                        return "sai_s32_list_t"
-                except ValueError:
-                    # If we can't convert to int (e.g., "null"), it's s32 list
-                    return "sai_s32_list_t"
-            return "sai_u32_list_t"
+        if not parts[0].isdigit():
+            return False, f"List format invalid - first part '{parts[0]}' should be count"
+        return True, None
 
-    # Single numeric value - check range to determine uint8 vs uint32
-    try:
-        num = int(value)
-        if 0 <= num <= 255:
-            return "sai_uint8_t"
-        else:
-            return "sai_uint32_t"
-    except ValueError:
-        # Non-numeric value, default to uint32
-        logger.warning(f"Non-numeric value '{value}', defaulting to sai_uint32_t")
-        return "sai_uint32_t"
+    # Single value types (uint8, uint32)
+    if expected_type in ("sai_uint8_t", "sai_uint32_t"):
+        if is_list_format:
+            return False, f"Expected single value but got list format '{value}'"
+        try:
+            num = int(value)
+            if expected_type == "sai_uint8_t" and (num < 0 or num > 255):
+                return False, f"Value {num} out of range for uint8 (0-255)"
+            if expected_type == "sai_uint32_t" and num < 0:
+                return False, f"Value {num} is negative, invalid for uint32"
+            return True, None
+        except ValueError:
+            return False, f"Value '{value}' is not a valid integer"
+
+    # Unknown type
+    return False, f"Unknown expected type: {expected_type}"

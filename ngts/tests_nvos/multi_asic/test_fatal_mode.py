@@ -10,7 +10,7 @@ from retry.api import retry_call
 from ngts.nvos_constants.constants_nvos import ApiType, HealthConsts, NvosConst, ActionConsts, SystemConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.infra import ExceptionTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, wait_until_cli_is_up, wait_on_systemctl_initialization
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, wait_until_cli_is_up, wait_on_systemctl_initialization
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -160,8 +160,9 @@ def test_fatal_flow_until_soft_reset(engines, devices, random_api, random_asic, 
     """
     Test that health-events trigger fatal mode properly, and that the system leaves fatal mode when everything is fine.
     """
-    _trigger_soft_reset(False, random_asic, events_count_setting)
     try:
+        _trigger_soft_reset(False, random_asic, events_count_setting)
+
         with allure.step(f'Validate {FATAL_REASON_FILE} exists'):
             fatal_reason = engines.dut.run_cmd(f'cat {FATAL_REASON_FILE} && echo', validate=True).strip()
         with allure.step(f'Validate {FATAL_REASON_FILE} contents are: "{FATAL_REASON_FILE_CONTENT}"'):
@@ -178,17 +179,17 @@ def test_fatal_flow_until_reboot(engines, devices, random_api, random_asic, test
     Test repetitive health-events cause "soft reset" and then reboot. After everything is fine, leave fatal mode.
     Also generate tech-support and assert the dump contains /etc/system_fatal and fatal_reason files.
     """
-    _set_settings(reboot_count=2, clear_time=4)  # longer clear-time so we have enough time to generate tech-support
-    _trigger_soft_reset(False, random_asic, events_count_setting)
-
-    with allure.step(f"Trigger switch reboot 1 or 2 times (randomly)"):
-        repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
-        allure.attach(f"{repetitions=}")
-        for _ in range(repetitions):
-            _trigger_reboot(random_asic, events_count_setting)
-
     start_time = datetime.now()
     try:
+        _set_settings(reboot_count=2, clear_time=4)  # longer clear-time so we have enough time to generate tech-support
+        _trigger_soft_reset(False, random_asic, events_count_setting)
+
+        with allure.step(f"Trigger switch reboot 1 or 2 times (randomly)"):
+            repetitions = RandomizationTool.select_random_value([1, 2]).get_returned_value()
+            for _ in range(repetitions):
+                _trigger_reboot(random_asic, events_count_setting)
+
+        start_time = datetime.now()
         _check_tech_support(engines.dut, test_name, repetitions)
     finally:
         elapsed = datetime.now() - start_time
@@ -360,8 +361,9 @@ def _trigger_soft_reset(already_in_fatal: bool, asic: int, number_of_events):
     with allure.step(_trigger_soft_reset.__name__ +
                      ': Generating health-events to trigger fatal-mode "soft-reset" (syncd restart)'):
         _simulate_events(number_of_events, asic, not already_in_fatal)
+        recent_events = _get_recent_events() if not already_in_fatal else None
         _assert_syncd_restart()
-        _assert_system_fatal_mode(True, not already_in_fatal)
+        _assert_system_fatal_mode(True, not already_in_fatal, recent_events=recent_events)
         _wait(0, 10)
 
 
@@ -390,9 +392,8 @@ def _simulate_event(event_id, asic):
     """Runs the command that simulates a health events and asserts that it worked (returned no output)."""
     with allure.step(f"{_simulate_event.__name__}({event_id=}, {asic=})"):
         cmd = FATAL_HEALTH_EVENT_SIMULATION[event_id].format(asic=asic, asic_folder=asic - 1)
-        # Get time from switch to match log timestamps
-        switch_time = ClockTools.get_local_time_from_show_system_date_time_output(System().datetime.show())
-        fatal_event_timestamps.append(switch_time)
+        dut_time = ClockTools.get_local_time_from_show_system_date_time_output(System().datetime.show())
+        fatal_event_timestamps.append(dut_time)
         _send_command_timing(TestToolkit.engines.dut, cmd)
 
 
@@ -436,11 +437,20 @@ def _set_dst(enter: bool, system: System):
             system.datetime.set(ClockConsts.TIMEZONE, ClockConsts.DEFAULT_TIMEZONE, apply=True)
 
 
-def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
+def _get_recent_events():
+    """Capture recent system events. Call right after event simulation, before syncd restart floods the event table."""
+    with allure.step("Capture recent events before syncd restart"):
+        return OutputParsingTool.parse_json_str_to_dictionary(
+            System().events.show_events_last_recent_entries(SystemConsts.SYSTEM_RECENT_EVENT, '3')
+        ).get_returned_value()
+
+
+def _assert_system_fatal_mode(fatal: bool, state_just_changed=False, recent_events=None):
     """
     Asserts system health status, led, health-issue and fatal-mode prompt are in Fatal mode (or are OK if fatal==False).
     If state_just_changed then also assert a system event was raised.
     if fatal and state_just_changed then wait for the system to detect fatal mode.
+    recent_events: pre-captured events to use for the event assertion (to avoid event flooding after syncd restart).
     """
     with allure.step(f"{_assert_system_fatal_mode.__name__}: Verify fatal mode is {fatal}"):
         system = System()
@@ -476,17 +486,20 @@ def _assert_system_fatal_mode(fatal: bool, state_just_changed=False):
                     "Health issues exist:\n" + str(health_dict)
 
         with allure.step("Assert console prompt"):
-            prompt = DutUtilsTool.get_prompt(engine)
-            assert prompt.startswith(FATAL_PROMPT) == fatal, \
-                f"Prompt is '{prompt}' but it should {'' if fatal else 'not '} contain '{FATAL_PROMPT}'."
+            def _assert_prompt():
+                prompt = DutUtilsTool.get_prompt(engine)
+                assert prompt.strip(), f"Got empty/whitespace prompt: '{prompt}'"
+                assert prompt.startswith(FATAL_PROMPT) == fatal, \
+                    f"Prompt is '{prompt}' but it should {'' if fatal else 'not '} contain '{FATAL_PROMPT}'."
+            retry_call(_assert_prompt, exceptions=AssertionError, tries=3, delay=2)
 
         if state_just_changed:
             with allure.step(f"Assert system-event was raised for {'entering' if fatal else 'exiting'} fatal mode"):
                 event_text = ('' if fatal else 'Cleared: ') + FATAL_EVENT_STRING
-                event_list = OutputParsingTool.parse_json_str_to_dictionary(
+                event_dict = recent_events or OutputParsingTool.parse_json_str_to_dictionary(
                     system.events.show_events_last_recent_entries(SystemConsts.SYSTEM_RECENT_EVENT, '3')
                 ).get_returned_value()
-                event_list = [x for x in event_list.values() if x['text'] == event_text]
+                event_list = [x for x in event_dict.values() if x['text'] == event_text]
                 if not event_list:
                     raise AssertionError('Expected system-event not found: ' + event_text)
                 elif len(event_list) > 1:
@@ -545,7 +558,8 @@ def _assert_syncd_restart(expect_restart=True):
 
 def _assert_reboot():
     with allure.step(f"{_assert_reboot.__name__}: Verify switch is rebooted"):
-        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut)
+        reboot_params = RebootParams(throw_exception_on_unhealthy=False)
+        DutUtilsTool.wait_on_system_reboot(TestToolkit.engines.dut, reboot_params=reboot_params)
         _reset_base_prompt(TestToolkit.engines.dut)
         _wait(0, 15)
 

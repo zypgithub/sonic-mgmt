@@ -8,7 +8,6 @@ from retry import retry
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
 from ngts.nvos_constants.constants_nvos import ApiType, NtpConsts, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -58,7 +57,6 @@ def test_configure_ntp_server(random_api):
     21.	Validate show system ntp commands output (expect default values)
     22.	Verify ntp daemon state (expect Ntpd running)
     """
-    TestToolkit.tested_api = random_api
     system = System()
     server_name = NtpConsts.SERVER1_IPV4
     ntp_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
@@ -512,7 +510,6 @@ def test_configure_ntp_multiple_servers(random_api):
         (The active server does not exist, and another server becomes active)
     9. Check unset of all servers (All servers removed)
     """
-    TestToolkit.tested_api = random_api
     system = System()
     server2_hostname = get_hostname_from_ip(NtpConsts.SERVER2_IPV4)
     ntp_dict = dict(NtpConsts.NTP_DEFAULT_DICT)
@@ -675,7 +672,6 @@ def test_ntp_performance(random_api):
     9. Remove all ntp servers
     10. Validate system sync time after setting a new server (Sync time < 5 sec)
     """
-    TestToolkit.tested_api = random_api
     system = System()
     server_name = NtpConsts.SERVER1_IPV4
 
@@ -1045,8 +1041,7 @@ def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ntp_invalid_values(test_api):
+def test_ntp_invalid_values(random_api):
     """
     Check all the commands that get param with bad values
 
@@ -1064,7 +1059,6 @@ def test_ntp_invalid_values(test_api):
     11. nv set system ntp server <server-id> version <not 3|4> (Failure)
     12. nv set system ntp vrf <random str> (Failure)
     """
-    TestToolkit.tested_api = test_api
     system = System()
     server_name = NtpConsts.SERVER1_IPV4
 

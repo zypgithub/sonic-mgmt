@@ -159,11 +159,14 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_rout
             for app in devices.dut.expected_cluster_apps:
                 if app in techsupport_dirs:
                     log_dir = techsupport_dirs[app]
-                    if log_dir:  # Ensure log_dir is not None or empty
-                        # Get app-specific log files (not generic!)
+                    if log_dir:
                         app_log_files = log_files_by_app.get(app, None)
-                        if app_log_files:  # Ensure not None and not empty list
-                            expected_files_dict[log_dir] = app_log_files
+                        if app_log_files:
+                            if standalone_system:
+                                excluded = getattr(devices.dut, 'cluster_standalone_excluded_files', [])
+                                app_log_files = [f for f in app_log_files if f not in excluded]
+                            if app_log_files:
+                                expected_files_dict[log_dir] = app_log_files
 
         # Add cluster config/state files directory if defined
         cluster_files = getattr(devices.dut.constants, 'cluster_files', None)

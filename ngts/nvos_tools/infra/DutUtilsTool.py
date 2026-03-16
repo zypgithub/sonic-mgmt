@@ -14,7 +14,7 @@ from retry.api import retry_call, retry
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
+from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst, RebootConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -30,11 +30,12 @@ logger = logging.getLogger()
 class RebootParams:
     recovery_engine: Any = None
     topology_obj: Any = None
-    wait_time_before_reboot: int = 120
+    wait_time_before_reboot: int = RebootConsts.WAIT_TIME_BEFORE_REBOOT
     system_is_ready_timeout: int = None
     track_boot_intervals: bool = False
     should_wait_till_system_ready: bool = True
     check_system_is_functional: bool = True
+    throw_exception_on_unhealthy: bool = True
 
 
 class DutUtilsTool:
@@ -139,7 +140,9 @@ class DutUtilsTool:
                         if device:
                             result_obj = device.wait_for_os_to_become_functional(dut_engine)
                         else:
-                            result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(dut_engine)
+                            result_obj = DutUtilsTool.wait_for_nvos_to_become_functional(
+                                dut_engine,
+                                throw_exception_on_unhealthy=reboot_params.throw_exception_on_unhealthy)
 
                         if verify_final_result:
                             result_obj.verify_result()
@@ -156,7 +159,7 @@ class DutUtilsTool:
             serial_engine.run_cmd('', system_ready_pattern, timeout=wait_timeout, send_without_enter=True)
 
     @staticmethod
-    def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10):
+    def wait_for_nvos_to_become_functional(engine, find_prompt_tries=60, find_prompt_delay=10, /, *, throw_exception_on_unhealthy: bool = True):
         with allure.step('wait until the system is ready - check SYSTEM_STATE table'):
             with allure.step('wait for the system table to exist'):
                 wait_for_system_table_to_exist(engine)
@@ -186,6 +189,11 @@ class DutUtilsTool:
                 logging.error("System is not ready according to systemctl status")
                 engine.run_cmd("nv show system health")
                 raise ex
+
+            with allure.step('Validate system health status is OK'):
+                from ngts.nvos_tools.system.System import System
+                from ngts.nvos_constants.constants_nvos import HealthConsts
+                System().validate_health_status(HealthConsts.OK, dut_engine=engine, throw_exception=throw_exception_on_unhealthy)
 
             return ResultObj(result=True, info="System Is Ready", issue_type=IssueType.PossibleBug)
 
@@ -238,7 +246,7 @@ class DutUtilsTool:
 
     @staticmethod
     def get_prompt(engine: LinuxSshEngine) -> str:
-        return engine.engine.send_command('', strip_prompt=False)
+        return engine.engine.find_prompt()
 
     @staticmethod
     def get_running_dockers(engine: LinuxSshEngine) -> List[str]:

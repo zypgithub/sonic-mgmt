@@ -105,20 +105,21 @@ def pytest_collection(session: pytest.Session):
     session.config.cache.set(PytestConst.CUSTOM_TEST_SKIP_IMAGE_TYPE, image)
 
 
-pytest_plugins = ('ngts.tools.sysdumps',
-                  'ngts.tools.conditional_mark',
-                  'ngts.tools.loganalyzer',
-                  'ngts.tools.serial_logger.analyzer',
-                  'ngts.tools.infra',
-                  'pytester',
-                  'ngts.tools.allure_report',
-                  'ngts.tools.mars_test_cases_results',
-                  'ngts.tools.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore',
-                  'tests.common.plugins.collect_test_data_to_sql',
-                  'ngts.tools.ports_modifier',
-                  'tests.common.plugins.random_seed',
-                  'tests.common.plugins.cli_coverage'
-                  )
+pytest_plugins = (
+    'ngts.tools.sysdumps',
+    'ngts.tools.conditional_mark',
+    'ngts.tools.loganalyzer',
+    'ngts.tools.serial_logger.analyzer',
+    'ngts.tools.infra',
+    'pytester',
+    'ngts.tools.allure_report',
+    'ngts.tools.mars_test_cases_results',
+    'ngts.tools.loganalyzer_dynamic_errors_ignore.la_dynamic_errors_ignore',
+    'tests.common.plugins.collect_test_data_to_sql',
+    'ngts.tools.ports_modifier',
+    'tests.common.plugins.random_seed',
+    'tests.common.plugins.cli_coverage',
+)
 
 
 def pytest_addoption(parser):
@@ -378,7 +379,7 @@ def has_loopbox(topology_obj):
     """
     with allure.step('Checking if system has loopbox'):
         dut_setup_common_attributes = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']
-        labels = dut_setup_common_attributes['labels']
+        labels = dut_setup_common_attributes.get('labels')
         return labels and InfraConst.LOOPBOX_LABEL in labels
 
 
@@ -457,7 +458,7 @@ def set_asic_for_dut_clis(topology, tested_asic_index):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic):
+def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic, is_ipv6):
     topo = initial_topology_obj
     if is_multi_asic:
         for side in ('ha', 'hb'):
@@ -470,7 +471,7 @@ def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic):
 
 
 @pytest.fixture(scope='session')
-def initial_topology_obj(setup_name, request, is_performance):
+def initial_topology_obj(setup_name, request, is_performance, is_ipv6):
     """
     Fixture which create topology object before run tests and doing cleanup for ssh engines after test executed
     :param setup_name: example: sonic_tigris_r-tigris-06
@@ -499,6 +500,18 @@ def initial_topology_obj(setup_name, request, is_performance):
         with allure.step("Update topology for fast reboot with max ports"):
             config_db = topology.players['dut']['cli'].general.get_config_db()
             topology.players_all_ports['dut'] = list(config_db['PORT'].keys())
+
+    if is_ipv6 and 'sonic-mgmt' in topology.players:
+        sonic_mgmt_engine = topology.players['sonic-mgmt']['engine']
+        ipv6_addr = IpTool.get_routable_ipv6_from_any_interface(sonic_mgmt_engine)
+        if ipv6_addr:
+            sonic_mgmt_engine.switch_reachable_ip = ipv6_addr
+            logger.info(f'Set sonic-mgmt switch_reachable_ip to {ipv6_addr}')
+        else:
+            logger.error(
+                'IPv6 mode enabled but no routable IPv6 found on sonic-mgmt. '
+                'SCP operations from switch will use IPv4 and likely fail.'
+            )
 
     yield topology
 

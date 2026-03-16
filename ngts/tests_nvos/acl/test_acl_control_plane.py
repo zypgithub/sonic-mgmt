@@ -62,7 +62,7 @@ def get_system_cp_rule_packets(system_cp_acl_obj, rule_id=None, rule_direction=A
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_control_plane_counters(engines, test_api, topology_obj):
     """
     Validate system control plane ACL counters.
@@ -165,7 +165,7 @@ def test_system_control_plane_counters(engines, test_api, topology_obj):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_control_plane_acl_commands(devices, engines, test_api, topology_obj):
     """
     Validate system control plane acl show commands.
@@ -357,7 +357,7 @@ def test_show_system_control_plane_acl_commands(devices, engines, test_api, topo
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_interface_control_plane_single_acl_rule_priority_order(devices, engines, test_api, topology_obj):
     """
     Validate control plane ACL rules order by priority of rules order.
@@ -486,7 +486,7 @@ def test_interface_control_plane_single_acl_rule_priority_order(devices, engines
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_interface_control_plane_acl_unset_and_show_operations(engines, test_api, topology_obj):
     """
     Validate interface ACL show and unset commands for all combinations of inbound/outbound and control-plane.
@@ -694,7 +694,7 @@ def test_interface_control_plane_acl_unset_and_show_operations(engines, test_api
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_control_plane_acl_global_vs_interface_behavior(engines, test_api, topology_obj):
     """
     Validate global system control-plane ACL behavior across multiple interfaces

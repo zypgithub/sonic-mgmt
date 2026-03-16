@@ -26,7 +26,6 @@ def test_change_sed_password(engines, devices: DevicesT, sed_default_password, r
         4. Reboot the system and verify nvos works.
         5. Check that tpm primary and secondary bank have this password.
     """
-    TestToolkit.tested_api = random_api
     switch: LinuxSshEngine = engines.dut
     system = System()
     new_sed_password = "test_sed_password"

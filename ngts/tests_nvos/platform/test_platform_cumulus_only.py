@@ -21,8 +21,7 @@ log = logging.getLogger()
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_watchdog_good_kill(engines, test_api):
+def test_watchdog_good_kill(engines, random_api):
     """
     Name: Watchdog Good Kill
     ===============================================
@@ -38,7 +37,6 @@ def test_watchdog_good_kill(engines, test_api):
     2. Kill the watchdog
     3. Ensure the system does not restart
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("If watchdog is not running, Skip the test"):
         pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
@@ -92,8 +90,7 @@ shutdown for the watchdog was used."
 @pytest.mark.platform
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_watchdog_bad_kill(engines, test_api):
+def test_watchdog_bad_kill(engines, random_api):
     """
     Name: Watchdog Bad Kill
     ===============================================
@@ -109,7 +106,6 @@ def test_watchdog_bad_kill(engines, test_api):
     2. Kill the watchdog incorrectly
     3. Ensure the system restarts
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("If watchdog is not running, Skip the test"):
         pid_wd = engines.dut.run_cmd("pidof wd_keepalive")
@@ -201,8 +197,7 @@ def check_shutdown_state(engines, start_boot_id):
 
 @pytest.mark.cumulus_only
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_port_amount(engines, devices, test_api):
+def test_platform_port_amount(engines, devices, random_api):
     """
     Validates the actual number of ports is equal to the expected number of ports
     defined in the HW specification for the platform. This test is specific to
@@ -213,7 +208,6 @@ def test_platform_port_amount(engines, devices, test_api):
        3. Count the number of ports excluding breakout ports
        4. Validate the actual number of ports is equal to the expected number of ports
     """
-    TestToolkit.tested_api = test_api
 
     output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
         Port.show_interface()).get_returned_value()

@@ -234,7 +234,21 @@ def test_ztp_startup_file_commands_list(engines, devices):
     system = System(None)
     empty_description = ""
     abcd_description = "abcd"
-    selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_DOWN).get_returned_value()
+    port_was_toggled_down = False
+
+    # Try to find a DOWN port first, if none available use an UP port
+    result = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_DOWN)
+    if result.result:
+        selected_port = result.get_returned_value()
+    else:
+        result.ignore_result()  # It's acceptable that no DOWN ports were found
+        # No DOWN port available, select an UP port and toggle it down
+        selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP).get_returned_value()
+        with allure.step(f"Toggle port {selected_port.name} down for test"):
+            selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True).verify_result()
+            selected_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_DOWN).verify_result()
+            port_was_toggled_down = True
+
     selected_port.update_output_dictionary()
     TestToolkit.update_tested_ports([selected_port])
 
@@ -308,6 +322,10 @@ def test_ztp_startup_file_commands_list(engines, devices):
         logger.info("Received Exception during test_ztp_startup_file_commands_list: {}".format(e))
         raise e
     finally:
+        if port_was_toggled_down:
+            with allure.step(f"Toggle port {selected_port.name} back up"):
+                selected_port.interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_UP, apply=True).verify_result()
+                selected_port.interface.wait_for_port_state(state=NvosConsts.LINK_STATE_UP).verify_result()
         _ztp_cleanup(engines, system)
 
 
@@ -436,7 +454,7 @@ def test_ztp_nmx_negative(engines, devices, setup_name, has_loopbox, standalone_
                                        SystemConsts.ZTP_STATUS_FAILED, SystemConsts.ZTP_STATUS_SUCCESS)
 
         with allure.step("Start cluster"):
-            ClusterTools.start_cluster(cluster, setup_name)
+            ClusterTools.start_cluster(cluster, setup_name, devices=devices)
 
             with allure.step("Verify cluster enabled"):
                 ClusterTools.validate_cluster_enabled(cluster)
@@ -491,7 +509,7 @@ def test_ztp_nmx_positive(engines, devices, setup_name):
                                               SystemConsts.ZTP_DEFAULT_VALUES, tries=5, delay=2)
 
         with allure.step("Start cluster"):
-            ClusterTools.start_cluster(cluster, setup_name)
+            ClusterTools.start_cluster(cluster, setup_name, devices=devices)
 
         with allure.step("Download ztp nmx positive command list, cluster enabled"):
             _download_file_and_run_ztp(engines, system, SystemConsts.NMX_POSITIVE_JSON, '1-nmx-commands-list',

@@ -15,9 +15,7 @@ logger = logging.getLogger()
 @pytest.mark.fae
 @pytest.mark.bmc
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_eeprom_bmc(devices, test_api, output_format):
-    TestToolkit.tested_api = test_api
+def test_show_eeprom_bmc(devices, random_api, output_format):
     fae = Fae()
 
     with allure.step("Consider skipping test (if device has no BMC)"):

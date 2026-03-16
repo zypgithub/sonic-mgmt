@@ -25,7 +25,7 @@ from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_play
 @pytest.mark.nvos_ci
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cacert_mgmt_cacert_cli(test_api, engines, scp_player, clear_certs):
     """
     Verify that all CLI work and check values change properly in show
@@ -122,7 +122,7 @@ def test_cacert_mgmt_cacert_cli(test_api, engines, scp_player, clear_certs):
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cacert_mgmt_import_ca_data_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that import cert with bad params rejected
@@ -166,7 +166,7 @@ def test_cacert_mgmt_import_ca_data_bad_param(test_api, engines, scp_player, cle
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cacert_mgmt_import_ca_uri_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that import ca with bad params rejected
@@ -205,7 +205,7 @@ def test_cacert_mgmt_import_ca_uri_bad_param(test_api, engines, scp_player, clea
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cacert_mgmt_delete_ca_bad_param(test_api, engines, scp_player, clear_certs):
     """
     Verify that delete ca with bad params rejected and doesn't affect other imported cas
@@ -245,7 +245,7 @@ def test_cacert_mgmt_delete_ca_bad_param(test_api, engines, scp_player, clear_ce
 
 @pytest.mark.system
 @pytest.mark.certificate
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cacert_mgmt_import_ca_unique_id(test_api, engines, scp_player, clear_certs):
     """
     Verify that must use unique ca id

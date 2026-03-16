@@ -20,6 +20,7 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import ProxySshEngine
@@ -131,7 +132,7 @@ class NvosInstallationSteps:
             config_file_path, config_filename = dut_device.get_test_config_file_by_version(base_version)
             system = System()
             sonic_mgmt_engine = topology_obj.players['sonic-mgmt']['engine']
-            scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{sonic_mgmt_engine.ip}'
+            scp_host_creds = f'{sonic_mgmt_engine.username}:{sonic_mgmt_engine.password}@{IpTool.format_ip_for_uri(sonic_mgmt_engine)}'
             if target_version_path.startswith('http'):
                 target_version_path = f'/auto/{target_version_path.split("/auto/")[1]}'
             bin_filename = target_version_path.split('/')[-1]
@@ -210,7 +211,7 @@ class NvosInstallationSteps:
     def upgrade_to_target_version(bin_filename, dut_engine, dut_device, scp_host_creds, system, target_version_path,
                                   topology_obj, param_value=''):
         image_scp_url = f'scp://{scp_host_creds}{target_version_path}'
-        system.image.action_fetch(image_scp_url, base_url='', engine=dut_engine, device=dut_device)
+        system.image.action_fetch(image_scp_url, base_url='', engine=dut_engine, device=dut_device, timeout=600)
         # use new default password for recovery after upgrade
         recovery_engine = LinuxSshEngine(dut_engine.ip, dut_engine.username,
                                          dut_device.get_default_password_by_version(target_version_path))
@@ -224,7 +225,7 @@ class NvosInstallationSteps:
     def fetch_apply_save_config(config_filename, config_file_path, dut_engine, scp_host_creds, system, dut_device=None,
                                 verify_result=False):
         conf_scp_url = f'scp://{scp_host_creds}{config_file_path}'
-        result = system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine, device=dut_device)
+        result = system.config.action_fetch(conf_scp_url, base_url='', engine=dut_engine, device=dut_device, timeout=600)
         if verify_result:
             result.verify_result()
         NvueGeneralCli.patch_config(engine=dut_engine, file=config_filename)

@@ -293,7 +293,7 @@ def generic_test_mtls_reboot(reboot_flow: str, engines, feature_resource: MTLSab
 
     with allure.step(f'verify {"no " if not with_save else ""} mtls only connection'):
         verify_connection(TestFlowType.ALL_TYPES, engines.dut, user, with_save, server_cert, server_ca,
-                          non_matching_client_cert_should_work, verify_connection_func)
+                          non_matching_client_cert_should_work, verify_connection_func, test_certs=certs)
 
 
 # generator functions

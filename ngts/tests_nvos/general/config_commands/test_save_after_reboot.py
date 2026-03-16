@@ -1,4 +1,5 @@
 import logging
+import random
 import time
 
 import pytest
@@ -71,11 +72,11 @@ def test_save_reboot(engines, devices):
             fae.fast_recovery.set(FastRecoveryConsts.STATE,
                                   FastRecoveryConsts.STATE_DISABLED, apply=True, dut_engine=engines.dut)'''
 
-        with allure.step('Set system events table-size to 600 and validate'):
-            system.events.set(op_param_name='table-size', op_param_value=600, apply=True, dut_engine=engines.dut).\
+        with allure.step('Set system events table-size to 1200 and validate'):
+            system.events.set(op_param_name='table-size', op_param_value=1200, apply=True, dut_engine=engines.dut).\
                 verify_result()
             output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '600').verify_result()
+            ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '1200').verify_result()
 
         with allure.step('Simulate 10 system events'):
             output = engines.dut.run_cmd('docker exec eventd events_publish_test.py -c 10')
@@ -147,8 +148,10 @@ def test_save_reboot(engines, devices):
                     verify_result()
 
         with allure.step("Update the health component unhealthy counters"):
-            system.health.component.action(ActionConsts.CLEAR)
-            HWSimulator.create_health_component_error_fan(devices, engines)
+            with allure.step("clear system health component"):
+                system.health.component.action(ActionConsts.CLEAR)
+            with allure.step("simulate fan health error"):
+                HWSimulator.create_health_component_error_fan(devices, engines)
 
         with allure.step('Save config'):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
@@ -202,7 +205,7 @@ def test_save_reboot(engines, devices):
 
             with allure.step('Verify that system events table-size config was saved'):
                 output = OutputParsingTool.parse_json_str_to_dictionary(system.events.show()).get_returned_value()
-                ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '600').\
+                ValidationTool.verify_field_value_in_output(output, EventConsts.TABLE_SIZE, '1200').\
                     verify_result()
 
             with allure.step('Verify that the system event before the reboot is present post reboot as well'):
@@ -316,11 +319,10 @@ def test_save_reboot(engines, devices):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.general
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_general_auto_save(engines, devices, test_api):
     system = System()
     eth0_port = Port('eth0')
-    TestToolkit.tested_api = test_api
     new_eth0_description = 'TestingAutoSave'
 
     try:

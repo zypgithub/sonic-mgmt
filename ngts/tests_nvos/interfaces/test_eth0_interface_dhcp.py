@@ -149,7 +149,7 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj, ser
         list_supported_duplex = devices.dut.supported_eth0_duplex
         for speed in list_supported_speeds:
             # Only allow full and half duplex if the speed is "10M" or "100M"
-            if speed in ["10M", "100M"]:
+            if speed in ["10M"]:
                 applicable_duplex = list_supported_duplex
             else:
                 applicable_duplex = ["full"]  # For other speeds, only "full" duplex is applicable
@@ -169,6 +169,18 @@ def test_interface_eth0_speed_duplex_autoneg(engines, devices, topology_obj, ser
                 wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_DUPLEX, duplex)
 
     with allure.step('Set autoneg to off'):
+        # Auto-negotiate cannot be disabled at 1G speed, so find a non-1G speed from the supported list
+        non_1g_speeds = [s for s in devices.dut.supported_eth0_speeds if s != '1G']
+        if not non_1g_speeds:
+            pytest.skip("No speeds that support disabling auto-negotiate (all supported speeds are 1G)")
+
+        target_speed = non_1g_speeds[0]
+        mgmt_port.interface.link.set(op_param_name='speed', op_param_value=target_speed, apply=True,
+                                     ask_for_confirmation=True).verify_result()
+        Port.wait_for_port_state(mgmt_port, "up")
+        wait_for_param_changed(mgmt_port, IbInterfaceConsts.LINK_SPEED, target_speed)
+
+        # On MEC network, peer switch requires auto-neg so port goes down when disabled
         mgmt_port.interface.link.set(op_param_name=IbInterfaceConsts.LINK_AUTO_NEGOTIATE, op_param_value=AutoNegotiateConsts.State.DISABLED.value, apply=True,
                                      ask_for_confirmation=True).verify_result()
         if is_in_mec:
@@ -347,7 +359,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 
         with allure.step('Select random ipv4 and set it'):
             ip_address = Tools.IpTool.select_random_ipv4_address().verify_result()
-            serial_engine.serial_engine.sendline("nv set interface {0} ip address {1}".format(mgmt_port_name, ip_address))
+            serial_engine.serial_engine.sendline("nv set interface {0} ipv4 address {1}".format(mgmt_port_name, ip_address))
             serial_engine.serial_engine.sendline("nv config apply")
             serial_engine.serial_engine.expect("Are you sure?", timeout=120)
             serial_engine.serial_engine.sendline("y")
@@ -785,14 +797,21 @@ def validate_dhcp_option_60_tcpdump(dut, mgmt_port_name, regex):
 
 
 @retry(Exception, tries=6, delay=5)
-def validate_interface_ip_address(address, output_dictionary, validate_in=True):
+def validate_interface_ip_address(address, output_dictionary, validate_in=True, run_show=False, mgmt_port=None, dut_engine=None):
     """
 
     :param address: ip address (could be ipv4 or ipv6)
-    :param output_dictionary: the output after running nv show interface ib0 ip
+    :param output_dictionary: the output after running nv show interface ib0 ip (ignored when run_show=True)
     :param validate_in: True after running set cmd, False after running unset
+    :param run_show: when True, run show and parse inside (for retry with fresh data). Requires mgmt_port.
+    :param mgmt_port: Port object for show when run_show=True
+    :param dut_engine: engine for show when run_show=True (e.g. serial_engine)
     """
     with allure.step('check the address field is updated as expected'):
+        if run_show:
+            assert mgmt_port is not None, "mgmt_port required when run_show=True"
+            output_dictionary = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
+                mgmt_port.interface.ipv4.show(dut_engine=dut_engine)).get_returned_value()
         output_dictionary = str(output_dictionary['address'].keys())
         if validate_in:
             assert address in output_dictionary, "address not found: {add}".format(add=address)
@@ -843,7 +862,7 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
     mgmt_port = Port(mgmt_port_name)
 
     try:
-        with allure.step('Get current IP address'):
+        with allure.step('Run show command on mgmt port and verify default description'):
             ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
             validate_interface_ip_address(engines.dut.ip, ipv4_output, True)

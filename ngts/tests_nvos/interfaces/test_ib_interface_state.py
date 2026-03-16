@@ -22,8 +22,7 @@ logger = logging.getLogger()
 @pytest.mark.check_disk_usage
 @pytest.mark.ib_interfaces
 @pytest.mark.air
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_state(test_name, test_api, devices):
+def test_ib_interface_state(test_name, random_api, devices):
     """
     Configure port interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -38,7 +37,6 @@ def test_ib_interface_state(test_name, test_api, devices):
     5. Wait until the port is up
     6. Verify the configuration applied by running "show" command
     """
-    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
     TestToolkit.update_tested_ports([selected_port])
     try:
@@ -77,8 +75,7 @@ def wait_for_port_state(selected_port, port_state, logical_state=None, test_name
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_state_invalid(engines, test_api):
+def test_ib_interface_state_invalid(engines, random_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -92,7 +89,6 @@ def test_ib_interface_state_invalid(engines, test_api):
     4. Verify the new value remain original in StateDB
     5. Verify the value remain original by running “show” command
     """
-    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
 
     TestToolkit.update_tested_ports([selected_port])
@@ -109,8 +105,7 @@ def test_ib_interface_state_invalid(engines, test_api):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_state_unset(engines, test_api):
+def test_ib_interface_state_unset(engines, random_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -127,7 +122,6 @@ def test_ib_interface_state_unset(engines, test_api):
     6. Verify the new value remain original in StateDB
     7. Verify the value remain original by running “show” command
     """
-    TestToolkit.tested_api = test_api
     selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
 
     TestToolkit.update_tested_ports([selected_port])
@@ -160,7 +154,6 @@ def test_ib_interface_state_up_once(engines, devices, random_api):
     6. Verify the state is up after reboot
     """
     with allure.step('set up system objects'):
-        TestToolkit.tested_api = random_api
         selected_port = Tools.RandomizationTool.select_random_port().get_returned_value()
         port_name = selected_port.name
         TestToolkit.update_tested_ports([selected_port])

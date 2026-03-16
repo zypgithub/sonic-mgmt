@@ -24,7 +24,7 @@ from .token_signing import CRCSTokenSigner
 @pytest.mark.crcs
 @pytest.mark.functionality
 def test_crcs_complete_flow(engines, nv_command, test_name, random_api,
-                            topology_obj, skip_if_opn_system):
+                            topology_obj, skip_if_prod_asics):
     """
     Test Plan Section 6.1: CRCS Complete Flow
 

@@ -32,7 +32,6 @@ logger = logging.getLogger()
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
 
-    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
     config_files_deleted = False
     with allure.step("Create Cluster object"):
@@ -50,7 +49,7 @@ def test_cluster_sdn(engines, devices, random_api, has_loopbox, standalone_syste
     try:
 
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
 
         # Get config files paths for all apps that exist on this device type
         config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)

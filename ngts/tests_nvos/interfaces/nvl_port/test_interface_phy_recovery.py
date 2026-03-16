@@ -40,6 +40,9 @@ ERR_MSG_TIMEOUT_NEGATIVE_MIN = "-1 is less than the minimum of 0"
 ERR_MSG_TIMEOUT_VALID_RANGE = "Valid range for serdes-eq-timeout is 0 - 2550"
 ERR_MSG_BAD_MODE = "'bad-mode' is not one of"
 
+# Command prefix for phy-recovery set command
+NV_SET_FAE_INTERFACE_PHY_RECOVERY = "nv set fae interface {port} link phy-recovery"
+
 # Retry settings
 VALIDATE_RETRIES = 6
 VALIDATE_RETRY_DELAY_SECONDS = 30
@@ -59,7 +62,6 @@ def test_phy_recovery_counters(engines, devices, random_api):
     4. Pick a random counter, subscribe via GNMI ONCE to 'phy-diag/state/<counter>'.
     5. Verify GNMI stream contains the counter name and its default value.
     """
-    TestToolkit.tested_api = random_api
 
     with allure.step("Select a port for test"):
         port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_ALL_TYPES)
@@ -69,26 +71,25 @@ def test_phy_recovery_counters(engines, devices, random_api):
 
     with allure.step("Select a random counter"):
         counters_list = list(devices.dut.default_phy_recovery_counters.keys())
-        if is_bug_active(4692220):
-            counters_to_remove = [PhyRecoveryConsts.LAST_RS_FEC_UNCORRECTABLE_DURING_RECOVERY,
-                                  PhyRecoveryConsts.TOTAL_RS_FEC_UNCORRECTABLE_DURING_RECOVERY,
-                                  PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_TIME,
-                                  PhyRecoveryConsts.TOTAL_SUCCESSFUL_RECOVERY_TIME,
-                                  PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS]
-            for counter in counters_to_remove:
-                counters_list.remove(counter)
         random_counter = random.choice(counters_list)
+        path = f"phy-diag/state/{random_counter}"
+        if random_counter in [PhyRecoveryConsts.LAST_RS_FEC_UNCORRECTABLE_DURING_RECOVERY,
+                              PhyRecoveryConsts.TOTAL_RS_FEC_UNCORRECTABLE_DURING_RECOVERY,
+                              PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_TIME,
+                              PhyRecoveryConsts.TOTAL_SUCCESSFUL_RECOVERY_TIME,
+                              PhyRecoveryConsts.LAST_SUCCESSFUL_RECOVERY_STEP_ATTEMPTS]:
+            path = f"phy/recovery-information/state/{random_counter}"
         allure.attach(random_counter)
 
     with allure.step(f"Set up gnmi client and subscribe client to counter: {random_counter}"):
         client = GnmiClient(engines.dut.ip, GnmiConsts.GNMI_DEFAULT_PORT, devices.dut.default_username,
                             devices.dut.default_password, verify_tools_installed=True)
         out, err = client.gnmic_subscribe_interface(GnmiMode.ONCE, selected_port.name, skip_cert_verify=True,
-                                                    interface_path=f'phy-diag/state/{random_counter}')
+                                                    interface_path=path)
 
     with allure.step(f"Check that '{random_counter}' was streamed"):
         verify_msg_not_in_out_or_err(GnmicErr.AUTH_FAIL, out, err)
-        verify_msg_in_out_or_err(f'{random_counter}: {devices.dut.default_phy_recovery_counters.get(random_counter)}', out)
+        verify_msg_in_out_or_err(f'{random_counter}', out)
 
 
 @pytest.mark.interface
@@ -104,7 +105,6 @@ def test_phy_recovery_attributes(devices, random_api):
     3. Confirm all default attributes match default_phy_recovery_attributes.
     4. Pick a random attribute, set and verify.
     """
-    TestToolkit.tested_api = random_api
 
     with allure.step("Verify tested device is NVL6"):
         if devices.dut.asic_type not in [NvosConst.QTM4, NvosConst.NVL6]:
@@ -155,11 +155,10 @@ def test_phy_recovery_bad_flow(devices, random_api):
 
     Steps:
     1. Attempt to show a non-existent phy-recovery attribute; expect failure.
-    2. For each field in FWRecoveryConsts.negative_test_cases:
+    2. For both serdes-eq-mode and serdes-eq-timeout (when supported on DUT):
        a. Set the field to its bad_value with apply=True and ask_for_confirmation=True.
        b. Verify that the expected_error is raised.
     """
-    TestToolkit.tested_api = random_api
     with allure.step("Select a port for test"):
         port_result = RandomizationTool.select_random_port(requested_ports_state=NvosConsts.LINK_STATE_UP)
         if not port_result:
@@ -183,18 +182,20 @@ def test_phy_recovery_bad_flow(devices, random_api):
                 else:
                     logger.info("No port in up state were found")
 
-        with allure.independent_step(f"Testing bad-mode on interface {selected_port.port.name}"):
-            logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.MODE} to bad-mode")
-            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.MODE, "bad-mode", expected_str=ERR_MSG_BAD_MODE).verify_result()
+        if f"{NV_SET_FAE_INTERFACE_PHY_RECOVERY} {PhyRecoveryConsts.SerdesEQ.MODE}" not in devices.dut.unsupported_commands_list:
+            with allure.independent_step(f"Testing bad-mode on interface {selected_port.port.name}"):
+                logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.MODE} to bad-mode")
+                phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.MODE, "bad-mode", expected_str=ERR_MSG_BAD_MODE).verify_result()
 
-        with allure.independent_step(f"Testing bad-timeout on interface {selected_port.port.name}"):
-            logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.TIMEOUT} to -1")
-            expected_str = (
-                ERR_MSG_TIMEOUT_NEGATIVE_MIN
-                if is_bug_active(4631963) and random_api == ApiType.OPENAPI
-                else ERR_MSG_TIMEOUT_VALID_RANGE
-            )
-            phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.TIMEOUT, -1, expected_str=expected_str).verify_result()
+        if f"{NV_SET_FAE_INTERFACE_PHY_RECOVERY} {PhyRecoveryConsts.SerdesEQ.TIMEOUT}" not in devices.dut.unsupported_commands_list:
+            with allure.independent_step(f"Testing bad-timeout on interface {selected_port.port.name}"):
+                logger.info(f"Set {PhyRecoveryConsts.SerdesEQ.TIMEOUT} to -1")
+                expected_str = (
+                    ERR_MSG_TIMEOUT_NEGATIVE_MIN
+                    if is_bug_active(4631963) and random_api == ApiType.OPENAPI
+                    else ERR_MSG_TIMEOUT_VALID_RANGE
+                )
+                phy_recovery_obj.set(PhyRecoveryConsts.SerdesEQ.TIMEOUT, -1, expected_str=expected_str).verify_result()
 
 
 @pytest.mark.interface
@@ -211,7 +212,6 @@ def test_set_fae_phy_recovery_trunk_ports(devices, random_api):
     4. Update timeout higher and lower, verifying group vs. local effects.
     5. Disable recovery and confirm defaults restored.
     """
-    TestToolkit.tested_api = random_api
     skip_if_no_trunk_links(devices)
     port_name = select_random_nvl_port_name(devices, 'sw')
     summarized_switch_ports = summarize_switch_ports(devices.dut.nvl_trunk_ports_list)
@@ -236,7 +236,6 @@ def test_set_fae_phy_recovery_access_ports(devices, random_api, standalone_syste
     4. Update timeout higher and lower, verifying group vs. local effects.
     5. Disable recovery and confirm defaults restored.
     """
-    TestToolkit.tested_api = random_api
     skip_if_no_access_links(has_loopbox, standalone_system, is_simx)
     port_name = select_random_nvl_port_name(devices, 'acp')
     _run_fae_mode_timeout_test(

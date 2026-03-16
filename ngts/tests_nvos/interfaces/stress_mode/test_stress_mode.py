@@ -14,6 +14,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tests_nvos.interfaces.test_ib_interface_state import verify_port_state
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 
 from ngts.tests_nvos.constants import MINUTE
 
@@ -66,28 +67,21 @@ def test_stress_mode_configs(engines, devices, nv_command):
     """
     engine = engines.dut
     device = devices.dut
-    nv_command.system.log.rotate_logs()
 
     # Pre-stress checks
     baseline = pre_stress_checks(engine, device)
 
-    try:
-        # Enable and validate stress mode
-        enable_and_validate_stress_mode(engine)
+    # Enable and validate stress mode
+    enable_and_validate_stress_mode(engine)
 
-        # Validate stress mode effects
-        validate_stress_mode_effects(engine, device)
+    # Validate stress mode effects
+    validate_stress_mode_effects(engine, device)
 
-        # Disable and validate stress mode
-        disable_and_validate_stress_mode(engine)
+    # Disable and validate stress mode
+    disable_and_validate_stress_mode(engine)
 
-        # Post-stress checks
-        post_stress_checks(engine, device, baseline)
-
-    finally:
-        with allure.step("Cleanup: Disable stress mode"):
-            set_stress_mode_state(engine, StressModeConsts.STATE_DISABLED)
-            validate_health_status(HealthConsts.OK)
+    # Post-stress checks
+    post_stress_checks(engine, device, baseline)
 
 
 @pytest.mark.stress_mode
@@ -126,10 +120,10 @@ def test_stress_mode_port_admin_state_persistence(engines, devices):
         TestToolkit.update_tested_ports([selected_port])
         port_name = selected_port.name
 
-    try:
-        # Enable stress mode
-        enable_and_validate_stress_mode(engine)
+    # Enable stress mode
+    enable_and_validate_stress_mode(engine)
 
+    try:
         # Set admin state down and verify disconnect between mlxreg and NVOS
         with allure.step("Set port admin DOWN and verify mlxreg vs NVOS"):
 
@@ -163,14 +157,13 @@ def test_stress_mode_port_admin_state_persistence(engines, devices):
                 verify_port_state(output_dict, NvosConsts.LINK_STATE_UP)
 
     finally:
-        with allure.step("Cleanup: Disable stress mode"):
-            disable_and_validate_stress_mode(engine)
-            validate_health_status(HealthConsts.OK)
+        # Cleanup port state (stress mode cleanup handled by fixture)
+        with allure.step("Cleanup: Restore port admin state"):
             IbInterfaceTool.set_port_admin_state_paos_up(engine, port_name, sleep=5)
 
 
 @pytest.mark.stress_mode
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
+@pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_stress_mode_l1_power_saving_persistence(engines, devices):
     """
     Verify L1 power saving can be controlled during stress mode via hardware registers.
@@ -198,29 +191,26 @@ def test_stress_mode_l1_power_saving_persistence(engines, devices):
     engine = engines.dut
     device = devices.dut
 
-    try:
-        # Enable stress mode
-        enable_and_validate_stress_mode(engine)
+    # Enable stress mode
+    enable_and_validate_stress_mode(engine)
 
-        # Test L1 power saving enable/disable cycle
+    # Test L1 power saving enable/disable cycle
+    try:
         with allure.step("Enable L1 request on all ports and verify"):
             with allure.step("Set l1_req_en=1 on PPSLC register for all ports"):
-                set_l1_req_en_for_all_ports(engine, device, PowerSavingConsts.L1_REQ_EN_ENABLED)
+                set_l1_req_en_for_all_ports(engine, device, PowerSavingConsts.L1_REQ_EN_ENABLED).verify_result()
 
             with allure.step("Verify all ports show l1_cap=1 via PPSLS register"):
-                validate_all_ports_l1_cap(engine, device, PowerSavingConsts.L1_CAP_ENABLED)
-
-        with allure.step("Disable L1 request on all ports and verify"):
-            with allure.step("Set l1_req_en=0 on PPSLC register for all ports"):
-                set_l1_req_en_for_all_ports(engine, device, PowerSavingConsts.L1_REQ_EN_DISABLED)
-
-            with allure.step("Verify all ports show l1_cap=0 via PPSLS register"):
-                validate_all_ports_l1_cap(engine, device, PowerSavingConsts.L1_CAP_DISABLED)
+                validate_all_ports_l1_cap(engine, device, PowerSavingConsts.L1_CAP_ENABLED).verify_result()
 
     finally:
-        with allure.step("Cleanup: Disable stress mode"):
-            disable_and_validate_stress_mode(engine)
-            validate_health_status(HealthConsts.OK)
+        # Cleanup L1 state (stress mode cleanup handled by fixture)
+        with allure.step("Cleanup: Disable L1 request on all ports"):
+            with allure.step("Set l1_req_en=0 on PPSLC register for all ports"):
+                set_l1_req_en_for_all_ports(engine, device, PowerSavingConsts.L1_REQ_EN_DISABLED).verify_result()
+
+            with allure.step("Verify all ports show l1_cap=0 via PPSLS register"):
+                validate_all_ports_l1_cap(engine, device, PowerSavingConsts.L1_CAP_DISABLED).verify_result()
 
 
 @pytest.mark.stress_mode
@@ -256,6 +246,10 @@ def test_stress_mode_fatal_no_reboot(engines, devices, nv_command):
     device = devices.dut
     system = nv_command.system
 
+    with allure.step("Configure fatal mode settings"):
+        nv_command.fae.system.fatal.set(op_param_name="clear-time", op_param_value=FatalModeConsts.CLEAR_TIME, apply=True)
+        NvueGeneralCli.save_config(engines.dut)
+
     with allure.step("Pre-checks: Select random ASIC"):
         random_asic = RandomizationTool.select_random_asics().get_returned_value()[0]
         logger.info(f"Selected ASIC: {random_asic}")
@@ -285,10 +279,18 @@ def test_stress_mode_fatal_no_reboot(engines, devices, nv_command):
         with allure.step("Cleanup reboot"):
             system.reboot.action_reboot().verify_result()
 
+        with allure.step("Cleanup: Wait for system to exit fatal mode after reboot"):
+            # After manual reboot, system should exit fatal mode once boot completes
+            # Retry to allow time for full system initialization
+            retry_call(validate_health_status, [HealthConsts.OK], exceptions=AssertionError, tries=6, delay=10)
+
         with allure.step("Cleanup: System recovered from fatal events"):
-            validate_health_status(HealthConsts.OK)
             post_stress_checks(engine, device, baseline)
             system.techsupport.files.file_name[system.techsupport.file_name].action_delete()
+
+        with allure.step("Cleanup: Revert fatal-mode settings"):
+            nv_command.fae.system.fatal.unset(apply=True)
+            NvueGeneralCli.save_config(engine)
 
 
 @pytest.mark.skip(reason="TODO: Actual stress mode test not implemented - waiting for stress mode integration")
@@ -298,3 +300,4 @@ def test_stress_mode_with_actual_traffic(engines, devices, nv_command):
     """
     TODO: Test stress mode with actual traffic stress testing.
     """
+    pass

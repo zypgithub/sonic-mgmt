@@ -15,7 +15,6 @@ def test_ib0_show_interface(engines, random_api):
     Run show interface ib0 command and verify the required fields are exist
     command: nv show interface ib0 link
     """
-    TestToolkit.tested_api = random_api
     ib0_port = Port('ib0')
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate value'):
         output_dictionary = Tools.OutputParsingTool.parse_show_interface_output_to_dictionary(
@@ -33,7 +32,6 @@ def test_ib0_show_interface_link(engines, random_api):
     command1: nv show interface ib0 link state
     command2: nv show interface ib0 link stats
     """
-    TestToolkit.tested_api = random_api
     ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
@@ -50,7 +48,6 @@ def test_ib0_show_interface_stats(engines, random_api):
     Run show interface command and verify the required fields exist
     Command: nv show interface <name> link stats
     """
-    TestToolkit.tested_api = random_api
     ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '
@@ -72,7 +69,6 @@ def test_ib0_show_interface_ip(engines, random_api):
     2. Run 'nv show interface ib0 ipv4' and 'nv show interface ib0 ipv6'
     3. Verify the required fields are presented in the output
     """
-    TestToolkit.tested_api = random_api
     ib0_port = Port('ib0')
 
     with allure.step('Run show command on ib0 port and verify that each field has an appropriate '

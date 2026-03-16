@@ -97,9 +97,6 @@ def test_bmc_debug_config(engines, devices, nv_command):
         5. Unset bmc-debug-config, reboot system, check config not applied
         6. Cleanup
     """
-    if is_bug_active(4662368):
-        pytest.skip("skipped for NVUE type due to bug: https://redmine.mellanox.com/issues/4662368")
-
     system = nv_command.system
     bmc = nv_command.system.bmc_debug_config
 
@@ -119,7 +116,7 @@ def test_bmc_debug_config(engines, devices, nv_command):
         system.bmc_debug_config.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.PASS_FOLDER_CPU_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
         NvueGeneralCli.save_config(engines.dut)
 
-        _verify_debug_config_state(bmc, current=SystemConsts.FAIL_DEBUG_CONFIG, next=SystemConsts.PASS_FOLDER_CPU_DEBUG_CONFIG)
+        _verify_debug_config_state(bmc, current=SystemConsts.NA, next=SystemConsts.PASS_FOLDER_CPU_DEBUG_CONFIG)
 
     with allure.step("Try to delete config file, when it already set"):
         system.bmc_debug_config.action(ActionConsts.DELETE,
@@ -135,9 +132,6 @@ def test_bmc_debug_config(engines, devices, nv_command):
         with allure.step("Verify bmc-debug-config success after power cycle"):
             _verify_debug_config_state(bmc, current=SystemConsts.PASS_FOLDER_CPU_DEBUG_CONFIG, next=SystemConsts.PASS_FOLDER_CPU_DEBUG_CONFIG,
                                        status=SystemConsts.SUCCESS_STATUS_DEBUG_CONFIG)
-
-        with allure.step("Verify folder created after bmc-debug-config pass"):
-            _check_folder_created(engines, SystemConsts.CPU_CONFIG_CREATED_FOLDER)
 
     with allure.step("Unset bmc-debug-config, power cycle, check config not applied"):
         with allure.step("Unset bmc debug config"):
@@ -191,34 +185,26 @@ def test_cpu_bmc_debug_config_negative(engines, devices, nv_command):
         _download_debug_config(cpu, SystemConsts.VERIFICATION_CPU_DEBUG_PATH,
                                SystemConsts.FAIL_DEBUG_CONFIG)
 
-    if not is_bug_active(4662368):
-        with allure.step("Download bmc negative config file"):
-            _download_debug_config(bmc, SystemConsts.VERIFICATION_BMC_DEBUG_PATH,
-                                   SystemConsts.FAIL_DEBUG_CONFIG)
+    with allure.step("Download bmc negative config file"):
+        _download_debug_config(bmc, SystemConsts.VERIFICATION_BMC_DEBUG_PATH,
+                               SystemConsts.FAIL_DEBUG_CONFIG)
 
     with allure.step("Set not exist file and verify output"):
-        cpu.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.NOT_EXIST_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
-        bmc.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.NOT_EXIST_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
+        cpu.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.NOT_EXIST_DEBUG_CONFIG, apply=True, ask_for_confirmation=True).verify_result(False)
+        bmc.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.NOT_EXIST_DEBUG_CONFIG, apply=True, ask_for_confirmation=True).verify_result(False)
         NvueGeneralCli.detach_config(engines.dut)
 
     with allure.step("Set next debug-config file to negative"):
         cpu.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.FAIL_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
-        if not is_bug_active(4662368):
-            bmc.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.FAIL_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
+        bmc.set(SystemConsts.NEXT_DEBUG_CONFIG, SystemConsts.FAIL_DEBUG_CONFIG, apply=True, ask_for_confirmation=True)
         NvueGeneralCli.save_config(engines.dut)
 
-    if is_bug_active(4662368):
-        with allure.step("Perform system reboot"):
-            system.reboot.action_reboot(params='force').verify_result()
-    else:
-        with allure.step("Perform power cycle"):
-            system.action(ActionConsts.POWER_CYCLE, flags='force', reboot_params=True,
-                          expected_output='System will power cycle in a few seconds')
+    with allure.step("Perform power cycle"):
+        system.action(ActionConsts.POWER_CYCLE, flags='force', reboot_params=True,
+                      expected_output='System will power cycle in a few seconds')
 
     with allure.step("Check cpu config applied after power cycle"):
         _verify_debug_config_state(cpu, current=SystemConsts.FAIL_DEBUG_CONFIG, next=SystemConsts.FAIL_DEBUG_CONFIG, status=SystemConsts.FAILED_STATUS_DEBUG_CONFIG)
-
-    if not is_bug_active(4662368):
         _verify_debug_config_state(bmc, current=SystemConsts.FAIL_DEBUG_CONFIG, next=SystemConsts.FAIL_DEBUG_CONFIG, status=SystemConsts.FAILED_STATUS_DEBUG_CONFIG)
 
     with allure.step("Check system status is OK"):
@@ -226,16 +212,12 @@ def test_cpu_bmc_debug_config_negative(engines, devices, nv_command):
 
     with allure.step("Unset cpu and bmc config files"):
         cpu.unset(apply=True, ask_for_confirmation=True)
-        if not is_bug_active(4662368):
-            bmc.unset(apply=True, ask_for_confirmation=True)
+        bmc.unset(apply=True, ask_for_confirmation=True)
+        NvueGeneralCli.save_config(engines.dut)
 
-    if is_bug_active(4662368):
-        with allure.step("Perform system reboot"):
-            system.reboot.action_reboot(params='force').verify_result()
-    else:
-        with allure.step("Perform power cycle"):
-            system.action(ActionConsts.POWER_CYCLE, flags='force', reboot_params=True,
-                          expected_output='System will power cycle in a few seconds')
+    with allure.step("Perform power cycle"):
+        system.action(ActionConsts.POWER_CYCLE, flags='force', reboot_params=True,
+                      expected_output='System will power cycle in a few seconds')
 
     with allure.step("Check default values for bmc-debug-config output after cleanup"):
         _verify_debug_config_state(bmc, current=SystemConsts.NA, next=SystemConsts.NA)

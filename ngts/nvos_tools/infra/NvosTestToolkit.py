@@ -14,7 +14,7 @@ from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic imp
     insert_new_start_string
 from ngts.tools.test_utils import allure_utils as allure
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class TestToolkit:
@@ -32,7 +32,7 @@ class TestToolkit:
     @staticmethod
     def update_tested_ports(tested_ports):
         with allure.step("Update tested ports in TestTookit"):
-            logging.info("Testes port/s: " + str(tested_ports))
+            logger.info("Testes port/s: " + str(tested_ports))
             TestToolkit.tested_ports = tested_ports
 
     @staticmethod
@@ -43,7 +43,7 @@ class TestToolkit:
         :param dut_name: Name of the DUT to set as active (e.g., 'dut', 'dut2', 'dut3')
         """
         with allure.step(f"Set active DUT to {dut_name}"):
-            logging.info(f"Active DUT changed from '{TestToolkit.active_dut}' to '{dut_name}'")
+            logger.info(f"Active DUT changed from '{TestToolkit.active_dut}' to '{dut_name}'")
             TestToolkit.active_dut = dut_name
 
     @staticmethod
@@ -91,12 +91,12 @@ class TestToolkit:
     def update_apis(api_type):
         with allure.step("Update api in TestTookit to " + api_type):
             TestToolkit.tested_api = api_type
-            logging.info("API updated to: " + api_type)
+            logger.info("API updated to: " + api_type)
 
     @staticmethod
     def update_port_output_dictionary(port_obj, engine=None):
         with allure.step("Run 'show' command and update output dictionary"):
-            logging.info("Run 'show' command and update output dictionary")
+            logger.info("Run 'show' command and update output dictionary")
             port_obj.update_output_dictionary(engine or TestToolkit.get_engine())
 
     @staticmethod
@@ -237,7 +237,7 @@ class TestToolkit:
                     safe_marker = marker.replace("'", "'\\''")
                     engine.run_cmd(f"logger -p info '{safe_marker}'")
         except Exception as e:
-            logging.warning("Failed to add log analyzer marker: " + ExceptionTool.format_exception(e))
+            logger.warning("Failed to add log analyzer marker: " + ExceptionTool.format_exception(e))
 
     @staticmethod
     def add_loganalyzer_marker_at_beginning(engine, marker):
@@ -255,14 +255,14 @@ class TestToolkit:
     @staticmethod
     def start_code_section_loganalyzer_ignore():
         if TestToolkit.loganalyzer_duts:
-            logging.info('Start Loganalyzer ignore')
+            logger.info('Start Loganalyzer ignore')
             for loganalyzer_dut in TestToolkit.loganalyzer_duts.values():
                 loganalyzer_dut.add_start_ignore_mark()
 
     @staticmethod
     def end_code_section_loganalyzer_ignore():
         if TestToolkit.loganalyzer_duts:
-            logging.info('End Loganalyzer ignore')
+            logger.info('End Loganalyzer ignore')
             for loganalyzer_dut in TestToolkit.loganalyzer_duts.values():
                 loganalyzer_dut.add_end_ignore_mark()
 
@@ -282,7 +282,7 @@ class TestToolkit:
         from ngts.nvos_tools.infra.CommandTracker import command_tracker
         command_tracker.clear()
         command_tracker.enable()
-        logging.debug("Command tracking started")
+        logger.debug("Command tracking started")
 
     @staticmethod
     def stop_command_tracking():
@@ -290,7 +290,7 @@ class TestToolkit:
         from ngts.nvos_tools.infra.CommandTracker import command_tracker
         command_tracker.disable()
         command_tracker.log_summary()
-        logging.debug("Command tracking stopped")
+        logger.debug("Command tracking stopped")
 
     @staticmethod
     def get_executed_commands():

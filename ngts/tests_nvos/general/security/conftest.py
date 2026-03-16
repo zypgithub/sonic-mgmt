@@ -3,9 +3,9 @@ import time
 
 import pexpect
 import pytest
-
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
+
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.Devices.EthDevice import EthSwitch  # temporary, needed until nv unification RM 3735390.
@@ -117,10 +117,7 @@ def create_ssh_login_engine(dut_ip, username, port=22, custom_ssh_options=None):
     :return: pexpect python module with ssh connection command executed
     '''
     ssh_options = custom_ssh_options if custom_ssh_options is not None else DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS
-    _ssh_command = 'ssh {} -p {} -l {} {}'.format(ssh_options,
-                                                  port,
-                                                  username,
-                                                  dut_ip)
+    _ssh_command = f'ssh {ssh_options} -p {port} -l {username} {dut_ip}'
     # connect to device
     child = pexpect.spawn(_ssh_command, env={'TERM': 'dumb'}, timeout=10)
     return child
@@ -174,7 +171,7 @@ def post_test_remote_reboot(topology_obj):
     assert cmd, "Reboot command is empty"
     topology_obj.players['server']['engine'].run_cmd(cmd)
     SLEEP_AFTER_REBOOT = 60
-    logging.info("Sleeping {} secs after reboot".format(SLEEP_AFTER_REBOOT))
+    logging.info(f"Sleeping {SLEEP_AFTER_REBOOT} secs after reboot")
     time.sleep(SLEEP_AFTER_REBOOT)
     # verify dockers are up
     logging.info("Verifying that dockers are up")

@@ -116,6 +116,14 @@ class NvueClusterCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_rotate_cluster_manager_property(engine, resource_path):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action rotate {path}'
+        logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def action_reset(engine, resource_path, param=''):
         path = resource_path.replace('/', ' ').strip()
         cmd = f"nv action reset {path} {param}"
@@ -149,8 +157,18 @@ class NvueClusterCli(NvueBaseCli):
 
     @staticmethod
     def action_update_sdn_trays_maintenance_state(engine, path, tray_id='', maintenance_state=''):
-        param_value = f"{tray_id} {ClusterConsts.MAINTENANCE_STATE} {maintenance_state}"
-        return NvueClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, param_value=param_value)
+        return NvueClusterCli.action(
+            action_str=ActionType.UPDATE.replace('@', ''),
+            resource_path=path,
+            main_param=(ClusterConsts.MAINTENANCE_STATE, tray_id),
+            flags='',
+            additional_params={ClusterConsts.MAINTENANCE_STATE: maintenance_state},
+            engine=engine,
+            reboot_params=None,
+            send_user_confirmation=None,
+            expected_output='',
+            device=None,
+        )
 
     @staticmethod
     @check_output

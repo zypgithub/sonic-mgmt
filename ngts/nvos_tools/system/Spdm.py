@@ -14,21 +14,22 @@ class SPDMComponents:
     BMC = "ERoT_BMC_0"
     CPU = "ERoT_CPU_0"
     FPGA = "ERoT_FPGA_0"
-    NVSWITCH_SMA_0 = "IRoT_NVSwitch_SMA_0"
-    NVSWITCH_SMA_1 = "IRoT_NVSwitch_SMA_1"
     NVSWITCH_0 = "ERoT_NVSwitch_0"
     NVSWITCH_1 = "ERoT_NVSwitch_1"
     ALL_SUPPORTED_COMPONENTS = [BMC, CPU, FPGA, NVSWITCH_0, NVSWITCH_1]
 
+    NVSWITCH_SMA_PREFIX = "IRoT_NVSwitch_SMA_"
+    ROSALIND_NVSWITCH_PREFIX = "IRoT_NVSwitch_"
+
     @classmethod
     def nvswitch_sma(cls, index: int) -> str:
         """Get IRoT NVSwitch SMA (MCU) component name by index."""
-        return f"IRoT_NVSwitch_SMA_{index}"
+        return f"{cls.NVSWITCH_SMA_PREFIX}{index}"
 
     @classmethod
     def rosalind_nvswitch(cls, index: int) -> str:
         """Get Rosalind NVSwitch component name by index."""
-        return f"NVSwitch_{index}"
+        return f"{cls.ROSALIND_NVSWITCH_PREFIX}{index}"
 
     @classmethod
     def juliet_nvswitch(cls, index: int) -> str:
@@ -63,7 +64,7 @@ class Spdm(BaseComponent):
     Access components via get_component(component_name):
         spdm.get_component('ERoT_BMC_0')           # Juliet/Rosalind BMC
         spdm.get_component('ERoT_NVSwitch_0')      # Juliet NVSwitch
-        spdm.get_component('NVSwitch_0')           # Rosalind NVSwitch
+        spdm.get_component('IRoT_NVSwitch_0')      # Rosalind NVSwitch
         spdm.get_component('IRoT_NVSwitch_SMA_0')  # Rosalind MCU
 
     Component names come from device.get_spdm_components().

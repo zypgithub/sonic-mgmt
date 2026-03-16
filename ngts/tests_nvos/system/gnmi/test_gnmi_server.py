@@ -117,7 +117,6 @@ def test_gnmi_basic_flow_stream(random_api, engines, topology_obj):
             11. validate gnmi-server stream updates
     """
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
-    TestToolkit.tested_api = random_api
     gnmi_basic_flow(engines, mode=GnmiMode.STREAM, mgmt_port_name=mgmt_port_name)
 
 
@@ -140,7 +139,6 @@ def test_simulate_gnmi_server_failure(random_api, engines):
             10. validate gnmi-server is running
             11. validate gnmi-server stream updates
     """
-    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
     gnmi_table_name = "FEATURE|nv-gnmi"
@@ -216,7 +214,6 @@ def test_gnmi_bad_flow(random_api, engines, devices, setup_name):
             3. Subscribe to the gnmi server for data that is not supported
             5. Subscribe to the gnmi server with bad xpath
     """
-    TestToolkit.tested_api = random_api
     system = System()
     gnmi_server_obj = system.gnmi_server
     xpath = f'interfaces/interface[name={devices.dut.default_port}]/state/counters/in-broadcast-pkts'
@@ -497,8 +494,7 @@ def test_gnmi_events_overload(engines, devices):
 
 @pytest.mark.system
 @pytest.mark.gnmi
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_gnmi_extend_telemetry(test_api, engines, devices):
+def test_gnmi_extend_telemetry(random_api, engines, devices):
     """
     Check gnmi extend telemetry flow:
         Test flow:
@@ -508,7 +504,6 @@ def test_gnmi_extend_telemetry(test_api, engines, devices):
             4. Get all components with sonic-cli and check it have information, compare with fw output
             5. Subscribe to gnmi and compare all components with fw output
     """
-    TestToolkit.tested_api = test_api
     system = System()
     fae = Fae()
 

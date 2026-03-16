@@ -11,6 +11,43 @@ from ngts.nvos_tools.Devices.IbDevice import JulietScaleoutSwitch, JulietNonScal
 logger = logging.getLogger()
 
 
+@pytest.fixture(scope="session")
+def check_device_and_system_type_for_sdn(engines, devices, standalone_system):
+    """
+    Skip all SDN tests if device is not JulietScaleoutSwitch, if it's not a standalone system, or if it's a production system.
+
+    This fixture ensures that SDN tests only run on dev JulietScaleoutSwitch systems in standalone mode
+    """
+    # Check if device is not JulietScaleoutSwitch or if it's a non-scaleout switch or if it's not a standalone system
+    if (not isinstance(devices.dut, JulietScaleoutSwitch) or
+        isinstance(devices.dut, JulietNonScaleoutSwitch) or
+            not standalone_system):
+        pytest.skip("SDN tests are supported only on JulietScaleoutSwitch in standalone mode. "
+                    f"Current device type: {type(devices.dut).__name__}, Standalone: {standalone_system}")
+
+    # Check if system is production
+    if SecureBootTool.is_prod_system(engines.dut):
+        pytest.skip("SDN tests are supported only on development systems. The current system is a production system.")
+
+
+@pytest.fixture(scope="session")
+def check_device_type_for_partition(devices, standalone_system):
+    """
+    Skip all partition tests if device is not JulietSwitch or if it's not a standalone system.
+
+    This fixture ensures that partition tests only run on JulietSwitch systems in standalone mode.
+    """
+    # Check if device is not JulietSwitch
+    if not isinstance(devices.dut, JulietSwitch):
+        pytest.skip("Partition tests are supported only on JulietSwitch. "
+                    f"Current device type: {type(devices.dut).__name__}")
+
+    # Check if it's not a standalone system
+    if not standalone_system:
+        pytest.skip("Partition tests are supported only in standalone mode. "
+                    f"Current system mode: standalone={standalone_system}")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def start_sdn_maintenance_state_simulation(engines, setup_name):
     try:
@@ -21,7 +58,7 @@ def start_sdn_maintenance_state_simulation(engines, setup_name):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def enable_cluster_and_wait_nmx_controller_status(setup_name):
+def enable_cluster_and_wait_nmx_controller_status(setup_name, devices):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name)
+    ClusterTools.start_cluster(cluster, setup_name, devices=devices)
     ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok')

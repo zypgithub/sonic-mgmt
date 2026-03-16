@@ -1,4 +1,3 @@
-import random
 
 import pytest
 import logging
@@ -29,9 +28,8 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, test_api, has_loopbox,
-                                      setup_name, standalone_system, test_name, serial_log_analyzers, verify_no_kernel_errors, ib_router):
+def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, random_api, has_loopbox,
+                                      setup_name, standalone_system, test_name, serial_log_analyzers, verify_no_kernel_errors):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -54,7 +52,6 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
                 11.2.    Run set command & apply
     """
     serial_analyzer = list(serial_log_analyzers.values())[0]
-    TestToolkit.tested_api = test_api
     system = System()
     cluster = Cluster()
     expected_reason, expected_user = devices.dut.reboot_reason_dict[RebootConsts.FACTORY_RESET]
@@ -94,8 +91,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_basic(engines, devices, test_api, test_name, serial_log_analyzers, ib_router):
+def test_reset_factory_keep_basic(engines, devices, random_api, test_name, serial_log_analyzers):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -113,7 +109,6 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name, serial_
                 6.2.    Run set command & apply
     """
     serial_analyzer = list(serial_log_analyzers.values())[0]
-    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -150,8 +145,7 @@ def test_reset_factory_keep_basic(engines, devices, test_api, test_name, serial_
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, serial_log_analyzers, verify_no_kernel_errors, ib_router):
+def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, serial_log_analyzers, verify_no_kernel_errors):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -169,7 +163,6 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, se
                 6.2.    Run set command & apply
     """
     serial_analyzer = list(serial_log_analyzers.values())[0]
-    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -206,8 +199,7 @@ def test_reset_factory_keep_all_config(engines, devices, test_api, test_name, se
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_reset_factory_keep_only_files(engines, devices, test_api, test_name, serial_log_analyzers, ib_router):
+def test_reset_factory_keep_only_files(engines, devices, random_api, test_name, serial_log_analyzers):
     """
     Validate reset factory with keep only files param cleanup done as expected
 
@@ -225,7 +217,6 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name, se
                 6.2.    Run set command & apply
     """
     serial_analyzer = list(serial_log_analyzers.values())[0]
-    TestToolkit.tested_api = test_api
     with allure.step('Create System object'):
         system = System()
 
@@ -254,13 +245,11 @@ def test_reset_factory_keep_only_files(engines, devices, test_api, test_name, se
 
 @pytest.mark.system
 @pytest.mark.checklist
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_error_flow_reset_factory_with_params(test_api, engines, devices, topology_obj, ib_router):
+def test_error_flow_reset_factory_with_params(random_api, engines, devices, topology_obj):
     """
     This test is a temporary test - will be changed for GA
     :return:
     """
-    TestToolkit.tested_api = test_api
     with allure.step("Run reset factory with params - expect failure"):
         logging.info("Run reset factory with params - expect failure")
         output = engines.dut.run_cmd("nv action reset system factory-default only-config")

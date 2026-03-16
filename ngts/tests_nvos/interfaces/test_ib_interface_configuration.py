@@ -21,8 +21,7 @@ PORT_UPDATE_SLEEP_TIME = 5
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
+def test_ib_interface_mtu(engines, players, interfaces, start_sm, random_api):
     """
     Configure port mtu and verify the configuration applied successfully
     Relevant cli commands:
@@ -41,7 +40,6 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
         8.1 Restore the original mtu value
         8.2 Verify the mtu restored to original
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
@@ -104,8 +102,7 @@ def test_ib_interface_mtu(engines, players, interfaces, start_sm, test_api):
 
 @pytest.mark.ib_interfaces
 @pytest.mark.nvos_build
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, test_api):
+def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, random_api):
     """
     Configure interface speed and verify the configuration applied successfully
     Relevant cli commands:
@@ -125,7 +122,6 @@ def test_ib_interface_speed(engines, players, interfaces, devices, start_sm, tes
     9. Unset the ib-speed value -> should changed to default
     10.Send traffic -> Verify the traffic passes successfully
     """
-    TestToolkit.tested_api = test_api
     if len(devices.dut.supported_ib_speeds) <= 1:
         pytest.skip(f"{type(devices.dut).__name__} has only one supported ib-speed: {devices.dut.supported_ib_speeds[0]}")
 
@@ -254,8 +250,7 @@ def test_ib_interface_speed_invalid(engines, devices, start_sm, test_api):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, test_api):
+def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, random_api):
     """
     Configure port lanes and verify the configuration applied successfully
     Relevant cli commands:
@@ -274,7 +269,6 @@ def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, tes
         7.2 Verify the lanes restored to original
     8. Send traffic -> Verify the traffic passes successfully
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
@@ -356,8 +350,7 @@ def test_ib_interface_lanes(engines, players, interfaces, devices, start_sm, tes
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_interface_vls(engines, players, interfaces, start_sm, test_api):
+def test_ib_interface_vls(engines, players, interfaces, start_sm, random_api):
     """
     Configure port vls and verify the configuration applied successfully
     Relevant cli commands:
@@ -376,7 +369,6 @@ def test_ib_interface_vls(engines, players, interfaces, start_sm, test_api):
         7.2 Verify the op-vls restored to original
     8. Send traffic -> Verify the traffic passes successfully
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Get a random active port"):
         selected_port = Tools.RandomizationTool.get_random_traffic_port().get_returned_value()[0]
@@ -505,8 +497,7 @@ def wait_for_port_to_become_active(port_obj):
 
 
 @pytest.mark.ib_interfaces
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib_supported_speeds_validation(engines, devices, test_api):
+def test_ib_supported_speeds_validation(engines, devices, random_api):
     """
     Validate supported-ib-speeds field matches expected device supported IB speeds
 
@@ -517,7 +508,6 @@ def test_ib_supported_speeds_validation(engines, devices, test_api):
     2. Get supported-ib-speeds from show output
     3. Validate against devices.dut.supported_ib_speeds
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Select random IB port (any state)"):
         selected_port = Tools.RandomizationTool.select_random_port(requested_ports_state=None).get_returned_value()

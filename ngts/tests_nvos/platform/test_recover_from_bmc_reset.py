@@ -5,6 +5,7 @@ import pytest
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, PlatformConsts, FansConsts, HealthConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DeviceLogTool import grep_log_lines_after_datetime
 from ngts.nvos_tools.infra.DutUtilsTool import wait_for_specific_regex_in_logs
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -14,6 +15,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.switch_recovery import recover_dut_with_remote_reboot
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.IbDevice import JulietNonScaleoutSwitchGB300
+from ngts.tests_nvos.general.security.bmc.bmc_creds.constants import BmcUsers
 
 logger = logging.getLogger()
 
@@ -95,3 +97,13 @@ def test_recover_from_bmc_reset(engines, devices, topology_obj, loganalyzer):
         with allure.step("Failed to recover from BMC reset. Fixing device by remote-reboot."):
             recover_dut_with_remote_reboot(topology_obj, engines)
         raise
+    finally:
+        with allure.step("Restore BMC root password to known state"):
+            try:
+                platform.bmc_password.action_reset()
+                client = CurlTool(server_host=PlatformConsts.BMC_INTERNAL_IP,
+                                  username=BmcUsers.root.username,
+                                  password=BmcUsers.root.default_password)
+                client.change_root_password(password=BmcUsers.root.default_password)
+            except Exception as e:
+                logger.warning(f"Failed to restore BMC root password: {e}")

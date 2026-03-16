@@ -32,6 +32,7 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ImageConsts
 from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from retry import retry
@@ -53,7 +54,6 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
     4. Verify show ISSU status
     5. Verify image version
     """
-    TestToolkit.tested_api = test_api
     dut_engine = engines.dut
     dut_device = devices.dut
     player = engines.sonic_mgmt
@@ -134,7 +134,6 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
     4. Verify show ISSU status
     5. Verify image version
     """
-    TestToolkit.tested_api = test_api
     dut_engine = engines.dut
     dut_device = devices.dut
     player = engines.sonic_mgmt
@@ -238,7 +237,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
 #     19. Validate event table
 #     20. Run another upgrade with ISSU to newer image
 #     """
-#     TestToolkit.tested_api = test_api
+#     TestToolkit.tested_api = random_api
 #     dut_engine = engines.dut
 #     dut_device = devices.dut
 #     player = engines.sonic_mgmt
@@ -319,8 +318,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
 
 @pytest.mark.system
 @pytest.mark.issu
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_version, target_version, test_api):
+def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_version, target_version, random_api):
     """
     Validate:
     - No permission to upgrade system from SM
@@ -567,7 +565,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
 #     5. Validate FW version
 #     6. Validate event table
 #     """
-#     TestToolkit.tested_api = test_api
+#     TestToolkit.tested_api = random_api
 #     dut_engine = engines.dut
 #     dut_device = devices.dut
 #     player = engines.sonic_mgmt
@@ -1014,7 +1012,7 @@ def prepare_image_for_install(player, dut_engine, dut_device, image_version):
         system.image.action_uninstall(params="force", engine=dut_engine, verify_res=False)
 
     with allure.step("Prepare system image for install"):
-        scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
+        scp_host_creds = f'{player.username}:{player.password}@{IpTool.format_ip_for_uri(player)}'
         if image_version.startswith('http'):
             image_version = f'/auto/{image_version.split("/auto/")[1]}'
         image_filename = image_version.split('/')[-1]

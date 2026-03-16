@@ -1,6 +1,10 @@
+import random
 import pytest
 import logging
 import time  # TODO: Remove when XDR workaround is removed
+from typing import Tuple
+from ngts.ngts_types.devices_T import DevicesT
+from ngts.ngts_types.engines_T import EnginesT
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.system.System import System
@@ -11,6 +15,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.cluster.cluster_tools import summarize_switch_ports
+from ngts.tests_nvos.interfaces.nvl_port.helpers import get_linked_ports_pair
 
 logger = logging.getLogger()
 
@@ -194,3 +199,14 @@ def install_and_uninstall_platform_file(engines, devices):
 
     with allure.step("uninstall xdr simulation on switch"):
         MultiPlanarTool.override_platform_file(system, engines, devices, MultiPlanarConsts.ORIGIN_FILE)
+
+
+@pytest.fixture(scope="session")
+def linked_ports_pair(engines: EnginesT, devices: DevicesT, has_loopbox: bool) -> Tuple[str, str]:
+    """
+    Session-scoped fixture that provides a tuple of two linked port names.
+    """
+    if not has_loopbox:
+        pytest.skip("No loopbox found, skipping linked ports pair")
+
+    return get_linked_ports_pair(devices, engines)

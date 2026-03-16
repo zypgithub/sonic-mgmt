@@ -1,30 +1,33 @@
 #!/usr/bin/env python
-import allure
+
+from pathlib import Path
 import logging
-import os
-import time
 import pytest
-import json
-import shutil
+import allure
+import time
+import os
 import re
-from ngts.helpers import system_helpers
-from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
-from ngts.constants.constants import NvosCliTypes
-from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+
 from ngts.scripts.code_coverage.code_coverage_consts import SharedConsts, NvosConsts, SonicConsts
-from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.nvos_tools.infra.HostMethods import HostMethods
+from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
+from infra.tools.connection_tools.linux_ssh_engine import ProxySshEngine
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
+from ngts.nvos_tools.infra.HostMethods import HostMethods
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.scripts.code_coverage import coverage_helpers
+from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
+from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
+from ngts.constants.constants import NvosCliTypes
+from ngts.ngts_types import EnginesT, TopologyT
 from ngts.tests_nvos.constants import MINUTE
-from ngts.nvos_tools.system.System import System
-from ngts.scripts.code_coverage.coverage_helpers import get_dest_path, _get_coverage_path_from_target_version
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.helpers import system_helpers
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
-def list_files(engine, path, pattern=''):
+def list_files(engine: system_helpers.PrefixEngine, path: str, pattern: str = '') -> list[str]:
     files = GeneralCliCommon(engine).ls(path, flags='-1').splitlines()
     return [os.path.join(path, file) for file in files if re.search(pattern, file)]
 
@@ -32,7 +35,7 @@ def list_files(engine, path, pattern=''):
 @pytest.mark.disable_loganalyzer
 @allure.title('Extract Python Coverage')
 @pytest.mark.timeout(17 * MINUTE, func_only=True)
-def test_extract_python_coverage(topology_obj, dest, engines):
+def test_extract_python_coverage(topology_obj: TopologyT, dest: str, engines: EnginesT):
     """
     Extracts code coverage collected by the Coverage.py tool for Python scripts.
     Code coverage is extracted as .xml file, one for the main image and one for
@@ -51,7 +54,7 @@ def test_extract_python_coverage(topology_obj, dest, engines):
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Extract GCOV Coverage')
-def test_extract_gcov_coverage(topology_obj, dest, engines):
+def test_extract_gcov_coverage(topology_obj: TopologyT, dest: str, engines: EnginesT):
     """
     Extracts code coverage collected by GCOV for C/C++ binaries that were
     compiled with GCOV flags.
@@ -75,7 +78,7 @@ def test_extract_gcov_coverage(topology_obj, dest, engines):
             extract_c_coverage_for_sonic(c_dest, engines, engine, cli_obj)
 
 
-def get_coverage_file_names(sudo_cli_general, containers):
+def get_coverage_file_names(sudo_cli_general: GeneralCliCommon, containers: list[str]) -> tuple[str, str]:
     logger.info(f'Containers with GCOV coverage: {containers}')
     logger.info(f'GCOV dir: {SharedConsts.GCOV_DIR}')
     sudo_cli_general.mkdir(SharedConsts.GCOV_DIR, flags='-p')
@@ -86,23 +89,29 @@ def get_coverage_file_names(sudo_cli_general, containers):
     return gcov_filename_prefix, lcov_filename_prefix
 
 
-def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
+def extract_c_coverage_for_nvos(
+    dest: str,
+    engines: EnginesT,
+    engine: ProxySshEngine,
+    cli_obj: NvueCli,
+    topology_obj: TopologyT,
+) -> None:
     with allure.step("Create device object if needed"):
         if not TestToolkit.devices:
             devices = DeviceFactory.create_devices_object(topology_obj)
             TestToolkit.update_devices(devices)
 
     with allure.step("Create coverage report path"):
-        c_dest = get_dest_path(engine, dest) + SharedConsts.C_DIR
+        c_dest = coverage_helpers.get_dest_path(engine, dest) / SharedConsts.C_DIR
 
     with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE1}'):
-        logging.info("Waiting till the system reboot completed")
+        logger.info("Waiting till the system reboot completed")
         engines.dut.reload(reload_cmd_set=[f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE1}'],
                            find_prompt_tries=60, find_prompt_delay=5, wait_after_ping=20, ssh_after_reload=False)
 
         with allure.step("Wait till system is functional"):
-            DutUtilsTool.wait_for_nvos_to_become_functional(engine)
-            engines.dut.run_cmd(f'sudo docker ps')
+            DutUtilsTool.wait_for_nvos_to_become_functional(engine, throw_exception_on_unhealthy=False)
+            engines.dut.run_cmd('sudo docker ps')
 
     with allure.step(f'Run {NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}'):
         engines.dut.run_cmd(f'{NvosConsts.COVERAGE_SCRIPT_PATH} {NvosConsts.COVERAGE_SCRIPT_STAGE2}')
@@ -113,15 +122,28 @@ def extract_c_coverage_for_nvos(dest, engines, engine, cli_obj, topology_obj):
         engine.run_cmd(f"ls {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH}")
 
         logger.info(f'Destination directory: {c_dest}')
+        c_dest.mkdir(parents=True, exist_ok=True)
+        hostname: str = cli_obj.general.hostname()
+        timestamp = int(time.time())
+        coverage_filename_prefix = f'gcov-{hostname}-{timestamp}'
 
-        os.makedirs(c_dest, exist_ok=True)
-        engine.run_cmd(f"cp {NvosConsts.COVERAGE_OUTPUT_ON_SWITCH}/* {c_dest}")
+        coverage_files = list_files(engine, NvosConsts.COVERAGE_OUTPUT_ON_SWITCH, pattern='.')
+        for remote_path in map(Path, coverage_files):
+            remote_dir = '' if remote_path.parent.as_posix() == '.' else remote_path.parent.as_posix()
+            destination_file = c_dest / f'{coverage_filename_prefix}-{remote_path.name}'
+            destination_file.unlink(missing_ok=True)
+            engine.copy_file(
+                source_file=remote_path.name,
+                dest_file=str(destination_file),
+                file_system=remote_dir,
+                direction='get',
+            )
 
         logger.info(f"Coverage files under {c_dest}:")
-        engines.dut.run_cmd(f"ls {c_dest}")
+        logger.info(list(map(str, c_dest.iterdir())))
 
 
-def extract_c_coverage_for_sonic(dest, engines, engine, cli_obj):
+def extract_c_coverage_for_sonic(dest: str, engines: EnginesT, engine: system_helpers.PrefixEngine, cli_obj: SonicCli) -> None:
     with allure.step('Restart system services to get coverage for running services'):
         engines.dut.reload('sudo systemctl restart sonic.target')
         system_helpers.wait_for_all_jobs_done(engine)
@@ -143,37 +165,37 @@ def extract_c_coverage_for_sonic(dest, engines, engine, cli_obj):
     with allure.step(""):
         timestamp = int(time.time())
         gcov_report_file = os.path.join(SharedConsts.GCOV_DIR, f'{gcov_filename_prefix}-{timestamp}.xml')
-        with allure.step(f'Combine GCOV JSON reports into a single report for SonarQube'):
+        with allure.step('Combine GCOV JSON reports into a single report for SonarQube'):
             create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file, dest, gcov_filename_prefix)
         with allure.step("Delete JSON and LCOV files"):
             sudo_cli_general.rm(gcov_report_file, flags='-f')
             sudo_cli_general.rm(SharedConsts.GCOV_DIR + "/*.json", flags='-f')
 
 
-def get_sudo_cli_obj(engine):
+def get_sudo_cli_obj(engine: system_helpers.PrefixEngine):
     sudo_engine = system_helpers.PrefixEngine(engine, 'sudo')
     return GeneralCliCommon(sudo_engine)
 
 
-def get_topology_info(topology_obj):
+def get_topology_info(topology_obj: TopologyT):
     with allure.step("Get info from topology"):
         engine = topology_obj.players['dut']['engine']
         cli_obj = topology_obj.players['dut']['cli']
         is_nvos = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Topology Conn.'][
             'CLI_TYPE'] in NvosCliTypes.NvueCliTypes
-        logging.info("Is NVOS: " + str(is_nvos))
+        logger.info("Is NVOS: " + str(is_nvos))
 
         return engine, cli_obj, is_nvos
 
 
-def extract_python_coverage_for_nvos(dest, engines, cli_obj, topology_obj):
+def extract_python_coverage_for_nvos(dest: str, engines: EnginesT, cli_obj: NvueCli, topology_obj: TopologyT) -> None:
     with allure.step("Create device object if needed"):
         if not TestToolkit.devices:
             devices = DeviceFactory.create_devices_object(topology_obj)
             TestToolkit.update_devices(devices)
 
     with allure.step("Create coverage report path"):
-        dest = get_dest_path(engines.dut, dest) + SharedConsts.PYTHON_DIR
+        dest = coverage_helpers.get_dest_path(engines.dut, dest) / SharedConsts.PYTHON_DIR
 
     with allure.step('Get coverage file path'):
         coverage_file = get_python_coverage_file(cli_obj)
@@ -191,7 +213,7 @@ def extract_python_coverage_for_nvos(dest, engines, cli_obj, topology_obj):
         engines.dut.run_cmd('rm -f /var/lib/python/coverage/raw.*')
 
 
-def extract_python_coverage_for_sonic(dest, engines, engine, cli_obj):
+def extract_python_coverage_for_sonic(dest: str, engines: EnginesT, engine: system_helpers.PrefixEngine, cli_obj: SonicCli) -> None:
     with allure.step('Get coverage file path'):
         coverage_file = get_python_coverage_file(cli_obj)
 
@@ -203,7 +225,7 @@ def extract_python_coverage_for_sonic(dest, engines, engine, cli_obj):
         collect_python_coverage(cli_obj, engine, dest, coverage_file)
 
 
-def get_python_coverage_file(cli_obj):
+def get_python_coverage_file(cli_obj: NvueCli | SonicCli) -> str:
     coverage_file = cli_obj.general.echo(f'${{{SharedConsts.ENV_COVERAGE_FILE}}}')
     if not coverage_file:
         raise Exception('The system is not configured to collect code coverage.\n'
@@ -212,7 +234,7 @@ def get_python_coverage_file(cli_obj):
     return coverage_file
 
 
-def collect_python_coverage(cli_obj, engine, dest, coverage_file):
+def collect_python_coverage(cli_obj: NvueCli | SonicCli, engine: ProxySshEngine, dest: Path, coverage_file: str) -> None:
     coverage_dir = os.path.dirname(coverage_file)
     hostname = cli_obj.general.hostname()
     timestamp = int(time.time())
@@ -245,21 +267,27 @@ def collect_python_coverage(cli_obj, engine, dest, coverage_file):
         except Exception as ex:
             logger.info(f"Coverage collection for {container} has failed: " + str(ex))
 
-    with allure.step(f'Copy coverage xml reports from the system to destination directory'):
+    with allure.step('Copy coverage xml reports from the system to destination directory'):
         coverage_xml_files = list_files(engine, coverage_dir, pattern=coverage_xml_filename_prefix)
         logger.info(f'Coverage xml files on the system: {coverage_xml_files}')
         logger.info(f'Destination directory: {dest}')
-        os.makedirs(dest, exist_ok=True)
-        for file in coverage_xml_files:
-            filename = os.path.basename(file)
-            engine.copy_file(source_file=filename,
-                             dest_file=os.path.join(dest, filename),
-                             file_system=os.path.dirname(file),
-                             direction='get')
-            cli_obj.general.rm(file, flags='-f')
+        dest.mkdir(parents=True, exist_ok=True)
+        for file in map(Path, coverage_xml_files):
+            engine.copy_file(
+                source_file=file.name,
+                dest_file=str(dest / file.name),
+                file_system=str(file.parent),
+                direction='get',
+            )
+            cli_obj.general.rm(str(file), flags='-f')
 
 
-def create_and_copy_lcov_files(engine, sudo_cli_general, c_dest, lcov_filename_prefix):
+def create_and_copy_lcov_files(
+    engine: system_helpers.PrefixEngine,
+    sudo_cli_general: GeneralCliCommon,
+    c_dest: str,
+    lcov_filename_prefix: str,
+) -> None:
     combined_coverage_file = '/sonic/combined_coverage.info'
     lcov_files = list_files(engine, SharedConsts.GCOV_DIR, pattern=lcov_filename_prefix)
     lcov_file_to_combine = []
@@ -291,7 +319,13 @@ def create_and_copy_lcov_files(engine, sudo_cli_general, c_dest, lcov_filename_p
         sudo_cli_general.rm(lcov_file, flags='-f')
 
 
-def create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file, c_dest, gcov_filename_prefix):
+def create_and_copy_xml_coverage_file(
+    engine: system_helpers.PrefixEngine,
+    sudo_cli_general: GeneralCliCommon,
+    gcov_report_file: str,
+    c_dest: str,
+    gcov_filename_prefix: str,
+) -> None:
     gcov_json_files = list_files(engine, SharedConsts.GCOV_DIR, pattern=gcov_filename_prefix)
     logger.info(f'GCOV JSON files on the system: {gcov_json_files}')
 
@@ -314,14 +348,14 @@ def create_and_copy_xml_coverage_file(engine, sudo_cli_general, gcov_report_file
                      direction='get')
 
 
-def install_gcov(cli_obj):
+def install_gcov(cli_obj: NvueCli | SonicCli) -> None:
     with allure.step('Install required packages'):
         cli_obj.apt_update()
         cli_obj.apt_install('lcov', flags='-y')
         cli_obj.pip3_install('gcovr')
 
 
-def create_coverage_xml(cli_general, coverage_file, coverage_xml_file):
+def create_coverage_xml(cli_general: GeneralCliCommon, coverage_file: str, coverage_xml_file: str) -> None:
     """
     Checks if coverage files exist, and if so combines them into an xml report.
     :param cli_general: GeneralCliCommon object
@@ -344,7 +378,12 @@ def create_coverage_xml(cli_general, coverage_file, coverage_xml_file):
         cli_general.coverage_xml(coverage_xml_file)
 
 
-def collect_gcov_for_container_sonic(engine, cli_obj, container, gcov_filename_prefix):
+def collect_gcov_for_container_sonic(
+    engine: system_helpers.PrefixEngine,
+    cli_obj: SonicCli,
+    container: str,
+    gcov_filename_prefix: str
+) -> None:
     """
     Collect GCOV coverage from a container running on the system, and creates a
     JSON report from it. This JSON report may later be combined with other JSON
@@ -367,7 +406,12 @@ def collect_gcov_for_container_sonic(engine, cli_obj, container, gcov_filename_p
         docker_cli_obj.rm(container_gcov_json_file, flags='-f')
 
 
-def collect_gcov_for_container_nvos(engine, cli_obj, container, gcov_filename_prefix):
+def collect_gcov_for_container_nvos(
+    engine: system_helpers.PrefixEngine,
+    cli_obj: NvueCli,
+    container: str,
+    gcov_filename_prefix: str,
+) -> None:
     """
     Collect GCOV coverage from a container running on the system, and creates a
     JSON report from it. This JSON report may later be combined with other JSON
@@ -391,12 +435,12 @@ def collect_gcov_for_container_nvos(engine, cli_obj, container, gcov_filename_pr
         docker_cli_obj.rm(NvosConsts.JSON_PATH_DOCKER, flags='-f')
 
 
-def create_docker_cli_obj(engine, container):
+def create_docker_cli_obj(engine: system_helpers.PrefixEngine, container: str) -> GeneralCliCommon:
     docker_exec_engine = system_helpers.PrefixEngine(engine, f'docker exec {container}')
     return GeneralCliCommon(docker_exec_engine)
 
 
-def create_gcov_report_for_container(docker_cli_obj, gcov_filename_prefix, container, source_path):
+def create_gcov_report_for_container(docker_cli_obj: GeneralCliCommon, gcov_filename_prefix: str, container: str, source_path: str) -> str:
     container_gcov_json_file = os.path.join(SharedConsts.GCOV_DIR, f'{gcov_filename_prefix}-{container}.json')
     docker_cli_obj.tar(flags=f'xzf {source_path} -C {SharedConsts.GCOV_DIR}')
 
@@ -410,7 +454,7 @@ def create_gcov_report_for_container(docker_cli_obj, gcov_filename_prefix, conta
     return container_gcov_json_file
 
 
-def create_lcov_report_for_container(docker_cli_obj, lcov_filename_prefix, container):
+def create_lcov_report_for_container(docker_cli_obj: GeneralCliCommon, lcov_filename_prefix: str, container: str) -> str:
     container_lcov_file = os.path.join(SharedConsts.GCOV_DIR, f'{lcov_filename_prefix}-{container}.info')
 
     docker_cli_obj.lcovr(flags=f'--gcov-tool gcov --capture --directory {SharedConsts.GCOV_DIR} '
@@ -418,11 +462,11 @@ def create_lcov_report_for_container(docker_cli_obj, lcov_filename_prefix, conta
     return container_lcov_file
 
 
-def nvos_pre_step(engine):
+def nvos_pre_step(engine: system_helpers.PrefixEngine):
     try:
         engine.run_cmd(f'sudo chmod 777 {NvosConst.COVERAGE_PATH}/raw.*')
         with allure.step("Start SNMP"):
             HostMethods.start_snmp_server(engine=engine, state=NvosConst.ENABLED, readonly_community='qwerty12',
                                           listening_address='all')
     except BaseException as ex:
-        logging.info("NVOS pre step failed")
+        logger.warning(f"NVOS pre step failed: {ex}")

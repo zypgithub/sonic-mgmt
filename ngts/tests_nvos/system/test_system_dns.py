@@ -74,8 +74,7 @@ def clear_system_dns(system, engines):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_system_dns_server(engines, test_api, devices, dns_config_backup_and_restore):
+def test_set_system_dns_server(engines, random_api):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <ip> and verify command is completed successfully
@@ -83,7 +82,6 @@ def test_set_system_dns_server(engines, test_api, devices, dns_config_backup_and
         3. Check ‘nv show system dns server <ip>’ and validate <ip> DNS server information in output
 
     """
-    TestToolkit.tested_api = test_api
     dns_server_id = SystemConsts.DNS_SERVER_IDS["ipv4"]
     system = System()
     try:
@@ -104,9 +102,8 @@ def test_set_system_dns_server(engines, test_api, devices, dns_config_backup_and
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 @pytest.mark.parametrize('dns_server_type', SystemConsts.DNS_SERVER_IDS.keys())
-def test_set_system_dns_functionality(engines, test_api, target_version, dns_server_type, devices, dns_config_backup_and_restore):
+def test_set_system_dns_functionality(engines, random_api, target_version, dns_server_type):
     """
     Run set system dns server command and verify in show command
         1. Attempt a file fetch from a build server and verify it is successful

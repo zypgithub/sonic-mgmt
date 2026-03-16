@@ -81,7 +81,6 @@ def test_rules_order(devices, engines, random_api, topology_obj):
     2. send packet
     3. validate that the action we do on the packet is as the first rule.
     """
-    TestToolkit.tested_api = random_api
     with allure.step("Define ACL with 2 rules"):
 
         with allure.step("Define ACL"):
@@ -185,7 +184,6 @@ def test_acl_order(engines, random_api, topology_obj):
     2. send packet
     3. validate that the action we do on the packet is as the first ACL rule.
     """
-    TestToolkit.tested_api = random_api
 
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv4'
@@ -261,7 +259,6 @@ def test_inbound_outbound_counters(engines, random_api, topology_obj):
     5. unset source-ip rule from inbound acl
     6. validate outbound counters are still 0
     """
-    TestToolkit.tested_api = random_api
     with allure.step("Choosing randomly whether or not to use control-plane parameter"):
         control_plane = random.choice([AclConsts.CONTROL_PLANE, ""])
         allure.orig_allure.attach(f"{control_plane=}", "control_plane_value", allure.orig_allure.attachment_type.TEXT)
@@ -347,7 +344,6 @@ def test_acl_recent_list(engines, random_api, topology_obj):
     2. send packet
     3. validate counter increased
     """
-    TestToolkit.tested_api = random_api
     acl_id = "AA_TEST_ACL_RECENT_LIST"
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)
@@ -618,8 +614,7 @@ def test_override_default_rule(engines, topology_obj, apply_default_config):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_nmx_ports(engines, devices, test_api):
+def test_nmx_ports(engines, devices, random_api):
     """
     Check if device has acl rules for nmx
     steps:
@@ -635,7 +630,6 @@ def test_nmx_ports(engines, devices, test_api):
             pytest.skip("This setup doesn't have nmx")
 
     with allure.step("Show ACL rules and verify nmx ports are open"):
-        TestToolkit.tested_api = test_api
 
         default_chosen_acl = 'acl-default-whitelist'
         acl_obj = Acl().acl_id[default_chosen_acl]
@@ -657,24 +651,18 @@ def test_nmx_ports(engines, devices, test_api):
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_dscp_supported_values_ipv4(engines, devices, test_api, topology_obj):
+def test_acl_dscp_supported_values_ipv4(engines, devices, random_api, topology_obj):
     configure_validate_dscp_acl_value(engines, devices, acl_type=IpConsts.IPV4, protocol=AclConsts.ICMP, sonic_ip=engines.sonic_mgmt.ip)
 
 
 @pytest.mark.acl
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_dscp_supported_values_ipv6(engines, devices, test_api, topology_obj, sonic_mgmt_ipv6_addr):
-    # Check if DUT has IPv6 configured before running the test
-    IpTool.verify_ipv6_available('eth0')
-
+def test_acl_dscp_supported_values_ipv6(engines, devices, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     configure_validate_dscp_acl_value(engines, devices, acl_type=IpConsts.IPV6, protocol=AclConsts.ICMPV6, sonic_ip=sonic_mgmt_ipv6_addr)
 
 
 @pytest.mark.acl
 @pytest.mark.disable_loganalyzer
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_dscp_unsupported_values(engines, devices, test_api, topology_obj):
+def test_acl_dscp_unsupported_values(engines, devices, random_api, topology_obj):
     """
     Validate ACLs dscp over ipv4.
     steps:
@@ -1017,8 +1005,7 @@ def get_dscp_hexadecimal_dict(option):
 
 @pytest.mark.acl
 @pytest.mark.slow
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_acl_show_commands_coverage(engines, test_api, topology_obj):
+def test_acl_show_commands_coverage(engines, random_api, topology_obj):
     """
     Comprehensive test to validate all missing ACL show commands.
     This test creates rules with all possible configurations to ensure
@@ -1043,7 +1030,6 @@ def test_acl_show_commands_coverage(engines, test_api, topology_obj):
     - nv show acl <acl-id> rule <rule-id> action log
     - nv show acl <acl-id> rule <rule-id> action set
     """
-    TestToolkit.tested_api = test_api
 
     mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
     mgmt_port = Port(mgmt_port_name)

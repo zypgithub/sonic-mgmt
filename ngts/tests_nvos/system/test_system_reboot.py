@@ -77,7 +77,6 @@ def test_reboot_command_force(engines, devices, test_name, random_api):
     Test flow:
         1. run nv action reboot system force
     """
-    TestToolkit.tested_api = random_api
     system = System(None)
     with allure.step('Run nv action reboot system mode force'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name,

@@ -148,6 +148,9 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                 if skip_auth_mediums and medium in skip_auth_mediums:
                     continue
 
+                if should_check_accounting:
+                    time.sleep(1)  # Wait for any pending logs from previous medium to be written
+                    clear_accounting_logs_on_servers(accounting_server_mngrs)
                 time_at_server: str = datetime.now(pytz.utc).strftime('%b %d %H:%M:%S')  # servers have UTC timezone
                 verify_auth_with_medium(medium, user, expect_login_success, verify_authorization, engines, topology_obj)
 
@@ -278,7 +281,7 @@ def validate_users_authorization_and_role(engines, users, login_should_succeed=T
                 assert login_should_succeed, 'Login success, expect fail'
 
             SLEEP_BEFORE_EXECUTING_CMDS = 1
-            with allure.step("Sleeping {} secs before executing commands".format(SLEEP_BEFORE_EXECUTING_CMDS)):
+            with allure.step(f"Sleeping {SLEEP_BEFORE_EXECUTING_CMDS} secs before executing commands"):
                 time.sleep(SLEEP_BEFORE_EXECUTING_CMDS)
                 if role == AaaConsts.ADMIN:
                     with allure.step('FOR DEBUG - after login, run: sudo stat /var/log/audit.log'):
@@ -329,7 +332,7 @@ def validate_authentication_fail_with_credentials(engines, username, password):
     @summary: in this helper function we want to validate authentication failure while using
     username and password credentials
     """
-    with allure.step("Validating failed authentication with new credentials, username: {}".format(username)):
+    with allure.step(f"Validating failed authentication with new credentials, username: {username}"):
         ConnectionTool.create_ssh_conn(engines.dut.ip, username=username, password=password).verify_result(
             should_succeed=False)
 
@@ -447,8 +450,8 @@ def set_local_users(engines, users, apply=False):
 
     if apply:
         with allure.step('Apply changes together'):
-            SendCommandTool.execute_command(TestToolkit.GeneralApi[TestToolkit.tested_api].apply_config, engines.dut,
-                                            True)
+            # set_local_users configures users through NVUE objects, so apply via NVUE too.
+            SendCommandTool.execute_command(TestToolkit.GeneralApi[ApiType.NVUE].apply_config, engines.dut, True)
 
 
 def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, user_should_exist: bool):

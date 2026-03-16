@@ -128,6 +128,16 @@ class OpenApiAuthVerifier(AuthVerifier):
         # Don't call super().__init__ to avoid creating SSH connection that generates accounting logs
         self._log = logger.getChild(self.__class__.__name__)
         self.api = ApiType.OPENAPI
+        self.username = username
+        self.password = password
+        self.engines = engines
+        # Create a minimal engine-like object for OpenAPI that doesn't establish SSH
+        self.engine = type('OpenApiEngine', (), {
+            'ip': engines.dut.ip,
+            'username': username,
+            'password': password,
+            'open_api_port': getattr(engines.dut, 'open_api_port', '443')
+        })()
 
     def _authenticate(self, expect_success):
         with allure.step("For OpenApi - run show command with OpenApi request to verify authentication"):

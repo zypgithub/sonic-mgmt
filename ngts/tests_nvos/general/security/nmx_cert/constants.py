@@ -15,21 +15,48 @@ PORT = 'port'
 CERTIFICATE = 'certificate'
 CA_CERTIFICATE = 'ca-certificate'
 ENCRYPTION = 'encryption'
+ALTERNATE_CERTIFICATE = 'alternate-certificate'
 
 DEFAULT_NMX_C_MGMT_PORT = 9370
 DEFAULT_NMX_T_MGMT_PORT = 9351
 
+NV_BRIDGE_CLIENT_PORT = 9381
+NV_BRIDGE_SERVER_PORT = 50052
+
 USR_CFG_JSON_PATH = '/etc/cluster_infra/conf/user_config.json'
+SYSTEM_INTERNAL_JSON_PATH = '/etc/internal_infra/conf/internal_config.json'
+CLUSTER_INTERNAL_JSON_PATH = USR_CFG_JSON_PATH
 
 FILE_NOT_EXIST_ERR = 'No such file or directory'
 ITEM_NOT_EXIST_ERR = 'The requested item does not exist'
 
 
+class SystemInternalJsonFields:
+    CERTIFICATE = 'certificate'
+    CERTIFICATE_PRIVATE_KEY = 'certificate-private-key'
+    CA_CERTIFICATE = 'ca-certificate'
+    ENCRYPTION = 'encryption-mode'
+    ALTERNATE_CERTIFICATE = 'alternate-certificate'
+    ALTERNATE_CERTIFICATE_PRIVATE_KEY = 'alternate-certificate-private-key'
+    ALL_FIELDS = [CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, ALTERNATE_CERTIFICATE, ALTERNATE_CERTIFICATE_PRIVATE_KEY]
+
+
+class ClusterInternalJsonFields:
+    CERTIFICATE = '{}-internal-certificate'
+    CERTIFICATE_PRIVATE_KEY = '{}-internal-private-key'
+    CA_CERTIFICATE = '{}-internal-ca-certificate'
+    ENCRYPTION = '{}-internal-encryption-mode'
+    ALTERNATE_CERTIFICATE = '{}-internal-alternate-certificate'
+    ALTERNATE_CERTIFICATE_PRIVATE_KEY = '{}-internal-alternate-private-key'
+
+
 class FieldsInShowOf:
     MANAGER = [STATE, CERTIFICATE, CA_CERTIFICATE, ENCRYPTION]
+    INTERNAL = [CERTIFICATE, CA_CERTIFICATE, ENCRYPTION, ALTERNATE_CERTIFICATE]
     CERTIFICATE = [CERTIFICATE]
     CA_CERTIFICATE = [CA_CERTIFICATE]
     ENCRYPTION = [ENCRYPTION]
+    ALTERNATE_CERTIFICATE = [ALTERNATE_CERTIFICATE]
 
 
 class EncryptionMode:
@@ -43,6 +70,7 @@ class Defaults:
     STATE = DISABLED
     CERT = ''
     CACERT = ''
+    ALTERNATE_CERTIFICATE = ''
     ENCRYPTION = EncryptionMode.DISABLED
 
 

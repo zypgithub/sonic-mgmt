@@ -14,14 +14,12 @@ logger = logging.getLogger()
 @pytest.mark.ib
 @pytest.mark.simx
 def test_ib0_interface_ipv4_address(engines, random_api):
-    TestToolkit.tested_api = random_api
     _ib0_interface_ip_address(False)
 
 
 @pytest.mark.ib
 @pytest.mark.simx
 def test_ib0_interface_ipv6_address(engines, random_api):
-    TestToolkit.tested_api = random_api
     _ib0_interface_ip_address(True)
 
 
@@ -112,7 +110,6 @@ def test_ib0_interface_missing_show_commands(engines, random_api):
     - nv show interface ib0 ipv4
     - nv show interface ib0 ipv6
     """
-    TestToolkit.tested_api = random_api
 
     ib0_port = Port('ib0')
 
@@ -137,7 +134,6 @@ def test_ib0_interface_ipv4_gateway_commands(engines, random_api):
     - nv unset interface ib0 ipv4 gateway
     - nv unset interface ib0 ipv4 gateway <ip-address-id>
     """
-    TestToolkit.tested_api = random_api
 
     ib0_port = Port('ib0')
     _test_gateway_functionality('ipv4', ib0_port)
@@ -155,7 +151,6 @@ def test_ib0_interface_ipv6_gateway_commands(engines, random_api):
     - nv unset interface ib0 ipv6 gateway
     - nv unset interface ib0 ipv6 gateway <ip-address-id>
     """
-    TestToolkit.tested_api = random_api
 
     ib0_port = Port('ib0')
     _test_gateway_functionality('ipv6', ib0_port)

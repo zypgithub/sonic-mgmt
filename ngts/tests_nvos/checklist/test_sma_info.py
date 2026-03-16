@@ -1,5 +1,4 @@
 import pytest
-import random
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts, NvosConst
 from ngts.nvos_tools.infra.Fae import Fae
@@ -11,8 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.sma
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_show_sma_firmware(engines, devices, test_api):
+def test_show_sma_firmware(engines, devices, random_api):
     """
     Test nv show (fae) platform firmware <sma-component>
     Basic test to show that firmware sma have all necessary fields and are not N/A.
@@ -27,7 +25,6 @@ def test_show_sma_firmware(engines, devices, test_api):
     if not devices.dut.sma_components:
         pytest.skip(f"Device {devices.dut.__class__.__name__} has no SMA components - skipping SMA test")
 
-    TestToolkit.tested_api = test_api
     platform = Platform()
     fae = Fae()
     with allure.step("Parse basic nv show platform firmware"):

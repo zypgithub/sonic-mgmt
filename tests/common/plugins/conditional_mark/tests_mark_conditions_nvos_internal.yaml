@@ -1,11 +1,5 @@
 ########################## NVOS IGNORE START ##########################
 
-tests_nvos/interfaces/nvl_port/test_nvl_port.py::test_show_nvl_interface_commands:
-  skip:
-    reason: "Skip for BUG: https://redmine.mellanox.com/issues/4100265"
-    conditions:
-      - https://redmine.mellanox.com/issues/4100265
-
 tests_nvos/general/security/tpm_attestation/test_tpm_attestation.py:
   skip:
     reason: "Testcase skipped on gorilla systems - feature is pruned on gorilla"
@@ -47,7 +41,7 @@ tests_nvos/interfaces/test_ib_show_interface.py:
   skip:
     reason: "Testcase skipped due to Marlin does not have connected server"
     conditions:
-      - "'marlin' in testbed"
+      - "'marlin' in testbed or 'rosalind' in testbed"
 
 tests_nvos/ib/test_set_unset_sm_state.py::test_show_ib_sm_default_values:
   skip:
@@ -91,19 +85,19 @@ tests_nvos/interfaces/test_ib_interface_state.py::test_ib_interface_state:
   skip:
     reason: "Testcase skipped on Juliet systems, Tested in another NVL5 interfaces dedicated test"
     conditions:
-      - "'juliet' in testbed"
+      - "'juliet' in testbed or 'rosalind' in testbed"
 
 tests_nvos/fae/test_nmx_package.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/platform/test_platform.py::test_show_platform_chassis_location:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only (as a part of Uberon)"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/checklist/erot_fw_upgrade/test_erot_upgrade.py:
   skip:
@@ -135,7 +129,7 @@ tests_nvos/platform/test_platform_environment.py::test_platform_environment_fan_
   skip:
     reason: "Testcase skipped on non Juliet systems"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/multi_asic/test_interface_ipoib.py::test_interface_ipoib_mapping_basic_functionality:
   skip:
@@ -158,6 +152,32 @@ tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.p
     reason: "BMC ERoT Attestation tests should run only on Juliet"
     conditions:
       - "'juliet' not in testbed and 'rosalind' not in testbed and 'portia' not in testbed"
+
+tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_generate_give_different_measurement:
+  skip:
+    reason: "Testcase skipped on specific Rosalind EB systems"
+    conditions_logical_operator: or
+    conditions:
+      - "'rosalind-eb1-10' in testbed"
+      - "'rosalind-eb2-164' in testbed"
+      - "'rosalind-eb2-2102' in testbed"
+      - "'rosalind-nvos-2164' in testbed"
+
+tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_main_flow:
+  skip:
+    reason: "Testcase skipped on specific Rosalind EB systems"
+    conditions_logical_operator: or
+    conditions:
+      - "'rosalind-eb1-10' in testbed"
+      - "'rosalind-eb2-164' in testbed"
+      - "'rosalind-eb2-2102' in testbed"
+      - "'rosalind-nvos-2164' in testbed"
+
+tests_nvos/general/security/bmc/bmc_erot_attestation/test_bmc_erot_attestation.py::test_list_supported_components:
+  skip:
+    reason: "Testcase skipped on rosalind-eb2-164 as it has hw problem"
+    conditions:
+      - "'rosalind-eb2-164' in testbed"
 
 tests_nvos/general/security/password_hardening/test_password_hardening_nvos.py::test_password_hardening_apply_new_password_and_expiration_settings_together:
   skip:
@@ -197,13 +217,13 @@ tests_nvos/cluster/test_nmx_package.py:
   skip:
     reason: "Testcase skipped on non Juliet systems, Juliet feature only"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/system/test_system_juliet_power_button.py::test_system_juliet_power_button:
   skip:
     reason: "Testcase skipped on non Juliet systems"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/checklist/test_fpga_install.py:
   skip:
@@ -327,13 +347,13 @@ tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
     conditions:
-      - "'juliet' not in testbed"
+      - "'juliet' not in testbed and 'rosalind' not in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
   skip:
@@ -458,31 +478,53 @@ tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_phy_recovery
     conditions:
       - "'rosalind' in testbed or 'portia' in testbed"
 
-tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_access_ports:
-  skip:
-    reason: "Feature is not supported on NVL6-SIMX"
-    conditions:
-      - "'rosalind-simx' in testbed"
-
 tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_default_fields_values:
   skip:
     reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
     conditions:
-      - https://redmine.mellanox.com/issues/4718752
+      - "'rosalind' in testbed"
 
 tests_nvos/platform/test_platform_asic_power_telemetry.py::test_platform_asic_power_telemetry_counters_updates:
   skip:
     reason: "[NVOS - Design] Bug SW #4718752: [Telemetry][Rosalind] Missed 'nv show platform asic' command | Assignee: Or Farfara | Status: Assigned"
     conditions:
-      - https://redmine.mellanox.com/issues/4718752
+      - "'rosalind' in testbed"
 
 tests_nvos/platform/test_platform_staged_boot.py::test_show_set_platform_boot_policy:
   skip:
     reason: "BMC IPv6 Not Available in This Setup"
-    conditions_logical_operator: and
+    conditions_logical_operator: or
     conditions:
-      - "'rosalind-eb1-10' in testbed"
-      - https://redmine.mellanox.com/issues/4784658
+      - "('rosalind-eb1-10' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2182' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2164' in testbed and https://redmine.mellanox.com/issues/4878905)"
+
+tests_nvos/platform/test_bmc_connectivity.py::test_bmc_curl_request_via_ipv6:
+  skip:
+    reason: "BMC IPv6 Not Available in This Setup"
+    conditions_logical_operator: or
+    conditions:
+      - "('rosalind-eb1-10' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2182' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2164' in testbed and https://redmine.mellanox.com/issues/4878905)"
+
+tests_nvos/acl/test_acl_basic.py::test_acl_match_icmpv6_type:
+  skip:
+    reason: "BMC IPv6 Not Available in This Setup"
+    conditions_logical_operator: or
+    conditions:
+      - "('rosalind-eb1-10' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2182' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2164' in testbed and https://redmine.mellanox.com/issues/4878905)"
+
+tests_nvos/acl/test_acl_functionality.py::test_acl_dscp_supported_values_ipv6:
+  skip:
+    reason: "BMC IPv6 Not Available in This Setup"
+    conditions_logical_operator: or
+    conditions:
+      - "('rosalind-eb1-10' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2182' in testbed and https://redmine.mellanox.com/issues/4878905)"
+      - "('rosalind-nvos-2164' in testbed and https://redmine.mellanox.com/issues/4878905)"
 
 tests_nvos/multi_asic/test_fatal_mode.py:
   skip:
@@ -519,5 +561,29 @@ tests_nvos/ib_router/test_ib_router_functional.py::test_port_migration:
     reason: "[XDR ib router] SAI error when changing SWID mapping for active ports"
     conditions:
       - https://redmine.mellanox.com/issues/4886106
+
+tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_trunk_ports:
+  skip:
+    reason: "serdes-eq-mode is not supported on Rosalind systems"
+    conditions:
+      - "'rosalind' in testbed"
+
+tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_access_ports:
+  skip:
+    reason: "serdes-eq-mode is not supported on Rosalind systems"
+    conditions:
+      - "'rosalind' in testbed"
+
+tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_pgbc:
+  skip:
+    reason: "Testcase skipped due to we don't have rosalind system with connected gpu"
+    conditions:
+      - "'rosalind' in testbed"
+
+tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate:
+  skip:
+    reason: "this device has hardware problem"
+    conditions:
+      - "'rosalind-eb1-10' in testbed"
 
 ########################## NVOS IGNORE END ##########################

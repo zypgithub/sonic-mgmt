@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Tuple
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RegisterTool import RegisterTool
+from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.system.System import System
@@ -361,7 +362,7 @@ def get_l1_cap_for_port(engine, mst_device: str, port: int) -> str:
         >>> print(l1_cap)  # '0' or '1'
     """
     with allure.step(f"Get L1 capability for port {port}"):
-        indexes = f'--indexes "lp_msb=8,local_port={port}"'
+        indexes = f'--indexes "local_port={port}"'
         output = RegisterTool.get_mst_register_value(
             engine=engine,
             mst_dev_name=mst_device,
@@ -392,7 +393,7 @@ def set_l1_req_en_for_port(engine, mst_device: str, port: int, l1_req_en_value: 
         >>> set_l1_req_en_for_port(engines.dut, '/dev/mst/mt54004_pciconf0', 50, '1')
     """
     with allure.step(f"Set L1 request enable for port {port} to {l1_req_en_value}"):
-        indexes = f'--indexes "lp_msb=8,local_port={port}"'
+        indexes = f'--indexes "local_port={port}"'
         set_params = f'"l1_req_en={l1_req_en_value}"'
         output = RegisterTool.set_mst_register_value(
             engine=engine,
@@ -404,44 +405,57 @@ def set_l1_req_en_for_port(engine, mst_device: str, port: int, l1_req_en_value: 
         logger.info(f"Set port {port} L1 request enable to {l1_req_en_value}")
 
 
-def set_l1_req_en_for_all_ports(engine, device, l1_req_en_value: str) -> None:
+def set_l1_req_en_for_all_ports(engine, device, l1_req_en_value: str) -> ResultObj:
     """
     Set L1 request enable for all ports using PPSLC register.
 
-    This function sets l1_req_en on all odd-numbered ports (1, 3, 5, ...)
-    across all MST devices.
+    This function sets l1_req_en on all ports (1, 2, 3, ... port_count)
+    across all MST devices using parallel execution for faster performance.
 
     Args:
         engine: DUT engine instance
         device: Device instance with port information
         l1_req_en_value: L1 request enable value to set ('0' for disabled, '1' for enabled)
 
+    Returns:
+        ResultObj: Result object with success/failure status
+
     Example:
-        >>> set_l1_req_en_for_all_ports(engines.dut, devices.dut, '1')
+        >>> set_l1_req_en_for_all_ports(engines.dut, devices.dut, '1').verify_result()
     """
-    with allure.step(f"Set L1 request enable to {l1_req_en_value} for all ports"):
+    with allure.step(f"Set L1 request enable to {l1_req_en_value} for all ports (parallel)"):
         mst_devices = get_mst_devices(engine)
-        set_ports = []
+        errors = []
 
-        # Set ports 1, 3, 5, ... (odd ports only, as per the pattern)
+        # Build list of all ports (1, 2, 3, ... port_count)
         port_count = getattr(device, 'valid_ports_count', 72)
-        for port in range(1, port_count * 2, 2):
-            for mst_device in mst_devices:
-                try:
-                    set_l1_req_en_for_port(engine, mst_device, port, l1_req_en_value)
-                    set_ports.append(f"{mst_device.split('/')[-1]}:port{port}")
-                except Exception as e:
-                    logger.warning(f"Failed to set L1 for port {port} on {mst_device}: {e}")
+        all_ports = list(range(1, port_count + 1))
 
-        logger.info(f"Set L1 request enable to {l1_req_en_value} for {len(set_ports)} ports")
+        for mst_device in mst_devices:
+            try:
+                RegisterTool.set_mst_register_value_parallel(
+                    engine=engine,
+                    mst_dev_name=mst_device,
+                    reg_name=PowerSavingConsts.PPSLC_REGISTER,
+                    set_params=f"l1_req_en={l1_req_en_value},l1_cap_adv={l1_req_en_value}",
+                    ports=all_ports
+                )
+                logger.info(f"Set L1 request enable to {l1_req_en_value} for {len(all_ports)} ports on {mst_device}")
+            except Exception as e:
+                errors.append(f"Failed to set L1 for ports on {mst_device}: {e}")
+
         time.sleep(2)  # Allow all register changes to take effect
 
+        if errors:
+            return ResultObj(result=False, info="\n".join(errors))
+        return ResultObj(result=True, info=f"Set L1 request enable to {l1_req_en_value} for {len(all_ports)} ports")
 
-def validate_all_ports_l1_cap(engine, device, expected_l1_cap: str) -> None:
+
+def validate_all_ports_l1_cap(engine, device, expected_l1_cap: str) -> ResultObj:
     """
     Validate L1 capability for all ports matches expected value using PPSLS register.
 
-    This function checks all odd-numbered ports (1, 3, 5, ...) across all MST devices
+    This function checks all ports (1, 2, 3, ... port_count) across all MST devices
     and validates that the l1_cap field in PPSLS register matches the expected value.
 
     Args:
@@ -449,34 +463,62 @@ def validate_all_ports_l1_cap(engine, device, expected_l1_cap: str) -> None:
         device: Device instance with port information
         expected_l1_cap: Expected L1 capability value ('0' for disabled, '1' for enabled)
 
-    Raises:
-        AssertionError: If any port has incorrect L1 capability
+    Returns:
+        ResultObj: Result object with success/failure status
 
     Example:
-        >>> validate_all_ports_l1_cap(engines.dut, devices.dut, '1')
+        >>> validate_all_ports_l1_cap(engines.dut, devices.dut, '1').verify_result()
     """
     with allure.step(f"Validate all ports have L1 capability = {expected_l1_cap}"):
         mst_devices = get_mst_devices(engine)
         errors = []
-        checked_ports = []
 
-        # Check ports 1, 3, 5, ... (odd ports only, as per the pattern)
+        # Build list of all ports (1, 2, 3, ... port_count)
         port_count = getattr(device, 'valid_ports_count', 72)
-        for port in range(1, port_count * 2, 2):
-            for mst_device in mst_devices:
-                try:
-                    l1_cap = get_l1_cap_for_port(engine, mst_device, port)
-                    checked_ports.append(f"{mst_device.split('/')[-1]}:port{port}")
+        all_ports = list(range(1, port_count + 1))
+        all_ports_set = set(str(p) for p in all_ports)
 
-                    if l1_cap != expected_l1_cap:
-                        errors.append(f"{mst_device}:port{port} - L1 capability is {l1_cap}, expected {expected_l1_cap}")
-                except Exception as e:
-                    logger.info(f"Failed to check port {port} on {mst_device}: {e}")
+        for mst_device in mst_devices:
+            try:
+                # Get all ports at once using parallel get
+                output = RegisterTool.get_mst_register_value_parallel(
+                    engine=engine,
+                    mst_dev_name=mst_device,
+                    reg_name=PowerSavingConsts.PPSLS_REGISTER,
+                    ports=all_ports,
+                    grep_pattern=PowerSavingConsts.L1_CAP_FIELD
+                )
 
-        logger.info(f"Checked {len(checked_ports)} ports: {', '.join(checked_ports[:10])}{'...' if len(checked_ports) > 10 else ''}")
+                # Track verified ports
+                verified_ports = set()
 
-        assert not errors, f"L1 capability validation failed for {len(errors)} ports:\n" + "\n".join(errors)
-        logger.info(f"All {len(checked_ports)} ports have L1 capability = {expected_l1_cap}")
+                # Parse output to check each port
+                current_port = None
+                for line in output.strip().split('\n'):
+                    line = line.strip()
+                    if line.startswith('Port '):
+                        current_port = line.replace('Port ', '').replace(':', '')
+                    elif PowerSavingConsts.L1_CAP_FIELD in line and current_port:
+                        verified_ports.add(current_port)
+                        # Extract l1_cap value (last character after hex value)
+                        l1_cap = line.strip()[-1] if line.strip() else ""
+                        if l1_cap != expected_l1_cap:
+                            errors.append(f"{mst_device}:port{current_port} - L1 capability is {l1_cap}, expected {expected_l1_cap}")
+
+                # Check for missing ports
+                missing_ports = all_ports_set - verified_ports
+                if missing_ports:
+                    errors.append(f"{mst_device}: Missing l1_cap data for ports: {sorted(missing_ports, key=int)}")
+
+            except Exception as e:
+                errors.append(f"Failed to check ports on {mst_device}: {e}")
+
+        logger.info(f"Checked {len(all_ports)} ports per MST device")
+
+        if errors:
+            return ResultObj(result=False, info=f"L1 capability validation failed:\n" + "\n".join(errors))
+        logger.info(f"All ports have L1 capability = {expected_l1_cap}")
+        return ResultObj(result=True, info=f"All {len(all_ports)} ports have L1 capability = {expected_l1_cap}")
 
 
 # ============================================================================
@@ -500,9 +542,10 @@ def simulate_events(engine, asic: int) -> None:
     Example:
         >>> simulate_events(engines.dut, asic=0)
     """
+    asic_folder = asic - 1
     list_of_events = [
-        f"echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/asic0/sx_core",
-        f"echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/asic0/sx_core"
+        f"echo health_check_trigger  sx_dbg_test_fw_assert {asic} > /proc/mlx_sx/asic{asic_folder}/sx_core",
+        f"echo health_check_trigger  sx_dbg_test_fw_fatal_cause {asic} > /proc/mlx_sx/asic{asic_folder}/sx_core"
     ]
     with allure.step(f"{simulate_events.__name__}: Simulating MFDEs on ASIC{asic}"):
         for cmd in list_of_events:

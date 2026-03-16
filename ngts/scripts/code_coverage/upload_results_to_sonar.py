@@ -1,47 +1,49 @@
+from pathlib import Path
 import logging
-import os
 import shutil
 import allure
 import pytest
 
+from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts, SharedConsts
+from ngts.nvos_tools.infra.JenkinsTool import JenkinsQueryBuilder, JenkinsTool
 from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts, SharedConsts
-from ngts.scripts.code_coverage.coverage_helpers import _get_coverage_path_from_target_version, get_dest_path
-from ngts.nvos_tools.infra.JenkinsTool import JenkinsQueryBuilder, JenkinsTool
+from ngts.scripts.code_coverage import coverage_helpers
+from ngts.ngts_types import EnginesT, TopologyT
 
+logger = logging.getLogger(__name__)
 
 python_job_name = "NVOS_Python_upload_results_to_sonar"
 cpp_job_name = "NVOS_C_upload_results_to_sonar"
 
 
 @pytest.fixture(scope='module')
-def results_path(topology_obj, engines):
+def results_path(topology_obj: TopologyT, engines: EnginesT) -> Path:
     with allure.step("Create device object if needed"):
         if not TestToolkit.devices:
             devices = DeviceFactory.create_devices_object(topology_obj)
             TestToolkit.update_devices(devices)
 
     with allure.step("Create coverage report path"):
-        return get_dest_path(engines.dut, NvosConsts.DEST_PATH)
+        return coverage_helpers.get_dest_path(engines.dut, NvosConsts.DEST_PATH)
 
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Upload results to sonar')
-def test_upload_results_to_sonar(target_version, results_path):
+def test_upload_results_to_sonar(target_version: str, results_path: Path) -> None:
     try:
         with allure.step("Get coverage results paths, branch name and commit id"):
-            python_results_path = results_path + SharedConsts.PYTHON_DIR
-            logging.info(f"python results path: {python_results_path}")
+            python_results_path = results_path / SharedConsts.PYTHON_DIR
+            logger.info(f"python results path: {python_results_path}")
 
-            cpp_results_path = results_path + SharedConsts.C_DIR
-            logging.info(f"cpp results path: {cpp_results_path}")
+            cpp_results_path = results_path / SharedConsts.C_DIR
+            logger.info(f"cpp results path: {cpp_results_path}")
 
-            branch_name = _get_branch_name(python_results_path)
-            logging.info(f"branch name: {branch_name}")
+            branch_name = _get_branch_name(python_results_path.as_posix())
+            logger.info(f"branch name: {branch_name}")
 
-            commit_id = _get_commit_id(python_results_path)
-            logging.info(f"commit id: {commit_id}")
+            commit_id = _get_commit_id(python_results_path.as_posix())
+            logger.info(f"commit id: {commit_id}")
 
         client = JenkinsTool(project_job_path=SharedConsts.JENKINS_SONAR_PROJECT_PATH)
         general_job_params = (
@@ -49,7 +51,7 @@ def test_upload_results_to_sonar(target_version, results_path):
             .branch(branch_name)
             .commit_id(commit_id)
             .version(1)
-            .mailing_list(["yport"])
+            .mailing_list(["yport,ramih"])
         )
 
         with allure.step('Upload python coverage results to sonar'):
@@ -75,7 +77,7 @@ def test_upload_results_to_sonar(target_version, results_path):
 
 
 @pytest.mark.disable_loganalyzer
-def test_copy_unitests_results(engines, target_version, topology_obj, results_path):
+def test_copy_unitests_results(engines: EnginesT, target_version: str, topology_obj: TopologyT, results_path: Path) -> None:
     """
     Copies unitests coverage XML files from the coverage directory to the destination path.
     The function finds all XML files in the coverage directory and its sub-directories
@@ -88,37 +90,29 @@ def test_copy_unitests_results(engines, target_version, topology_obj, results_pa
     """
     with allure.step("Copy unitests results"):
         with allure.step("Get coverage path from target version"):
-            coverage_path = _get_coverage_path_from_target_version(target_version)
-            logging.info(f"coverage path: {coverage_path}")
+            coverage_path = coverage_helpers.get_coverage_path_from_target_version(target_version)
+            logger.info(f"coverage path: {coverage_path}")
 
         with allure.step("Check if destination path exists"):
             with allure.step("Create device object if needed"):
                 devices = DeviceFactory.create_devices_object(topology_obj)
                 TestToolkit.update_devices(devices)
-            dest = results_path + SharedConsts.PYTHON_DIR
-            logging.info(f"destination path: {dest}")
+            dest = results_path / SharedConsts.PYTHON_DIR
+            logger.info(f"destination path: {dest}")
 
         with allure.step("Copy unitests results"):
-            xml_files = []
-            for root, _, files in os.walk(coverage_path):
-                for file in files:
-                    if file.endswith('.xml'):
-                        xml_files.append(os.path.join(root, file))
+            for file in map(Path.resolve, Path(coverage_path).rglob('*.xml')):
+                dir_path = str(file.parent.relative_to(coverage_path)).replace('/', '_')
+                new_filename = f"{dir_path}-{file.name}" if dir_path else file.name
+                dest_file = dest / new_filename
 
-            for xml_file in xml_files:
-                rel_path = os.path.relpath(xml_file, coverage_path)
-                dir_path = os.path.dirname(rel_path).replace('/', '_')
-                filename = os.path.basename(xml_file)
+                dest_file.unlink(True)  # delete file if it exists
+                shutil.copy2(str(file), str(dest_file))
 
-                new_filename = f"{dir_path}-{filename}" if dir_path else filename
-                dest_file = os.path.join(dest, new_filename)
-
-                shutil.copy2(xml_file, dest_file)
-
-            logging.info(f"Unitests results: {dest}")
+            logger.info(f"Unitests results: {dest}")
 
 
-def _get_branch_name(target_version):
+def _get_branch_name(target_version: str) -> str:
     """
     Extract branch name from a coverage path.
 
@@ -134,16 +128,18 @@ def _get_branch_name(target_version):
     import re
 
     # Pattern to match nvos branch format like nvos-25-02-5000
-    pattern = r'nvos-\d+-\d+-\d+'
-    match = re.search(pattern, target_version)
+    pattern = r'/.+[-_](\d+[-.]\d+[-.]\d+)'
 
-    if match:
-        return match.group(0)
+    if grep := re.search(pattern, target_version):
+        logger.debug(f'{(result := ('nvos-%s' % grep.group(1)))=!r}')
+        release: str = TestToolkit.version_to_release(result)
+        logger.debug(f'{release=!r}')
+        return release
     else:
         raise ValueError(f"Could not extract branch name from path: {target_version}")
 
 
-def _get_version_name(target_version):
+def _get_version_name(target_version: str) -> str:
     """
     Extract version name from a coverage path.
 
@@ -169,7 +165,7 @@ def _get_version_name(target_version):
         raise ValueError(f"Could not extract version name from path: {target_version}")
 
 
-def _get_commit_id(target_version):
+def _get_commit_id(target_version: str) -> str:
     version_name = _get_version_name(target_version)
     branch_name = _get_branch_name(target_version)
     return branch_name + "_" + version_name

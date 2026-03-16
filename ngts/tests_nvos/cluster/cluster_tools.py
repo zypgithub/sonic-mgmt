@@ -10,7 +10,7 @@ from functools import wraps
 from retry import retry
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
+from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts, NvosConst
 from ngts.nvos_tools.ib.Ib import Ib
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
@@ -47,17 +47,13 @@ class ClusterTools:
                     if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                         pass
                     else:
-                        output = OutputParsingTool.parse_show_output_to_dict(
-                            cluster.apps.running.show(output_format=OutputFormat.json),
-                            output_format=OutputFormat.json).get_returned_value()
-                        app_status = output[app]['status']
-                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                        ClusterTools.wait_for_app_healthy(cluster, app)
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
                     nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
                     ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state=nmx_c_expected_state)
                     # TBD -- once "running" is working, use it to verify app is not running
-                    ClusterTools.verify_app_is_down(engines, app)
+                    ClusterTools.verify_app_is_down(engines, app, devices)
 
                 with allure.step(f"Start app again {app} and validate its up"):
                     output = cluster.apps.app_name[app].action_start_cluster_app()
@@ -73,11 +69,7 @@ class ClusterTools:
                     if app == ClusterConsts.NMX_CONTROLLER and is_bug_active(4207869) and standalone_system:
                         pass
                     else:
-                        output = OutputParsingTool.parse_show_output_to_dict(
-                            cluster.apps.running.show(output_format=OutputFormat.json),
-                            output_format=OutputFormat.json).get_returned_value()
-                        app_status = output[app]['status']
-                        assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok"
+                        ClusterTools.wait_for_app_healthy(cluster, app)
 
             return ResultObj(result=True)
 
@@ -100,7 +92,7 @@ class ClusterTools:
         return [f for f in state_file_types if not (standalone_system and f == 'topology')]
 
     @staticmethod
-    def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True, engine=None):
+    def start_cluster(cluster, setup_name, output_format=OutputFormat.json, verify_nmx_c=True, engine=None, devices=None):
         with allure.step("Start cluster"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format, dut_engine=engine),
@@ -111,6 +103,12 @@ class ClusterTools:
 
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up',
                                                              engine=engine)
+
+            # Apply nv-bridge config for devices that need it (e.g., Rosalind)
+            # This must happen AFTER cluster is enabled, then restart nmx-controller
+            # This is required because cluster.unset() clears the node primary server config
+            ClusterTools._apply_nv_bridge_config_if_needed(cluster, devices)
+
             ClusterTools.reboot_compute_nodes_gpus(setup_name)
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format, dut_engine=engine),
@@ -128,6 +126,76 @@ class ClusterTools:
                                                                       expected_value=expected_nmxc_state).verify_result()
 
     @staticmethod
+    def _is_nv_bridge_configured(cluster):
+        """
+        Check if nv-bridge node primary server is already configured.
+        Returns True if configured, False otherwise.
+        """
+        try:
+            output = cluster.show(op_param='node', output_format=OutputFormat.json)
+            parsed = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
+            # Check if primary/server exists in the config
+            return bool(parsed.get('primary', {}).get('server', {}))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _apply_nv_bridge_config_if_needed(cluster, devices=None):
+        """
+        Apply nv-bridge configuration for devices that require it.
+        This sets the cluster node primary server which is required for nv-bridge to function.
+
+        Note: Uses device.requires_nv_bridge_config flag (set to True in RosalindSurrogateSwitch).
+
+        Full sequence:
+        1. Check if already configured (skip if yes)
+        2. Set cluster node primary server 127.0.0.1
+        3. Stop nmx-controller
+        4. Start nmx-controller
+        5. Wait for nmx-conn to be up
+
+        This is called automatically by start_cluster() because cluster.unset() clears
+        the node primary server config, and tests need it to be re-applied.
+
+        :param cluster: Cluster object
+        :param devices: devices fixture (optional, will try to get from TestToolkit if not provided)
+        """
+        # Try to get devices from TestToolkit if not provided
+        if devices is None:
+            if hasattr(TestToolkit, 'devices') and TestToolkit.devices:
+                devices = TestToolkit.devices
+            else:
+                logger.debug("Could not get devices from TestToolkit, skipping nv-bridge config")
+                return
+
+        # Check if device requires nv-bridge config (set in device class, e.g., RosalindSurrogateSwitch)
+        if getattr(devices.dut, 'requires_nv_bridge_config', False):
+            # Check if nv-bridge is already configured - skip if it is
+            if ClusterTools._is_nv_bridge_configured(cluster):
+                logger.info("nv-bridge node primary server already configured, skipping")
+                return
+
+            with allure.step(f"Apply nv-bridge config for {devices.dut.__class__.__name__}"):
+                logger.info(f"Device {devices.dut.__class__.__name__} requires nv-bridge config - setting node primary server")
+
+                # Step 1: Set node primary server
+                cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                                                      op_param_value=devices.dut.cur_mgmt_port_ip, apply=True)
+
+                # Step 2: Stop nmx-controller
+                logger.info("Stopping nmx-controller to apply nv-bridge config")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_stop_cluster_app()
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='down')
+
+                # Step 3: Start nmx-controller
+                logger.info("Starting nmx-controller after nv-bridge config")
+                cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER].action_start_cluster_app()
+
+                # Step 4: Wait for nmx-conn to be up
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+
+    @staticmethod
+    @retry(AssertionError, tries=6, delay=15)
     def validate_cluster_enabled(cluster, output_format=OutputFormat.json):
         output = OutputParsingTool.parse_show_output_to_dict(
             cluster.show(output_format=output_format),
@@ -167,6 +235,10 @@ class ClusterTools:
                 output_format=output_format).get_returned_value()
 
             if output[SystemConsts.STATE] == 'enabled':
+                # Must unset node config before disabling cluster
+                # (product validation: "Cannot have cluster node server configuration when cluster state is not enabled")
+                if ClusterTools._is_nv_bridge_configured(cluster):
+                    cluster.unset(op_param=SystemConsts.NODE, apply=False, dut_engine=engine)
                 cluster.set(op_param_name="state", op_param_value='disabled', apply=True, dut_engine=engine)
 
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
@@ -197,7 +269,11 @@ class ClusterTools:
             assert all_services_present, f"Missing services - expected services {expected_services}, actual: {output}"
 
     @staticmethod
-    def verify_app_is_down(engines, app):
+    def verify_app_is_down(engines, app, devices=None):
+        # Skip nmx-t docker check since the agent keeps it running even when the app is stopped
+        if app == ClusterConsts.NMX_TELEMETRY and devices and getattr(devices.dut, 'has_nmx_telemetry_agent', False):
+            logger.info("Skipping nmx-t docker check - system has nmx-telemetry-agent")
+            return
         with allure.step("Checking if service is down using docker ps | grep -i nmx"):
             output = engines.dut.run_cmd('docker ps | grep -i nmx')
             output = output.split('\n')
@@ -540,7 +616,7 @@ class ClusterTools:
 
     @staticmethod
     def wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='', nmx_c_expected_state='', app='', engine=None):
-        for _ in range(15):
+        for _ in range(6):
             final_sleep_time = 2
             if (not cluster_expected_state) and (not nmx_c_expected_state):
                 final_sleep_time += 8
@@ -558,8 +634,8 @@ class ClusterTools:
                 ):
                     logger.info("Cluster state not as expected yet. Retrying...")
                     logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {output[SystemConsts.STATE]}, nmx_c {output[ClusterConsts.NMXC_CONN]}")
-                    logger.info("Sleeping for 3 seconds between iterations")
-                    time.sleep(3)
+                    logger.info("Sleeping for 15 seconds between iterations")
+                    time.sleep(15)
                 else:
                     logger.info(f"Cluster is now in the wanted state. Sleeping for {final_sleep_time} seconds.")
                     time.sleep(final_sleep_time)
@@ -574,6 +650,35 @@ class ClusterTools:
                         time.sleep(2)
                     else:
                         break
+
+    @staticmethod
+    def reset_sdn_factory_default_and_wait_for_restart(sdn, cluster):
+        """
+        Perform SDN factory reset and wait for the process to complete.
+
+        IMPORTANT: The SDN factory reset operation takes over 30 seconds to clean all
+        configuration and restart all related daemons in NMX-C. If any operation
+        (such as disabling the cluster) is performed immediately after calling
+        sdn.factory_default.action_reset(), it may interrupt the factory reset process
+        and leave the system in an inconsistent state (e.g., stale chassis-id mappings
+        from a previous test).
+
+        This helper ensures proper synchronization by:
+        1. Triggering the factory reset
+        2. Waiting for apps to transition to disabled/down state (reset in progress)
+        3. Waiting for apps to transition back to enabled/up state (reset complete)
+
+        Args:
+            sdn: The Sdn object to perform factory reset on.
+            cluster: The Cluster object to monitor app states.
+        """
+        with allure.step("Running sdn factory reset and waiting for completion"):
+            sdn.factory_default.action_reset(param='force')
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(
+                cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+            time.sleep(1)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(
+                cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
     @staticmethod
     def verify_sdn_config_files_deleted(sdn, devices):
@@ -616,16 +721,25 @@ class ClusterTools:
 
     @staticmethod
     def edit_config_file(path, edit_commands, engines):
-        engines.dut.run_cmd("\n".join(edit_commands).replace("{file}", path))
+        # Run each edit as a separate command so SSH/Netmiko pattern detection works:
+        # multi-line commands are echoed line-by-line with prompts in between, so the
+        # full-command pattern never appears and read_until_pattern times out.
+        full_text = "\n".join(edit_commands).replace("{file}", path)
+        for line in full_text.strip().split("\n"):
+            line = line.strip()
+            if line and not line.startswith("#"):
+                engines.dut.run_cmd(line)
 
     @staticmethod
-    def edit_fm_config(sdn, engines, devices, get_generated_file_info):
+    def edit_fm_config(sdn, engines, devices, standalone_system, get_generated_file_info):
         """
         Edit FM config based on device-specific requirements.
         Returns None if device doesn't require FM config edits (e.g., Rosalind).
         """
         # Check if device has FM config edits defined
-        if not hasattr(devices.dut, 'sdn_fm_config_edits') or devices.dut.sdn_fm_config_edits is None:
+        attr = 'sdn_fm_config_edits_standalone' if standalone_system else 'sdn_fm_config_edits'
+        config = getattr(devices.dut, attr, None)
+        if config is None:
             logger.info(f"Device {devices.dut.__class__.__name__} does not require FM config edits. Skipping.")
             return None
 
@@ -633,7 +747,7 @@ class ClusterTools:
         fm_generated_file_name, fm_path = get_generated_file_info(fm_config)
         fm_original_content = engines.dut.run_cmd(f"cat {fm_path}")
         logger.info(f"Adjusting fm_config file for {devices.dut.__class__.__name__}.")
-        ClusterTools().edit_config_file(fm_path, devices.dut.sdn_fm_config_edits, engines)
+        ClusterTools().edit_config_file(fm_path, config, engines)
         sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[fm_config].files.file_name[
             fm_generated_file_name].action_file_install(force=False)
         return fm_config, fm_generated_file_name, fm_path, fm_original_content
@@ -683,7 +797,7 @@ class ClusterTools:
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         # Edit FM config (device-specific, may return None for devices like Rosalind)
-        fm_result = ClusterTools().edit_fm_config(sdn, engines, devices, get_generated_file_info)
+        fm_result = ClusterTools().edit_fm_config(sdn, engines, devices, standalone_system, get_generated_file_info)
         if fm_result:
             fm_config, fm_generated_file_name, fm_path, fm_original_content = fm_result
         else:
@@ -705,7 +819,7 @@ class ClusterTools:
             if sm_result:
                 sm_config, sm_generated_file_name, sm_path, sm_original_content = sm_result
 
-                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4731969)
+                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
                 if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
                     devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
             else:
@@ -713,15 +827,12 @@ class ClusterTools:
         else:
             sm_config = sm_generated_file_name = sm_path = sm_original_content = None
 
-        ClusterTools().stop_app(cluster, ClusterConsts.NMX_CONTROLLER)
-        ClusterTools().start_app(cluster, ClusterConsts.NMX_CONTROLLER, has_loopbox, standalone_system)
-        ClusterTools.reboot_compute_nodes_gpus(setup_name)
         ClusterTools.validate_cluster_enabled(cluster)
 
         yield
 
         if ClusterTools.check_cluster_state(cluster, output_format) == 'disabled':
-            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format=output_format, devices=devices)
 
         # Restore FM config if it was edited
         if fm_path and "Exists" in engines.dut.run_cmd(f'test -e {fm_path} && echo "Exists" || echo "Does not exist"'):
@@ -760,6 +871,43 @@ class ClusterTools:
                 cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine)).get_returned_value()
             app_status = output[app]['status']
             assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
+
+    @staticmethod
+    def wait_for_app_healthy(cluster, app, expected_output=None, max_retries=7, delay=10):
+        """
+        Wait for a cluster app to become healthy. NMX-T can take up to ~60s after cluster
+        start to report healthy while the NVLink network is being configured.
+
+        If expected_output dict is provided, uses ValidationTool.validate_output_of_show
+        against a per-app show query. Otherwise checks status == 'ok' via apps running.
+        """
+        with allure.step(f"Waiting for {app} to become healthy (up to {max_retries * delay}s)"):
+            for attempt in range(max_retries):
+                if expected_output is not None:
+                    output = OutputParsingTool.parse_show_output_to_dict(
+                        cluster.apps.app_name[app].show(output_format=OutputFormat.json),
+                        output_format=OutputFormat.json).get_returned_value()
+                    validation_result = ValidationTool.validate_output_of_show(output, expected_output)
+                    if validation_result.result:
+                        return
+                    validation_result.ignore_result()
+                else:
+                    output = OutputParsingTool.parse_show_output_to_dict(
+                        cluster.apps.running.show(output_format=OutputFormat.json),
+                        output_format=OutputFormat.json).get_returned_value()
+                    if output[app]['status'] == 'ok':
+                        return
+
+                if attempt < max_retries - 1:
+                    logger.info(f"{app} not healthy yet (attempt {attempt + 1}/{max_retries}), "
+                                f"retrying in {delay}s...")
+                    time.sleep(delay)
+
+            if expected_output is not None:
+                validation_result.verify_result()
+            else:
+                app_status = output[app]['status']
+                assert app_status == 'ok', f"App {app} status is {app_status} instead of 'ok'"
 
 
 def summarize_switch_ports(ports_list):
@@ -816,6 +964,8 @@ def disabled_access_ports(func):
         perform_cleanup = bound_args.arguments.get('perform_cleanup', True)
         has_access_ports = True
         interface_wa_called = False
+        cluster = Cluster()
+        sdn = Sdn()
         try:
             if isinstance(devices.dut, JulietSwitch):
                 TestToolkit.tested_api = 'NVUE'
@@ -828,16 +978,15 @@ def disabled_access_ports(func):
                     selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
                     TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
                 if not standalone_system:
-                    for port in Configurations.ports_to_disable[setup_name]:
-                        selected_port = Port(port, "", "")
-                        port_state = NvosConsts.LINK_STATE_DOWN
-                        selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                    if Configurations.ports_to_disable[setup_name] != []:
+                        for port in Configurations.ports_to_disable[setup_name]:
+                            selected_port = Port(port, "", "")
+                            port_state = NvosConsts.LINK_STATE_DOWN
+                            selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
-                cluster = Cluster()
-                sdn = Sdn()
                 ClusterTools().stop_cluster(cluster)
-                ClusterTools().start_cluster(cluster, setup_name)
+                ClusterTools().start_cluster(cluster, setup_name, devices=devices)
                 interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
                 next(interfaces_wa)
                 interface_wa_called = True
@@ -858,11 +1007,12 @@ def disabled_access_ports(func):
                         selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
                         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
                     if not standalone_system:
-                        for port in Configurations.ports_to_disable[setup_name]:
-                            selected_port = Port(port, "", "")
-                            port_state = NvosConsts.LINK_STATE_UP
-                            selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
-                        TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
+                        if Configurations.ports_to_disable[setup_name] != []:
+                            for port in Configurations.ports_to_disable[setup_name]:
+                                selected_port = Port(port, "", "")
+                                port_state = NvosConsts.LINK_STATE_UP
+                                selected_port.interface.link.state.set(op_param_name=port_state, apply=True, ask_for_confirmation=True).verify_result()
+                            TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
                     if interface_wa_called:
                         try:
                             next(interfaces_wa)
@@ -872,6 +1022,7 @@ def disabled_access_ports(func):
                         refresh_switch_ports(devices.dut.nvl_trunk_ports_list, engines)
                     with allure.step("Reset cluster state"):
                         if ClusterTools.check_cluster_state(cluster, OutputFormat.json) == 'enabled':
+                            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
                             cluster.unset(apply=True)
                             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
     return wrapper
@@ -984,10 +1135,24 @@ class ClusterSimulation:
     @staticmethod
     def apply_patch_for_nmc_controller_job(engine):
         with allure.step("Apply the patch for /usr/share/cluster_pkgs/nmx-controller/job.json"):
-            # Backup and modify job.json
-            cmd_backup = "sudo mv /usr/share/cluster_pkgs/nmx-controller/job.json /usr/share/cluster_pkgs/nmx-controller/job.json.bak"
-            engine.run_cmd(cmd_backup)
-            cmd_modify = "cat /usr/share/cluster_pkgs/nmx-controller/job.json.bak | sed 's/\"\\/cfg\\/sdn_configs\\/fm_config\\.org\"$/\"\\/cfg\\/sdn_configs\\/fm_config\\.org\"\\,\\n                \"--sim-mode\"/' | sudo tee /usr/share/cluster_pkgs/nmx-controller/job.json"
+            job_json_path = "/usr/share/cluster_pkgs/nmx-controller/job.json"
+            # Backup original job.json
+            engine.run_cmd(f"sudo mv {job_json_path} {job_json_path}.bak")
+            # Use python3 to add --sim-mode arg and SIM_MODE env var to the nmxc task.
+            # This handles both juliet (args-based config) and rosalind (env-var-based config)
+            # job.json formats. The SIM_MODE env var is required for the nmxc entrypoint script
+            # to select the correct supervisord config (supervisord_sim.conf).
+            cmd_modify = (
+                f"cat {job_json_path}.bak | python3 -c \""
+                "import json, sys; "
+                "data = json.load(sys.stdin); "
+                "[task['Config']['args'].append('--sim-mode') or "
+                "task.setdefault('Env', {}).update({'SIM_MODE': 'true'}) "
+                "for tg in data['Job']['TaskGroups'] "
+                "for task in tg['Tasks'] if task['Name'] == 'nmxc']; "
+                "json.dump(data, sys.stdout, indent=2)"
+                f"\" | sudo tee {job_json_path}"
+            )
             engine.run_cmd(cmd_modify)
 
     @staticmethod
@@ -997,19 +1162,25 @@ class ClusterSimulation:
             engine.run_cmd(cmd_restore)
 
     @staticmethod
-    def config_fm_config(engine):
+    def config_fm_config(engine, topology_value='gb200_nvl72r2_c2g4_topology'):
         with allure.step("Config fm config"):
-            script = '''
-                        items=(MNNVL_TOPOLOGY)
-                        declare -A values=([MNNVL_TOPOLOGY]=gb200_nvl72r2_c2g4_topology)
-                        FMCFG_PATH=/host/cluster_infra/app_config/nmx-controller/fm_config
-                        FMCFG_NAME=fm_cfg
-                        sudo mkdir -p "$FMCFG_PATH"
-                        nv action generate sdn config app nmx-controller type fm_config
-                        LATEST_FILE=$(ls -Art "$FMCFG_PATH" | tail -n 1)
-                        sudo cp "$FMCFG_PATH/$LATEST_FILE" "$FMCFG_PATH/$FMCFG_NAME"
-                        for ITEM in "${items[@]}"; do VALUE="${values[$ITEM]}"; sudo sed -i -e "/^${ITEM}=/{h;s/=.*/=${VALUE}/};\\${x;/^$/{s//${ITEM}=${VALUE}/;H};x}" "$FMCFG_PATH/$FMCFG_NAME"; done
-                        cat "$FMCFG_PATH/$FMCFG_NAME"
-                        nv action install sdn config app nmx-controller type fm_config files "$FMCFG_NAME"
-                    '''
-            engine.run_cmd(script, validate=True)
+            # Run each command separately to avoid Netmiko ReadTimeout.
+            # Sending multi-line scripts via run_cmd fails because the shell echoes each line
+            # with a prompt in between, breaking Netmiko's command-echo pattern detection.
+            fmcfg_path = '/host/cluster_infra/app_config/nmx-controller/fm_config'
+            fmcfg_name = 'fm_cfg'
+            topology_key = 'MNNVL_TOPOLOGY'
+
+            engine.run_cmd(f'sudo mkdir -p "{fmcfg_path}"')
+            engine.run_cmd('nv action generate sdn config app nmx-controller type fm_config')
+            latest_file = engine.run_cmd(f'ls -Art "{fmcfg_path}" | tail -n 1').strip()
+            engine.run_cmd(f'sudo cp "{fmcfg_path}/{latest_file}" "{fmcfg_path}/{fmcfg_name}"')
+            engine.run_cmd(
+                f'sudo sed -i -e "/^{topology_key}=/{{h;s/=.*/={topology_value}/}};\\${{x;/^$/{{s//{topology_key}={topology_value}/;H}};x}}" '
+                f'"{fmcfg_path}/{fmcfg_name}"'
+            )
+            engine.run_cmd(f'cat "{fmcfg_path}/{fmcfg_name}"')
+            engine.run_cmd(
+                f'nv action install sdn config app nmx-controller type fm_config files "{fmcfg_name}"',
+                validate=True
+            )

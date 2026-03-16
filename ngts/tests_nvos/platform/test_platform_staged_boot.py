@@ -16,6 +16,7 @@ from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.tests_nvos.general.security.bmc.constants import BootPolicy
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 
 logger = logging.getLogger()
 BOOT_POLICY_REDFISH_API_ENDPOINT_PATH = "Systems/System_0/"
@@ -97,14 +98,18 @@ def test_system_boot_policy_after_firmware_upgrade(engines, devices, topology_ob
     :return:
     """
     TestToolkit.tested_api = test_api
-    send_bmc_request(engines['sonic_mgmt'], topology_obj, new_values={BootPolicy.POWER_RESTORE_POLICY: BootPolicy.ALWAYS_OFF})
+
+    with allure.step("Test default values of nv show platform boot-policy"):
+        platform = Platform()
+        show_output = OutputParsingTool.parse_show_output_to_dict(platform.boot_policy.show(output_format=output_format), output_format=output_format, field_name_dict=PlatformConsts.FW_FIELD_NAME_DICT).get_returned_value()
+        ValidationTool.verify_field_value_in_output(output_dictionary=show_output, field_name=BootPolicy.NVOS_CPU_POWER_POLICY, expected_value=BootPolicy.NVOS_CPU_POWER_ALWAYS_ON).verify_result()
 
     try:
+        with allure.step("Select a random component to test"):
+            component = select_random_component(devices)
+            platform_component = getattr(Platform().firmware, component)
+        send_bmc_request(engines['sonic_mgmt'], topology_obj, new_values={BootPolicy.POWER_RESTORE_POLICY: BootPolicy.ALWAYS_OFF})
         with allure.step("Select a random component to test switch is available after upgrade"):
-            with allure.step("Select a random component to test"):
-                component = select_random_component(devices)
-                platform_component = getattr(Platform().firmware, component)
-
             with allure.step("Install same fw version while using 'skip-version-check' 'force' options"):
                 path, filename, version_name = FWComponentsTool.get_fw_component_version_latest(component)
                 BmcTool.fetch_and_install_platform_component(

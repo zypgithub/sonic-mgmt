@@ -15,13 +15,12 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
 
-from .helpers import (
+from ngts.tests_nvos.fae.debug_token_qtm4.helpers import (
     CRDTTokenManager,
-    DebugTokenConsts,
     DebugTokenFileHelper,
     TokenVerifier,
 )
-from .token_signing import CRDTTokenSigner
+from ngts.tests_nvos.fae.debug_token_qtm4.token_signing import CRDTTokenSigner
 
 logger = logging.getLogger()
 
@@ -31,13 +30,14 @@ def _assert_health_ok(nv_command) -> None:
     nv_command.system.validate_health_status(HealthConsts.OK)
 
 
-@pytest.mark.timeout(45 * MINUTE)
+@pytest.mark.timeout(30 * MINUTE)
 @pytest.mark.fae
 @pytest.mark.debug_token
 @pytest.mark.crdt
 @pytest.mark.functionality
 def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
-                            topology_obj, serial_log_analyzers, skip_if_opn_system):
+                            topology_obj, serial_log_analyzers, skip_if_prod_asics,
+                            ensure_debug_firmware):
     """
     Test Plan Section 6.2: CRDT Complete Flow with Firmware
 
@@ -61,16 +61,19 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
     Cleanup: Factory reset to ensure clean state
 
     Test Scope: Token signing, uninstall flow, firmware version verification
+
+    Note: Uses ensure_debug_firmware fixture to generate debug firmware if needed.
     """
     serial_analyzer, = serial_log_analyzers.values()
     manager = CRDTTokenManager()
     system = System()
 
-    # Get firmware info from JSON
-    fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+    # Get firmware info directly from fixture (consistent bin/mfa versions)
+    fw_info = ensure_debug_firmware
     debug_fw_bin = fw_info['bin_filename']
     expected_debug_fw_version = fw_info['version_name']
 
+    logger.info(f"Using debug firmware: {debug_fw_bin} (version: {expected_debug_fw_version})")
     try:
         with allure.step('Verify initial state and save original firmware version'):
             original_firmware_version = DebugTokenFileHelper.get_asic_firmware_version(nv_command)
@@ -81,7 +84,7 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
             retry_call(_assert_health_ok, [nv_command], exceptions=AssertionError, tries=6, delay=5)
 
         with allure.step('Fetch debug BIN firmware for token generation'):
-            manager.fetch_debug_fw().verify_result()
+            manager.fetch_debug_fw(debug_fw_filename=debug_fw_bin, bin_path=fw_info['bin_path']).verify_result()
 
         with allure.step('Generate first CRDT token info from BIN file'):
             first_token_info_file = "crdt_first_token.xml"
@@ -119,7 +122,11 @@ def test_crdt_complete_flow(engines, devices, nv_command, test_name, random_api,
             TokenVerifier.verify_token_enabled(manager, expected_enabled=True)
 
         with allure.step('Fetch and install MFA firmware'):
-            manager.fetch_and_install_mfa_fw(nv_command, engines).verify_result()
+            manager.fetch_and_install_mfa_fw(
+                nv_command, engines,
+                mfa_filename=fw_info['mfa_filename'],
+                mfa_path=fw_info['mfa_path']
+            ).verify_result()
 
         with allure.step('Verify token and firmware version after MFA install'):
             TokenVerifier.verify_token_enabled(manager, expected_enabled=True)

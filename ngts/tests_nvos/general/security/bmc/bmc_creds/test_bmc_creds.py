@@ -60,13 +60,14 @@ def test_bmc_creds_flow(engines, devices, topology_obj, nv_command: NvCommand):
             time.sleep(10)
         with allure.independent_step("Wait for BMC to boot after factory reset"):
             client.wait_for_bmc_available(username=BmcUsers.root.username, password=BmcUsers.root.default_password)
-            client.change_root_password(password=BmcUsers.root.default_password)
         with allure.independent_step("Wait for CPU to see that BMC has booted"):
             # Bug #4690453: BMC state takes >2 minutes to transition from "failed" to "ok" after factory reset
             if is_bug_active(4690453):
                 logger.warning("Bug #4690453 is active - waiting extra 130 seconds for BMC recovery")
                 time.sleep(130)
             BmcTool.wait_for_cpu_to_detect_bmc(dut, nv_command)
+        with allure.independent_step("Change root password after BMC is fully initialized"):
+            client.change_root_password(password=BmcUsers.root.default_password)
 
     with allure.step(f'verify bmc user "{BmcUsers.admin.username}" can login only with TPM password'):
         with allure.independent_step(f'curl with user "{BmcUsers.admin.username}" + default password - expect fail'):

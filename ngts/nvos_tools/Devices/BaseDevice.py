@@ -7,7 +7,7 @@ from typing import Tuple, List
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
-    DiskConsts, DateTimeConsts, CumulusConsts, ActionConsts
+    DiskConsts, DateTimeConsts, CumulusConsts, ActionConsts, RebootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
@@ -95,6 +95,7 @@ class BaseDevice(ABC):
         self.unset_all_command = "nv unset acl; nv unset interface; nv unset platform; nv unset system"
         self.allow_cpld_update = False
         self.reboot_reason_dict = {}
+        self.wait_before_reboot_single_fw_install = 900
         self.techsupport_dump_empty_files_to_ignore = []
         self.techsupport_etc_empty_files_to_ignore = []
         self.techsupport_cluster_empty_files_to_ignore = []
@@ -457,6 +458,8 @@ class BaseSwitch(BaseDevice):
 
     def _init_constants(self):
         super()._init_constants()
+        # nv-bridge config flag: set to True in subclasses that require it (e.g., RosalindSurrogateSwitch)
+        self.requires_nv_bridge_config = False
         system_dic = {
             'system': [SystemConsts.HOSTNAME, SystemConsts.PRODUCT_NAME, SystemConsts.VERSION, SystemConsts.UPTIME,
                        SystemConsts.PRODUCT_RELEASE, SystemConsts.HEALTH, SystemConsts.DATE_TIME, SystemConsts.STATUS],
@@ -563,8 +566,8 @@ class BaseSwitch(BaseDevice):
         """
         self.expected_operation_durations.update({
             # Reboot operations
-            'reboot': 250 if is_bug_active(4364632) else 225,  # TODO: revert once bug closed
-            'julietscaleout_reboot': 380 if is_bug_active(4444933) else 270,
+            'reboot': 225,
+            'julietscaleout_reboot': 270,
             'julietscaleout reset factory': 600,
             'reset factory': 300,
 
@@ -573,6 +576,7 @@ class BaseSwitch(BaseDevice):
             'install default fw': 360,
             'reboot with default FW installation': 500,
             'reboot with new user FW': 525,  # Pre-calculated: 500 * 1.05
+            'reboot with single package FW': 1200,
 
             # Port operations
             'port goes up': 30,

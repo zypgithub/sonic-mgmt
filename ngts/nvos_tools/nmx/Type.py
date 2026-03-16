@@ -37,7 +37,11 @@ class FileType(BaseComponent):
                                                    self.get_resource_path())
 
     def action_fetch_sdn(self, url, dut_engine=None) -> ResultObj:
-        return self.action_fetch(url, None, dut_engine)
+        # If url already starts with scp://, pass empty string to prevent double prepending
+        # When base_url=None, BaseComponent.action_fetch will prepend ImageConsts.SCP_PATH
+        # When base_url='', it uses the url as-is without prepending
+        base_url = '' if url.startswith('scp://') else None
+        return self.action_fetch(url, base_url, dut_engine)
 
     def action_install_sdn(self, file, dut_engine=None) -> ResultObj:
         with allure.step(f'Execute action install for {self.get_resource_path()}'):

@@ -32,7 +32,7 @@ def start_sdn_maintenance_state_simulation(engines, setup_name):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def enable_cluster_and_wait_nmx_controller_status(setup_name):
+def enable_cluster_and_wait_nmx_controller_status(setup_name, devices):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name)
+    ClusterTools.start_cluster(cluster, setup_name, devices=devices)
     ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, 'ok')

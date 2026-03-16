@@ -10,7 +10,7 @@ from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.nvos_constants.constants_nvos import ApiType, ConfState, ImageConsts, ActionConsts, OutputFormat, \
-    ActionParamConsts
+    ActionParamConsts, SystemConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -395,16 +395,29 @@ class BaseComponent:
                                                                 deny_reboot=deny_reboot, topology_obj=topology_obj,
                                                                 expected_output=expected_output)
 
-    def action_fetch(self, path, base_url=None, engine=None, device=None, expected_output='File fetched successfully') -> ResultObj:
+    def action_fetch(self, path, base_url=None, engine=None, device=None, expected_output='File fetched successfully',
+                     timeout=None) -> ResultObj:
         """
         nv action fetch <resource-path> <remote-url>
         :param path: Absolute file-path in the network drive, e.g. '/auto/path/to/file.img'.
         :param base_url: e.g. 'scp://user:password@host'. If None, the default credentials are used. If empty string
             then the `path` parameter needs to contain the full URL.
+        :param timeout: Timeout in seconds for the fetch command. None uses the default.
         """
         url = (ImageConsts.SCP_PATH if base_url is None else base_url) + path
         with allure.step(f"Fetching: {url}"):
             return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine, device=device,
+                               expected_output=['File fetched successfully', 'File has been successfully fetched'],
+                               timeout=timeout)
+
+    def action_fetch_local(self, file_url, engine=None, device=None) -> ResultObj:
+        """
+        Fetch a file from a local path on the DUT using file:// URL.
+        nv action fetch <resource-path> file:///path/to/file
+        :param file_url: Local file URL, e.g. 'file:///tmp/image.bin'
+        """
+        with allure.step(f"Fetching local file: {file_url}"):
+            return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, file_url), engine=engine, device=device,
                                expected_output=['File fetched successfully', 'File has been successfully fetched'])
 
     def action(self,
@@ -416,7 +429,7 @@ class BaseComponent:
                reboot_params: Union[bool, RebootParams, None] = None,  # set True if reboot is expected
                send_user_confirmation: str = None,  # e.g. 'y' or 'n' if NVUE asks for confirmation
                expected_output: Union[str, Iterable[str]] = '',  # string or list of possible strings
-               read_timeout: int = None,  # timeout in seconds for long-running operations (e.g. ISSU)
+               timeout: float = None,  # timeout in seconds for the action command; None uses the default
                device=None) -> ResultObj:
         """
         :param action_str: e.g. 'install', 'reboot', ...
@@ -446,12 +459,16 @@ class BaseComponent:
         if not (reboot_params is None or type(reboot_params) in (bool, RebootParams)):
             raise TypeError(f'{reboot_params=} but it should be one of [True, False, None, RebootParams()]')
 
+        # Auto-determine expected_output for install actions if not explicitly provided
+        if action_str == ActionConsts.INSTALL and not expected_output:
+            expected_output = SystemConsts.REBOOT_RESPONSE_MESSAGES if reboot_params else SystemConsts.ACTION_INSTALL_SUCCESS_MESSAGES
+
         resource_path = self.get_resource_path()
         with allure.step("Execute " + BaseCli.get_nv_action_string(action_str, resource_path, main_param, flags,
                                                                    additional_params)):
             result = self._cli_wrapper.action(action_str, resource_path, main_param, flags, additional_params, engine,
                                               reboot_params, send_user_confirmation, expected_output, device,
-                                              read_timeout=read_timeout)
+                                              timeout=timeout)
             logger.info(result)
 
         if reboot_params and result:  # if reboot is expected and the action returned a success message: wait on reboot

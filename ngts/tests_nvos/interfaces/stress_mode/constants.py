@@ -43,6 +43,9 @@ class FlexCounterConsts:
 class FatalModeConsts:
     """Constants for Fatal Mode configuration"""
 
+    # Fatal mode settings
+    CLEAR_TIME = 2  # Time in minutes for system to exit fatal mode
+
     # Syslog Messages
     FATAL_RECOVERY_ACTIONS_SUPPRESSED_MSG = "suppressing fatal recovery actions"
 

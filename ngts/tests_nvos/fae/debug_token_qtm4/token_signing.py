@@ -12,6 +12,10 @@ from typing import Tuple
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.SshCmdBuilder import ScpPassCmdBuilder
+from ngts.tests_nvos.fae.debug_token_qtm4.consts import (
+    TokenSigningPaths,
+    TokenSigningCommands,
+)
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
@@ -30,11 +34,6 @@ class TokenSigner(ABC):
     3. Sign using mlxconfig on switch
     4. Copy signed token to token directory for installation
     """
-
-    # Development key constants (Gen 4 dev)
-    DK_PRIVATE_KEY_SOURCE = "/auto/sw_system_project/NVOS_INFRA/verification_files/debug_token/token-dk-private-key.pem"
-    DK_PRIVATE_KEY_PATH = "/tmp/token-dk-private-key.pem"  # On switch (DUT)
-    UUID_HEX = "49 6E 47 6C 45 77 4F 6F 44 0A 00 00 00 00 00 00"  # "InGlEwOoD" in ASCII
 
     def __init__(self, engines):
         """
@@ -59,7 +58,7 @@ class TokenSigner(ABC):
         """Copy private key from player to switch (DUT) using SCP."""
         with allure.step('Ensure private key is on switch'):
             # Check if key already exists on switch
-            check_cmd = f'test -f {self.DK_PRIVATE_KEY_PATH} && echo "exists" || echo "missing"'
+            check_cmd = TokenSigningCommands.CHECK_FILE_EXISTS.format(path=TokenSigningPaths.DK_PRIVATE_KEY_PATH)
             result = self.dut_engine.run_cmd(check_cmd)
 
             if "missing" in result:
@@ -68,14 +67,14 @@ class TokenSigner(ABC):
                     user=self.dut_engine.username,
                     password=self.dut_engine.password,
                     host=self.dut_engine.ip,
-                    src=self.DK_PRIVATE_KEY_SOURCE,
-                    dest=self.DK_PRIVATE_KEY_PATH
+                    src=TokenSigningPaths.DK_PRIVATE_KEY_SOURCE,
+                    dest=TokenSigningPaths.DK_PRIVATE_KEY_PATH
                 ).NoStrictHostKeyChecking().NoUserKnownHostsFile().build()
 
                 self.scp_engine.run_cmd(sshpass_cmd)
-                logger.info(f'Copied private key from player to switch at {self.DK_PRIVATE_KEY_PATH}')
+                logger.info(f'Copied private key from player to switch at {TokenSigningPaths.DK_PRIVATE_KEY_PATH}')
             else:
-                logger.info(f'Private key already exists on switch at {self.DK_PRIVATE_KEY_PATH}')
+                logger.info(f'Private key already exists on switch at {TokenSigningPaths.DK_PRIVATE_KEY_PATH}')
 
     @abstractmethod
     def get_token_info_dir(self) -> str:
@@ -108,11 +107,11 @@ class TokenSigner(ABC):
         Returns:
             Path to signed token binary
         """
-        cmd = (
-            f'mlxconfig -t switch '
-            f'-p {self.DK_PRIVATE_KEY_PATH} '
-            f'-u "{self.UUID_HEX}" '
-            f'create_conf {token_info_xml} {output_bin}'
+        cmd = TokenSigningCommands.MLXCONFIG_SIGN_CMD.format(
+            private_key_path=TokenSigningPaths.DK_PRIVATE_KEY_PATH,
+            uuid_hex=TokenSigningPaths.UUID_HEX,
+            input_xml=token_info_xml,
+            output_bin=output_bin
         )
         return self._execute_signing(cmd, token_info_xml, output_bin)
 
@@ -157,17 +156,17 @@ class TokenSigner(ABC):
     def _copy_to_tmp(self, source: str, dest: str):
         """Copy file to /tmp directory on switch."""
         with allure.step(f'Copy {os.path.basename(source)} to /tmp'):
-            self.dut_engine.run_cmd(f'sudo cp {source} {dest}')
-            ls_output = self.dut_engine.run_cmd(f'ls -lh {dest}')
+            self.dut_engine.run_cmd(TokenSigningCommands.COPY_FILE.format(src=source, dest=dest))
+            ls_output = self.dut_engine.run_cmd(TokenSigningCommands.LS_FILE.format(path=dest))
             logger.info(f'Copied to /tmp: {ls_output}')
 
     def _copy_to_token_dir(self, source: str, dest: str):
         """Copy signed token to token directory."""
         with allure.step(f'Copy signed token to token directory'):
             token_dir = os.path.dirname(dest)
-            self.dut_engine.run_cmd(f'sudo mkdir -p {token_dir}')
-            self.dut_engine.run_cmd(f'sudo cp {source} {dest}')
-            ls_output = self.dut_engine.run_cmd(f'ls -lh {dest}')
+            self.dut_engine.run_cmd(TokenSigningCommands.MKDIR.format(path=token_dir))
+            self.dut_engine.run_cmd(TokenSigningCommands.COPY_FILE.format(src=source, dest=dest))
+            ls_output = self.dut_engine.run_cmd(TokenSigningCommands.LS_FILE.format(path=dest))
             logger.info(f'Copied signed token: {ls_output}')
 
     def _execute_signing(self, cmd: str, input_file: str, output_file: str) -> str:
@@ -182,7 +181,7 @@ class TokenSigner(ABC):
             assert "Unknown parameter" not in output, f"Token signing failed: {output}"
 
             # Verify signed token file created
-            ls_output = self.dut_engine.run_cmd(f'ls -lh {output_file}')
+            ls_output = self.dut_engine.run_cmd(TokenSigningCommands.LS_FILE.format(path=output_file))
             assert "cannot access" not in ls_output.lower(), f"Signed token file not created: {output_file}"
 
         return output_file
@@ -192,10 +191,10 @@ class CRCSTokenSigner(TokenSigner):
     """CRCS (Customer Support Token) signer."""
 
     def get_token_info_dir(self) -> str:
-        return "/etc/platform_debug/info/customer_support"
+        return TokenSigningPaths.CRCS_INFO_DIR
 
     def get_token_dir(self) -> str:
-        return "/etc/platform_debug/token/customer_support"
+        return TokenSigningPaths.CRCS_TOKEN_DIR
 
     def get_file_prefix(self) -> str:
         return "crcs"
@@ -208,10 +207,10 @@ class CRDTTokenSigner(TokenSigner):
     """CRDT (Debug Image Token) signer."""
 
     def get_token_info_dir(self) -> str:
-        return "/etc/platform_debug/info/debug_image"
+        return TokenSigningPaths.CRDT_INFO_DIR
 
     def get_token_dir(self) -> str:
-        return "/etc/platform_debug/token/debug_image"
+        return TokenSigningPaths.CRDT_TOKEN_DIR
 
     def get_file_prefix(self) -> str:
         return "crdt"

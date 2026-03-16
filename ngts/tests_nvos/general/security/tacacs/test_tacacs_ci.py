@@ -14,9 +14,8 @@ from ngts.tests_nvos.general.security.tacacs.constants import TacacsDockerServer
 @pytest.mark.security_ci
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.parametrize('addressing_type', [random.choice(AddressingType.ALL_TYPES)])
-def test_tacacs_auth(test_api, addressing_type, engines, topology_obj, request):
+def test_tacacs_auth(random_api, addressing_type, engines, topology_obj, request):
     """
     @summary: Basic test to verify authentication and authorization through tacacs, using SSH auth medium.
 

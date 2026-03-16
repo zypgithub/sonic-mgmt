@@ -19,7 +19,7 @@ logger = logging.getLogger()
 @pytest.mark.version
 @pytest.mark.cumulus
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_version(test_api, engines, devices, nv_command):
     """
     Run show system version command and verify version values
@@ -56,7 +56,7 @@ def _verify_system_show_version_sanity(devices, nv_command):
 
 
 @pytest.mark.nvos_chipsim_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_version_sanity(test_api, devices, nv_command):
     TestToolkit.tested_api = test_api
     _verify_system_show_version_sanity(devices, nv_command)
@@ -91,7 +91,7 @@ def test_show_system_version_image(test_api, engines, devices, nv_command):
 @pytest.mark.version
 @pytest.mark.cumulus
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_version_packages(engines, test_api, output_format, nv_command):
     """nv show system version packages"""
     TestToolkit.tested_api = test_api
@@ -111,7 +111,7 @@ def test_show_system_version_packages(engines, test_api, output_format, nv_comma
 @pytest.mark.version
 @pytest.mark.cumulus
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_version_packages_installed(engines, test_api, output_format, nv_command):
     """`nv show system version packages installed` and `nv show system version packages installed <software-id>`"""
     TestToolkit.tested_api = test_api

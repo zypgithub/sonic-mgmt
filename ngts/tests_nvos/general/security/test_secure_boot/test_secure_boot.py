@@ -18,9 +18,7 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.conftest import topology_obj
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
-from ngts.nvos_tools.infra.Tools import RandomizationTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.KernelModulesTool import KernelModulesTool
 from ngts.tests_nvos.general.security.test_secure_boot.constants import ChainOfTrustNode, SecureBootConsts, SigningState
@@ -63,18 +61,28 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
                 download_from_remote=True
             )
 
-    with allure.step(f'Manipulate content in the end of {chain_of_trust_node} file'):
-        rand_str = RandomizationTool.get_random_string(6)
-        chars_from_end = 6
-        with open(system_file_local_path, 'a') as file_obj:
-            # Get the current file position
-            file_obj.seek(0, 2)  # Seek to the end of the file
-            # Calculate the position to insert the string
-            insert_position = max(file_obj.tell() - chars_from_end, 0)
-            # Seek to the insertion position
-            file_obj.seek(insert_position)
-            # Write the string at the desired position
-            file_obj.write(rand_str)
+    with allure.step(f'Manipulate binary content in {chain_of_trust_node} file'):
+        with open(system_file_local_path, 'rb') as file_obj:
+            original_content = file_obj.read()
+        assert original_content, f'Cannot corrupt empty file: {system_file_local_path}'
+
+        with open(system_file_local_path, 'rb+') as file_obj:
+            file_obj.seek(0, os.SEEK_END)
+            file_size = file_obj.tell()
+            corruption_offset = max(file_size - 64, 0)
+            file_obj.seek(corruption_offset)
+            bytes_to_corrupt = file_obj.read(16)
+            assert bytes_to_corrupt, f'Cannot read bytes to corrupt at offset {corruption_offset}'
+            file_obj.seek(corruption_offset)
+            file_obj.write(bytes(current_byte ^ 0xA5 for current_byte in bytes_to_corrupt))
+            file_obj.flush()
+            os.fsync(file_obj.fileno())
+
+        with open(system_file_local_path, 'rb') as file_obj:
+            corrupted_content = file_obj.read()
+        assert corrupted_content != original_content, f'Corruption did not change file content: {system_file_local_path}'
+        assert len(corrupted_content) == len(original_content), \
+            f'Unexpected file size change after corruption. Original: {len(original_content)}, Corrupted: {len(corrupted_content)}'
 
     with allure.step(f'Update {chain_of_trust_node} file on the switch'):
         with allure.step(f'Upload new {chain_of_trust_node} file to the switch'):
@@ -88,6 +96,8 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
         with allure.step(f'Override orig {chain_of_trust_node} file with the new one'):
             logging.info(f'Copy file on switch:\nSwitch (src) path: {system_file_switch_tmp_path}\nSwitch (dst) path: {system_file_switch_path}')
             dut_engine.run_cmd(f'sudo cp -f {system_file_switch_tmp_path} {system_file_switch_path}', validate=True)
+        with allure.step(f'Verify updated {chain_of_trust_node} file on switch matches uploaded corrupted file'):
+            dut_engine.run_cmd(f'sudo cmp -s {system_file_switch_tmp_path} {system_file_switch_path}', validate=True)
 
     with allure.step('Remove file from local fs'):
         os.remove(system_file_local_path)
@@ -96,6 +106,7 @@ def manipulate_nvos_system_file_signature(chain_of_trust_node: str, dut_engine: 
 @pytest.mark.track_serial_console
 @pytest.mark.checklist
 @pytest.mark.secure_boot
+@pytest.mark.timeout(20 * MINUTE, func_only=True)
 @pytest.mark.parametrize('tested_chain_of_trust_node', [random.choice(ChainOfTrustNode.ALL_NODES)])
 def test_secure_boot_unsigned_system_file(tested_chain_of_trust_node: str, serial_engine: PexpectSerialEngine,
                                           mount_uefi_disk_partition, engines, restore_image_path, is_secure_boot_enabled,

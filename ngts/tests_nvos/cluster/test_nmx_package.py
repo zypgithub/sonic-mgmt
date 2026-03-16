@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, ActionConsts
+from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, ActionConsts, SystemConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -13,6 +13,7 @@ from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -44,7 +45,7 @@ def clear_cluster_package_files():
 @pytest.fixture(scope='session', autouse=True)
 def enable_cluster_and_stop_apps(setup_name, devices):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
     for app in devices.dut.expected_cluster_apps:
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
 
@@ -151,7 +152,17 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
         ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result(False)
 
     with allure.step(f'try to install nmx package file {filename}'):
-        fae.cluster.package.files.file_name[filename].action_install(reboot_params=False, force=False).verify_result()
+        bug_4899223_active = is_bug_active(4899223)
+        # For NVUE CLI, check for "Action succeeded" until bug is fixed
+        expected_output = "Action succeeded" if bug_4899223_active else SystemConsts.ACTION_INSTALL_SUCCESS_MESSAGES
+        install_result = fae.cluster.package.files.file_name[filename].action_install(
+            reboot_params=False, force=False, expected_output=expected_output
+        )
+        if bug_4899223_active and TestToolkit.tested_api == ApiType.OPENAPI:
+            # OpenAPI can return state=action_success with empty status; skip string check until bug is fixed
+            install_result.ignore_result()
+        else:
+            install_result.verify_result()
 
     with allure.step(f'verify installation nmx package file {filename}'):
         ClusterTools.verify_app_version(fae.cluster, app, expected_version)

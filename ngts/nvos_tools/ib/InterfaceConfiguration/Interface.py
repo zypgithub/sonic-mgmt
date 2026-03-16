@@ -14,7 +14,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.cli_wrappers.openapi.openapi_ib_interface_clis import OpenApiIbInterfaceCli
-from ngts.nvos_constants.constants_nvos import ApiType, IbConsts
+from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, NvosConst
 from ngts.nvos_tools.acl.acl import Acl
 from retry import retry
 import allure
@@ -94,10 +94,11 @@ class Interface(BaseComponent):
             return result_obj
 
     @retry(Exception, tries=10, delay=5)
-    def wait_for_port_speed(self, port_obj, speed_to_verify):
+    def wait_for_port_speed(self, port_obj, system_type, speed_to_verify):
         with allure.step(f"Waiting for port {port_obj.name} speed changed to {speed_to_verify}"):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(self.port_obj.interface.link.show()).get_returned_value()
-            current_speed = output_dictionary[IbInterfaceConsts.LINK_SPEED]
+            speed_field = IbInterfaceConsts.LINK_IB_SPEED if system_type == NvosConst.IB_SWITCH_TYPE else IbInterfaceConsts.LINK_SPEED
+            current_speed = output_dictionary[speed_field]
             assert current_speed == speed_to_verify, "Current speed {} is not as expected {}".\
                 format(current_speed, speed_to_verify)
 

@@ -6,6 +6,7 @@ from ngts.nvos_tools.infra.FilesTool import FilesTool, EngineFile
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -19,8 +20,7 @@ def clear_debug_info_files():
 
 @pytest.mark.fae
 @pytest.mark.debug_token
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_debug_token_upload_good_flow(engines, test_name, test_api):
+def test_debug_token_upload_good_flow(engines, test_name, random_api):
     """
     Test the successful upload of a debug token file.
 
@@ -34,12 +34,11 @@ def test_debug_token_upload_good_flow(engines, test_name, test_api):
     7. Delete the debug token file from the system.
     8. Verify that no debug token files remain.
     """
-    TestToolkit.tested_api = test_api
     fae = Fae(None)
     debug_image = fae.platform.debug.info.debug_image_bmc
     with allure.step('generate valid url'):
         player = engines['sonic_mgmt']
-        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=IpTool.format_ip_for_uri(player), path='/tmp/')
 
     filename = generate_and_verify_debug_token(debug_image, test_name)
     path = f"/etc/platform_debug/info/debug_image/{filename}"
@@ -61,8 +60,7 @@ def test_debug_token_upload_good_flow(engines, test_name, test_api):
 
 @pytest.mark.fae
 @pytest.mark.debug_token
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_debug_token_upload_bad_flow(engines, test_name, test_api):
+def test_debug_token_upload_bad_flow(engines, test_name, random_api):
     """
     Test the unsuccessful upload of a debug token file with invalid URLs and non-existent files.
 
@@ -77,14 +75,13 @@ def test_debug_token_upload_bad_flow(engines, test_name, test_api):
     8. Delete the debug token file from the system.
     9. Verify that no debug token files remain.
     """
-    TestToolkit.tested_api = test_api
     fae = Fae(None)
     debug_image = fae.platform.debug.info.debug_image_bmc
     with allure.step('generate valid and invalid urls'):
         player = engines['sonic_mgmt']
         invalid_url_1 = 'scp://{}:{}{}/tmp/'.format(player.username, player.password, player.ip)
         invalid_url_2 = 'ffff://{}:{}@{}/tmp/'.format(player.username, player.password, player.ip)
-        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp/')
+        upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=IpTool.format_ip_for_uri(player), path='/tmp/')
 
     with allure.step('Try to upload non exist debug info file'):
         debug_image.files.file_name['nonexist'].action_upload(upload_path=upload_path).verify_result(should_succeed=False)
@@ -105,8 +102,7 @@ def test_debug_token_upload_bad_flow(engines, test_name, test_api):
 
 @pytest.mark.fae
 @pytest.mark.debug_token
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_debug_info_generate_mulitple(engines, test_name, test_api):
+def test_debug_info_generate_mulitple(engines, test_name, random_api):
     """
     Test generating multiple debug info files sequentially.
 
@@ -118,7 +114,6 @@ def test_debug_info_generate_mulitple(engines, test_name, test_api):
     5. Delete all generated debug info files.
     6. Verify that no debug info files remain.
     """
-    TestToolkit.tested_api = test_api
     fae = Fae(None)
     debug_image = fae.platform.debug.info.debug_image_bmc
 
@@ -138,8 +133,7 @@ def test_debug_info_generate_mulitple(engines, test_name, test_api):
 
 @pytest.mark.fae
 @pytest.mark.debug_token
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_debug_info_rename_good_flow(engines, test_name, test_api):
+def test_debug_info_rename_good_flow(engines, test_name, random_api):
     """
     Test renaming a debug info file successfully.
 
@@ -152,7 +146,6 @@ def test_debug_info_rename_good_flow(engines, test_name, test_api):
     6. Delete the renamed debug token file.
     7. Verify that no debug token files remain.
     """
-    TestToolkit.tested_api = test_api
     fae = Fae(None)
     debug_image = fae.platform.debug.info.debug_image_bmc
     filename = generate_and_verify_debug_token(debug_image, test_name)
@@ -171,8 +164,7 @@ def test_debug_info_rename_good_flow(engines, test_name, test_api):
 
 @pytest.mark.fae
 @pytest.mark.debug_token
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_debug_info_rename_bad_flow(engines, test_name, test_api):
+def test_debug_info_rename_bad_flow(engines, test_name, random_api):
     """
     Test renaming a debug info file unsuccessfully with invalid names and non-existent files.
 
@@ -188,13 +180,12 @@ def test_debug_info_rename_bad_flow(engines, test_name, test_api):
     9. Attempt to delete the renamed file again and expect failure.
     10. Verify that no debug token files remain.
     """
-    TestToolkit.tested_api = test_api
     fae = Fae(None)
     debug_image = fae.platform.debug.info.debug_image_bmc
 
     with allure.step('Try to rename non exist debug info file'):
         debug_image.files.file_name['non_exist'].action_rename(
-            new_name='new_name').verify_result(False, expected_value='not in a bin format')
+            new_name='new_name').verify_result(False, expected_value='File not found')
 
     with allure.step('Try to generate debug info file with invalid name not_with_bin'):
         debug_image.action_generate(name='not_with_bin', test_name=test_name, should_succeed=False)

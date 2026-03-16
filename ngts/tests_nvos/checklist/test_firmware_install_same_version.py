@@ -22,8 +22,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_firmware_install_same_version(devices, test_api, test_name):
+def test_firmware_install_same_version(devices, random_api, test_name):
     """
        @summary: test 'nv action install platform firmware <component>' command without using 'skip-version-check'
         option (no need to reboot)
@@ -32,7 +31,6 @@ def test_firmware_install_same_version(devices, test_api, test_name):
             1.Select a random component on device
             2. Fetch and install same firmware version on component without using 'skip-version-check' option
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Select a random component to test"):
         component = select_random_component(devices)
@@ -54,8 +52,7 @@ def test_firmware_install_same_version(devices, test_api, test_name):
 
 
 @pytest.mark.timeout(20 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_firmware_install_same_version_skip_check(devices, test_api, test_name):
+def test_firmware_install_same_version_skip_check(devices, random_api, test_name):
     """
         @summary: test 'nv action install platform firmware <component>' command while using 'skip-version-check'
         option (no need to reboot)
@@ -64,7 +61,6 @@ def test_firmware_install_same_version_skip_check(devices, test_api, test_name):
             1.Select a random component on device
             2. Fetch and install same firmware version on component while using 'skip-version-check' option
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Select a random component to test"):
         component = select_random_component(devices)
@@ -84,8 +80,7 @@ def test_firmware_install_same_version_skip_check(devices, test_api, test_name):
 
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 @pytest.mark.erot
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_fae_erot_firmware_install(devices, test_api, test_name):
+def test_fae_erot_firmware_install(devices, random_api, test_name):
     """
         @summary: test 'skip-version-check' option on 'nv action install fae platform firmware <erot-component>' command
         (no need to reboot)
@@ -96,14 +91,12 @@ def test_fae_erot_firmware_install(devices, test_api, test_name):
             3. Install same fw version on selected component without using 'skip-version-check' option.
             4. Install same fw version on selected component while using 'skip-version-check' option.
     """
-    TestToolkit.tested_api = test_api
     _run_fae_firmware_install_test(devices, test_name, FW_COMPONENT_EROT, _select_random_erot_component)
 
 
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 @pytest.mark.erot
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_fae_sma_firmware_install(devices, test_api, test_name):
+def test_fae_sma_firmware_install(devices, random_api, test_name):
     """
         @summary: test 'skip-version-check' option on 'nv action install fae platform firmware <sma-component>' command
         (no need to reboot)
@@ -118,13 +111,11 @@ def test_fae_sma_firmware_install(devices, test_api, test_name):
     if not devices.dut.sma_components or devices.dut.sma_amount == 0:
         pytest.skip(f"Device {devices.dut.__class__.__name__} has no SMA components - skipping SMA firmware install test")
 
-    TestToolkit.tested_api = test_api
     _run_fae_firmware_install_test(devices, test_name, FW_COMPONENT_SMA, _select_random_sma_component)
 
 
 @pytest.mark.timeout(2 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_firmware_install_invalid_version(devices, test_api, test_name):
+def test_firmware_install_invalid_version(devices, random_api, test_name):
     """
         @summary: test installing invalid fw version (already deleted version)
 
@@ -132,7 +123,6 @@ def test_firmware_install_invalid_version(devices, test_api, test_name):
             1. Select a random component on device (CPLD if no BMC, otherwise from device's components_list).
             2. Install invalid fw version for chosen component, and expect an error.
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Select a random component to test"):
         component = select_random_component(devices)

@@ -148,7 +148,6 @@ def test_patch_acl_rules(engines, random_api):
         4. Verify all rules are created
         5. Cleanup
     """
-    TestToolkit.tested_api = random_api
     system = System()
 
     acl_config = """nv set acl test_patch_acl type ipv4
@@ -193,7 +192,6 @@ def test_patch_with_range_expansion(engines, random_api):
         2. Patch using CLI or API
         3. Verify 6 individual rules created
     """
-    TestToolkit.tested_api = random_api
 
     config_with_range = """nv set acl test_range_acl type ipv4
 nv set acl test_range_acl rule 10-15 action permit"""
@@ -240,7 +238,6 @@ def test_replace_removes_existing_config(engines, random_api):
         3. Replace config
         4. Verify ACL is removed
     """
-    TestToolkit.tested_api = random_api
     system = System()
     hostname = "test-replace-removes"  # Use dashes, not underscores (valid hostname)
 
@@ -315,7 +312,6 @@ def test_replace_functionality_with_acls(engines, random_api):
         - No partial rules should remain
         - Both CLI and API should behave identically
     """
-    TestToolkit.tested_api = random_api
     system = System()
     hostname = "test-acl-replace"
 
@@ -459,7 +455,6 @@ def test_invalid_command_syntax(engines, random_api):
     """
     Negative test: PATCH with invalid command should fail with line number (both CLI and API)
     """
-    TestToolkit.tested_api = random_api
 
     commands = """nv set acl test_acl type ipv4
 nv set invalid command here
@@ -486,7 +481,6 @@ def test_unsupported_show_action_questioning(engines, random_api):
     Both 'nv show' (read operations) and 'nv action' (runtime operations) should fail.
     Tests all unsupported command types in a single patch file.
     """
-    TestToolkit.tested_api = random_api
 
     # Combine multiple unsupported commands in one file
     commands = """nv set acl test_acl type ipv4
@@ -533,7 +527,6 @@ def test_patch_with_revision_flags(engines, random_api):
 
     This test verifies atomic behavior is consistent across all NVOS versions.
     """
-    TestToolkit.tested_api = random_api
 
     commands_with_flag = """nv set interface eth0 link state up --rev=5"""
 
@@ -555,7 +548,6 @@ def test_multiple_errors_reports_first(engines, random_api):
     """
     Negative test: Should report first error only (both CLI and API)
     """
-    TestToolkit.tested_api = random_api
 
     commands = """nv set acl test_acl type ipv4
 nv set invalid command one
@@ -702,7 +694,6 @@ def test_abbreviated_commands(engines, random_api):
 
     Example: nv set int eth0 desc value (versus nv set interface eth0 description value)
     """
-    TestToolkit.tested_api = random_api
 
     # Test abbreviated commands: 'int' instead of 'interface', 'desc' instead of 'description'
     abbreviated_config = """nv set int eth0 desc "Abbreviated Test" """
@@ -738,7 +729,6 @@ def test_commands_on_same_line_fail(engines, random_api):
 
     Multiple commands on the same line should fail
     """
-    TestToolkit.tested_api = random_api
 
     same_line_commands = "nv set system hostname test1 nv set system message pre-login test2"
 
@@ -767,7 +757,6 @@ def test_interactive_password_prompts_not_supported(engines, random_api):
     interactively prompt for passwords. Interactive commands are NOT supported
     in patch files - all data must be provided in the command.
     """
-    TestToolkit.tested_api = random_api
 
     interactive_config = """nv set system aaa user test_user1 password"""
 
@@ -811,7 +800,6 @@ def test_multiple_interactive_prompts_not_supported(engines, random_api):
     Old behavior (WRONG): Would prompt 6 times (password + confirm for each user)
     New behavior (CORRECT): Should fail without prompting
     """
-    TestToolkit.tested_api = random_api
 
     interactive_config = """nv set system aaa user test_user1 password
 nv set system aaa user test_user2 password
@@ -869,7 +857,6 @@ def test_environment_variable_expansion(engines, random_api):
     Expected behavior: nv set interface eth0 description $TEST_VAR  -> remains as literal "$TEST_VAR"
     Note: This is different from terminal behavior where variables would be expanded by the shell.
     """
-    TestToolkit.tested_api = random_api
 
     # Set environment variable for test (to verify it's NOT expanded)
     test_var_value = "expanded_test_value_12345"
@@ -1058,7 +1045,6 @@ def test_mixed_set_and_unset_commands(engines, random_api):
     """
     Positive test: Batch should support both nv set and nv unset commands (both CLI and API)
     """
-    TestToolkit.tested_api = random_api
 
     mixed_commands = """nv set acl test_mixed_acl type ipv4
 nv set acl test_mixed_acl rule 10 action permit
@@ -1124,7 +1110,6 @@ def test_maximum_properties_constraint_acl_action(engines, random_api):
     automatically unsets the previous mutually exclusive value, even with
     multiple back-and-forth changes and other commands mixed in.
     """
-    TestToolkit.tested_api = random_api
 
     try:
         # Complex patch with multiple conflicting actions + other commands
@@ -1220,7 +1205,6 @@ def test_patch_30k_acl_prefixes_performance(engines, random_api):
     Regression test for bug #4491397 where applying 30K prefixes took 12 hours
     with gradual performance degradation (1.2s → 2.4s per PATCH).
     """
-    TestToolkit.tested_api = random_api
     acl_name = 'test_30k_acl'
     num_rules = 30000
     # Use large config timeout for 30K ACL rules

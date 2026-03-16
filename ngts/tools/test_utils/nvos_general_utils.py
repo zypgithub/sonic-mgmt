@@ -12,6 +12,7 @@ from ngts.nvos_constants.constants_nvos import DiskConsts, TopologyConsts, NvosC
 from ngts.nvos_tools.infra.DiskTool import DiskTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 
 @contextmanager
@@ -95,12 +96,14 @@ def get_version_info(version: str) -> Tuple[str, str]:
     return '', ''
 
 
-def generate_scp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str:
-    return f'scp://{player.username}:{player.password}@{player.ip}{file_path}'
+def generate_scp_uri_using_player(player, file_path: str) -> str:
+    ip = IpTool.format_ip_for_uri(player)
+    return f'scp://{player.username}:{player.password}@{ip}{file_path}'
 
 
-def generate_sftp_uri_using_player(player: LinuxSshEngine, file_path: str) -> str:
-    return f'sftp://{player.username}:{player.password}@{player.ip}{file_path}'
+def generate_sftp_uri_using_player(player, file_path: str) -> str:
+    ip = IpTool.format_ip_for_uri(player)
+    return f'sftp://{player.username}:{player.password}@{ip}{file_path}'
 
 
 def generate_file_location_uri(file_path: str, localhost: bool = False) -> str:

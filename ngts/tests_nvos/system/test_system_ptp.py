@@ -10,8 +10,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_configure_ptp_state(engines, devices, test_api):
+def test_configure_ptp_state(engines, devices, random_api):
     """
     Validate configuring feature state by using the fae commands:
     - Validate show system ptp command
@@ -26,7 +25,6 @@ def test_configure_ptp_state(engines, devices, test_api):
     5. Verify unset system ptp command
     6. Verify tc-state persist disabled after reboot
     """
-    TestToolkit.tested_api = test_api
     engines_dut = engines.dut
     system = System()
 
@@ -57,16 +55,13 @@ def test_configure_ptp_state(engines, devices, test_api):
 
 
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_ptp_invalid_commands(test_api):
+def test_set_ptp_invalid_commands(random_api):
     """
     Check set ptp command with invalid param value.
 
     Test flow:
     1. nv set system ptp tc <invalid state>
     """
-
-    TestToolkit.tested_api = test_api
 
     with allure.step("Validate set fae interface link lanes with invalid lanes"):
         System().ptp.set(op_param_name=PtpConsts.TC_STATE, op_param_value='invalid_state',

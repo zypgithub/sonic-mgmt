@@ -24,8 +24,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_maintenance_state_show_cmd(test_api, setup_name):
+def test_maintenance_state_show_cmd(random_api, setup_name, check_device_and_system_type_for_sdn):
     """
     Test the SDN maintenance state show commands functionality.
 
@@ -34,7 +33,6 @@ def test_maintenance_state_show_cmd(test_api, setup_name):
     2. The 'nv show sdn transceivers <transceiver-id>' command output matches the general show output
     3. The maintenance state appears in interface link output
     """
-    TestToolkit.tested_api = test_api
     sdn = Sdn()
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, setup_name)
@@ -61,8 +59,7 @@ def test_maintenance_state_show_cmd(test_api, setup_name):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_change_maintenance_state(test_api):
+def test_change_maintenance_state(random_api, check_device_and_system_type_for_sdn):
     """
     Test the ability to change and restore maintenance state for SDN transceivers.
 
@@ -74,7 +71,6 @@ def test_change_maintenance_state(test_api):
        - Restores the maintenance state
        - Verifies the state is restored to 'up'
     """
-    TestToolkit.tested_api = test_api
     sdn = Sdn()
     transceivers_amount = 2    # same as rack number, to use transceiver from each rack
 
@@ -113,8 +109,7 @@ def test_change_maintenance_state(test_api):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_bad_params(test_api):
+def test_bad_params(random_api, check_device_and_system_type_for_sdn):
     """
     Test error handling for invalid parameters in SDN maintenance state commands.
 
@@ -122,7 +117,6 @@ def test_bad_params(test_api):
     1. The 'nv show sdn transceivers' command handles invalid parameters correctly
     2. The maintenance state update command rejects invalid state values
     """
-    TestToolkit.tested_api = test_api
     sdn = Sdn()
     random_string = RandomizationTool.get_random_string(length=10)
 
@@ -141,8 +135,7 @@ def test_bad_params(test_api):
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_port_state_change_according_to_maintenance_state(engines, devices, test_api):
+def test_port_state_change_according_to_maintenance_state(engines, devices, random_api, check_device_and_system_type_for_sdn):
     """
     Test that port states change correctly based on maintenance state changes.
 
@@ -153,7 +146,6 @@ def test_port_state_change_according_to_maintenance_state(engines, devices, test
     2. For ports in DOWN state:
        - Port stays DOWN regardless of maintenance state
     """
-    TestToolkit.tested_api = test_api
     up_port_maintenance_state_mapping = {'up': 'up', 'diag': 'up', 'down': 'down'}  # key is the maintenance state, value is the expected port state
     down_port_maintenance_state_mapping = {'up': 'down', 'diag': 'down', 'down': 'down'}  # key is the maintenance state, value is the expected port state
 

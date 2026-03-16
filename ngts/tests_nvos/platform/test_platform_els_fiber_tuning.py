@@ -37,8 +37,7 @@ def get_els_list(engines, devices):
 
 @pytest.mark.platform
 @pytest.mark.els_fiber_tuning
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_fae_platform_cpo(engines, devices, nv_command, test_api, get_els_list):
+def test_show_fae_platform_cpo(engines, devices, nv_command, random_api, get_els_list):
     """
     Test Objective:
     Verify that all FAE platform CPO commands work correctly and return expected default values.
@@ -51,7 +50,6 @@ def test_show_fae_platform_cpo(engines, devices, nv_command, test_api, get_els_l
     4. Validate all enum values and default states
     5. Test additional FAE system commands
     """
-    TestToolkit.tested_api = test_api
     with allure.step("Create FAE system object"):
         fae_system = nv_command.fae.system
 
@@ -84,8 +82,7 @@ def test_show_fae_platform_cpo(engines, devices, nv_command, test_api, get_els_l
 
 @pytest.mark.platform
 @pytest.mark.els_fiber_tuning
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_fae_platform_cpo(engines, devices, test_api, nv_command, get_els_list):
+def test_set_fae_platform_cpo(engines, devices, random_api, nv_command, get_els_list):
     """
     Test Objective:
     Verify that setting and unsetting FAE platform CPO states works as expected.
@@ -97,7 +94,6 @@ def test_set_fae_platform_cpo(engines, devices, test_api, nv_command, get_els_li
     4. Verify the parameter returned to default value.
     5. Repeat the above steps for all parameters and valid states.
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create FAE system object"):
         fae_system = nv_command.fae.system
@@ -150,8 +146,7 @@ def test_set_fae_platform_cpo(engines, devices, test_api, nv_command, get_els_li
 
 @pytest.mark.platform
 @pytest.mark.els_fiber_tuning
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_fae_platform_cpo_bad_flow(engines, devices, nv_command, test_api, get_els_list):
+def test_fae_platform_cpo_bad_flow(engines, devices, nv_command, random_api, get_els_list):
     """
     Test Objective:
     Ensure the FAE platform CPO interface robustly rejects invalid operations and returns appropriate error messages.
@@ -161,7 +156,6 @@ def test_fae_platform_cpo_bad_flow(engines, devices, nv_command, test_api, get_e
     2. Attempt to activate an ELS transceiver with non-existent or invalid IDs and check for correct error handling.
     3. Execute invalid command and confirm the command fails as expected.
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Test invalid enum values for CPO parameters"):
         for field_name in CpoConsts.CPO_FIELDS:
@@ -184,8 +178,7 @@ def test_fae_platform_cpo_bad_flow(engines, devices, nv_command, test_api, get_e
 
 @pytest.mark.platform
 @pytest.mark.els_fiber_tuning
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_list):
+def test_els_unplug_plug_event(engines, devices, nv_command, random_api, get_els_list):
     """
     Test Objective:
     Verify PMAOS (Physical Module Activation/Deactivation) functionality for ELS transceivers.
@@ -204,7 +197,6 @@ def test_els_unplug_plug_event(engines, devices, nv_command, test_api, get_els_l
     10. Activate the ELS transceiver
     11. Verify all baseline ports are back in up state
     """
-    TestToolkit.tested_api = test_api
 
     els_list = get_els_list
     platform = nv_command.platform

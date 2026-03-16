@@ -13,7 +13,6 @@ logger = logging.getLogger()
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_mtu_disabled_sm(engines, stop_sm, random_api):
-    TestToolkit.tested_api = random_api
     """
     Verify default mtu configuration(2044), check that we can configure possible values (252, 508, 1020, 2044, 4092).
     negative check random value, check changes, unset it to default
@@ -59,7 +58,6 @@ def test_interface_ib0_mtu_disabled_sm(engines, stop_sm, random_api):
 @pytest.mark.ib
 @pytest.mark.simx
 def test_interface_ib0_arp_timeout_disabled_sm(stop_sm, random_api):
-    TestToolkit.tested_api = random_api
     """
     Verify default arp timeout (1800 sec), check that we can configure possible values (60-28800).
     negative check random value, unset it to default

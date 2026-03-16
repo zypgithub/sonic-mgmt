@@ -44,8 +44,7 @@ def _validate_against_thresholds(value: float, data: dict, name: str,
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_transceiver_els(engines, devices, nv_command, test_api):
+def test_show_transceiver_els(engines, devices, nv_command, random_api):
     """
     Verify ELS transceiver fields, port-mapping, oe-mapping, and fault-condition.
 
@@ -53,7 +52,6 @@ def test_show_transceiver_els(engines, devices, nv_command, test_api):
     1. Verify all expected fields exist for a random ELS transceiver
     2. Verify port-mapping, oe-mapping, and fault-condition for each ELS
     """
-    TestToolkit.tested_api = test_api
 
     els_list, _ = _get_transceiver_lists(devices.dut.transceiver_list)
     if not els_list:
@@ -93,8 +91,7 @@ def test_show_transceiver_els(engines, devices, nv_command, test_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_transceiver_oe(engines, devices, nv_command, test_api):
+def test_show_transceiver_oe(engines, devices, nv_command, random_api):
     """
     Verify OE transceiver fields, status, port-mapping, and els-mapping.
 
@@ -102,7 +99,6 @@ def test_show_transceiver_oe(engines, devices, nv_command, test_api):
     1. Verify all expected fields exist for a random OE transceiver
     2. Verify status=Inserted, port-mapping matches ELS mapping for each OE
     """
-    TestToolkit.tested_api = test_api
 
     _, oe_list = _get_transceiver_lists(devices.dut.transceiver_list)
     if not oe_list:

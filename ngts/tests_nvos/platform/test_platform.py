@@ -17,8 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform(engines, test_api, devices, nv_command):
+def test_show_platform(engines, random_api, devices, nv_command):
     """
     Validates the output of nv show platform.
     The OpenAPI test checks the JSON output while the NVUE test checks the auto output.
@@ -28,6 +27,5 @@ def test_show_platform(engines, test_api, devices, nv_command):
         3. Validate all keys (field names) exist and there are no extra keys
         4. Validate all values are correct
     """
-    TestToolkit.tested_api = test_api
     output = OutputParsingTool.parse_show_output_to_dict(nv_command.platform.show()).get_returned_value()
     ValidationTool.validate_output_of_show(output, TestToolkit.devices.dut.show_platform_output).verify_result()

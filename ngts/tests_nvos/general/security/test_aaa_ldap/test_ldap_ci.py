@@ -14,9 +14,8 @@ from ngts.tests_nvos.general.security.test_aaa_ldap.ldap_servers_info import Lda
 @pytest.mark.security_ci
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.parametrize('addressing_type', [random.choice(AddressingType.ALL_TYPES)])
-def test_ldap_auth_ci(test_api, addressing_type, engines, topology_obj, request):
+def test_ldap_auth_ci(random_api, addressing_type, engines, topology_obj, request):
     """
     @summary: Basic test to verify authentication and authorization through LDAP, using SSH auth medium.
 

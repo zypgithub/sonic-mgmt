@@ -7,21 +7,30 @@ DEFAULT_PORT = 443
 class CurlCmdBuilder:
     CURL_CMD_TEMPLATE = "curl{opts} --request {method} 'https://{host}:{port}{resource}{params}'"
 
-    def __init__(self, method: str, host: str, resource: str, port=DEFAULT_PORT, resource_prefix: str = NVUE_RESOURCE_PREFIX):
-        self.method = method.upper()
-        self.host = host
-        self.port = port
-        self.resource = f'{resource_prefix}{resource}'
+    def __init__(self, method: str, host: str, resource: str, port: int = DEFAULT_PORT, resource_prefix: str = NVUE_RESOURCE_PREFIX):
+        self.method: str = method.upper()
+        self.host: str = host
+        self.port: int = port
+        self.resource: str = f'{resource_prefix}{resource}'
         self.options: str = ''
         self.parameters: list = []
+        self._is_ipv6: bool = False
 
     def build(self) -> str:
         self.options.strip()
-        params = f'?{"&".join(self.parameters)}' if self.parameters else ''
-        return CurlCmdBuilder.CURL_CMD_TEMPLATE.format(opts=self.options, method=self.method, host=self.host, port=self.port, resource=self.resource, params=params).strip()
+        params: str = f'?{"&".join(self.parameters)}' if self.parameters else ''
+        # IPv6 addresses must be enclosed in square brackets in URLs
+        host: str = f'[{self.host}]' if self._is_ipv6 else self.host
+        return CurlCmdBuilder.CURL_CMD_TEMPLATE.format(opts=self.options, method=self.method, host=host, port=self.port, resource=self.resource, params=params).strip()
+
+    def ipv6(self) -> 'CurlCmdBuilder':
+        """Force curl to use IPv6 and format the host address with brackets."""
+        self._is_ipv6 = True
+        self.options += ' -6'
+        return self
 
     def insecure(self) -> 'CurlCmdBuilder':
-        self.options += f' -k'
+        self.options += ' -k'
         return self
 
     def user_creds(self, username: str, password: str) -> 'CurlCmdBuilder':
@@ -38,6 +47,10 @@ class CurlCmdBuilder:
 
     def client_cert(self, key_path: str, public_path: str) -> 'CurlCmdBuilder':
         self.options += f' --key {key_path} --cert {public_path}'
+        return self
+
+    def interface(self, iface: str) -> 'CurlCmdBuilder':
+        self.options += f' --interface {iface}'
         return self
 
     def payload(self, payload: dict) -> 'CurlCmdBuilder':

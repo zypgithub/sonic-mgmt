@@ -31,7 +31,7 @@ from ngts.tests_nvos.general.security.test_api_server_security.helpers import bu
 
 @pytest.mark.security
 @pytest.mark.mtls
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
     """
     Verify that all CLI work and check values change properly in show
@@ -91,7 +91,7 @@ def test_api_spiffe_cli(test_api, local_admin_users: List[UserInfo], engines):
 
 @pytest.mark.security
 @pytest.mark.mtls
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_spiffe_valid_value_special_cases(test_api, local_adminuser: UserInfo, engines):
     """
     Verify that set with valid spiffe works
@@ -123,7 +123,7 @@ def test_api_spiffe_valid_value_special_cases(test_api, local_adminuser: UserInf
 
 @pytest.mark.security
 @pytest.mark.mtls
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
     """
     Verify that set with bad param rejected
@@ -159,7 +159,7 @@ def test_api_spiffe_invalid_value(test_api, local_adminuser: UserInfo):
 
 @pytest.mark.security
 @pytest.mark.mtls
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_spiffe_uniqueness_apply_together(test_api, local_admin_users: List[UserInfo]):
     """
     Verify that can't set same SPIFFE to multiple users
@@ -191,7 +191,7 @@ def test_api_spiffe_uniqueness_apply_together(test_api, local_admin_users: List[
 
 @pytest.mark.security
 @pytest.mark.mtls
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_spiffe_uniqueness_apply_separately(test_api, local_admin_users: List[UserInfo]):
     """
     Verify that can't set same SPIFFE to multiple users

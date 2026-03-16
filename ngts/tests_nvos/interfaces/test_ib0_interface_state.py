@@ -11,8 +11,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib0_interface_state(engines, start_sm, nv_command, test_api):
+def test_ib0_interface_state(engines, start_sm, nv_command, random_api):
     """
     Configure ib0 interface state and verify the configuration applied successfully
     Relevant cli commands:
@@ -25,7 +24,6 @@ def test_ib0_interface_state(engines, start_sm, nv_command, test_api):
     3. Set ib0 port state to ‘up’
     4. Verify the configuration applied by running “show” command
     """
-    TestToolkit.tested_api = test_api
 
     nv_command.port['ib0'].interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
                                                     ask_for_confirmation=True).verify_result()
@@ -49,8 +47,7 @@ def test_ib0_interface_state(engines, start_sm, nv_command, test_api):
 
 
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib0_interface_state_invalid(engines, nv_command, test_api):
+def test_ib0_interface_state_invalid(engines, nv_command, random_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -61,7 +58,6 @@ def test_ib0_interface_state_invalid(engines, nv_command, test_api):
     1. Set ib0 port state to invalid value -> should fail
     2. Verify the value remain original by running “show” command
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create Port class and check current ib0 state"):
         current_state = nv_command.port['ib0'].interface.link.state.show()
@@ -83,8 +79,7 @@ def test_ib0_interface_state_invalid(engines, nv_command, test_api):
 
 
 @pytest.mark.ib
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_ib0_interface_state_unset(engines, start_sm, nv_command, test_api):
+def test_ib0_interface_state_unset(engines, start_sm, nv_command, random_api):
     """
     Configure port interface state using an invalid value
     Relevant cli commands:
@@ -97,7 +92,6 @@ def test_ib0_interface_state_unset(engines, start_sm, nv_command, test_api):
     2. Unset ib0 port state
     3. Verify the value remain original by running “show” command
     """
-    TestToolkit.tested_api = test_api
 
     nv_command.port['ib0'].interface.link.state.set(op_param_name=NvosConsts.LINK_STATE_DOWN, apply=True,
                                                     ask_for_confirmation=True).verify_result()

@@ -14,9 +14,8 @@ from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_tes
 @pytest.mark.security_ci
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.parametrize('addressing_type', [random.choice(AddressingType.ALL_TYPES)])
-def test_radius_auth(test_api, addressing_type, engines, topology_obj, request):
+def test_radius_auth(random_api, addressing_type, engines, topology_obj, request):
     """
     @summary: Basic test to verify authentication and authorization through radius, using SSH auth medium.
 

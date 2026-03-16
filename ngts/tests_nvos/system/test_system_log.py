@@ -7,6 +7,7 @@ import json
 import pytest
 from typing import List
 from datetime import datetime
+from retry import retry
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import LogComponentsConsts, SyslogConsts, LogsSources
@@ -587,6 +588,10 @@ def test_delete_log_files(engines, topology_obj):
             _delete_log_files(engines, component, file_name=LogComponentsConsts.NVUE_LOG)
 
 
+@pytest.mark.system
+@pytest.mark.log
+@pytest.mark.simx
+@pytest.mark.disable_loganalyzer
 def _delete_log_files(engines, system_log_obj, file_name):
     """
     Check user can delete debug-log files

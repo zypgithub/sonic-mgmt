@@ -24,7 +24,6 @@ logger = logging.getLogger()
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = random_api
     output_format = OutputFormat.json
 
     try:
@@ -32,7 +31,7 @@ def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standa
             cluster = Cluster()
             system = System()
             logger.info("Setting cluster state to enabled")
-            ClusterTools.start_cluster(cluster, setup_name, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
         with allure.step("Validate initial log level"):
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
@@ -44,7 +43,6 @@ def test_cluster_app_log_level(engines, devices, random_api, has_loopbox, standa
                     output = cluster.apps.app_name[app].loglevel.action_update_cluster_log_level(level='undefined').get_returned_value(should_succeed=False)
                     assert ClusterConsts.UNDEFINED_LOG_LEVEL in output, f"Expected {ClusterConsts.UNDEFINED_LOG_LEVEL}, Actual: {output}"
                     ClusterTools.verify_log_level(ClusterConsts.DEFAULT_LOG_LEVEL, app, output_format, cluster)
-            TestToolkit.tested_api = random_api
 
         with allure.step("Choose random log level, and set cluster app log level to"):
             log_level = random.choice(ClusterConsts.ClusterAppsLogLevelsList)
@@ -81,7 +79,7 @@ def test_cluster_app_log_level_under_stress(engines, devices, test_api, test_nam
             system = System()
             logger.info("Setting cluster state to enabled")
             installed_packages = []
-            ClusterTools.start_cluster(cluster, setup_name, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
 
             installed_packages = StressResourcesTool.stress_cpu_and_memory(engines, devices.dut.core_count)
             timeout = 300  # for example, 300 seconds

@@ -9,7 +9,9 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.DMIDecodeTool import DMIDecodeTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
+from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.OnieTool import OnieTool
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
 
@@ -54,7 +56,7 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
-            BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_CPU_PATH_NAME)
+            BmcTool.verify_background_copy_completed_if_enabled(engines.dut, nv_command.platform, erot_name=PlatformConsts.EROT_CPU_PATH_NAME)
         with allure.step(f"verify operation time for install bios {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install bios', devices).verify_result()
     finally:
@@ -64,3 +66,17 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
                                                      test_name=test_name)
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)
+
+        # On Rosalind systems, verify AutomaticBackgroundCopyEnabled based on OPN status
+        # OPN (production): should be True, DEV (not OPN): should be False
+        if isinstance(devices.dut, RosalindSurrogateSwitch):
+            is_opn = OnieTool.is_opn(topology_obj)
+            bg_copy_enabled = BmcTool.is_automatic_background_copy_enabled(engines.dut, PlatformConsts.EROT_CPU_PATH_NAME)
+            if is_opn:
+                with allure.step("Assert AutomaticBackgroundCopyEnabled is true on Rosalind OPN system"):
+                    assert bg_copy_enabled, \
+                        f"AutomaticBackgroundCopyEnabled is false for {PlatformConsts.EROT_CPU_PATH_NAME} on Rosalind OPN system - expected true"
+            else:
+                with allure.step("Assert AutomaticBackgroundCopyEnabled is false on Rosalind DEV system"):
+                    assert not bg_copy_enabled, \
+                        f"AutomaticBackgroundCopyEnabled is true for {PlatformConsts.EROT_CPU_PATH_NAME} on Rosalind DEV system - expected false"

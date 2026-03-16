@@ -18,10 +18,8 @@ logger = logging.getLogger()
 
 @pytest.mark.bmc
 @pytest.mark.platform
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_platform_firmware_bmc_component(engines, devices, test_api):
+def test_platform_firmware_bmc_component(engines, devices, random_api):
     """Tests nv show platform firmware bmc component"""
-    TestToolkit.tested_api = test_api
 
     fae = Fae()
     platform = Platform()

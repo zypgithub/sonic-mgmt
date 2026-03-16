@@ -51,4 +51,4 @@ class BaseCli(metaclass=ABCMeta):
     def action(cls, action_str: str, resource_path: str, main_param: Tuple[str, Union[str, int]],
                flags: Union[str, Iterable[str]], params: dict, engine, reboot_params: Optional[RebootParams],
                send_user_confirmation: Optional[str], expected_output: str, device,
-               read_timeout: Optional[int] = None) -> ResultObj: pass
+               timeout: Optional[float] = None) -> ResultObj: pass

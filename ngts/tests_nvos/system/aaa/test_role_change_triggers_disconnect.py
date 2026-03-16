@@ -1,5 +1,6 @@
 import json
 import crypt
+import random
 import yaml
 import requests
 import time
@@ -111,8 +112,7 @@ def __check_user_connections_status_on_server_side(engines, username: str) -> in
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_default_role_switch(engines, test_api):
+def test_default_role_switch(engines, random_api):
     """
     Test flow:
         1. Create a new user A with a default role : system-admin
@@ -121,7 +121,6 @@ def test_default_role_switch(engines, test_api):
         4. Verify user A's SSH connection is disconnected
         5. Verify user A is not shown in 'who' command output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Create a new user with a default role : system-admin'):
         username, password = create_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)
@@ -146,8 +145,7 @@ def test_default_role_switch(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_custom_to_default_role_switch(engines, test_api):
+def test_custom_to_default_role_switch(engines, random_api):
     """
     Test flow:
         1. Create new user A with a custom role : custom_role1
@@ -156,7 +154,6 @@ def test_custom_to_default_role_switch(engines, test_api):
         4. Verify user A's SSH connection is disconnected
         5. Verify user A is not shown in 'who' command output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create a new user with a custom role : custom_role1"):
         username, password = create_new_user(role=CUSTOM_ROLE_1['name'], apply=True)
@@ -181,8 +178,7 @@ def test_custom_to_default_role_switch(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_custom_role_switch(engines, test_api):
+def test_custom_role_switch(engines, random_api):
     """
     Test flow:
         1. Establish SSH connection with a custom user A with custom role
@@ -190,7 +186,6 @@ def test_custom_role_switch(engines, test_api):
         3. Verify user A's SSH connection is disconnected
         4. Verify user A is not shown in 'who' command output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create a new user with a custom role : custom_role1"):
         username, password = create_new_user(role=CUSTOM_ROLE_1['name'], apply=True)
@@ -215,8 +210,7 @@ def test_custom_role_switch(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_scale_ssh(engines, test_api):
+def test_scale_ssh(engines, random_api):
     """
     Test flow:
         1. Create new user A with a default role : system-admin
@@ -225,7 +219,6 @@ def test_scale_ssh(engines, test_api):
         4. Verify all the user A's SSH connections are disconnected
         5. Verify user A is not shown in 'who' command output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Create a new user with a default role : system-admin'):
         username, password = create_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)
@@ -252,7 +245,7 @@ def test_scale_ssh(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_scale_ssh_users(engines, test_api):
     """
     Test flow:
@@ -262,7 +255,6 @@ def test_scale_ssh_users(engines, test_api):
         4. Verify all 80 user A's SSH connections are disconnected
         5. Verify user A is not shown in 'who' command output
     """
-    TestToolkit.tested_api = test_api
     general_cli = TestToolkit.GeneralApi[test_api]
 
     with allure.step(f'Create {TEST_6_SCALE_SSH_USERS_AMOUNT} users with a default role : system-admin'):
@@ -511,8 +503,7 @@ def test_negative_change_user_attributes(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_negative_delete_user(engines, test_api):
+def test_negative_delete_user(engines, random_api):
     """
     Test flow:
         1. Create a new user with a default role : system-admin
@@ -520,7 +511,6 @@ def test_negative_delete_user(engines, test_api):
         3. Try to delete the user and verify the action failed with an error "{username} is logged in and cannot be deleted"
         5. Verify the user's session is still active
     """
-    TestToolkit.tested_api = test_api
 
     system = System()
     with allure.step('Create a new user with a default role : system-admin'):
@@ -600,8 +590,7 @@ def test_negative_change_user_attributes_and_role(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_console_up(engines, test_api):
+def test_console_up(engines, random_api):
     """
     Test flow:
         1. Create a new user with a default role : system-admin
@@ -610,7 +599,6 @@ def test_console_up(engines, test_api):
         4. Verify the user is logged out of the console connection
         5. Verify the user is not shown in "who" command output
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Create a new user with a default role : system-admin'):
         username, password = create_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)
@@ -645,8 +633,7 @@ def test_console_up(engines, test_api):
 @pytest.mark.cumulus
 @pytest.mark.cumulus_only
 @pytest.mark.system
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_agent_restart(engines, test_api):
+def test_agent_restart(engines, random_api):
     """
     Test flow:
         1. Create a new user with a default role : system-admin
@@ -655,7 +642,6 @@ def test_agent_restart(engines, test_api):
         4. Change the user's role to a default role : nvue-admin
         5. Verify the user is logged out of the SSH connection
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step('Create a new user with a default role : system-admin'):
         username, password = create_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)

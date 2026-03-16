@@ -22,9 +22,12 @@ from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_constants.constants_nvos import DatabaseConst
+from ngts.tests_nvos.platform.test_platform_environment_leakage import rewrite_files
 
 logger = logging.getLogger()
 
@@ -35,6 +38,163 @@ IGNORED = HealthConsts.IGNORED
 USER_DEFINED_CHECKERS_KEY = 'user_defined_checkers'
 DEVICES_TO_IGNORE_KEY = "devices_to_ignore"
 SIMULATED_ISSUES = {"bad_device": "device is out of power"}
+
+# Multi-instance component validation: component -> (naming_pattern, device_spec_attr)
+MULTI_INSTANCE_COMPONENTS = {
+    HealthConsts.Component.ASIC: (r'ASIC\d+', 'asic_amount'),
+    HealthConsts.Component.Leakage_Sensor: (r'LEAKAGE-\d+', 'leakage_sensors_count'),
+    HealthConsts.Component.FAN: (r'FAN\d+(/\d+)?', 'fan_list'),  # Supports FAN1 or FAN1/1 format
+    HealthConsts.Component.PSU: (r'PSU\d+', 'psu_list'),
+    HealthConsts.Component.Transceiver: (r'[A-Za-z]+\d+p\d+', 'transceiver_list'),  # e.g., swA1p1, swB2p2
+}
+
+# Single-instance components (only have "ALL" instance)
+SINGLE_INSTANCE_COMPONENTS = [
+    HealthConsts.Component.CPU,
+    HealthConsts.Component.Switch,
+    HealthConsts.Component.Software
+]
+
+# ASIC health simulation via STATE_DB (thermalctld stopped so value is not overwritten)
+_HEALTH_POLL_WAIT_SEC = 70
+_ASIC_TEMP_UNHEALTHY = "999"
+_ASIC_TEMP_HEALTHY = "30"
+_STATE_DB_TEMPERATURE_PREFIX = "TEMPERATURE_INFO|"
+# ASIC_HEALTH fatal_state: when set to 'true', all ASIC instances are marked unhealthy (new image logic)
+_STATE_DB_ASIC_HEALTH_STATE = "ASIC_HEALTH|STATE"
+_ASIC_HEALTH_FATAL_FIELD = "fatal_state"
+
+
+def _inject_asic_temperature(engines, instance_id, temp_value):
+    """Set STATE_DB TEMPERATURE_INFO|{instance_id} temperature to temp_value (e.g. ASIC1, 999 or 30)."""
+    table_key = f"{_STATE_DB_TEMPERATURE_PREFIX}{instance_id}"
+    DatabaseTool.sonic_db_cli_hset(
+        engines.dut, "", DatabaseConst.STATE_DB_NAME, table_key, "temperature", temp_value)
+
+
+def _wait_health_cycle():
+    time.sleep(_HEALTH_POLL_WAIT_SEC)
+
+
+def _assert_component_instance(system, component, instance_id, field_name, field_value, tries=5, delay=5):
+    retry_call(validate_component_health_data_for_instance,
+               [system, component, instance_id, field_name, field_value],
+               exceptions=AssertionError, tries=tries, delay=delay)
+
+
+def _assert_asic_instance(system, instance_id, field_name, field_value, tries=3, delay=10):
+    _assert_component_instance(system, HealthConsts.Component.ASIC, instance_id, field_name, field_value, tries, delay)
+
+
+def _get_asic_instance_count(system, instance_id):
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    return int(health_out[HealthConsts.Component.ASIC][HealthConsts.Component.INSTANCE][instance_id][
+        HealthConsts.Component.UNHEALTHY_COUNT])
+
+
+def _set_asic_health_fatal_state(engines, value):
+    """Set STATE_DB ASIC_HEALTH|STATE fatal_state to 'true' or 'false'. When true, all ASICs are marked unhealthy."""
+    DatabaseTool.sonic_db_cli_hset(
+        engines.dut, "", DatabaseConst.STATE_DB_NAME,
+        _STATE_DB_ASIC_HEALTH_STATE, _ASIC_HEALTH_FATAL_FIELD, value)
+
+
+def _build_validation_config(available_components, devices):
+    """
+    Build validation config based on components actually present in API response
+    and device hardware specifications.
+
+    Args:
+        available_components: List of component names from API response
+        devices: Device fixture with hardware specs
+
+    Returns:
+        Dictionary with validation config for multi-instance components
+    """
+    validation_config = {}
+
+    # Check each multi-instance component
+    for component, (pattern, spec_attr) in MULTI_INSTANCE_COMPONENTS.items():
+        # Only add if component is in API response
+        if component in available_components:
+            device_spec = getattr(devices.dut, spec_attr, [])
+
+            # Check if device actually has this hardware
+            has_hardware = False
+            if isinstance(device_spec, list):
+                has_hardware = len(device_spec) > 0
+            elif isinstance(device_spec, int):
+                has_hardware = device_spec > 0
+
+            if has_hardware:
+                validation_config[component] = (pattern, spec_attr)
+                logger.info(f"Added validation for {component}: pattern={pattern}, spec={spec_attr}")
+
+    return validation_config
+
+
+def _validate_instance_fields_and_values(component, instance_id, instance_data):
+    """Validate instance fields have correct formats and values"""
+    ValidationTool.verify_field_exist_in_json_output(
+        instance_data, [HealthConsts.Component.LAST_HEALTHY, HealthConsts.Component.STATE,
+                        HealthConsts.Component.UNHEALTHY_COUNT]).verify_result()
+
+    state = instance_data[HealthConsts.Component.STATE]
+    assert state in [HealthConsts.Component.HEALTHY, HealthConsts.Component.UNHEALTHY], \
+        f"{component}/{instance_id} invalid state: '{state}'"
+
+    count = instance_data[HealthConsts.Component.UNHEALTHY_COUNT]
+    assert isinstance(count, str) and count.isdigit() and int(count) >= 0, \
+        f"{component}/{instance_id} invalid unhealthy-count: '{count}'"
+
+    timestamp = instance_data[HealthConsts.Component.LAST_HEALTHY]
+    if timestamp:
+        assert re.match(r'\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}', timestamp), \
+            f"{component}/{instance_id} invalid timestamp: '{timestamp}'"
+
+
+def _validate_instance_naming_and_count(component, instances, devices, validation_config):
+    """
+    Validate instance naming patterns and count against device specs
+
+    Args:
+        component: Component name
+        instances: Dictionary of instances
+        devices: Device fixture with hardware specs
+        validation_config: Validation configuration dictionary
+    """
+    instance_ids = list(instances.keys())
+
+    # Multi-instance components with naming patterns
+    if component in validation_config:
+        pattern, spec_attr = validation_config[component]
+        for inst_id in instance_ids:
+            assert re.match(pattern, inst_id), f"Invalid {component} instance name: {inst_id}"
+
+        # Get expected count from device specs (not used for transceivers)
+        expected = getattr(devices.dut, spec_attr, 0)
+
+        # For list attributes (fan_list, psu_list, transceiver_list), use len()
+        if isinstance(expected, list):
+            expected = len(expected)
+
+        # Validate count if expected is non-zero (or for transceivers: just that instances > 0)
+        if expected > 0:
+            if component == HealthConsts.Component.Transceiver:
+                # Transceivers: do not rely on ibdevice count; only check key is present and instances > 0
+                assert len(instances) > 0, \
+                    f"{component} has no instances in health output"
+                logger.info(f"{component} validated: key present, instance count {len(instances)} > 0")
+            else:
+                # For other components (ASIC, Fan, PSU): exact count match
+                assert len(instances) == expected, \
+                    f"{component} count mismatch: expected {expected}, found {len(instances)}"
+                logger.info(f"{component} count validated: {len(instances)} matches device spec")
+
+    # Single-instance components must have "ALL"
+    elif component in SINGLE_INSTANCE_COMPONENTS:
+        assert len(instances) == 1 and "ALL" in instances, \
+            f"{component} should have exactly one 'ALL' instance, found {instance_ids}"
 
 
 @pytest.fixture(scope='function')
@@ -177,6 +337,323 @@ def test_show_system_health(devices):
 
 @pytest.mark.system
 @pytest.mark.health
+def test_show_system_health_component(devices):
+    """
+    Validate all three health component show endpoints (command coverage):
+        1. nv show system health component
+        2. nv show system health component <component> instance
+        3. nv show system health component <component> instance <instance_id> (e.g. ASIC1, ALL)
+    """
+
+    system = System()
+    health_comp_output = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).\
+        get_returned_value()
+    available_components = list(health_comp_output.keys())
+    validation_config = _build_validation_config(available_components, devices)
+    logger.info(f"Using validation config for components: {list(validation_config.keys())}")
+
+    with allure.step("Validate show system health component command and instance option for each component"):
+        for component in available_components:
+            with allure.step(f"Validate show system health component {component}"):
+                assert component in HealthConsts.Component.COMPONENTS, \
+                    f"Unexpected component '{component}' found in output"
+
+                comp_output = health_comp_output[component]
+                assert HealthConsts.Component.INSTANCE in comp_output, \
+                    f"Component '{component}' missing 'instance' field"
+                instances = comp_output[HealthConsts.Component.INSTANCE]
+                assert len(instances) > 0, f"Component '{component}' has no instances"
+
+                _validate_instance_naming_and_count(component, instances, devices, validation_config)
+                for instance_id, instance_data in instances.items():
+                    _validate_instance_fields_and_values(component, instance_id, instance_data)
+
+                # Endpoint 2: instance output must match full show's instance section (keeps both in sync, no re-validation)
+                instance_list = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.health.component.show(op_param=f"{component} instance")).get_returned_value()
+                assert instances == instance_list, \
+                    f"Component '{component}' instance endpoint output != full show instance data"
+                one_instance_id = next(iter(instances))  # e.g. ASIC1 for asic, ALL for switch/software/cpu
+                out = OutputParsingTool.parse_json_str_to_dictionary(
+                    system.health.component.show(op_param=f"{component} instance {one_instance_id}")).get_returned_value()
+                ValidationTool.verify_field_exist_in_json_output(
+                    out, [HealthConsts.Component.STATE, HealthConsts.Component.LAST_HEALTHY,
+                          HealthConsts.Component.UNHEALTHY_COUNT]).verify_result()
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_system_health_component_counters(engines, devices):
+    """
+    Validate system health component counters
+        Test flow:
+            1. Get system health component counters information
+            2. Simulate fan error
+            3. Fix fan error
+            4. Simulate PSU error
+            5. Fix PSU error
+            6. Get updated system health component counters information
+            7. Validate counters and timestamps are updated
+    """
+
+    system = System()
+    platform = Platform()
+
+    # Get the actual components from the API response
+    with allure.step("Get available system health components from API"):
+        health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+        component_list = list(health_out.keys())
+        logger.info(f"Available components from API: {component_list}")
+
+    for component_name in component_list:
+        with allure.step(f"Get system health component counters details of {component_name}"):
+            health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).\
+                get_returned_value()
+            # New structure: component -> instance -> instance_id -> fields
+            component_data = health_out[component_name][HealthConsts.Component.INSTANCE]
+
+            # For multi-instance components (leakage-sensor), store all instance data
+            # For single-instance components (fan, psu, cpu, switch), just use the first
+            initial_instance_data = {}
+            for instance_id, instance_info in component_data.items():
+                initial_instance_data[instance_id] = {
+                    'unhealthy_count': int(instance_info[HealthConsts.Component.UNHEALTHY_COUNT]),
+                    'last_unhealthy': instance_info[HealthConsts.Component.LAST_HEALTHY]
+                }
+
+            # Validate all instances are healthy
+            for instance_id, instance_info in component_data.items():
+                ValidationTool.verify_field_value_in_output(instance_info, HealthConsts.Component.STATE,
+                                                            HealthConsts.Component.HEALTHY).verify_result()
+
+        simulated_instance_id = None
+        if component_name == "fan":
+            with allure.step("Simulate and fix Fan error"):
+                HWSimulator.simulate_and_fix_fan_component_error(devices, engines)
+
+        elif component_name == "psu":
+            show_out = OutputParsingTool.parse_json_str_to_dictionary(platform.environment.psu.show()).verify_result()
+            with allure.step("Simulate and fix random PSU temperature error"):
+                HWSimulator.simulate_and_fix_psu_component_error(devices, engines, show_out)
+
+        elif component_name == "leakage-sensor":
+            with allure.step("Simulate leakage on a random sensor and fix it"):
+                simulated_instance_id = simulate_and_fix_leakage_sensor_error(engines, devices)
+                logger.info(f"Simulated error on sensor: {simulated_instance_id}")
+
+        elif component_name == HealthConsts.Component.ASIC:
+            with allure.step("Simulate and fix ASIC temperature error (via STATE_DB)"):
+                simulated_instance_id = simulate_and_fix_asic_component_error(engines, devices)
+                if simulated_instance_id is None:
+                    continue
+                logger.info(f"Simulated error on ASIC instance: {simulated_instance_id}")
+
+        else:
+            # Other components (e.g. cpu, switch, software, transceiver) not simulated in this test
+            continue
+
+        with allure.step(f"Validate updated state of system health component - {component_name}"):
+            retry_call(validate_component_health_data, [system, component_name, HealthConsts.Component.STATE,
+                                                        HealthConsts.Component.HEALTHY], exceptions=AssertionError,
+                       tries=5, delay=5)
+
+        with allure.step(f"Validate that {component_name} counters are updated"):
+            # For leakage-sensor, validate the specific simulated instance
+            if simulated_instance_id:
+                initial_count = initial_instance_data[simulated_instance_id]['unhealthy_count']
+                expected_count = initial_count + 1
+                retry_call(validate_component_health_data_for_instance, [system, component_name, simulated_instance_id,
+                                                                         HealthConsts.Component.UNHEALTHY_COUNT, str(expected_count)],
+                           exceptions=AssertionError, tries=5, delay=5)
+            else:
+                # For single-instance components, use the first instance
+                first_instance_id = list(initial_instance_data.keys())[0]
+                initial_count = initial_instance_data[first_instance_id]['unhealthy_count']
+                expected_count = initial_count + 1
+                retry_call(validate_component_health_data, [system, component_name,
+                                                            HealthConsts.Component.UNHEALTHY_COUNT, str(expected_count)],
+                           exceptions=AssertionError, tries=5, delay=5)
+
+        with allure.step(f"Validate that {component_name} last unhealthy timestamps are updated"):
+            if simulated_instance_id:
+                initial_timestamp = initial_instance_data[simulated_instance_id]['last_unhealthy']
+            else:
+                first_instance_id = list(initial_instance_data.keys())[0]
+                initial_timestamp = initial_instance_data[first_instance_id]['last_unhealthy']
+            retry_call(validate_health_component_last_unhealthy, [system, component_name, initial_timestamp],
+                       exceptions=AssertionError, tries=5, delay=5)
+
+    with allure.step('Clear system health component unhealthy counter'):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
+    with allure.step("Validate system all health components unhealthy data are cleared"):
+        error_msgs = []
+        health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+        for component in health_out:
+            # New structure: component -> instance -> instance_id -> fields
+            instances = health_out[component][HealthConsts.Component.INSTANCE]
+            for instance_id, instance_data in instances.items():
+                with allure.step(f"Validate {component} {instance_id} unhealthy counters are cleared"):
+                    count = int(instance_data[HealthConsts.Component.UNHEALTHY_COUNT])
+                    if count != 0:
+                        error_msgs.append(f"Unhealthy counter for {component} {instance_id} is {count} instead of 0")
+                with allure.step(f"Validate {component} {instance_id} unhealthy timestamps are cleared"):
+                    last_unhealthy = instance_data[HealthConsts.Component.LAST_HEALTHY]
+                    if last_unhealthy != "":
+                        error_msgs.append(f"Last-unhealthy timestamp for {component} {instance_id} is {last_unhealthy} instead of empty")
+        assert len(error_msgs) == 0, f"Health components unhealthy data are not cleared: {error_msgs}"
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_asic_health_unhealthy_triggers_and_recovery(engines):
+    """
+    Single test combining all 5 ASIC health scenarios in one series of events (STATE_DB + thermalctld stopped):
+    1. New unhealthy detection: ASIC1 down -> validate UNHEALTHY and unhealthy-count increased.
+    2. No duplicate trigger: wait another health cycle -> ASIC1 still down, count unchanged.
+    3. Second instance unhealthy: ASIC2 down -> both ASIC1 and ASIC2 UNHEALTHY.
+    4. Partial recovery: bring ASIC1 up -> ASIC1 HEALTHY, ASIC2 still UNHEALTHY.
+    5. Full recovery: bring ASIC2 up -> both HEALTHY.
+    """
+    TestToolkit.update_engines(engines)
+    system = System()
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    if HealthConsts.Component.ASIC not in health_out:
+        pytest.skip("ASIC component not in health output")
+    asic_data = health_out[HealthConsts.Component.ASIC][HealthConsts.Component.INSTANCE]
+    if "ASIC1" not in asic_data or "ASIC2" not in asic_data:
+        pytest.skip("DUT needs ASIC1 and ASIC2 in health output")
+
+    with allure.step("Stop thermalctld for ASIC temperature simulation"):
+        engines.dut.run_cmd("docker exec pmon supervisorctl stop thermalctld")
+    try:
+        initial_asic1_count = int(asic_data["ASIC1"][HealthConsts.Component.UNHEALTHY_COUNT])
+        expected_after_first = initial_asic1_count + 1
+
+        with allure.step("1. New unhealthy detection: set ASIC1 to unhealthy and validate state + count"):
+            _inject_asic_temperature(engines, "ASIC1", _ASIC_TEMP_UNHEALTHY)
+            _wait_health_cycle()
+            _assert_asic_instance(system, "ASIC1", HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY,
+                                  tries=3, delay=_HEALTH_POLL_WAIT_SEC)
+            _assert_asic_instance(system, "ASIC1", HealthConsts.Component.UNHEALTHY_COUNT, str(expected_after_first))
+
+        with allure.step("2. No duplicate trigger: wait another health cycle and verify ASIC1 count unchanged"):
+            _wait_health_cycle()
+            assert _get_asic_instance_count(system, "ASIC1") == expected_after_first, "ASIC1 count should not change (no duplicate trigger)"
+
+        with allure.step("3. Second instance unhealthy: set ASIC2 to unhealthy, validate both UNHEALTHY"):
+            _inject_asic_temperature(engines, "ASIC2", _ASIC_TEMP_UNHEALTHY)
+            _wait_health_cycle()
+            for inst in ("ASIC1", "ASIC2"):
+                _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY)
+
+        with allure.step("4. Partial recovery: bring ASIC1 up, validate ASIC1 HEALTHY and ASIC2 still UNHEALTHY"):
+            _inject_asic_temperature(engines, "ASIC1", _ASIC_TEMP_HEALTHY)
+            _wait_health_cycle()
+            _assert_asic_instance(system, "ASIC1", HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY)
+            _assert_asic_instance(system, "ASIC2", HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY)
+
+        with allure.step("5. Full recovery: bring ASIC2 up, validate both HEALTHY"):
+            _inject_asic_temperature(engines, "ASIC2", _ASIC_TEMP_HEALTHY)
+            _wait_health_cycle()
+            for inst in ("ASIC1", "ASIC2"):
+                _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY)
+    finally:
+        with allure.step("Start thermalctld after ASIC simulation"):
+            engines.dut.run_cmd("docker exec pmon supervisorctl start thermalctld")
+
+    with allure.step("Clear system health component unhealthy counters after ASIC test"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_asic_health_fatal_state_marks_all_unhealthy(engines):
+    """
+    When ASIC_HEALTH fatal_state is set to true in STATE_DB, all ASIC instances are marked unhealthy (new image logic).
+    Steps: set ASIC_HEALTH|STATE fatal_state 'true' -> wait health cycle -> all ASICs UNHEALTHY ->
+           set fatal_state 'false' -> wait -> all ASICs HEALTHY -> clear counters.
+    """
+    TestToolkit.update_engines(engines)
+    system = System()
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    if HealthConsts.Component.ASIC not in health_out:
+        pytest.skip("ASIC component not in health output")
+    asic_instances = health_out[HealthConsts.Component.ASIC][HealthConsts.Component.INSTANCE]
+    if not asic_instances:
+        pytest.skip("No ASIC instances in health output")
+    instance_ids = list(asic_instances.keys())
+
+    try:
+        with allure.step("Set ASIC_HEALTH fatal_state to true (triggers all ASICs unhealthy)"):
+            _set_asic_health_fatal_state(engines, "true")
+        _wait_health_cycle()
+        with allure.step("Validate all ASIC instances are UNHEALTHY"):
+            for inst in instance_ids:
+                _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY,
+                                      tries=3, delay=_HEALTH_POLL_WAIT_SEC)
+
+        with allure.step("Set ASIC_HEALTH fatal_state to false (recovery)"):
+            _set_asic_health_fatal_state(engines, "false")
+        _wait_health_cycle()
+        with allure.step("Validate all ASIC instances are HEALTHY"):
+            for inst in instance_ids:
+                _assert_asic_instance(system, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY,
+                                      tries=3, delay=_HEALTH_POLL_WAIT_SEC)
+        with allure.step("Wait for system is ready (recovery after fatal state)"):
+            DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
+        with allure.step("Validate nv show system health - status OK (all components healthy)"):
+            system.validate_health_status(HealthConsts.OK, dut_engine=engines.dut)
+    finally:
+        _set_asic_health_fatal_state(engines, "false")
+
+    with allure.step("Clear system health component unhealthy counters after ASIC fatal test"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
+
+@pytest.mark.system
+@pytest.mark.health
+def test_software_component_unhealthy_count_lldp_stop(engines):
+    """
+    Validate software component unhealthy state and count when LLDP is stopped:
+    stop lldp -> sleep 5s -> software UNHEALTHY and count increment by 1 ->
+    start lldp -> state HEALTHY -> clear counters -> count 0.
+    """
+    TestToolkit.update_engines(engines)
+    system = System()
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    if HealthConsts.Component.Software not in health_out:
+        pytest.skip("Software component not in health output")
+    software_instances = health_out[HealthConsts.Component.Software][HealthConsts.Component.INSTANCE]
+    if "ALL" not in software_instances:
+        pytest.skip("Software component has no ALL instance")
+    initial_count = int(software_instances["ALL"][HealthConsts.Component.UNHEALTHY_COUNT])
+    sw, inst = HealthConsts.Component.Software, "ALL"
+
+    with allure.step("Stop LLDP container"):
+        engines.dut.run_cmd("docker stop lldp")
+    time.sleep(5)
+    with allure.step("Validate software UNHEALTHY and unhealthy-count incremented by 1"):
+        _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY)
+        _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, str(initial_count + 1))
+
+    with allure.step("Start LLDP container"):
+        engines.dut.run_cmd("docker start lldp")
+    with allure.step("Validate software state HEALTHY"):
+        _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY, tries=10)
+
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+    with allure.step("Validate software unhealthy count is 0"):
+        _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, "0", tries=3, delay=2)
+
+
+@pytest.mark.system
+@pytest.mark.health
 def test_system_health_files(engines):
     """
     Will validate the health files requirements:
@@ -297,6 +774,10 @@ def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service
             system.wait_until_health_status_change_to(OK)
             verify_health_status_and_led(system, OK)
 
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
 
 @pytest.mark.system
 @pytest.mark.health
@@ -356,6 +837,10 @@ def test_simulate_health_problem_with_hw_simulator(devices, engines, set_unset_p
                 HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_symlink)
             validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
 
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
 
 @pytest.mark.system
 @pytest.mark.health
@@ -404,6 +889,10 @@ def test_simulate_fan_speed_fault(devices, engines, loganalyzer, reset_health_se
                 time.sleep(1)
                 HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, symlink_target)
                 retry_validate_health_fix_or_issue(engines, system, health_issue_dict, date_time, True)
+
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
 
 
 @pytest.mark.disable_loganalyzer
@@ -480,6 +969,10 @@ def test_simulate_multi_fan_speed_fault(engines, devices, loganalyzer, reset_hea
                 for fan_id in fan_ids:
                     if fan_id in fan_info:
                         HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, fan_info[fan_id][1])
+
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
 
 
 @pytest.mark.disable_loganalyzer
@@ -590,6 +1083,10 @@ def test_simulate_psu_multi_faults(engines, devices, loganalyzer, reset_health_s
             with allure.step("Fix PSU absent fault for chosen PSU:{}".format(psu_id)):
                 HWSimulator.simulate_fix_psu_fault(engines.dut, thermal_directory, psu_id, psu_status_symlink)
 
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
+
 
 @pytest.mark.system
 @pytest.mark.health
@@ -622,6 +1119,10 @@ def test_simulate_health_problem_with_user_config_file(devices, engines, reset_h
 
     time.sleep(1)
     validate_health_fix_or_issue(engines, system, SIMULATED_ISSUES, date_time, True)
+
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
 
 
 @pytest.mark.system
@@ -697,6 +1198,10 @@ def test_simulate_health_problem_with_docker_stop(devices, engines, reset_health
             clear_docker_not_running_log_str = "Cleared: {}".format(docker_not_running_log_str)
             retry_call(validate_system_event, [system, latest_event_id, [clear_docker_not_running_log_str]],
                        exceptions=AssertionError, tries=12, delay=5)
+
+    with allure.step("Clear system health component unhealthy counters"):
+        system.health.component.action(ActionConsts.CLEAR)
+        time.sleep(5)
 
 
 def validate_system_event(system, latest_event_id, events_to_search):
@@ -1110,3 +1615,154 @@ def simulate_health_issue_using_config_file(engine):
                 config_file.json_overwrite(config_dict)
 
             yield
+
+
+def simulate_and_fix_asic_component_error(engines, devices):
+    """
+    Simulate and fix an ASIC temperature error via STATE_DB (same approach as QA unit test).
+    Stops thermalctld, injects high temperature for ASIC1, waits for health cycle, then restores.
+
+    Returns:
+        str: The instance ID that was simulated (e.g., "ASIC1"), or None if DUT has no ASICs.
+    """
+    if getattr(devices.dut, 'asic_amount', 0) < 1:
+        logger.info("DUT has no ASICs, skip ASIC component error simulation")
+        return None
+    system = System()
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    if HealthConsts.Component.ASIC not in health_out:
+        logger.info("ASIC component not in health output, skip")
+        return None
+    asic_instances = health_out[HealthConsts.Component.ASIC][HealthConsts.Component.INSTANCE]
+    if "ASIC1" not in asic_instances:
+        logger.info("ASIC1 instance not present, skip")
+        return None
+
+    table_key = f"{_STATE_DB_TEMPERATURE_PREFIX}ASIC1"
+    with allure.step("Stop thermalctld for ASIC temperature simulation"):
+        engines.dut.run_cmd("docker exec pmon supervisorctl stop thermalctld")
+    try:
+        with allure.step("Inject ASIC1 high temperature via STATE_DB"):
+            DatabaseTool.sonic_db_cli_hset(
+                engines.dut, "", DatabaseConst.STATE_DB_NAME, table_key, "temperature", _ASIC_TEMP_UNHEALTHY)
+        time.sleep(_HEALTH_POLL_WAIT_SEC)
+        with allure.step("Restore ASIC1 temperature via STATE_DB"):
+            DatabaseTool.sonic_db_cli_hset(
+                engines.dut, "", DatabaseConst.STATE_DB_NAME, table_key, "temperature", _ASIC_TEMP_HEALTHY)
+        time.sleep(_HEALTH_POLL_WAIT_SEC)
+    finally:
+        with allure.step("Start thermalctld after ASIC simulation"):
+            engines.dut.run_cmd("docker exec pmon supervisorctl start thermalctld")
+    return "ASIC1"
+
+
+def simulate_and_fix_leakage_sensor_error(engines, devices):
+    """
+    Simulate and fix a leakage sensor error.
+
+    Returns:
+        str: The sensor instance ID that was simulated (e.g., "LEAKAGE-1", "LEAKAGE-2")
+    """
+    selected_sensor = random.choice(devices.dut.list_of_leakages)
+    leakage_file = selected_sensor.replace("-", "").lower()
+    engines.dut.run_cmd("sudo sh -c 'unlink {0}{1} && echo {2} > {0}{1}'".format(
+        PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file, PlatformConsts.LEAK_STATUS_LEAK))
+    time.sleep(10)
+    ls_output = engines.dut.run_cmd("ls -la {}".format(PlatformConsts.LEAKAGE_FILES_FOLDER))
+    leakage_folder_name = re.search(r'hwmon/([^/]+)/leakage', ls_output).group(1)
+    engines.dut.run_cmd("sudo sh -c 'rm {0}{1}'".format(PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
+    engines.dut.run_cmd("sudo sh -c 'ln -s {0}{1}/{2} {3}{2}'".format(
+        PlatformConsts.LEAKAGE_FILES_SYSFS_FOLDER, leakage_folder_name, leakage_file,
+        PlatformConsts.LEAKAGE_FILES_FOLDER, leakage_file))
+    return selected_sensor
+
+
+def validate_component_health_data(system, component_name, field_name, field_value):
+    """
+    Validate health component field value using the new nested structure.
+
+    New API structure: health[component][instance][instance_id][field]
+    Example: health["fan"]["instance"]["ALL"]["unhealthy-count"]
+
+    Args:
+        system: System object
+        component_name: Component name (e.g., "fan", "cpu", "asic")
+        field_name: Field to validate (e.g., "state", "unhealthy-count")
+        field_value: Expected value
+    """
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    # New structure: component -> instance -> instance_id -> fields
+    component_data = health_out[component_name][HealthConsts.Component.INSTANCE]
+
+    # For multi-instance components (leakage-sensor, asic), check all instances and find any matching value
+    # For single-instance components (fan, psu, cpu), there's only one to check
+    found_matching_instance = False
+    for instance_id, instance_data in component_data.items():
+        if instance_data.get(field_name) == field_value:
+            found_matching_instance = True
+            break
+
+    if not found_matching_instance:
+        # If no instance matched, fail with a clear message
+        actual_values = {instance_id: instance_data.get(field_name) for instance_id, instance_data in component_data.items()}
+        raise AssertionError(f"No instance of {component_name} has {field_name}='{field_value}'. Actual values: {actual_values}")
+
+
+def validate_component_health_data_for_instance(system, component_name, instance_id, field_name, field_value):
+    """
+    Validate health component field value for a specific instance.
+
+    Args:
+        system: System object
+        component_name: Component name (e.g., "leakage-sensor")
+        instance_id: Specific instance ID (e.g., "LEAKAGE-1", "LEAKAGE-2")
+        field_name: Field to validate (e.g., "state", "unhealthy-count")
+        field_value: Expected value
+    """
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    component_data = health_out[component_name][HealthConsts.Component.INSTANCE]
+
+    if instance_id not in component_data:
+        raise AssertionError(f"Instance {instance_id} not found in {component_name}")
+
+    instance_data = component_data[instance_id]
+    actual_value = instance_data.get(field_name)
+
+    if actual_value != field_value:
+        raise AssertionError(f"{component_name} instance {instance_id} has {field_name}='{actual_value}', expected '{field_value}'")
+
+
+def validate_health_component_last_unhealthy(system, component_name, last_unhealthy):
+    """
+    Validate that health component last-unhealthy timestamp is updated.
+
+    New API structure: health[component][instance][instance_id]["last-unhealthy"]
+    Example: health["fan"]["instance"]["ALL"]["last-unhealthy"]
+
+    Args:
+        system: System object
+        component_name: Component name (e.g., "fan", "cpu")
+        last_unhealthy: Previous last-unhealthy timestamp to compare
+
+    Returns:
+        Updated last-unhealthy timestamp
+    """
+    health_out = OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
+    # New structure: component -> instance -> instance_id -> fields
+    component_data = health_out[component_name][HealthConsts.Component.INSTANCE]
+
+    # For multi-instance components (leakage-sensor, asic), find the instance with a non-empty last-unhealthy
+    last_unhealthy_updated = ""
+    for instance_id, instance_data in component_data.items():
+        instance_last_unhealthy = instance_data.get(HealthConsts.Component.LAST_HEALTHY, "")
+        # If we find an instance with a timestamp, use it
+        if instance_last_unhealthy != "":
+            last_unhealthy_updated = instance_last_unhealthy
+            break
+
+    if last_unhealthy != "":
+        assert (last_unhealthy_updated != "" and last_unhealthy_updated >= last_unhealthy), \
+            f"Last unhealthy timestamp of {component_name} is not updated"
+    else:
+        assert last_unhealthy_updated != "", f"Last unhealthy timestamp of {component_name} is not updated"
+    return last_unhealthy_updated

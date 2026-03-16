@@ -1,23 +1,30 @@
 """
 Helper functions and fixtures for Debug Token tests.
 """
+import glob
 import logging
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Optional, Dict
-from enum import Enum
 
 import pytest
 
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.nvos_constants.constants_nvos import PlatformConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import PlatformConsts
-
+from ngts.tests_nvos.fae.debug_token_qtm4.consts import (
+    DebugTokenConsts as DebugTokenConstsBase,
+    DebugTokenErrors,
+    DebugTokenTestValues,
+    DebugFwFilenames,
+    DebugFwPatterns,
+)
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger(__name__)
@@ -522,60 +529,100 @@ class TokenVerifier:
 
 
 # ====================
-# Constants
+# Constants (extends base constants from consts.py)
 # ====================
 
-class DebugTokenConsts:
-    """Constants for debug token tests."""
+class DebugTokenConsts(DebugTokenConstsBase):
+    """
+    Constants for debug token tests.
 
-    # Token state enum (like NtpConsts.State)
-    class State(Enum):
-        """Token state enum."""
-        ENABLED = "enabled"
-        DISABLED = "disabled"
+    Inherits from DebugTokenConstsBase (consts.py) and adds helper methods.
+    Also exposes error messages and test values from consts.py.
+    """
 
-    # File extensions
-    XML_EXTENSION = '.xml'
-    BIN_EXTENSION = '.bin'
+    # Re-export error messages for backward compatibility
+    INVALID_FILENAME_ERROR = DebugTokenErrors.INVALID_FILENAME_ERROR
+    INVALID_EXTENSION_ERROR = DebugTokenErrors.INVALID_EXTENSION_ERROR
+    FILE_NOT_FOUND_ERROR = DebugTokenErrors.FILE_NOT_FOUND_ERROR
+    FILE_ALREADY_EXISTS_ERROR = DebugTokenErrors.FILE_ALREADY_EXISTS_ERROR
+    CONNECTION_FAILED_ERROR = DebugTokenErrors.CONNECTION_FAILED_ERROR
+    NO_ACTIVE_TOKEN_ERROR = DebugTokenErrors.NO_ACTIVE_TOKEN_ERROR
 
-    # Component name for BmcTool lookup
-    DEBUG_ASIC_COMPONENT = "debug_asic"
-
-    # Fallback debug firmware values (used if JSON lookup fails)
-    DEBUG_FW_FILENAME = "debug_fw_41_2018_0220.bin"
-    DEBUG_MFA_FILENAME = "debug_fw_41_2018_0220.mfa"
-    DEBUG_FW_SOURCE_PATH = "/auto/sw_system_project/NVOS_INFRA/verification_files/debug_token/"
-
-    # Token filenames for tests
-    CRCS_TOKEN_INFO = "crcs_token_info.xml"
-    CRDT_TOKEN_INFO = "crdt_token_info.xml"
-
-    # Error messages
-    INVALID_FILENAME_ERROR = "Invalid filename"
-    INVALID_EXTENSION_ERROR = "not in an xml format"
-    FILE_NOT_FOUND_ERROR = "File not found"
-    FILE_ALREADY_EXISTS_ERROR = "already exists"
-    CONNECTION_FAILED_ERROR = "Connection failed"
-    NO_ACTIVE_TOKEN_ERROR = "no token installed"
-
-    # Test values for error scenarios
-    INVALID_FILENAME = 'bad<name>.abc'
-    NONEXISTENT_FILE = 'nonexistent'
-    NONEXISTENT_TOKEN = 'nonexistent_token.bin'
-    INVALID_URL = 'scp://nonexistent_host_12345/path/'
-    INVALID_TOKEN_URL = 'scp://nonexistent_host_12345/token.bin'
+    # Re-export test values for backward compatibility
+    INVALID_FILENAME = DebugTokenTestValues.INVALID_FILENAME
+    NONEXISTENT_FILE = DebugTokenTestValues.NONEXISTENT_FILE
+    NONEXISTENT_TOKEN = DebugTokenTestValues.NONEXISTENT_TOKEN
+    INVALID_URL = DebugTokenTestValues.INVALID_URL
+    INVALID_TOKEN_URL = DebugTokenTestValues.INVALID_TOKEN_URL
 
     @classmethod
     def get_debug_asic_fw_info(cls):
         """
-        Get debug ASIC firmware info from platform components JSON.
+        Get debug ASIC firmware info.
+
+        Priority order:
+        1. Search DEBUG_FW_PATH for generated files (extract version from filename)
+        2. Fallback: Load from JSON (via BmcTool)
 
         Returns:
             Dict with keys: bin_path, bin_filename, mfa_path, mfa_filename, version_name
-            Falls back to default constants if JSON lookup fails.
+
+        Example:
+            >>> fw_info = DebugTokenConsts.get_debug_asic_fw_info()
+            >>> print(fw_info['bin_filename'])
+            'debug_fw_41_2018_0220.bin'
+        """
+        # Priority 1: Search for generated files
+        bin_pattern = f"{cls.DEBUG_FW_PATH}{DebugFwFilenames.DEBUG_FW_PREFIX}*.bin"
+
+        # Get bin files sorted by modification time (newest first)
+        bin_files = sorted(glob.glob(bin_pattern), key=os.path.getmtime, reverse=True)
+        bin_files = [f for f in bin_files if os.path.getsize(f) > 0]
+
+        # Find most recent bin file with matching mfa
+        for bin_path in bin_files:
+            bin_filename = os.path.basename(bin_path)
+
+            # Extract version from filename: debug_fw_41_2018_0220.bin -> 41_2018_0220
+            match = DebugFwPatterns.VERSION_WITH_UNDERSCORES.search(bin_filename)
+            if not match:
+                continue
+
+            version_underscore = match.group(1)  # e.g., "41_2018_0220"
+            version_name = version_underscore.replace('_', '.')  # e.g., "41.2018.0220"
+
+            # Find matching mfa file with same version
+            mfa_filename = f"{DebugFwFilenames.DEBUG_FW_PREFIX}{version_underscore}.mfa"
+            mfa_path = f"{cls.DEBUG_FW_PATH}{mfa_filename}"
+
+            if os.path.exists(mfa_path) and os.path.getsize(mfa_path) > 0:
+                logger.info(f"Found debug firmware pair: {bin_filename}, {mfa_filename} (version: {version_name})")
+                return {
+                    'bin_path': bin_path,
+                    'bin_filename': bin_filename,
+                    'mfa_path': mfa_path,
+                    'mfa_filename': mfa_filename,
+                    'version_name': version_name
+                }
+
+        # Fallback: Load from JSON
+        logger.info("No matching firmware pair found, falling back to JSON")
+        return cls._get_fw_info_from_json()
+
+    @classmethod
+    def _get_fw_info_from_json(cls):
+        """
+        Get debug firmware info from JSON configuration file.
+
+        Returns:
+            Dict with firmware info from JSON
+
+        Raises:
+            FileNotFoundError: If JSON lookup fails
         """
         try:
             component_info = BmcTool.get_fw_component_version_dict(cls.DEBUG_ASIC_COMPONENT, "latest")
+            logger.info(f"Found debug ASIC info from JSON: {component_info}")
             return {
                 'bin_path': component_info['bin_path'],
                 'bin_filename': component_info['bin_filename'],
@@ -584,11 +631,6 @@ class DebugTokenConsts:
                 'version_name': component_info['version_name']
             }
         except Exception as e:
-            logger.warning(f"Failed to get debug ASIC info from JSON, using fallback values: {e}")
-            return {
-                'bin_path': f"{cls.DEBUG_FW_SOURCE_PATH}{cls.DEBUG_FW_FILENAME}",
-                'bin_filename': cls.DEBUG_FW_FILENAME,
-                'mfa_path': f"{cls.DEBUG_FW_SOURCE_PATH}{cls.DEBUG_MFA_FILENAME}",
-                'mfa_filename': cls.DEBUG_MFA_FILENAME,
-                'version_name': None
-            }
+            raise FileNotFoundError(
+                f"No debug firmware found. Check {cls.DEBUG_FW_PATH} or JSON config. Error: {e}"
+            )

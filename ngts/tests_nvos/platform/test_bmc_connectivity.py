@@ -5,16 +5,18 @@ from infra.tools.validations.traffic_validations.ping.send import ping_till_aliv
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.acl.test_acl_basic import ping_from_switch
+from ngts.tests_nvos.platform.constants import SETUPS_WITHOUT_IPV6_BMC
 
 logger = logging.getLogger()
 
 
-def test_bmc_ping(engines, devices, topology_obj):
+def test_bmc_ping(engines, devices, topology_obj, setup_name):
     """
      verify the network connectivity between a management system and bmc by sending a ping request to Ipv4 and Ipv6 addresses
     :param engines:
     :param devices:
     :param topology_obj:
+    :param setup_name:
     :return:
     """
     with allure.step("get bmc addresses"):
@@ -22,6 +24,9 @@ def test_bmc_ping(engines, devices, topology_obj):
 
     with allure.step("Try to ping via all addresses"):
         for address_type, address in ip_addresses.items():
+            logger.info(f"address_type: {address_type}, address: {address}, setup_name: {setup_name}")
+            if address_type == "IPv6" and setup_name in SETUPS_WITHOUT_IPV6_BMC:
+                continue
             with allure.independent_step(f"try to ping using {address_type}: {address}"):
                 ping_from_switch(engines.dut, address, "eth0").verify_result()
 

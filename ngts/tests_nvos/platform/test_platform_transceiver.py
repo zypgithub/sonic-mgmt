@@ -30,8 +30,7 @@ MODULE_STATUS_DICT = {"Inserted": {"N/A", "Power budget exceeded", "Long range f
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_status(engines, test_api):
+def test_transceiver_status(engines, random_api):
     """
     The test will check default field and values for transceiver module_status and error.
 
@@ -39,7 +38,6 @@ def test_transceiver_status(engines, test_api):
     1. Check module and error_status for plugged module
     2. Check module and error_status for unplugged module
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create platform object"):
         platform = Platform()
@@ -60,8 +58,7 @@ def test_transceiver_status(engines, test_api):
 @pytest.mark.check_disk_usage
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_transceiver_status_unplug(engines, devices, test_api):
+def test_transceiver_status_unplug(engines, devices, random_api):
     """
     The test will check if the module_status changes to Removed after simulating unplug event.
 
@@ -71,7 +68,6 @@ def test_transceiver_status_unplug(engines, devices, test_api):
     3. Check module and error_status for unplugged module
     4. Plug module back
     """
-    TestToolkit.tested_api = test_api
 
     platform = Platform()
     desired_state = NvosConsts.LINK_STATE_UP
@@ -112,7 +108,6 @@ def test_transceiver_status_with_reboot(engines, devices, random_api):
     4. Reboot the system
     5. Verify module is plugged
     """
-    TestToolkit.tested_api = random_api
 
     with allure.step("Create System and platform object"):
         platform = Platform()
@@ -146,7 +141,7 @@ def test_transceiver_status_with_reboot(engines, devices, random_api):
 @pytest.mark.platform
 @pytest.mark.transceiver
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_transceivers_and_ports(engines, devices, nv_command, test_api):
+def test_transceivers_and_ports(engines, devices, nv_command, random_api):
     """
     The test verifies all expected modules (by device) exists in transceivers detail output.
 
@@ -154,7 +149,6 @@ def test_transceivers_and_ports(engines, devices, nv_command, test_api):
     1. Verify all expected modules exists in transceivers detail output
     2. Verify connected transceivers count matches system status
     """
-    TestToolkit.tested_api = test_api
 
     transceivers_list = devices.dut.transceiver_list
 

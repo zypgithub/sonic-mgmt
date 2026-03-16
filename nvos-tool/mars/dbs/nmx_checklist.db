@@ -44,6 +44,8 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nmx_checklist.cases</cases>
 	</test>
-
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nvos_multinode_techsupport.cases</cases>
+	</test>
 
 </DBDEF>

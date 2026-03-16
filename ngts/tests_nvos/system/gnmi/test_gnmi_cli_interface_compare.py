@@ -30,7 +30,6 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
     3. Run 'nv show interface <port>', and get cli output.
     4. Compare CLI and GNMI outputs.
     """
-    TestToolkit.tested_api = random_api
     tested_ports = []
 
     with allure.step("Select link-up port"):
@@ -95,6 +94,8 @@ def test_gnmi_cli_interface_compare(engines, devices, random_api):
                     if is_bug_active(4566854):
                         adjusted_cli_output.pop(PhyHealthConsts.TIME_SINCE_LAST_CLEAR_MIN, None)
                     for attribute, value in adjusted_cli_output.items():
+                        if is_bug_active(4835638) and value is None:
+                            continue
                         with allure.independent_step(f"Testing {attribute}"):
                             assert attribute in gnmi_output_as_dict.keys(), f"Can't find {attribute} in GNMI output"
                             gnmi_value = gnmi_output_as_dict[attribute]
@@ -129,7 +130,7 @@ def adjust_cli_attributes_and_values(attributes_mapping_dict, cli_output):
                 if inner_attribute in attributes_mapping_dict.keys():
                     res[attributes_mapping_dict[inner_attribute]] = adjust_cli_values(inner_attribute, inner_value)
                 elif attribute in [IbInterfaceConsts.PHY_DIAG, IbInterfaceConsts.PHY_DETAIL]:
-                    res[inner_attribute] = inner_value if inner_value is not None else "N/A"
+                    res[inner_attribute] = inner_value if inner_value is not "None" else "N/A"
         else:
             if attribute in attributes_mapping_dict.keys():
                 res[attributes_mapping_dict[attribute]] = adjust_cli_values(attribute, value)
@@ -155,7 +156,12 @@ def adjust_logical_state(value):
 
 
 def adjust_physical_state(value):
-    return 'LINK_UP' if value == IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP else value.upper()
+    if value == IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP:
+        return 'LINK_UP'
+    elif value == IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_CONFIGURATION_TRAINING:
+        return 'PORT_CONFIGURATION_TRAINING'
+    else:
+        return value.upper()
 
 
 def adjust_supported_lanes(value):
@@ -185,11 +191,11 @@ def adjust_cli_values(attribute, value):
 
 def handle_numeric_values(gnmi_value, cli_value):
     out = False
-    if re.match(r'^\d*\.?\d+$', gnmi_value) and re.match(r'^\d*\.?\d+$', cli_value):
+    if re.match(r'^\d*\.?\d+([eE][-+]?\d+)?$', gnmi_value) and re.match(r'^\d*\.?\d+([eE][-+]?\d+)?$', cli_value):
         gnmi_number = float(gnmi_value)
-        assert gnmi_number >= 0, f"The value in gNMI in negative: {gnmi_number}"
+        assert gnmi_number >= 0, f"The value in gNMI is negative: {gnmi_number}"
         cli_number = float(cli_value)
-        assert cli_number >= 0, f"The value in CLI in negative: {cli_number}"
+        assert cli_number >= 0, f"The value in CLI is negative: {cli_number}"
 
         out = (abs(gnmi_number - cli_number) <= 0.1 * cli_number)
     return out

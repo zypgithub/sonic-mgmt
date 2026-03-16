@@ -21,6 +21,7 @@ from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngi
 from retry.api import retry_call
 
 
+from retry import retry
 logger = logging.getLogger()
 
 
@@ -70,8 +71,7 @@ def verify_system_messages_with_retry(system, expected_pre_login, expected_post_
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_message(engines, devices, test_api):
+def test_show_system_message(engines, devices, random_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -82,7 +82,6 @@ def test_show_system_message(engines, devices, test_api):
             5. Run 'nv show system message'
             6. Verify that all messages have default values
     """
-    TestToolkit.tested_api = test_api
     system = System()
     clear_system_messages(system, engines)
 
@@ -131,8 +130,7 @@ def test_show_system_message(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_system_message_pre_login(engines, devices, test_api):
+def test_set_system_message_pre_login(engines, devices, random_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -147,7 +145,6 @@ def test_set_system_message_pre_login(engines, devices, test_api):
             9. Verify pre-login changed to default upon connecting via SSH
             10. Verify pre-login changed to default upon connecting via Serial
     """
-    TestToolkit.tested_api = test_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     system = System()
 
@@ -201,8 +198,7 @@ def test_set_system_message_pre_login(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_system_message_post_login(engines, devices, test_api):
+def test_set_system_message_post_login(engines, devices, random_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
         Test flow:
@@ -217,7 +213,6 @@ def test_set_system_message_post_login(engines, devices, test_api):
             9. Verify post-login changed to default upon connecting via SSH
             10. Verify pre-login changed to default upon connecting via Serial
     """
-    TestToolkit.tested_api = test_api
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     system = System()
 
@@ -261,8 +256,7 @@ def test_set_system_message_post_login(engines, devices, test_api):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_system_message_post_logout(engines, devices, test_api):
+def test_set_system_message_post_logout(engines, devices, random_api):
     """
     Run show/set/unset system message command and verify the required post-login message
         Test flow:
@@ -277,7 +271,6 @@ def test_set_system_message_post_logout(engines, devices, test_api):
             9. Verify post-login changed to default upon connecting via SSH
             10. Verify post-login changed to default upon connecting via Serial
     """
-    TestToolkit.tested_api = test_api
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
     system = System()
 
@@ -319,8 +312,7 @@ def test_set_system_message_post_logout(engines, devices, test_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_unset_system_message(engines, devices, test_api):
+def test_unset_system_message(engines, devices, random_api):
     """
     Run factory reset system message command and verify the system messages are changed to default
         Test flow:
@@ -331,7 +323,6 @@ def test_unset_system_message(engines, devices, test_api):
             5. Unset system message
             6. Run 'nv show system message' and verify systems messages are set to defaults
     """
-    TestToolkit.tested_api = test_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"
@@ -382,7 +373,6 @@ def test_system_reload_for_system_message(engines, devices, random_api):
             5. Run system reload
             6. Run 'nv show system message' and verify systems messages are set to defaults
     """
-    TestToolkit.tested_api = random_api
     new_pre_login_msg = "Testing PRE LOGIN MESSAGE"
     new_post_login_msg = "Testing POST LOGIN MESSAGE"
     new_post_logout_msg = "Testing POST LOGOUT MESSAGE"

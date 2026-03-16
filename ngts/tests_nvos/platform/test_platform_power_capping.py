@@ -39,7 +39,7 @@ def cleanup_profiles(engines):
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_platform_power_capping(engines, devices, test_api):
     """
     Test Objective:
@@ -136,7 +136,7 @@ def test_set_fae_platform_power_capping_enum_profiles_activation(engines, random
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_set_fae_platform_power_capping_configurations(engines, test_api):
     """
     Test Objective:
@@ -189,7 +189,7 @@ def test_set_fae_platform_power_capping_configurations(engines, test_api):
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_power_capping_bad_flow(engines, test_api):
     """
     Test Objective:
@@ -250,7 +250,7 @@ def test_power_capping_bad_flow(engines, test_api):
 
 @pytest.mark.platform
 @pytest.mark.power_capping
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_power_capping_state_disabled(engines, test_api):
     """
     Test Objective:

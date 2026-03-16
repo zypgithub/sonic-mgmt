@@ -41,8 +41,7 @@ INVALID_CONFIG = "Config invalid"
 @pytest.mark.syslog
 @pytest.mark.simx
 @pytest.mark.air
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, test_api):
+def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, random_api):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -54,15 +53,13 @@ def test_rsyslog_positive_minimal_flow_by_hostname(engines, is_air, test_api):
     4. Print msg that the server should not catch, validate it does not get the msg
     5. Cleanup
     """
-    TestToolkit.tested_api = test_api
     remote_server_engine, remote_server_hostname = _get_server_info(is_air, engines)
     positive_minimal_flow(remote_server_engine, remote_server_hostname)
 
 
 @pytest.mark.system
 @pytest.mark.syslog
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_ipv4(engines, test_api):
+def test_rsyslog_positive_minimal_flow_by_ipv4(engines, random_api):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -74,15 +71,13 @@ def test_rsyslog_positive_minimal_flow_by_ipv4(engines, test_api):
     4. Print msg that the server should not catch, validate it does not get the msg
     5. Cleanup
     """
-    TestToolkit.tested_api = test_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     positive_minimal_flow(remote_server_engine, remote_server_engine.ip)
 
 
 @pytest.mark.system
 @pytest.mark.syslog
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api, sonic_mgmt_ipv6_addr):
+def test_rsyslog_positive_minimal_flow_by_ipv6(engines, random_api, sonic_mgmt_ipv6_addr):
     """
     Will validate the minimal positive flow:
         set server and send UDP msg , verify the server get the msg and show commands
@@ -97,7 +92,6 @@ def test_rsyslog_positive_minimal_flow_by_ipv6(engines, test_api, sonic_mgmt_ipv
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
         pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
-    TestToolkit.tested_api = test_api
     positive_minimal_flow(engines[NvosConst.SONIC_MGMT], sonic_mgmt_ipv6_addr)
 
 
@@ -200,7 +194,6 @@ def test_rsyslog_configurations(random_api):
     6. unset server
     7. validate show commands
     """
-    TestToolkit.tested_api = random_api
     system = System()
     server_a = 'server-a'
     server_b = 'server-b'
@@ -297,7 +290,6 @@ def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api
     * Unset server severity
     * Cleanup
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine, _ = _get_server_info(is_air, engines)
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -332,8 +324,7 @@ def test_rsyslog_server_severity_levels(engines, is_air, loganalyzer, random_api
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_server_and_global_severity_levels(test_api):
+def test_rsyslog_server_and_global_severity_levels(random_api):
     """
     Will validate all the severity options:  debug, info, notice, warning, error, critical, alert, emerg, none.
     Will configure the severity level, validate it in the show command and validate that the server catch the relevant
@@ -349,7 +340,6 @@ def test_rsyslog_server_and_global_severity_levels(test_api):
     * Unset server trap
     * Cleanup
     """
-    TestToolkit.tested_api = test_api
     system = System()
     server_a_name = 'server_a'
 
@@ -412,8 +402,7 @@ def test_rsyslog_server_and_global_severity_levels(test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_port(engines, test_api):
+def test_rsyslog_port(engines, random_api):
     """
     Will check the syslog with non default port
     we will check it with 2 ports number, one in the system ports range (0-1023) and the other out of this range.
@@ -427,7 +416,6 @@ def test_rsyslog_port(engines, test_api):
     7. Change back rsyslog port to default port on remote server
     8. send msg , validate remote server get the msg
     """
-    TestToolkit.tested_api = test_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -492,7 +480,6 @@ def test_rsyslog_protocol(engines, random_api):
         12. verify all buffered messages are delivered to remote server
         13. send a msg and validate server received it
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -616,7 +603,6 @@ def test_rsyslog_filter(engines, random_api):
     5. unset filter
     6. validate with show commands and send messages
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -758,8 +744,7 @@ def test_rsyslog_filter(engines, random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_format(engines, test_api):
+def test_rsyslog_format(engines, random_api):
     """
     Will validate all the format options:  standard, welf.
     Will configure the syslog format, validate it in the show command and in the syslog file.
@@ -774,7 +759,6 @@ def test_rsyslog_format(engines, test_api):
     8. unset welf firewall-nme
     9.  validate with show command and on the remote syslog server
     """
-    TestToolkit.tested_api = test_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -819,12 +803,10 @@ def test_rsyslog_format(engines, test_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_rsyslog_bad_params(test_api):
+def test_rsyslog_bad_params(random_api):
     """
     Will check all the commands that get params, with bad params- empty or random
     """
-    TestToolkit.tested_api = test_api
     system = System()
     rand_str = RandomizationTool.get_random_string(10)
     server_name = RandomizationTool.get_random_string(5)
@@ -906,7 +888,6 @@ def test_syslog_selector_priorities(random_api):
     6. Verify selector ID retrieval by priority
     7. Clean up configuration
     """
-    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -972,7 +953,6 @@ def test_syslog_selector_attachment_validation_negative(random_api):
     6. Attempt to unset attached selector
     7. Clean up configurations
     """
-    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1039,7 +1019,6 @@ def test_syslog_selector_priority_with_all_options(random_api):
     - Syslog service is enabled
     - Test environment is properly configured
     """
-    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1230,7 +1209,6 @@ def test_syslog_multiple_filters_same_selector(random_api):
     3. Test message filtering with different patterns
     4. Clean up configurations
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -1311,7 +1289,6 @@ def test_syslog_multiple_selectors_same_server(random_api):
     - Syslog service is enabled
     - Test environment is properly configured
     """
-    TestToolkit.tested_api = random_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1552,8 +1529,7 @@ def test_syslog_rate_limit_burst(random_api):
 @pytest.mark.system
 @pytest.mark.syslog
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_syslog_welf_format_without_firewall_name(test_api):
+def test_syslog_welf_format_without_firewall_name(random_api):
     """
     Test Objective:
     Verify that WELF format configuration requires a firewall name and proper error handling.
@@ -1565,7 +1541,6 @@ def test_syslog_welf_format_without_firewall_name(test_api):
     4. Unset with commands
     5. Clean up configuration
     """
-    TestToolkit.tested_api = test_api
     system = System()
     remote_server_engine = TestToolkit.engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
@@ -1909,7 +1884,6 @@ def test_syslog_logging_during_system_reboot(engines, random_api):
     3. Verify DUT reboot logs are present in remote syslog
     4. Clean up
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()
@@ -1943,7 +1917,7 @@ def test_syslog_logging_during_system_reboot(engines, random_api):
 
         with allure.step("Verify reboot logs are forwarded to remote syslog"):
             # Get reboot-related logs from DUT
-            dut_logs = TestToolkit.engines.dut.run_cmd('grep -i "reboot\\|restart\\|boot" /var/log/syslog | tail -5')
+            dut_logs = TestToolkit.engines.dut.run_cmd('grep -ia "reboot\\|restart\\|boot" /var/log/syslog | tail -5')
 
             if not dut_logs.strip():
                 logger.warning("No reboot logs found on DUT")
@@ -1990,7 +1964,6 @@ def test_syslog_buffering_during_mgmt_interface_downtime(engines, topology_obj, 
     5. Bring management interface back up
     6. Verify all buffered messages are received after interface recovery
     """
-    TestToolkit.tested_api = random_api
     remote_server_engine = engines[NvosConst.SONIC_MGMT]
     remote_server_ip = remote_server_engine.ip
     system = System()

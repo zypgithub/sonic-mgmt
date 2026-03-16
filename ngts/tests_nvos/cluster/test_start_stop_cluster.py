@@ -1,8 +1,10 @@
 import logging
+import random
 import time
 
 import pytest
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
+from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, RosalindSwitch
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.StressResourcesTool import StressResourcesTool
@@ -39,9 +41,16 @@ INVALID_SHOW_EXPECTED_OUTPUT = {'NVUE': INVALID_SHOW_EXPECTED_OUTPUT_NVUE, 'Open
 
 @disabled_access_ports
 @pytest.mark.nmx
+@pytest.mark.nvl_ci
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
-    TestToolkit.tested_api = random_api
+    # Skip test for Juliet systems (but NOT Rosalind) while bug SW #4859121 is active
+    # Bug: [Juliet] - nmx-controller having "nvbridge" capability - which should not be supported over juliet systems
+    # Note: Rosalind systems should run this test
+    if isinstance(devices.dut, JulietSwitch) and not isinstance(devices.dut, RosalindSwitch) and is_bug_active(4859121):
+        pytest.skip("Skipping test for Juliet systems (non-Rosalind) while bug SW #4859121 is active: "
+                    "nmx-controller has 'nvbridge' capability which is not supported on Juliet")
+
     output_format = OutputFormat.json
 
     def verify_apps_attributes(output):
@@ -51,13 +60,17 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
             assert set(app_names) == set(devices.dut.expected_cluster_apps), f"Expected apps:{devices.dut.expected_cluster_apps} Actual apps:{app_names}"
 
         with allure.step("Verify 'nv show cluster apps' output"):
-            if NMX_TELEMETRY in devices.dut.expected_cluster_apps:
-                ValidationTool.validate_output_of_show(output[NMX_TELEMETRY], devices.dut.cluster_app_nmx_telemetry).verify_result()
-            cluster_app_nmx_controller = devices.dut.cluster_app_nmx_controller.copy()
+            ClusterTools.wait_for_app_healthy(cluster, NMX_TELEMETRY,
+                                              devices.dut.cluster_app[NMX_TELEMETRY])
             if is_bug_active(4207869) and standalone_system:
+                cluster_app_nmx_controller = devices.dut.cluster_app_nmx_controller.copy()
                 cluster_app_nmx_controller['status'] = ExpectedString(regex=".*")
                 cluster_app_nmx_controller['reason'] = ExpectedString(regex=".*")
-            ValidationTool.validate_output_of_show(output[NMX_CONTROLLER], cluster_app_nmx_controller).verify_result()
+                ValidationTool.validate_output_of_show(output[NMX_CONTROLLER],
+                                                       cluster_app_nmx_controller).verify_result()
+            else:
+                ClusterTools.wait_for_app_healthy(cluster, NMX_CONTROLLER,
+                                                  devices.dut.cluster_app[NMX_CONTROLLER])
 
     with allure.step("Create Cluster object"):
         interface_wa_called = False
@@ -65,7 +78,7 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
         cluster = Cluster()
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
 
         with allure.step("Running 'nv show cluster apps' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
@@ -85,7 +98,8 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
                         cluster_app_nmx_controller['reason'] = ExpectedString(regex=".*")
                     ValidationTool.validate_output_of_show(output, cluster_app_nmx_controller).verify_result()
                 else:
-                    ValidationTool.validate_output_of_show(output, devices.dut.cluster_app[app]).verify_result()
+                    ClusterTools.wait_for_app_healthy(cluster, app,
+                                                      devices.dut.cluster_app[app])
 
         TestToolkit.tested_api = 'NVUE'
         with allure.step("Running 'nv show cluster apps installed' command and verifying output"):
@@ -131,7 +145,7 @@ def test_stress_cluster_app_start_stop(engines, devices, test_api, test_name, ha
             operation = 'start stop cluster app'
             if has_loopbox:
                 operation = 'start stop cluster app with loopbox'
-            ClusterTools.start_cluster(cluster, setup_name, output_format)
+            ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
             for i in range(4):
                 logger.info(f"Starting iteration {i}")
                 result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
@@ -167,7 +181,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
             while time.time() - start_time < timeout:
                 if has_loopbox:
                     operation = 'start stop cluster app stressed resources with loopbox'
-                ClusterTools.start_cluster(cluster, setup_name, output_format)
+                ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
                 result_obj, duration = OperationTime.save_duration(operation, '', test_name, ClusterTools.stop_start_app, cluster, engines, devices, has_loopbox, setup_name, standalone_system)
                 OperationTime.verify_operation_time(duration, operation, devices).verify_result()
 
@@ -176,7 +190,7 @@ def test_cluster_app_start_stop_under_stressed_resources(engines, devices, test_
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_cluster_app_start_stop_disabled_cluster(engines, devices, test_api):
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json

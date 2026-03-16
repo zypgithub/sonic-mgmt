@@ -135,6 +135,34 @@ def pytest_configure(config):
     VaultClient.fetch_and_export_secrets()
 
 
+def pytest_configure(config):
+    """
+    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
+    This hook runs before session start and any fixtures.
+
+    For MARS runs, secrets are already provided via environment variables.
+    For local runs, we fetch secrets from Vault.
+
+    This only runs when NVOS tests are being executed.
+    """
+    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
+    args = config.args if hasattr(config, 'args') else config.invocation_params.args
+    if not args or not any('tests_nvos' in str(arg) for arg in args):
+        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
+        return
+
+    mars_key_id = config.getoption("--mars_key_id", default=None)
+    session_id = config.getoption("--session_id", default=None)
+    if mars_key_id or session_id:
+        logger.info("MARS run detected - secrets already in environment, skipping Vault")
+        return
+
+    from ngts.nvos_tools.infra.VaultClient import VaultClient
+
+    logger.info("Local run detected - loading secrets from Vault...")
+    VaultClient.fetch_and_export_secrets()
+
+
 def pytest_addoption(parser: pytest.Parser):
     """
     Parse NVOS pytest options
@@ -396,6 +424,14 @@ def dut_engines(engines):
     return filter_objects(engines, host_type='dut', engine_type='ssh')
 
 
+@pytest.fixture(scope='session')
+def single_switch(dut_engines):
+    """
+    Check if setup has only one switch
+    """
+    return len(dut_engines) == 1
+
+
 @pytest.fixture(scope='function', autouse=True)
 def auto_command_tracking_for_cli_coverage(request):
     """
@@ -510,6 +546,9 @@ def dut_ipv6_addr(engines, devices):
 
 @pytest.fixture(scope='session')
 def sonic_mgmt_ipv6_addr(engines):
+    if hasattr(engines.sonic_mgmt, 'switch_reachable_ip'):
+        logging.info(f'sonic_mgmt ipv6 address (from switch_reachable_ip): {engines.sonic_mgmt.switch_reachable_ip}')
+        return engines.sonic_mgmt.switch_reachable_ip
     sonic_mgmt_ipv6_addr = IpTool.get_player_ipv6_addr(engines.sonic_mgmt.ip, engines.sonic_mgmt)
     logging.info(f'sonic_mgmt ipv6 address: {sonic_mgmt_ipv6_addr}')
     return sonic_mgmt_ipv6_addr
@@ -832,9 +871,10 @@ def default_config_yml_path(engines, devices, root_dir):
 
 def pytest_exception_interact(report):
     logging.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
-    for dev_name, device in filter_objects(TestToolkit.devices, host_type='dut', engine_type='ssh').items():
-        engine = TestToolkit.get_engine(dev_name)
-        device.handle_exception(engine)
+    if TestToolkit.devices is not None:
+        for dev_name, device in filter_objects(TestToolkit.devices, host_type='dut', engine_type='ssh').items():
+            engine = TestToolkit.get_engine(dev_name)
+            device.handle_exception(engine)
 
 
 @pytest.fixture(scope="function")

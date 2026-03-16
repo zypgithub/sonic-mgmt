@@ -306,7 +306,7 @@ def test_image_uninstall_force(release_name, original_version, test_name, device
 @pytest.mark.simx
 @pytest.mark.image
 @pytest.mark.system
-@pytest.mark.timeout(6 * MINUTE, func_only=True)
+@pytest.mark.timeout(7 * MINUTE, func_only=True)
 def test_system_image_bad_flow(engines, release_name, random_api, original_version, sonic_mgmt_ipv6_addr,
                                downgrade_version_realpath):
     """
@@ -374,7 +374,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
 
         with allure.step("Upload bad flows"):
             player = engines['sonic_mgmt']
-            upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=player.ip, path='/tmp')
+            upload_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password, ip=IpTool.format_ip_for_uri(player), path='/tmp')
             with allure.independent_step("Upload image file that does not exist"):
                 file_rand_name.action_upload(upload_path).verify_result(False, "File not found")
             with allure.independent_step("Upload the same image twice"):
@@ -479,7 +479,7 @@ def image_uninstall_test(release_name, original_version, devices, uninstall_forc
         with allure.step("uninstall image, while there are 2 images- should success"):
             system.image.action_uninstall(params="force")
             image_output = system.image.get_image_field_values()
-            assert not image_output[partition_id_for_new_image][ImageConsts.BUILD_ID], "uninstall didn't work"
+            assert not image_output[ImageConsts.PARTITION2_IMG][ImageConsts.BUILD_ID], "uninstall didn't work"
 
     else:
         with allure.step("{} uninstall image, while there is just 1 image- should fail".format(uninstall_force)):

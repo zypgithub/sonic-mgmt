@@ -11,17 +11,18 @@ from ngts.nvos_constants.constants_nvos import (
     UserRole,
 )
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner
-from ngts.nvos_tools.infra.CrlValidator import CrlValidator
+from ngts.nvos_tools.infra.CrlValidator import ClientConfig, CrlValidator, RevokeConfig
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.conftest import get_dut_hostname
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tests_nvos.general.security.constants import SecurityConsts
-from ngts.tests_nvos.general.security.crl.helpers import ApiCrlClient, GnmiCrlClient
+from ngts.tests_nvos.general.security.crl.helpers import ApiCrlValidator, GnmiCrlValidator
 from ngts.tests_nvos.general.security.helpers import generate_certs, get_test_certs_dir_location, set_new_random_users
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
 from ngts.tests_nvos.general.security.test_api_server_security.constants import CA_CERTIFICATE
+from ngts.tests_nvos.helpers.general_helpers import run_ssh_cmd_with_rc
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmiMode
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmicCmdBuilder
@@ -54,7 +55,7 @@ def test_import_crl_cert(dut_hostname, engines, test_api, system_with_cleanup):
     engine: LinuxSshEngine = engines.dut
     scp_player = get_scp_player(engines)
     crl_resource = system.security.crl
-    crl_validator = CrlValidator(app=ApiCrlClient(host=dut_hostname, ip=engine.ip))
+    crl_validator = ApiCrlValidator(host=dut_hostname, ip=engine.ip)
     certs = crl_validator.setup_certs(engines=engines, dest="sasha", cert_names=["client", "server"])
     cert_to_revoke = certs[0]
     crl_name = "test_crl"
@@ -117,7 +118,7 @@ def test_crl_core_functionality(engines, validator_with_cleanup):
     admin = _generate_random_admin_with_apply(engines.dut, system)
     with allure.step("Core test flow"):
         with allure.independent_step("Make request via client application and see it fails"):
-            crl_validator.run_client(admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=revoked_cert, client_cacert=server_cert))
 
         with allure.independent_step("Try to delete CRL file"):
             if is_bug_active(4395527):
@@ -127,7 +128,7 @@ def test_crl_core_functionality(engines, validator_with_cleanup):
 
         crl_validator.unbind_crl()
         with allure.independent_step("Make request via client application and see it is successful"):
-            crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert))
 
 
 @pytest.mark.system
@@ -170,23 +171,23 @@ def test_cert_not_in_crl(dut_hostname, engines, validator_with_cleanup):
     crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[cert_pos])
     crl_name = "test_crl"
     ca_dest = os.path.join(client_certs_dir, "ca")
-    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=cert_neg, dest=client_certs_dir, ca_dest=ca_dest)
+    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=cert_neg, config=RevokeConfig(dest=client_certs_dir, ca_dest=ca_dest))
     crl_validator.bind_crl(crl_path, crl_name)
 
     admin = UserInfo("admin", "admin", "admin")
     with allure.step("Make request via client with good cert"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert))
 
     with allure.step("Make request via client with revoked cert"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=cert_neg, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=cert_neg, client_cacert=server_cert))
 
     crl_validator.unbind_crl()
 
     with allure.step("Make request via client with good cert"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert))
 
     with allure.step("Make request via client with revoked cert"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=cert_pos, client_cacert=server_cert))
 
 
 @pytest.mark.system
@@ -210,17 +211,17 @@ def test_empty_crl(engines, addressing_type, validator_with_cleanup):
 
     crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[revoked_cert])
     crl_name = "test_crl"
-    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=revoked_cert, create_empty=True)
+    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=revoked_cert, config=RevokeConfig(create_empty=True))
     crl_validator.bind_crl(crl_path, crl_name)
     system = System()
 
     admin = _generate_random_admin_with_apply(engines.dut, system)
     with allure.step("Make request via client application and see it works as crl is empty"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert))
 
     crl_validator.unbind_crl()
     with allure.step("Make request via client application and see it works after unbinding crl"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=revoked_cert, client_cacert=server_cert))
 
 
 @pytest.mark.system
@@ -254,24 +255,26 @@ def test_cert_intermidiate_ca(engines, validator_with_cleanup):
     crl_name = "test_crl_chain"
     crl2_name = "test_revoked_iCA"
     system = System()
-    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=chain_cert, ca_name="interCA")
-    crl2_path = crl_validator.revoke_cert(crl_name=crl2_name, cert=chain_cert, ca_name="rCA", revoke_cert_name="interCA.crt")
+    crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=chain_cert, config=RevokeConfig(ca_name="interCA"))
+    crl2_path = crl_validator.revoke_cert(
+        crl_name=crl2_name, cert=chain_cert, config=RevokeConfig(ca_name="rCA", revoke_cert_name="interCA.crt")
+    )
 
     admin = _generate_random_admin_with_apply(engines.dut, system)
     with allure.step("Make request via client application and see it works before applying crl"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=chain_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=chain_cert, client_cacert=server_cert))
 
     crl_validator.bind_crl(crl_path, crl_name)
     with allure.step("Make request via client application and see doesn't work after applying crl"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=chain_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=chain_cert, client_cacert=server_cert))
 
     crl_validator.bind_crl(crl2_path, crl2_name)
     with allure.step("Make request via client application and see doesn't work as iCA is revoked"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=chain_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=chain_cert, client_cacert=server_cert))
 
     crl_validator.unbind_crl()
     with allure.step("Make request via client application and see it works after unbinding crl"):
-        crl_validator.run_client(admin, expect_success=True, client_cert=chain_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=chain_cert, client_cacert=server_cert))
 
 
 @pytest.mark.system
@@ -310,8 +313,8 @@ def test_multiple_crl(engines, dut_hostname, system_with_cleanup):
 
     """
     ip = engines.dut.ip
-    rest_validator = CrlValidator(app=ApiCrlClient(host=dut_hostname, ip=ip))
-    gnmi_validator = CrlValidator(app=GnmiCrlClient(host=dut_hostname, ip=ip))
+    rest_validator = ApiCrlValidator(host=dut_hostname, ip=ip)
+    gnmi_validator = GnmiCrlValidator(host=dut_hostname, ip=ip)
     with allure.step("prepare client and server certs"):
         rest_certs = rest_validator.setup_certs(engines=engines, dest="crl-rest", cert_names=["client_rest", "server_rest"])
         rest_cert = rest_certs[0]
@@ -330,14 +333,14 @@ def test_multiple_crl(engines, dut_hostname, system_with_cleanup):
 
     admin = _generate_random_admin_with_apply(engines.dut, system)
     with allure.step("Make request both client request work before binding the crl"):
-        rest_validator.run_client(admin, expect_success=True, client_cert=rest_cert, client_cacert=rest_server_cert)
-        gnmi_validator.run_client(admin, expect_success=True, client_cert=gnmi_cert, client_cacert=gnmi_server_cert)
+        rest_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=rest_cert, client_cacert=rest_server_cert))
+        gnmi_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=gnmi_cert, client_cacert=gnmi_server_cert))
 
     rest_validator.bind_crl(rest_crl_path, crl_rest_name)
     gnmi_validator.bind_crl(gnmi_crl_path, crl_gnmi_name)
     with allure.step("Make sure both client request do not work as crl is applied"):
-        rest_validator.run_client(admin, expect_success=False, client_cert=rest_cert, client_cacert=rest_server_cert)
-        gnmi_validator.run_client(admin, expect_success=False, client_cert=gnmi_cert, client_cacert=gnmi_server_cert)
+        rest_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=rest_cert, client_cacert=rest_server_cert))
+        gnmi_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=gnmi_cert, client_cacert=gnmi_server_cert))
 
     with allure.step("Combine both crls into one and verify both request are not working"):
         combined_crl_path = _combine_crls(rest_crl_path, gnmi_crl_path)
@@ -346,14 +349,14 @@ def test_multiple_crl(engines, dut_hostname, system_with_cleanup):
         gnmi_validator.bind_crl(combined_crl_path, f"{combined_crl_name}_gnmi")
 
     with allure.step("Make sure both client request do not work as crl is applied"):
-        rest_validator.run_client(admin, expect_success=False, client_cert=rest_cert, client_cacert=rest_server_cert)
-        gnmi_validator.run_client(admin, expect_success=False, client_cert=gnmi_cert, client_cacert=gnmi_server_cert)
+        rest_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=rest_cert, client_cacert=rest_server_cert))
+        gnmi_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=gnmi_cert, client_cacert=gnmi_server_cert))
 
     rest_validator.unbind_crl()
     gnmi_validator.unbind_crl()
     with allure.step("Make request both client request work before binding the crl"):
-        rest_validator.run_client(admin, expect_success=True, client_cert=rest_cert, client_cacert=rest_server_cert)
-        gnmi_validator.run_client(admin, expect_success=True, client_cert=gnmi_cert, client_cacert=gnmi_server_cert)
+        rest_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=rest_cert, client_cacert=rest_server_cert))
+        gnmi_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=gnmi_cert, client_cacert=gnmi_server_cert))
 
 
 @pytest.mark.system
@@ -389,7 +392,7 @@ def test_continious_application(engines, validator_with_cleanup):
     """
     crl_validator: CrlValidator = validator_with_cleanup
     with allure.step("Check if supported"):
-        if not isinstance(crl_validator.app, GnmiCrlClient):
+        if not isinstance(crl_validator, GnmiCrlValidator):
             pytest.skip("This test is only supported for gNMI")
 
     with allure.step("Setup certs and gNMI mTLS"):
@@ -401,7 +404,7 @@ def test_continious_application(engines, validator_with_cleanup):
     crl_name = "test_crl_continuous"
     crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=client_cert)
 
-    admin = _generate_random_admin_with_apply(engines.dut, crl_validator.app.system)
+    admin = _generate_random_admin_with_apply(engines.dut, crl_validator.system)
     gnmic_cmd = (
         GnmicCmdBuilder(engines.dut.ip)
         .user_creds(admin.username, admin.password)
@@ -421,7 +424,7 @@ def test_continious_application(engines, validator_with_cleanup):
         crl_validator.bind_crl(crl_path, crl_name)
 
     with allure.step("Attempt new connection with revoked cert and verify failure"):
-        crl_validator.run_client(admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert)
+        crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert))
 
     with allure.step("Validate process is still running"):
         output, err = read_process_for_specified_time(gnmi_process, GnmiConsts.SLEEP_TIME_FOR_UPDATE)
@@ -430,10 +433,11 @@ def test_continious_application(engines, validator_with_cleanup):
 
 def crl_factory_reset_keep_all_config_check():
     engines = TestToolkit.engines
+    assert engines is not None
     system = System()
     hostname = get_dut_hostname(engines)
-    crl_validator = CrlValidator(app=ApiCrlClient(host=hostname, ip=engines.dut.ip))
-    gnmi_validator = CrlValidator(app=GnmiCrlClient(host=hostname, ip=engines.dut.ip))
+    crl_validator = ApiCrlValidator(host=hostname, ip=engines.dut.ip)
+    gnmi_validator = GnmiCrlValidator(host=hostname, ip=engines.dut.ip)
     try:
         with allure.step("prepare client and server certs"):
             certs = crl_validator.setup_certs(engines=engines, dest="crl-reset-factory", cert_names=["client_rest", "server_rest"])
@@ -447,7 +451,7 @@ def crl_factory_reset_keep_all_config_check():
         admin = UserInfo("admin", "admin", "admin")
 
         with allure.independent_step("Make request via client application and see it fails"):
-            crl_validator.run_client(admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert))
 
         with allure.step("save config"):
             NvueGeneralCli.save_config(engines.dut)
@@ -455,7 +459,7 @@ def crl_factory_reset_keep_all_config_check():
         yield  # do factory reset
 
         with allure.independent_step("Make request via client application and see it fails"):
-            crl_validator.run_client(admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert))
 
         with allure.independent_step("setup mtls by binding test certs"):
             system.gnmi_server.set(CERTIFICATE, server_cert.name).verify_result()
@@ -464,7 +468,7 @@ def crl_factory_reset_keep_all_config_check():
             gnmi_validator.bind_crl(crl_path, crl_name)
 
         with allure.independent_step("Make gnmi request with same certs and get revoked error"):
-            crl_validator.run_client(admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert))
     finally:
         crl_validator.cleanup()
         gnmi_validator.cleanup()
@@ -490,11 +494,10 @@ def test_crl_with_no_ca(engines, dut_hostname, system_with_cleanup):
 
     """
     ip = engines.dut.ip
-    crl_validator = CrlValidator(app=ApiCrlClient(host=dut_hostname, ip=ip))
+    crl_validator = ApiCrlValidator(host=dut_hostname, ip=ip)
     certs = crl_validator.setup_certs(engines=engines, dest="crl-no-ca", cert_names=["client1", "client2", "server"])
     revoked_cert = certs[0]
-    another_ca_cert = certs[1]
-    server_cert = certs[-1]
+    # certs[1] (another_ca_cert) and certs[-1] (server_cert) reserved for future test expansion
 
     crl_name = "test_crl"
     crl_path = crl_validator.revoke_cert(crl_name=crl_name, cert=revoked_cert)
@@ -580,8 +583,7 @@ def _combine_crls(crl1_path: str, crl2_path: str) -> str:
 
 def _verify_cmd_success(switch: LinuxSshEngine, cmd: str, should_succeed: bool = True):
     with allure.step("Verify the command is successful"):
-        output = switch.run_cmd(cmd)
-        exit_code = int(switch.run_cmd("echo $?").split("\n")[-1])
+        output, exit_code = run_ssh_cmd_with_rc(switch, cmd)
         if should_succeed:
             assert exit_code == 0, "The command should be successful"
         else:
@@ -613,7 +615,7 @@ def crl_factory_reset_keep_only_files_check():
     engines = TestToolkit.engines
     system = System()
     hostname = get_dut_hostname(engines)
-    crl_validator = CrlValidator(app=ApiCrlClient(host=hostname, ip=engines.dut.ip))
+    crl_validator = ApiCrlValidator(host=hostname, ip=engines.dut.ip)
 
     try:
         with allure.step("prepare client and server certs"):
@@ -628,7 +630,7 @@ def crl_factory_reset_keep_only_files_check():
         admin = UserInfo("admin", "admin", "admin")
 
         with allure.independent_step("Verify request fails with revoked cert before factory reset"):
-            crl_validator.run_client(admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=False, client_cert=client_cert, client_cacert=server_cert))
 
         with allure.step("save config"):
             NvueGeneralCli.save_config(engines.dut)
@@ -648,7 +650,7 @@ def crl_factory_reset_keep_only_files_check():
             crl_validator.prepare_mtls(server_certs=[server_cert], client_cas=[client_cert])
 
         with allure.independent_step("Verify request succeeds (CRL not bound after factory reset)"):
-            crl_validator.run_client(admin, expect_success=True, client_cert=client_cert, client_cacert=server_cert)
+            crl_validator.run_client(ClientConfig(user=admin, expect_success=True, client_cert=client_cert, client_cacert=server_cert))
 
     finally:
         crl_validator.cleanup()

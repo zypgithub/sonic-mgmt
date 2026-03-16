@@ -1,3 +1,4 @@
+
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts, NvosConst
@@ -10,8 +11,7 @@ from ngts.tools.test_utils import allure_utils as allure
 
 
 @pytest.mark.erot
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_erot_firmware(engines, devices, test_api):
+def test_show_erot_firmware(engines, devices, random_api):
     """
     Test nv show (fae) platform firmware <erot-component>
     Basic test to show that firmware erot have all necessary fields and are not N/A.
@@ -22,7 +22,6 @@ def test_show_erot_firmware(engines, devices, test_api):
     3. Verify both basic and fae show commands have all necessary fields and are not N/A.
 
     """
-    TestToolkit.tested_api = test_api
     platform = Platform()
     fae = Fae()
     with allure.step("Parse basic nv show platform firmware"):

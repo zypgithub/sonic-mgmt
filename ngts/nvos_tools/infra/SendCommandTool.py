@@ -44,10 +44,10 @@ class SendCommandTool:
         return ResultObj(True, "", cmd_output_str)
 
     @staticmethod
-    def execute_command_expected_str(command_to_execute, expected_str, *args, **kwargs) -> ResultObj:
+    def execute_command_expected_str(command_to_execute, expected_str, *args, exempted_err_msgs=(), **kwargs) -> ResultObj:
         """`expected_str` can also be a list of strings; the function searches for any (not all) of them."""
         output = command_to_execute(*args, **kwargs)
-        return SendCommandTool.verify_output(output, expected_str)
+        return SendCommandTool.verify_output(output, expected_str, exempted_err_msgs=exempted_err_msgs)
 
     @staticmethod
     def verify_output(output: str, expected_str='', exempted_err_msgs=()) -> ResultObj:

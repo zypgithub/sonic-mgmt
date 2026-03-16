@@ -5,6 +5,7 @@ import pytest
 from retry import retry
 
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
+from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -55,7 +56,7 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
                                                                name=version_name, filename=filename, topology_obj=topology_obj,
                                                                test_name=test_name)
         with allure.step(f"Verify background copy status is completed in 7 minutes time"):
-            BmcTool.verify_background_copy_completed(nv_command.platform, erot_name=PlatformConsts.EROT_BMC_PATH_NAME)
+            BmcTool.verify_background_copy_completed_if_enabled(engines.dut, nv_command.platform, erot_name=PlatformConsts.EROT_BMC_PATH_NAME)
         with allure.step(f"verify operation time for install bmc {version_name!r} (duration: {res_obj.duration})"):
             OperationTime.verify_operation_time(res_obj.duration, 'install bmc', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
@@ -68,3 +69,8 @@ def test_bmc_install(engines, devices, topology_obj, test_api, platform_componen
             OperationTime.verify_operation_time(res_obj.duration, 'install bmc', devices).verify_result()
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         # BmcTool.compare_bmc_version_issu_module(engines, version_name)  !TBD uncomment after merge 1800 to master
+        # On Rosalind/Surrogate systems, AutomaticBackgroundCopyEnabled should be false
+        if isinstance(device, RosalindSurrogateSwitch):
+            with allure.step("Assert AutomaticBackgroundCopyEnabled for erot-bmc is false on Rosalind"):
+                assert not BmcTool.is_automatic_background_copy_enabled(engines.dut, PlatformConsts.EROT_BMC_PATH_NAME), \
+                    f"AutomaticBackgroundCopyEnabled is true for {PlatformConsts.EROT_BMC_PATH_NAME} on Rosalind system - expected false"

@@ -20,11 +20,14 @@ class OpenApiBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device, read_timeout=None):
+               send_user_confirmation, expected_output, device, timeout=None):
         """See documentation of BaseComponent.action()"""
-        # Note: read_timeout is not used for OpenAPI actions (HTTP requests have their own timeout handling)
         if send_user_confirmation:
             logger.warning(f'The following argument is ignored for OpenAPI commands: {send_user_confirmation=}')
+        if timeout is not None:
+            logger.warning(f'The following argument is ignored for OpenAPI commands: {timeout=}. '
+                           f'OpenAPI actions use REST polling with no overall timeout, unlike NVUE which uses '
+                           f'Netmiko send_command_timing with a read_timeout.')
 
         url = cls._resource_path_to_rest_path(resource_path)
         params = additional_params.copy()

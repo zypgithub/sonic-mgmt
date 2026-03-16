@@ -23,7 +23,7 @@ def enable_cluster(setup_name, devices):
     with allure.step("Enable cluster"):
         cluster = Cluster()
         cluster_tools = ClusterTools()
-        cluster_tools.start_cluster(cluster, setup_name)
+        cluster_tools.start_cluster(cluster, setup_name, devices=devices)
     yield cluster
     with allure.step("Disable cluster"):
         cluster_tools.stop_cluster(cluster)

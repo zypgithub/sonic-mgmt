@@ -524,7 +524,7 @@ class SonicSecureBootHelper(SecureBootHelper):
         """
         logger.info(f"Start copying {kernel_module_file_path} from dut to ngts docker")
         self.engines.dut.upload_file_using_scp(self.engines.sonic_mgmt.username, self.engines.sonic_mgmt.password,
-                                               self.engines.sonic_mgmt.ip, kernel_module_file_path,
+                                               getattr(self.engines.sonic_mgmt, 'switch_reachable_ip', self.engines.sonic_mgmt.ip), kernel_module_file_path,
                                                SecureBootConsts.TMP_FOLDER)
         logger.info(f"Delete temp file {kernel_module_file_path}")
         self.engines.dut.run_cmd(f"sudo rm -f {kernel_module_file_path}")

@@ -11,6 +11,7 @@ from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.nvos_tools.infra.TpmTool import TpmTool
@@ -108,6 +109,9 @@ class BmcTool:
                     BmcTool.PLATFORM_COMPONENTS_DICT = json.load(file)
             platform_components_dict = BmcTool.PLATFORM_COMPONENTS_DICT
             provisioning = DEVELOPMENT if SecureBootTool.is_dev_system(TestToolkit.get_engine()) else PRODUCTION
+            if component_name not in platform_components_dict[provisioning].keys():
+                logger.info(f"Component {component_name} not found in json")
+                return None, None, None
             component_image_info = platform_components_dict[provisioning][component_name][version]
             path = component_image_info['path']
             # Derive filename from path if not explicitly provided (e.g., for CPLD components)
@@ -128,6 +132,37 @@ class BmcTool:
             return component_image_info
 
     @staticmethod
+    def is_automatic_background_copy_enabled(engine, erot_name: str) -> bool:
+        """
+        Check if AutomaticBackgroundCopyEnabled is true for the given EROT component.
+
+        Uses Redfish API to query the EROT chassis and check the Oem.Nvidia.AutomaticBackgroundCopyEnabled field.
+
+        :param engine: Engine object to execute commands
+        :param erot_name: EROT name (e.g., 'EROT-BMC', 'EROT-CPU')
+        :return: True if automatic background copy is enabled, False otherwise
+        """
+        # Convert EROT name to Redfish chassis name (e.g., 'EROT-BMC' -> 'MGX_ERoT_BMC_0')
+        # The format is: EROT-XXX -> MGX_ERoT_XXX_0
+        erot_suffix = erot_name.replace('EROT-', '')
+        redfish_chassis_name = f"MGX_ERoT_{erot_suffix}_0"
+        chassis_path = f"/Chassis/{redfish_chassis_name}"
+
+        with allure.step(f"Checking if AutomaticBackgroundCopyEnabled is true for {erot_name}"):
+            password = BmcTool._get_bmc_password(engine)
+            curl_tool = CurlTool(server_host=BmcTool.BMC_LOCAL_IP, username=BmcTool.USER_NAME, password=password)
+            response = curl_tool.run_redfish_command(rest_op='GET', path=chassis_path, dut_engine=engine)
+
+            try:
+                response_dict = json.loads(response)
+                auto_bg_copy_enabled = response_dict.get("Oem", {}).get("Nvidia", {}).get("AutomaticBackgroundCopyEnabled", True)
+                logger.info(f"AutomaticBackgroundCopyEnabled for {erot_name}: {auto_bg_copy_enabled}")
+                return auto_bg_copy_enabled
+            except (json.JSONDecodeError, KeyError) as e:
+                logger.warning(f"Failed to parse Redfish response for {erot_name}: {e}. Assuming background copy is enabled.")
+                return True
+
+    @staticmethod
     @retry(AssertionError, tries=14, delay=30)
     def verify_background_copy_completed(platform, erot_name):
         with allure.step(f"Verifying {erot_name} completed background copy"):
@@ -135,6 +170,24 @@ class BmcTool:
                 platform.firmware.erot_id[erot_name].show()).get_returned_value()
             background_copy_status = firmware_shown[PlatformConsts.FW_BACKGROUND_COPY_STATUS]
             assert background_copy_status.lower() == "Completed".lower(), "Background copy status is not completed"
+
+    @staticmethod
+    def verify_background_copy_completed_if_enabled(engine, platform, erot_name):
+        """
+        Verify background copy is completed only if AutomaticBackgroundCopyEnabled is true.
+
+        If automatic background copy is disabled, this method skips the verification and logs a message.
+
+        :param engine: Engine object to execute commands for Redfish API calls
+        :param platform: Platform object for NVUE show commands
+        :param erot_name: EROT name (e.g., 'EROT-BMC', 'EROT-CPU')
+        """
+        if not BmcTool.is_automatic_background_copy_enabled(engine, erot_name):
+            with allure.step(f"Skipping background copy verification - AutomaticBackgroundCopyEnabled is false for {erot_name}"):
+                logger.info(f"AutomaticBackgroundCopyEnabled is false for {erot_name}, skipping background copy verification")
+                return
+
+        BmcTool.verify_background_copy_completed(platform, erot_name)
 
     @staticmethod
     @retry(AssertionError, tries=3, delay=15)
@@ -201,8 +254,14 @@ class BmcTool:
         """Build base curl command with authentication and URL."""
         if IpTool.is_address_ipv6(bmc_ip_address):
             bmc_ip_address = f'[{bmc_ip_address}]'
+        # Quote credentials so shell does not interpret '#' or other special chars (e.g. over SSH)
+        creds = f"{ROOT}:{BMC_USER_BACKUP_PASSWORD}"
+        if "'" in creds:
+            creds_quoted = "'" + creds.replace("'", "'\"'\"'") + "'"
+        else:
+            creds_quoted = "'" + creds + "'"
         return (
-            f"curl -s -k -u {ROOT}:{BMC_USER_BACKUP_PASSWORD} "
+            f"curl -s -k -u {creds_quoted} "
             f"https://{bmc_ip_address}{BmcTool.BASE_REDFISH_URL}{component_path} -X {method}"
         )
 
@@ -219,7 +278,7 @@ class BmcTool:
 
         with allure.step(f"Send GET request to {bmc_ip_address}"):
             curl_get_cmd = BmcTool._build_curl_base(OpenApiReqType.GET, bmc_ip_address, component_path)
-            curl_get_output = engine.run_cmd(curl_get_cmd + ' --fail && echo', validate=True)
+            curl_get_output = engine.run_cmd(curl_get_cmd + ' --fail && echo')
 
             if not curl_get_output:
                 return ResultObj(False, "Received empty response from BMC")
@@ -243,14 +302,21 @@ class BmcTool:
             json_data = json.dumps(new_values)
             curl_path_cmd = (
                 f"{BmcTool._build_curl_base(OpenApiReqType.PATCH, bmc_ip_address, component_path)} "
-                f"-H 'Content-Type: application/json' -d '{json_data}' --fail && echo"
+                f"-H 'Content-Type: application/json' -d '{json_data}' --fail 2>&1; echo \"CURL_EXIT=$?\""
             )
-            curl_patch_output = engine.run_cmd(curl_path_cmd, validate=True)
+            curl_patch_output = engine.run_cmd(curl_path_cmd, validate=False)
 
-            if expected_value not in curl_patch_output:
+            if "CURL_EXIT=0" not in curl_patch_output:
+                return ResultObj(
+                    False,
+                    f"PATCH failed (exit code or curl error). Output: {curl_patch_output}"
+                )
+
+            if expected_value and expected_value not in curl_patch_output:
                 return ResultObj(
                     False,
                     f"Expected value '{expected_value}' not found in response: {curl_patch_output}"
                 )
 
-            return ResultObj(True, "", curl_patch_output)
+            response_output = curl_patch_output.split("CURL_EXIT=")[0].rstrip()
+            return ResultObj(True, "", response_output)

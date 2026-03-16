@@ -37,7 +37,8 @@ class SecureBootConsts:
     VMLINUZ_DIR = '/boot/'
     INVALID_SIGNATURE = ["Invalid signature detected",
                          "Malformed binary after Attribute Certificate Table",
-                         "bad.*signature"]
+                         "bad.*signature",
+                         "Security Violation"]
     REBOOT_CMD = "sudo reboot -f"
 
     # numerical expressions

@@ -312,6 +312,44 @@ class IpTool:
             f'could not find ipv6 address that is attached to same interface as given ipv4 address: {player_ipv4_addr}')
 
     @staticmethod
+    def get_routable_ipv6_from_any_interface(engine) -> str:
+        """
+        Discover a routable (global-scope) IPv6 address from any interface on the engine.
+        Used when the switch needs to reach the engine over IPv6, regardless of which
+        interface the IPv6 is assigned to.
+
+        Returns:
+            First routable IPv6 found, or empty string if none found.
+        """
+        try:
+            output = engine.run_cmd('ip -6 addr show scope global')
+            inet6_pattern = r'inet6\s+(\S+)'
+            matches = re.findall(inet6_pattern, output)
+            for match in matches:
+                ipv6 = IpTool._extract_ipv6_from_address_string(match)
+                if ipv6 and IpTool.is_routable_ipv6(ipv6):
+                    logging.info(f'Found routable IPv6 from any interface: {ipv6}')
+                    return ipv6
+            logging.warning(f'No routable IPv6 found on any interface. Output:\n{output}')
+            return ''
+        except Exception as e:
+            logging.warning(f'Failed to discover routable IPv6: {e}')
+            return ''
+
+    @staticmethod
+    def get_switch_reachable_ip(engine) -> str:
+        """Raw IP the switch uses to reach this engine. Falls back to engine.ip."""
+        return getattr(engine, 'switch_reachable_ip', engine.ip)
+
+    @staticmethod
+    def format_ip_for_uri(engine) -> str:
+        """Get the switch-reachable IP for an engine, bracketed for URI use if IPv6."""
+        ip = IpTool.get_switch_reachable_ip(engine)
+        if not ip or ':' not in ip or ip.startswith('['):
+            return ip or ''
+        return f'[{ip}]'
+
+    @staticmethod
     def is_address_ipv6(address: str) -> bool:
         try:
             return ipaddress.ip_address(address).version == 6

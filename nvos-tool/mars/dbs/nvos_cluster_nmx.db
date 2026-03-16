@@ -56,4 +56,11 @@
     <test>
         <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nv_bridge.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nvos_nmx_t_distributed.cases </cases>
+    </test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cluster/nvos_nmx_t_lite.cases </cases>
+		<ignore><condition> <key>dut_name</key> <op> not in </op> <value>[sws_rtf2_rosalind_198]</value> </condition></ignore>
+	</test>
 </DBDEF>

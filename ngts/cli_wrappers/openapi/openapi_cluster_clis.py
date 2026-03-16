@@ -29,9 +29,13 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_update_cluster_log_stream(engine, resource_path, stream):
-        param_name = "log_stream"
-        param_value = stream
+        param_name = ["protocol", "remote-url"]
+        param_value = stream.split(None, 1)
         return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
+
+    @staticmethod
+    def action_restore_cluster_log_stream(engine, resource_path, param_name='', param_value=''):
+        return OpenApiClusterCli.action_deprecated(engine, action_type=ActionType.RESTORE.replace('@', ''), resource_path=resource_path, param_name=param_name, param_value=param_value)
 
     @staticmethod
     def action_update_cluster_chassis_id(engine, resource_path, mapping_id=''):
@@ -165,6 +169,17 @@ class OpenApiClusterCli(OpenApiBaseCli):
                                                    engine.ip, engine.open_api_port, resource_path, params)
 
     @staticmethod
+    def action_rotate_cluster_manager_property(engine, resource_path):
+        logging.info(f'Run action rotate on: {resource_path} using OpenApi')
+        params = \
+            {
+                "state": "start",
+                "parameters": {}
+            }
+        return OpenApiCommandHelper.execute_action(ActionType.ROTATE, engine.engine.username, engine.engine.password,
+                                                   engine.ip, engine.open_api_port, resource_path, params)
+
+    @staticmethod
     def action_reset(engine, resource_path, param=''):
         logging.info("Running action: reset {} on dut using OpenApi".format(resource_path))
 
@@ -217,5 +232,16 @@ class OpenApiClusterCli(OpenApiBaseCli):
 
     @staticmethod
     def action_update_sdn_trays_maintenance_state(engine, path, tray_id='', maintenance_state=''):
-        # For OpenAPI, tray_id needs to be added to the path as a suffix
-        return OpenApiClusterCli.action(engine, action_type=ActionType.UPDATE.replace('@', ''), resource_path=path, suffix=tray_id, param_name=ClusterConsts.MAINTENANCE_STATE, param_value=maintenance_state)
+        resource_path = path + '/' + tray_id if tray_id else path
+        return OpenApiClusterCli.action(
+            action_str=ActionType.UPDATE.replace('@', ''),
+            resource_path=resource_path,
+            main_param=None,
+            flags='',
+            additional_params={ClusterConsts.MAINTENANCE_STATE: maintenance_state},
+            engine=engine,
+            reboot_params=None,
+            send_user_confirmation=None,
+            expected_output='',
+            device=None,
+        )

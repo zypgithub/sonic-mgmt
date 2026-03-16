@@ -1,6 +1,7 @@
 import logging
 import pytest
 import time
+import random
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
@@ -21,7 +22,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.nmx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loopbox):
 
@@ -70,7 +71,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         initial_configuration_restored = False
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         config_files_paths = get_current_config_files_paths(sdn, devices)

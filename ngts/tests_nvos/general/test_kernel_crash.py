@@ -1,6 +1,7 @@
+
+
 import pytest
 import logging
-import random
 import time
 import re
 from datetime import datetime
@@ -25,8 +26,7 @@ logger = logging.getLogger()
 
 @pytest.mark.disable_loganalyzer
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_kernel_crash(engines, devices, topology_obj, test_api):
+def test_kernel_crash(engines, devices, topology_obj, random_api):
     """
         @summary: Test simulates kernal crash and verifies behavior
 
@@ -39,7 +39,6 @@ def test_kernel_crash(engines, devices, topology_obj, test_api):
         6. Get kdump files in tech-support
         7. Verify expected kdump files in tech-support
     """
-    TestToolkit.tested_api = test_api
     system = System()
 
     with allure.step("Simulate kernel crash"):

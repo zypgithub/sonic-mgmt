@@ -63,7 +63,8 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled, 
 
     :return:
     """
-    expected_packet_msg = f"ARP, Request who-has.*{hostname}.*\\(Broadcast\\).*"
+    expected_packet_msgs = [f"ARP, Request who-has.*{hostname}.*\\(Broadcast\\).*",
+                            f"ARP, Request who-has.*{engine.ip}.*\\(Broadcast\\).*"]
     eth0_gateway, eth0_ip, eth1_ip = replace_two_ip_addresses(engine)
 
     expected_msg1 = expected_messages[0].format(eth1_ip.split('/')[0]) if is_enabled else expected_messages[0]
@@ -74,8 +75,8 @@ def swap_ips_and_verify_logs_and_packets(engine, expected_messages, is_enabled, 
             with allure.independent_step('check tcpdump output'):
                 # Increase the timeout here if needed, up to 90 seconds
                 output = engine.run_cmd('sudo timeout 70 tcpdump -i eth0 arp')
-                matches = re.findall(expected_packet_msg, output)
-                assert bool(matches) == is_enabled, f"Assertion failed for expected packet msg: {expected_packet_msg}\n, output: {output}\n, param: {is_enabled}"
+                found_any = any(re.findall(msg, output) for msg in expected_packet_msgs)
+                assert found_any == is_enabled, f"Assertion failed: expected at least one match={is_enabled}, msgs: {expected_packet_msgs}\n, output: {output}"
 
             with allure.independent_step('check in logs'):
                 logs_output = engine.run_cmd(f'tail -n 400 /var/log/syslog')

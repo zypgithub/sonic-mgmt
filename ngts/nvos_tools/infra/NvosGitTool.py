@@ -18,7 +18,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator, Literal
+from typing import Iterator, Literal, List
 
 logger = logging.getLogger()
 
@@ -81,7 +81,7 @@ class NvosGitTool:
             atexit.register(lambda: shutil.rmtree(cls._tmp_home, ignore_errors=True))
         return cls._tmp_home
 
-    def _run_git_cmd(self, args: list[str], timeout: int = 60) -> subprocess.CompletedProcess:
+    def _run_git_cmd(self, args: List[str], timeout: int = 60) -> subprocess.CompletedProcess:
         """
         Run git command with safe.directory config to handle shared repo ownership.
 
@@ -380,7 +380,6 @@ class NvosGitTool:
         target_tag = f"{branch_prefix}_{version}"
         target_fw = self.get_fw_version_from_tag(target_tag, asic_type)
         if not target_fw:
-            # Try first tag as fallback (target may be newer than latest tag)
             target_fw = self.get_fw_version_from_tag(tags[0], asic_type)
         if not target_fw:
             raise ValueError(f"Could not determine target FW version for {asic_type} at tag {target_tag}")

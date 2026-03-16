@@ -152,6 +152,44 @@ class CurlTool:
             self._log(f"BMC did not become available within {timeout}s (elapsed: {elapsed_time:.1f}s)")
             return False
 
+    def wait_for_bmc_unavailable(self, timeout: int = 60, retry_interval: int = 5,
+                                 dut_engine=None) -> bool:
+        """
+        Wait until BMC is no longer responding to ping (e.g. after factory reset).
+
+        Args:
+            timeout: Maximum time to wait in seconds (default: 60)
+            retry_interval: Time between retry attempts in seconds (default: 5)
+            dut_engine: SSH engine to use for commands (uses default if None)
+
+        Returns:
+            bool: True if BMC becomes unavailable within timeout, False otherwise
+        """
+        dut_engine: LinuxSshEngine = dut_engine or TestToolkit.get_engine()
+
+        start_time = time.time()
+        attempt = 1
+
+        with allure.step(f'Wait for BMC to become unavailable (timeout: {timeout}s)'):
+            while time.time() - start_time < timeout:
+                self._log(f"Attempt {attempt}: Pinging BMC at {self.server_host}")
+
+                output = dut_engine.run_cmd(
+                    f"ping -c 1 -W 3 {self.server_host} > /dev/null 2>&1 && echo 'UP' || echo 'DOWN'"
+                )
+
+                if 'DOWN' in output:
+                    self._log(f"BMC is down after {time.time() - start_time:.1f}s")
+                    return True
+
+                self._log(f"BMC still responds to ping")
+                time.sleep(retry_interval)
+                attempt += 1
+
+            elapsed_time = time.time() - start_time
+            self._log(f"BMC did not become unavailable within {timeout}s (elapsed: {elapsed_time:.1f}s)")
+            return False
+
     def _verify_curl_installed(self):
         cmd = 'curl -version'
         output = self._run_cmd_in_process(cmd)

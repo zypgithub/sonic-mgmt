@@ -19,8 +19,7 @@ cmd_to_simulate_events = 'docker exec eventd events_publish_test.py -c '
 @pytest.mark.events
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_events(test_api, engines):
+def test_show_system_events(random_api, engines):
     """
     Run show system events and table-size commands and verify the required events and table-size
         Test flow:
@@ -30,7 +29,6 @@ def test_show_system_events(test_api, engines):
             4. Run 'nv show system events last 25' and validate there are 25 events in the output
             5. Run 'nv show system events recent 5' and validate there are events in the output
     """
-    TestToolkit.tested_api = test_api
     system = System()
 
     with allure.step('Simulate 60 system events'):
@@ -66,14 +64,12 @@ def test_show_system_events(test_api, engines):
 @pytest.mark.events
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_system_events_table_size(test_api):
+def test_show_system_events_table_size(random_api):
     """
     Run show system events and table-size commands and verify the required events and table-size
         Test flow:
             1. Run 'nv show system events table-size' and validate table-size is present in the output
     """
-    TestToolkit.tested_api = test_api
     system = System()
 
     with allure.step('Run show system events table-size command & validate table-size is present in the output'):
@@ -96,7 +92,6 @@ def test_system_events_maximum(random_api, engines):
             5. Unset system events table-size and validate table-size is set to default(1000)
             6. Clear system events
     """
-    TestToolkit.tested_api = random_api
     system = System()
     clear_system_events(system)
     try:
@@ -140,8 +135,7 @@ def test_system_events_maximum(random_api, engines):
 @pytest.mark.events
 @pytest.mark.system
 @pytest.mark.simx
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_system_events_table_size(test_api, engines):
+def test_set_system_events_table_size(random_api, engines):
     """
     Verify nv set system events table-size <size> command
         Test flow:
@@ -161,7 +155,6 @@ def test_set_system_events_table_size(test_api, engines):
             14	Run nv action clear system events
             15	Run nv show system events and validate table-occupancy should be 0
     """
-    TestToolkit.tested_api = test_api
     system = System()
 
     try:

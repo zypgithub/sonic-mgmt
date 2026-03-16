@@ -2,7 +2,7 @@ import logging
 
 from netmiko.exceptions import ReadTimeout
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
-from ngts.nvos_constants.constants_nvos import OutputFormat
+from ngts.nvos_constants.constants_nvos import OutputFormat, RebootConsts, ActionConsts
 from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
@@ -39,20 +39,14 @@ class NvueBaseCli(BaseCli):
 
     @classmethod
     def action(cls, action_str, resource_path, main_param, flags, additional_params, engine, reboot_params,
-               send_user_confirmation, expected_output, device, read_timeout=None) -> ResultObj:
+               send_user_confirmation, expected_output, device, timeout=None) -> ResultObj:
         """See documentation of BaseComponent.action()"""
         cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
         with allure.step('Running cmd: ' + cmd):
-            # Todo: Instead of send_command_timing, use send_command to expect one of [expected_output, prompt_message,
-            #  other stuff ?] with proper timeout settings so it doesn't wait too long if we encounter an unexpected
-            #  response. Also, find a way to keep getting input from the shell if the action takes a long time
-            #  ("Action executing...") and print it to the log, instead of waiting for the action to finish and only
-            #  then printing everything all at once.
-            # Use custom read_timeout for long-running operations (e.g., ISSU)
             timing_kwargs = {}
-            if read_timeout is not None:
-                timing_kwargs['read_timeout'] = read_timeout
+            if timeout is not None:
+                timing_kwargs['read_timeout'] = timeout
             response: str = netmiko_engine.send_command_timing(cmd, **timing_kwargs)
             logger.info(response)
 
@@ -61,7 +55,6 @@ class NvueBaseCli(BaseCli):
         expect_prompt = bool(send_user_confirmation)
         if prompt_is_shown and expect_prompt:
             with allure.step(f'Sending "{send_user_confirmation}" in response'):
-                # Use custom read_timeout for long-running operations after user confirmation (e.g., ISSU)
                 response = netmiko_engine.send_command_timing(send_user_confirmation, **timing_kwargs)
                 logger.info(response)
         elif prompt_is_shown:  # we see a confirmation-prompt that we didn't expect; it's an error
@@ -182,11 +175,16 @@ class NvueBaseCli(BaseCli):
         logger.info(f"Running command: {command}")
 
         if expect_reboot:
+            if action_type == ActionConsts.INSTALL:
+                wait_time_before_reboot = device.wait_before_reboot_single_fw_install
+            else:
+                wait_time_before_reboot = RebootConsts.WAIT_TIME_BEFORE_REBOOT
             return (DutUtilsTool.reload(engine=engine, device=device, command=command, confirm=press_y,
                                         reboot_params=RebootParams(recovery_engine=recovery_engine,
                                                                    topology_obj=topology_obj,
                                                                    system_is_ready_timeout=system_is_ready_timeout,
-                                                                   track_boot_intervals=track_boot_intervals)
+                                                                   track_boot_intervals=track_boot_intervals,
+                                                                   wait_time_before_reboot=wait_time_before_reboot)
                                         ).verify_result(should_succeed=should_succeed))
         else:
             output = engine.run_cmd(command)

@@ -1,6 +1,7 @@
 import logging
 import re
 import time
+from datetime import datetime
 
 import allure
 from retry import retry
@@ -46,6 +47,47 @@ class History(BaseComponent):
         if not file_output:
             file_output = self.show()
         return re.findall(line_to_search, file_output)
+
+    @staticmethod
+    def _parse_log_date(line):
+        """Extract datetime from a health log line. Returns None if not parseable."""
+        match = re.search(r'(\w{3}\s+\d{1,2}\s+\d{2}:\d{2}:\d{2})', line)
+        if not match:
+            return None
+        return datetime.strptime(f"{datetime.now().year} {match.group(1)}", "%Y %b %d %H:%M:%S")
+
+    def _filter_lines_by_date(self, patterns, since_date, file_output):
+        """Return log lines that match any pattern and are on or after since_date."""
+        return [line.strip() for line in file_output.splitlines()
+                if any(re.search(p, line) for p in patterns) and
+                (self._parse_log_date(line) or datetime.min) >= since_date]
+
+    def search_line_by_date(self, lines_to_search, since_date, expect_found=True, file_output=None):
+        """Search for lines in health history filtered by date.
+
+        Args:
+            lines_to_search: a single regex pattern (str) or a list of regex patterns.
+            since_date: datetime object - only lines on or after this date are considered.
+            expect_found: if True, assert all patterns found; if False, assert none found.
+            file_output: optional pre-fetched output; fetched via show() if None.
+        """
+        if isinstance(lines_to_search, str):
+            lines_to_search = [lines_to_search]
+        if not file_output:
+            file_output = self.show()
+
+        matched_lines = self._filter_lines_by_date(lines_to_search, since_date, file_output)
+
+        if expect_found:
+            missing = [p for p in lines_to_search if not any(re.search(p, m) for m in matched_lines)]
+            assert not missing, \
+                f"Expected all patterns to appear after {since_date}, but not found: {missing}"
+        else:
+            assert not matched_lines, \
+                f"Expected '{lines_to_search}' NOT to appear after {since_date}, but found: {matched_lines}"
+
+        logger.info(f"Found {len(matched_lines)} lines matching '{lines_to_search}' since {since_date}")
+        return matched_lines
 
     def get_last_status_from_health_file(self, file_output=None):
         last_status = self.search_line(HealthConsts.ADD_STATUS_TO_SUMMARY_REGEX, file_output)

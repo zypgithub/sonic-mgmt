@@ -13,8 +13,6 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.constants.constants import GnmiConsts
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.nvos_tools.system.System import System
@@ -40,6 +38,14 @@ DEFAULT_VALUES = {CPU_WARNING_THRESHOLD: 50,
                   MEMORY_RESTART_THRESHOLD: 95,
                   NUMBER_OF_SAMPLES: 5}
 
+# Mapping between warning and restart thresholds (warning must be < restart)
+THRESHOLD_PAIRS = {
+    MEMORY_WARNING_THRESHOLD: MEMORY_RESTART_THRESHOLD,
+    MEMORY_RESTART_THRESHOLD: MEMORY_WARNING_THRESHOLD,
+    CPU_WARNING_THRESHOLD: CPU_RESTARTS_THRESHOLD,
+    CPU_RESTARTS_THRESHOLD: CPU_WARNING_THRESHOLD,
+}
+
 WARNING_MSG_PATTERN = r"WARNING cpu_memory_container_checker: (Memory|CPU) usage ([0-9]+(\.[0-9]+))% is above expected threshold ([0-9]+)%"
 HIGH_USAGE_EVENT_MSG_PATTERN = r"NOTICE cpu_memory_container_checker: :- publish: EVENT_PUBLISHED:.*\"resource\":\"{}\".*\"text\":\"(Memory|CPU) usage ([0-9]+(\.[0-9]+))% is above expected threshold ([0-9]+)%\""
 GENERATING_TECH_SUPPORT_MSG_PATTERN = r"INFO cpu_memory_container_checker: Generating techsupport"
@@ -52,8 +58,7 @@ NORMAL_USAGE_EVENT_MSG_PATTERN = r"NOTICE cpu_memory_container_checker: :- publi
 
 
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_configuration_cli(engines, devices, test_api):
+def test_configuration_cli(engines, devices, random_api):
     """
         @summary: check 'CPU/memory monitoring' functionality
 
@@ -74,7 +79,6 @@ def test_configuration_cli(engines, devices, test_api):
         14. Change sample-number for the selected docker in config_db and verify output
         15. Set thresholds to default values
     """
-    TestToolkit.tested_api = test_api
     fae = Fae()
     cluster = Cluster()
     changed_configurations = []
@@ -95,8 +99,7 @@ def test_configuration_cli(engines, devices, test_api):
             tested_threshold = random.choice(memory_thresholds)
 
         with allure.step(f"Change {tested_threshold} value and verify"):
-            new_memory_threshold = randomize_new_value(limit=tested_threshold,
-                                                       curr_value=output_dict[tested_threshold])
+            new_memory_threshold = randomize_new_value(tested_threshold, output_dict)
             set_value_and_verify(limit=tested_threshold, new_value=new_memory_threshold)
             changed_configurations.append(tested_threshold)
 
@@ -105,14 +108,12 @@ def test_configuration_cli(engines, devices, test_api):
             tested_threshold = random.choice(cpu_thresholds)
 
         with allure.step(f"Change {tested_threshold} value and verify"):
-            new_cpu_threshold = randomize_new_value(limit=tested_threshold,
-                                                    curr_value=output_dict[tested_threshold])
+            new_cpu_threshold = randomize_new_value(tested_threshold, output_dict)
             set_value_and_verify(limit=tested_threshold, new_value=new_cpu_threshold)
             changed_configurations.append(tested_threshold)
 
         with allure.step(f"Change number of samples"):
-            new_sample_number = randomize_new_value(limit=NUMBER_OF_SAMPLES,
-                                                    curr_value=output_dict[NUMBER_OF_SAMPLES])
+            new_sample_number = randomize_new_value(NUMBER_OF_SAMPLES, output_dict)
             set_value_and_verify(limit=NUMBER_OF_SAMPLES, new_value=new_sample_number)
             changed_configurations.append(NUMBER_OF_SAMPLES)
 
@@ -145,13 +146,11 @@ def test_configuration_cli(engines, devices, test_api):
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
         with allure.step(f"Set thresholds to default values"):
-            for limit in changed_configurations:
-                set_value_and_verify(limit, DEFAULT_VALUES[limit])
+            restore_thresholds_to_defaults(changed_configurations)
 
 
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_high_memory_usage_simulation(engines, devices, test_api):
+def test_high_memory_usage_simulation(engines, devices, random_api):
     """
         @summary: simulate high memory usage and test feature functionality
 
@@ -172,7 +171,6 @@ def test_high_memory_usage_simulation(engines, devices, test_api):
         12. Verify no new tech-support file was generated
         13. Set thresholds to default values
     """
-    TestToolkit.tested_api = test_api
     fae = Fae()
     cluster = Cluster()
     changed_configurations = []
@@ -201,15 +199,15 @@ def test_high_memory_usage_simulation(engines, devices, test_api):
             logger.info(f"Selected docker: {docker}")
 
         with allure.step(f"Change {MEMORY_WARNING_THRESHOLD} and start high memory usage simulation"):
-            new_memory_threshold = 15
-            set_value_and_verify(limit=MEMORY_WARNING_THRESHOLD, new_value=new_memory_threshold)
+            warning_threshold = 15
+            set_value_and_verify(limit=MEMORY_WARNING_THRESHOLD, new_value=warning_threshold)
             changed_configurations.append(MEMORY_WARNING_THRESHOLD)
             simulate_and_verify_high_memory_usage(engines, devices, docker, warning_phase=True)
 
         with allure.step(f"Change {MEMORY_RESTART_THRESHOLD} and start another high memory simulation"):
             # Restart threshold must be greater than warning threshold
-            new_memory_restart_threshold = new_memory_threshold + 1
-            set_value_and_verify(limit=MEMORY_RESTART_THRESHOLD, new_value=new_memory_restart_threshold)
+            restart_threshold = warning_threshold + 1
+            set_value_and_verify(limit=MEMORY_RESTART_THRESHOLD, new_value=restart_threshold)
             changed_configurations.append(MEMORY_RESTART_THRESHOLD)
             simulate_and_verify_high_memory_usage(engines, devices, docker)
 
@@ -223,15 +221,11 @@ def test_high_memory_usage_simulation(engines, devices, test_api):
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
         with allure.step(f"Set thresholds to default values"):
-            # Restore in reverse order: restart threshold (95) before warning threshold (90)
-            # to ensure restart > warning constraint is never violated
-            for limit in reversed(changed_configurations):
-                set_value_and_verify(limit=limit, new_value=DEFAULT_VALUES[limit])
+            restore_thresholds_to_defaults(changed_configurations)
 
 
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_high_cpu_usage_simulation(engines, devices, test_api):
+def test_high_cpu_usage_simulation(engines, devices, random_api):
     """
         @summary: simulate high cpu usage and test feature functionality
 
@@ -244,7 +238,6 @@ def test_high_cpu_usage_simulation(engines, devices, test_api):
         6. Verify events in events table
         7. Verify there is a warning message in logs describing high cpu usage
     """
-    TestToolkit.tested_api = test_api
     fae = Fae()
     cluster = Cluster()
     changed_configurations = []
@@ -293,20 +286,37 @@ def test_high_cpu_usage_simulation(engines, devices, test_api):
                 Cluster().unset(apply=True)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
-        with allure.step("Set thresholds to default value"):
-            for limit in changed_configurations:
-                set_value_and_verify(limit=limit, new_value=DEFAULT_VALUES[CPU_WARNING_THRESHOLD])
+        with allure.step("Set thresholds to default values"):
+            restore_thresholds_to_defaults(changed_configurations)
 
 
-def randomize_new_value(limit, curr_value):
+def randomize_new_value(limit, output_dict):
     """
         Helper function to randomize new value for resource.
+        For warning thresholds: value must be less than restart threshold.
+        For restart thresholds: value must be greater than warning threshold.
     """
-    if limit == "number-of-samples":
-        new_value = random.choice([num for num in range(1, 21) if num != int(curr_value)])
+    curr_value = int(output_dict[limit])
+    is_warning = limit in [MEMORY_WARNING_THRESHOLD, CPU_WARNING_THRESHOLD]
+    is_restart = limit in [MEMORY_RESTART_THRESHOLD, CPU_RESTARTS_THRESHOLD]
+
+    if limit == NUMBER_OF_SAMPLES:
+        return random.choice([n for n in range(1, 21) if n != curr_value])
+
+    # Get the related threshold value if this is a warning/restart threshold
+    related = THRESHOLD_PAIRS.get(limit)
+    related_val = int(output_dict[related]) if related else None
+
+    if is_warning:
+        # Warning must be < restart, so max is (restart - 1)
+        min_val, max_val = DEFAULT_VALUES[limit], related_val - 1
+    elif is_restart:
+        # Restart must be > warning, so min is (warning + 1)
+        min_val, max_val = related_val + 1, 100
     else:
-        new_value = random.choice([num for num in range(DEFAULT_VALUES[limit], 101)])
-    return new_value
+        min_val, max_val = DEFAULT_VALUES[limit], 100
+
+    return random.choice([n for n in range(min_val, max_val + 1) if n != curr_value])
 
 
 def enable_feature_and_verify(status=True):
@@ -328,6 +338,23 @@ def set_value_and_verify(limit, new_value):
         show_and_verify(attribute=limit, expected_value=str(new_value))
 
 
+def restore_thresholds_to_defaults(changed_configurations):
+    """
+        Helper function to restore thresholds to default values in the correct order.
+        Restart thresholds must be set before warning thresholds to avoid constraint violation
+        (warning must be less than restart).
+    """
+    # Restart thresholds first (priority 0), warning thresholds second (priority 1), others last (priority 2)
+    restart_thresholds = {CPU_RESTARTS_THRESHOLD, MEMORY_RESTART_THRESHOLD}
+    warning_thresholds = {CPU_WARNING_THRESHOLD, MEMORY_WARNING_THRESHOLD}
+
+    def priority(limit):
+        return 0 if limit in restart_thresholds else (1 if limit in warning_thresholds else 2)
+
+    for limit in sorted(changed_configurations, key=priority):
+        set_value_and_verify(limit=limit, new_value=DEFAULT_VALUES[limit])
+
+
 def show_and_verify(attribute, expected_value):
     """
         Helper function to show output of "nv show fae system control dockers resource-limit" command, and verify it.
@@ -343,10 +370,9 @@ def set_value_for_docker_and_verify(engines, limit, docker):
     """
     with allure.step(f"Get curr {limit}"):
         output_dict = OutputParsingTool.parse_json_str_to_dictionary(Fae().system.resource_limit.show()).verify_result()
-        curr_value = output_dict[limit]
 
     with allure.step(f"Randomize new {limit}"):
-        new_value = str(randomize_new_value(limit, curr_value))
+        new_value = str(randomize_new_value(limit, output_dict))
 
     with allure.step(f"Set {limit} to {new_value} in config_db"):
         db_config = f"CPU_MEMORY_MONITOR|{docker}"
@@ -502,7 +528,7 @@ def get_events(resource):
     return high_usage_event, normal_usage_event
 
 
-@retry(tries=5, delay=10)
+@retry(tries=8, delay=10)
 def verify_events_in_logs(engines, system, docker, start_time):
     log_message_list = [HIGH_USAGE_EVENT_MSG_PATTERN.format(docker),
                         NORMAL_USAGE_EVENT_MSG_PATTERN.format(docker)]

@@ -1,3 +1,4 @@
+import random
 import pytest
 
 from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType, RebootTestFlowType
@@ -33,7 +34,7 @@ def test_api_mtls_cli(test_api):
 
 @pytest.mark.mtls
 @pytest.mark.security
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
+@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_api_mtls_set_bad_param(test_api):
     """
     Verify that set with bad param rejected

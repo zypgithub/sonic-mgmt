@@ -18,6 +18,7 @@ from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.fae.Debug import Debug
 from ngts.nvos_tools.fae.Asic import Asic
 from ngts.nvos_tools.fae.FaePowerCapping import FaePowerCapping
+from ngts.nvos_tools.fae.SecureState import SecureState
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
@@ -98,7 +99,6 @@ class Ib(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/ib')
         self.ufm_mad = BaseComponent(self, path='/ufm-m')  # [L.A] temporary change ('/ufm-mad')
-        self.link_low_power = BaseComponent(self, path='/link-low-power')
 
 
 class SonicCli(BaseComponent):
@@ -124,6 +124,7 @@ class FaePlatform(BaseComponent):
         self.asic = Asic(self)
         self.power_capping = FaePowerCapping(self)
         self.write_protection = WriteProtection(self)
+        self.secure_state = SecureState(self)
 
 
 class WriteProtection(BaseComponent):
@@ -223,6 +224,7 @@ class FaeSystem(BaseComponent):
         self.asic_debug_config = BaseComponent(self, path='/asic-debug-config')
         self.mloop = Mloop(self)
         self.cpo = BaseComponent(self, path='/cpo')
+        self.peer_port = FaePeerPort(self)
 
     def ssd_cleanup(self, expected_str="", dut_engine=None):
         """nv action run fae system ssd-cleanup """
@@ -250,3 +252,10 @@ class Mloop(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path='/mloop')
         self.state = BaseComponent(self, path='/state')
+
+
+class FaePeerPort(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/peer-port')
+        self.state = BaseComponent(self, path='/state')
+        self.interval = BaseComponent(self, path='/interval')

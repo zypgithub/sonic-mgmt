@@ -1,14 +1,9 @@
-import os
-from ngts.constants.constants import InfraConst
-from enum import Enum
-
-
 class SharedConsts:
     ENV_COVERAGE_FILE = 'COVERAGE_FILE'
     GCOV_DIR = '/sonic'
     SONIC_SOURCES_PATH = ['/src/sonic_src_cov.tar.gz']
-    C_DIR = "/c_coverage/"
-    PYTHON_DIR = "/python_coverage/"
+    C_DIR = "c_coverage"
+    PYTHON_DIR = "python_coverage"
     JENKINS_SONAR_PROJECT_PATH = "/nbu-sws-nos/job/Verification/job/sonar/job"
     JENKINS_CLI_COVERAGE_HIT_LIST_PATH = "/nbu-sw-da/job"
     JENKINS_BASE_URL = "https://nbuprod.blsm.nvidia.com/"
@@ -109,7 +104,7 @@ class NvosConsts:
     COVERAGE_SCRIPT_PATH = "/usr/local/bin/nvos_coverage.sh"
     COVERAGE_SCRIPT_STAGE1 = "stage1"
     COVERAGE_SCRIPT_STAGE2 = "stage2"
-    COVERAGE_OUTPUT_ON_SWITCH = "/sonic/coverage"
+    COVERAGE_OUTPUT_ON_SWITCH = "coverage"  # NOTE: coverage is a directory on the switch home directory
 
 
 class SonicConsts:

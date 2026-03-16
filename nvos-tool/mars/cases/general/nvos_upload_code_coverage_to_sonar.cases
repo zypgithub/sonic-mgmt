@@ -21,18 +21,52 @@
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/code_coverage/upload_results_to_sonar.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts --dest=[[conf:extra_info.dest]] -k test_copy_unitests_results -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+        <static_args>
+          --setup_name [[conf:extra_info.setup_name]]
+          --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/code_coverage/upload_results_to_sonar.py
+          --raw_options "\'
+            --rootdir=/root/mars/workspace/sonic-mgmt/ngts
+            --dest=[[conf:extra_info.dest]]
+            -k test_copy_unitests_results
+            -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+            --log-level=INFO
+            --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+            --target_version=[[conf:extra_info.target_version]]
+            --clean-alluredir
+            --disable-warnings
+            --alluredir=/tmp/allure-results
+            --showlocals [[conf:extra_info.additional_options]]
+            --timeout 900
+          \'"
+        </static_args>
       </params>
     </cmd>
   </case>
 
-    <case>
+  <case>
     <name> Upload results to Sonar </name>
     <info> </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/scripts/code_coverage/upload_results_to_sonar.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts --dest=[[conf:extra_info.dest]] -k test_upload_results_to_sonar -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results --showlocals  [[conf:extra_info.additional_options]]  --timeout 900   \'"</static_args>
+        <static_args>
+          --setup_name [[conf:extra_info.setup_name]]
+          --test_script
+          /root/mars/workspace/sonic-mgmt/ngts/scripts/code_coverage/upload_results_to_sonar.py
+          --raw_options "\'
+            --rootdir=/root/mars/workspace/sonic-mgmt/ngts
+            --dest=[[conf:extra_info.dest]]
+            -k test_upload_results_to_sonar
+            -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
+            --log-level=INFO
+            --default_pass_env_var=[[conf:extra_info.default_pass_env_var]]
+            --clean-alluredir
+            --disable-warnings
+            --alluredir=/tmp/allure-results
+            --showlocals [[conf:extra_info.additional_options]]
+            --timeout 900
+          \'"
+        </static_args>
       </params>
     </cmd>
   </case>

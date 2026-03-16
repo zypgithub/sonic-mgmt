@@ -1,3 +1,9 @@
+# Setups where BMC or management does not support IPv6; skip IPv6-only tests on these.
+SETUPS_WITHOUT_IPV6_BMC = (
+    'NVOS_rosalind_eb1_10', 'NVOS_rosalind_nvos_2182', 'NVOS_rosalind_nvos_2164'
+)
+
+
 class Transceiver:
     def __init__(self, transceiver_type, last_release_path, test_versions_path,
                  upgrade_version_name, downgrade_version_name,

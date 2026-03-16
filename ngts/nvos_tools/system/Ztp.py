@@ -5,6 +5,7 @@ from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class Ztp(BaseComponent):
@@ -28,7 +29,9 @@ class Ztp(BaseComponent):
             if reboot_expected:
                 DutUtilsTool.wait_on_system_reboot(TestToolkit.get_engine())
                 DutUtilsTool.wait_for_nvos_to_become_functional(engine)
-            time.sleep(3)
+
+            if is_redmine_issue_active(4868603):
+                time.sleep(5)
             return res
 
     def action_abort_ztp(self, engine=None, device=None, params_dict={}):

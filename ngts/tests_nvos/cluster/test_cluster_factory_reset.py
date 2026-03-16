@@ -14,6 +14,8 @@ from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
+from ngts.tests_nvos.cluster.dscp_marking_tools import DscpValueSelector
+from ngts.tests_nvos.cluster.test_cluster_dscp_marking import _get_random_dscp_not_default
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.factory_reset.helpers import add_verification_data, \
     verify_the_setup_is_functional, get_current_time, KEEP_ONLY_FILES
@@ -54,6 +56,12 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             with allure.step("Create Empty partition"):
                 ClusterTools.create_empty_partition(sdn, {})
 
+        with allure.step("Configure custom DSCP before factory reset"):
+            dscp_value, dscp_numeric = _get_random_dscp_not_default()
+            logger.info(f"Setting DSCP to {dscp_value} (numeric: {dscp_numeric}) before factory reset")
+            cluster.set(op_param_name=ClusterConsts.DSCP_MARKING_FIELD,
+                        op_param_value=dscp_value, apply=True)
+
         with allure.step("Run reset factory without params"):
             execute_reset_factory(engines, system, devices.dut.reset_factory, "", current_time)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
@@ -61,7 +69,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in devices.dut.expected_cluster_apps:
-                ClusterTools.verify_app_is_down(engines, app)
+                ClusterTools.verify_app_is_down(engines, app, devices)
             # Only check file types that were actually generated
             for file_type in all_config_files_paths.keys():
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
@@ -69,7 +77,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             for file_type in state_files:
                 if file_type in all_state_files_paths:
                     verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             ClusterTools.verify_sdn_config_files_deleted(sdn, devices)
             ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices)
             sdn_files_deleted = True
@@ -91,6 +99,16 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
                                                                      output_format=output_format).get_returned_value()
                 assert initial_partition_output == output, f'Partition was not restored to initial. initial: {initial_partition_output}\n current: {output}'
 
+        with allure.step(f"Verify DSCP reset to default ({ClusterConsts.DSCP_DEFAULT_VALUE}) after factory reset"):
+            show_output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=output_format), output_format=output_format
+            ).get_returned_value()
+            actual_dscp = show_output.get(ClusterConsts.DSCP_MARKING_FIELD)
+            actual_numeric = DscpValueSelector.get_numeric_value(actual_dscp)
+            assert actual_numeric == ClusterConsts.DSCP_DEFAULT_VALUE, \
+                f"DSCP should be default ({ClusterConsts.DSCP_DEFAULT_VALUE}) after factory reset, " \
+                f"got {actual_dscp} ({actual_numeric})"
+
     finally:
         if interface_wa_called:
             try:
@@ -106,7 +124,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
@@ -149,7 +167,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in devices.dut.expected_cluster_apps:
-                ClusterTools.verify_app_is_down(engines, app)
+                ClusterTools.verify_app_is_down(engines, app, devices)
             # Only check file types that were actually generated
             for file_type in all_config_files_paths.keys():
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
@@ -157,7 +175,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             for file_type in state_files:
                 if file_type in all_state_files_paths:
                     verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             ClusterTools.verify_sdn_config_files_deleted(sdn, devices)
             ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices)
             sdn_files_deleted = True
@@ -191,7 +209,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
@@ -233,7 +251,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
         with allure.step("Verify cluster in correct state"):
             verify_cluster_state_resetted(cluster)
             for app in devices.dut.expected_cluster_apps:
-                ClusterTools.verify_app_is_down(engines, app)
+                ClusterTools.verify_app_is_down(engines, app, devices)
             # Only check file types that were actually generated
             for file_type in all_config_files_paths.keys():
                 verify_all_files_are_deleted(engines, all_config_files_paths[file_type])
@@ -241,7 +259,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             for file_type in state_files:
                 if file_type in all_state_files_paths:
                     verify_all_files_are_deleted(engines, all_state_files_paths[file_type])
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             ClusterTools.verify_sdn_config_files_deleted(sdn, devices)
             ClusterTools.verify_sdn_state_files_deleted(sdn, standalone_system, devices)
             sdn_files_deleted = True
@@ -275,7 +293,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
 
@@ -375,7 +393,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
             verify_the_setup_is_functional(system, engines, dut=devices.dut)
 
         if not sdn_files_deleted:
-            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json)
+            ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
             delete_all_sdn_fetched_generated_files(engines, sdn, all_config_files_paths, all_state_files_paths, standalone_system)
 
         with allure.step("Run reset factory to get back to default configuration"):
@@ -431,7 +449,8 @@ def verify_all_files_are_deleted(engines, files_list):
 def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, system, sdn, all_state_files_paths, all_config_files_paths, output_format, initial_config_contents, setup_name, standalone_system):
 
     logger.info("Setting cluster state to enabled")
-    ClusterTools.start_cluster(cluster, setup_name, output_format)
+    ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
 
     # Get config files paths for all apps that exist on this device type
     config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)

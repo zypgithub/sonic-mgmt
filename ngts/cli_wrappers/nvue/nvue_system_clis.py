@@ -388,6 +388,30 @@ class NvueSystemCli(NvueBaseCli):
 
     @staticmethod
     @check_output
+    def action_update_system_internal_property(engine, resource_path, param_name="", param_val=""):
+        path = resource_path.replace("/", " ").strip()
+        cmd = f"nv action update {path} {param_val}".strip()
+        logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_restore_system_internal_property(engine, resource_path):
+        path = resource_path.replace("/", " ").strip()
+        cmd = f"nv action restore {path}"
+        logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def action_rotate_system_internal_property(engine, resource_path):
+        path = resource_path.replace("/", " ").strip()
+        cmd = f"nv action rotate {path}"
+        logging.info(f"Running action cmd: '{cmd}' on dut using NVUE")
+        return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
     def action_upload_platform_certificate(engine, resource_path, remote_url):
         """
         Upload platform certificate to a remote server.

@@ -181,9 +181,13 @@ class ResultObj:
         return msg
 
     def apply_occurred(self) -> bool:
-        apply_occurred = bool(self and self.result and isinstance(self.returned_value, str) and
-                              re.findall('verif.*applied', self.returned_value))
-        # logging.warning(
-        #     f'DEBUG:\nresult: {self.result}\ninfo: {self.info}\nreturned value: {self.returned_value}\n'
-        #     f'issue type: {self.issue_type}\n***should sleep***: {apply_occurred}')
-        return apply_occurred
+        # NVUE: apply CLI output is in returned_value and contains "verif...applied"
+        nvue_apply = (
+            self and self.result and isinstance(self.returned_value, str) and
+            re.findall('verif.*applied', self.returned_value)
+        )
+        # OpenAPI: apply success sets returned_value to "Configuration applied successfully"
+        openapi_apply = (
+            self and self.result and isinstance(self.returned_value, str) and 'applied' in self.returned_value
+        )
+        return bool(nvue_apply or openapi_apply)

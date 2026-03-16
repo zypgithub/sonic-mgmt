@@ -58,7 +58,7 @@ class IbInterfaceConsts:
     LINK_PHYSICAL_PORT_STATE_LINK_UP = 'LinkUp'
     LINK_PHYSICAL_PORT_STATE_DISABLED = 'Disabled'
     LINK_PHYSICAL_PORT_STATE_POLLING = 'Polling'
-    LINK_PHYSICAL_PORT_STATE_POLLING_XDR = 'PortConfigurationTraining'
+    LINK_PHYSICAL_PORT_STATE_CONFIGURATION_TRAINING = 'PortConfigurationTraining'
     LINK_ADMIN_STATUS = "admin-status"
     LINK_OPER_STATUS = "oper-status"
     LINK_STATE = "state"
@@ -405,7 +405,5 @@ class PhyDetailConsts:
         'cable-proto-cap-ext': 'sai_uint32_t',
     }
 
-    # Attributes that should NOT exist at all on QTM4+ ASICs
-    QTM4_NON_EXISTENT_ATTRS = ['pd-link-width-enabled', 'phy-manager-link-width-enabled',
-                               'core-to-phy-link-width-enabled', 'cable-proto-cap-ext',
-                               'phy-hst-link-width-enabled', 'phy-hst-link-speed-enabled']
+    # These attributes now return scalar values on QTM4+ after product fix (no longer null/absent)
+    QTM4_NON_EXISTENT_ATTRS = []

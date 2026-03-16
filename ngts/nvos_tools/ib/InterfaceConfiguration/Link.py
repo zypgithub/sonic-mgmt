@@ -1,6 +1,14 @@
+from enum import Enum
+from typing import List
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.ib.InterfaceConfiguration.MgmtStats import MgmtStats
 from ngts.nvos_tools.ib.InterfaceConfiguration.Phy import Phy
+
+
+class LowPower(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj, path='/low-power')
+        self.state = BaseComponent(self, path='/state')
 
 
 class LinkMgmt(BaseComponent):
@@ -17,3 +25,4 @@ class LinkMgmt(BaseComponent):
         self.kr = BaseComponent(self, path='/link-training')
         self.plr = BaseComponent(self, path='/plr')
         self.ib_subnet = BaseComponent(self, path='/ib-subnet')
+        self.low_power = LowPower(self)

@@ -29,12 +29,10 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_ci
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment(engines, devices, test_api, output_format):
+def test_show_platform_environment(engines, devices, random_api, output_format):
     """
     Show platform environment test
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()
@@ -60,12 +58,10 @@ def test_show_platform_environment(engines, devices, test_api, output_format):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment_fan(engines, devices, test_api, output_format, skip_for_fanless_setup):
+def test_show_platform_environment_fan(engines, devices, random_api, output_format, skip_for_fanless_setup):
     """
     Show platform environment fan test
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create Platform object"):
         platform = Platform()
@@ -125,12 +121,10 @@ def _test_specific_fan(fan, output_format, expected, output, platform):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment_led(engines, devices, test_api):
+def test_show_platform_environment_led(engines, devices, random_api):
     """
     Show platform environment led test
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()
@@ -153,8 +147,7 @@ def test_show_platform_environment_led(engines, devices, test_api):
 @pytest.mark.platform
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_set_platform_environment_led(engines, devices, test_api):
+def test_set_platform_environment_led(engines, devices, random_api):
     """
     Set platform environment led test
 
@@ -164,7 +157,6 @@ def test_set_platform_environment_led(engines, devices, test_api):
     3. Turn-on UID led and check led is green
     4. Unset it and check it returned to default values
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()
@@ -221,15 +213,12 @@ def test_set_platform_environment_led(engines, devices, test_api):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment_psu(engines, devices, test_api):
+def test_show_platform_environment_psu(engines, devices, random_api):
     """
     Show platform environment psu test
     """
     if not devices.dut.psu_list:
         pytest.skip("Device has no PSUs")
-
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()
@@ -253,8 +242,7 @@ def test_show_platform_environment_psu(engines, devices, test_api):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.skynet
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_platform_environment_temperature(engines, devices, test_api):
+def test_show_platform_environment_temperature(engines, devices, random_api):
     """
     Show platform environment temperature test
 
@@ -268,7 +256,6 @@ def test_show_platform_environment_temperature(engines, devices, test_api):
     7. Validate PSU sensors temp in specified range from mean by some tolerance
 
     """
-    TestToolkit.tested_api = test_api
 
     with allure.step("Create System object"):
         platform = Platform()

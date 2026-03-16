@@ -1,6 +1,5 @@
 import logging
 import pytest
-import random
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
@@ -60,8 +59,7 @@ def _verify_write_protection_state(fae, expected_state: str):
 
 
 @pytest.mark.fae
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_platform_write_protection_enabled(engines, test_api):
+def test_platform_write_protection_enabled(engines, random_api):
     """
     Test write protection can be controlled via Redfish and verified via CLI
 
@@ -71,7 +69,6 @@ def test_platform_write_protection_enabled(engines, test_api):
         3. Verify disabled via CLI
         4. Finally: Re-enable write protection and verify (cleanup)
     """
-    TestToolkit.tested_api = test_api
     fae = Fae()
 
     # Get BMC admin password from TPM

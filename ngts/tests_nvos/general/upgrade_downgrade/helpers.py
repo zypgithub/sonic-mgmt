@@ -22,6 +22,7 @@ from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.system.System import System
 from ngts.ngts_types import EnginesT, DevicesT
 from ngts.nvos_tools.system.Asic import Asic
+from ngts.nvos_tools.infra.IpTool import IpTool
 
 logger = logging.getLogger(__name__)
 ResultsMetadataT = Dict['ResultMetadata', Union[Any, Dict[str, Any]]]
@@ -358,7 +359,7 @@ def _update_nvos(engines: EnginesT, topology_obj, nvos: Path) -> Result:
         system.image.action_fetch(ImageConsts.SCP_PATH_SERVER.format(
             username=engines.sonic_mgmt.username,
             password=engines.sonic_mgmt.password,
-            ip=engines.sonic_mgmt.ip,
+            ip=IpTool.format_ip_for_uri(engines.sonic_mgmt),
             path=nvos,
         ))
 
@@ -405,7 +406,7 @@ def update_system_fw(devices: DevicesT, engines: EnginesT, sys_pkg: SystemPackag
     '''
     logger.info("Starting Upgrade Action")
     metadata: ResultsMetadataT = {}
-    scp_path = 'scp://{}:{}@{}'.format(engines.sonic_mgmt.username, engines.sonic_mgmt.password, engines.sonic_mgmt.ip)
+    scp_path = 'scp://{}:{}@{}'.format(engines.sonic_mgmt.username, engines.sonic_mgmt.password, IpTool.format_ip_for_uri(engines.sonic_mgmt))
 
     with allure.step("Get system current FW versions"):
         current_fw_versions = get_platform_fw_versions()
@@ -461,7 +462,7 @@ def load_config(engines: EnginesT, config_file: Union[Path, str]) -> None:
     remote_url = ImageConsts.SCP_PATH_SERVER.format(
         username=engines.sonic_mgmt.username,
         password=engines.sonic_mgmt.password,
-        ip=engines.sonic_mgmt.ip,
+        ip=IpTool.format_ip_for_uri(engines.sonic_mgmt),
         path=config_file,
     )
 

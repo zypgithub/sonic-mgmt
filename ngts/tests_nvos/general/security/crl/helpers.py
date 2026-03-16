@@ -1,280 +1,178 @@
 import logging
 import time
-from typing import Dict, List, Optional, Tuple
 
 from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
-from ngts.nvos_tools.infra.CrlValidator import CrlClient
+from ngts.nvos_tools.infra.CrlValidator import ClientConfig, CrlValidator
 from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.helpers import import_cas_safely, import_certs_safely, import_crl_safely
 from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, EncryptionMode
-from ngts.tests_nvos.general.security.nmx_cert.helpers import disable_cluster_app_manager_state, enable_cluster, disable_cluster, enable_cluster_app_manager_state
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import (
-    UserInfo,
+from ngts.tests_nvos.general.security.nmx_cert.helpers import (
+    disable_cluster,
+    disable_cluster_app_manager_state,
+    enable_cluster,
+    enable_cluster_app_manager_state,
 )
 from ngts.tests_nvos.system.gnmi.GnmiClient import GnmicCmdBuilder
-from ngts.tests_nvos.system.gnmi.helpers import get_scp_player, verify_gnmi_client_tools_installed
-
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
 from ngts.tools.test_utils import allure_utils as allure
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
-class ApiCrlClient(CrlClient):
-    def prepare_mtls(self, server_certs: List[CertInfo], client_cas: List[CertInfo]) -> Tuple[CertInfo, CertInfo]:
+class ApiCrlValidator(CrlValidator):
+    """API/REST CRL validator."""
+
+    @property
+    def _feature_resource(self):
+        return self.system.api
+
+    def _bind_mtls_certs(self, server_cert: CertInfo, client_ca: CertInfo) -> None:
         engines = TestToolkit.engines
-        scp_player = get_scp_player(engines)
-        dut = engines.dut
+        assert engines is not None
+        self._feature_resource.set(CERTIFICATE, server_cert.name).verify_result()
+        self._feature_resource.mtls.set(CA_CERTIFICATE, client_ca.cacert_name).verify_result()
+        self._feature_resource._general_cli_wrapper.apply_config(engines.dut)
 
-        server_cert: CertInfo = server_certs[0]
-        client_ca_cert: CertInfo = client_cas[0]
+    def _do_bind_crl(self, crl_name: str, ask_confirm: bool, should_succeed: bool) -> None:
+        self._feature_resource.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_confirm).verify_result(
+            should_succeed=should_succeed
+        )
 
-        with allure.step("import test certs"):
-            import_certs_safely(server_certs, scp_player)
-            import_cas_safely(client_cas, scp_player)
+    def _post_bind_crl(self) -> None:
+        pass
 
-        feature_resource = self.system.api
+    def _verify_crl_bound(self, crl_name: str) -> None:
+        output = self._feature_resource.mtls.parse_show()
+        assert "crl" in output, "No crl found in output"
+        assert crl_name in output["crl"], f"Expected CRL '{crl_name}' not found in show output"
 
-        with allure.step("setup mtls by binding test certs"):
-            feature_resource.set(CERTIFICATE, server_cert.name).verify_result()
-            feature_resource.mtls.set(CA_CERTIFICATE, client_ca_cert.cacert_name).verify_result()
-            feature_resource._general_cli_wrapper.apply_config(dut)
-            return server_cert, client_ca_cert
+    def _do_unbind_crl(self) -> None:
+        self._feature_resource.mtls.unset("crl", apply=True).verify_result()
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
-        system = self.system
-        engines = TestToolkit.engines
-        scp_player = get_scp_player(engines)
-        crl_file_path = dest
+    def _do_cleanup(self) -> None:
+        self._feature_resource.unset(apply=True).verify_result()
 
-        if should_import:
-            with allure.step("import test crl"):
-                import_crl_safely(crl_name, crl_file_path, scp_player)
+    def run_client(self, config: ClientConfig | None = None):
+        if config is None:
+            config = ClientConfig()
 
-            with allure.step("verifies the CRL is imported"):
-                output = system.security.crl.parse_show()
-                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
-
-        with allure.step("bind crl"):
-            system.api.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
-
-        if should_succeed:
-            with allure.step("verify crl shown in mtls"):
-                output = system.api.mtls.parse_show()
-                assert 'crl' in output, "No crl found in output"
-                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
-
-    def run_client(
-        self,
-        user: Optional[UserInfo] = None,
-        expect_success: bool = True,
-        run_insecure: bool = True,
-        client_cacert: Optional[CertInfo] = None,
-        client_cert: Optional[CertInfo] = None,
-        port: Optional[int] = None,
-    ):
-        method = 'GET'
+        method = "GET"
         resource = self.system.version.get_resource_path()
 
         cmd_builder = CurlCmdBuilder(method, self.host, resource)
-        if user:
-            cmd_builder.user_creds(user.username, user.password)
-        if run_insecure or not client_cert:
+        if config.user:
+            cmd_builder.user_creds(config.user.username, config.user.password)
+        if config.run_insecure or not config.client_cert:
             cmd_builder.insecure()
-        if client_cert:
-            cmd_builder.client_cert(client_cert.private, client_cert.public)
-        if client_cacert:
-            cmd_builder.cacert(client_cacert.cacert)
+        if config.client_cert:
+            cmd_builder.client_cert(config.client_cert.private, config.client_cert.public)
+        if config.client_cacert:
+            cmd_builder.cacert(config.client_cacert.cacert)
         curl_cmd = cmd_builder.build()
-        self.verify_result(curl_cmd, expect_success)
-
-    def unbind_crl(self):
-        self.system.api.mtls.unset('crl', apply=True).verify_result()
-
-    def cleanup(self):
-        self.system.api.unset(apply=True).verify_result()
+        self.verify_result(curl_cmd, config.expect_success)
 
 
-class GnmiCrlClient(CrlClient):
-    def prepare_mtls(self, server_certs: List[CertInfo], client_cas: List[CertInfo]) -> Tuple[CertInfo, CertInfo]:
+class GnmiCrlValidator(CrlValidator):
+    """gNMI CRL validator."""
+
+    @property
+    def _feature_resource(self):
+        return self.system.gnmi_server
+
+    def _bind_mtls_certs(self, server_cert: CertInfo, client_ca: CertInfo) -> None:
         engines = TestToolkit.engines
-        scp_player = get_scp_player(engines)
-        dut = engines.dut
+        assert engines is not None
+        self._feature_resource.set(CERTIFICATE, server_cert.name).verify_result()
+        self._feature_resource.mtls.set(CA_CERTIFICATE, client_ca.cacert_name).verify_result()
+        self._feature_resource._general_cli_wrapper.apply_config(engines.dut)
 
-        server_cert: CertInfo = server_certs[0]
-        client_ca_cert: CertInfo = client_cas[0]
+    def _do_bind_crl(self, crl_name: str, ask_confirm: bool, should_succeed: bool) -> None:
+        self._feature_resource.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_confirm).verify_result(
+            should_succeed=should_succeed
+        )
 
-        with allure.step("import test certs"):
-            import_certs_safely(server_certs, scp_player)
-            import_cas_safely(client_cas, scp_player)
+    def _post_bind_crl(self) -> None:
+        time.sleep(5)
 
-        feature_resource = self.system.gnmi_server
+    def _verify_crl_bound(self, crl_name: str) -> None:
+        output = self._feature_resource.mtls.parse_show()
+        assert "crl" in output, "No crl found in output"
+        assert crl_name in output["crl"], f"Expected CRL '{crl_name}' not found in show output"
 
-        with allure.step("setup mtls by binding test certs"):
-            feature_resource.set(CERTIFICATE, server_cert.name).verify_result()
-            feature_resource.mtls.set(CA_CERTIFICATE, client_ca_cert.cacert_name).verify_result()
-            feature_resource._general_cli_wrapper.apply_config(dut)
-            return server_cert, client_ca_cert
+    def _do_unbind_crl(self) -> None:
+        self._feature_resource.mtls.unset("crl", apply=True).verify_result()
+        time.sleep(5)
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
-        system = self.system
-        engines = TestToolkit.engines
-        scp_player = get_scp_player(engines)
-        crl_file_path = dest
+    def _do_cleanup(self) -> None:
+        self._feature_resource.unset(apply=True).verify_result()
 
-        if should_import:
-            with allure.step("import test crl"):
-                import_crl_safely(crl_name, crl_file_path, scp_player)
+    def run_client(self, config: ClientConfig | None = None):
+        if config is None:
+            config = ClientConfig()
 
-            with allure.step("verifies the CRL is imported"):
-                output = system.security.crl.parse_show()
-                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
-
-        with allure.step("bind crl and wait 5 sec"):
-            system.gnmi_server.mtls.set("crl", crl_name, apply=True, ask_for_confirmation=ask_for_confirmation).verify_result(should_succeed=should_succeed)
-            time.sleep(5)
-
-        if should_succeed:
-            with allure.step("verify crl shown in mtls"):
-                output = system.gnmi_server.mtls.parse_show()
-                assert 'crl' in output, "No crl found in output"
-                assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
-
-    def run_client(
-        self,
-        user: Optional[UserInfo] = None,
-        expect_success: bool = True,
-        run_insecure: bool = True,
-        client_cacert: Optional[CertInfo] = None,
-        client_cert: Optional[CertInfo] = None,
-        port: Optional[int] = None,
-    ):
-        verify_gnmi_client_tools_installed()  # Makes sure gnmic and grpcurl are installed on the test player
+        verify_gnmi_client_tools_installed()
         gnmic = GnmicCmdBuilder(self.ip).capabilities()
-        if run_insecure or not client_cert:
+        if config.run_insecure or not config.client_cert:
             gnmic.skip_verify()
-        if user:
-            gnmic.user_creds(user.username, user.password)
-        if client_cert:
-            gnmic.cert(client_cert.private, client_cert.public)
-        if client_cacert:
-            gnmic.ca(client_cacert.cacert)
+        if config.user:
+            gnmic.user_creds(config.user.username, config.user.password)
+        if config.client_cert:
+            gnmic.cert(config.client_cert.private, config.client_cert.public)
+        if config.client_cacert:
+            gnmic.ca(config.client_cacert.cacert)
 
-        self.verify_result(gnmic.build(), expect_success)
-
-    def unbind_crl(self):
-        with allure.step("unbind crl and wait 5 sec"):
-            self.system.gnmi_server.mtls.unset('crl', apply=True).verify_result()
-            time.sleep(5)
-
-    def cleanup(self):
-        self.system.gnmi_server.unset(apply=True).verify_result()
+        self.verify_result(gnmic.build(), config.expect_success)
 
 
-class NmxCrlClient(CrlClient):
-    def __init__(self, host: str, ip: str, app_name: str, port: int, proto_path: str = ''):
+class NmxCrlValidator(CrlValidator):
+    """NMX CRL validator base class."""
+
+    def __init__(self, host: str, ip: str, app_name: str, port: int, proto_path: str = ""):
         super().__init__(host, ip)
-        self.app_name: str = app_name
-        self.port: int = port
+        self.app_name = app_name
+        self.port = port
         self.cluster = Cluster()
-        self.proto_path: str = proto_path
-        # Makes sure gnmic and grpcurl are installed on the test player
+        self.proto_path = proto_path
         verify_gnmi_client_tools_installed()
 
-    def prepare_mtls(self, server_certs: List[CertInfo], client_cas: List[CertInfo]) -> Tuple[CertInfo, CertInfo]:
-        engines = TestToolkit.engines
-        scp_player = get_scp_player(engines)
+    @property
+    def _nmx_app(self):
+        return self.cluster.apps.app_name[self.app_name]
 
-        server_cert: CertInfo = server_certs[0]
-        client_ca_cert: CertInfo = client_cas[0]
-
-        with allure.step("import test certs"):
-            import_certs_safely(server_certs, scp_player)
-            import_cas_safely(client_cas, scp_player)
-
-        nmx_app = self.cluster.apps.app_name[self.app_name]
+    def _bind_mtls_certs(self, server_cert: CertInfo, client_ca: CertInfo) -> None:
+        nmx_app = self._nmx_app
 
         with allure.step("Enable cluster and setup mtls by binding test certs"):
             enable_cluster()
             enable_cluster_app_manager_state(nmx_app.manager)
             nmx_app.manager.certificate.action_update(server_cert.name).verify_result()
-            nmx_app.manager.ca_certificate.action_update(client_ca_cert.cacert_name).verify_result()
+            nmx_app.manager.ca_certificate.action_update(client_ca.cacert_name).verify_result()
             nmx_app.manager.encryption.action_update(EncryptionMode.MTLS).verify_result()
-        return server_cert, client_ca_cert
 
-    def bind_crl(self, dest: str, crl_name: str, should_succeed: bool = True, should_import: bool = True, ask_for_confirmation: bool = False):
-        system = self.system
-        scp_player = get_scp_player(TestToolkit.engines)
-        nmx_app = self.cluster.apps.app_name[self.app_name]
-        crl_file_path = dest
+    def _do_bind_crl(self, crl_name: str, ask_confirm: bool, should_succeed: bool) -> None:
+        self._nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)
 
-        if should_import:
-            with allure.step("import test crl"):
-                import_crl_safely(crl_name, crl_file_path, scp_player)
+    def _post_bind_crl(self) -> None:
+        pass
 
-            with allure.step("verifies the CRL is imported"):
-                output = system.security.crl.parse_show()
-                assert crl_name in output, f"Expected CRL '{crl_name}' not found in show output"
+    def _verify_crl_bound(self, crl_name: str) -> None:
+        nmx_app = self._nmx_app
+        with allure.independent_step("verify crl shown in nmx app manager output"):
+            output = nmx_app.manager.parse_show()
+            assert "crl" in output, "No crl found in output"
+        with allure.independent_step("verify crl shown in nmx app manager crl output"):
+            output = nmx_app.manager.crl.parse_show()
+            assert "crl" in output, "No crl found in output"
+            assert crl_name in output["crl"], f"Expected CRL '{crl_name}' not found in show output"
 
-        with allure.step("bind crl"):
-            nmx_app.manager.crl.action_update(crl_name).verify_result(should_succeed=should_succeed)
+    def _do_unbind_crl(self) -> None:
+        self._nmx_app.manager.crl.action_restore().verify_result()
 
-        if should_succeed:
-            with allure.step("verify crl shown in mtls"):
-                with allure.independent_step("verify crl shown in nmx app manager output"):
-                    output = nmx_app.manager.parse_show()
-                    assert 'crl' in output, "No crl found in output"
-                with allure.independent_step("verify crl shown in nmx app manager crl output"):
-                    output = nmx_app.manager.crl.parse_show()
-                    assert 'crl' in output, "No crl found in output"
-                    assert crl_name in output['crl'], f"Expected CRL '{crl_name}' not found in show output"
-
-    def run_client(
-        self,
-        user: Optional[UserInfo] = None,
-        expect_success: bool = True,
-        run_insecure: bool = False,
-        client_cacert: Optional[CertInfo] = None,
-        client_cert: Optional[CertInfo] = None,
-        port: Optional[int] = None,
-    ):
-        if self.app_name == ClusterApps.NMX_CONTROLLER:
-            endpoint: str = 'nmx_c.NMX_Controller.Hello'
-        elif self.app_name == ClusterApps.NMX_TELEMETRY:
-            endpoint: str = 'TelemetryService.Hello'
-        else:
-            raise ValueError(f"Invalid app name: {self.app_name}")
-
-        if not port:
-            port = self.port
-
-        payload: Dict[str, str] = {"gatewayId": "sasha",
-                                   "major_version": "PROTO_MSG_MAJOR_VERSION", "minor_version": "PROTO_MSG_MINOR_VERSION"}
-        grpc = GrpcCmdBuilder(self.ip, port)
-        if user:
-            grpc.user_creds(user.username, user.password)
-        if client_cert:
-            grpc.cert(client_cert.private, client_cert.public)
-        if client_cacert:
-            grpc.ca(client_cacert.cacert)
-        if endpoint:
-            grpc.endpoint(endpoint)
-        if payload:
-            grpc.payload(payload)
-        if self.proto_path:
-            grpc.proto(self.proto_path)
-        grpc_cmd = grpc.build()
-        self.verify_result(grpc_cmd, expect_success)
-
-    def unbind_crl(self):
-        app_manager = self.cluster.apps.app_name[self.app_name].manager
-        app_manager.crl.action_restore().verify_result()
-
-    def cleanup(self):
-        app_manager = self.cluster.apps.app_name[self.app_name].manager
+    def _do_cleanup(self) -> None:
+        app_manager = self._nmx_app.manager
         app_manager.encryption.action_restore().verify_result()
         app_manager.crl.action_restore().verify_result()
         app_manager.certificate.action_restore().verify_result()
@@ -282,13 +180,53 @@ class NmxCrlClient(CrlClient):
         disable_cluster_app_manager_state(app_manager)
         disable_cluster()
 
+    def run_client(self, config: ClientConfig | None = None):
+        if config is None:
+            config = ClientConfig()
 
-class NmxControllerCrlClient(NmxCrlClient):
+        match self.app_name:
+            case ClusterApps.NMX_CONTROLLER:
+                endpoint = "nmx_c.NMX_Controller.Hello"
+            case ClusterApps.NMX_TELEMETRY:
+                endpoint = "TelemetryService.Hello"
+            case _:
+                raise ValueError(f"Invalid app name: {self.app_name}")
+
+        port = config.port or self.port
+
+        payload = {
+            "gatewayId": "sasha",
+            "major_version": "PROTO_MSG_MAJOR_VERSION",
+            "minor_version": "PROTO_MSG_MINOR_VERSION",
+        }
+        grpc = GrpcCmdBuilder(self.ip, port)
+        if config.user:
+            grpc.user_creds(config.user.username, config.user.password)
+        if config.client_cert:
+            grpc.cert(config.client_cert.private, config.client_cert.public)
+        if config.client_cacert:
+            grpc.ca(config.client_cacert.cacert)
+        if endpoint:
+            grpc.endpoint(endpoint)
+        if payload:
+            grpc.payload(payload)
+        if self.proto_path:
+            grpc.proto(self.proto_path)
+        grpc_cmd = grpc.build()
+        self.verify_result(grpc_cmd, config.expect_success)
+
+
+class NmxControllerCrlValidator(NmxCrlValidator):
+    """NMX Controller CRL validator."""
+
     def __init__(self, host: str, ip: str):
         super().__init__(host, ip, ClusterApps.NMX_CONTROLLER, ClusterConsts.NMX_CONTROLLER_ENVOY_PORT)
 
 
-class NmxTelemetryCrlClient(NmxCrlClient):
+class NmxTelemetryCrlValidator(NmxCrlValidator):
+    """NMX Telemetry CRL validator."""
+
     def __init__(self, host: str, ip: str):
-        super().__init__(host, ip, ClusterApps.NMX_TELEMETRY,
-                         ClusterConsts.NMX_TELEMETRY_ENVOY_PORT, ClusterConsts.NMX_TELEMETRY_PROTO_PATH)
+        super().__init__(
+            host, ip, ClusterApps.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_ENVOY_PORT, ClusterConsts.NMX_TELEMETRY_PROTO_PATH
+        )

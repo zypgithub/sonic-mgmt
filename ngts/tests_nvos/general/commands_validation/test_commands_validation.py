@@ -13,8 +13,7 @@ logger = logging.getLogger()
 
 @pytest.mark.simx
 @pytest.mark.general
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_show_commands_validate(engines, test_api):
+def test_show_commands_validate(engines, random_api):
     """
     @summary:
     Basic validation all show commands
@@ -29,7 +28,6 @@ def test_show_commands_validate(engines, test_api):
     @param test_api: The API type to use (from ApiType enum)
     @param engines: Object giving access to DUT shell/command interfaces
     """
-    TestToolkit.tested_api = test_api
     command_tree = CommandNodeTree()
 
     try:
@@ -63,8 +61,7 @@ def test_show_commands_validate(engines, test_api):
 
 @pytest.mark.simx
 @pytest.mark.general
-@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
-def test_commands_help_str_validate(engines, test_api):
+def test_commands_help_str_validate(engines, random_api):
     """
     @summary:
     Basic validation all show commands
@@ -79,7 +76,6 @@ def test_commands_help_str_validate(engines, test_api):
     @param test_api: The API type to use (from ApiType enum)
     @param engines: Object giving access to DUT shell/command interfaces
     """
-    TestToolkit.tested_api = test_api
     command_tree = CommandNodeTree()
 
     try:
@@ -112,8 +108,7 @@ def test_commands_help_str_validate(engines, test_api):
 
 @pytest.mark.simx
 @pytest.mark.general
-@pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_commands_help_str_attr_validate(engines, test_api):
+def test_commands_help_str_attr_validate(engines, random_api):
     """
     @summary:
     Basic validation all show commands
@@ -128,7 +123,6 @@ def test_commands_help_str_attr_validate(engines, test_api):
     @param test_api: The API type to use (from ApiType enum)
     @param engines: Object giving access to DUT shell/command interfaces
     """
-    TestToolkit.tested_api = test_api
     command_tree = CommandNodeTree()
 
     try:

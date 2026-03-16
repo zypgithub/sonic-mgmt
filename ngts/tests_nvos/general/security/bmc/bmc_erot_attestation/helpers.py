@@ -35,7 +35,7 @@ def get_component_obj(component_name: str, supported_components: List[str]) -> S
 
     Uses spdm.get_component() for device-agnostic access, which creates the
     component with the correct path based on the actual component name
-    (e.g., 'ERoT_NVSwitch_0' for Juliet, 'NVSwitch_0' for Rosalind).
+    (e.g., 'ERoT_NVSwitch_0' for Juliet, 'IRoT_NVSwitch_0' for Rosalind).
     """
     assert component_name in supported_components, f'given component name "{component_name}" not in {supported_components}'
     spdm = System().security.spdm
@@ -137,7 +137,8 @@ def verify_component_values(component_name: str, expect_cert, expect_measurement
                         f'actual: {measurements_out[SpdmConsts.Component.Measurements.SIGNED_MEASUREMENTS]}')
         else:
             with allure.independent_step('verify measurements initial values'):
-                for field, expected_value in SpdmConsts.Component.Measurements.initial_values.items():
+                initial_values = SpdmConsts.Component.Measurements.get_initial_values(component_name)
+                for field, expected_value in initial_values.items():
                     if expected_value == NOT_EMPTY:
                         with allure.independent_step(f'verify field "{field}" is not empty'):
                             assert measurements_out[
