@@ -4,6 +4,7 @@ import random
 import re
 import string
 import subprocess
+import threading
 import time
 from typing import Optional, Tuple, List
 
@@ -31,6 +32,10 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient, GnmicCmdBuilder
 from ngts.tests_nvos.system.gnmi.constants import CERTIFICATE, GnmicErr, GnmiServerStatus
 from ngts.tests_nvos.system.gnmi.constants import DUT_GNMI_CERTS_DIR, DOCKER_CERTS_DIR, GnmiMode, GrpcMsg, \
     SERVER_REFLECTION_SUBSCRIBE_RESPONSE
+from ngts.tests_nvos.system.gnmi.constants import (
+    CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC,
+    PER_REQUEST_TIMEOUT_SEC, RECONNECT_CAPABILITIES_MAX_ATTEMPTS,
+    RECONNECT_CAPABILITIES_RETRY_INTERVAL_SEC, SAMPLE_ERROR_MAX_LEN)
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -715,3 +720,184 @@ def parse_gnmi_output(gnmi_out):
         logger.info("Got an exception while trying to parse GNMI output")
         logger.info(e)
         raise e
+
+
+def is_gnmi_failure(err):
+    """True if stderr indicates a failed gNMI request (e.g. rate limit, rpc error)."""
+    return err and any(m in err for m in GnmicErr.ALL_ERRS)
+
+
+def is_gnmi_rate_limit_error(err):
+    """True if stderr indicates a rate-limit (local_rate_limited) error."""
+    return err and GnmicErr.LOCAL_RATE_LIMITED in err
+
+
+def attach_rate_limit_result(
+    total_success, total_fail, sample_error, duration_sec, step_name, rate_limit_failures=None
+):
+    """Attach ramp summary (request rate, counts, rate-limit vs other failures, sample error) to Allure."""
+    total = total_success + total_fail
+    effective_rpm = total * (60.0 / duration_sec) if duration_sec else total
+    summary = (
+        f"Request rate: ~{effective_rpm:.1f} req/min\n"
+        f"Total: {total} (success={total_success}, failed={total_fail})\n"
+    )
+    if rate_limit_failures is not None:
+        other_failures = total_fail - rate_limit_failures
+        summary += f"Of failures: rate_limit={rate_limit_failures}, other (e.g. timeout/network)={other_failures}\n"
+    if sample_error:
+        summary += f"Sample error:\n{sample_error}\n"
+    # Project wrapper signature is attach(title, msg, ...): title first, body second.
+    allure.attach(
+        f"{step_name}: requests and output",
+        summary,
+        allure.orig_allure.attachment_type.TEXT,
+    )
+
+
+def attach_plain_summary(body: str, title: str):
+    # Project wrapper signature is attach(title, msg, ...): title first, body second.
+    allure.attach(title, body, allure.orig_allure.attachment_type.TEXT)
+
+
+def output_shows_rate_limit_or_grpc_failure(out: str, err: str) -> bool:
+    for chunk in (err or "", out or ""):
+        if is_gnmi_failure(chunk):
+            return True
+    return False
+
+
+def capabilities_until_success_after_restart(client, step_label: str):
+    """
+    After gNMI comes back, attackers may have saturated Envoy; retry capabilities when the only
+    failure is local_rate_limited so the check validates reachability, not global fairness.
+    """
+    with allure.step(f"{step_label}: Capabilities until success (gnmic retries)"):
+        last_err = ""
+        for attempt in range(1, RECONNECT_CAPABILITIES_MAX_ATTEMPTS + 1):
+            _, err = client.gnmic_capabilities(skip_cert_verify=True, cmd_time=PER_REQUEST_TIMEOUT_SEC)
+            if not is_gnmi_failure(err):
+                if attempt > 1:
+                    attach_plain_summary(
+                        f"{step_label}: succeeded on attempt {attempt} after prior errors.",
+                        "Reconnect capabilities retries",
+                    )
+                return
+            last_err = err or ""
+            if is_gnmi_rate_limit_error(err):
+                time.sleep(RECONNECT_CAPABILITIES_RETRY_INTERVAL_SEC)
+                continue
+            break
+        assert not is_gnmi_failure(last_err), f"Reconnect capabilities failed: {last_err}"
+
+
+def stream_subscribe_for_duration(
+    client, prefix, path, duration_sec, flat=True, extra_subscribe_flags=""
+):
+    """
+    STREAM subscribe for a fixed duration. Optional ``extra_subscribe_flags`` (e.g.
+    ``--stream-mode on-change``) are appended after ``--target nvos``, matching gnmic
+    subscribe layout without extending ``GnmiClient.gnmic_subscribe``.
+    """
+    flat_option = " --format flat" if flat else ""
+    extras = (
+        f" {extra_subscribe_flags.strip()}"
+        if extra_subscribe_flags and extra_subscribe_flags.strip()
+        else ""
+    )
+    subscribe_op = (
+        f"subscribe --prefix '{prefix}' --path '{path}' --target nvos{extras}" + flat_option
+    )
+    _, _, _, proc = client._run_gnmic_op(
+        subscribe_op,
+        skip_cert_verify=True,
+        cacert="",
+        debug_mode=True,
+        cmd_time=None,
+        username="",
+        password="",
+        keep_session_alive=True,
+        wait_till_done=False,
+    )
+    time.sleep(duration_sec)
+    return client.close_session_and_get_out_and_err(proc, delay=0)
+
+
+def run_parallel_capabilities_flood(
+    dut,
+    username,
+    password,
+    *,
+    duration_sec,
+    num_clients,
+    cmd_timeout_sec,
+):
+    """
+    ``num_clients`` threads each run Capabilities in a tight loop for ``duration_sec``.
+
+    Returns ``(results, elapsed_sec, first_error)`` where ``results[i]`` is
+    ``(success, fail, rate_limit_fail)`` and ``first_error`` may contain key ``"err"``.
+    """
+    results = [None] * num_clients
+    lock = threading.Lock()
+    first_error = {}
+
+    def _run_loop(thread_id):
+        client = GnmiClient(
+            dut.ip,
+            GnmiConsts.GNMI_DEFAULT_PORT,
+            username,
+            password,
+            cmd_time=cmd_timeout_sec,
+        )
+        success, fail, rate_limit_fail = 0, 0, 0
+        end_time = time.time() + duration_sec
+        while time.time() < end_time:
+            _, err = client.gnmic_capabilities(skip_cert_verify=True, cmd_time=cmd_timeout_sec)
+            if is_gnmi_failure(err):
+                fail += 1
+                if is_gnmi_rate_limit_error(err):
+                    rate_limit_fail += 1
+                with lock:
+                    if "err" not in first_error:
+                        first_error["err"] = (err or "").strip()[:SAMPLE_ERROR_MAX_LEN]
+            else:
+                success += 1
+        results[thread_id] = (success, fail, rate_limit_fail)
+
+    start_time = time.time()
+    # daemon=True so a stuck gnmic subprocess cannot keep the suite alive after this
+    # function returns; the bounded join + alive-check assert below is the primary path.
+    threads = [
+        threading.Thread(target=_run_loop, args=(i,), daemon=True, name=f"cap-flood-{i}")
+        for i in range(num_clients)
+    ]
+    for t in threads:
+        t.start()
+    still_alive = shutdown_threads(threads, CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC)
+    assert not still_alive, (
+        f"run_parallel_capabilities_flood: {len(still_alive)} worker(s) still alive "
+        f"after {CAPABILITIES_FLOOD_THREAD_JOIN_TIMEOUT_SEC}s join (deadline was "
+        f"{duration_sec}s, per-request cap {cmd_timeout_sec}s). Stuck thread name(s): "
+        f"{[t.name for t in still_alive]}"
+    )
+    return results, time.time() - start_time, first_error
+
+
+def shutdown_threads(thread_list, first_timeout_sec, second_timeout_sec=5):
+    """Join threads with two bounded attempts; return the list still alive.
+
+    ``Thread.join(timeout=...)`` does not guarantee termination, so callers
+    must check the returned list and fail the test (or take additional
+    action) if any worker is still running — otherwise a stuck worker can
+    leak into subsequent tests. A second bounded join gives slow-but-not-
+    stuck workers a final chance to exit after a stop event is set.
+    """
+    for t in thread_list:
+        t.join(timeout=first_timeout_sec)
+    still_alive = [t for t in thread_list if t.is_alive()]
+    if still_alive:
+        for t in still_alive:
+            t.join(timeout=second_timeout_sec)
+        still_alive = [t for t in thread_list if t.is_alive()]
+    return still_alive
