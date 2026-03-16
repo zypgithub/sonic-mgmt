@@ -21,12 +21,259 @@
 #    - GitHub:
 #      - https://github.com/Azure/sonic-buildimage/issues/9811
 
-# Errors which should be ignored in tests which doing reboot/reload
+# ===== Not specific defined =====
+
+# Ignore thermalctld fan_dir FileNotFoundError on Bobcat platform
+# The fan_dir sysfs file does not exist on sn4280 (Bobcat), causing thermalctld to log errors
+# Issue already tracked by [SONIC - Design] Bug SW #4902985
+
 - Errors_list:
-  - '.* ERR sonic-installer: Error: Failed verify image signature'
+  - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/thermal/fan\d+_dir - FileNotFoundError.*'
+  Conditions:
+  - Redmine:
+    - 4902985
+    Platform:
+    - sn4280
+
+- Errors_list:
+  - '.*ERR root: /etc/dhcp/dhclient-exit-hooks.d/ntp returned non-zero exit status 1.*'
+  Conditions:
+  - Redmine:
+    - 3588280
+
+- Errors_list:
+  - '.* ERR swss#orchagent: :- removeLag: Failed to remove ref count.*\d+.*LAG PortChannel.*'
+  - '.* ERR swss#orchagent: message repeated \d+ times: \[ :- removeLag: Failed to remove ref count \d+ LAG PortChannel\d+\]'
   Conditions:
   - Affected_test_cases:
-    - tests/nightly/secure/test_secure_upgrade/test_secure_upgrade.py
+    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_route
+    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_neighbor_and_nexthop
+    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_nexthop_group_and_member
+    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_fdb_entry
+    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_acl
+    - pc/test_po_update.py::test_po_update_io_no_los
+    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
+    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py
+    - drop_packets/test_wjh.py::test_wjh_starts_after_config_reload
+    - system_health/test_system_health.py
+    Redmine:
+    - 2615940
+
+- Errors_list:
+  - 'ERR pmon#sensord: Error getting sensor data: mp2975.*16: Kernel interface error.*'
+  Conditions:
+  - Redmine:
+    - 4029831
+    Platform:
+    - sn4280
+
+- Errors_list:
+  - '.*ERR kernel:.*mlxsw_minimal .* Eeprom query failed.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - tests/nightly/app_extension/test_app_extension_reboot.py::test_app_start_delay_after_reboot
+    - platform_tests/sfp/test_sfputil.py
+    - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file
+    - show_techsupport/test_techsupport.py::test_techsupport
+    - show_techsupport/test_auto_techsupport.py
+    - show_techsupport/test_techsupport_no_secret.py::test_secret_removed_from_show_techsupport
+    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_remove_dhcp_server
+    Redmine:
+    - 2915388
+
+- Errors_list:
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Could not acquire lock.*'
+  - '.* ERR kernel:.*hwmon hwmon\d+: Failed to query module temperature.*'
+  - '.* ERR kernel:.*mlxsw_minimal \d+-0048: Failed to query temp sensor.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query PWM.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query fan.*'
+  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Reg cmd access failed.*'
+  - '.* ERR pmon#thermalctld: Failed to read from file /run/hw-management/thermal/module.*_temp_fault - OSError.*'
+  Conditions:
+  - Redmine:
+    - 2856406
+
+- Errors_list:
+  - '.* ERR kernel.*Failed to query module temperature thresholds'
+  Conditions:
+  - Redmine:
+    - 2915388
+
+- Errors_list:
+  - '.*ERR .*: Failed to get status of .*: rc=.*'
+  - ".*ERR .*: \\['sudo', 'systemctl', 'start', '.*'\\] - failed: return code.*"
+  - ".*ERR .*: Feature .* failed to be enabled and started.*"
+  Conditions:
+  - Redmine:
+    - 3537514
+
+- Errors_list:
+  - ".*Failed to add device '/dev/sda\\d*' to watch: Operation not permitted.*"
+  - ".*Failed to add device '/dev/loop\\d*' to watch: Operation not permitted.*"
+  Conditions:
+  - Redmine:
+    - 3044633
+
+- Errors_list:
+  - '.* ERR .*rsyslogd: omfwd\/udp: socket \d+: sendto\(\) error: Network is unreachable.*'
+  - '.* ERR .*rsyslogd: omfwd: socket \d+: error 101 sending via udp: Network is unreachable.*'
+  Conditions:
+  - Redmine:
+    - 3168474
+
+- Errors_list:
+  - '.* ERR .*#rsyslogd: imfile: error reading state file for .*'
+  - ".* ERR bgp#rsyslogd: imfile: poll_tree cannot stat file '/var/log/supervisor/supervisord.log' - ignored: No such file or directory.*"
+  Conditions:
+  - Redmine:
+    - 3186637
+
+- Errors_list:
+  - '.* ERR swss#orchagent: :- meta_sai_on_port_state_change_single: data.port_id oid.* has unexpected type: SAI_OBJECT_TYPE_NULL, expected PORT, BRIDGE_PORT or LAG.*'
+  - '.* ERR swss#orchagent: :- handlePortStatusChangeNotification: Failed to get port object for port id.*'
+  - '.* ERR swss#orchagent: :- doTask: Failed to get port object for port id.*'
+  Conditions:
+  - Redmine:
+    - 3131583
+
+- Errors_list:
+  - '.* ERR bgp#fpmsyncd: :- onRouteMsg: Invalid VRF name .*ifindex \d+.*'
+  Conditions:
+  - Redmine:
+    - 3221776
+
+- Errors_list:
+  - ".* ERR hostcfgd: sudo systemctl enable eventd.timer - failed: return code - 1, output:#.*None.*"
+  - '.* ERR eventd#eventd: :- main: ERR:The eventd service started.*'
+  - '.* ERR eventd#eventd: :- deserialize: deserialize Failed: input stream errorstr.*data type: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&.*'
+  - '.* ERR eventd#eventd: :- zmq_read_part: Failed to deserialize part rc=-2.*'
+  - '.* ERR eventd#eventd: :- zmq_read_part: last:errno.*'
+  - '.* ERR eventd#eventd: :- zmq_message_read: Failure to read part1 rc.*'
+  - '.* ERR eventd#eventd: :- zmq_message_read: last:errno.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py
+    - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_url
+    - platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
+    - tests/nightly/lag/test_lag.py::test_lags_scale
+  - Redmine:
+    - 3201740
+
+- Errors_list:
+  - '.* ERR kernel: \[.*\] Fails to access \(\d+\) module eeprom, status: -\d+.'
+  - '.* ERR pmon#xcvrd: Failed to read sfp=\d+ EEPROM page=/sys/module/sx_core/asic\d+/module\d+/eeprom/pages/.*/data, page_offset=\d+,\s+size=\d+, offset=\d+, error = \[Errno \d+\] Input/output error'
+  - '.* ERR pmon#xcvrd: message repeated \d+ times: \[ Failed to read sfp=\d+ EEPROM page=/sys/module/sx_core/asic\d+/module\d+/eeprom/pages/.*/data, page_offset=\d+,\s+size=\d+, offset=\d+, error = \[Errno \d+\] Input/output error\]'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
+    - show_techsupport/test_auto_techsupport.py
+    - show_techsupport/test_techsupport_no_secret.py
+    - show_techsupport/test_techsupport.py::test_techsupport
+    - platform_tests/sfp/test_sfputil.py::test_check_sfputil_reset
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    Redmine:
+    - 3263805
+
+- Errors_list:
+  - '.*ERR kernel.*Unknown EEPROM type.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_max_limit
+    - platform_tests/sfp/test_sfputil.py
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    Redmine:
+    - 3283464
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+CR-Space dump faile.*'
+  - '.*ERR syncd#SDK: \[SX_API_DBG_AMBER\.ERR\].+Failed to create dump file.*'
+  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+AMBER dump failed.*'
+  Conditions:
+  - Redmine:
+    - 3580534
+
+- Errors_list:
+  - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object.*'
+  - '.*ERR swss#orchagent: :- meta_sai_validate_eni_ether_address_map_entry: object key SAI_OBJECT_TYPE_ENI_ETHER_ADDRESS_MAP_ENTRY.*exist.*'
+  - '.*ERR swss#orchagent: :- flush_removing_entries: ObjectBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_OBJECT_IN_USE.*'
+  Conditions:
+  - Redmine:
+    - 3537984
+    Platform:
+    - nvda_bf
+
+- Errors_list:
+  - '.*ERR systemctl.*Failed to start.*service: Transaction for.*service\/start is destructive \(.* has .stop. job queued, but .start. is included in transaction\).*'
+  - '.*ERR systemctl.*: See system logs and .systemctl status.*service. for details.*'
+  Conditions:
+  - Redmine:
+    - 3814720
+
+- Errors_list:
+  - '.*ERR pmon#psud: message repeated \d+ times.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base.*invalid value.*'
+  - '.*ERR pmon#psud: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base \d+.*'
+  Conditions:
+  - Redmine:
+    - 3589197
+
+- Errors_list:
+  - '.*ERR eventd#eventd.*run_eventd_service: Eventd service exiting.*'
+  Conditions:
+  - Redmine:
+    - 3685068
+
+- Errors_list:
+  - '.*ERR \(udev-worker\)\[\d+\]: could not read from .*\/sys\/module\/pcc_cpufreq\/initstate.*: No such device.*'
+  Conditions:
+  - Redmine:
+    - 3693907
+
+- Errors_list:
+  - '.*ERR kernel:.*usb usb\d-port\d: connect-debounce failed.*'
+  Conditions:
+  - Redmine:
+    - 3735940
+
+- Errors_list:
+  - '.* ERR kernel:.*i2c i2c-\d+: Invalid block size returned.*'
+  Conditions:
+  - Redmine:
+    - 3827149
+
+# Errors which should be ignored in tests which doing reboot/reload
+- Errors_list:
+  - '.*ERR systemctl.*: Failed to start dhcp_relay\.service: Unit dhcp_relay\.service is masked.*'
+  - '.*ERR ntpd.*: CONFIG: restrict nopeer ignored.*'
+  - '.*ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
+  - '.*ERR kernel:.*x86\/cpu: SGX disabled by BIOS.*'
+  Conditions:
+  - Redmine:
+    - 3726137
+
+- Errors_list:
+  - '.*ERR swss#orchagent.*doPortTask: Unsupported port speed.*'
+  Conditions:
+  - Redmine:
+    - 3430196
+
+- Errors_list:
+  - '.*ERR healthd: FEATURE table is not fully ready:*'
+  - ".*ERR featured: Unexpected state value 'None' for feature .*"
+  Conditions:
+  - Redmine:
+    - 3943532
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] .*mlnx_sai_port.c\[.*\]- mlnx_port_samplepacket_session_get: Egress mirroring is not supported on SPC6.*'
+  - '.*ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- get_dispatch_attribs_handler: Failed Get #\d+, EGRESS_SAMPLEPACKET_ENABLE, key:PORT \[OID:.*\] \[log_port:.*\].*'
+  Conditions:
+  - Platform:
+    - sn6600
+    Redmine:
+    - 4634736
 
 - Errors_list:
   - '.* ERR mlxfwmanager: LIBMVPD: MVPD_READ4 failed on offset:.*'
@@ -149,6 +396,218 @@
     - autorestart/test_container_autorestart.py::test_containers_autorestart
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
 
+- Errors_list:
+  - '.* ERR memory_threshold_check: Free memory (\d+(\.\d+)?) is less then free memory threshold (\d+(\.\d+)?).*'
+  - '.*ERR mlnx-fw-upgrade.sh: FW Query command: mlxfwmanager --query failed to detect spectrum device with error: Querying Mellanox devices firmware.*'
+  Conditions:
+  - Image_type:
+    - ASAN
+
+- Errors_list:
+  - '.* ERR syncd#SDK: \[EMAD_RX_THREAD.ERR\] EMAD transaction FW error.*'
+  - '.* ERR syncd#SDK: \[EMAD.ERR\] emad-send failed on register.*'
+  - '.* ERR syncd#SDK: \[REG_BULK.ERR\] sx_reg_layer_sxd_reg_call - Error at access reg call reg_id.*'
+  - '.* ERR syncd#SDK: \[REG_BULK.ERR\] __reg_bulk_post_completion_cb Error got in completion data sxd_status .*'
+  - '.* ERR syncd#SDK: \[MGMT_LIB.ERR\] Slot .* Module .* Attr get, MCION GET failed.*'
+  Conditions:
+  - Affected_test_cases:
+    - show_techsupport/test_techsupport.py
+    - app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - tests/show_techsupport/test_auto_techsupport.py
+    - tests/show_techsupport/test_techsupport_no_secret.py
+
+# The below errors should be ignored, because it is caused by FW was busing(err is -16) , and it is an expected behaviour
+- Errors_list:
+  - '.*ERR kernel: \[.*\] Fails to get module type, err: -16.*'
+  - '.*ERR pmon#xcvrd: Failed to read sfp=\d+ EEPROM.*page=\/sys\/module\/sx_core.*eeprom\/pages.*Device or resource busy.*'
+  - '.*ERR pmon#xcvrd: message repeated \d+ times: \[ Failed to read sfp=\d+ EEPROM.*page=\/sys\/module\/sx_core.*eeprom\/pages.*Device or resource busy.*\]'
+  - '.*ERR kernel: \[.*\] Fails to access .* register MCIA \(module:\d+, page:\d+, device_addr:\d+, size:\d+, i2c_addr:.*, slot:\d+, status:.*err: -16.*'
+  - '.*ERR kernel: \[.*\] Fails to read module eeprom, status: -16.*'
+  - '.*ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
+  - '.*ERR pmon#xcvrd: Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - show_techsupport/test_auto_techsupport.py
+    - show_techsupport/test_techsupport_no_secret.py
+    - show_techsupport/test_techsupport.py
+    - tests/nightly/arp/test_arp.py::test_arp_gratuitous_without_arp_update
+    - tests/nightly/fec/test_fec.py
+    - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggle_peer_port
+    - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf
+    - tests/nightly/auto_negotition/test_auto_neg_negative.py::TestAutoNegNegative::test_negative_advertised_speed_type_mismatch
+    - tests/nightly/evpn_vxlan/tech_support/test_evpn_vxlan_tech_support.py
+
+- Errors_list:
+  - '.* ERR kernel: \[.*\] Fails to access \(\d+\) register MCIA \(module:\d+, page:\d+, device_addr:\d+, size:\d+, i2c_addr:.*, slot:\d+, status:\d+\), err: -16.*'
+  - '.* ERR kernel: \[.*\] Fails to get module type, err: -16.*'
+  - '.* ERR kernel: \[ .*\] Fails to read module eeprom, status: -16.*'
+  - '.* ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
+  - '.* ERR pmon#xcvrd:.*Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy.*'
+  - '.*ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+  - '.* ERR swss#orchagent: :- wait: SELECT operation result: TIMEOUT on object_type_get_availability_response.*'
+  - '.* ERR swss#orchagent: :- wait: failed to get response for object_type_get_availability_response.*'
+  - '.*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/auto_negotition/test_auto_neg_scale.py
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity
+    - qos/test_buffer.py::test_port_admin_down
+    - fdb/test_fdb_mac_move.py
+
+# In the test case test_sensor_errors and test_sensor_blacklist, it has an action to remove the port_amb file,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/port_amb",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+  - '.*ERR pmon#psud.*\/var\/run\/hw-management\/thermal\/port_amb.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
+    - platform_tests/test_platform_info.py::test_show_platform_temperature_mocked
+
+- Errors_list:
+  - '.*ERR dualtor_neighbor_check.py: .*'
+  Conditions:
+  - Affected_test_cases:
+    - vxlan/test_vnet_route_leak.py
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_upstream
+    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_downstream
+    - pc/test_lag_2.py::test_lag_db_status_with_po_update
+    - pc/test_po_cleanup.py
+    GitHub:
+    - https://github.com/sonic-net/sonic-mgmt/issues/10670
+
+- Errors_list:
+  - '.*kernel.*NOHZ tick-stop error: local softirq work is pending, handler.*'
+  Conditions:
+  - Platform:
+    - dpu
+
+# The login attempts were all coming from a device from the ThreatOps team.
+# They are running brute force attempts on random devices in the company to try and find vulnerabilities in the network.
+- Errors_list:
+  - '.*ERR sshd-session.*auth fail: Password incorrect. user.*'
+  Conditions:
+  - Platform:
+    - sn
+    
+# ===== Only Canonical =====
+
+- Errors_list:
+  - '.*ERR.*teamd#tlm_teamd: :- get_dump: Can.*t get dump for LAG .*PortChannel.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/lag/test_lag.py
+    Redmine:
+    - 2934692
+
+- Errors_list:
+  - '.* ERR swss#orchagent: message repeated \d+ times: .* :- removeLag: Failed to remove LAG PortChannel\d+, it is still in VLAN.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/lag/test_lag.py
+    Redmine:
+    - 2825653
+
+- Errors_list:
+  - '.*ERR systemd\[\d+\]: Failed to start Rotate log files.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    Redmine:
+    - 3320283
+
+- Errors_list:
+  - '.*ERR lldp#lldpmgrd\[\d+\]: unknown operation.*'
+  - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] mlnx_sai_port.c\[\d+\]- mlnx_port_by_log_id: Failed lookup port config.*'
+  - '.*ERR syncd#SDK: \[SAI_QUEUE.ERR\] mlnx_sai_queue.c\[\d+\]- mlnx_queue_cfg_lookup: Filed to lookup queue.*'
+  - '.*ERR syncd#SDK: :- collectQueueCounters: QUEUE_WATERMARK_STAT_COUNTER: failed to get stats of queue.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/dynamic_port_breakout/test_dpb_all_ports.py
+    Redmine:
+    - 3099410
+
+- Errors_list:
+  - ".* ERR ntpd\\[\\d+\\]: leapsecond file \\('/usr/share/zoneinfo/leap-seconds.list'\\): expired \\d+ days? ago.*"
+  - ".* ERR ntpd\\[\\d+\\]: leapsecond file \\('/usr/share/zoneinfo/leap-seconds.list'\\): expired less than \\d+ days ago.*"
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
+    Redmine:
+    - 3120607
+
+- Errors_list:
+  - '.* ERR sflow#port_index_mapper: \<built-in function Select_select\> returned a result with an error set'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
+    Redmine:
+    - 3172649
+
+- Errors_list:
+  - '.*ERR dhclient.*: receive_packet failed on .*: Network is down.*'
+  - '.*ERR dhclient.*: send_packet: No such device or address*'
+  - '.*ERR dhclient.*: dhclient.c:.*: Failed to send \d+ byte long packet over .* interface.*'
+  - '.*ERR dhclient\[\d+\]: send_packet6: No such device.*'
+  - '.*ERR dhclient\[\d+\]: dhc6: send_packet6\(\) sent -.* of .* bytes.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    Redmine:
+    - 3114029
+
+- Errors_list:
+  - '.*Bulk-Cntr PPCNT parser - unexpected local port.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py
+    Redmine:
+    - 3279709
+
+- Errors_list:
+  - ".* ERR swss#supervisor-proc-exit-listener: Process 'orchagent' is stuck in namespace 'host'.*"
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
+    Redmine:
+    - 3705311
+
+- Errors_list:
+  - '.* ERR teamd#teammgrd: :- addLagMember: Failed to add Ethernet\d+ to port channel .*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/lag/test_lag.py
+    Redmine:
+    - 3137284
+
+- Errors_list:
+  - '.*ERR swss#orchagent.*doPortTask: Failed to get port id by alias:Ethernet.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/dynamic_port_breakout/test_dpb_introp.py
+    Redmine:
+    - 3405332
+
+- Errors_list:
+  - '.*ERR ntpd.*: CLOCK: Panic: offset too big.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
+  - Redmine:
+    - 4056053
+
+# Errors which should be ignored in tests which doing reboot/reload
+- Errors_list:
+  - '.* ERR sonic-installer: Error: Failed verify image signature'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/secure/test_secure_upgrade/test_secure_upgrade.py
+
 # PCIE probe errors which should be ignored during the smartswitch deployment
 # Comments from Sasha:
 # This is a non-functional warning message that is rarely observed during BFB image installation,
@@ -164,48 +623,6 @@
     - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
     Platform:
     - sn4280
-
-# Ignore these errors on r-bobcat-01 due to a PSU hw issue
-- Errors_list:
-  - '.*r-bobcat-01.*psu.*'
-  - '.*r-bobcat-01.*pmbus.*4-0059.*'
-  Conditions:
-  - Platform: sn4280
-
-# Ignore thermalctld fan_dir FileNotFoundError on Bobcat platform
-# The fan_dir sysfs file does not exist on sn4280 (Bobcat), causing thermalctld to log errors
-# Issue already tracked by [SONIC - Design] Bug SW #4902985
-- Errors_list:
-  - '.*ERR pmon#thermalctld: Failed to read from file /var/run/hw-management/thermal/fan\d+_dir - FileNotFoundError.*'
-  Conditions:
-  - Redmine:
-    - 4902985
-    Platform:
-    - sn4280
-
-- Errors_list:
-  - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
-  - '.* ERR watchdogutil: Failed to get watchdog module'
-  - '.* ERR kernel: \[\s+\d+\.\d+\] /dev/sda3: Can''t open blockdev'
-  - '.* ERR healthd(\[\d+\])?: Failed to read from file \/var\/run\/hw-management\/led\/led_status_capability - FileNotFoundError.*No such file or directory.*'
-  - '.* ERR healthd(\[\d+\])?: Failed to write.*file \/var\/run\/hw-management\/led\/led_status_green - FileNotFoundError.*No such file or directory.*'
-  - '.* ERR show: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, .*No such file or directory.*\)'
-  Conditions:
-  - Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR root: /etc/dhcp/dhclient-exit-hooks.d/ntp returned non-zero exit status 1.*'
-  Conditions:
-  - Redmine:
-    - 3588280
-
-- Errors_list:
-  - '.* ERR memory_threshold_check: Free memory (\d+(\.\d+)?) is less then free memory threshold (\d+(\.\d+)?).*'
-  - '.*ERR mlnx-fw-upgrade.sh: FW Query command: mlxfwmanager --query failed to detect spectrum device with error: Querying Mellanox devices firmware.*'
-  Conditions:
-  - Image_type:
-    - ASAN
 
 # Below ignores from temp_log_analyzer_ignores.txt in LAG folder
 - Errors_list:
@@ -224,20 +641,13 @@
   - Affected_test_cases:
     - tests/nightly/lag/test_lag.py
 
-- Errors_list:
-  - '.*ERR.*teamd#tlm_teamd: :- get_dump: Can.*t get dump for LAG .*PortChannel.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/lag/test_lag.py
-    Redmine:
-    - 2934692
-
 # From ngts/tests/nightly/arp/log_analyzer_ignores.txt
 - Errors_list:
   - '.* ERR swss#orchagent.*Failed to remove ref count.*\d+.*LAG.*PortChannel.*'
   Conditions:
   - Affected_test_cases:
     - tests/nightly/arp/test_arp.py
+
 
 # From ngts/tests/nightly/auto_negotition/negative_auto_neg_log_analyzer_ignores
 - Errors_list:
@@ -287,94 +697,6 @@
   - Affected_test_cases:
     - tests/nightly/fdb/test_fdb_basic.py::TestFdbBasic::test_fdb_aging_time_expire
 
-# Errors which should be ignored on SPC1 when install the p4-examples, p4-sampling, and enable them
-- Errors_list:
-  - '.*ERR p4.*examples: start.sh - unsupported DEVICE_TYPE=Spectrum.*'
-  - '.*ERR p4.*sampling: start.sh - unsupported DEVICE_TYPE=Spectrum.*'
-  Conditions:
-  - Platform: sn2
-
-# From ngts/tests/nightly/p4/sampling_example/p4_sampling_loganalyzer_ignore.txt
-- Errors_list:
-  - '.* ERR swss#orchagent: :- removeTunnelNextHop: Remove Tunnel next hop unable to find EVPN VTEP.*'
-  - '.* ERR swss#orchagent: :- removeOverlayNextHops: Tunnel Nexthop .*delete failed.*'
-  - '.* ERR syncd#SAI:.*\[SAI_SWITCH.ERR\].*mlnx_sai_switch.c.*Shared memory of the SAI already exists, destroying it and re-creating'
-  - '.* WARNING syncd#SAI.*\[SAI_SWITCH.WARNING\].*mlnx_sai_switch.c.*sai_qos_db_create.*Shared memory of the SAI QOS already exists, destroying it and re-creating'
-  - '.* WARNING syncd#SAI.*\[SAI_SWITCH.WARNING\].*mlnx_sai_switch.c.*sai_buffer_db_create.*Shared memory of the SAI buffer already exists, destroying it and re-creating'
-  - '.* WARNING syncd#SAI.*\[SAI_SWITCH.WARNING\].*mlnx_sai_switch.c.*sai_acl_db_create.*Shared memory of the SAI ACL already exists, destroying it and re-creating'
-  - '.* WARNING syncd#SAI.*\[SAI_SWITCH.WARNING\].*mlnx_sai_switch.c.*sai_tunnel_db_create.*Shared memory of the SAI TUNNEL already exists, destroying it and re-creating'
-  - '.* WARNING syncd#SDK.*\[SXD_DPT.WARNING\].*sxd_dpt_init().*Shared memory of the DPT already exists,destroying it and re-creating'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/p4/sampling_example/test_entry_advance.py::TestEntryTraffic::test_enable_disable_p4_sampling
-    - tests/nightly/p4/sampling_example/test_entry_advance.py::TestEntryTraffic::test_p4_sampling_traffic_concussive
-    - tests/nightly/p4/sampling_example/test_entry_priority.py::test_entries_with_different_priority
-    - tests/nightly/p4/sampling_example/test_entry_priority.py::test_entries_with_same_priority
-    - tests/nightly/p4/sampling_example/test_entry_scaling.py::TestEntryScaling::test_scaling_entries
-
-# p4-sampling related err msg
-- Errors_list:
-  - '.* ERR syncd#SDK: \[SPAN.ERR\] SPAN module already initialized'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/p4/sampling_example/test_entry_advance.py::TestEntryTraffic::test_enable_disable_p4_sampling
-    - tests/nightly/p4/sampling_example/test_entry_advance.py::TestEntryTraffic::test_p4_sampling_traffic_concussive
-    - tests/nightly/p4/sampling_example/test_entry_priority.py::test_entries_with_different_priority
-    - tests/nightly/p4/sampling_example/test_entry_priority.py::test_entries_with_same_priority
-    - tests/nightly/p4/sampling_example/test_entry_scaling.py::TestEntryScaling::test_scaling_entries
-      # this err can also happen in test case doing "config reload -y" when p4-sampling is installed and enabled
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_remove_dhcp_server
-
-- Errors_list:
-  - '.* ERR swss#orchagent: :- removeLag: Failed to remove ref count.*\d+.*LAG PortChannel.*'
-  - '.* ERR swss#orchagent: message repeated \d+ times: \[ :- removeLag: Failed to remove ref count \d+ LAG PortChannel\d+\]'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_route
-    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_neighbor_and_nexthop
-    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_nexthop_group_and_member
-    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_fdb_entry
-    - tests/push_build_tests/L3/crm/test_crm.py::test_crm_acl
-    - pc/test_po_update.py::test_po_update_io_no_los
-    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py
-    - drop_packets/test_wjh.py::test_wjh_starts_after_config_reload
-    - system_health/test_system_health.py
-    Redmine:
-    - 2615940
-
-- Errors_list:
-  - 'ERR pmon#sensord: Error getting sensor data: mp2975.*16: Kernel interface error.*'
-  Conditions:
-  - Redmine:
-    - 4029831
-    Platform:
-    - sn4280
-
-- Errors_list:
-  - '.* ERR swss#orchagent: :- removeLag: Failed to remove non-empty LAG PortChannel.*'
-  Conditions:
-  - Affected_test_cases:
-    - pc/test_po_update.py::test_po_update
-    Redmine:
-    - 2615940
-
-- Errors_list:
-  - '.*ERR kernel:.*mlxsw_minimal .* Eeprom query failed.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - tests/nightly/app_extension/test_app_extension_reboot.py::test_app_start_delay_after_reboot
-    - platform_tests/sfp/test_sfputil.py
-    - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_file
-    - show_techsupport/test_techsupport.py::test_techsupport
-    - show_techsupport/test_auto_techsupport.py
-    - show_techsupport/test_techsupport_no_secret.py::test_secret_removed_from_show_techsupport
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcp6_relay_remove_dhcp_server
-    Redmine:
-    - 2915388
-
 - Errors_list:
   - '.*WARNING syncd#SDK: \[HOST_INTERFACE\.WARNING\] Receive event of FW SOS.*'
   Conditions:
@@ -389,30 +711,71 @@
     - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay.py::TestDHCP6Relay::test_dhcpv6_relay_client_request_with_malformed_payload
 
 - Errors_list:
-  - '.*ERR syncd#SDK: \[FDB_UC.ERR\] FDB: not supported fid type \(\d+\) for fid \(\d+\).*'
+  - '.*sonic ERR systemctl.*: Job for pmon\.service canceled\..*'
   Conditions:
   - Affected_test_cases:
-    - sub_port_interfaces/test_show_subinterface.py
-    - sub_port_interfaces/test_sub_port_interfaces.py
-    Redmine:
-    - 3664168
-    Branch:
-    - 202305
-    - master
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
 
 - Errors_list:
-  - '.* WARNING syncd#SDK: :- discover: skipping since it causes crash: SAI_STP_ATTR_BRIDGE_ID'
+  - '.*ERR swss#swssconfig:.*Failed to open file \/etc\/swss\/config.d\/ipinip.json'
   Conditions:
   - Affected_test_cases:
-    - pc/test_po_update.py::test_po_update_io_no_loss
-    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
-    - ecmp/inner_hashing/test_wr_inner_hashing.py
-    - autorestart/test_container_autorestart.py
-    - copp/test_copp.py::TestCOPP::test_no_policer
-    - copp/test_copp.py::TestCOPP::test_policer
-    - route/test_static_route.py::test_static_route_ecmp
-    - system_health/test_system_health.py
-    - iface_loopback_action/test_iface_loopback_action.py::test_loopback_action_reload
+    - tests/performance/test_ar_performance.py::TestArPerformance::test_ar_perf_reload_reboot
+
+- Errors_list:
+  - '.*ERR systemctl.*: Job for .*service canceled.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
+- Errors_list:
+  - ".*ERR mlnx-fw-upgrade.sh: FW (Query|Update) command.*"
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+
+- Errors_list:
+  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_status.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_dir.*'
+  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_speed_get.*'
+  - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
+  - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
+  - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
+  - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
+  - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/.* does not exis.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
+
+# In the test case test_temperature_sweep, it has an action to remove the sensors files,
+# when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
+# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
+- Errors_list:
+  - '.*ERR pmon#.*\/var\/run\/hw-management\/thermal\/.*'
+  - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/.* does not exis.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SX_API_DBG.ERR\] .* halt irisc \d  halt_addr.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
+
+# ===== Only Community =====
+
+- Errors_list:
+  - '.* ERR swss#orchagent: :- removeLag: Failed to remove non-empty LAG PortChannel.*'
+  Conditions:
+  - Affected_test_cases:
+    - pc/test_po_update.py::test_po_update
+    Redmine:
+    - 2615940 
 
 - Errors_list:
   - '.*ERR teamd#teamsyncd: :- poll_descriptors: readData error: Unable to initialize team socket: Cannot assign requested address'
@@ -421,123 +784,6 @@
     - autorestart/test_container_autorestart.py
     Redmine:
     - 3071644
-
-- Errors_list:
-  - '.* WARNING syncd#SDK: \[SAI_TUNNEL.WARNING\] mlnx_sai_tunnel.c\[\d+\]- mlnx_sdk_fill_tunnel_ttl_data: TTL uniform model is not supported for non-ipinip type on Spectrum 1, using default settings in switch'
-  Conditions:
-  - Redmine:
-    - 2954740
-    Branch:
-    - 202111
-    - master
-    - 202211
-    Platform:
-    - x86_64-mlnx_msn2
-    - x86_64-mlnx_msn2700-r0
-
-- Errors_list:
-  - '.* ERR teamd#tlm_teamd: :- get_dump: Can''t get dump for LAG ''PortChannel\d+''. Skipping'
-  Conditions:
-  - Affected_test_cases:
-    - pc/test_po_update.py::test_po_update
-    Redmine:
-    - 2934692
-    Branch:
-    - 202111
-    - master
-    - 202211
-
-- Errors_list:
-  - '.* teamd\[\d+\]: segfault at .* ip .* sp .* error 4 in libteam.so.5.6.0.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/lag/test_lag.py
-    Redmine:
-    - 2910559
-    Branch:
-    - 202111
-    - master
-    - 202012
-    - 202211
-
-- Errors_list:
-  - ".*ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/\\d+-\\d+/raw due to IndexError\\('list index out of range'\\)"
-  Conditions:
-  - Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR sflow#hsflowd: device .* Get SIOCGIFFLAGS failed : No such device'
-  Conditions:
-  - Redmine:
-    - 3160535
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Could not acquire lock.*'
-  - '.* ERR kernel:.*hwmon hwmon\d+: Failed to query module temperature.*'
-  - '.* ERR kernel:.*mlxsw_minimal \d+-0048: Failed to query temp sensor.*'
-  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query PWM.*'
-  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Failed to query fan.*'
-  - '.* ERR kernel:.*mlxsw_minimal 2-0048: Reg cmd access failed.*'
-  - '.* ERR pmon#thermalctld: Failed to read from file /run/hw-management/thermal/module.*_temp_fault - OSError.*'
-  Conditions:
-  - Redmine:
-    - 2856406
-
-- Errors_list:
-  - '.* ERR swss#orchagent: message repeated \d+ times: .* :- removeLag: Failed to remove LAG PortChannel\d+, it is still in VLAN.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/lag/test_lag.py
-    Redmine:
-    - 2825653
-
-- Errors_list:
-  - '.* ERR kernel.*Failed to query module temperature thresholds'
-  Conditions:
-  - Redmine:
-    - 2915388
-
-- Errors_list:
-  - '.* ERR syncd#SDK: \[EMAD_RX_THREAD.ERR\] EMAD transaction FW error.*'
-  - '.* ERR syncd#SDK: \[EMAD.ERR\] emad-send failed on register.*'
-  - '.* ERR syncd#SDK: \[REG_BULK.ERR\] sx_reg_layer_sxd_reg_call - Error at access reg call reg_id.*'
-  - '.* ERR syncd#SDK: \[REG_BULK.ERR\] __reg_bulk_post_completion_cb Error got in completion data sxd_status .*'
-  - '.* ERR syncd#SDK: \[MGMT_LIB.ERR\] Slot .* Module .* Attr get, MCION GET failed.*'
-  Conditions:
-  - Affected_test_cases:
-    - show_techsupport/test_techsupport.py
-    - app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - tests/show_techsupport/test_auto_techsupport.py
-    - tests/show_techsupport/test_techsupport_no_secret.py
-
-- Errors_list:
-  - '.* ERR dhclient\[\d+\]: send_packet: No such device or address'
-  - '.* ERR dhclient\[\d+\]: dhclient\.c:\d+: Failed to send \d+ byte long packet over .* interface.*'
-  Conditions:
-  - Redmine:
-    - 3006222
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.* ERR dhclient\[\d+\]: receive_packet failed on .*: Network is down'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_multiple_dhcp_servers
-    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_remove_dhcp_server
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR .*: Failed to get status of .*: rc=.*'
-  - ".*ERR .*: \\['sudo', 'systemctl', 'start', '.*'\\] - failed: return code.*"
-  - ".*ERR .*: Feature .* failed to be enabled and started.*"
-  Conditions:
-  - Redmine:
-    - 3537514
 
 - Errors_list:
   - '.*ERR kernel:.*Failed to bind BFD socket to local_addr.*'
@@ -556,56 +802,57 @@
     - 3536554
 
 - Errors_list:
+  - '.* ERR vnet_route_check.py:.*results.*missed_in_asic_db_routes.*Vnet.*'
+  - '.* ERR vnet_route_check.py:  Vnet Route Mismatch reported.*'
+  Conditions:
+  - Affected_test_cases:
+    - vxlan/test_vnet_route_leak.py
+    Redmine:
+    - 3165489
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[SAI_DEBUG_COUNTER\.ERR\] mlnx_sai_debug_counter\.c\[\d+\]- mlnx_debug_counter_db_idx_to_data: Debug counter at index \d+ is removed or not created yet.*'
+  - '.*ERR syncd#SDK: :- collectSwitchDebugCounters: Failed to get stats of port.*'
+  - '.*ERR syncd#SDK: :- collectData: Failed to get stats of Switch Debug Counter.*'
+  Conditions:
+  - Affected_test_cases:
+    - drop_packets/test_configurable_drop_counters.py
+    Redmine:
+    - 3310078
+
+- Errors_list:
+  - '.*ERR pmon#ycabled: Stop daemon main loop.*'
+  Conditions:
+  - Affected_test_cases:
+    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_upstream[active-active]
+    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
+    Redmine:
+    - 3521394
+
+- Errors_list:
+  - '.* WARNING syncd#SDK: :- discover: skipping since it causes crash: SAI_STP_ATTR_BRIDGE_ID'
+  Conditions:
+  - Affected_test_cases:
+    - pc/test_po_update.py::test_po_update_io_no_loss
+    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
+    - ecmp/inner_hashing/test_wr_inner_hashing.py
+    - autorestart/test_container_autorestart.py
+    - copp/test_copp.py::TestCOPP::test_no_policer
+    - copp/test_copp.py::TestCOPP::test_policer
+    - route/test_static_route.py::test_static_route_ecmp
+    - system_health/test_system_health.py
+    - iface_loopback_action/test_iface_loopback_action.py::test_loopback_action_reload
+
+- Errors_list:
   - '.* ERR wjhd: :- removeBufferConfiguration: Fail to deinit SDK telemetry, error: \[4\]: \[Communication Error\]'
   - '.* ERR wjhd\[\d+\]: \[WJH_LIB.ERROR\s+\].*'
   - '.* ERR wjhd\[\d+\]: :- deleteDropGroupReason:.*'
   - '.* ERR wjhd\[\d+\]: :- destroy: Failed to destroy  channel.*'
   - '.* ERR what-just-happened#wjhd\[\d+\]: :- destroy: Failed to destroy wjh channel.*'
   - '.* ERR wjhd\[\d+\]: :- deinitialize: Failed to de-initialize WJH library, status 1.*'
-
   Conditions:
   - Affected_test_cases:
     - autorestart/test_container_autorestart.py
-
-- Errors_list:
-  - ".*Failed to add device '/dev/sda\\d*' to watch: Operation not permitted.*"
-  - ".*Failed to add device '/dev/loop\\d*' to watch: Operation not permitted.*"
-  Conditions:
-  - Redmine:
-    - 3044633
-
-- Errors_list:
-  - '.*ERR systemd\[\d+\]: Failed to start Rotate log files.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-    Redmine:
-    - 3320283
-
-- Errors_list:
-  - '.* ERR .*rsyslogd: omfwd\/udp: socket \d+: sendto\(\) error: Network is unreachable.*'
-  - '.* ERR .*rsyslogd: omfwd: socket \d+: error 101 sending via udp: Network is unreachable.*'
-  Conditions:
-  - Redmine:
-    - 3168474
-
-- Errors_list:
-  - '.* ERR .*#rsyslogd: imfile: error reading state file for .*'
-  - ".* ERR bgp#rsyslogd: imfile: poll_tree cannot stat file '/var/log/supervisor/supervisord.log' - ignored: No such file or directory.*"
-  Conditions:
-  - Redmine:
-    - 3186637
-
-- Errors_list:
-  - '.*ERR lldp#lldpmgrd\[\d+\]: unknown operation.*'
-  - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] mlnx_sai_port.c\[\d+\]- mlnx_port_by_log_id: Failed lookup port config.*'
-  - '.*ERR syncd#SDK: \[SAI_QUEUE.ERR\] mlnx_sai_queue.c\[\d+\]- mlnx_queue_cfg_lookup: Filed to lookup queue.*'
-  - '.*ERR syncd#SDK: :- collectQueueCounters: QUEUE_WATERMARK_STAT_COUNTER: failed to get stats of queue.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/dynamic_port_breakout/test_dpb_all_ports.py
-    Redmine:
-    - 3099410
 
 - Errors_list:
   - '.* ERR kernel.* PMBus status register not found'
@@ -621,27 +868,10 @@
     Reason: "when 4600c downgrade CPLD these errors are expected "
 
 - Errors_list:
-  - ".* ERR ntpd\\[\\d+\\]: leapsecond file \\('/usr/share/zoneinfo/leap-seconds.list'\\): expired \\d+ days? ago.*"
-  - ".* ERR ntpd\\[\\d+\\]: leapsecond file \\('/usr/share/zoneinfo/leap-seconds.list'\\): expired less than \\d+ days ago.*"
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-    Redmine:
-    - 3120607
-
-- Errors_list:
   - '.* ERR radv#radvd\[\d+\]: Vlan1000 not found: No such device.*'
   Conditions:
   - Affected_test_cases:
     - autorestart/test_container_autorestart.py
-
-- Errors_list:
-  - '.* ERR swss#orchagent: :- meta_sai_on_port_state_change_single: data.port_id oid.* has unexpected type: SAI_OBJECT_TYPE_NULL, expected PORT, BRIDGE_PORT or LAG.*'
-  - '.* ERR swss#orchagent: :- handlePortStatusChangeNotification: Failed to get port object for port id.*'
-  - '.* ERR swss#orchagent: :- doTask: Failed to get port object for port id.*'
-  Conditions:
-  - Redmine:
-    - 3131583
 
 - Errors_list:
   - '.* ERR pmon#xcvrd: Receive PMPE error event on module \d+: status \d+ error type \d+.*'
@@ -652,204 +882,12 @@
     - platform_tests/sfp/test_sfputil.py
 
 - Errors_list:
-  - '.* ERR vnet_route_check.py:.*results.*missed_in_asic_db_routes.*Vnet.*'
-  - '.* ERR vnet_route_check.py:  Vnet Route Mismatch reported.*'
-  Conditions:
-  - Affected_test_cases:
-    - vxlan/test_vnet_route_leak.py
-    Redmine:
-    - 3165489
-
-- Errors_list:
-  - '.* ERR bgp#fpmsyncd: :- onRouteMsg: Invalid VRF name .*ifindex \d+.*'
-  Conditions:
-  - Redmine:
-    - 3221776
-
-- Errors_list:
-  - '.*sonic ERR systemctl.*: Job for pmon\.service canceled\..*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-
-- Errors_list:
-  - '.* ERR sflow#port_index_mapper: \<built-in function Select_select\> returned a result with an error set'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
-    Redmine:
-    - 3172649
-
-- Errors_list:
-  - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to IndexError\(''list index out of range''\)'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
-    Redmine:
-    - 3430646
-    Platform:
-    - simx
-
-- Errors_list:
   - '.*ERR swss#orchagent: :- createEntry: detection_time missing.*'
   - '.*ERR swss#orchagent: :- doTask: Failed to process PFC watchdog SET task, invalid entry.*'
   - '.*ERR swss#orchagent: :- createEntry: Failed to parse PFC Watchdog Ethernet.* configuration\. Unknown attribute NULL.*'
   Conditions:
   - Affected_test_cases:
     - generic_config_updater/test_pfcwd_interval.py::test_stop_pfcwd
-
-- Errors_list:
-  - ".* ERR hostcfgd: sudo systemctl enable eventd.timer - failed: return code - 1, output:#.*None.*"
-  - '.* ERR eventd#eventd: :- main: ERR:The eventd service started.*'
-  - '.* ERR eventd#eventd: :- deserialize: deserialize Failed: input stream errorstr.*data type: std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >&.*'
-  - '.* ERR eventd#eventd: :- zmq_read_part: Failed to deserialize part rc=-2.*'
-  - '.* ERR eventd#eventd: :- zmq_read_part: last:errno.*'
-  - '.* ERR eventd#eventd: :- zmq_message_read: Failure to read part1 rc.*'
-  - '.* ERR eventd#eventd: :- zmq_message_read: last:errno.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py
-    - platform_tests/fwutil/test_fwutil.py::test_fwutil_install_url
-    - platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-    - tests/nightly/lag/test_lag.py::test_lags_scale
-  - Redmine:
-    - 3201740
-
-- Errors_list:
-  - '.* ERR .*echo_receive: failing to read echo rc.*'
-  - '.* ERR .*echo_receive: last:errno=.*'
-  Conditions:
-  - Redmine:
-    - 3216736
-    Branch:
-    - master
-    - 202211
-
-- Errors_list:
-  - '.* ERR syncd#SDK: \[BULK_COUNTER\.ERR\] BULK-CNTR ioctl failed \(cmd=\d+\) error Invalid argument.*'
-  - '.* ERR syncd#SDK: \[BULK_COUNTER\.ERR\] BULK-CNTR transaction parameter is invalid.*'
-  - '.* ERR syncd#SDK: \[BULK_COUNTER\.ERR\] Port-Counter-Transaction-Start: failed to start transaction in driver.*'
-  - '.* ERR syncd#SDK: \[BULK_COUNTER\.ERR\] failed to start port counters bulk-read transaction.*'
-  - '.* ERR kernel: \[.*\] Bulk-Counter DB add - invalid buffer_id.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/routing/test_routing.py::TestRouting::test_reboot
-    - tests/nightly/fec/test_fec.py::TestFec::test_fec_capabilities_loopback_ports
-    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
-    Redmine:
-    - 3216771
-    Branch:
-    - 202205
-    - master
-
-- Errors_list:
-  - '.*ERR dhclient.*: receive_packet failed on .*: Network is down.*'
-  - '.*ERR dhclient.*: send_packet: No such device or address*'
-  - '.*ERR dhclient.*: dhclient.c:.*: Failed to send \d+ byte long packet over .* interface.*'
-  - '.*ERR dhclient\[\d+\]: send_packet6: No such device.*'
-  - '.*ERR dhclient\[\d+\]: dhc6: send_packet6\(\) sent -.* of .* bytes.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-    Redmine:
-    - 3114029
-
-- Errors_list:
-  - '.*ERR swss#swssconfig:.*Failed to open file \/etc\/swss\/config.d\/ipinip.json'
-  Conditions:
-  - Affected_test_cases:
-    - tests/performance/test_ar_performance.py::TestArPerformance::test_ar_perf_reload_reboot
-
-# The below errors should be ignored, because it is caused by FW was busing(err is -16) , and it is an expected behaviour
-- Errors_list:
-  - '.*ERR kernel: \[.*\] Fails to get module type, err: -16.*'
-  - '.*ERR pmon#xcvrd: Failed to read sfp=\d+ EEPROM.*page=\/sys\/module\/sx_core.*eeprom\/pages.*Device or resource busy.*'
-  - '.*ERR pmon#xcvrd: message repeated \d+ times: \[ Failed to read sfp=\d+ EEPROM.*page=\/sys\/module\/sx_core.*eeprom\/pages.*Device or resource busy.*\]'
-  - '.*ERR kernel: \[.*\] Fails to access .* register MCIA \(module:\d+, page:\d+, device_addr:\d+, size:\d+, i2c_addr:.*, slot:\d+, status:.*err: -16.*'
-  - '.*ERR kernel: \[.*\] Fails to read module eeprom, status: -16.*'
-  - '.*ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
-  - '.*ERR pmon#xcvrd: Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - show_techsupport/test_auto_techsupport.py
-    - show_techsupport/test_techsupport_no_secret.py
-    - show_techsupport/test_techsupport.py
-    - tests/nightly/arp/test_arp.py::test_arp_gratuitous_without_arp_update
-    - tests/nightly/fec/test_fec.py
-    - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_toggle_peer_port
-    - tests/nightly/auto_negotition/test_auto_neg.py::TestAutoNeg::test_auto_neg_conf
-    - tests/nightly/auto_negotition/test_auto_neg_negative.py::TestAutoNegNegative::test_negative_advertised_speed_type_mismatch
-    - tests/nightly/evpn_vxlan/tech_support/test_evpn_vxlan_tech_support.py
-
-- Errors_list:
-  - '.* ERR kernel: \[.*\] Fails to access \(\d+\) module eeprom, status: -\d+.'
-  - '.* ERR pmon#xcvrd: Failed to read sfp=\d+ EEPROM page=/sys/module/sx_core/asic\d+/module\d+/eeprom/pages/.*/data, page_offset=\d+,\s+size=\d+, offset=\d+, error = \[Errno \d+\] Input/output error'
-  - '.* ERR pmon#xcvrd: message repeated \d+ times: \[ Failed to read sfp=\d+ EEPROM page=/sys/module/sx_core/asic\d+/module\d+/eeprom/pages/.*/data, page_offset=\d+,\s+size=\d+, offset=\d+, error = \[Errno \d+\] Input/output error\]'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
-    - show_techsupport/test_auto_techsupport.py
-    - show_techsupport/test_techsupport_no_secret.py
-    - show_techsupport/test_techsupport.py::test_techsupport
-    - platform_tests/sfp/test_sfputil.py::test_check_sfputil_reset
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    Redmine:
-    - 3263805
-
-- Errors_list:
-  - '.*Bulk-Cntr PPCNT parser - unexpected local port.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py
-    Redmine:
-    - 3279709
-
-- Errors_list:
-  - ".* ERR swss#supervisor-proc-exit-listener: Process 'orchagent' is stuck in namespace 'host'.*"
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
-    Redmine:
-    - 3705311
-
-- Errors_list:
-  - '.*ERR kernel.*Unknown EEPROM type.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_max_limit
-    - platform_tests/sfp/test_sfputil.py
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    Redmine:
-    - 3283464
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SAI_DEBUG_COUNTER\.ERR\] mlnx_sai_debug_counter\.c\[\d+\]- mlnx_debug_counter_db_idx_to_data: Debug counter at index \d+ is removed or not created yet.*'
-  - '.*ERR syncd#SDK: :- collectSwitchDebugCounters: Failed to get stats of port.*'
-  - '.*ERR syncd#SDK: :- collectData: Failed to get stats of Switch Debug Counter.*'
-  Conditions:
-  - Affected_test_cases:
-    - drop_packets/test_configurable_drop_counters.py
-    Redmine:
-    - 3310078
-
-- Errors_list:
-  - '.* ERR teamd#teammgrd: :- addLagMember: Failed to add Ethernet\d+ to port channel .*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/lag/test_lag.py
-    Redmine:
-    - 3137284
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+CR-Space dump faile.*'
-  - '.*ERR syncd#SDK: \[SX_API_DBG_AMBER\.ERR\].+Failed to create dump file.*'
-  - '.*ERR syncd#SDK: \[SX_API_DBG\.ERR\].+AMBER dump failed.*'
-  Conditions:
-  - Redmine:
-    - 3580534
 
 - Errors_list:
   - '.*ERR neighbor_advertiser: The request failed.*'
@@ -859,26 +897,6 @@
     - decap/test_decap.py::test_decap
     GitHub:
     - https://github.com/sonic-net/sonic-mgmt/issues/14707
-
-- Errors_list:
-  - '.* ERR syncd#SDK: \[SAI_INTERFACE_QUERY_ETH.ERR\] mlnx_sai_interfacequery_eth.c\[\d+\]- sai_dbg_generate_dump_ext: Failed to lock DFW semaphore - Connection timed out'
-  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] dump generation failed'
-  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] Cr space dump failed#\d+'
-  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] FW dump generation failed to move meta file to:\[/tmp/saisdkdump/sdkdump_ext_meta_.*\]'
-  - '.* ERR syncd#SDK: \[COMP_LIB.ERR\] failed to rename file:\[/tmp/saisdkdump/.*.tmp\] to:\[/tmp/saisdkdump/.*\] code:\[2,No such file or directory\]'
-  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] FW dump generation failed to move CR file to:\[/tmp/saisdkdump/.*]'
-  Conditions:
-  - Affected_test_cases:
-    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - tests/nightly/evpn_vxlan/tech_support/test_evpn_vxlan_tech_support.py::TestEvpnVxlanTechSupport::test_tech_support
-    - show_techsupport/test_auto_techsupport.py
-    - show_techsupport/test_techsupport_no_secret.py
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
-  - Platform:
-    - simx
-    Redmine:
-    - 3272016
 
 - Errors_list:
   - '.* ERR what-just-happened#wjhd: :- removeBufferConfiguration: Fail to deinit SDK telemetry, error: \[4\]: \[Communication Error\]'
@@ -930,43 +948,155 @@
   - Affected_test_cases:
     - autorestart/test_container_autorestart.py::test_containers_autorestart
 
-# Errors which should be ignored in tests which doing reboot/reload
 - Errors_list:
-  - '.*ERR systemctl.*: Failed to start dhcp_relay\.service: Unit dhcp_relay\.service is masked.*'
-  - '.*ERR ntpd.*: CONFIG: restrict nopeer ignored.*'
-  - '.*ERR kernel:.*ima: impossible to appraise a kernel image without a file descriptor; try using kexec_file_load syscall.*'
-  - '.*ERR kernel:.*x86\/cpu: SGX disabled by BIOS.*'
-  Conditions:
-  - Redmine:
-    - 3726137
-
-- Errors_list:
-  - '.*ERR systemctl.*: Job for .*service canceled.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-
-- Errors_list:
-  - '.*ERR ntpd.*: CLOCK: leapsecond file .*: expired less than \d+ days ago.*'
-  Conditions:
-  - Redmine:
-    - 3723467
-    Branch:
-    - master
-
-- Errors_list:
-  - '.*ERR swss#orchagent.*doPortTask: Failed to get port id by alias:Ethernet.*'
+  - '.* ERR syncd#SAI: \[SAI_PORT.ERR\] .\/src\/mlnx_sai_port.c.*- mlnx_run_and_process_ethtool_cmd: Failed to run the cmd ethtool -S  Ethernet\d+.*'
+  - '.* ERR syncd#SAI.*- collectData: Failed to get stats of Port Counter.*'
+  - '.* ERR syncd#SDN: mlx\d_net: Failed to update link status: No such device or address.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: Failed to update link status: No such device.*'
+  - '.* ERR syncd#SAI: \[SAI_INTERFACE_QUERY_ETH.ERR\] .\/src\/mlnx_sai_interfacequery_dpu.c.*- sai_dbg_do_dump: Failed to run mlxconfig command - mlxconfig -d \/dev\/mst\/mt.*_pciconf.* q .* \/var\/log\/bluefield\/sdk-dumps\/_stage\/sai_nasa_dump.txt.*'
+  - '.* ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_stc_modify\]: Failed to modify STC FW action_type \d+.*'
+  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_flow_table_modify\]: Failed to modify FT.*'
+  - '.* ERR syncd#SDN: mlx5_net: \[mlx5dr_matcher_disconnect\]: Failed to update miss table RTC for last matcher.*'
+  - '.* ERR pmon#thermalctld: Failed to exec mget_temp - Failed to open \(\/sys\/bus\/pci\/devices\/0000:03:00.0\/config\) for reading: No such file or directory.*'
+  - '.* WARNING kernel.*NOHZ tick-stop error: Non-RCU local softirq work is pending, handler.*'
   Conditions:
   - Affected_test_cases:
-    - tests/nightly/dynamic_port_breakout/test_dpb_introp.py
+    - show_techsupport/test_techsupport_dpu.py
+
+- Errors_list:
+  - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object key SAI_OBJECT_TYPE_ROUTE_ENTRY.*doesn.t exist.*'
+  - '.*ERR syncd#SDK:.*\[SAI_ROUTE.ERR\].*\/src\/mlnx_sai_route.c.*mlnx_get_route: Failed to get \d+ route entries Entry Not Found.*'
+  - '.*ERR syncd#SDK: :- sendApiResponse: api SAI_COMMON_API_BULK_REMOVE failed in syncd mode: SAI_STATUS_FAILURE.*'
+  - '.*ERR swss#orchagent: :- flush_removing_entries: EntityBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_FAILURE.*'
+  - '.*ERR swss#orchagent: :- removeRoutePost: Failed to remove route prefix:.*'
+  Conditions:
+  - Affected_test_cases:
+    - crm/test_crm.py::test_crm_nexthop_group
+    GitHub:
+    - https://github.com/sonic-net/sonic-mgmt/issues/20563
+    Platform:
+    - sn4700
+
+# ===== Only simx ======
+
+- Errors_list:
+  - '.*ERR sflow#hsflowd: device .* Get SIOCGIFFLAGS failed : No such device'
+  Conditions:
+  - Redmine:
+    - 3160535
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.* ERR dhclient\[\d+\]: send_packet: No such device or address'
+  - '.* ERR dhclient\[\d+\]: dhclient\.c:\d+: Failed to send \d+ byte long packet over .* interface.*'
+  Conditions:
+  - Redmine:
+    - 3006222
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to IndexError\(''list index out of range''\)'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
     Redmine:
-    - 3405332
+    - 3430646
+    Platform:
+    - simx
 
 - Errors_list:
-  - '.*ERR swss#orchagent.*doPortTask: Unsupported port speed.*'
+  - '.* ERR syncd#SDK: \[SAI_INTERFACE_QUERY_ETH.ERR\] mlnx_sai_interfacequery_eth.c\[\d+\]- sai_dbg_generate_dump_ext: Failed to lock DFW semaphore - Connection timed out'
+  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] dump generation failed'
+  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] Cr space dump failed#\d+'
+  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] FW dump generation failed to move meta file to:\[/tmp/saisdkdump/sdkdump_ext_meta_.*\]'
+  - '.* ERR syncd#SDK: \[COMP_LIB.ERR\] failed to rename file:\[/tmp/saisdkdump/.*.tmp\] to:\[/tmp/saisdkdump/.*\] code:\[2,No such file or directory\]'
+  - '.* ERR syncd#SDK: \[SX_API_DBG.ERR\] FW dump generation failed to move CR file to:\[/tmp/saisdkdump/.*]'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports
+    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
+    - tests/nightly/evpn_vxlan/tech_support/test_evpn_vxlan_tech_support.py::TestEvpnVxlanTechSupport::test_tech_support
+    - show_techsupport/test_auto_techsupport.py
+    - show_techsupport/test_techsupport_no_secret.py
+    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump
+  - Platform:
+    - simx
+    Redmine:
+    - 3272016
+
+- Errors_list:
+  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/timeout - FileNotFoundError.*No such file or directory.*'
+  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/state - FileNotFoundError.*No such file or directory*'
   Conditions:
   - Redmine:
-    - 3430196
+    - 3584706
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Received port profile apply done OK event, but port profile \(index \d+\) has already been destroyed.*'
+  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Could not send port added events.*'
+  - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed to process port profile apply status job, error: Internal Error.*'
+  Conditions:
+  - Redmine:
+    - 3908922
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR kernel:.* RETBleed: WARNING: Spectre v\d+ mitigation leaves CPU vulnerable to RETBleed attacks, data leaks possible.*'
+  Conditions:
+  - Redmine:
+    - 3856241
+    Platform:
+    - simx
+
+- Errors_list:
+  - '.*ERR hw-management: message repeated \d+ times: \[ chip hwmon object\].*'
+  Conditions:
+  - Redmine:
+    - 3856952
+    Platform:
+    - simx
+
+
+- Errors_list:
+  - '.*ERR kernel:.*mlxplat mlxplat: Failed to get adapter for bus \d+.*'
+  - '.*ERR kernel:.*mlxplat mlxplat: probe with driver mlxplat failed with error \-\d+.*'
+  Conditions:
+  - Platform:
+    - sn6600_simx
+    Redmine:
+    - 4836707
+
+- Errors_list:
+  - '.* ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, ''No such file or directory''\)'
+  - '.* ERR watchdogutil: Failed to get watchdog module'
+  - '.* ERR kernel: \[\s+\d+\.\d+\] /dev/sda3: Can''t open blockdev'
+  - '.* ERR healthd(\[\d+\])?: Failed to read from file \/var\/run\/hw-management\/led\/led_status_capability - FileNotFoundError.*No such file or directory.*'
+  - '.* ERR healthd(\[\d+\])?: Failed to write.*file \/var\/run\/hw-management\/led\/led_status_green - FileNotFoundError.*No such file or directory.*'
+  - '.* ERR show: Fail to decode DMI /sys/firmware/dmi/entries/2-0/raw due to FileNotFoundError\(2, .*No such file or directory.*\)'
+  Conditions:
+  - Platform:
+    - simx
+
+- Errors_list:
+  - ".*ERR pmon#chassis_db_init: Fail to decode DMI /sys/firmware/dmi/entries/\\d+-\\d+/raw due to IndexError\\('list index out of range'\\)"
+  Conditions:
+  - Platform:
+    - simx
+
+- Errors_list:
+  - '.* ERR dhclient\[\d+\]: receive_packet failed on .*: Network is down'
+  Conditions:
+  - Affected_test_cases:
+    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_multiple_dhcp_servers
+    - tests/push_build_tests/L3/dhcp_relay/test_dhcp6_relay::test_dhcp6_relay_remove_dhcp_server
+    Platform:
+    - simx
 
 - Errors_list:
   - '.*ERR syncd#SDK: \[SAI_INTERFACE_QUERY_ETH\.ERR\].+sai_dbg_run_mlxtrace: Failed running.*'
@@ -976,24 +1106,14 @@
     - simx
 
 - Errors_list:
-  - '.*ERR pmon#ycabled: Stop daemon main loop.*'
+  - '.*ERR\s+kernel:\s+\[\s*\d+\.\d+\]\s+sxd_kernel:\s+\[error\]\s+Fails\s+to\s+access\s+MCIA,\s+module:\s+\d+,\s+status:\s+\d+\..*'
   Conditions:
-  - Affected_test_cases:
-    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_upstream[active-active]
-    - vxlan/test_vnet_route_leak.py::test_vnet_route_leak
-    Redmine:
-    - 3521394
+  - Platform:
+    - simx
 
-- Errors_list:
-  - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object.*'
-  - '.*ERR swss#orchagent: :- meta_sai_validate_eni_ether_address_map_entry: object key SAI_OBJECT_TYPE_ENI_ETHER_ADDRESS_MAP_ENTRY.*exist.*'
-  - '.*ERR swss#orchagent: :- flush_removing_entries: ObjectBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_OBJECT_IN_USE.*'
-  Conditions:
-  - Redmine:
-    - 3537984
-    Platform:
-    - nvda_bf
+# ===== NVOS =====
 
+# NVOS
 - Errors_list:
   - '.* ERR nvued:   ERROR: lifecycle.py:\d+ Failed verify eth interface configuration.*'
   Conditions:
@@ -1135,189 +1255,6 @@
     - tests_nvos/ib/test_ibdiagnet.py::test_ibdiagnet_run
     - tests_nvos/platform/test_install_platform_firmware.py::test_install_platform_firmware
 
-- Errors_list:
-  - ".*ERR mlnx-fw-upgrade.sh: FW (Query|Update) command.*"
-
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-
-- Errors_list:
-  - '.* ERR kernel: \[.*\] Fails to access \(\d+\) register MCIA \(module:\d+, page:\d+, device_addr:\d+, size:\d+, i2c_addr:.*, slot:\d+, status:\d+\), err: -16.*'
-  - '.* ERR kernel: \[.*\] Fails to get module type, err: -16.*'
-  - '.* ERR kernel: \[ .*\] Fails to read module eeprom, status: -16.*'
-  - '.* ERR kernel: \[.*\] Fails to access .* module eeprom, status: -16.*'
-  - '.* ERR pmon#xcvrd:.*Failed to get SFP type, index=\d+, error=\[Errno \d+\] Device or resource busy.*'
-  - '.*ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
-  - '.* ERR swss#orchagent: :- wait: SELECT operation result: TIMEOUT on object_type_get_availability_response.*'
-  - '.* ERR swss#orchagent: :- wait: failed to get response for object_type_get_availability_response.*'
-  - '.*mlnx_switch_health_event_handle: Health event happened.*HW catastrophic.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/auto_negotition/test_auto_neg_scale.py
-    - tests/nightly/app_extension/test_app_extension_basic.py::test_app_techsupport_integration
-    - show_techsupport/test_auto_techsupport.py::TestAutoTechSupport::test_sanity
-    - qos/test_buffer.py::test_port_admin_down
-    - fdb/test_fdb_mac_move.py
-
-- Errors_list:
-  - '.*ERR systemctl.*Failed to start.*service: Transaction for.*service\/start is destructive \(.* has .stop. job queued, but .start. is included in transaction\).*'
-  - '.*ERR systemctl.*: See system logs and .systemctl status.*service. for details.*'
-  Conditions:
-  - Redmine:
-    - 3814720
-
-- Errors_list:
-  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
-  - '.*ERR pmon#psud:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
-  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_status.*'
-  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/psu\d+_fan_dir.*'
-  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_status.*'
-  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_dir.*'
-  - '.*ERR pmon#thermalctld:.*\/var\/run\/hw-management\/thermal\/fan\d+_speed_get.*'
-  - '.*ERR health-statsd#health_history: PSU\d: is missing or not available.*'
-  - '.*ERR health-statsd#health_history: PSU\d\/FAN: is missing.*'
-  - '.*ERR health-statsd#health_history: PSU\d\/FAN: direction exhaust is not aligned with fan1 direction intake.*'
-  - '.*ERR health-statsd#health_history: FAN\d\/\d: direction intake is not aligned with fan1 direction exhaust.*'
-  - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/.* does not exis.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
-
-# In the test case test_temperature_sweep, it has an action to remove the sensors files,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/sensor_file",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-  - '.*ERR pmon#.*\/var\/run\/hw-management\/thermal\/.*'
-  - '.*ERR pmon#thermalctld: Thermal sysfs \/run\/hw-management\/thermal\/.* does not exis.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_temperature_sweep
-
-# In the test case test_sensor_errors and test_sensor_blacklist, it has an action to remove the port_amb file,
-# when pmon try to read the file psu file "/var/run/hw-management/thermal/port_amb",
-# following error msg will be logged to syslog, it is not an real issue, so it is safe to ignore these err msg
-- Errors_list:
-  - '.*ERR pmon#psud.*\/var\/run\/hw-management\/thermal\/port_amb.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_errors
-    - tests/nightly/new_hw_thermal_control/test_new_hw_tc_algorithm.py::TestNewTc::test_sensor_blacklist
-    - platform_tests/test_platform_info.py::test_show_platform_temperature_mocked
-
-- Errors_list:
-  - '.*ERR pmon#psud: message repeated \d+ times.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base.*invalid value.*'
-  - '.*ERR pmon#psud: message repeated \d+ times:.*Failed to read from file \/var\/run\/hw-management\/thermal\/port_amb - ValueError.*invalid literal for int.* with base \d+.*'
-  Conditions:
-  - Redmine:
-    - 3589197
-
-- Errors_list:
-  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/timeout - FileNotFoundError.*No such file or directory.*'
-  - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/state - FileNotFoundError.*No such file or directory*'
-  Conditions:
-  - Redmine:
-    - 3584706
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR dualtor_neighbor_check.py: .*'
-  Conditions:
-  - Affected_test_cases:
-    - vxlan/test_vnet_route_leak.py
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
-    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_upstream
-    - dualtor_io/test_link_failure.py::test_active_link_admin_down_config_reload_downstream
-    - pc/test_lag_2.py::test_lag_db_status_with_po_update
-    - pc/test_po_cleanup.py
-    GitHub:
-    - https://github.com/sonic-net/sonic-mgmt/issues/10670
-
-- Errors_list:
-  - '.* ERR syncd#SAI: \[SAI_PORT.ERR\] .\/src\/mlnx_sai_port.c.*- mlnx_run_and_process_ethtool_cmd: Failed to run the cmd ethtool -S  Ethernet\d+.*'
-  - '.* ERR syncd#SAI.*- collectData: Failed to get stats of Port Counter.*'
-  - '.* ERR syncd#SDN: mlx\d_net: Failed to update link status: No such device or address.*'
-  - '.* ERR syncd#SDN: mlx\d+_net: Failed to update link status: No such device.*'
-  - '.* ERR syncd#SAI: \[SAI_INTERFACE_QUERY_ETH.ERR\] .\/src\/mlnx_sai_interfacequery_dpu.c.*- sai_dbg_do_dump: Failed to run mlxconfig command - mlxconfig -d \/dev\/mst\/mt.*_pciconf.* q .* \/var\/log\/bluefield\/sdk-dumps\/_stage\/sai_nasa_dump.txt.*'
-  - '.* ERR swss#orchagent: :- on_switch_shutdown_request: Syncd stopped.*'
-  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_stc_modify\]: Failed to modify STC FW action_type \d+.*'
-  - '.* ERR syncd#SDN: mlx\d+_net: \[mlx\d+dr_cmd_flow_table_modify\]: Failed to modify FT.*'
-  - '.* ERR syncd#SDN: mlx5_net: \[mlx5dr_matcher_disconnect\]: Failed to update miss table RTC for last matcher.*'
-  - '.* ERR pmon#thermalctld: Failed to exec mget_temp - Failed to open \(\/sys\/bus\/pci\/devices\/0000:03:00.0\/config\) for reading: No such file or directory.*'
-  - '.* WARNING kernel.*NOHZ tick-stop error: Non-RCU local softirq work is pending, handler.*'
-  Conditions:
-  - Affected_test_cases:
-    - show_techsupport/test_techsupport_dpu.py
-
-- Errors_list:
-  - '.*kernel.*NOHZ tick-stop error: local softirq work is pending, handler.*'
-  Conditions:
-  - Platform:
-    - dpu
-
-- Errors_list:
-  - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] Port-Counter-Transaction-Start: failed to access MOCS register .*'
-  - '.* ERR syncd#SDK: \[BULK_COUNTER.ERR\] failed to start port counters bulk-read transaction .*'
-  - '.* ERR syncd#SDK: \[SAI_OBJECT.ERR\] mlnx_sai_object.c.*- mlnx_set_async_bulk_read: Failed to start bulk read operation: No More Resources.*'
-  - '.* ERR syncd#SDK: \[SAI_PORT.ERR\] mlnx_sai_port.c.*- mlnx_get_port_stats_ext: Failed to prepare bulk counter for port stats.*'
-  - '.* ERR syncd#SDK: :- collectPortCounters: Failed to get stats of port .*'
-  Conditions:
-  - Redmine:
-    - 3653755
-    Branch:
-    - master
-
-- Errors_list:
-  - '.*ERR eventd#eventd.*run_eventd_service: Eventd service exiting.*'
-  Conditions:
-  - Redmine:
-    - 3685068
-
-- Errors_list:
-  - '.*ERR \(udev-worker\)\[\d+\]: could not read from .*\/sys\/module\/pcc_cpufreq\/initstate.*: No such device.*'
-  Conditions:
-  - Redmine:
-    - 3693907
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Received port profile apply done OK event, but port profile \(index \d+\) has already been destroyed.*'
-  - '.*ERR syncd#SDK: \[TRACE_CBUFF.ERR\] Could not send port added events.*'
-  - '.*ERR syncd#SDK: \[CORE_API.ERR\] Failed to process port profile apply status job, error: Internal Error.*'
-  Conditions:
-  - Redmine:
-    - 3908922
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR kernel:.*usb usb\d-port\d: connect-debounce failed.*'
-  Conditions:
-  - Redmine:
-    - 3735940
-
-- Errors_list:
-  - '.* ERR kernel:.*i2c i2c-\d+: Invalid block size returned.*'
-  Conditions:
-  - Redmine:
-    - 3827149
-
-- Errors_list:
-  - '.*ERR kernel:.* RETBleed: WARNING: Spectre v\d+ mitigation leaves CPU vulnerable to RETBleed attacks, data leaks possible.*'
-  Conditions:
-  - Redmine:
-    - 3856241
-    Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR hw-management: message repeated \d+ times: \[ chip hwmon object\].*'
-  Conditions:
-  - Redmine:
-    - 3856952
-    Platform:
-    - simx
-
 # NVOS
 - Errors_list:
   - '.*ERR health-statsd#health_history: .*: speed is out of range, speed=.*'
@@ -1399,6 +1336,7 @@
   - Affected_test_cases:
     - tests_nvos/infra/init_flow/test_system_init_done_feature.py::test_system_ready_state_down
 
+# NVOS
 - Errors_list:
   - '.*ERR swss-ibv00#orchagent: :- getPortFnmStatus: Mismatch between FNM status 0 and alias fnma1p236.*'
   - '.*ERR swss-ibv00#orchagent: :- getPortFnmStatus: Mismatch between FNM status 0 and alias fnm1pl1.*'
@@ -1487,7 +1425,6 @@
   - '.*ztp.*Traceback.*'
   - '.*Exception.*'
   - '.*Error.*'
-
   Conditions:
   - Affected_test_cases:
     - tests_nvos/system/test_system_ztp.py::test_ztp_startup_file_commands_list
@@ -1507,6 +1444,7 @@
   - Redmine:
     - 3585813
 
+# NVOS
 - Errors_list:
   - ".*ansible-command Invoked with _raw_params=python /tmp/loganalyzer.py.*"
   Conditions:
@@ -1520,6 +1458,7 @@
   - Affected_test_cases:
     - tests_nvos/interfaces/test_ib0_interface_ip.py::test_ib0_interface_ipv6_address
 
+# NVOS
 # The below errors should be ignored, because it is caused by redis db crash and it is an expected behaviour
 - Errors_list:
   - '.*\[SAI_PORT.ERR\] mlnx_sai_port_ib.c\[3265\]- mlnx_create_port: Failed convert attribute list to string.'
@@ -1544,70 +1483,3 @@
   Conditions:
   - Redmine:
     - 3669272
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SX_API_DBG.ERR\] .* halt irisc \d  halt_addr.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_health_event_sdk_dump
-
-- Errors_list:
-  - '.*ERR ntpd.*: CLOCK: Panic: offset too big.*'
-  Conditions:
-  - Affected_test_cases:
-    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py::test_check_errors_in_log_during_deploy_sonic_image
-  - Redmine:
-    - 4056053
-
-- Errors_list:
-  - '.*ERR healthd: FEATURE table is not fully ready:*'
-  - ".*ERR featured: Unexpected state value 'None' for feature .*"
-  Conditions:
-  - Redmine:
-    - 3943532
-
-- Errors_list:
-  - '.*ERR\s+kernel:\s+\[\s*\d+\.\d+\]\s+sxd_kernel:\s+\[error\]\s+Fails\s+to\s+access\s+MCIA,\s+module:\s+\d+,\s+status:\s+\d+\..*'
-  Conditions:
-  - Platform:
-    - simx
-
-- Errors_list:
-  - '.*ERR swss#orchagent: :- meta_generic_validation_remove: object key SAI_OBJECT_TYPE_ROUTE_ENTRY.*doesn.t exist.*'
-  - '.*ERR syncd#SDK:.*\[SAI_ROUTE.ERR\].*\/src\/mlnx_sai_route.c.*mlnx_get_route: Failed to get \d+ route entries Entry Not Found.*'
-  - '.*ERR syncd#SDK: :- sendApiResponse: api SAI_COMMON_API_BULK_REMOVE failed in syncd mode: SAI_STATUS_FAILURE.*'
-  - '.*ERR swss#orchagent: :- flush_removing_entries: EntityBulker.flush remove entries failed, number of entries to remove: \d+, status: SAI_STATUS_FAILURE.*'
-  - '.*ERR swss#orchagent: :- removeRoutePost: Failed to remove route prefix:.*'
-  Conditions:
-  - Affected_test_cases:
-    - crm/test_crm.py::test_crm_nexthop_group
-    GitHub:
-    - https://github.com/sonic-net/sonic-mgmt/issues/20563
-    Platform:
-    - sn4700
-
-- Errors_list:
-  - '.*ERR syncd#SDK: \[SAI_PORT.ERR\] .*mlnx_sai_port.c\[.*\]- mlnx_port_samplepacket_session_get: Egress mirroring is not supported on SPC6.*'
-  - '.*ERR syncd#SDK: \[SAI_UTILS.ERR\] .\/src\/mlnx_sai_utils.c.*- get_dispatch_attribs_handler: Failed Get #\d+, EGRESS_SAMPLEPACKET_ENABLE, key:PORT \[OID:.*\] \[log_port:.*\].*'
-  Conditions:
-  - Platform:
-    - sn6600
-    Redmine:
-    - 4634736
-
-- Errors_list:
-  - '.*ERR kernel:.*mlxplat mlxplat: Failed to get adapter for bus \d+.*'
-  - '.*ERR kernel:.*mlxplat mlxplat: probe with driver mlxplat failed with error \-\d+.*'
-  Conditions:
-  - Platform:
-    - sn6600_simx
-    Redmine:
-    - 4836707
-
-# The login attempts were all coming from a device from the ThreatOps team.
-# They are running brute force attempts on random devices in the company to try and find vulnerabilities in the network.
-- Errors_list:
-  - '.*ERR sshd-session.*auth fail: Password incorrect. user.*'
-  Conditions:
-  - Platform:
-    - sn
