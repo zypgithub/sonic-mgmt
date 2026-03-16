@@ -4,6 +4,7 @@ import shutil
 import allure
 import pytest
 
+from ngts.helpers.object_filters import filter_objects
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths
 from ngts.scripts.sonic_deploy.sonic_only_methods import SonicInstallationSteps, update_hosts_file
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
@@ -19,7 +20,7 @@ from ngts.scripts.sonic_deploy.simx_community_helper import prepare_air_communit
 
 @pytest.mark.disable_loganalyzer
 @allure.title('Deploy and upgrade image - Air')
-def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy_only_target, setup_name, base_version,
+def test_deploy_and_upgrade_air(topology_obj, engines, target_version, sonic_topo, deploy_only_target, setup_name, base_version,
                                 platform_params, reboot_after_install, fw_pkg_path, recover_by_reboot, reboot, port_number,
                                 additional_apps, workspace_path, chip_type, custom_config_db_air_path, destination_hwsku,
                                 deploy_sequential):
@@ -32,12 +33,13 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
         dut_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Common']['Name']
         update_hosts_file(dut_ip=dut['engine'].ip, dut_name=dut_name, sonic_topo=sonic_topo, setup_name=setup_name)
 
-        sonic_chassis_cli = SonicChassisCli(engine=dut['engine'])
-        supported_hwsku = sonic_chassis_cli.get_supported_hwsku_platform_dir()
-        hwsku = destination_hwsku if destination_hwsku else platform_params['hwsku']
-        if hwsku not in supported_hwsku:
-            raise Exception(f"Unsupported hwsku provided: {hwsku}, "
-                            f"the supported hwsku: {supported_hwsku} for platform: {platform_params['platform']}")
+        if isinstance(cli_obj, SonicGeneralCliDefault) and not isinstance(cli_obj, NvueGeneralCli):
+            sonic_chassis_cli = SonicChassisCli(engine=dut['engine'])
+            supported_hwsku = sonic_chassis_cli.get_supported_hwsku_platform_dir()
+            hwsku = destination_hwsku if destination_hwsku else platform_params['hwsku']
+            if hwsku not in supported_hwsku:
+                raise Exception(f"Unsupported hwsku provided: {hwsku}, "
+                                f"the supported hwsku: {supported_hwsku} for platform: {platform_params['platform']}")
         if isinstance(cli_obj, SonicGeneralCliDefault) and is_community(sonic_topo):
             prepare_air_community_directory(setup_name=setup_name, topology=topology_obj, hwsku=destination_hwsku, platform_params=platform_params)
             threads_dict = {}
@@ -52,8 +54,9 @@ def test_deploy_and_upgrade_air(topology_obj, target_version, sonic_topo, deploy
 
         with allure.step('Post installation steps'):
             if isinstance(cli_obj, NvueGeneralCli):
-                DutUtilsTool.wait_for_nvos_to_become_functional(dut['engine'])
-                set_base_configurations(dut_engine=dut['engine'], apply=True)
+                for engine in filter_objects(engines, host_type='dut', engine_type='ssh').values():
+                    DutUtilsTool.wait_for_nvos_to_become_functional(engine)
+                    set_base_configurations(dut_engine=engine, apply=True, save_conf=True)
             elif isinstance(cli_obj, SonicGeneralCliDefault):
                 apply_base_config = True if sonic_topo == 'ptf-any' else False
                 SonicInstallationSteps.post_installation_steps(topology_obj=topology_obj, sonic_topo=sonic_topo,
