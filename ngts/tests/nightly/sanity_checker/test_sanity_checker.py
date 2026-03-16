@@ -650,6 +650,12 @@ def test_component_version_check(engines, cli_objects, request, is_in_deploy_ima
     :param is_in_deploy_image_flow: flag indicating if running in deploy flow
     :param is_simx: flag indicating if running on SIMX platform
     """
+    # TODO: WA for RM#4895801 when the test is running in BAT with darkmode
+    from infra.tools.redmine.redmine_api import is_redmine_issue_active
+    if is_in_deploy_image_flow and is_redmine_issue_active([4895801])[0]:
+        if not request.config.getoption("--base-version-dpu"):
+            pytest.skip("Skipping test for RM#4895801 while there is no DPU image available.")
+
     is_test_failed = False
 
     # Get sonic image version
