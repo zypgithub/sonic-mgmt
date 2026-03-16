@@ -271,6 +271,16 @@ def test_pmon_psud_stop_and_start_status(check_daemon_status, duthosts,
 
     wait_until(wait_time, 5, 0, get_and_verify_data, duthost, data_before_restart)
 
+    # Verify show version after psud restart
+    cmd = "show version"
+    SHOW_VERSION_AFTER_PSUD_TIMEOUT = 10
+    
+    logging.info("Running '{}' with timeout {}s on '{}' ...".format(
+        cmd, SHOW_VERSION_AFTER_PSUD_TIMEOUT, duthost.hostname))
+    result = duthost.shell_cmds(cmds=[cmd], timeout=SHOW_VERSION_AFTER_PSUD_TIMEOUT, module_ignore_errors=True)
+    rc = result.get("results", [{}])[0].get("rc", "N/A") if result.get("results") else "N/A"
+    pytest_assert(not result.get("failed"), "show version failed: rc={}, result={}".format(rc, result))
+
 
 def test_pmon_psud_term_and_start_status(check_daemon_status, duthosts,
                                          enum_supervisor_dut_hostname, data_before_restart):
