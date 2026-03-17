@@ -427,6 +427,10 @@ def run_validation(config: ValidationConfig, ignore_violations=False, attach_to_
             player_alias = result['player_alias']
             traffic_json = result['traffic_json']
 
+            if 'tc_pg_collector' in traffic_json:
+                allure.dynamic.parameter(f'tc_pg_collector[{player_alias}]',
+                                         traffic_json['tc_pg_collector'])
+
             player_violations = []
             skipped_validations = [n for n, v in all_validations.items() if v is None]
             logging.info(f"[{player_alias}] Skipped validations: {skipped_validations}\n")
