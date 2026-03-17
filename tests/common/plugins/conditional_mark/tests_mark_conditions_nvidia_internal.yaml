@@ -400,6 +400,13 @@ bgp/test_bgp_sentinel.py:
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/18998
 
+bgp/:
+  skip:
+    reason: "BGP currently not supported on Mellanox SN6600-V448P16S2 due to RM issue 4931314"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4931314"
+    - "hwsku in ['Mellanox-SN6600-V448P16S2']"
+
 console/test_console_driver.py:
   skip:
     reason: "Not supported on existing testbed. the switch needs to be attached to a DUT via USB link."
