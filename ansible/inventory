@@ -1834,6 +1834,9 @@ switch3  ansible_host=10.0.0.102  sonic_version=v2  sonic_hwsku=Force10-S6000   
 switch4  ansible_host=10.0.0.103  sonic_version=v2  sonic_hwsku=AS7512 sonic_portsku=32x40 pdu_host=pdu-2
 switch5  ansible_host=10.0.0.104  sonic_version=v2  sonic_hwsku=ACS-MSN2700 # LAG topo: 8 LAGs x 2 members/lag to spines; 16 ports to Tors
 
+leopard-dgx-208-ptf-any ansible_host=10.220.12.208  sonic_version=v2  sonic_hwsku=ACS-SN4700D             serial_console="ssh -l rcon:7001 10.220.12.151" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-230-109 base_mac="28:01:CD:15:96:00" serial="MT2603XZ02GW" model="MSN4700-WSAROS-NS" syseeprom_info="{'0x21': u'SN4700D', '0x22': u'MSN4700-WSAROS-NS', '0x23': u'MT2603XZ02GW', '0x24': u'28:01:CD:15:96:00', '0x25': u'01/26/2026 14:37:10', '0x26': u'18', '0x28': u'x86_64-nvidia_sn4700d-r0', '0x29': u'5.3.0015', '0x2a': u'254', '0x2b': u'Nvidia', '0xfe': u'0x1E9993DD'}"
+leopard-dgx-208 ansible_host=10.220.12.208  sonic_version=v2  sonic_hwsku=ACS-SN4700D             serial_console="ssh -l rcon:7001 10.220.12.151" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-193-230-109 base_mac="28:01:CD:15:96:00" serial="MT2603XZ02GW" model="MSN4700-WSAROS-NS" syseeprom_info="{'0x21': u'SN4700D', '0x22': u'MSN4700-WSAROS-NS', '0x23': u'MT2603XZ02GW', '0x24': u'28:01:CD:15:96:00', '0x25': u'01/26/2026 14:37:10', '0x26': u'18', '0x28': u'x86_64-nvidia_sn4700d-r0', '0x29': u'5.3.0015', '0x2a': u'254', '0x2b': u'Nvidia', '0xfe': u'0x1E9993DD'}"
+
 [sonic:children]
 sonic_latest
 
@@ -3227,6 +3230,9 @@ mlx-2700a1-46
 mlx-2201m-01-ptf-any
 mlx-2201m-01
 
+leopard-dgx-208-ptf-any
+leopard-dgx-208
+
 [leaf_topo_1:vars]
 podset_number=200
 
@@ -3337,3 +3343,4 @@ pdu-10-245-2-17 ansible_host=10.245.2.17 protocol=snmp
 pdu-10-193-228-79 ansible_host=10.193.228.79 protocol=snmp
 pdu-10-193-229-95 ansible_host=10.193.229.95 protocol=snmp pdu_ro_snmp_version=v3 pdu_ro_snmp_user="{{ lookup('env','SNMP_RO_USER') }}" pdu_ro_snmp_auth_type=sha pdu_ro_snmp_auth_pass="{{ lookup('env','SNMP_RO_AUTH_PASSWORD') }}" pdu_ro_snmp_priv_type=aes pdu_ro_snmp_priv_pass="{{ lookup('env','SNMP_RO_PRIV_PASSWORD') }}" pdu_rw_snmp_version=v3 pdu_rw_snmp_user="{{ lookup('env','SNMP_RW_USER') }}" pdu_rw_snmp_auth_type=sha pdu_rw_snmp_auth_pass="{{ lookup('env','SNMP_RW_AUTH_PASSWORD') }}" pdu_rw_snmp_priv_type=aes pdu_rw_snmp_priv_pass="{{ lookup('env','SNMP_RW_PRIV_PASSWORD') }}"
 pdu-10-193-230-193 ansible_host=10.193.230.193 protocol=snmp pdu_ro_snmp_version=v3 pdu_ro_snmp_user="{{ lookup('env','SNMP_RO_USER') }}" pdu_ro_snmp_auth_type=sha pdu_ro_snmp_auth_pass="{{ lookup('env','SNMP_RO_AUTH_PASSWORD') }}" pdu_ro_snmp_priv_type=aes pdu_ro_snmp_priv_pass="{{ lookup('env','SNMP_RO_PRIV_PASSWORD') }}" pdu_rw_snmp_version=v3 pdu_rw_snmp_user="{{ lookup('env','SNMP_RW_USER') }}" pdu_rw_snmp_auth_type=sha pdu_rw_snmp_auth_pass="{{ lookup('env','SNMP_RW_AUTH_PASSWORD') }}" pdu_rw_snmp_priv_type=aes pdu_rw_snmp_priv_pass="{{ lookup('env','SNMP_RW_PRIV_PASSWORD') }}"
+pdu-10-193-230-109 ansible_host=10.193.230.109 protocol=snmp protocol=snmp pdu_ro_snmp_version=v3 pdu_ro_snmp_user="{{ lookup('env','SNMP_RO_USER') }}" pdu_ro_snmp_auth_type=sha pdu_ro_snmp_auth_pass="{{ lookup('env','SNMP_RO_AUTH_PASSWORD') }}" pdu_ro_snmp_priv_type=aes pdu_ro_snmp_priv_pass="{{ lookup('env','SNMP_RO_PRIV_PASSWORD') }}" pdu_rw_snmp_version=v3 pdu_rw_snmp_user="{{ lookup('env','SNMP_RW_USER') }}" pdu_rw_snmp_auth_type=sha pdu_rw_snmp_auth_pass="{{ lookup('env','SNMP_RW_AUTH_PASSWORD') }}" pdu_rw_snmp_priv_type=aes pdu_rw_snmp_priv_pass="{{ lookup('env','SNMP_RW_PRIV_PASSWORD') }}"
