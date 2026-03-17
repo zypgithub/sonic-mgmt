@@ -332,7 +332,8 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
             cli_objects.dut.general.reboot_reload_flow(
                 r_type=SonicConst.CONFIG_RELOAD_CMD,
                 topology_obj=topology_obj,
-                ports_list=ports_list
+                ports_list=ports_list,
+                reload_force=True
             )
 
         logger.info('PushGate Common configuration completed')
