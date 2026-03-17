@@ -16,6 +16,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.constants import RESOLV_CONF_NAMESERVERS
 from tests.common.utilities import wait_until
+from ngts.constants.constants import SonicConst
 current_path = sys.path.copy()
 sys.path.insert(0, "dash")
 from tests.common.helpers.smartswitch_util import correlate_dpu_info_with_dpuhost
@@ -33,7 +34,9 @@ pytestmark = [
 ]
 
 if not RESOLV_CONF_NAMESERVERS['public']:
-    RESOLV_CONF_NAMESERVERS['public'] = ["10.211.0.124", "10.245.1.121", "10.7.77.135"]
+    RESOLV_CONF_NAMESERVERS['public'] = [SonicConst.NVIDIA_LAB_DNS_FIRST,
+                                         SonicConst.NVIDIA_LAB_DNS_SECOND,
+                                         SonicConst.NVIDIA_LAB_DNS_THIRD]
 
 @pytest.fixture(scope="module", params=["pull", "image", "file"])
 def option(request):
