@@ -1022,12 +1022,6 @@ platform_tests/cli/test_show_platform.py::test_show_platform_fan:
     conditions:
     - "'6600_simx' in platform"
 
-platform_tests/mellanox/test_reboot_cause.py:
-  skip:
-    reason: "Test is skipped - reboot cause emulation not supported on sn6600_simx platforms"
-    conditions:
-    - "'6600_simx' in platform"
-
 span/test_port_mirroring.py::test_mirroring_both:
   skip:
     reason: "tx mirroring not supported on SPC6"
