@@ -263,6 +263,40 @@
 
 			}
 		},
+		"SN4700D": {
+            "component":{
+                "BIOS": [
+                    {
+                        "force_reboot": true,
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release/0ACLH004.rom",
+                        "version": "0ACLH004_02.02.010",
+                        "reboot": ["cold"]
+                    },
+                    {
+                        "force_reboot": true,
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/sx_mlnx_bios/Broadwell/0ACLH004_02.02.x10/Release/0ACLH004.rom",
+                        "version": "0ACLH004_02.02.010",
+                        "reboot": ["cold"]
+                    }
+                ],
+                "ONIE": [
+                    {
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com/auto/sw_system_release/sx_mlnx_os/onie_release/5.3.0015/115200/onie-updater-x86_64-mlnx_x86-r0",
+                        "force_reboot": true,
+                        "version": "2024.08-5.3.0015-115200",
+                        "reboot": ["cold"]
+                    }
+                ],
+                "CPLD2": [
+                    {
+                        "firmware": "http://nbu-mtr-nfs.nvidia.com//auto/sw_system_release/hw_cpld/Approved_CPLDs/SN4700D/FUI000596/FUI000596.mpfa",
+                        "version": "CPLD000500_REV0201",
+                        "reboot": ["power off","cold"]
+                    }
+                ]
+
+            }
+        },
 		"SN5600": {
 			"component": {
 				"BIOS": [
