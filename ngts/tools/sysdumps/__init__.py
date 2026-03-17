@@ -42,8 +42,10 @@ def collect_ptf_logs(hyper_engine, dumps_folder, setup_name):
     ptf_docker_name = f'ptf_vm-t{2 if setup_name in SETUPS_WITH_NON_DEFAULT_PTF else 1}'
     try:
         with allure.step('Generate ptf log tar file {}'.format(ptf_log_file)):
-            hyper_engine.run_cmd('docker exec {} tar -czvf /tmp/{} --exclude=/tmp/{} /tmp/'.format(
-                ptf_docker_name, ptf_log_file, ptf_log_file))
+            hyper_engine.run_cmd(
+                'docker exec {} tar -czvf /tmp/{} --exclude=/tmp/{} /tmp/ /var/log/tac_plus_daily.log'.format(
+                    ptf_docker_name, ptf_log_file, ptf_log_file)
+            )
             hyper_engine.run_cmd('docker cp {}:/tmp/{} /tmp'.format(ptf_docker_name, ptf_log_file))
             hyper_engine.run_cmd('docker exec {} rm /tmp/{}'.format(ptf_docker_name, ptf_log_file))
         with allure.step('Copy the ptf log tar file to log folder {}'.format(dumps_folder)):
