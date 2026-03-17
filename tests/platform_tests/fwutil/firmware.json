@@ -410,18 +410,20 @@
 						"reboot": ["power off"]
 					}
 				],
-				"BMC": [
-					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-005/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-005.fwpkg",
-						"version": "chameleon_bu_kernel_leak-005",
-						"reboot": ["power off"]
-					},
-					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-004/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-004.fwpkg",
-						"version": "chameleon_bu_kernel_leak-004",
-						"reboot": ["power off"]
-					}
-				]
+				"BMC": {
+					"AST2600": [
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-005/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-005.fwpkg",
+							"version": "chameleon_bu_kernel_leak-005",
+							"reboot": ["power off"]
+						},
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/chameleon_bu_kernel_leak-004/CHAMELEON5/dev/non_otp/erot_sign_debug/sw_bmc_arm_chameleon5_chameleon_bu_kernel_leak-004.fwpkg",
+							"version": "chameleon_bu_kernel_leak-004",
+							"reboot": ["power off"]
+						}
+					]
+				}
 			}
 		},
 		"SN6600_LD": {
@@ -450,18 +452,32 @@
 						"reboot": ["power off", "cold"]
 					}
 				],
-				"BMC": [
-					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0205/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0205.fwpkg",
-						"version": "88.0060.0205",
-						"reboot": ["power off"]
-					},
-					{
-						"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0081/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0081.fwpkg",
-						"version": "88.0060.0081",
-						"reboot": ["power off"]
-					}
-				]
+				"BMC": {
+					"AST2600": [
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0205/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0205.fwpkg",
+							"version": "88.0060.0205",
+							"reboot": ["power off"]
+						},
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.0081/SPC6_AST2600_BMC/dev/non_otp/erot_sign_debug/sw_bmc_arm_spc6_ast2600_88.0060.0081.fwpkg",
+							"version": "88.0060.0081",
+							"reboot": ["power off"]
+						}
+					],
+					"AST2700-A1": [
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.1008/SPC6_AST2700_A1_BMC/dev/non_otp/pldm_combined_image-spc6-ast2700-a1-bmc.fwpkg",
+							"version": "88.0060.1008",
+							"reboot": ["power off"]
+						},
+						{
+							"firmware": "http://nbu-nfs.mellanox.com/auto/sw_system_release/low_level/openbmc/88.0060.1007/SPC6_AST2700_A1_BMC/dev/non_otp/pldm_combined_image-spc6-ast2700-a1-bmc.fwpkg",
+							"version": "88.0060.1007",
+							"reboot": ["power off"]
+						}
+					]
+				}
 
 			}
 		},

@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from tests.common.utilities import wait_until
 from tests.common.reboot import SONIC_SSH_REGEX
-from tests.common.helpers.firmware_helper import show_firmware
+from tests.common.helpers.firmware_helper import show_firmware, resolve_bmc_flavor, load_bmc_creds, get_bmc_ip
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +178,18 @@ def get_install_paths(request, duthost, defined_fw, versions, chassis, target_co
     return paths
 
 
+def _resolve_flavor_components(component, defined_fw, chassis, duthost):
+    """Resolve any flavor-dict entries (e.g. BMC) into revision lists."""
+    for comp, revs in list(component.items()):
+        if comp == "BMC" and isinstance(revs, dict):
+            bmc_ip = get_bmc_ip(duthost)
+            bmc_user, bmc_password = load_bmc_creds()
+            flavor = resolve_bmc_flavor(defined_fw, chassis, duthost, bmc_ip,
+                                        bmc_user, bmc_password)
+            component[comp] = revs.get(flavor, [])
+    return component
+
+
 def get_defined_components(duthost, defined_fw, chassis):
     """
     Update the component content, in case there is a pre-definition for a specific host.
@@ -188,7 +200,7 @@ def get_defined_components(duthost, defined_fw, chassis):
     if "host" in defined_fw and duthost.hostname in defined_fw["host"]:
         for component_type in list(defined_fw["host"][duthost.hostname]["component"].keys()):
             component[component_type] = defined_fw["host"][duthost.hostname]["component"][component_type]
-    return component
+    return _resolve_flavor_components(component, defined_fw, chassis, duthost)
 
 
 def generate_config(duthost, cfg, versions):

@@ -15,7 +15,8 @@ from tests.common.platform.device_utils import platform_api_conn, start_platform
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from .platform_api_test_base import PlatformApiTestBase
 from tests.common.helpers.firmware_helper import (
-    show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE, get_bmc_version_from_firmware_data
+    show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE,
+    get_bmc_version_from_firmware_data, get_bmc_firmware_list, get_bmc_ip
 )
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -176,7 +177,17 @@ def _update_bmc_firmware(duthost, fw_image, bmc_ip, method='api',
 
 
 @pytest.fixture(scope="module")
-def recover_bmc_firmware(duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg):
+def bmc_ip(duthosts, enum_rand_one_per_hwsku_hostname):
+    """Module-scoped fixture to get BMC IP address. Returns None if BMC is not present."""
+    duthost = duthosts[enum_rand_one_per_hwsku_hostname]
+    if not bmc.is_bmc_exists(duthost):
+        yield None
+        return
+    yield get_bmc_ip(duthost)
+
+
+@pytest.fixture(scope="module")
+def recover_bmc_firmware(duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg, bmc_ip, creds):
     """Module-scoped fixture to recover BMC firmware to the latest version.
 
     Recovery runs only once at module teardown (after all parametrized
@@ -193,13 +204,16 @@ def recover_bmc_firmware(duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg):
         return
 
     chassis = list(show_firmware(duthost)["chassis"].keys())[0]
-    fw_version_latest = fw_pkg["chassis"][chassis]["component"]["BMC"][LATEST_BMC_VERSION_IDX]["version"]
+    bmc_fw_list = get_bmc_firmware_list(fw_pkg, chassis, duthost, bmc_ip,
+                                        creds['sonic_bmc_root_user'],
+                                        creds['sonic_bmc_root_password'])
+    fw_version_latest = bmc_fw_list[LATEST_BMC_VERSION_IDX]["version"]
 
     if bmc_version_current == fw_version_latest:
         logger.info("Recovery: already on latest BMC version, skipping recovery")
         return
 
-    fw_pkg_path = fw_pkg["chassis"][chassis]["component"]["BMC"][LATEST_BMC_VERSION_IDX]["firmware"]
+    fw_pkg_path = bmc_fw_list[LATEST_BMC_VERSION_IDX]["firmware"]
     fw_pkg_clean_path = urlparse(fw_pkg_path).path
     fw_pkt_name = os.path.basename(fw_pkg_path)
 
@@ -246,16 +260,6 @@ class TestBMCApi(PlatformApiTestBase):
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
         if not bmc.is_bmc_exists(duthost):
             pytest.skip("BMC is not present, skipping BMC platform API tests")
-
-    @pytest.fixture(scope="class")
-    def bmc_ip(self, duthosts, enum_rand_one_per_hwsku_hostname, skip_if_no_bmc):
-        duthost = duthosts[enum_rand_one_per_hwsku_hostname]
-        platform = duthost.shell("sudo show platform summary | grep Platform | awk '{print $2}'")["stdout"]
-        bmc_config_file = f"/usr/share/sonic/device/{platform}/bmc.json"
-        duthost.fetch(src=bmc_config_file, dest='/tmp')
-        with open(f'/tmp/{duthost.hostname}/{bmc_config_file}', "r") as f:
-            bmc_config = json.load(f)
-        yield bmc_config["bmc_addr"]
 
     @pytest.fixture(autouse=True)
     def prepare_param(self, creds):
@@ -690,7 +694,7 @@ class TestBMCApi(PlatformApiTestBase):
             f"ls -l {bmc_dump_path}")["rc"] == 0, f"BMC dump file not found: {bmc_dump_path}")
 
     def test_bmc_firmware_update(self, duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg, bmc_firmware_command_type,
-                                 backup_platform_file, bmc_ip, recover_bmc_firmware, request):
+                                 backup_platform_file, bmc_ip, recover_bmc_firmware, request, creds):
         """
         Test BMC firmware update with platform API and CLI
 
@@ -721,7 +725,10 @@ class TestBMCApi(PlatformApiTestBase):
 
         chassis = list(show_firmware(duthost)["chassis"].keys())[0]
         logger.info(f"Chassis: {chassis}")
-        fw_version_old = fw_pkg["chassis"][chassis]["component"]["BMC"][OLD_BMC_VERSION_IDX]["version"]
+        bmc_fw_list = get_bmc_firmware_list(fw_pkg, chassis, duthost, bmc_ip,
+                                            creds['sonic_bmc_root_user'],
+                                            creds['sonic_bmc_root_password'])
+        fw_version_old = bmc_fw_list[OLD_BMC_VERSION_IDX]["version"]
 
         # Pick the other version so we always test an actual firmware change.
         # If already on old -> install latest; if already on latest -> install old.
@@ -730,8 +737,8 @@ class TestBMCApi(PlatformApiTestBase):
         else:
             target_idx = OLD_BMC_VERSION_IDX
 
-        fw_pkg_path_target = fw_pkg["chassis"][chassis]["component"]["BMC"][target_idx]["firmware"]
-        fw_version_target = fw_pkg["chassis"][chassis]["component"]["BMC"][target_idx]["version"]
+        fw_pkg_path_target = bmc_fw_list[target_idx]["firmware"]
+        fw_version_target = bmc_fw_list[target_idx]["version"]
         fw_pkg_clean_path_target = urlparse(fw_pkg_path_target).path
         fw_pkt_name_target = os.path.basename(fw_pkg_path_target)
 

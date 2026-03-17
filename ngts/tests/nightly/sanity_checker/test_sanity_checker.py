@@ -15,7 +15,8 @@ from ngts.tests.conftest import get_dut_loopbacks
 from ngts.constants.constants import FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE, CliType
 from ngts.tests.nightly.sanity_checker.analyze_sanity_checker_result_and_take_action import write_failed_sanity_checker_cases_to_file
 from tests.common.helpers.firmware_helper import (
-    parse_firmware_status, get_bmc_version_from_firmware_data, get_bmc_info_from_firmware_data
+    parse_firmware_status, get_bmc_version_from_firmware_data,
+    get_bmc_info_from_firmware_data, resolve_bmc_flavor, load_bmc_creds
 )
 
 pytestmark = [
@@ -687,6 +688,8 @@ def update_bmc_firmware(dut_engine, expected_version, firmware_path):
             raise Exception("Firmware file not found after download")
         logger.info("Firmware downloaded successfully to local: {}".format(tmp_fw_path))
 
+        dut_engine.run_cmd('sudo rm -f {}'.format(shlex.quote(tmp_fw_path)), timeout=30)
+
         # Copy firmware from local to DUT
         dut_engine.copy_file(source_file=tmp_fw_path,
                              dest_file=os.path.basename(tmp_fw_path),
@@ -706,8 +709,8 @@ def update_bmc_firmware(dut_engine, expected_version, firmware_path):
         # BMC install is NOT idempotent - use send_command directly to avoid retry
         output = dut_engine.engine.send_command(
             install_cmd,
-            delay_factor=10,
-            max_loops=90
+            read_timeout=900,
+            expect_string=r'[#\$]\s*$'
         )
         logger.info("BMC firmware installation output: {}".format(output))
 
@@ -721,7 +724,7 @@ def update_bmc_firmware(dut_engine, expected_version, firmware_path):
         try:
             if os.path.exists(tmp_fw_path):
                 os.remove(tmp_fw_path)
-            dut_engine.run_cmd('rm -f {}'.format(shlex.quote(tmp_fw_path)), timeout=30)
+            dut_engine.run_cmd('sudo rm -f {}'.format(shlex.quote(tmp_fw_path)), timeout=30)
         except Exception as e:
             logger.warning("Cleanup failed: {}".format(e))
 
@@ -734,8 +737,22 @@ def check_update_bmc_version(engines, fw_pkg):
         logger.info("BMC not found or chassis name not found, skipping check")
         return True
 
+    bmc_user, bmc_password = load_bmc_creds()
+    try:
+        platform = engines.dut.run_cmd(
+            "sudo show platform summary | grep Platform | awk '{print $2}'", timeout=30
+        ).strip()
+        bmc_json_path = "/usr/share/sonic/device/{}/bmc.json".format(platform)
+        bmc_json_raw = engines.dut.run_cmd("cat {}".format(bmc_json_path), timeout=30)
+        bmc_ip = json.loads(bmc_json_raw)["bmc_addr"]
+        logger.info("BMC IP resolved: {}".format(bmc_ip))
+    except Exception as e:
+        logger.warning("Failed to get BMC IP: {}".format(e))
+        bmc_ip = None
+    flavor = resolve_bmc_flavor(fw_pkg, chassis_name, engines.dut, bmc_ip,
+                                bmc_user, bmc_password)
     # Get BMC info from firmware package
-    expected_version, firmware_path = get_bmc_info_from_firmware_data(fw_pkg, chassis_name)
+    expected_version, firmware_path = get_bmc_info_from_firmware_data(fw_pkg, chassis_name, flavor)
     if not expected_version:
         logger.info("BMC not defined in firmware.json for chassis={}".format(chassis_name))
         return True
