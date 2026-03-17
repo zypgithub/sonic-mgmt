@@ -768,16 +768,26 @@ class SonicInstallationSteps:
             try:
                 retry_call(fetch_dash_api_package, tries=1, delay=2, logger=logger)
             except Exception as e:
-                logger.error(f"Failed to download the dash api package in sonic-mgmt: {e}")
-                logger.info("Copying the dash api to sonic-mgmt and try install again")
+                logger.error(f"Failed to download the dash api package from artifact server: {e}")
+                logger.info("Copying the dash api to sonic-mgmt from local nfs")
                 try:
                     subprocess.run(["scp", "/auto/sw_system_release/sonic/internal/bjb/dash_deb/libdashapi_1.0.0_amd64.deb", "./libdashapi_1.0.0_amd64.deb"],
                                    check=True, capture_output=False, text=True)
                 except Exception as e:
                     logger.error(f"Failed to scp the dash api to sonic-mgmt: {e}")
                     raise
-            subprocess.run(["dpkg", "--install", "./libdashapi_1.0.0_amd64.deb"],
+            logger.info("Extracting the dash api to /tmp/dashapi_extract")
+            subprocess.run(["dpkg-deb", "-x", "libdashapi_1.0.0_amd64.deb", "/tmp/dashapi_extract"],
                            check=True, capture_output=False, text=True)
+            src_path = subprocess.run(
+                ["find", "/tmp/dashapi_extract", "-type", "d", "-path", "*dist-packages/dash_api"],
+                check=True, capture_output=True, text=True).stdout.strip()
+            logger.info(f"Found the dash api python package in {src_path}")
+            dst_path = "/opt/venv/lib/python3.12/site-packages/"
+            logger.info(f"Copying the dash api python package to {dst_path}")
+            subprocess.run(["sudo", "cp", "-r", src_path, dst_path],
+                           check=True, capture_output=False, text=True)
+            logger.info("Successfully copied the dash api python package to the venv")
 
         if is_community(sonic_topo):
             # only for community setup
