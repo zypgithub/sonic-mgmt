@@ -6,7 +6,7 @@ r-panther-42-t1-lag  ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_v
 r-panther-42-ptf32   ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
 r-panther-42-ptf-any   ansible_host=2001:db8:1234:5678:a288:c2ff:fe86:3edc sonic_version=v2 sonic_hwsku=Mellanox-SN2700-A1 iface_speed=100000 serial_console="ssh -l rcon:7011 10.208.0.80" ptf_host=ptf-r-panther-42 ptf_portmap="roles/test/files/mlnx/default_interface_to_front_map.ini" pdu_host=pdu-10-208-0-191
 
-r-panther-43 ansible_host=r-panther-43 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
+r-panther-43 ansible_host=2001:db8:1234:5678:7efe:90ff:fe58:e026 ansible_ssh_user="{{ lookup('env','ONYX_SWITCH_USER') }}" ansible_ssh_pass="{{ lookup('env','ONYX_SWITCH_PASSWORD') }}" os=onyx
 
 [sonic:children]
 sonic_latest
