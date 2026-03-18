@@ -5731,6 +5731,7 @@ zmq/test_gnmi_zmq.py:
     conditions_logical_operator: or
     conditions:
       - "'arista' in platform"
+      - "'dualtor' in topo_name"
       - "'isolated' in topo_name"
   xfail:
     reason: "Test is not aligned for smartswitch light mode: https://github.com/sonic-net/sonic-mgmt/issues/20698"
