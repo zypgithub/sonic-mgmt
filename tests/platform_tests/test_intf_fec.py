@@ -4,7 +4,7 @@ import time
 
 from tests.common.helpers.assertions import pytest_assert
 from tests.common.utilities import skip_release, wait_until
-from tests.common.platform.interface_utils import get_fec_eligible_interfaces
+from tests.common.platform.interface_utils import clear_interface_counters_and_wait, get_fec_eligible_interfaces
 from tests.common.port_toggle import port_toggle
 
 pytestmark = [
@@ -129,6 +129,19 @@ def test_verify_fec_stats_counters(duthosts, toggles_num, enum_rand_one_per_hwsk
     @Summary: Verify the FEC stats counters are valid
     Also, check for any uncorrectable FEC errors
     """
+    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
+
+    # Get operationally up and interfaces with supported speeds
+    interfaces = get_fec_eligible_interfaces(duthost, SUPPORTED_SPEEDS)
+
+    if not interfaces:
+        pytest.skip("Skipping this test as there is no fec eligible interface")
+
+    clear_interface_counters_and_wait(duthost)
+
+    logging.info("Get output of 'show interfaces counters fec-stats'")
+    intf_status = duthost.show_and_parse("show interfaces counters fec-stats")
+
     def skip_ber_counters_test(intf_status: dict) -> bool:
         """
         Check whether the BER fields (Pre-FEC and Post-FEC BER)
