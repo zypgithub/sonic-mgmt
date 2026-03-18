@@ -33,7 +33,7 @@ def _set_write_protection_via_redfish(engines, bmc_user, bmc_password, enable: b
         f"-H 'Content-Type: application/json' "
         f"-X PATCH "
         f"-d '{{\"Oem\": {{\"Nvidia\": {{\"HardwareWriteProtectEnable\": {state}}}}}}}' "
-        f"https://{PlatformConsts.BMC_INTERNAL_IP}/redfish/v1/Chassis/System_0"
+        f"https://{PlatformConsts.BMC_INTERNAL_IP}/redfish/v1/Chassis/Chassis_0"
     )
     result = engines.dut.run_cmd(cmd)
     logger.info(f"Redfish {action} response: {result}")
