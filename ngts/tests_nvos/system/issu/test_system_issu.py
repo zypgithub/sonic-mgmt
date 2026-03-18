@@ -89,7 +89,7 @@ def test_system_issu_positive_basic_flow(engines, devices, issu_version, target_
     with allure.step("Perform install image with ISSU skip-sm flag"):
         system.image.files.file_name[target_filename].action(
             ActionConsts.INSTALL, flags=IssuConsts.ISSU_SKIP_SM, send_user_confirmation='y', reboot_params=True,
-            read_timeout=IssuConsts.ISSU_READ_TIMEOUT). \
+            timeout=IssuConsts.ISSU_READ_TIMEOUT). \
             verify_result(should_succeed=True)
 
     issu_end = time.time()
@@ -182,7 +182,7 @@ def test_system_issu_positive_flow_with_traffic(engines, devices, pytestconfig, 
     with allure.step("Perform install image with ISSU flag"):
         system.image.files.file_name[target_filename].action(
             ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y', reboot_params=True,
-            read_timeout=IssuConsts.ISSU_READ_TIMEOUT). \
+            timeout=IssuConsts.ISSU_READ_TIMEOUT). \
             verify_result(should_succeed=True)
 
     issu_end = time.time()
@@ -408,7 +408,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action(
                 ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
-                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
+                timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_OPENSM_REACH_TIMEOUT in output, \
@@ -421,7 +421,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         with allure.step("Perform install image with ISSU with 'reboot no' flag"):
             output = system.image.files.file_name[target_filename].action(
                 ActionConsts.INSTALL, flags=IssuConsts.ISSU_NO_REBOOT, send_user_confirmation='y',
-                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
+                timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_SYSTEM_MUST_BE_REBOOTED in output, \
@@ -435,7 +435,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[target_filename].action(
                 ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
-                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
+                timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_CONFIG_MUST_BE_SAVED in output, \
@@ -453,7 +453,7 @@ def test_system_issu_prevention_cases(engines, devices, downgrade_version, issu_
         with allure.step("Perform install image with ISSU"):
             output = system.image.files.file_name[base_filename].action(
                 ActionConsts.INSTALL, flags=IssuConsts.ISSU, send_user_confirmation='y',
-                read_timeout=IssuConsts.ISSU_READ_TIMEOUT).\
+                timeout=IssuConsts.ISSU_READ_TIMEOUT).\
                 verify_result(should_succeed=False)
 
         assert IssuConsts.ERROR_DOWNGRADE_NOT_ALLOWED in output, \
@@ -1126,7 +1126,7 @@ def run_install_system_image_issu(dut_engine, dut_device, recovery_engine, image
         #     should_succeed=should_succeed)
         output = system.image.files.file_name[image_filename].action(
             ActionConsts.INSTALL, flags=param_value, send_user_confirmation='y', engine=dut_engine, device=dut_device,
-            reboot_params=True, read_timeout=IssuConsts.ISSU_READ_TIMEOUT).verify_result(should_succeed=should_succeed)
+            reboot_params=True, timeout=IssuConsts.ISSU_READ_TIMEOUT).verify_result(should_succeed=should_succeed)
 
     return output
 
