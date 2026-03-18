@@ -32,6 +32,8 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                               help="All the other options that to be passed to py.test")
         self.add_cmd_argument("--test_type", required=False, default="", dest="test_type",
                               help="Decide the pytest marker we want to use in the CI test")
+        self.add_cmd_argument("--dut_hwsku", required=False, default="", dest="dut_hwsku",
+                              help="DUT hwsku")
 
     def run_commands(self):
         rc = ErrorCode.SUCCESS
@@ -45,7 +47,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
 
         if '--alluredir' not in self.raw_options:
             self.raw_options += ' --alluredir="/tmp/allure-results" '
-        
+
         # Append --remote_test_path only for NVOS tests that declare this option
         # to avoid pytest parse failures in other projects.
         if getattr(self, 'remote_test_path', None) and 'tests_nvos' in str(self.test_script):
@@ -61,16 +63,16 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                                                allure_project_id_suffix=allure_project_id_suffix)
         random_seed = int(time.time())
         if self.sonic_topo:
-            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --sonic-topo={} --session_id={} --mars_key_id={} {} ' \
+            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --dut_hwsku={} --sonic-topo={} --session_id={} --mars_key_id={} {} ' \
                            '--dynamic_update_skip_reason --allure_server_project_id={} --random_seed={} ' \
                            '--store_la_logs --ignore_la_failure'
-            cmd = cmd_template.format(self.test_script, self.setup_name, self.sonic_topo, self.session_id,
+            cmd = cmd_template.format(self.test_script, self.setup_name, self.dut_hwsku, self.sonic_topo, self.session_id,
                                       self.mars_key_id, self.raw_options, allure_project, random_seed)
         else:
-            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --session_id={} --mars_key_id={} {} ' \
+            cmd_template = '/ngts_venv/bin/pytest {} --setup_name={} --dut_hwsku={} --session_id={} --mars_key_id={} {} ' \
                            '--dynamic_update_skip_reason --allure_server_project_id={} --random_seed={} ' \
                            '--store_la_logs --ignore_la_failure'
-            cmd = cmd_template.format(self.test_script, self.setup_name, self.session_id,
+            cmd = cmd_template.format(self.test_script, self.setup_name, self.dut_hwsku, self.session_id,
                                       self.mars_key_id, self.raw_options, allure_project, random_seed)
 
         # when disabling one plugin, we also need to remove the relevant pytest argument
