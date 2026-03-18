@@ -133,7 +133,7 @@ def test_show_system_image(original_version):
 @pytest.mark.system
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
 def test_downgrade_upgrade(release_name, random_api, original_version, devices, engines, downgrade_version_realpath,
-                           target_version_realpath, dut_ipv6_addr, ib_router):
+                           target_version_realpath, dut_ipv6_addr, ib_router, topology_obj):
     """
     Check the image rename cmd.
     Validate that install and delete commands will success with the new name
@@ -189,7 +189,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             with allure.step('run curl via ipv6, customer bug #4318552'):
                 send_open_api_request(dut_ipv6_addr, engines.dut)
 
-        _run_post_downgrade_cheks(ib_router)
+        run_post_downgrade_cheks(ib_router)
         player = engines['sonic_mgmt']
         scp_host_creds = f'{player.username}:{player.password}@{player.ip}'
         with allure.step('Get config file and path for target version'):
@@ -205,6 +205,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         engines.dut.run_cmd("true")
 
         TestToolkit.tested_api = random_api
+        run_pre_upgrade_steps(topology_obj, engines, ib_router)
 
     finally:
         with allure.step(f"Run upgrade: {target_version_realpath}"):
@@ -214,6 +215,8 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         target_fetched_image = target_version_realpath.split('/')[-1]
 
         with allure.step('Verify configuration preserved after upgrade and cleanup'):
+
+            run_post_upgrade_cheks(topology_obj, engines, ib_router)
 
             with allure.independent_step('cleanup test'):
                 cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
@@ -1133,7 +1136,7 @@ def verify_current_version(original_version, system, device):
         assert current_version == original_version, f"Current version is invalid: {current_version}, expected: {original_version}"
 
 
-def _run_post_downgrade_cheks(ib_router):
+def run_post_downgrade_cheks(ib_router):
     """run various optional checks after the machine finish downgrade"""
     with allure.step(f"Running post downgrade checks if there's any"):
         if ib_router:
@@ -1144,3 +1147,28 @@ def verify_ib_router_post_downgrade():
     """run various checks on ib router machine state after downgrade took place"""
     IbRouterTool.verify_leaf_port_mapping(expect_disabled=True)
     IbRouterTool.verify_profile_status(SystemConsts.PROFILE_STATE_DISABLED, 1)
+
+
+def run_ib_router_pre_upgrades_steps(topology_obj, engines):
+    """prepare the ib router setup before upgrade flow take place"""
+    IbRouterTool.set_router_setup(topology_obj, engines)
+
+
+def run_ib_router_post_upgrade_steps(topology_obj, engines):
+    """prepare the ib router setup before upgrade flow take place"""
+    IbRouterTool.verify_profile_status(expected_profile_status=SystemConsts.PROFILE_STATE_ENABLED, expected_swid_number=4)
+    IbRouterTool.verify_leaf_port_mapping(expect_disabled=False)
+
+
+def run_pre_upgrade_steps(topology_obj, engines, ib_router):
+    """run various optional checks before the machine starts the upgrade stage"""
+    with allure.step(f"Running pre upgrade actions if there's any"):
+        if ib_router:
+            run_ib_router_pre_upgrades_steps(topology_obj, engines)
+
+
+def run_post_upgrade_cheks(topology_obj, engines, ib_router):
+    """run various optional checks after the machine finish downgrade"""
+    with allure.step(f"Running post upgrade checks if there's any"):
+        if ib_router:
+            run_ib_router_post_upgrade_steps(topology_obj, engines)

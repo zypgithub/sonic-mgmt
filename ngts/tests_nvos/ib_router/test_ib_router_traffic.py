@@ -47,7 +47,7 @@ def test_sanity_traffic(engines, players, interfaces, devices, verify_sm_running
                     traffic_fails_lists.append(f"Traffic between host {sender_host} - {sender_ip} and host {receiver_host} - {receiver_ip}, both on SWID{sender_swid} failed")
         if traffic_fails_lists:
             raise Exception(traffic_fails_lists)
-    with allure.step(f"Sending traffic between all hosts on the same SWID"):
+    with allure.step(f"Sending traffic between all hosts on different SWIDs"):
         for (sender_host, receiver_host) in different_swid_hosts_pairs:
             sender_swid = IbRouterConsts.HOST_TO_SWID[sender_host]
             sender_ip = engines[sender_host].ip
