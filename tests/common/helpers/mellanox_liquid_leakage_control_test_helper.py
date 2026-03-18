@@ -50,7 +50,7 @@ class MlxLiquidLeakageMocker(LiquidLeakageMocker):
         self.mock_helper = MockerHelper(dut)
         self.test_leakage_num = random.randint(1, self.mock_helper.LEAKAGE_NUM)
         self.test_leakage_index_list = random.sample(
-            list(range(1,self.mock_helper.LEAKAGE_NUM + 1)), k=self.test_leakage_num)
+            list(range(1, self.mock_helper.LEAKAGE_NUM + 1)), k=self.test_leakage_num)
         logging.info(
             f"Test leakage num: {self.test_leakage_num}, test leakage index list: {self.test_leakage_index_list}")
 

@@ -38,14 +38,18 @@ def single_liquid_cooling_leakage_api(conn, leak_sensor_id, name, args=None):
 def get_name(conn, leak_sensor_id):
     return single_liquid_cooling_leakage_api(conn, leak_sensor_id, 'get_name')
 
+
 def is_leak(conn, leak_sensor_id):
     return single_liquid_cooling_leakage_api(conn, leak_sensor_id, 'is_leak')
+
 
 def get_num_leak_sensors(conn):
     return liquid_cooling_leakage_api(conn, 'get_num_leak_sensors')
 
+
 def get_leak_sensor_status(conn):
     return liquid_cooling_leakage_api(conn, 'get_leak_sensor_status')
+
 
 def get_all_leak_sensors(conn):
     return liquid_cooling_leakage_api(conn, 'get_all_leak_sensors')
