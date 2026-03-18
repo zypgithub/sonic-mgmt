@@ -104,10 +104,6 @@ class MultiAsicSonicHost(object):
 
         # Update the asic service based on feature table state and asic flag
         for service in list(self.sonichost.DEFAULT_ASIC_SERVICES):
-            if (service == 'teamd' or service == 'lldp') and switch_type == 'dpu':
-                logger.info(f"Removing {service} from default services for switch_type DPU")
-                self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
-                continue
             if service not in config_facts['FEATURE']:
                 self.sonichost.DEFAULT_ASIC_SERVICES.remove(service)
                 continue

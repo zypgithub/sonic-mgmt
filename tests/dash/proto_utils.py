@@ -85,14 +85,14 @@ def parse_value_or_range(orig):
     if isinstance(orig, list):
         if len(orig) == 1:
             val = int(orig[0])
-            return [{"value": val}]
+            return {"value": val}
         elif len(orig) == 2:
             min = int(orig[0])
             max = int(orig[1])
-            return [{"range": {"min": min, "max": max}}]
+            return {"range": {"min": min, "max": max}}
     else:
         val = int(orig)
-        return [{"value": val}]
+        return {"value": val}
 
 
 def parse_dash_proto(key: str, proto_dict: dict):
@@ -122,7 +122,10 @@ def parse_dash_proto(key: str, proto_dict: dict):
             elif field_map[key].message_type.name == "Guid":
                 new_dict[key] = parse_guid(value)
             elif field_map[key].message_type.name == "ValueOrRange":
-                new_dict[key] = parse_value_or_range(value)
+                if field_map[key].label == FieldDescriptor.LABEL_REPEATED:
+                    new_dict[key] = [parse_value_or_range(val) for val in value]
+                else:
+                    new_dict[key] = parse_value_or_range(value)
 
         elif field_map[key].type == field_map[key].TYPE_BYTES:
             new_dict[key] = parse_byte_field(value)
