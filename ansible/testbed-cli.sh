@@ -478,7 +478,7 @@ function add_topo
           -e ptf_imagename=\"$ptf_imagename\" -e vm_type=\"$vm_type\" -e ptf_ipv6=\"$ptf_ipv6\" \
           -e ptf_extra_mgmt_ip=\"$ptf_extra_mgmt_ip\" -e netns_mgmt_ip=\"$netns_mgmt_ip\" \
           -e upstream_neighbor_groups=\"$upstream_neighbor_groups\" -e downstream_neighbor_groups=\"$downstream_neighbor_groups\" \
-	  -e use_converged_peers="$use_converged_peers" \
+	  -e use_converged_peers=\"$use_converged_peers\" \
           $ansible_options ${args[*]}"
 
     if [[ "$parallel_execution" == "true" ]]; then
