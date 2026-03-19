@@ -28,7 +28,7 @@
      <info> </info>
      <cmd>
        <params>
-          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/secure/test_secure_boot/test_secure_boot.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --restore_to_image=[[conf:extra_info.base_version]] --showlocals --timeout 3600 --session-timeout 7200\'"</static_args>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests/nightly/secure/test_secure_boot/test_secure_boot.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini --log-level=INFO --clean-alluredir --alluredir=/tmp/allure-results --restore_to_image=[[conf:extra_info.base_version]],[[conf:extra_info.target_version]] --showlocals --timeout 3600 --session-timeout 7200\'"</static_args>
        </params>
      </cmd>
     </case>

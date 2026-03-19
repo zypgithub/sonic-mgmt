@@ -68,6 +68,11 @@ class SecureBootHelper:
     @staticmethod
     def get_restore_to_image_path(request):
         restore_to_image = request.config.getoption('restore_to_image')
+        if ',' in restore_to_image:
+            base_version, target_version = restore_to_image.split(',')
+            logger.info(f"base_version: {base_version}, target_version: {target_version}")
+            return target_version if target_version else base_version
+        logger.info(f"restore_to_image: {restore_to_image}")
         return restore_to_image
 
     def get_test_server_engine(self):
