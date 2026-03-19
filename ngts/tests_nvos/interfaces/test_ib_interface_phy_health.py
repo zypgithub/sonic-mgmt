@@ -8,6 +8,7 @@ from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceCon
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -23,9 +24,12 @@ def test_show_phy_health(engines, test_api):
     with allure.step("Verify output structure and field presence"):
         ValidationTool.verify_field_exist_in_json_output(d, PhyHealthConsts.EXPECTED_FIELDS).verify_result()
 
-        lane_data = d["lane"]
-        for lane_key in lane_data:
-            ValidationTool.verify_field_value_in_output(lane_data[lane_key], PhyHealthConsts.LANE_RAW_BER, PhyHealthConsts.EXPECTED_BER_FORMAT).verify_result()
+        if not is_bug_active(4792430):
+            lane_data = d["lane"]
+            for lane_key in lane_data:
+                ValidationTool.verify_field_value_in_output(lane_data[lane_key], PhyHealthConsts.LANE_RAW_BER, PhyHealthConsts.EXPECTED_BER_FORMAT).verify_result()
+        else:
+            logger.info("Skipping lane raw BER verification as bug 4792430 is active: port connected via loop cable has raw-ber errors")
 
 
 @pytest.mark.ib_interfaces
