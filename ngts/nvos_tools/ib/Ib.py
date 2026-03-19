@@ -16,4 +16,12 @@ class Ib(BaseComponent):
         self.ibdiagnet = Ibdiagnet(self)
         self.sm = Sm(self)
         self.device = BaseComponent(self, path='/device')
-        self.router = BaseComponent(self, path='/router')
+        self.router = IbRouter(self)
+
+
+class IbRouter(BaseComponent):
+    def __init__(self, parent_obj=None):
+        BaseComponent.__init__(self, parent=parent_obj,
+                               api={ApiType.NVUE: NvueOpenSmCli, ApiType.OPENAPI: OpenApiOpenSmCli}, path='/router')
+        self.routing_table = BaseComponent(self, path='/routing-table')
+        self.ib_subnet = BaseComponent(self, path='/ib-subnet')

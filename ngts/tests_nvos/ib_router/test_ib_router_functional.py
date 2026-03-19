@@ -64,13 +64,13 @@ def test_sm_configuration_change(engines, devices, verify_sm_running_on_all_host
             IbRouterTool.start_sm_on_hosts(engines, skip_copy_files=True)
             swid_name = IbRouterTool.get_swid_name(chosen_swid)
 
-        with allure.step(f"checking that SWID{chosen_swid} now has the new prefix of {new_prefix} - {new_dec_value} in the nv show command"):
+        with allure.step(f"checking that SWID{chosen_swid} now has the new prefix of {new_prefix} - {new_dec_value} in the show command"):
             ib = Ib(None)
             show_router_output = OutputParsingTool.parse_json_str_to_dictionary(ib.router.show()).get_returned_value()
-            cli_subnet_prefix = show_router_output[IbRouterConsts.ROUTING_TABLE][swid_name][IbRouterConsts.SUBNET_PREFIX]
-            logger.info(f"found prefix for swid{chosen_swid} is: {cli_subnet_prefix}, expected {new_dec_value}")
+            cli_subnet_prefix = show_router_output[IbRouterConsts.ROUTING_TABLE][swid_name][IbRouterConsts.SUBNET_PREFIX].replace(':', '')
+            logger.info(f"found prefix for swid{chosen_swid} is: {cli_subnet_prefix}, expected {new_prefix.replace('0x', '')}")
             err_msg = f"SWID{chosen_swid} has the prefix {cli_subnet_prefix} , expected to have the new prefix {new_dec_value}"
-            assert str(new_dec_value) == str(cli_subnet_prefix), err_msg
+            assert new_prefix.replace('0x', '') == cli_subnet_prefix, err_msg
     finally:
         IbRouterTool.stop_sm_on_hosts(engines)
         IbRouterTool.reset_router_config_file(engines)

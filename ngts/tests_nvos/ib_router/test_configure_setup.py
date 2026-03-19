@@ -35,7 +35,7 @@ def test_setup_health(engines, players, interfaces, setup_name, start_sm_on_host
     with allure.step(f"checking SWIDs status and enforcement"):
         check_swid_state(engines)
         check_swid_isolation(engines)
-        check_node_description()
+        check_swid_gids(engines)
 
 
 @pytest.mark.skip_clear_config
@@ -55,10 +55,6 @@ def test_clean_setup_health(engines, disable_ib_router_profile, stop_sm):
         assert system_profile_output[
             SystemConsts.PROFILE_IB_ROUTING] == SystemConsts.PROFILE_STATE_DISABLED, f"FAILED - after enabling, ib-routing field is {system_profile_output[SystemConsts.PROFILE_IB_ROUTING]}," \
             f" its expected to be disabled"
-
-
-def check_node_description():
-    pass
 
 
 def check_leaf_ports():
@@ -81,11 +77,11 @@ def check_swid_state(engines):
     """
     with allure.step('check the active SWIDs are marked as valid and has the correct prefix'):
         ib = Ib(None)
-        show_router_output = OutputParsingTool.parse_json_str_to_dictionary(ib.router.show()).get_returned_value()
+        show_router_output = OutputParsingTool.parse_json_str_to_dictionary(ib.router.routing_table.show()).get_returned_value()
         for idx in range(IbRouterConsts.SWID_NUM):
             swid_name = IbRouterTool.get_swid_name(idx)
-            assert swid_name in show_router_output[IbRouterConsts.ROUTING_TABLE].keys(), f"SWID {swid_name} not in the nv show ib router output"
-            swid_state = show_router_output[IbRouterConsts.ROUTING_TABLE][swid_name][IbRouterConsts.VALID]
+            assert swid_name in show_router_output.keys(), f"SWID {swid_name} not in the nv show ib router output"
+            swid_state = show_router_output[swid_name][IbRouterConsts.VALID]
             logger.info(f"SWID{idx} state on switch: {swid_state}")
             if idx in IbRouterConsts.OPERATIONAL_SWIDS:
                 verify_swid_prefix(engines, idx, swid_name, show_router_output)
@@ -105,9 +101,39 @@ def verify_swid_prefix(engines, idx, swid_name, show_router_output):
         sm_conf_file_name = IbRouterConsts.OPENSM_CONF_FILE_NAME.format(sm_host_nickname)
         sm_conf_file_path = IbRouterConsts.OPENSM_CONF_PATH + sm_conf_file_name
         subnet_prefix = get_subnet_prefix_from_sm_conf(engines, sm_conf_file_path)
-        cli_subnet_prefix = show_router_output[IbRouterConsts.ROUTING_TABLE][swid_name][IbRouterConsts.SUBNET_PREFIX]
+        cli_subnet_prefix = show_router_output[swid_name][IbRouterConsts.SUBNET_PREFIX].replace(':', '')
         err_msg = f"SWID{idx} has the prefix {subnet_prefix} in the opensm file {sm_conf_file_path}, but on CLI output the prefix is {cli_subnet_prefix}"
         assert str(subnet_prefix) == str(cli_subnet_prefix), err_msg
+
+
+def check_swid_gids(engines):
+    """
+           the Function will check the "nv show ib router ib-subnet" has the correct gids per subnet
+"""
+    with allure.step(f"checking gids per subnet"):
+        ib = Ib(None)
+        show_ib_subnet_output = OutputParsingTool.parse_json_str_to_dictionary(ib.router.ib_subnet.show()).get_returned_value()
+        for idx in range(IbRouterConsts.SWID_NUM):
+            with allure.step(f"checking gids on SWID {idx}"):
+                swid_name = IbRouterTool.get_swid_name(idx)
+                router_gids = show_ib_subnet_output[swid_name][IbRouterConsts.GID].keys()
+                logger.info(f"for SWID{idx} - {swid_name}, the gids in the show commands are:\n{"\n".join(router_gids)}")
+                swid_idx_sm_nickname = IbRouterConsts.SWID_TO_SM_NICKNAME[idx]
+                host_engine = engines[swid_idx_sm_nickname]
+                ibnetdiscover_router_guids = parse_ibnetdiscover_router_guids(host_engine)
+                logger.info(f"for SWID{idx} - {swid_name}, the guids the host sees for router are:{"\n".join(ibnetdiscover_router_guids)}")
+                sm_conf_file_name = IbRouterConsts.OPENSM_CONF_FILE_NAME.format(swid_idx_sm_nickname)
+                sm_conf_file_path = IbRouterConsts.OPENSM_CONF_PATH + sm_conf_file_name
+                subnet_prefix = get_subnet_prefix_from_sm_conf(engines, sm_conf_file_path)
+                for guid in ibnetdiscover_router_guids:
+                    # converting guid from (for example) b8e924030000b928 to b8e9:2403:0000:b928
+                    parsed_guid = ":".join([guid[i:i + 4] for i in range(0, len(guid), 4)])
+                    # converting prefix from (for example) 0xfec0000000000001 to fec0:0000:0000:0001
+                    parsed_subnet_prefix = ":".join([subnet_prefix[i:i + 4] for i in range(0, len(subnet_prefix), 4)])
+                    expected_gid = parsed_subnet_prefix + ":" + parsed_guid
+                    logger.info(f"for SWID{idx} - {swid_name} gid calculated form ibnetdiscover and sm file: {expected_gid}")
+                    logger.info(f"for SWID{idx} - {swid_name}, the gids in the show commands are:\n{"\n".join(router_gids)}")
+                    assert expected_gid in router_gids, f"router guid {expected_gid} on SWID{idx} is not in the show commands guids: {router_gids} "
 
 
 def check_swid_isolation(engines):
@@ -147,11 +173,11 @@ def get_subnet_prefix_from_sm_conf(engines, sm_conf_file_path):
 
     @param engines: engines obj
     @param sm_conf_file_path: the path to the opensm conf file
-    @return: int, the prefix of the SM configuration
+    @return: string, the prefix of the SM configuration
     """
     subnet_prefix = engines['sonic_mgmt'].run_cmd("grep 'subnet_prefix' {}".format(sm_conf_file_path) + "| awk '{print $2}'")
     assert IbRouterConsts.SUBNET_PREFIX_INITITAL in subnet_prefix, f"failed to parse the subnet prefix from the file {sm_conf_file_path}"
-    return int(subnet_prefix.replace(IbRouterConsts.SUBNET_PREFIX_INITITAL, ''))
+    return subnet_prefix.replace('0x', '')
 
 
 def parse_ibnetdiscover_nodes(engine_obj):
@@ -178,6 +204,38 @@ def parse_ibnetdiscover_nodes(engine_obj):
     unique_labels = get_unique_node_labels(ibnetdiscover_output)
     assert unique_labels, f"failed to parse ib nodes from ibnetdiscover on {engine_obj.ip}, or there were none in the ibnetdiscover output: {ibnetdiscover_output}"
     return unique_labels
+
+
+def parse_ibnetdiscover_router_guids(engine_obj):
+    """
+    parse ibnetdiscover output on given engine object and return list of router interface guids
+    router asics will be found in the name (for example)
+    "MF0;mamba-2132:Q3400_RA/U1/RT"
+    "MF0;mamba-2132:Q3400_RA/U2/RT"
+    "MF0;mamba-2132:Q3400_RA/U3/RT"
+    "MF0;mamba-2132:Q3400_RA/U4/RT"
+    along with their GUID - in the example below the GUID is b8e924030000b929
+
+    vendid=0x2c9
+    devid=0xc839
+    sysimgguid=0xb8e924030000b900
+    rtguid=0xb8e924030000b928
+    Rt      8 "R-b8e924030000b928"          # "MF0;mamba-2132:Q3400_RA/U2/RT"
+    [2](b8e924030000b929)   "S-b8e924030000b921"[149]               # lid 9 lmc 0 "MF0;mamba-2132:Q3400_RA/U2" lid 8 1xXDR
+
+
+    """
+    def get_unique_router_node_guid(ibnetdiscover_output):
+        # pattern = re.compile(r'"R-([^"]+)".*#\s*"[^"]+\/RT"')
+        pattern = r'RT.*\n\[\d+\]\((.*)\).*U\d+'
+        matches = re.findall(pattern, ibnetdiscover_output, re.MULTILINE)
+        return matches
+
+    ibnetdiscover_output = engine_obj.run_cmd("sudo ibnetdiscover -C smi0")
+    assert ibnetdiscover_output, f"failed to get ibnetdiscover on {engine_obj.ip} "
+    guid_list = get_unique_router_node_guid(ibnetdiscover_output)
+    assert guid_list, f"failed to parse ib nodes from ibnetdiscover on {engine_obj.ip}, or there were none in the ibnetdiscover output: {ibnetdiscover_output}"
+    return guid_list
 
 
 def calculate_hosts_hostnames(engines, host_nicknames):

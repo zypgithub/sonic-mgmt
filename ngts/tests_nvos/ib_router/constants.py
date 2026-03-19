@@ -46,3 +46,4 @@ class IbRouterConsts:
     # the network prefix starts with 0xfecin the openSM config file, for example 0xfec0000002
     SUBNET_PREFIX_INITITAL = '0xfec'
     IBR_DUMP_FILE = 'ib.router'
+    GID = "gid"
