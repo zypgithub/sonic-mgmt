@@ -43,6 +43,9 @@ MAX_TIME_CONFIG = {
     'dataplane_downtime': 1,
     'controlplane_convergence': 300
 }
+MAX_DOWNTIME_PORT_FLAPPING = MAX_TIME_CONFIG['controlplane_convergence'] + 30  # seconds
+MAX_DOWNTIME_UNISOLATION = 300  # seconds
+MAX_DOWNTIME_NEXTHOP_GROUP_MEMBER_CHANGE = MAX_TIME_CONFIG['controlplane_convergence'] + 30  # seconds
 PKTS_SENDING_TIME_SLOT = 1  # seconds
 PACKETS_PER_TIME_SLOT = 500 // PKTS_SENDING_TIME_SLOT
 MASK_COUNTER_WAIT_TIME = 10  # wait some seconds for mask counters processing packets
@@ -662,9 +665,7 @@ def flapper(duthost, ptfadapter, bgp_peers_info, transient_setup, flapping_count
             pdp.get_mac(pdp.port_to_device(injection_port), injection_port),
             icmp_type
         )
-        # Downtime ratio is calculated by dividing the number of flapping neighbors by 5, from test data
-        downtime_ratio = len(flapping_connections) / 5
-        downtime_threshold = _get_max_time('dataplane_downtime', downtime_ratio)
+        downtime_threshold = MAX_DOWNTIME_PORT_FLAPPING
         terminated = Event()
         traffic_thread = Thread(
             target=send_packets, args=(terminated, pdp, pdp.port_to_device(injection_port), injection_port, pkts)
@@ -836,7 +837,7 @@ def test_nexthop_group_member_scale(
         traffic_thread.join()
         end_time = datetime.datetime.now()
         acceptable_downtime, actual_downtime = validate_rx_tx_counters(
-            pdp, end_time, start_time, exp_mask, _get_max_time('dataplane_downtime', 1)
+            pdp, end_time, start_time, exp_mask, MAX_DOWNTIME_NEXTHOP_GROUP_MEMBER_CHANGE
         )
         if not acceptable_downtime:
             for ptfhost in ptfhosts:
@@ -844,7 +845,7 @@ def test_nexthop_group_member_scale(
                 announce_routes(localhost, tbinfo, ptf_ip, servers_dut_interfaces.get(ptf_ip, ''))
             pytest.fail(
                 f"Dataplane downtime is too high: actual {actual_downtime:.4f} seconds, "
-                f"threshold is {_get_max_time('dataplane_downtime', 1)} seconds"
+                f"threshold is {MAX_DOWNTIME_NEXTHOP_GROUP_MEMBER_CHANGE} seconds"
             )
         if not result.get("converged"):
             pytest.fail("BGP routes are not stable in long time")
@@ -885,12 +886,12 @@ def test_nexthop_group_member_scale(
     traffic_thread.join()
     end_time = datetime.datetime.now()
     acceptable_downtime, actual_downtime = validate_rx_tx_counters(
-        pdp, end_time, start_time, exp_mask, _get_max_time('dataplane_downtime', 1)
+        pdp, end_time, start_time, exp_mask, MAX_DOWNTIME_NEXTHOP_GROUP_MEMBER_CHANGE
     )
     if not acceptable_downtime:
         pytest.fail(
             f"Dataplane downtime is too high: actual {actual_downtime:.4f} seconds, "
-            f"threshold is {_get_max_time('dataplane_downtime', 1)} seconds"
+            f"threshold is {MAX_DOWNTIME_NEXTHOP_GROUP_MEMBER_CHANGE} seconds"
         )
     if not result.get("converged"):
         pytest.fail("BGP routes are not stable in long time")
