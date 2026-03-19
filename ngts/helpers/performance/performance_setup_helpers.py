@@ -578,6 +578,15 @@ def create_occ_watermark_dump(players, sonic_mgmt_path, tar_file_name="occ_headr
 
 
 def create_sdk_dump(players, full_path):
+    """Fetch SDK dump text from the DUT into local file, then decode by content.
+
+    Args:
+        players: Test players dict (must include DUT with performance CLI).
+        full_path: Intended local path for the dump.
+
+    Returns:
+        str: SDK dump file contents.
+    """
     return players[PerfConsts.DUT_ALIAS]['cli'].performance.create_sdk_dump(full_path)
 
 

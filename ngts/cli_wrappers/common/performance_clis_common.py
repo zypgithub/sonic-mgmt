@@ -1,3 +1,4 @@
+import gzip
 import logging
 import os
 import re
@@ -6,7 +7,43 @@ import fcntl
 import pandas as pd
 from retry import retry
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
+from ngts.nvos_tools.infra.FilesTool import FilesTool
 from infra.tools.exceptions.test_issue import TestIssue
+
+
+def _file_is_gzip(filepath):
+    """Return True if the file begins with gzip magic bytes (``GZIP_MAGIC_BYTES``; RFC 1952).
+
+    Uses content sniffing rather than the filename extension so misnamed files are handled
+    correctly.
+
+    Args:
+        filepath (str): Path to the local file to inspect.
+
+    Returns:
+        bool: True if the first two bytes match gzip signature.
+    """
+    with open(filepath, 'rb') as f:
+        return f.read(len(PerfConsts.GZIP_MAGIC_BYTES)) == PerfConsts.GZIP_MAGIC_BYTES
+
+
+def _read_sdk_dump_support_gzip(path):
+    """Read a local file as UTF-8 text, gzip-decompressing if content has gzip magic bytes.
+
+    Call this after copying a dump from the DUT: the remote name may be ``*.gz`` or not;
+    decoding follows the actual bytes, not the extension.
+
+    Args:
+        path (str): Local filesystem path.
+
+    Returns:
+        str: File contents as text.
+    """
+    if _file_is_gzip(path):
+        with gzip.open(path, 'rt', encoding='utf-8', errors='replace') as f:
+            return f.read()
+    with open(path, encoding='utf-8', errors='replace') as f:
+        return f.read()
 
 
 class PerformanceCommon:
@@ -502,32 +539,46 @@ class PerformanceCommon:
 
         return sonic_mgmt_path
 
-    def create_sdk_dump(self, sonic_mgmt_path, sdk_dump_file_name="sdkdump", sdk_dump_file_system='/var/log/sdk_dbg'):
+    def create_sdk_dump(self, sonic_mgmt_path, sdk_dump_file_system=PerfConsts.SDK_DUMP_FILE_SYSTEM):
         """
         Generate an SDK debug dump and retrieve its contents.
 
-        This method executes the SDK dump generation script, copies the resulting dump
-        file from the device to the local management system, and returns the dump contents
-        as a string.
+        Runs "sx_api_dbg_generate_dump.py" with an explicit base path. The SDK may write the dump with or without .gz
 
         Args:
-            sonic_mgmt_path (str): The local path where the SDK dump file will be copied.
-            sdk_dump_file_name (str, optional): The name of the SDK dump file. Defaults to "sdkdump".
-            sdk_dump_file_system (str, optional): The remote filesystem path where the dump is generated.
-                Defaults to '/var/log/sdk_dbg'.
+            sonic_mgmt_path (str): Local path for the copied dump
+            sdk_dump_file_system (str, optional): Remote directory for the dump.
+                Defaults to ``PerfConsts.SDK_DUMP_FILE_SYSTEM``.
 
         Returns:
             str: The contents of the SDK dump file as a string.
+
+        Raises:
+            TestIssue: If neither ``{basename}.gz`` nor ``{basename}`` exists after generation.
         """
-        create_sdk_dump_cmd = "sx_api_dbg_generate_dump.py"
+        basename = PerfConsts.SDK_DUMP_REMOTE_BASENAME
+        remote_dump_path = os.path.join(sdk_dump_file_system, basename)
+        create_sdk_dump_cmd = f"sx_api_dbg_generate_dump.py {remote_dump_path}"
         self.run_customer_examples_on_sdk(create_sdk_dump_cmd)
 
-        os.environ[PerfConsts.SDK_DUMP_FILE_SYSTEM] = sonic_mgmt_path
-        self.engine.copy_file(source_file=sdk_dump_file_name, file_system=sdk_dump_file_system, dest_file=sonic_mgmt_path, overwrite_file=True, verify_file=False, direction='get')
+        remote_gz = os.path.join(sdk_dump_file_system, f'{basename}.gz')
+        remote_plain = os.path.join(sdk_dump_file_system, basename)
+        if FilesTool.file_exists(self.engine, remote_gz):
+            remote_name = f'{basename}.gz'
+        elif FilesTool.file_exists(self.engine, remote_plain):
+            remote_name = basename
+        else:
+            raise TestIssue(
+                f'No SDK dump file on DUT under {sdk_dump_file_system!r} '
+                f'(expected {remote_gz!r} or {remote_plain!r}).'
+            )
 
-        with open(sonic_mgmt_path) as f:
-            sdk_dump_str = f.read()
-        return sdk_dump_str
+        os.environ[PerfConsts.SDK_DUMP_FILE_SYSTEM] = sonic_mgmt_path
+        self.engine.copy_file(source_file=remote_name, file_system=sdk_dump_file_system,
+                              dest_file=sonic_mgmt_path,
+                              overwrite_file=True, verify_file=False, direction='get')
+
+        return _read_sdk_dump_support_gzip(sonic_mgmt_path)
 
     def write_shared_json(self, key=None, json_path='/tmp', data=None, raise_on_existing=True):
         """

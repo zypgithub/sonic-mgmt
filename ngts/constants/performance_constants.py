@@ -198,6 +198,8 @@ class PerfConsts:
     IBM_CUSTOM_PROFILE_NAME = 'ibm_profile'
     DISABLE_MAC_SCRIPT = "disable_mac_learn.py"
     LB_FILTER_SCRIPT = "api_for_filter.py"
+    SDK_DUMP_REMOTE_BASENAME = 'sdkdump'
+    GZIP_MAGIC_BYTES = b'\x1f\x8b'
     LB_SCRIPT_TG = "run_lb_script.sh"
     IP_NEIGH_SCRIPT = "config_ip_neigh.sh"
     TRAFFIC_SENDER_SCRIPT_TG = "traffic_generator.py"
