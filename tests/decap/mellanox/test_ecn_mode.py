@@ -191,7 +191,7 @@ class TestECNMode:
             self.send_verify_ipinip_packet(ptfadapter=ptfadapter,
                                            pkt=pkt,
                                            exp_pkt=exp_pkt,
-                                           ptf_src_port_id=self.params['ptf_downlink_port'],
+                                           ptf_src_port_id=self.params['ptf_src_port'],
                                            ptf_dst_port_ids=self.params['ptf_uplink_ports'])
 
     def _check_bgp_route(self, duthost):
