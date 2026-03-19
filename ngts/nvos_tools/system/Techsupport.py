@@ -174,14 +174,12 @@ class TechSupport(BaseComponent):
         return [self.rename_file(name) for name in file_names]
 
     def rename_file(self, filename):
-
-        sai_sdk_regex = re.compile(r'sai_sdk_dump_\d{2}_\d{2}_\d{4}_\d{2}_\d{2}_(AM|PM)\.(.*)')
-        sdk_dump_ext_regex = re.compile(r'(sdk_dump_ext)_\d{1,2}[A-Za-z]{3}\d{4}_\d{2}:\d{2}:\d{2}\.\d{6}_(dev\d+.*)')
+        sai_sdk_regex = re.compile(r'sai_sdk_dump_\d{2}_\d{2}_\d{4}_\d{2}_\d{2}_(AM|PM)[._](.*)')
+        sdk_dump_ext_regex = re.compile(r'(sdk_dump_ext)_.*?_(dev\d+.*)')
         if sai_sdk_regex.match(filename):
             return sai_sdk_regex.sub(r'sai_sdk_dump.\2', filename)
         elif sdk_dump_ext_regex.match(filename):
             return sdk_dump_ext_regex.sub(r'\1_\2', filename)
-
         return filename
 
     def get_techsupport_files_list(self, engine, tech_folder):

@@ -2590,7 +2590,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
                                                        'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
                                                        'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
                                                        'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
-                                                       'verification_test.gz']
+                                                       'verification_test.gz', 'system.profile']
 
         self.nvl_trunk_port_speed = '400G'
         self.access_port_speed = '200G'  # Updated default for Rosalind systems

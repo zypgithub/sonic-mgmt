@@ -506,7 +506,11 @@ class ValidationTool:
         is_included = not missing
         return ResultObj(
             (is_included == should_be_included),
-            f"Missing from superset: {missing}" if missing else "All elements are included."
+            "Validation failed: subset is not fully included in superset\n"
+            f"\nExpected (subset):\n{sorted(subset)}"
+            f"\n\nActual (superset):\n{sorted(superset)}"
+            f"\n\nMissing elements:\n{sorted(missing)}"
+            if missing else "All elements are included."
         )
 
     @staticmethod
