@@ -17,6 +17,7 @@ from ngts.helpers.performance.performance_setup_helpers import (save_base_config
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration,
                                                                 skip_test_on_unsupported_os)
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.performance_tests.conftest import get_all_players_ports
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, MultiNosSharedData
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata
@@ -395,10 +396,37 @@ def move_alibaba_acl_dump(players):
     )
 
 
+def _apply_alibaba_leaf_skip_conditions(test_params, ip_combinations):
+    """
+    Apply all skip conditions for alibaba leaf scenario tests.
+    Must be called before apply_test_configuration so skips happen without configuring the DUT.
+    """
+    if test_params.test_id in ALI_PWS_TESTS_LIST and ip_combinations.ipv6_enabled == "ipv6_enabled":
+        pytest.skip(f"Skipping PWS test {test_params.test_id} with IPv6 enabled")
+
+    if test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
+        pytest.skip("Skipping test for 99.9 percent shaper value")
+
+    if (not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and
+            ip_combinations.ipv6_enabled == "ipv6_enabled" and is_redmine_issue_active([4662379])[0]):
+        pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
+
+    if (test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS and
+        ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled" and
+            is_redmine_issue_active([4662379])[0]):
+        pytest.skip("Skipping Ali scenario 3, IPv4 enabled and IPv6 enabled")
+
+    if is_redmine_issue_active([4662378])[0] and test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
+        pytest.skip("Skipping test for 99.9 percent shaper value")
+
+    if (is_redmine_issue_active([4662379])[0] and not test_params.ar_enabled and
+            ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled"):
+        pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
+
+
 @pytest.fixture(scope='class', autouse=True)
-def basic_setup_configuration(players, conf_args, test_id, ipv6_enabled):
-    if test_id in ALI_PWS_TESTS_LIST and ipv6_enabled == "ipv6_enabled":
-        pytest.skip(f"Skipping PWS test {test_id} with IPv6 enabled")
+def basic_setup_configuration(players, conf_args, test_params, ip_combinations):
+    _apply_alibaba_leaf_skip_conditions(test_params, ip_combinations)
 
     try:
         with allure.step('Save Players initial Configuration'):

@@ -27,7 +27,6 @@ from ngts.performance_tests.alibaba_performance.alibaba_leaf_scenarios.conftest 
     TEST_ID_ALI_PWS_SPINE_AR_ENABLED_ASYM_SPLIT,
     ALI_PWS_TESTS_LIST)
 from ngts.constants.constants import BugHandlerConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger(__name__)
 
@@ -113,18 +112,6 @@ class TestAlibabaLeafScenario:
         logging.info(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}")
         test_name = get_perf_test_name(request)
 
-        if test_params.test_id in ALI_PWS_TESTS_LIST and ip_combinations.ipv6_enabled == "ipv6_enabled":
-            pytest.skip(f"Skipping PWS test {test_params.test_id} with IPv6 enabled")
-
-        if test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
-            pytest.skip("Skipping test for 99.9 percent shaper value")
-
-        if not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled" and is_redmine_issue_active([4662379])[0]:
-            pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
-
-        if test_params.test_id == TEST_ID_SUPER_SPINE_TO_LEAF_AR_ENABLED_SPLIT_2_64K_DIPS and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled" and is_redmine_issue_active([4662379])[0]:
-            pytest.skip("Skipping Ali scenario 3, IPv4 enabled and IPv6 enabled")
-
         with allure.step(f"Testing with IPv4={conf_args['is_ipv4']}, IPv6={conf_args['is_ipv6']}"):
             with allure.step("Adding dynamic description to allure report"):
                 scenario_name = (f"Alibaba Performance real life leaf Scenario. "
@@ -146,12 +133,6 @@ class TestAlibabaLeafScenario:
 
             allure.dynamic.title(scenario_name)
             allure.dynamic.description(scenario_description)
-
-        if is_redmine_issue_active([4662378])[0] and test_params.test_id == TEST_ID_SHAPER_99_9_AR_ENABLED_SPLIT_4_128_DIPS:
-            pytest.skip("Skipping test for 99.9 percent shaper value")
-
-        if is_redmine_issue_active([4662379])[0] and not test_params.ar_enabled and ip_combinations.ipv4_enabled == "ipv4_enabled" and ip_combinations.ipv6_enabled == "ipv6_enabled":
-            pytest.skip("Skipping test for non-AR scenario, IPv4 enabled and IPv6 enabled")
 
         if test_params.test_id not in ALI_PWS_TESTS_LIST:
             with allure.step("Create incremental dips"):
