@@ -51,7 +51,7 @@ class ClusterTools:
                 with allure.step(f"Stop app {app} and validate its down"):
                     cluster.apps.app_name[app].action_stop_cluster_app()
                     nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state=nmx_c_expected_state)
+                    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
                     # TBD -- once "running" is working, use it to verify app is not running
                     ClusterTools.verify_app_is_down(engines, app, devices)
 
