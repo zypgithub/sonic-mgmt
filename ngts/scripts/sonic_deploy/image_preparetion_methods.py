@@ -28,9 +28,17 @@ def get_real_file_path(file_path: str) -> str:
 
 
 def get_real_paths(base_version, target_version, cli_type):
-    base_version = get_real_file_path(base_version) if base_version else ''
+    if not base_version:
+        base_version = ''
+    elif not is_url(base_version):
+        base_version = get_real_file_path(base_version)
+
     if cli_type != PerfConsts.DVS_CLI_TYPE:
-        target_version = get_real_file_path(target_version) if target_version else ''
+        if not target_version:
+            target_version = ''
+        elif not is_url(target_version):
+            target_version = get_real_file_path(target_version)
+
     return base_version, target_version
 
 
