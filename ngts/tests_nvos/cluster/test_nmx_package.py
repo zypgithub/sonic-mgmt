@@ -175,7 +175,7 @@ def verify_start_stop(cluster, app):
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
         nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state=nmx_c_expected_state)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
 
 
 def delete_package_file(fae, filename):
