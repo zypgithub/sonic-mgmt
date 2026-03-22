@@ -2200,6 +2200,7 @@ class SonicGeneralCliDefault(GeneralCliCommon):
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install pciutils'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install git'")
             self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install rsync'")
+            self.engine.run_cmd(f"{docker_exec_syncd_cmd} 'echo Y | apt-get install lm-sensors'")
 
         with allure.step('Prepare SDK_VER git to run tests'):
             self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch, is_in_syncd=True)

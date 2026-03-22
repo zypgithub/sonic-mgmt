@@ -90,21 +90,53 @@ class SonicPerformanceCli(PerformanceCommon):
             if controller_info_list:
                 controllers_info_dict = {}
                 for controller_info in controller_info_list:
-                    regex_pattern = r"(Rail|Curr|Pwr)\s*\((out\d+)\):\s+(\d*\.*\d*)\s+([mV|A|V|W]*)"
-                    controller_info_parsed = re.search(regex_pattern, controller_info)
-                    if controller_info_parsed:
-                        key = controller_info_parsed.group(2)
-                        value = controller_info_parsed.group(3)
-                        measure_unit = controller_info_parsed.group(4)
-                        key = self.get_sensors_output_key(key, measure_unit)
-                        if is_controller_name_vddscc and '1' in key:
-                            controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
-                        elif not is_controller_name_vddscc:
-                            controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
-                        else:
-                            pass
+                    parsed = self._parse_sensor_line(controller_info)
+                    if not parsed:
+                        continue
+                    key, value, measure_unit = parsed
+                    key = self.get_sensors_output_key(key, measure_unit)
+                    if is_controller_name_vddscc and '1' in key:
+                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
+                    elif not is_controller_name_vddscc:
+                        controllers_info_dict[key] = float(value) / 1000 if 'm' in measure_unit else float(value)
                 controllers_info_dicts_list.append(controllers_info_dict)
         return controllers_info_dicts_list
+
+    @staticmethod
+    def _parse_sensor_line(line):
+        """Parse a single sensor output line and return (channel, value, unit), or None.
+
+        Sensor readings can come in two different text formats depending on the tool:
+
+        1. "labeled" format (original, from SDK scripts) — the measurement type is a
+           word and the channel appears in parentheses:
+               Rail (out1):  1.20 V
+               Curr (out1): 13.00 A
+
+        2. "compact" format (added to support lm-sensors) — the measurement type is a
+           single-letter prefix (v/i/p) fused with the channel name:
+               vout1:  1.20 V
+               iout1: 13.00 A
+           The prefix is stripped so the return value is the same shape as format 1.
+        """
+        labeled_match = re.search(
+            r"(Rail|Curr|Pwr)\s*\((out\d+)\):\s+(\d*\.?\d+)\s+([mV|A|V|W]+)", line)
+        if labeled_match:
+            return labeled_match.group(2), labeled_match.group(3), labeled_match.group(4)
+
+        compact_match = re.search(
+            r"([vip])(out\d+|in):\s+(\d*\.?\d+)\s+(m?[VAW])", line)
+        if compact_match:
+            prefix = compact_match.group(1)
+            channel = compact_match.group(2)
+            value = compact_match.group(3)
+            unit = compact_match.group(4)
+            if channel == "in":
+                channel = "out1"
+            measure_unit = unit if len(unit) == 1 else unit
+            return channel, value, measure_unit
+
+        return None
 
     @staticmethod
     def get_sensors_output_key(key, measure_unit):
@@ -677,10 +709,18 @@ class SonicPerformanceCli(PerformanceCommon):
             samples_params.append(f"{env_var_name}={param_val}")
         run_validator_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_TG_VALIDATOR_NAME}"
         self.logrotate("rsyslog")
-        self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=samples_params))
-        self.execute_cmd(f"docker cp {InfraConst.SYNCD_DOCKER}:/tmp/TrafficValidator.json /tmp/TrafficValidator.json")
-        self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
-                              overwrite_file=True, verify_file=False, direction='get')
+        try:
+            self.execute_cmd(self.get_cmd_for_sdk(run_validator_cmd, env_variables=samples_params))
+        except Exception as e:
+            logging.error(f"Error running traffic validator: {e}")
+            raise TestIssue(msg=f"Error running traffic validator: {type(e).__name__}: {e}") from e
+        try:
+            self.execute_cmd(f"docker cp {InfraConst.SYNCD_DOCKER}:/tmp/TrafficValidator.json {dst_dut_dir}/TrafficValidator.json")
+            self.engine.copy_file(source_file="TrafficValidator.json", file_system=dst_dut_dir, dest_file=json_path,
+                                  overwrite_file=True, verify_file=False, direction='get')
+        except Exception as e:
+            logging.error(f"Error copying traffic validator JSON from syncd: {e}")
+            raise TestIssue(msg=f"Error copying traffic validator JSON from syncd: {type(e).__name__}: {e}") from e
 
     def logrotate(self, daemon):
         if is_redmine_issue_active([4388176])[0]:
