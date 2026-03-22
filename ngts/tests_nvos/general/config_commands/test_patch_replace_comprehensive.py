@@ -2,35 +2,34 @@
 Comprehensive tests for config patch and replace operations
 Tests both CLI and REST API methods with positive and negative scenarios
 """
-import json
-import logging
-import os
-import tempfile
-import time
 
-import pytest
-import requests
 from urllib3.exceptions import InsecureRequestWarning
+import textwrap
+import tempfile
+import requests
+import logging
+import urllib3
+import pytest
+import json
+import time
+import os
 
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.cli_wrappers.openapi.openapi_general_clis import OpenApiGeneralCli
-from ngts.nvos_constants.constants_nvos import SystemConsts, NvosConst, OutputFormat, ApiType
-from ngts.nvos_tools.acl.acl import Acl
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from infra.tools.linux_tools import linux_tools
+
+from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.System import System
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.FilesTool import TempFileOnEngine
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.acl.acl import Acl
 
 # Suppress insecure request warnings
-requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+urllib3.disable_warnings(category=InsecureRequestWarning)
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 LARGE_CONFIG_APPLY_TIMEOUT = 600    # 10 minutes - for large configs (e.g., 30K ACL rules)
@@ -117,7 +116,7 @@ def create_temp_file(engine, filename, content):
                     f.write(content)
                     local_temp = f.name
                 try:
-                    scp_file(engine, local_temp, temp_file.path, download_from_remote=False)
+                    linux_tools.scp_file(engine, local_temp, temp_file.path, download_from_remote=False)
                 finally:
                     os.remove(local_temp)
             else:
@@ -252,7 +251,11 @@ def test_replace_removes_existing_config(engines, random_api):
 
         with allure.step('Export config with only hostname'):
             # Replace requires commands format (nv set), not YAML
-            config_content = f"""nv set system hostname {hostname}"""
+            config_content = textwrap.dedent(f"""
+                nv set system hostname {hostname}
+                nv set system aaa user admin password $y$j9T$Uay927sQ.WFouaJb1uHpd/$Vn58Jt3rx4TElcI7KUYbtA/qQtK/qKM2qWy9J9wanF3
+                nv set system security password-hardening state disabled
+            """)
 
         with create_temp_file(engines.dut, f'minimal_config_{random_api}.txt', config_content) as filepath:
             with allure.step(f'Replace config via {random_api} (includes apply)'):
