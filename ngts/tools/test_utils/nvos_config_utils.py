@@ -120,11 +120,11 @@ def set_base_configurations(dut_engine, timezone=LinuxConsts.JERUSALEM_TIMEZONE,
             TestToolkit.tested_api = orig_api
 
 
-def clear_conf(engine, device, config_yml, root_dir):
+def clear_conf(engine, device, config_yml, root_dir, version=""):
     try:
         if not config_yml or not FilesTool.file_exists(engine, config_yml):
             with allure.step("Config file is empty or can't be found. Trying to copy default yml again"):
-                config_yml = device.get_default_config_yml(engine, root_dir)
+                config_yml = device.get_default_config_yml(engine, root_dir, version=version)
 
         if config_yml:
             with allure.step("Replace config"):

@@ -171,8 +171,8 @@ class IbSwitch(BaseSwitch):
 
         return ResultObj(False, err_msg) if err_msg else ResultObj(True, "", "")
 
-    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir=""):
-        clear_conf(dut_engine, self, default_yml_path, root_dir)
+    def clear_config(self, dut_engine, markers=None, default_yml_path=None, root_dir="", version=""):
+        clear_conf(dut_engine, self, default_yml_path, root_dir, version=version)
 
     def handle_exception(self, dut_engine):
         try:
@@ -183,22 +183,30 @@ class IbSwitch(BaseSwitch):
         except BaseException as err:
             logger.warning(err)
 
-    def get_default_config_yml(self, engine, root_dir):
+    # Subclasses that should use the version-based GA config for clear_config set this to True
+    use_ga_default_config = False
+
+    def get_default_config_yml(self, engine, root_dir, version=""):
         try:
             with allure.step("Get default yml file"):
-                default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
-                path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
+                if version and self.use_ga_default_config:
+                    config_file_path, default_config_name = self.get_test_config_file_by_version(version)
+                    src_path = config_file_path
+                else:
+                    default_config_name = NvosConst.DEFAULT_CONFIG_FILE_NAME
+                    path_to_config_ymls = f"{root_dir}/{NvosConst.DEFAULT_CONFIG_PATH}"
 
-                logger.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
-                logger.info(f"engine.ip:{engine.ip}")
-                logger.info(f"switch_class:{self.switch_class}")
+                    logger.info(f"eth0_ip:{TestToolkit.dut_eth0_ip}")
+                    logger.info(f"engine.ip:{engine.ip}")
+                    logger.info(f"switch_class:{self.switch_class}")
 
-                for file_name in os.listdir(path_to_config_ymls):
-                    if self.switch_class in file_name:
-                        default_config_name = file_name
-                    if (TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name) or (engine.ip in file_name):
-                        default_config_name = file_name
-                        break
+                    for file_name in os.listdir(path_to_config_ymls):
+                        if self.switch_class in file_name:
+                            default_config_name = file_name
+                        if (TestToolkit.dut_eth0_ip and TestToolkit.dut_eth0_ip in file_name) or (engine.ip in file_name):
+                            default_config_name = file_name
+                            break
+                    src_path = f"{path_to_config_ymls}{default_config_name}"
 
             yml_file_path = f"{NvosConst.PATH_TO_CONFIG_FILES_ON_DUT}/{default_config_name}"
 
@@ -207,7 +215,7 @@ class IbSwitch(BaseSwitch):
             else:
                 with allure.step(f"Copy {default_config_name} to the switch"):
                     scp_file(player=engine,
-                             src_path=f"{path_to_config_ymls}{default_config_name}",
+                             src_path=src_path,
                              dst_path=NvosConst.PATH_TO_TMP_ON_DUT,
                              download_from_remote=False, print_output=True)
 
@@ -904,6 +912,7 @@ class BlackMambaSwitch(IbSwitch):
         self.asic_amount = 4
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         super()._init_constants()
+        self.use_ga_default_config = True
         self.supports_ssd_upgrade = True
         self.ib_ports_num = 2 * 72
         self.core_count = 4
@@ -1244,6 +1253,7 @@ class CrocodileSwitch(IbSwitch):
 
     def _init_constants(self):
         super()._init_constants()
+        self.use_ga_default_config = True
         self.supports_ssd_upgrade = True
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.ib_ports_num = 64

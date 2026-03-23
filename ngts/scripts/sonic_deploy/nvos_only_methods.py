@@ -101,7 +101,8 @@ class NvosInstallationSteps:
             allure.attach('install flow intervals', InstallStepsTimer.analyze_saved_timestamps())
 
         with allure.step('Set base configuration for tests after the install phase'):
-            dut_device.clear_config(dut_engine=dut_engine, default_yml_path=None, root_dir=root_dir)
+            dut_device.clear_config(dut_engine=dut_engine, default_yml_path=None, root_dir=root_dir,
+                                    version=target_version)
             try:
                 with allure.step('Set timezone using timedatectl command'):
                     logger.info("Configuring same time zone for dut and local engine to {}"
