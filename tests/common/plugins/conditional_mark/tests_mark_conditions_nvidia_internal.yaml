@@ -452,11 +452,17 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
     - "https://redmine.mellanox.com/issues/4531681"
 
-dash/test_dash_smartswitch_vnet.py:
+dash/test_fnic.py:
   skip:
-    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4804684"
+    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4937990"
     conditions:
-    - "https://redmine.mellanox.com/issues/4804684"
+    - "https://redmine.mellanox.com/issues/4937990"
+
+dash/test_fnic_tunnel.py:
+  skip:
+    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4937990"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4937990"
 
 dhcp_relay/test_dhcp_relay.py::test_dhcp_relay_monitor_checksum_validation:
   xfail:
@@ -1046,4 +1052,3 @@ tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
-
