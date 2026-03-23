@@ -339,6 +339,7 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
 
             mux_configs = mux_cable_server_ip(duthost)
             local_interfaces = random.sample(list(mux_configs.keys()), peer_count)
+            logger.info("Randomly selected interfaces for BGP peers (dualtor): %s", local_interfaces)
             server_ip_key = "server_ipv6" if is_v6_topo else "server_ipv4"
             for local_interface in local_interfaces:
                 connections.append(
@@ -400,6 +401,7 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
             is_vlan_tagged = mg_facts["minigraph_vlans"][vlan_intf_name].get("type", "").lower() == "tagged"
             vlan_id = mg_facts["minigraph_vlans"][vlan_intf_name]["vlanid"]
             local_interfaces = random.sample(vlan_members, peer_count)
+            logger.info("Randomly selected interfaces for BGP peers (t0/mx): %s", local_interfaces)
             neighbor_addresses = generate_ips(
                 peer_count,
                 vlan_intf["subnet"],
@@ -507,8 +509,10 @@ def setup_interfaces(duthosts, enum_rand_one_per_hwsku_frontend_hostname, ptfhos
                 pytest.skip("Found {} IPv{} interfaces or lags with 1 port member,"
                             " but require {} interfaces".format(num_intfs, '6' if is_v6_topo else '4', peer_count))
 
-            for intf, subnet in zip(random.sample(interfaces + lag_interfaces + vlan_sub_interfaces,
-                                                  peer_count), subnets):
+            selected_intfs = random.sample(interfaces + lag_interfaces + vlan_sub_interfaces, peer_count)
+            logger.info("Randomly selected interfaces for BGP peers (t1/t2): %s", selected_intfs)
+
+            for intf, subnet in zip(selected_intfs, subnets):
                 def _get_namespace(minigraph_config, intf):
                     namespace = DEFAULT_NAMESPACE
                     if intf in minigraph_config and 'namespace' in minigraph_config[intf] and \
