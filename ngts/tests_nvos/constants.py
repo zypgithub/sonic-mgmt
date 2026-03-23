@@ -12,3 +12,5 @@ FW_COMPONENT_BIOS = "bios"
 FW_COMPONENT_SMA = "sma"
 FW_COMPONENT_SSD = "ssd"
 FW_COMPONENT_ASIC = "asic"
+
+VOLTAGE_DPC_COMPONENT = "voltage-dpc"

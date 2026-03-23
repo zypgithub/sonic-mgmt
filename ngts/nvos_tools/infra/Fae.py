@@ -125,11 +125,20 @@ class FaePlatform(BaseComponent):
         self.power_capping = FaePowerCapping(self)
         self.write_protection = WriteProtection(self)
         self.secure_state = SecureState(self)
+        self.voltage_dpc = VoltageDpc(self)
 
 
 class WriteProtection(BaseComponent):
     def __init__(self, parent_obj=None):
         super().__init__(parent=parent_obj, path="/write-protection")
+
+
+class VoltageDpc(BaseComponent):
+    """Represents fae/platform/voltage-dpc subtree"""
+
+    def __init__(self, parent_obj=None):
+        super().__init__(parent=parent_obj, path='/voltage-dpc')
+        self.files = Files(self)
 
 
 class FaeFirmware(BaseComponent):
