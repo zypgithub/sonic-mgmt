@@ -19,7 +19,7 @@ CONFIG_DB_COPY_NAME = 'config_db_copy.json'
 PRE_RUNNING_CONFIG_PATH = '/tmp/pre_running_config.json'
 MAX_PORTS_TEST_LIST = [REBOOT_TEST_NAME, ACL_SCALE_TEST_NAME]
 INDEPENDENT_MODULE_PLATFORMS = [PlatformTypesConstants.PLATFORM_MOOSE, PlatformTypesConstants.PLATFORM_GAUR,
-                                PlatformTypesConstants.PLATFORM_LEOPARD,]
+                                PlatformTypesConstants.PLATFORM_LEOPARD, PlatformTypesConstants.PLATFORM_LEOPARD_DC]
 
 
 def pytest_addoption(parser):
@@ -53,6 +53,7 @@ def pytest_collection_modifyitems(session, config, items):
                                       PlatformTypesConstants.PLATFORM_ANACONDA_C: 116,
                                       PlatformTypesConstants.PLATFORM_TIGON: 124,
                                       PlatformTypesConstants.PLATFORM_LEOPARD: 116,
+                                      PlatformTypesConstants.PLATFORM_LEOPARD_DC: 116,
                                       PlatformTypesConstants.PLATFORM_MOOSE: 244,
                                       PlatformTypesConstants.PLATFORM_GAUR: 244
                                       }

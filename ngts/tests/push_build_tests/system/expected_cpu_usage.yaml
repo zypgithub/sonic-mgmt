@@ -83,6 +83,10 @@ master:
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
+  SN4700D: # Leopard DC
+    <<: *platform_defaults
+    sx_sdk: 5
+    syncd: 2
   # SPC4
   SN5600: # Moose/Albatross
     <<: *platform_defaults
