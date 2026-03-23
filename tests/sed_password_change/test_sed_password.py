@@ -34,7 +34,7 @@ def test_change_sed_password(duthosts, enum_rand_one_per_hwsku_hostname, vendor_
     """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     min_len, max_len = vendor_sed_class.get_min_and_max_pass_len(duthost)
-    new_sed_pass = vendor_sed_class.generate_pass_with_len(duthost, min_len=min_len, max_len=max_len)
+    new_sed_pass = vendor_sed_class.generate_pass_with_len(min_len=min_len, max_len=max_len)
 
     with allure.step(f"Setting new SED password: {new_sed_pass}"):
         vendor_sed_class.change_sed_pass_via_cli(duthost, new_sed_pass)
@@ -59,7 +59,7 @@ def test_set_default_pass(duthosts, enum_rand_one_per_hwsku_hostname, localhost,
     """
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     min_len, max_len = vendor_sed_class.get_min_and_max_pass_len(duthost)
-    rand_pass = vendor_sed_class.generate_pass_with_len(duthost, min_len=min_len, max_len=max_len)
+    rand_pass = vendor_sed_class.generate_pass_with_len(min_len=min_len, max_len=max_len)
 
     with allure.step(f"Setting SED password to: {rand_pass}"):
         vendor_sed_class.change_sed_pass_via_cli(duthost, rand_pass)
@@ -70,16 +70,16 @@ def test_set_default_pass(duthosts, enum_rand_one_per_hwsku_hostname, localhost,
 
     with allure.step("Resetting SED password"):
         default_pass = vendor_sed_class.reset_sed_pass_via_cli(duthost, localhost)
-        logger.info(f"Password was set to default")
+        logger.info("Password was set to default")
 
     with allure.step("Verifying default password"):
         pytest_assert(
             vendor_sed_class.verify_sed_pass_works(duthost, default_pass) and rand_pass != default_pass,
-            f"SED password verification failed for default password"
+            "SED password verification failed for default password"
         )
 
     with allure.step("Verifying the default password saved properly"):
-          vendor_sed_class.verify_pass_saved(duthost, default_pass)
+        vendor_sed_class.verify_pass_saved(duthost, default_pass)
 
 
 def test_password_length_negative(duthosts, enum_rand_one_per_hwsku_hostname, vendor_sed_class):
@@ -98,9 +98,9 @@ def test_password_length_negative(duthosts, enum_rand_one_per_hwsku_hostname, ve
     short_pass_offset = random.randint(1, min(min_len_thld, min_len - 1))
 
     long_pass = vendor_sed_class.generate_pass_with_len(
-        duthost, min_len=max_len + 1, max_len=max_len + long_pass_offset)
+        min_len=max_len + 1, max_len=max_len + long_pass_offset)
     short_pass = vendor_sed_class.generate_pass_with_len(
-        duthost, min_len=max(1, min_len - short_pass_offset), max_len=min_len - 1)
+        min_len=max(1, min_len - short_pass_offset), max_len=min_len - 1)
 
     with allure.step(f"Attempting to set password longer than maximum ({len(long_pass)} chars)"):
         result = vendor_sed_class.change_sed_pass_via_cli(duthost, long_pass, expect_success=False)
@@ -124,9 +124,9 @@ def test_reboot_recovery_password(duthosts, enum_rand_one_per_hwsku_hostname, lo
     min_len, max_len = vendor_sed_class.get_min_and_max_pass_len(duthost)
 
     new_sed_pass = vendor_sed_class.generate_pass_with_len(
-        duthost, min_len=min_len, max_len=max_len)
+        min_len=min_len, max_len=max_len)
     neg_pass = vendor_sed_class.generate_pass_with_len(
-        duthost, min_len=min_len, max_len=max_len, exclude_passwords=[new_sed_pass])
+        min_len=min_len, max_len=max_len, exclude_passwords=[new_sed_pass])
     primary_sed_tpm_bank = vendor_sed_class.get_primary_sed_tpm_bank()
 
     with allure.step(f"Setting new SED password: {new_sed_pass}"):
