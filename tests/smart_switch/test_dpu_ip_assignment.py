@@ -41,7 +41,8 @@ def test_dpu_ip_assignment(duthost, creds):
             duthost.shell("show dhcp_server ipv4 info")
             output = duthost.shell("show dhcp_server ipv4 lease")['stdout']
             for address in ip_addresses:
-                if not re.search(address, output):
+                pattern = f"bridge-midplane\\|dpu\\d+.*{address}"
+                if not re.search(pattern, output):
                     return False
             return True
         pytest_assert(wait_until(600, 5, 0, _check_dhcp_lease),
