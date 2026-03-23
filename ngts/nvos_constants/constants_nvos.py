@@ -161,6 +161,7 @@ class NvosConst:
     PATH_TO_CONFIG_FILES_ON_DUT = "/host/config_files"
     PATH_TO_TMP_ON_DUT = "/tmp/"
     PATH_TO_FW_IMAGES = "/host/fw-images"
+    PATH_TO_DPC_ON_DUT = "/etc/fae_platform_dpc"
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -1234,6 +1235,7 @@ class PlatformConsts:
     TIMEOUT_AFTER_FW_INSTALL = 1200
     DISK_SIZE = 'disk-size'
     MEMORY = 'memory'
+    DPC = "dpc"
 
 
 class ChassisLocationConsts:
