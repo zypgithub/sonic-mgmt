@@ -624,6 +624,14 @@
     Platform:
     - sn4280
 
+- Errors_list:
+  - '.*ERR kernel: .* cp210x ttyUSB\d+: failed set request 0x12 status: -110.*'
+  Conditions:
+  - Affected_test_cases:
+    - tests/nightly/logging/test_log_analyzer_errors_during_deploy_sonic.py
+    Redmine:
+    - 4369583
+
 # Below ignores from temp_log_analyzer_ignores.txt in LAG folder
 - Errors_list:
   - '.* ERR kernel: \[.*\] mlxsw_minimal 2-0048: Could not acquire lock'
