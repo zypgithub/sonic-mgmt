@@ -424,7 +424,8 @@ class IbSwitch(BaseSwitch):
                                                        'queue.counters_2.0', 'queue.counters_1.1', 'queue.counters_2.1',
                                                        'queue.counters_1.3', 'queue.counters_1.2', 'queue.counters_2.3',
                                                        'queue.counters_2.2', 'rsyslog.conf', 'verification_test',
-                                                       'verification_test.gz', 'cpu-debug-config', 'bmc-debug-config', 'asic-debug-config']
+                                                       'verification_test.gz', 'cpu-debug-config', 'bmc-debug-config', 'asic-debug-config',
+                                                       'system.profile']
         self.techsupport_etc_empty_files_to_ignore = ['ifstatelock', '.lock', 'base', 'tail', 'installed', 'rules.v4',
                                                       'rules.v6', 'gnmi-server_reconcile', 'lsb_release', 'usr.sbin.haveged',
                                                       'nvidia_modprobe', '.placeholder', 'installed', '.pwd.lock',
