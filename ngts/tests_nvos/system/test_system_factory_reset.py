@@ -29,7 +29,7 @@ logger = logging.getLogger()
 @pytest.mark.checklist
 @pytest.mark.reset_factory
 def test_reset_factory_without_params(engines, devices, topology_obj, platform_params, random_api, has_loopbox,
-                                      setup_name, standalone_system, test_name, serial_log_analyzers, verify_no_kernel_errors):
+                                      setup_name, standalone_system, test_name, serial_log_analyzers, verify_no_kernel_errors, ib_router):
     """
     Validate reset factory without params cleanup done as expected
 
@@ -91,7 +91,7 @@ def test_reset_factory_without_params(engines, devices, topology_obj, platform_p
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_basic(engines, devices, random_api, test_name, serial_log_analyzers):
+def test_reset_factory_keep_basic(engines, devices, random_api, test_name, serial_log_analyzers, ib_router):
     """
     Validate reset factory with keep basic param cleanup done as expected
 
@@ -145,7 +145,7 @@ def test_reset_factory_keep_basic(engines, devices, random_api, test_name, seria
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, serial_log_analyzers, verify_no_kernel_errors):
+def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, serial_log_analyzers, verify_no_kernel_errors, ib_router):
     """
     Validate reset factory with keep all config param cleanup done as expected
 
@@ -199,7 +199,7 @@ def test_reset_factory_keep_all_config(engines, devices, random_api, test_name, 
 @pytest.mark.system
 @pytest.mark.checklist
 @pytest.mark.reset_factory
-def test_reset_factory_keep_only_files(engines, devices, random_api, test_name, serial_log_analyzers):
+def test_reset_factory_keep_only_files(engines, devices, random_api, test_name, serial_log_analyzers, ib_router):
     """
     Validate reset factory with keep only files param cleanup done as expected
 
