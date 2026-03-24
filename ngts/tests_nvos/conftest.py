@@ -1134,8 +1134,33 @@ def skip_clear_config(request):
     return request.config.getoption('--skip_clear_config')
 
 
+def _api_type_for_cli_coverage(item):
+    """
+    API type used for this test run (NVUE vs OpenAPI).
+    Use parametrization (test_api / random_api) when present. Relying only on
+    TestToolkit.tested_api during teardown is unsafe: clear_config's finalizer sets it
+    back to NVUE and may run before run_cli_coverage_flow, so OpenAPI cases could
+    incorrectly trigger NVUE CLI coverage.
+    """
+    callspec = getattr(item, 'callspec', None)
+    if callspec is not None:
+        params = getattr(callspec, 'params', None) or {}
+        if 'test_api' in params:
+            return params['test_api']
+        if 'random_api' in params:
+            return params['random_api']
+    return TestToolkit.tested_api
+
+
 def run_cli_coverage(item, markers):
-    if TestToolkit.tested_api == ApiType.NVUE and \
+    try:
+        api_type = _api_type_for_cli_coverage(item)
+    except Exception as e:
+        logging.warning(
+            'Could not resolve API type from parametrization for CLI coverage (%s); skipping CLI coverage for this test', e)
+        return
+
+    if api_type == ApiType.NVUE and \
             'no_cli_coverage_run' not in markers and \
             not pytest.is_sanitizer and \
             pytest.is_mars_run and \
@@ -1144,6 +1169,8 @@ def run_cli_coverage(item, markers):
         NVUECliCoverage.run(item=item, start_time=pytest.s_time,
                             project=TestToolkit.devices.dut.cli_coverage_project_name, department='verification',
                             nvue_dir=TestToolkit.devices.dut.cli_coverage_path)
+    else:
+        logging.debug('Skipping CLI coverage: test API is %s', api_type)
 
 
 @pytest.fixture(autouse=True)
