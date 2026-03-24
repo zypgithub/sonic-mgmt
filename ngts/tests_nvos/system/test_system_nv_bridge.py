@@ -2,12 +2,14 @@ import time
 import pytest
 import random
 import logging
+from typing import Dict
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests.nightly.dynamic_port_breakout.conftest import dut_engine
+from ngts.nvos_constants.constants_nvos import ClusterApps
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat, ChassisLocationConsts
-from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_constants.constants_nvos import HealthConsts, ApiType
 from ngts.nvos_tools.nmx.Sdn import Sdn
@@ -325,6 +327,59 @@ def test_system_nv_bridge_state_file(engines, nv_command, test_api):
     finally:
         with allure.step("Delete generated files"):
             sdn.state.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[SystemConsts.NV_BRIDGE_CLIENT_STATE].files.delete_files()
+        with allure.step("Disable cluster"):
+            cluster.unset(apply=True, dut_engine=engines.dut)
+
+
+@disabled_access_ports
+@pytest.mark.nv_bridge
+@pytest.mark.system
+def test_system_nv_bridge_primary_secondary(engines, nv_command, random_api, topology_obj, has_loopbox, standalone_system, devices, setup_name, is_simx):
+    """
+    Test to cover bug nvbugs/5949850
+    Test flow:
+        1. Enable cluster if not enabled
+        2. Set cluster node for primary and secondary
+        3. Wait for cluster apps in ok state
+        4. Disable cluster
+    """
+    output_format = OutputFormat.json
+    cluster = Cluster()
+    try:
+        with allure.step("Get all eth ip addresses"):
+            dut_setup_specific_attributes: Dict[str, str] = \
+                topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']
+            setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
+        with allure.step("Enable cluster"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.show(output_format=OutputFormat.json),
+                output_format=OutputFormat.json).get_returned_value()
+
+            if output[SystemConsts.STATE] == SystemConsts.CLUSTER_STATE_DISABLED:
+                cluster.set(op_param_name=SystemConsts.STATE, op_param_value=SystemConsts.CLUSTER_STATE_ENABLED, apply=True)
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state=SystemConsts.CLUSTER_STATE_ENABLED,
+                                                                 nmx_c_expected_state=SystemConsts.CLUSTER_APP_STATE_UP)
+
+        with allure.step("Configure nv-bridge nodes"):
+            cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value=setup_mgmt_ips[0],
+                                                  apply=True, dut_engine=engines.dut)
+            cluster.node.secondary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                                                    op_param_value=setup_mgmt_ips[1],
+                                                    apply=True, dut_engine=engines.dut)
+
+        with allure.step("Wait for nv-bridge to be configured"):
+            _verify_nv_bridge_output(nv_command.system.nv_bridge, state=SystemConsts.NV_BRIDGE_ENABLED,
+                                     dut_engine=engines.dut, connections=SystemConsts.NV_BRIDGE_NODE_IP,
+                                     local_host=True)
+
+        with allure.step("Wait for cluster apps in ok state"):
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster,
+                                                             cluster_expected_state=SystemConsts.CLUSTER_STATE_ENABLED,
+                                                             app=ClusterApps.NMX_TELEMETRY, nmx_c_expected_state=SystemConsts.CLUSTER_APP_STATE_UP)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
+                                             has_loopbox, is_simx)
+
+    finally:
         with allure.step("Disable cluster"):
             cluster.unset(apply=True, dut_engine=engines.dut)
 
