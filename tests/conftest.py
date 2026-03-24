@@ -126,7 +126,8 @@ pytest_plugins = ('ngts.tools.sysdumps',
                   'tests.common.plugins.random_seed',
                   'tests.common.plugins.cli_coverage',
                   'tests.common.plugins.memory_utilization',
-                  'tests.common.fixtures.duthost_utils')
+                  'tests.common.fixtures.duthost_utils',
+                  'tests.common.plugins.parallel_fixture')
 
 
 # NOTE: This is to backport fix https://github.com/python/cpython/pull/126098
