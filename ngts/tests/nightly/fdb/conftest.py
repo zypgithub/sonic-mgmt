@@ -83,9 +83,21 @@ def pre_configure_for_fdb_advance(engines, topology_obj, interfaces, cli_objects
     VlanConfigTemplate.cleanup(topology_obj, vlan_config_dict)
 
 
+def _verify_fdb_flushed(cli_obj):
+    """Verify FDB table has no dynamic entries after flush."""
+    mac_table = cli_obj.mac.parse_mac_table()
+    dynamic_entries = {k: v for k, v in mac_table.items() if v.get('Type') == 'Dynamic'}
+    assert len(dynamic_entries) == 0, f"FDB not yet flushed, remaining dynamic entries: {dynamic_entries}"
+
+
 @pytest.fixture(scope='function', autouse=True)
 def pre_clear_fdb_table(cli_objects):
     cli_objects.dut.mac.clear_fdb()
+    retry_call(_verify_fdb_flushed,
+               fargs=[cli_objects.dut],
+               tries=10,
+               delay=1,
+               logger=logger)
 
 
 @pytest.fixture(scope='function', autouse=False)
