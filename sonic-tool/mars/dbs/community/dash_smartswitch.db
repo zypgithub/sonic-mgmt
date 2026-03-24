@@ -63,6 +63,9 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_smartswitch_vnet.cases </cases>
     </test>
     <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_config_churn.cases </cases>
+    </test>
+    <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/dash_crm.cases </cases>
     </test>
 </DBDEF>
