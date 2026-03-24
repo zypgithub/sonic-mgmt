@@ -64,7 +64,7 @@ def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None)
         return False
 
 
-def check_port(address: str, port: int, timeout: int = 3, dut_engine=None) -> bool:
+def check_port(address: str, port: int, timeout: int = 3, dut_engine=None, protocol: str = 'tcp') -> bool:
     """
     Check if a specific port is open on the server.
 
@@ -74,44 +74,61 @@ def check_port(address: str, port: int, timeout: int = 3, dut_engine=None) -> bo
         timeout: Timeout in seconds for the connection attempt
         dut_engine: Optional DUT engine to run check from DUT instead of
             test runner
+        protocol: 'tcp' or 'udp'. RADIUS uses UDP, TACACS/LDAP use TCP.
 
     Returns:
         True if port is open, False otherwise
     """
     try:
+        is_udp = protocol == 'udp'
         if dut_engine:
             is_ipv6 = ":" in address
             nc_flag = "-6" if is_ipv6 else "-4"
-            cmd = f"nc -zv {nc_flag} -w {timeout} {address} {port}"
+            udp_flag = "-u" if is_udp else ""
+            cmd = f"nc -zv {nc_flag} {udp_flag} -w {timeout} {address} {port}"
             logging.debug(f"Running port check command on DUT: {cmd}")
             result = dut_engine.run_cmd(cmd)
             is_open = "succeeded" in result.lower() or "open" in result.lower()
         else:
             is_ipv6 = ":" in address
             family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
-            sock = socket.socket(family, socket.SOCK_STREAM)
-            sock.settimeout(timeout)
-            result = sock.connect_ex((address, port))
-            sock.close()
-            is_open = result == 0
+            sock_type = socket.SOCK_DGRAM if is_udp else socket.SOCK_STREAM
+            with socket.socket(family, sock_type) as sock:
+                sock.settimeout(timeout)
+                if is_udp:
+                    # UDP port checks via raw sockets are unreliable — silence
+                    # is ambiguous (open vs filtered). Use nc on the DUT instead
+                    # (via dut_engine) for meaningful UDP checks.
+                    logging.warning(
+                        f"UDP port {port} on {address}: socket-based check is unreliable, "
+                        f"assuming open. Pass dut_engine for accurate nc-based check.")
+                    return True
+                else:
+                    result = sock.connect_ex((address, port))
+                    is_open = result == 0
 
         if is_open:
-            logging.info(f"Port {port} on {address} is open")
+            logging.info(f"Port {port}/{protocol} on {address} is open")
         else:
-            logging.warning(f"Port {port} on {address} is closed")
+            logging.warning(f"Port {port}/{protocol} on {address} is closed")
         return is_open
+    except ConnectionRefusedError:
+        logging.warning(f"Port {port}/{protocol} on {address} is closed (connection refused)")
+        return False
     except socket.timeout:
-        logging.warning(f"Connection to {address}:{port} timed out")
+        logging.warning(f"Connection to {address}:{port}/{protocol} timed out")
         return False
     except socket.gaierror as ex:
         logging.error(f"Failed to resolve {address}: {ex}")
         return False
     except Exception as ex:
-        logging.error(f"Failed to check port {port} on {address}: {ex}")
+        logging.error(f"Failed to check port {port}/{protocol} on {address}: {ex}")
         return False
 
 
 class RemoteAaaServerInfo:
+    service_protocol = 'tcp'
+
     def __init__(
         self,
         hostname,
@@ -208,11 +225,11 @@ class RemoteAaaServerInfo:
                 )
 
             if check_service:
-                service_up = check_port(address, self.port, dut_engine=dut_engine)
+                service_up = check_port(address, self.port, dut_engine=dut_engine, protocol=self.service_protocol)
                 if not service_up:
                     return ResultObj(
                         False,
-                        f"AAA service on {self.hostname}:{self.port} is not "
+                        f"AAA service on {self.hostname}:{self.port}/{self.service_protocol} is not "
                         f"responding from DUT. Server is pingable but service "
                         f"may be down. Cannot run good flow test.",
                     )
@@ -361,6 +378,8 @@ class LdapServerInfo(RemoteAaaServerInfo):
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
+    service_protocol = 'udp'
+
     def __init__(
         self,
         hostname,

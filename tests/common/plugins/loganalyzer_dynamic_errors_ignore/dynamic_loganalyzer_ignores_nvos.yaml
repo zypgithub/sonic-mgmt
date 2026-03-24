@@ -2326,3 +2326,14 @@
     - Affected_test_cases:
         - tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_pgrss
 
+# NVOS: test_save_reboot deliberately simulates fan fault via HWSimulator.create_health_component_error_fan()
+# which injects 1 RPM into a random fan sysfs file. These syslog messages are expected side-effects.
+- Errors_list:
+    - '.*WARNING pmon#thermalctld: Fan low speed warning: fan\d+ current speed.*'
+    - '.*WARNING pmon#thermalctld: Fan fault warning: fan\d+ is not working.*'
+    - '.*WARNING pmon#thermalctld: Insufficient number of working fans warning.*'
+    - '.*ERR health-statsd#health_history: FAN\d+\/\d+: is not working.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/general/config_commands/test_save_after_reboot.py::test_save_reboot
+
