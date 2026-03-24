@@ -559,9 +559,9 @@ class ClockTools:
                 parsed_dt = datetime.strptime(timestamp_str.replace('T', ' '), StatsConsts.SYSTEM_TIME_FORMAT)
             else:
                 parsed_dt = dateutil_parser.parse(timestamp_str)
-                if parsed_dt.year == 1900:
-                    year_to_use = system_year if system_year is not None else datetime.now().year
-                    parsed_dt = parsed_dt.replace(year=year_to_use)
+                # Syslog timestamps never include a year — always use system_year
+                year_to_use = system_year if system_year is not None else datetime.now().year
+                parsed_dt = parsed_dt.replace(year=year_to_use)
             res = parsed_dt.strftime(StatsConsts.SYSTEM_TIME_FORMAT)
             logging.info('Result date-time: {}'.format(res))
             return res
