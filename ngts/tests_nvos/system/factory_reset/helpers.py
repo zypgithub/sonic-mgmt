@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import time
+import retry
 from datetime import datetime, timezone
 from dateutil import parser
 
@@ -135,8 +136,7 @@ def add_verification_data(engine, system):
             line = line.split()
             docker_name = line[len(line) - 1]
             if docker_name not in DO_NOT_CHECK_DOCKERS:
-                start_time = engine.run_cmd(r"docker inspect -f \{\{'.Created'\}\} " + docker_name)
-                start_time = datetime.strptime(start_time.split(".")[0], f'%Y-%m-%dT%H:%M:%S')
+                start_time = get_docker_start_time(engine, docker_name)
                 running_dockers[docker_name] = start_time
 
     with allure.step("Create new user"):
@@ -355,3 +355,9 @@ def get_current_time(engines):
     date_time_str = engines.dut.run_cmd("date").split(" ", 1)[1]
     current_time = parser.parse(date_time_str)
     return current_time
+
+
+@retry.retry(Exception, delay=3, tries=5)
+def get_docker_start_time(engine, docker_name):
+    result = engine.run_cmd(r"docker inspect -f {{'.Created'}} " + docker_name)
+    return datetime.strptime(result.split(".")[0], '%Y-%m-%dT%H:%M:%S')
