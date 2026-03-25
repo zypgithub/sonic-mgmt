@@ -66,6 +66,16 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
     :param request: pytest build-in
     :param loganalyzer: loganalyzer fixture
     """
+    # Remove the unnecessary loganalyzer instances except the one of dut_host
+    loganalyzer_hosts = [analyzer.ansible_host.hostname for analyzer in loganalyzer.values()]
+    dut_hostname = dut_host.run_cmd("hostname")
+    for loganalyzer_host in loganalyzer_hosts:
+        if dut_hostname != loganalyzer_host:
+            loganalyzer.pop(loganalyzer_host)
+            logger.info(f"Removed loganalyzer host {loganalyzer_host} from loganalyzer")
+    # We expect exactly one loganalyzer instance
+    assert len(loganalyzer) == 1, f"Expected exactly one loganalyzer instance, but got {len(loganalyzer)}"
+
     os.environ[PytestConst.GET_DUMP_AT_TEST_FALIURE] = "False"
     log_analyzer_start_string_line = get_la_start_string(dut_host, request)
 

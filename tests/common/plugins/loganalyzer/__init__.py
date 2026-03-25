@@ -119,16 +119,20 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
     if no_duthost:
         raise Exception(f"Some duthost objects are None so loganalyzer can't run: {duthosts=}. This is probably due to "
                         f"a network error.")
+
+    # It's possible we modify the analyzers in tests to skip some duthosts
+    analyzer_hosts = [duthost for duthost in duthosts if duthost.hostname in analyzers]
+
     logging.info("Starting to analyse on all DUTs")
     la_results = parallel_run(
         analyze_logs,
         [analyzers, markers],
         {'fail_test': fail_test, 'store_la_logs': store_la_logs},
-        duthosts,
+        analyzer_hosts,
         timeout=240
     )
     consolidated_bughandler = get_bughandler_instance({"type": "consolidated"})
-    consolidated_bughandler.bug_handler_wrapper(analyzers, duthosts, la_results)
+    consolidated_bughandler.bug_handler_wrapper(analyzers, analyzer_hosts, la_results)
 
 
 @pytest.fixture(autouse=True)
