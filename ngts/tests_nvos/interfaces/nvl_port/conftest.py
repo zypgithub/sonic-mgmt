@@ -8,7 +8,7 @@ from ngts.ngts_types.engines_T import EnginesT
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
+from ngts.nvos_tools.Devices.IbDevice import RosalindSimx, RosalindStackedSimx, RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tools.test_utils import allure_utils as allure

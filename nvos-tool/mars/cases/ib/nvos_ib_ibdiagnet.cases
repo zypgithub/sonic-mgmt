@@ -46,7 +46,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia]</value>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
       </condition>
     </ignore>
   </case>
@@ -64,7 +64,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia]</value>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
       </condition>
     </ignore>
   </case>
@@ -82,7 +82,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia]</value>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
       </condition>
     </ignore>
   </case>
@@ -100,7 +100,7 @@
       <condition>
         <key>dut_type</key>
         <op> in </op>
-        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia]</value>
+        <value>[juliet, rosalind-surrogate, rosalind-chipless, portia, rosalind]</value>
       </condition>
     </ignore>
   </case>

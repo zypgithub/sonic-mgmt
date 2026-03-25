@@ -681,6 +681,7 @@ class BaseSwitch(BaseDevice):
 
     def _extend_firmware_by_cpld_amount(self):
         if hasattr(self, "cpld_amount"):
+            self.constants.firmware[:] = [fw for fw in self.constants.firmware if not fw.startswith(PlatformConsts.FW_CPLD)]
             self.constants.firmware.extend(
                 PlatformConsts.FW_CPLD + str(i) for i in range(1, self.cpld_amount + 1)
             )

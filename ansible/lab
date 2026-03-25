@@ -281,6 +281,7 @@ rosalind-simx-93      ansible_host=10.237.6.93 ansible_hostv6="" sonic_version=v
 rosalind-simx-45      ansible_host=10.220.75.45 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-simx-44      ansible_host=10.220.75.44 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 rosalind-simx-46      ansible_host=10.220.75.46 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
+rosalind-stacked-simx-91      ansible_host=10.220.75.66 ansible_hostv6="" sonic_version=v2 hwsku="Mellanox-N6300_LD" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 jaguar-113      ansible_host=10.7.144.113 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 jaguar-112      ansible_host=10.7.144.112 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM8700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000
 gorilla-126      ansible_host=10.7.144.126 ansible_hostv6="" sonic_version=v2 hwsku="ACS-MQM9700" iface_speed=40000  mgmt_subnet_mask_length=22 vm_base=VM0000

@@ -138,7 +138,7 @@ class NvosConst:
     QTM3 = "Quantum3"
     QTM4 = "Quantum4"
     NVL5 = 'NVLink-5 switch'
-    NVL6 = 'NVLink-6 switch'
+    NVL6 = 'NVLink-6 Switch'
     NVL7 = 'NVLink-7 Switch'
     NVL_ACCESS_PORTS_LIST = 'nvl_access_ports_list'
     NVL_TRUNK_PORTS_LIST = 'nvl_trunk_ports_list'
@@ -984,16 +984,6 @@ class SystemConsts:
     GLOBAL = 'global'
     DNS = 'dns'
     FQDN = 'fqdn'
-
-    class ApiConsts:
-        class CompressionT:
-            GZIP = 'gzip'
-
-            @classmethod
-            def all(cls):
-                return [v for k, v in vars(cls).items() if k.isupper()]
-
-        COMPRESSION = 'compression'
 
     class ApiConsts:
         class CompressionT:

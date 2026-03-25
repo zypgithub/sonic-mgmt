@@ -3070,6 +3070,153 @@ class RosalindSwitch(RosalindSurrogateSwitch):
                                                       "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|920-9K42W-00L6-TS1|920-9K42W-00L6-TS2")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
 
 
+# -------------------------- Rosalind Stacked Switch ----------------------------
+
+
+class RosalindStackedSwitch(RosalindSwitch):
+
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=asic_amount)
+
+    def _init_constants(self):
+        super()._init_constants()
+
+        self.cpld_amount = 3
+        self._extend_firmware_by_cpld_amount()
+
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_stacked_0400_versions.json"
+        # will be updated
+        self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
+            "x86_64-nvidia_n6300_ld-r0")
+        self.show_platform_output.update({
+            PlatformConsts.SYSTEM_TYPE: "N6300_LD",
+            "asic-model": self.asic_type,
+        })
+
+        self.all_nvl_ports_list = self.nvl_access_ports_list + self.nvl_trunk_ports_list + self.network_ports
+        self.nvl_fnm_ports = []
+        self.nvl_internal_fnm_ports = ["fnma0p1", "fnma1p1", "fnma2p1", "fnma3p1"]
+        self.all_fae_nvl_ports_list = self.all_nvl_ports_list + self.nvl_fnm_ports
+
+        self.voltage_sensors = [
+            "PDB-1-Conv-In-1",
+            "PDB-1-Conv-Out-1",
+            "PDB-2-Conv-In-1",
+            "PDB-2-Conv-Out-1",
+            "HSC-VinDC-In",
+            "HSC-VinDC-Out",
+            "PMIC-1-ASIC1-VDD-Out-1",
+            "PMIC-1-PVIN1-VDD-ASIC1-In-1",
+            "PMIC-2-ASIC1-AVDD-PL0-Out-1",
+            "PMIC-2-ASIC1-DVDD-PL0-Out-2",
+            "PMIC-2-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-3-ASIC1-AVDD-PL1-Out-1",
+            "PMIC-3-ASIC1-DVDD-PL1-Out-2",
+            "PMIC-3-PVIN1-AVDD-DVDD-ASIC1-In-1",
+            "PMIC-4-ASIC1-AVCC-PL0-PL1-Out-1",
+            "PMIC-4-ASIC1-HVDD-PL0-PL1-Out-2",
+            "PMIC-4-PVIN1-AVCC-HVDD-ASIC1-In-1",
+            "PMIC-5-ASIC2-VDD-Out-1",
+            "PMIC-5-PVIN1-VDD-ASIC2-In-1",
+            "PMIC-6-ASIC2-AVDD-PL0-Out-1",
+            "PMIC-6-ASIC2-DVDD-PL0-Out-2",
+            "PMIC-6-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-7-ASIC2-AVDD-PL1-Out-1",
+            "PMIC-7-ASIC2-DVDD-PL1-Out-2",
+            "PMIC-7-PVIN1-AVDD-DVDD-ASIC2-In-1",
+            "PMIC-8-ASIC2-AVCC-PL0-PL1-Out-1",
+            "PMIC-8-ASIC2-HVDD-PL0-PL1-Out-2",
+            "PMIC-8-PVIN1-AVCC-HVDD-ASIC2-In-1",
+            "PMIC-9-ASIC3-VDD-Out-1",
+            "PMIC-9-PVIN1-VDD-ASIC3-In-1",
+            "PMIC-10-ASIC3-AVDD-PL0-Out-1",
+            "PMIC-10-ASIC3-DVDD-PL0-Out-2",
+            "PMIC-10-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-11-ASIC3-AVDD-PL1-Out-1",
+            "PMIC-11-ASIC3-DVDD-PL1-Out-2",
+            "PMIC-11-PVIN1-AVDD-DVDD-ASIC3-In-1",
+            "PMIC-12-ASIC3-AVCC-PL0-PL1-Out-1",
+            "PMIC-12-ASIC3-HVDD-PL0-PL1-Out-2",
+            "PMIC-12-PVIN1-AVCC-HVDD-ASIC3-In-1",
+            "PMIC-13-ASIC4-VDD-Out-1",
+            "PMIC-13-PVIN1-VDD-ASIC4-In-1",
+            "PMIC-14-ASIC4-AVDD-PL0-Out-1",
+            "PMIC-14-ASIC4-DVDD-PL0-Out-2",
+            "PMIC-14-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-15-ASIC4-AVDD-PL1-Out-1",
+            "PMIC-15-ASIC4-DVDD-PL1-Out-2",
+            "PMIC-15-PVIN1-AVDD-DVDD-ASIC4-In-1",
+            "PMIC-16-ASIC4-AVCC-PL0-PL1-Out-1",
+            "PMIC-16-ASIC4-HVDD-PL0-PL1-Out-2",
+            "PMIC-16-PVIN1-AVCC-HVDD-ASIC4-In-1",
+            "PMIC-17-12V-MAIN-In-1",
+            "PMIC-17-CPU-Out-1",
+            "PMIC-17-SOC-Out-2",
+            "PMIC-18-COMEX-VDD-MEM-In-1",
+            "PMIC-18-COMEX-VDD-MEM-Out-1"
+        ]
+
+    def _init_ib_speeds(self):
+        super()._init_ib_speeds()
+        # Rosalind has only internal FNM (no regular FNM)
+        self.supported_fnm_speeds = ['200G']  # Internal FNM only
+
+    def _init_interfaces_ib_lanes(self):
+        self.supported_lanes = '1X,2X'  # Rosalind regular NVL ports (simplex + duplex)
+        self.supported_internal_fnm_lanes = '2X'  # Rosalind internal FNM
+
+    def _init_platform_lists(self):
+        super()._init_platform_lists()
+        self.platform_environment_fan_values = {}
+        self.platform_inventory_switch_values.update({"hardware-version": None,
+                                                      "model": ExpectedString(regex="699-23809-0600-EB1|920-9K42W-00L6-GS0|920-9K42W-00L6-EB2|920-9K24W-00L6-ES1|920-9K42W-00L6-TS1|920-9K42W-00L6-TS2|920-9K42W-2310-EB1")})  # TBD -- This is for OPN, need to replace with the real one once arrive.
+
+    def _init_temperature(self):
+        super()._init_temperature()
+        self.temperature_sensors = [
+            "ASIC1",
+            "ASIC2",
+            "ASIC3",
+            "ASIC4",
+            "CPU-Pack-Temp",
+            "Drive-Temp",
+            "HSC-VinDC-Temp",
+            "PDB-Conv-1-Temp",
+            "PDB-Conv-2-Temp",
+            "PMIC-1-Temp",
+            "PMIC-2-Temp",
+            "PMIC-3-Temp",
+            "PMIC-4-Temp",
+            "PMIC-5-Temp",
+            "PMIC-6-Temp",
+            "PMIC-7-Temp",
+            "PMIC-8-Temp",
+            "PMIC-9-Temp",
+            "PMIC-10-Temp",
+            "PMIC-11-Temp",
+            "PMIC-12-Temp",
+            "PMIC-13-Temp",
+            "PMIC-14-Temp",
+            "PMIC-15-Temp",
+            "PMIC-16-Temp",
+            "PMIC-17-Temp",
+            "PMIC-18-Temp",
+            "SODIMM-1-Temp",
+            "SODIMM-2-Temp"
+        ]
+
+# -------------------------- RosalindStackedSimx Switch ---------------------
+
+
+class RosalindStackedSimx(RosalindStackedSwitch):
+
+    def __init__(self):
+        super().__init__(asic_amount=4)
+
+    def _init_constants(self):
+        super()._init_constants()
+        self.require_mloop_setup = True
+
 # -------------------------- RosalindSimx Switch ----------------------------
 
 

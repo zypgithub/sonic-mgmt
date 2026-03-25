@@ -107,62 +107,6 @@ def pytest_configure(config):
     VaultClient.fetch_and_export_secrets()
 
 
-def pytest_configure(config):
-    """
-    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
-    This hook runs before session start and any fixtures.
-
-    For MARS runs, secrets are already provided via environment variables.
-    For local runs, we fetch secrets from Vault.
-
-    This only runs when NVOS tests are being executed.
-    """
-    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
-    args = config.args if hasattr(config, 'args') else config.invocation_params.args
-    if not args or not any('tests_nvos' in str(arg) for arg in args):
-        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
-        return
-
-    mars_key_id = config.getoption("--mars_key_id", default=None)
-    session_id = config.getoption("--session_id", default=None)
-    if mars_key_id or session_id:
-        logger.info("MARS run detected - secrets already in environment, skipping Vault")
-        return
-
-    from ngts.nvos_tools.infra.VaultClient import VaultClient
-
-    logger.info("Local run detected - loading secrets from Vault...")
-    VaultClient.fetch_and_export_secrets()
-
-
-def pytest_configure(config):
-    """
-    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
-    This hook runs before session start and any fixtures.
-
-    For MARS runs, secrets are already provided via environment variables.
-    For local runs, we fetch secrets from Vault.
-
-    This only runs when NVOS tests are being executed.
-    """
-    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
-    args = config.args if hasattr(config, 'args') else config.invocation_params.args
-    if not args or not any('tests_nvos' in str(arg) for arg in args):
-        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
-        return
-
-    mars_key_id = config.getoption("--mars_key_id", default=None)
-    session_id = config.getoption("--session_id", default=None)
-    if mars_key_id or session_id:
-        logger.info("MARS run detected - secrets already in environment, skipping Vault")
-        return
-
-    from ngts.nvos_tools.infra.VaultClient import VaultClient
-
-    logger.info("Local run detected - loading secrets from Vault...")
-    VaultClient.fetch_and_export_secrets()
-
-
 def pytest_addoption(parser: pytest.Parser):
     """
     Parse NVOS pytest options

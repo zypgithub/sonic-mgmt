@@ -62,7 +62,6 @@ def test_fae_interface_commands(engines, devices, random_api, start_sm, setup_na
     9. Validate unset fae interface <interface-id> link lanes
     """
 
-    TestToolkit.tested_api = test_api
     dut_device = devices.dut
 
     with allure.step("Select random ports"):

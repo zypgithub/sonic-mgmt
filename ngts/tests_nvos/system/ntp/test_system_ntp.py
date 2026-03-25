@@ -934,7 +934,7 @@ def test_ntp_log(engines):
 @pytest.mark.system
 @pytest.mark.ntp
 @pytest.mark.simx
-def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine):
+def test_ntp_mgmt_port_listeners(topology_obj, nv_command, serial_engine, random_api):
     """
     validate:
     - NTP synchronization when listening to each of the mgmt ports.
