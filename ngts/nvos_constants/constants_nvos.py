@@ -911,9 +911,10 @@ class SystemConsts:
 
     REBOOT_RESPONSE_MESSAGES = (
         "Performing reboot",
+        "Performing warm reboot",
         "Disconnecting from NVOS, system is offline during reboot",
         "System will be rebooted",
-        "System will power cycle in a few seconds"
+        "System will power cycle in a few seconds",
         "Restarting system",
         "The system will reboot now!",
         "Rebooting System in cold mode",
