@@ -814,7 +814,7 @@ class DeployDpuHelper:
             for index in dpu_index_list:
                 try:
                     dut_engine.run_cmd(
-                        f"sudo screen -dmS ttyUSB{index}_log minicom -D /dev/ttyUSB{index} -C /tmp/ttyUSB{index}", validate=True)
+                        f"sudo screen -dmS ttyUSB{index}_log minicom -D /dev/ttyUSB{index} -C /var/log/ttyUSB{index}", validate=True)
                 except Exception as e:
                     logger.warning(f"Failed to start monitoring minicom for DPU{index}: {e}")
 
@@ -844,7 +844,7 @@ class DeployDpuHelper:
                 try:
                     dumps_folder = get_dumps_folder(setup_name, "monitor", topology_obj)
                     for index in dpu_index_list:
-                        source_file = f"/tmp/ttyUSB{index}"
+                        source_file = f"/var/log/ttyUSB{index}"
                         dest_file = os.path.join(dumps_folder, f"ttyUSB{index}.log")
                         dut_engine.copy_file(
                             source_file=source_file,
