@@ -39,7 +39,7 @@ COMMANDS_FOR_ACTUAL = {
     "HW_MANAGEMENT": ["dpkg -l | grep hw", ".*1\\.mlnx\\.([0-9.]*)"],
     "SDK": ["docker exec -it syncd bash -c 'dpkg -l | grep sdk'", ".*1\\.mlnx\\.([0-9.]*)"],
     "SAI": ["docker exec -it syncd bash -c 'dpkg -l | grep mlnx-sai'", ".*1\\.mlnx\\.([A-Za-z0-9.]*)"],
-    "FW": ["sudo mlxfwmanager --query | grep -e 'FW *[0-9.]*'", "FW * [0-9]{2}\\.([0-9.]*)"],
+    "FW": ["sudo mlxfwmanager -d $(/usr/bin/asic_detect/asic_detect.sh -p) --query", "FW * [0-9]{2}\\.([0-9.]*)"],
     "KERNEL": ["uname -r", "(.*)-[a-z0-9]+$"]
 }
 OPTIONAL_COMMANDS_FOR_ACTUAL = {
