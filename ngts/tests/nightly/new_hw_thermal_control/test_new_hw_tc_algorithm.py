@@ -54,7 +54,7 @@ class TestNewTc:
             Calculate the expected PWM with below formula:
             expected_pwm = pwm_min + ((new_temp - val_min)/(val_max-val_min)) * (pwm_max - pwm_min)
             Wait poll_time secs, and get current system PWM by reading /var/run/hw-management/thermal/pwm1
-            Check current_system_pwm >= expected_pwm
+            Check current_system_pwm == expected_pwm within +-1% tolerance
             Check FAN speed is set to correct range
             Iterate the above steps until temperature is over val_max
         3. Mock temperature decrease
@@ -62,7 +62,7 @@ class TestNewTc:
             Calculate the expected PWM with below formula:
             expected_pwm = pwm_min + ((new_temp - val_min)/(val_max-val_min)) * (pwm_max - pwm_min)
             Wait poll_time secs, and get current system PWM
-            Check current_system_pwm >= expected_pwm
+            Check current_system_pwm == expected_pwm within +-1% tolerance
             Check FAN speed is set to correct range
             Iterate the above steps until temperature is under val_min
         4. Repeat step 1~ step 5 for following sensors or randomly select one sensor to test

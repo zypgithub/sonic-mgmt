@@ -1,6 +1,7 @@
 import datetime
 import json
 import logging
+import math
 import os
 import random
 import re
@@ -572,15 +573,38 @@ def get_pwm(mock_sensor):
 
 
 def verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None):
-    verify_pwd_ge_than_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm)
+    verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm)
     verify_rpm_is_expected_value(mock_sensor, tc_config_dict)
 
 
-def verify_pwd_ge_than_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None):
-    with allure.step(f"Verify current pwd is greater than or equal to expected pwm"):
+def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None):
+    """
+    Verify current PWM matches the expected value within ±1% tolerance.
+
+    The system PWM is the MAX across all sensors. If expected_pwm is not higher
+    than the current system PWM (initial_pwm) before TC reacts to the mocked
+    temperature, the tested sensor is NOT the dominant contributor — another
+    sensor is already driving the PWM at least as high. In that case the tested
+    sensor's target cannot be validated precisely, so we skip the check.
+
+    When expected_pwm > initial_pwm the tested sensor IS the dominant one and
+    we apply the strict ±1% tolerance to make sure the smoothing filter
+    converges to the correct target (guards against overshoot from stale slope).
+    """
+    pwm_tolerance = 1  # ±1% PWM tolerance
+    with allure.step(f"Verify current PWM matches expected value within ±{pwm_tolerance}%"):
         dev_parameter = SENSOR_DATA[sensor_type]["dev_parameters_name"]
         if not expected_pwm:
             expected_pwm = calculate_pwm(tc_config_dict, dev_parameter, temperature)
+
+        # Read system PWM *before* TC reacts to the newly mocked temperature.
+        # This reflects the PWM driven by all other (non-mocked) sensors.
+        initial_pwm = get_pwm(mock_sensor)
+        if expected_pwm <= initial_pwm:
+            logger.info(f"expected_pwm:{expected_pwm} <= initial_pwm:{initial_pwm}, "
+                        f"tested sensor is not the dominant PWM contributor, skip precise check")
+            return
+
         poll_time = int(tc_config_dict["dev_parameters"][dev_parameter]['poll_time'])
 
         # cpu_pack and sodimm are special cases, when the pwm can be adjusted to the expected one,
@@ -588,15 +612,19 @@ def verify_pwd_ge_than_expected_value(mock_sensor, tc_config_dict, sensor_type, 
         # for the remaining sensor, it just need wait poll_time + TC_CONST.PWM_GROW_TIME),
         # the pwm should be adjusted to the expected one
         sepcial_sensor_try_times = {"cpu_pack": 15 * poll_time,
-                                    "sodimm": 150}
+                                    "sodimm": 360}
         try_times = sepcial_sensor_try_times.get(sensor_type, poll_time + TC_CONST.PWM_GROW_TIME)
 
-        @retry(Exception, tries=try_times, delay=1)
-        def check_cpu_pack_pwm():
-            pwm_curr = get_pwm(mock_sensor)
-            assert pwm_curr >= expected_pwm, f"PWM:{pwm_curr} is not adjusted to the set one:{expected_pwm}"
+        pwm_low = math.floor(expected_pwm * (1 - pwm_tolerance / 100.0))
+        pwm_high = math.ceil(expected_pwm * (1 + pwm_tolerance / 100.0))
 
-        check_cpu_pack_pwm()
+        @retry(Exception, tries=try_times, delay=1)
+        def check_pwm_within_tolerance():
+            pwm_curr = get_pwm(mock_sensor)
+            assert pwm_low <= pwm_curr <= pwm_high, \
+                f"PWM:{pwm_curr} is not within expected range [{pwm_low}, {pwm_high}] (target:{expected_pwm} ±{pwm_tolerance}%)"
+
+        check_pwm_within_tolerance()
 
 
 @retry(Exception, tries=30, delay=3)
