@@ -448,9 +448,64 @@ SWITCH_MODELS = {
                 "start": 1,
                 "number": 2
             },
-            "pmic":{
+            "pmic": {
                 "start": 1,
                 "number": 22
+            }
+        }
+    },
+    "x86_64-nvidia_sn6600_simx-r0": {
+        "chip_type": "spectrum6",
+        "reboot": {
+            "cold_reboot": True,
+            "fast_reboot": True,
+            "warm_reboot": True
+        },
+        "fans": {
+            "number": 0
+        },
+        "psus": {
+            "number": 0
+        },
+        "cpu_pack": {
+            "number": 0
+        },
+        "cpu_cores": {
+            "number": 0
+        },
+        "ports": {
+            "number": 512
+        },
+        "thermals": {
+            "cpu_core": {
+                "start": 0,
+                "number": 6
+            },
+            "module": {
+                "start": 1,
+                "number": 512
+            },
+            "cpu_pack": {
+                "number": 1
+            },
+            "cpu_ambient": {
+                "number": 0
+            },
+            "asic_ambient": {
+                "number": 1
+            },
+            "port_ambient": {
+                "number": 0
+            },
+            "fan_ambient": {
+                "number": 0
+            },
+            "pch": {
+                "number": 1
+            },
+            "sodimm": {
+                "start": 1,
+                "number": 2
             }
         }
     },
