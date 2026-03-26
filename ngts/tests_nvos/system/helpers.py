@@ -100,7 +100,7 @@ def verify_control_plane_acl_bindings(baseline_bindings):
         logger.warning("Could not get system control-plane ACLs after upgrade: %s", e)
         return
     current_bindings = set(cp_acls.keys()) if cp_acls else set()
-    for default_acl in AclConsts.NEW_DEFAULT_ACLS:
+    for default_acl in baseline_bindings:
         assert default_acl in current_bindings, (
             "Default ACL {} not bound to system control-plane after upgrade. "
             "Bound ACLs: {}".format(default_acl, sorted(current_bindings))
