@@ -605,6 +605,12 @@ class GenerateGoldenConfigDBModule(object):
         # rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
         # if "orch_northbond_route_zmq_enabled" in out:
         #     ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
+        rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
+        if "orch_northbond_route_zmq_enabled" in out:
+            if self.topo_name == "t1-smartswitch-ha":
+                ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "false"
+            else:
+                ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
 
         return json.dumps(ori_config_db, indent=4)
 
