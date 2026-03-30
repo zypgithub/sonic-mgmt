@@ -1,39 +1,42 @@
+import urllib.parse
+import logging
 import base64
 import random
 import string
-import time
-from urllib.parse import quote
-
 import pytest
+import time
+import os
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
+from ngts.tests_nvos.general.security.centralized_tests.upgrade import test_upgrade  # TODO: we should't import stuff from other test files directly
+from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
 from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.redmine.redmine_api import *
-from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_constants.constants_nvos import ImageConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts
-from ngts.nvos_tools.actions.Actions import Action
+from ngts.tests_nvos.general.security import conftest as security_conftest  # TODO: we should't import stuff from conftest directly
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
-from ngts.nvos_tools.infra.IpTool import IpTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts
+from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
+from ngts.nvos_constants.constants_nvos import ImageConsts
+from ngts.tests_nvos.checklist import test_checklist_ipv6  # TODO: we shouldn't import stuff from other test files directly
 from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
-from ngts.tests_nvos.constants import MINUTE
-from ngts.tests_nvos.general.security.conftest import create_ssh_login_engine
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import check_partitions_capacity
-from ngts.scripts.sonic_deploy.nvos_only_methods import NvosInstallationSteps
-from ngts.tests_nvos.general.security.centralized_tests.upgrade.test_upgrade import fetch_install_img
-from ngts.tests_nvos.checklist.test_checklist_ipv6 import send_open_api_request
+from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.tools.test_utils import nvos_general_utils
+from ngts.nvos_tools.actions.Actions import Action
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.infra.IpTool import IpTool
 
-logger = logging.getLogger()
+from ngts.tests_nvos.constants import MINUTE
+
+logger = logging.getLogger(__name__)
 
 PATH_TO_IMAGED_DIRECTORY = "/auto/sw_system_release/nos/nvos/"
 PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
@@ -116,7 +119,7 @@ def test_show_system_image(original_version):
             assert output_dictionary[ImageConsts.PARTITION1_IMG][ImageConsts.BUILD_ID] == original_version or partition2 == original_version, \
                 f"Partition1 image is invalid. Expected {original_version}"
             assert output_dictionary[ImageConsts.NEXT_IMG] == output_dictionary[ImageConsts.CURRENT_IMG], \
-                f"Next image is not the current as expected in default settings."
+                "Next image is not the current as expected in default settings."
 
     with allure.step("Run show command to view system image files"):
         output_dictionary = system.image.files.get_files()
@@ -190,7 +193,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
                 system.image.action_uninstall('force')
 
             with allure.step('run curl via ipv6, customer bug #4318552'):
-                send_open_api_request(dut_ipv6_addr, engines.dut)
+                test_checklist_ipv6.send_open_api_request(dut_ipv6_addr, engines.dut)
 
         run_post_downgrade_cheks(ib_router)
         player = engines['sonic_mgmt']
@@ -212,9 +215,9 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
 
     finally:
         with allure.step(f"Run upgrade: {target_version_realpath}"):
-            fetch_install_img(system, target_version_realpath, engines)
+            test_upgrade.fetch_install_img(system, target_version_realpath, engines)
         with allure.step('Run curl via ipv6, customer bug #4318552'):
-            send_open_api_request(dut_ipv6_addr, engines.dut)
+            test_checklist_ipv6.send_open_api_request(dut_ipv6_addr, engines.dut)
         target_fetched_image = target_version_realpath.split('/')[-1]
 
         with allure.step('Verify configuration preserved after upgrade and cleanup'):
@@ -452,7 +455,7 @@ def test_install_multiple_images(release_name, test_name, random_api, original_v
             install_image_and_verify(orig_engine, BASE_IMAGE_VERSION_TO_INSTALL, partition_id_for_new_image,
                                      original_images, system, test_name)
         with allure.step("Test partitions available capacity"):
-            check_partitions_capacity(allowed_limit=60)
+            nvos_general_utils.check_partitions_capacity(allowed_limit=60)
 
     finally:
         cleanup_test(system, original_images, original_image_partition, image_files, orig_engine=orig_engine)
@@ -567,7 +570,7 @@ def system_image_install_reject_with_prompt(engines, system, prompt_response, or
     action_job_id = 0
     try:
         with allure.step("Create SSH Engine to login to the switch"):
-            child = create_ssh_login_engine(engines.dut.ip, SystemConsts.DEFAULT_USER_ADMIN)
+            child = security_conftest.create_ssh_login_engine(engines.dut.ip, SystemConsts.DEFAULT_USER_ADMIN)
             assert isinstance(child.pid, int), "SSH login process failed to be spawned"
             respond = child.expect([DefaultConnectionValues.PASSWORD_REGEX, '~'])
             assert respond == 0, "SSH Connection to switch failed"
@@ -699,7 +702,7 @@ def helper_fetch_image_with_weird_password(engines, system, test_api, weird_pass
             weird_password = "Password1\\'"
         weird_password_urlencoded = weird_password
     else:
-        weird_password_urlencoded = quote(weird_password, safe='')
+        weird_password_urlencoded = urllib.parse.quote(weird_password, safe='')
 
     if test_api == ApiType.OPENAPI:
         # encode password to base64 object and convert the base64 object to string
@@ -739,10 +742,27 @@ def normalize_image_name(image_name):
     return image_name.replace("-amd64", "").replace(".bin", "")
 
 
-def install_image_and_verify(orig_engine, image_name, partition_id, original_images, system, release_name,
-                             test_name=''):
+def install_image_and_verify(
+    orig_engine: ProxySshEngine,
+    image_name: str,
+    partition_id: str,
+    original_images: dict,
+    system: System,
+    release_name: str,
+    test_name: str = '',
+) -> None:
     with allure.step("Installing image {}".format(image_name)):
-        new_engine = LinuxSshEngine(orig_engine.ip, orig_engine.username, orig_engine.password)
+        new_engine = LinuxSshEngine(
+            orig_engine.ip,
+            orig_engine.username,
+            orig_engine.password,
+            ssh_port=orig_engine.ssh_port,
+            xml_rpc_port=orig_engine.xml_rpc_port,
+            retry=getattr(orig_engine, "_retry", True),
+            device_type=orig_engine.device_type,
+            engine_connect_retries=orig_engine.engine_connect_retries,
+            is_on_air=orig_engine.is_on_air,
+        )
         res_obj, _ = OperationTime.save_duration('image install', '', test_name,
                                                  system.image.files.file_name[image_name].action_file_install_with_reboot,
                                                  expected_str=SystemConsts.REBOOT_RESPONSE_MESSAGES,
@@ -796,8 +816,11 @@ def get_list_of_directories(current_installed_img, starts_with=None):
         temp_dir = PATH_TO_IMAGED_DIRECTORY + PATH_TO_IMAGE_TEMPLATE.format(directory)
         if os.path.isdir(temp_dir) and "-001" not in temp_dir:
             logger.info("Searching for images in path: " + temp_dir)
-            relevant_images = [f for f in os.listdir(temp_dir) if f.startswith("nvos-amd64-25.") and
-                               list(current_installed_img.values())[0].replace("nvos-25", "nvos-amd64-25") not in f]
+            relevant_images = [
+                f for f in os.listdir(temp_dir)
+                if f.startswith("nvos-amd64-25.") and  # noqa: W504
+                list(current_installed_img.values())[0].replace("nvos-25", "nvos-amd64-25") not in f
+            ]
             if relevant_images:
                 return_directories[temp_dir] = relevant_images
         if len(return_directories) == 2:
@@ -855,7 +878,7 @@ def cleanup_test(system, original_images, original_image_partition, fetched_imag
             try:
                 system.image.action_uninstall(params='force')
                 system.image.verify_show_images_output(original_images)
-            except Exception as e:
+            except Exception:
                 logger.info("No image to uninstall")
 
         with allure.step("Delete all images that have been fetch during the test and verify"):
@@ -909,7 +932,7 @@ def get_image_data_and_fetch_base_image(system, base_version):
     original_images, original_image, original_image_partition, partition_id_for_new_image = get_image_data(system)
 
     with allure.step(f"Fetch image {base_version}"):
-        player = TestToolkit.engines['sonic_mgmt']
+        _ = TestToolkit.engines['sonic_mgmt']
         system.image.action_fetch(path=base_version).verify_result()
     image_name = base_version.split("/")[-1]
     return original_images, original_image, original_image_partition, partition_id_for_new_image, image_name
@@ -943,10 +966,10 @@ def _detect_system_type_and_select_port(device):
                     interface_type='sw'
                 ).get_returned_value()
                 port_name = selected_port_obj.name
-                logging.info(f"Selected ACTIVE IB port for speed testing: {port_name}")
+                logger.info(f"Selected ACTIVE IB port for speed testing: {port_name}")
                 return NvosConst.IB_SWITCH_TYPE, selected_port_obj, port_name
             except Exception as e:
-                logging.error(f"Failed to find active IB port: {e}")
+                logger.error(f"Failed to find active IB port: {e}")
                 pytest.skip("No active IB ports available for speed testing")
 
     elif hasattr(device, 'nvl_access_ports_list') or hasattr(device, 'nvl_trunk_ports_list'):
@@ -956,18 +979,18 @@ def _detect_system_type_and_select_port(device):
 
             if hasattr(device, 'nvl_trunk_ports_list') and device.nvl_trunk_ports_list:
                 available_port_types.append('trunk')
-                logging.info(f"NVL trunk ports available: {len(device.nvl_trunk_ports_list)} ports")
+                logger.info(f"NVL trunk ports available: {len(device.nvl_trunk_ports_list)} ports")
 
             if hasattr(device, 'nvl_access_ports_list') and device.nvl_access_ports_list:
                 available_port_types.append('access')
-                logging.info(f"NVL access ports available: {len(device.nvl_access_ports_list)} ports")
+                logger.info(f"NVL access ports available: {len(device.nvl_access_ports_list)} ports")
 
             if not available_port_types:
                 pytest.skip("No NVL ports available for speed testing")
 
             # Randomly choose between available port types
             chosen_port_type = RandomizationTool.select_random_value(available_port_types).get_returned_value()
-            logging.info(f"Randomly chosen NVL port type for testing: {chosen_port_type}")
+            logger.info(f"Randomly chosen NVL port type for testing: {chosen_port_type}")
 
             # Select active port based on chosen type
             try:
@@ -977,25 +1000,25 @@ def _detect_system_type_and_select_port(device):
                         requested_ports_state=NvosConsts.LINK_STATE_UP,
                         interface_type='sw'  # trunk ports
                     ).get_returned_value()
-                    logging.info(f"Selected ACTIVE NVL trunk port for speed testing: {selected_port_obj.name}")
+                    logger.info(f"Selected ACTIVE NVL trunk port for speed testing: {selected_port_obj.name}")
                 else:  # access
                     # Access ports: need LINK_LOG_STATE_INITIALIZE (with loopboxes)
                     selected_port_obj = RandomizationTool.select_random_port(
                         requested_ports_logical_state=NvosConsts.LINK_LOG_STATE_INITIALIZE,
                         interface_type='acp'  # access ports
                     ).get_returned_value()
-                    logging.info(f"Selected ACTIVE NVL access port for speed testing: {selected_port_obj.name}")
+                    logger.info(f"Selected ACTIVE NVL access port for speed testing: {selected_port_obj.name}")
 
                 port_name = selected_port_obj.name
                 return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name
 
             except Exception as e:
-                logging.error(f"Failed to find active {chosen_port_type} port: {e}")
+                logger.error(f"Failed to find active {chosen_port_type} port: {e}")
                 # Try the other port type if available
                 other_port_types = [pt for pt in available_port_types if pt != chosen_port_type]
                 if other_port_types:
                     other_type = other_port_types[0]
-                    logging.info(f"Trying fallback to {other_type} ports")
+                    logger.info(f"Trying fallback to {other_type} ports")
                     try:
                         if other_type == 'trunk':
                             selected_port_obj = RandomizationTool.select_random_port(
@@ -1009,11 +1032,11 @@ def _detect_system_type_and_select_port(device):
                             ).get_returned_value()
 
                         port_name = selected_port_obj.name
-                        logging.info(f"Fallback successful - selected {other_type} port: {port_name}")
+                        logger.info(f"Fallback successful - selected {other_type} port: {port_name}")
                         return NvosConst.NVL_SWITCH_TYPE, selected_port_obj, port_name
 
                     except Exception as e2:
-                        logging.error(f"Fallback to {other_type} ports also failed: {e2}")
+                        logger.error(f"Fallback to {other_type} ports also failed: {e2}")
 
                 pytest.skip(f"No active NVL ports available for speed testing (tried {available_port_types})")
 
@@ -1055,7 +1078,7 @@ def _choose_different_speed(current_speed, supported_speeds, port_name):
         pytest.skip(f"No alternative speeds available for port {port_name}. Current: {current_speed}, Supported: {supported_speeds}")
 
     new_speed = RandomizationTool.select_random_value(available_speeds_other_than_original).get_returned_value()
-    logging.info(f"Chosen different speed for {port_name}: {new_speed} (original was: {current_speed})")
+    logger.info(f"Chosen different speed for {port_name}: {new_speed} (original was: {current_speed})")
     return new_speed
 
 
@@ -1142,7 +1165,7 @@ def verify_current_version(original_version, system, device):
 
 def run_post_downgrade_cheks(ib_router):
     """run various optional checks after the machine finish downgrade"""
-    with allure.step(f"Running post downgrade checks if there's any"):
+    with allure.step("Running post downgrade checks if there's any"):
         if ib_router:
             verify_ib_router_post_downgrade()
 
@@ -1166,13 +1189,13 @@ def run_ib_router_post_upgrade_steps(topology_obj, engines):
 
 def run_pre_upgrade_steps(topology_obj, engines, ib_router):
     """run various optional checks before the machine starts the upgrade stage"""
-    with allure.step(f"Running pre upgrade actions if there's any"):
+    with allure.step("Running pre upgrade actions if there's any"):
         if ib_router:
             run_ib_router_pre_upgrades_steps(topology_obj, engines)
 
 
 def run_post_upgrade_cheks(topology_obj, engines, ib_router):
     """run various optional checks after the machine finish downgrade"""
-    with allure.step(f"Running post upgrade checks if there's any"):
+    with allure.step("Running post upgrade checks if there's any"):
         if ib_router:
             run_ib_router_post_upgrade_steps(topology_obj, engines)

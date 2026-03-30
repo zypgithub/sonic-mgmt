@@ -1,18 +1,22 @@
+from netmiko.exceptions import ReadTimeout
+import functools
 import logging
 
-from netmiko.exceptions import ReadTimeout
-from ngts.cli_wrappers.nvue.base_cli import BaseCli
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+
 from ngts.nvos_constants.constants_nvos import OutputFormat, RebootConsts, ActionConsts
-from ngts.nvos_tools.infra import ExceptionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams
 from ngts.nvos_tools.infra.ResultObj import ResultObj, IssueType
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.cli_wrappers.nvue.base_cli import BaseCli
+from ngts.nvos_tools.infra import ExceptionTool
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def check_output(method):
+    @functools.wraps(method)
     def check_output_wrapper(*args, **kwargs):
         output = method(*args, **kwargs)
         check_substrings(output, *args, **kwargs)
@@ -21,9 +25,9 @@ def check_output(method):
     return check_output_wrapper
 
 
-def check_substrings(output, *args, **kwargs):
+def check_substrings(output: str, *args, **kwargs) -> None:
     try:
-        engine = args[0] if args else kwargs['engine']
+        engine: ProxySshEngine = args[0] if args else kwargs['engine']
         if NvueBaseCli.check_output_strings:
             if any(sub_string in output.lower() for sub_string in NvueBaseCli.sub_strings_to_search):
                 cmd = engine.run_cmd("history | tail -n 2").split('\n')[0]
@@ -76,11 +80,13 @@ class NvueBaseCli(BaseCli):
             # The following lines only check the command's return-code, assuming that no reboot happened.
             try:
                 with allure.step('Assert return code 0'):
-                    return_code = netmiko_engine.send_command('echo $?')
-                    logger.info('echo $?\n' + return_code)
-                    assert return_code.splitlines()[-1] == '0'
+                    return_code_output = netmiko_engine.send_command_timing('echo $?')
+                    logger.info('echo $?\n' + return_code_output)
+                    rc_lines = [line.strip() for line in return_code_output.splitlines() if line.strip()]
+                    return_code = next((line for line in reversed(rc_lines) if line.isdigit()), '')
+                    assert return_code == '0'
             except AssertionError:
-                logger.error(f'{return_code=}')
+                logger.error(f'{return_code_output=}')
                 result.update(False, returned_value=response, issue_type=IssueType.PossibleBug,
                               info=f'Command finished with {return_code=} and output:\n{response}')
             except (OSError, TimeoutError, ReadTimeout) as e:  # OSError("Socket is closed"), ReadTimeout on prompt
@@ -107,7 +113,7 @@ class NvueBaseCli(BaseCli):
                 cmd += ' --color off'
         cmd = " ".join(cmd.split())
         cmd = cmd.replace('%2F', '/')
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        logger.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 
     @staticmethod
@@ -122,7 +128,7 @@ class NvueBaseCli(BaseCli):
             format(path=path, param_name=op_param_name, param_value=op_param_value)
         cmd = " ".join(cmd.split())
         cmd = cmd.replace('%2F', '/')
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        logger.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 
     @staticmethod
@@ -137,7 +143,7 @@ class NvueBaseCli(BaseCli):
             format(path=path, params=op_param)
         cmd = " ".join(cmd.split())
         cmd = cmd.replace('%2F', '/')
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        logger.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         return engine.run_cmd(cmd)
 
     # todo: remove all functions below. they're replaced by action() and remain here for backward-compatibility
@@ -213,7 +219,7 @@ class NvueBaseCli(BaseCli):
         :param topology_obj: if exists, waits for 'System is ready'
         """
         cmd = "nv action install {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        logger.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
             return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
                                        reboot_params=RebootParams(topology_obj=topology_obj)
@@ -234,7 +240,7 @@ class NvueBaseCli(BaseCli):
         :param force: if True, will add "force" argument to the command
         """
         cmd = "nv action uninstall {fae} platform {args} {force}".format(fae="fae" if fae_command else '', args=args, force="force" if force else '')
-        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        logger.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
         if expect_reboot:
             return DutUtilsTool.reload(engine=engine, device=device, command=cmd, confirm=True,
                                        reboot_params=RebootParams(topology_obj=topology_obj)
