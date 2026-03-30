@@ -584,3 +584,6 @@ r, ".* ERR swss\d*#orchagent:.*getPortLinkTrainingFailure: Failed to get LT fail
 r, ".* ERR auditd.*: queue to plugins is full - dropping event"
 r, ".* ERR auditd.*: message repeated .*: \[ queue to plugins is full - dropping event\]"
 r, ".* ERR auditd.*: auditd queue full reporting limit reached - ending dropped event notifications"
+
+# Ignore SPC6 Egress mirroring not supported failures on SPC6 mellanox platform
+r, ".*ERR syncd#SDK: \[SAI_PORT.ERR\] .*mlnx_sai_port.c\[.*\]- mlnx_port_samplepacket_session_get: Egress mirroring is not supported on SPC6.*"
