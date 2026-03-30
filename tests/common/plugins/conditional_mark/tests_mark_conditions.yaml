@@ -893,6 +893,12 @@ dash/crm/test_dash_crm.py:
     conditions:
       - "asic_type in ['vs'] and https://github.com/sonic-net/sonic-mgmt/issues/16407"
 
+dash/test_dash_smartswitch_crm.py::TestDashCRM::test_dash_crm_cleanup:
+  skip:
+    reason: "Skip cleanup test"
+    conditions:
+      - "https://github.com/sonic-net/sonic-buildimage/issues/23590"
+
 dash/test_dash_acl.py:
   skip:
     reason: "Currently dash tests are not supported on KVM"
