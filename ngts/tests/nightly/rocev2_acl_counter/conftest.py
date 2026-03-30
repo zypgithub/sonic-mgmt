@@ -21,7 +21,7 @@ ROCEV2_ACL_COUNTER_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(
 
 logger = logging.getLogger()
 DUT_PORTCHANNEL_NAME = "PortChannel1"
-MIRROR_EGRESS_NO_SUPPORT_PLATFORMS = ["sn6600", "sn6600_ld"]
+MIRROR_EGRESS_NO_SUPPORT_PLATFORMS = ["sn6600", "sn6600_ld", "sn6810_ld"]
 
 
 def generate_arp(players, interface, sender, dst_ip):
