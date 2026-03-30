@@ -290,13 +290,13 @@ class TestLinkLocalIPacket:
         pytest_assert(len(received_packets) >= PKT_NUM,
                       "Received tcpdump {} packets, expected >= {}".format(len(received_packets), PKT_NUM))
 
-    def test_link_local_dst_ipv4_packet(self, ptfhost, ptfadapter, cleanup_list, common_params):
+    def test_link_local_dst_ipv4_packet(self, ptfhost, ptfadapter, cleanup_list, common_params, tbinfo):
         (duthost, mg_facts, pc_ports_map, ptf_indices, ingress_router_mac, rx_iface, tx_iface,
          ptf_rx_mac, ptf_rx_idx, ptf_tx_mac, ptf_tx_idx, link_local_src,
          link_local_dst, downlink_uplink_rx_info, rif_support) = common_params
 
         self.remove_ips_form_downlink_ifaces(duthost, mg_facts, rx_iface, tx_iface)
-        self.add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list)
+        self.add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list, tbinfo)
 
         link_local_src, link_local_dst = self.add_link_local_address_to_ptf(ptfhost, ptf_rx_idx,
                                                                             ptf_tx_idx, cleanup_list)
@@ -318,13 +318,13 @@ class TestLinkLocalIPacket:
         self.validate_counters(duthost, ptfadapter, exp_pkt, rx_iface, None,
                                out_ptf_indices, out_ifaces, out_rif_ifaces, rif_support)
 
-    def test_link_local_dst_ipv6_packet(self, ptfadapter, cleanup_list, common_params):
+    def test_link_local_dst_ipv6_packet(self, ptfadapter, cleanup_list, common_params, tbinfo):
         (duthost, mg_facts, pc_ports_map, ptf_indices, ingress_router_mac, rx_iface, tx_iface,
          ptf_rx_mac, ptf_rx_idx, ptf_tx_mac, ptf_tx_idx, link_local_src,
          link_local_dst, downlink_uplink_rx_info, rif_support) = common_params
 
         self.remove_ips_form_downlink_ifaces(duthost, mg_facts, rx_iface, tx_iface)
-        self.add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list)
+        self.add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list, tbinfo)
 
         logger.info("Sending IPV6 Packet from {} to {}".format(rx_iface, tx_iface))
         pkt = testutils.simple_ipv6ip_packet(eth_dst=ptf_tx_mac,
@@ -343,12 +343,12 @@ class TestLinkLocalIPacket:
                                out_ptf_indices, out_ifaces, out_rif_ifaces, rif_support)
 
     @staticmethod
-    def add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list):
+    def add_vlan_configuration(duthost, rx_iface, tx_iface, cleanup_list, tbinfo):
         duthost.command("config vlan add {}".format(VLAN_ID))
         config_facts = duthost.config_facts(host=duthost.hostname, source="running")['ansible_facts']
 
         vlan_member = config_facts.get('VLAN_MEMBER')
-        if vlan_member:
+        if vlan_member and "t1" not in tbinfo["topo"]["name"]:
             for vlan_interface, vlan_members in vlan_member.items():
                 vlan_id = re.search(r"Vlan(\d+)", vlan_interface).group(1)
                 if vlan_members.get(rx_iface):
