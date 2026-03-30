@@ -1264,11 +1264,12 @@ def downgrade_version_realpath(downgrade_version: str, base_version: str):
     return version_path
 
 
-@pytest.fixture(params=ApiType.ALL_TYPES)
+@pytest.fixture
 def test_api(request: pytest.FixtureRequest):
     """This fixture runs the test twice (once for each api)."""
-    TestToolkit.tested_api = request.param
-    return request.param
+    if hasattr(request, 'param'):
+        TestToolkit.tested_api = request.param
+    return TestToolkit.tested_api
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc):
