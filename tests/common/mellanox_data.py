@@ -1540,7 +1540,13 @@ SWITCH_MODELS = {
         }
     },
     "x86_64-nvidia_sn6810_ld_simx-r0": {
-        "chip_type": "spectrum6"
+        "chip_type": "spectrum6",
+        "psus": {
+            "number": 0
+        },
+        "fans": {
+            "number": 0
+        }
     },
     "x86_64-nvidia_sn6810_ld-r0": {
         "chip_type": "spectrum6",

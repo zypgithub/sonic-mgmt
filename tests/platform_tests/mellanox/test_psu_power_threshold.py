@@ -29,6 +29,10 @@ def check_feature_supported(request, duthosts, rand_one_dut_hostname, mocker_fac
     platform_data = get_platform_data(duthost)
     MAX_PSUS = platform_data['psus']['number']
     all_psus_supporting_thresholds = True
+
+    if MAX_PSUS == 0:
+        pytest.skip('PSUs are not supported on the platform')
+
     mocker = mocker_factory(duthost, 'PsuPowerThresholdMocker')
     try:
         for psu_index in range(MAX_PSUS):
