@@ -61,6 +61,29 @@ class TestNeighborMacNoPtf:
             except Exception as e:
                 logger.warning(f"Error getting back plane {port} IP: {e}")
 
+        # If DPC ports have no direct IPs, they may be VLAN members (new architecture).
+        # Look up the VLAN interface IP instead.
+        if back_plane_ports and not back_plane_port_ips:
+            try:
+                vlan_keys = duthost.shell(
+                    f"sonic-db-cli CONFIG_DB KEYS 'VLAN_MEMBER|*|{back_plane_ports[0]}'",
+                    module_ignore_errors=True, verbose=False)["stdout_lines"]
+                if vlan_keys:
+                    assert len(vlan_keys) == 1, f"Expected 1 VLAN key, got {len(vlan_keys)}"
+                    vlan_name = vlan_keys[0].split("|")[1]
+                    addr_lines = duthost.shell(
+                        f"ip addr show {vlan_name} | grep -w inet | awk '{{print $2}}'",
+                        module_ignore_errors=True, verbose=False)["stdout_lines"]
+                    if addr_lines:
+                        # Add both the host IP and the network address so count_routes
+                        # matches the /32 host route and the subnet connected route.
+                        iface = ip_interface(addr_lines[0])
+                        back_plane_port_ips.append(str(iface.ip))
+                        back_plane_port_ips.append(str(iface.network.network_address))
+                        logger.info(f"Got DPC VLAN IPs {back_plane_port_ips} from {vlan_name}")
+            except Exception as e:
+                logger.warning(f"Error getting DPC VLAN interface IP: {e}")
+
         logger.info(f"back plane port IPs: {back_plane_port_ips}")
 
         return back_plane_port_ips
