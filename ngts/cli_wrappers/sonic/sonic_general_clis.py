@@ -53,7 +53,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 
 logger = logging.getLogger()
 DUMMY_COMMAND = 'echo dummy_command'
-NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2']
+NOT_SUPPORTED_DPB_SKU_LIST = ['Mellanox-SN5810_LD-O128A2', 'ACS-SN6810_LD']
 
 
 class SonicGeneralCli:
