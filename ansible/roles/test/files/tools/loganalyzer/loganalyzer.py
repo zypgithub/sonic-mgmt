@@ -32,6 +32,7 @@ import csv
 import time
 import logging
 import logging.handlers
+import subprocess
 from datetime import datetime
 
 # ---------------------------------------------------------------------
@@ -40,6 +41,7 @@ from datetime import datetime
 tokenizer = ','
 comment_key = '#'
 system_log_file = '/var/log/syslog'
+re_rsyslog_pid = re.compile(r"PID:\s+(\d+)")
 
 # -- List of ERROR codes to be returned by AnsibleLogAnalyzer
 err_duplicate_start_marker = -1
@@ -158,18 +160,28 @@ class AnsibleLogAnalyzer:
         '''
         @summary: flush all remaining buffer in rsyslogd to disk
 
-        Uses 'systemctl reload rsyslog' instead of 'kill -HUP' to avoid a race
-        condition where buffered syslog messages can be lost during the signal
-        handler's file-close/reopen cycle.  systemctl reload performs a cleaner
-        reload that is less prone to dropping in-flight messages.
-
-        After the reload, a short sleep gives rsyslog time to finish flushing
-        its internal queues to disk.
-
-        See: https://serverfault.com/questions/813871/proper-way-to-reload-rsyslog
+        rsyslog.service - System Logging Service
+            Loaded: loaded (/lib/systemd/system/rsyslog.service; enabled; vendor preset: enabled)
+            Active: active (running) since Fri 2021-09-03 15:50:17 UTC; 14h ago
+        TriggeredBy: syslog.socket
+            Docs: man:rsyslogd(8)
+             https://www.rsyslog.com/doc/
+         Main PID: 17516 (rsyslogd)
+         Tasks: 5 (limit: 3402)
+         Memory: 3.3M
+         CGroup: /system.slice/rsyslog.service
+              17516 /usr/sbin/rsyslogd -n
         '''
-        os.system("sudo systemctl reload rsyslog 2>/dev/null || true")
-        time.sleep(0.5)
+        pid = None
+        out = str(subprocess.check_output("systemctl status rsyslog", shell=True))
+        for msgs in out.split('\n'):
+            m = re.search(re_rsyslog_pid, msgs)
+            if m:
+                pid = int(m.group(1))
+                break
+
+        if pid:
+            os.system("sudo kill -HUP {}".format(pid))
 
     def place_marker_to_file(self, log_file, marker):
         '''
