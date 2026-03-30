@@ -104,7 +104,7 @@ def fanouthost(duthosts, enum_rand_one_per_hwsku_frontend_hostname, fanouthosts,
             fanout.restore_drop_counter_config()
 
     if fanout:
-        if fanout.facts["asic_type"] == "marvell-teralynx":
+        if hasattr(fanout, 'facts') and fanout.facts["asic_type"] == "marvell-teralynx":
             # Check and clean up existing REDIRECT_VLAN ACL table if present.
             check_output = fanout.shell("show acl table", module_ignore_errors=True)
             if "REDIRECT_VLAN" in check_output["stdout"]:
