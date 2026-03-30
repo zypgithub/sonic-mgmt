@@ -196,11 +196,13 @@ class HWSimulator:
         with allure.step("Check whether the setup has fans"):
             if 'hw-management-tc.service' not in devices.dut.available_services:
                 logger.info("No fan available, skip")
-                return
+                return None
 
         with allure.step("get random fan id from fans folder"):
             thermal_directory = devices.dut.fan_direction_dir
             fan_id = random.randrange(1, len(devices.dut.fan_list) + 1)
+            fan_instance_name = devices.dut.fan_list[fan_id - 1]
+            logger.info(f"Selected fan_id={fan_id}, health instance name: {fan_instance_name}")
 
         with allure.step("Simulate fan error"):
             symlink_target = HWSimulator.simulate_fan_speed_fault(engines.dut, thermal_directory, fan_id, 1)
@@ -209,6 +211,8 @@ class HWSimulator:
         with allure.step("Fix fan error"):
             HWSimulator.simulate_fix_fan_speed_fault(engines.dut, thermal_directory, fan_id, symlink_target)
             time.sleep(10)
+
+        return fan_instance_name
 
     @staticmethod
     def find_sensor_dir(engine, base_path, sensor_name):

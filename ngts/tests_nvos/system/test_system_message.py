@@ -35,6 +35,13 @@ def clear_system_messages(system, engines):
         system.message.unset(op_param="", apply=True, dut_engine=engines.dut).verify_result()
 
 
+@pytest.fixture
+def system_message_cleanup(engines):
+    system = System()
+    yield system
+    clear_system_messages(system, engines)
+
+
 @retry(Exception, tries=5, delay=2)
 def verify_system_message_field_with_retry(system, field_name, expected_value):
     """
@@ -112,7 +119,7 @@ def test_show_system_message(engines, devices, random_api):
             TestToolkit.tested_api = ApiType.NVUE
             verify_system_message_field_with_retry(system, SystemConsts.POST_LOGIN_MESSAGE,
                                                    devices.dut.post_login_message)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
         with allure.step('Run unset system message post-logout command and apply config'):
             system.message.unset(op_param=SystemConsts.POST_LOGOUT_MESSAGE,
@@ -168,7 +175,7 @@ def test_set_system_message_pre_login(engines, devices, random_api):
             TestToolkit.tested_api = ApiType.NVUE
             verify_system_message_field_with_retry(system, SystemConsts.POST_LOGIN_MESSAGE,
                                                    devices.dut.post_login_message)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
         with allure.step('Verify post-logout did not change in show system'):
             verify_system_message_field_with_retry(system, SystemConsts.POST_LOGOUT_MESSAGE,
@@ -244,7 +251,7 @@ def test_set_system_message_post_login(engines, devices, random_api):
             TestToolkit.tested_api = ApiType.NVUE
             verify_system_message_field_with_retry(system, SystemConsts.POST_LOGIN_MESSAGE,
                                                    devices.dut.post_login_message)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
         # TBA : SSH test for default post-login message
 
@@ -293,7 +300,7 @@ def test_set_system_message_post_logout(engines, devices, random_api):
             TestToolkit.tested_api = ApiType.NVUE
             verify_system_message_field_with_retry(system, SystemConsts.POST_LOGIN_MESSAGE,
                                                    devices.dut.post_login_message)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
         with allure.step('Run unset system message post-logout command and apply config'):
             system.message.unset(op_param=SystemConsts.POST_LOGOUT_MESSAGE,
@@ -352,7 +359,7 @@ def test_unset_system_message(engines, devices, random_api):
             verify_system_messages_with_retry(system, devices.dut.pre_login_message,
                                               devices.dut.post_login_message,
                                               SystemConsts.POST_LOGOUT_MESSAGE_DEFAULT_VALUE)
-            TestToolkit.tested_api = test_api
+            TestToolkit.tested_api = random_api
 
     finally:
         clear_system_messages(system, engines)
@@ -422,11 +429,9 @@ def test_system_reload_for_system_message(engines, devices, random_api):
 def test_post_logout_message_multiple_users(engines, devices, test_api, system_message_cleanup):
     """
     Description:
-    ===============================================
     Verify switching between different users should not affect logout msg.
 
     Steps:
-    ===============================================
     1. Configure user user1
     2. Configure post logout message
     3. Verify after logout custom message is as expected
@@ -478,11 +483,9 @@ def test_post_logout_message_multiple_users(engines, devices, test_api, system_m
 def test_post_logout_message_after_nvued_restart(engines, devices, test_api, topology_obj, system_message_cleanup):
     """
     Description:
-    ===============================================
     Verify that after nvued service restart the post-logout message still works.
 
     Steps:
-    ===============================================
     1. Configure post-log out message
     2. Verify the output display configured message
     3. Do nvued service restart

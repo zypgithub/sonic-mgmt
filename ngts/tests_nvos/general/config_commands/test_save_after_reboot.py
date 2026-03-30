@@ -151,7 +151,7 @@ def test_save_reboot(engines, devices):
             with allure.step("clear system health component"):
                 system.health.component.action(ActionConsts.CLEAR)
             with allure.step("simulate fan health error"):
-                HWSimulator.create_health_component_error_fan(devices, engines)
+                simulated_fan_name = HWSimulator.create_health_component_error_fan(devices, engines)
 
         with allure.step('Save config'):
             TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
@@ -273,8 +273,9 @@ def test_save_reboot(engines, devices):
                 if 'hw-management-tc.service' in devices.dut.available_services:
                     health = OutputParsingTool.parse_json_str_to_dictionary(
                         system.health.component.show()).get_returned_value()
-                    fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
-                    fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
+                    fan_instance = health[HealthConsts.Component.FAN][HealthConsts.Component.INSTANCE][simulated_fan_name]
+                    fan_unhealthy_count = int(fan_instance[HealthConsts.Component.UNHEALTHY_COUNT])
+                    fan_last_unhealthy = fan_instance[HealthConsts.Component.LAST_HEALTHY]
                     assert fan_unhealthy_count == 1, "Fan unhealthy counter is not retained"
                     assert fan_last_unhealthy != "", "Fan last-unhealthy time is not retained"
                 else:

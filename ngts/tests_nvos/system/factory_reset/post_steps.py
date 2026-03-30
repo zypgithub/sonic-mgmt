@@ -36,10 +36,12 @@ def factory_reset_no_params_post_steps(apply_and_save_port, engines, just_apply_
     with allure.step("Validate health component unhealthy counters and timestamps are cleared"):
         health = Tools.OutputParsingTool.parse_json_str_to_dictionary(system.health.component.show()).get_returned_value()
         if HealthConsts.Component.FAN in health.keys():
-            fan_unhealthy_count = int(health[HealthConsts.Component.FAN][HealthConsts.Component.UNHEALTHY_COUNT])
-            fan_last_unhealthy = health[HealthConsts.Component.FAN][HealthConsts.Component.LAST_HEALTHY]
-            assert fan_unhealthy_count == 0, "Fan unhealthy counter is not cleared"
-            assert fan_last_unhealthy == "", "Fan last-unhealthy time is not cleared"
+            fan_instances = health[HealthConsts.Component.FAN][HealthConsts.Component.INSTANCE]
+            for fan_name, fan_data in fan_instances.items():
+                fan_unhealthy_count = int(fan_data[HealthConsts.Component.UNHEALTHY_COUNT])
+                fan_last_unhealthy = fan_data[HealthConsts.Component.LAST_HEALTHY]
+                assert fan_unhealthy_count == 0, "{} unhealthy counter is not cleared".format(fan_name)
+                assert fan_last_unhealthy == "", "{} last-unhealthy time is not cleared".format(fan_name)
 
     if TestToolkit.devices.dut.has_nmx:
         with allure.step('Juliet Device Check'):

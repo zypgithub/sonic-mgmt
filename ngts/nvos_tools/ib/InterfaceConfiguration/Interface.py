@@ -104,11 +104,11 @@ class Interface(BaseComponent):
 
     @retry(Exception, tries=10, delay=2)
     def wait_for_mtu_changed(self, mtu_to_verify):
-        with allure.step("Waiting for ib0 port mtu changed to {}".format(mtu_to_verify)):
+        with allure.step("Waiting for '{}' port mtu changed to {}".format(self.port_obj.name, mtu_to_verify)):
             output_dictionary = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
                 self.link.show(rev=ConfState.APPLIED)).get_returned_value()
-            current_mtu = output_dictionary[IbInterfaceConsts.LINK_MTU]
-            assert current_mtu == mtu_to_verify, "Current mtu {} is not as expected {}".\
+            current_mtu = int(output_dictionary[IbInterfaceConsts.LINK_MTU])
+            assert current_mtu == int(mtu_to_verify), "Current mtu {} is not as expected {}".\
                 format(current_mtu, mtu_to_verify)
 
     def action_clear_counters(self, interface_name=None, engine=None, fae_param="",

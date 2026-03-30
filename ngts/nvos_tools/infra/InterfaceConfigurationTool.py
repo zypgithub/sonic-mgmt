@@ -314,6 +314,7 @@ class InterfaceConfigurationTool:
             selected_port.interface.link.set(
                 op_param_name='mtu', op_param_value=str(new_mtu), apply=True,
                 ask_for_confirmation=True).verify_result()
+            selected_port.interface.wait_for_mtu_changed(new_mtu)
             from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
             NvueGeneralCli.save_config(TestToolkit.engines.dut)
             return selected_port, original_mtu, new_mtu
