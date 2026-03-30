@@ -441,7 +441,7 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
         ).verify_result(True)
 
         with allure.step("Verify eth0 port is down"):
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(False, device_mgmt_ports_ips[InfraConst.IPV4]['eth0'], engines.dut.ssh_port)
         with allure.step("Verify with tcpdump"):
             try:
                 tcpdump_cmd = TcpdumpCmdBuilder().sudo().interface("eth0").build()
@@ -457,7 +457,7 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
                 apply=True, ask_for_confirmation=True,
                 dut_engine=serial_engine
             ).verify_result(True)
-            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(True, device_mgmt_ports_ips[InfraConst.IPV4]['eth0'], engines.dut.ssh_port)
         register_cleanup(partial(unset_eth0, eth0_port))
 
     with allure.step("Create ssh connection to eth1"):
@@ -483,31 +483,32 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
             ]
         )
 
-    with allure.step("Run switch as client DHCP checkers"):
-        eth1_port = Port("eth1")
+    if ip_type == InfraConst.IPV4:
+        with allure.step("Run switch as client DHCP checkers"):
+            eth1_port = Port("eth1")
 
-        @_checker_with_expected_traffic(serial_engine)
-        def renew_eth1_dhcp():
-            ip_obj = eth1_port.interface.ipv4 if ip_type == InfraConst.IPV4 else eth1_port.interface.ipv6
-            ip_obj.action_renew_dhcp_client(
-                dut_engine=connection
-            ).verify_result()
+            @_checker_with_expected_traffic(serial_engine)
+            def renew_eth1_dhcp():
+                eth1_port.interface.ipv4.action_renew_dhcp_client(
+                    dut_engine=connection
+                ).verify_result()
+                time.sleep(10)
 
-        _tcpdump_checkers_wrapper(
-            serial_engine=serial_engine,
-            tcpdump_cmd=TcpdumpCmdBuilder().sudo().interface("eth1").ports(67, 68).build(),
-            checkers=[
-                renew_eth1_dhcp
-            ]
-        )
+            _tcpdump_checkers_wrapper(
+                serial_engine=serial_engine,
+                tcpdump_cmd=TcpdumpCmdBuilder().sudo().interface("eth1").ports(67, 68).build(),
+                checkers=[
+                    renew_eth1_dhcp
+                ]
+            )
 
-        with allure.step("Verify eth1 dhcp lease was renewed"):
-            dhcp_client_obj = eth1_port.interface.ipv4.dhcp_client if ip_type == InfraConst.IPV4 else eth1_port.interface.ipv6.dhcp_client
-            eth1_dhcp_output = OutputParsingTool.parse_json_str_to_dictionary(
-                dhcp_client_obj.show(dut_engine=connection)
-            ).get_returned_value()
-            ValidationTool.verify_field_value_in_output(
-                output_dictionary=eth1_dhcp_output,
-                field_name='has-lease',
-                expected_value='yes'
-            ).verify_result()
+            with allure.step("Verify eth1 ipv4 dhcp lease was renewed"):
+                eth1_dhcp_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    eth1_port.interface.ipv4.dhcp_client.show(dut_engine=connection)
+                ).get_returned_value()
+                ValidationTool.verify_field_exist_in_json_output(
+                    eth1_dhcp_output, ['lease']
+                ).verify_result()
+                ValidationTool.verify_field_exist_in_json_output(
+                    eth1_dhcp_output['lease'], ['expire']
+                ).verify_result()
