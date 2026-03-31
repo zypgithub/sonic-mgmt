@@ -40,13 +40,18 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module")
-def deploy_files(ptfhost):
+def copy_files(ptfhost):
     current_path = Path(__file__).resolve()
     tcp_server_path = current_path.parent.parent.joinpath("common", "ha", "tcp_server.py")
     tcp_client_path = current_path.parent.parent.joinpath("common", "ha", "tcp_client.py")
 
     ptfhost.copy(src=str(tcp_server_path), dest='/root')
     ptfhost.copy(src=str(tcp_client_path), dest='/root')
+
+
+@pytest.fixture(scope='module')
+def tcp_adapter(ptfadapter):
+    return PtfTcpTestAdapter(ptfadapter)
 
 
 @pytest.fixture(scope="module")
