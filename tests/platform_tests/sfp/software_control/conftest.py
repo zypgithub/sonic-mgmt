@@ -1,7 +1,7 @@
 import pytest
 
 from tests.common.utilities import skip_release
-from tests.platform_tests.mellanox.software_control_helper import sc_supported, sc_ms_sku, PLATFORM_GENERATION
+from tests.platform_tests.mellanox.software_control_helper import sc_supported, sc_ms_sku, PLATFORM_GENERATION, check_sc_sai_attribute_value
 
 
 @pytest.fixture(autouse=True, scope="module")
@@ -31,3 +31,13 @@ def check_ms_sku(duthost):
     """
     if not sc_ms_sku(duthost):
         pytest.skip(f"Software Control feature supported only at Microsoft SKU {PLATFORM_GENERATION}")
+
+@pytest.fixture(autouse=True, scope="module")
+def check_sai_attribute(duthost):
+    """
+    @summary: This fixture is for skip test if SAI_INDEPENDENT_MODULE_MODE is not enabled
+    @param: duthost: duthost fixture
+    """
+    if not check_sc_sai_attribute_value(duthost):
+        pytest.skip("Software Control feature is not enabled in sai.profile")
+
