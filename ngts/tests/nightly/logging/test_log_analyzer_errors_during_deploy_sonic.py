@@ -3,6 +3,7 @@ import logging
 import pytest
 import random
 import os
+import re
 from retry.api import retry_call
 from ngts.constants.constants import InfraConst, PytestConst
 from ngts.common.util import get_specified_installed_dpus
@@ -68,9 +69,10 @@ def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, logana
     """
     # Remove the unnecessary loganalyzer instances except the one of dut_host
     loganalyzer_hosts = [analyzer.ansible_host.hostname for analyzer in loganalyzer.values()]
-    dut_hostname = dut_host.run_cmd("hostname")
+    dut_base_mac = re.search(r"(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}",
+                             dut_host.run_cmd("show platform syseeprom | grep 'Base MAC'")).group().lower()
     for loganalyzer_host in loganalyzer_hosts:
-        if dut_hostname != loganalyzer_host:
+        if dut_base_mac != loganalyzer[loganalyzer_host].ansible_host.facts['router_mac'].lower():
             loganalyzer.pop(loganalyzer_host)
             logger.info(f"Removed loganalyzer host {loganalyzer_host} from loganalyzer")
     # We expect exactly one loganalyzer instance
