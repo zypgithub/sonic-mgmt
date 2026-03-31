@@ -3005,6 +3005,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         """
         from ngts.tools.test_utils import allure_utils as allure
         from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+        from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 
         # Only apply workaround if bug is active
         if is_bug_active(4910763):
@@ -3017,6 +3018,9 @@ class RosalindSwitch(RosalindSurrogateSwitch):
 
                 logger.info("Starting nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
+
+                logger.info("Waiting for nmx-conn to be up")
+                ClusterTools.validate_cluster_enabled(cluster)
         else:
             logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 

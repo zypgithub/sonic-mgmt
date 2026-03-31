@@ -731,7 +731,20 @@ class ClusterTools:
                 engines.dut.run_cmd(line)
 
     @staticmethod
-    def edit_fm_config(sdn, engines, devices, standalone_system, get_generated_file_info):
+    def get_generated_file_info(sdn, config_type):
+        output_format = OutputFormat.json
+        output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+            config_type].action_generate_sdn().get_returned_value()
+        file_name = ClusterTools().get_generated_sdn_file(output, 'config')
+        output_dict = OutputParsingTool.parse_show_output_to_dict(
+            sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
+                output_format=output_format),
+            output_format=output_format).get_returned_value()
+        path = output_dict[file_name]['path']
+        return file_name, path
+
+    @staticmethod
+    def edit_fm_config(sdn, engines, devices, standalone_system):
         """
         Edit FM config based on device-specific requirements.
         Returns None if device doesn't require FM config edits (e.g., Rosalind).
@@ -744,7 +757,7 @@ class ClusterTools:
             return None
 
         fm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[0]
-        fm_generated_file_name, fm_path = get_generated_file_info(fm_config)
+        fm_generated_file_name, fm_path = ClusterTools.get_generated_file_info(sdn, fm_config)
         fm_original_content = engines.dut.run_cmd(f"cat {fm_path}")
         logger.info(f"Adjusting fm_config file for {devices.dut.__class__.__name__}.")
         ClusterTools().edit_config_file(fm_path, config, engines)
@@ -753,18 +766,23 @@ class ClusterTools:
         return fm_config, fm_generated_file_name, fm_path, fm_original_content
 
     @staticmethod
-    def edit_sm_config(sdn, engines, devices, get_generated_file_info):
+    def edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox):
         """
         Edit SM config based on device-specific requirements.
-        Returns None if device doesn't have SM config edits defined.
+        SM config is ONLY edited when: standalone=True AND has_loopbox=True.
+        Returns None if conditions are not met or device doesn't have SM config edits defined.
         """
-        # Check if device has SM config edits defined
+        if not (standalone_system and has_loopbox):
+            logger.info(f"Device {devices.dut.__class__.__name__} - skipping SM config edit "
+                        f"(standalone={standalone_system}, has_loopbox={has_loopbox}).")
+            return None
+
         if not hasattr(devices.dut, 'sdn_sm_config_edits') or devices.dut.sdn_sm_config_edits is None:
             logger.info(f"Device {devices.dut.__class__.__name__} does not have SM config edits defined. Skipping.")
             return None
 
         sm_config = ClusterConsts.NMX_CONTROLLER_CONFIG_FILE_TYPES[1]
-        sm_generated_file_name, sm_path = get_generated_file_info(sm_config)
+        sm_generated_file_name, sm_path = ClusterTools.get_generated_file_info(sdn, sm_config)
         sm_original_content = engines.dut.run_cmd(f"cat {sm_path}")
         logger.info(f"Adjusting sm_config file for {devices.dut.__class__.__name__}.")
         ClusterTools().edit_config_file(sm_path, devices.dut.sdn_sm_config_edits, engines)
@@ -775,17 +793,6 @@ class ClusterTools:
     @staticmethod
     def wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name,
                                                        standalone_system):
-        def get_generated_file_info(config_type):
-            output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
-                config_type].action_generate_sdn().get_returned_value()
-            file_name = ClusterTools().get_generated_sdn_file(output, 'config')
-            output_dict = OutputParsingTool.parse_show_output_to_dict(
-                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[config_type].files.show(
-                    output_format=output_format),
-                output_format=output_format).get_returned_value()
-            path = output_dict[file_name]['path']
-            return file_name, path
-
         output_format = OutputFormat.json
 
         # Device-specific: Run pre-cluster setup if needed (e.g., Rosalind)
@@ -797,33 +804,20 @@ class ClusterTools:
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
 
         # Edit FM config (device-specific, may return None for devices like Rosalind)
-        fm_result = ClusterTools().edit_fm_config(sdn, engines, devices, standalone_system, get_generated_file_info)
+        fm_result = ClusterTools.edit_fm_config(sdn, engines, devices, standalone_system)
         if fm_result:
             fm_config, fm_generated_file_name, fm_path, fm_original_content = fm_result
         else:
             fm_config = fm_generated_file_name = fm_path = fm_original_content = None
 
-        # Edit SM config based on device requirements
-        # SM config is ONLY edited when: standalone=True AND has_loopbox=True
-        # If NOT standalone: DO NOT touch SM config
-        should_edit_sm = False
-        if standalone_system and has_loopbox:
-            should_edit_sm = True
-            logger.info(f"Device {devices.dut.__class__.__name__} is standalone with loopbox - editing SM config.")
-        # non-standalone system, has cable-cartridge, and therefor does not needs changes in sm_config
-        else:
-            logger.info(f"Device {devices.dut.__class__.__name__} - skipping SM config edit (standalone={standalone_system}, has_loopbox={has_loopbox}).")
+        # Edit SM config (includes standalone/loopbox guard internally)
+        sm_result = ClusterTools.edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox)
+        if sm_result:
+            sm_config, sm_generated_file_name, sm_path, sm_original_content = sm_result
 
-        if should_edit_sm:
-            sm_result = ClusterTools().edit_sm_config(sdn, engines, devices, get_generated_file_info)
-            if sm_result:
-                sm_config, sm_generated_file_name, sm_path, sm_original_content = sm_result
-
-                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
-                if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
-                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
-            else:
-                sm_config = sm_generated_file_name = sm_path = sm_original_content = None
+            # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
+            if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
+                devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
         else:
             sm_config = sm_generated_file_name = sm_path = sm_original_content = None
 

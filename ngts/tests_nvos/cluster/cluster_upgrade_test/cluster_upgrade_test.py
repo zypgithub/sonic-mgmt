@@ -162,6 +162,13 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 TestToolkit.engines.dut.disconnect()  # if install succeeded, need to replace dut engine
             target_image_installed = True
 
+        with allure.step("Install sm_config after upgrade"):
+            sm_result = ClusterTools.edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox)
+            if sm_result:
+                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
+                if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
+                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
+
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
