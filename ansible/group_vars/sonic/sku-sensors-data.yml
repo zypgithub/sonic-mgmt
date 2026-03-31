@@ -6027,7 +6027,7 @@ sensors_checks:
       - jc42-i2c-10-52/SODIMM1 Temp/temp1_max_alarm
       - jc42-i2c-10-52/SODIMM1 Temp/temp1_min_alarm
       - jc42-i2c-10-52/SODIMM1 Temp/temp1_crit_alarm
-      - nvme-pci-0300/SSD Temp/temp1_alarm
+      - \nvme-pci-.*\/SSD Temp/temp1_alarm
     compares:
       fan: []
       power: []
@@ -6072,8 +6072,8 @@ sensors_checks:
       - - jc42-i2c-10-52/SODIMM1 Temp/temp1_input
         - jc42-i2c-10-52/SODIMM1 Temp/temp1_crit
 
-      - - nvme-pci-0300/SSD Temp/temp1_input
-        - nvme-pci-0300/SSD Temp/temp1_crit
+      - - \nvme-pci-.*\/SSD Temp/temp1_input
+        - \nvme-pci-.*\/SSD Temp/temp1_crit
     non_zero:
       fan: []
       power: []
