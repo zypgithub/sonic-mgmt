@@ -223,7 +223,38 @@ class SonicSecureBootHelper(SecureBootHelper):
             self.cli_objects.dut.general.save_configuration()
 
         with allure.step("Login from serial port"):
-            self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_USER, DefaultConnectionValues.PASSWORD_REGEX)
+            self._wait_and_login_serial()
+
+    def _wait_and_login_serial(self, login_timeout=180):
+        """
+        Wait for the serial console to reach the login prompt before sending credentials.
+        This avoids the race condition where username is sent while boot logs are still
+        streaming through the serial buffer, causing the username to be lost.
+        If the console is already at a shell prompt (already logged in), skip credential sending.
+        """
+        self._serial_login_needed = True
+
+        def press_enter_until_ready():
+            _, respond = self.serial_engine.run_cmd('\r', [DefaultConnectionValues.LOGIN_REGEX] +
+                                                    DefaultConnectionValues.DEFAULT_PROMPTS, timeout=10)
+            if respond == 0:
+                self._serial_login_needed = True
+                return True
+            if respond is not None:
+                logger.info("Serial console already at a shell prompt, skipping credential sending")
+                self._serial_login_needed = False
+                return True
+            return False
+
+        logger.info("Waiting for serial console login prompt")
+        success = wait_until(login_timeout, 1, 0, press_enter_until_ready)
+        if not success:
+            raise RuntimeError(f"Serial console did not reach login prompt within {login_timeout} seconds")
+
+        if self._serial_login_needed:
+            self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_USER,
+                                       [DefaultConnectionValues.PASSWORD_REGEX] +
+                                       DefaultConnectionValues.DEFAULT_PROMPTS)
             self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_PASSWORD,
                                        DefaultConnectionValues.DEFAULT_PROMPTS)
 
