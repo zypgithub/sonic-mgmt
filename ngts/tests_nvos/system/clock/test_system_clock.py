@@ -503,10 +503,8 @@ def test_new_time_in_logs(engines, system, orig_timezone, valid_timezones, init_
     with allure.step("Change date-time"):
         logging.info("Pick random new date-time to set")
         now = datetime.now()
-        now.replace(hour=0, minute=0, second=0, microsecond=0)
-        min_dt = now.strftime('%Y-%m-%d %H:%M:%S')
-        now.replace(hour=23, minute=59, second=59, microsecond=0)
-        max_dt = now.strftime('%Y-%m-%d %H:%M:%S')
+        min_dt = now.replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
+        max_dt = now.replace(hour=23, minute=59, second=59, microsecond=0).strftime('%Y-%m-%d %H:%M:%S')
         new_datetime = RandomizationTool.select_random_datetime(min_datetime=min_dt, max_datetime=max_dt) \
             .get_returned_value()
 

@@ -22,6 +22,7 @@ from ngts.nvos_tools.system.Config import Config
 from ngts.nvos_tools.system.ControlPlane import ControlPlane
 from ngts.nvos_tools.system.Debug_log import DebugLog
 from ngts.nvos_tools.system.Disk import Disk
+from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.system.GnmiServer import GnmiServer
 from ngts.nvos_tools.system.Health import Health
 from ngts.nvos_tools.system.Image import Image
@@ -100,16 +101,27 @@ class System(BaseComponent):
             dut_engine = TestToolkit.get_engine()
         with allure.step("Validate health status with \"nv show system\" cmd"):
             logger.info("Validate health status with \"nv show system\" cmd")
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=dut_engine)).get_returned_value()
-            if expected_status != system_output[SystemConsts.HEALTH][HealthConsts.STATUS]:
-                health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
-                health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
-                exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
-                    " with the following health issues:\n{}".\
-                    format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)
-                logger.warning(exception_str)
-                if throw_exception:
-                    assert False, exception_str
+            actual_status = None
+            # Retry up to 3 times if health status is N/A (may take a moment to populate after reboot)
+            for attempt in range(3):
+                system_output = OutputParsingTool.parse_json_str_to_dictionary(self.show(dut_engine=dut_engine)).get_returned_value()
+                actual_status = system_output[SystemConsts.HEALTH][HealthConsts.STATUS]
+                if actual_status == expected_status:
+                    logger.info(f"Health status matches expected: {expected_status}")
+                    return
+                if actual_status != "N/A":
+                    break
+                logger.info(f"Health status is N/A (attempt {attempt + 1}/3), sleeping 5 seconds before retry...")
+                time.sleep(5)
+
+            health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
+            health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
+            exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
+                " with the following health issues:\n{}".\
+                format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)
+            logger.warning(exception_str)
+            if throw_exception:
+                assert False, exception_str
 
     @retry(Exception, tries=10, delay=2)
     def wait_until_health_status_change_to(self, expected_status):
@@ -173,6 +185,7 @@ class Events(BaseComponent):
 class Documentation(BaseComponent):
     def __init__(self, parent_obj=None):
         BaseComponent.__init__(self, parent=parent_obj, path='/documentation')
+        self.files = Files(self)
 
     def action_upload(self, upload_path, file_name):
         with allure.step("Upload {file} to '{path}".format(file=file_name, path=upload_path)):

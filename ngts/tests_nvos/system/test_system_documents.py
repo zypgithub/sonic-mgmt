@@ -22,14 +22,15 @@ def test_show_document(engines, devices):
             2. for each file validate: the right path and type
     """
     system = System()
-    with allure.step('Run nv show system documentation files'):
-        output = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.files.show()).verify_result()
+    with allure.step('Run nv show system documentation'):
+        output = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.show()).verify_result()
 
     with allure.step('Verify all the documents paths'):
-        verify_documents_path(output, 'path', devices.dut)
+        files_output = output.get('files', output)
+        verify_documents_path(files_output, 'path', devices.dut)
 
     with allure.step('Verify all the documents types'):
-        verify_documents_type(output, 'type')
+        verify_documents_type(files_output, 'type')
 
 
 @pytest.mark.system
@@ -43,8 +44,8 @@ def test_show_document_files(engines, devices):
             2. for each file validate: the right path
     """
     system = System()
-    with (allure.step('Run nv show system documentation files')):
-        output_files = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.show('files')
+    with allure.step('Run nv show system documentation files'):
+        output_files = OutputParsingTool.parse_json_str_to_dictionary(system.documentation.files.show()
                                                                       ).verify_result()
 
     with allure.step('Verify all the documents paths'):

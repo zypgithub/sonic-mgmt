@@ -509,11 +509,18 @@ class ClockTools:
                 logging.warning(f"'nv show system log' did not work, retrying once")
                 time.sleep(5)
                 logs = system.log.file.show_log(exit_cmd='q', expected_str=' ')
-            # Support both syslog-style and ISO-style timestamps; take the last occurrence in the log
+            # Extract the syslog header timestamp from the last log line.
+            # Use re.match (anchored to line start) so we only capture the line's
+            # own timestamp, not application-level timestamps embedded in message bodies
+            # (e.g. gunicorn may cache an old timezone and emit stale timestamps).
             last_log_datetime = None
-            for pattern in NvosConst.DATE_TIME_REGEX:
-                for m in re.finditer(pattern, logs):
-                    last_log_datetime = m.group()
+            for line in logs.split('\n'):
+                stripped = line.strip()
+                for pattern in NvosConst.DATE_TIME_REGEX:
+                    m = re.match(pattern, stripped)
+                    if m:
+                        last_log_datetime = m.group()
+                        break
             if not last_log_datetime:
                 snippet = (logs[-2000:] if len(logs) > 2000 else logs).replace('\n', ' ')
                 raise AssertionError(

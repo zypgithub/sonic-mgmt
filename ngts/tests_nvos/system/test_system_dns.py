@@ -74,36 +74,8 @@ def clear_system_dns(system, engines):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_set_system_dns_server(engines, random_api):
-    """
-    Run set system dns server command and verify in show command
-        1. Run ‘nv set system dns server <ip> and verify command is completed successfully
-        2. Check ‘nv show system dns server’ ond validate DNS server <ip> in output
-        3. Check ‘nv show system dns server <ip>’ and validate <ip> DNS server information in output
-
-    """
-    dns_server_id = SystemConsts.DNS_SERVER_IDS["ipv4"]
-    system = System()
-    try:
-        with allure.step('Run set system dns server <server-id>command and apply config'):
-            system.dns.set(SystemConsts.DNS_SERVER, dns_server_id, apply=True, dut_engine=engines.dut,
-                           ask_for_confirmation=devices.dut.ask_for_confirmation)
-
-        with allure.step('Verify DNS server in show system dns server output'):
-            dns_output = OutputParsingTool.parse_json_str_to_dictionary(system.dns.show(SystemConsts.DNS_SERVER)).\
-                get_returned_value()
-            assert dns_server_id in dns_output, "The configured DNS server is not present in show system dns"
-
-    finally:
-        clear_system_dns(system, engines)
-
-
-@pytest.mark.dns
-@pytest.mark.system
-@pytest.mark.simx
-@pytest.mark.cumulus
 @pytest.mark.parametrize('dns_server_type', SystemConsts.DNS_SERVER_IDS.keys())
-def test_set_system_dns_functionality(engines, random_api, target_version, dns_server_type):
+def test_set_system_dns_functionality(engines, random_api, target_version, dns_server_type, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Attempt a file fetch from a build server and verify it is successful
@@ -114,7 +86,6 @@ def test_set_system_dns_functionality(engines, random_api, target_version, dns_s
 
     """
     _dns_config_backup_and_restore_helper(engines, restore=True)
-    TestToolkit.tested_api = test_api
     system = System()
     dns_server_id = SystemConsts.DNS_SERVER_IDS[dns_server_type]
 
@@ -141,7 +112,7 @@ def test_set_system_dns_functionality(engines, random_api, target_version, dns_s
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_unset_system_dns_server(engines, devices, dns_config_backup_and_restore):
+def test_unset_system_dns_server(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <dns_server_id_ipv4> and verify command is completed successfully
@@ -195,7 +166,7 @@ def test_unset_system_dns_server(engines, devices, dns_config_backup_and_restore
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_unset_system_dns_server_ip(engines, devices, dns_config_backup_and_restore):
+def test_unset_system_dns_server_ip(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <dns_server_id_ipv4> and verify command is completed successfully
@@ -253,7 +224,7 @@ def test_unset_system_dns_server_ip(engines, devices, dns_config_backup_and_rest
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_set_system_invalid_dns_server(engines, dns_config_backup_and_restore):
+def test_set_system_invalid_dns_server(engines, random_api, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv unset system dns server <ip> and verify command is not completed successfully
@@ -289,7 +260,7 @@ def test_set_system_invalid_dns_server(engines, dns_config_backup_and_restore):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_system_dns_server_max(engines, devices, dns_config_backup_and_restore):
+def test_system_dns_server_max(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <dns_server_id_ipv4> and verify command is completed successfully
@@ -363,7 +334,7 @@ def test_system_dns_server_max(engines, devices, dns_config_backup_and_restore):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_system_dns_server_max_single_apply(engines, devices, dns_config_backup_and_restore):
+def test_system_dns_server_max_single_apply(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <dns_server_id_ipv4> and verify command is completed successfully
@@ -418,7 +389,7 @@ def test_system_dns_server_max_single_apply(engines, devices, dns_config_backup_
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_system_dns_server_max_set_unset_single_apply(engines, devices, dns_config_backup_and_restore):
+def test_system_dns_server_max_set_unset_single_apply(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run set system dns server command and verify in show command
         1. Run ‘nv set system dns server <dns_server_id_ipv4> and verify command is completed successfully
@@ -476,7 +447,7 @@ def test_system_dns_server_max_set_unset_single_apply(engines, devices, dns_conf
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_factory_reset_for_static_system_dns(engines, devices, nv_command, dns_config_backup_and_restore):
+def test_factory_reset_for_static_system_dns(engines, random_api, devices, nv_command, dns_config_backup_and_restore):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:
@@ -533,7 +504,7 @@ def test_factory_reset_for_static_system_dns(engines, devices, nv_command, dns_c
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-def test_factory_reset_with_config_save_for_static_system_dns(engines, devices, dns_config_backup_and_restore):
+def test_factory_reset_with_config_save_for_static_system_dns(engines, random_api, devices, dns_config_backup_and_restore):
     """
     Run factory reset system command and verify the system DNS fields are removed from show system dns
         Test flow:

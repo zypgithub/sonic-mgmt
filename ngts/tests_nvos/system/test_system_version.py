@@ -135,6 +135,7 @@ def test_show_system_version_packages_installed(engines, test_api, output_format
 
 @pytest.mark.version
 @pytest.mark.system
+@pytest.mark.cumulus_only
 @pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_show_system_info(test_api, engines, devices, nv_command):
     """
