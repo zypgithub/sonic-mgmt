@@ -44,7 +44,7 @@ class NvueBaseCli(BaseCli):
         cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
         with allure.step('Running cmd: ' + cmd):
-            timing_kwargs = {}
+            timing_kwargs = {'last_read': 5}
             if timeout is not None:
                 timing_kwargs['read_timeout'] = timeout
             response: str = netmiko_engine.send_command_timing(cmd, **timing_kwargs)

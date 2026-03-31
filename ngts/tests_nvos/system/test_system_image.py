@@ -148,6 +148,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     """
     config_file_path = ''
     mtu_info = None
+    include_mtu_testing = getattr(devices.dut, 'supports_mtu_testing', False)
 
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
@@ -156,7 +157,9 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     system = System()
     verify_current_version(original_version, system, devices.dut)
     has_active_ports = InterfaceConfigurationTool.has_active_ports(devices.dut)
-    logger.info(f"Active ports available for MTU testing: {has_active_ports}")
+
+    if include_mtu_testing:
+        logger.info(f"Active ports available for MTU testing: {has_active_ports}")
 
     original_images, _, original_image_partition, partition_id_for_new_image, fetched_image = \
         get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
@@ -198,7 +201,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
         TestToolkit.tested_api = ApiType.NVUE
         mtu_info, _ = NvosInstallationSteps.setup_test_environment_with_config_and_speed(
             config_filename, config_file_path, engines, devices, system, scp_host_creds, engines.dut,
-            include_mtu_testing=has_active_ports, verify_result=True)
+            include_mtu_testing=include_mtu_testing, verify_result=True)
 
         logger.info("After replacing configuration file, system will ask for new password. Restoring password:")
         engines.dut.disconnect()
@@ -221,8 +224,9 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             with allure.independent_step('cleanup test'):
                 cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
 
-            with allure.independent_step('Verify MTU preserved after upgrade'):
-                InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
+            if include_mtu_testing:
+                with allure.independent_step('Verify MTU preserved after upgrade'):
+                    InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
 
 
 @pytest.mark.checklist

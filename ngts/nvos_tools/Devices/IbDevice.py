@@ -51,6 +51,7 @@ class IbSwitch(BaseSwitch):
 
     def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE, switch_class=NvosConst.IB_SWITCH_TYPE):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
+        self.supports_mtu_testing = True
         self.documents_path = None
         self.documents_files = None
         # Default firmware components list for IB switches (can be overridden by subclasses)
@@ -1451,6 +1452,7 @@ class NvLinkSwitch(IbSwitch):
     def __init__(self, asic_amount):
         super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount,
                          switch_class=NvosConst.JULIET_SWITCH)
+        self.supports_mtu_testing = False
 
     def _init_interface_lists(self):
         super()._init_interface_lists()
