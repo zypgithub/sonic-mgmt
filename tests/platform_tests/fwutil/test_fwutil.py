@@ -10,6 +10,30 @@ pytestmark = [
 
 DEVICES_PATH = "/usr/share/sonic/device"
 
+SN4280_PLATFORM = "x86_64-nvidia_sn4280-r0"
+
+FWUTIL_LOG_IGNORE_TESTS = {
+    "test_fwutil_install_file",
+    "test_fwutil_install_url",
+    "test_fwutil_update_current",
+    "test_fwutil_update_next",
+}
+
+FWUTIL_DPU_RESET_IGNORE_REGEX = [
+    r".*ERR.*kernel.*i2c.*Failed to complete workqueue.*",
+    r".*ERR.*kernel:.*mlx5_core.*",
+    r".*ERR.*kernel.*Device error state:.*",
+    r".*ERR pmon#sensord: Error getting sensor data.*",
+]
+
+@pytest.fixture(autouse=True)
+def ignore_fwutil_expected_dpu_reset_errors(request, loganalyzer, duthost, component):
+    if request.node.originalname not in FWUTIL_LOG_IGNORE_TESTS or 'FPGA' not in component:
+        return
+    if duthost.facts.get("platform") != SN4280_PLATFORM:
+        return
+    if loganalyzer:
+        loganalyzer[duthost.hostname].ignore_regex.extend(FWUTIL_DPU_RESET_IGNORE_REGEX)
 
 def test_fwutil_show(duthost):
     """Tests that fwutil show has all components defined for platform"""
