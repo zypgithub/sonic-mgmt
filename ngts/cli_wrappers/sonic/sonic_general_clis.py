@@ -1054,11 +1054,12 @@ class SonicGeneralCliDefault(GeneralCliCommon):
                                         reload_force=True)
 
         if deploy_chipless:
-            self.cli_obj.qos.reload_qos(no_dynamic=True)
+            self.cli_obj.qos.reload_qos(no_dynamic=True, platform_params=platform_params)
         else:
             if not self.is_performance_setup(setup_name):
                 with allure.step("Apply qos and dynamic buffer config"):
-                    self.cli_obj.qos.reload_qos(no_dynamic=True)
+                    no_dynamic = platform_params["hwsku"].upper().startswith("MELLANOX-SN5640")
+                    self.cli_obj.qos.reload_qos(no_dynamic=no_dynamic, platform_params=platform_params)
                     self.verify_dockers_are_up(dockers_list=['swss'], platform_params=platform_params)
                     self.cli_obj.qos.stop_buffermgrd(platform_params=platform_params)
                     self.cli_obj.qos.start_buffermgrd(platform_params=platform_params)
