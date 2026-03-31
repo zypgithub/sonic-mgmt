@@ -540,6 +540,96 @@ def get_temperature_digit(value):
     return value
 
 
+def _resolve_thermal_threshold(mock_sensor, config_val, sysfs_path):
+    """
+    Resolve a val_min or val_max value following the TC loop's read_val_min_max logic:
+      - If config value starts with "!" → use the constant (strip "!" and convert)
+      - Otherwise → read from sysfs file; use config value as fallback
+
+    Args:
+        mock_sensor: MockSensors instance for reading sysfs files on the DUT
+        config_val: value from tc_config.json (int, or str like "!70000" or "95000")
+        sysfs_path: sysfs file path to read if not a "!" constant
+
+    Returns:
+        int value in millicelsius
+    """
+    if isinstance(config_val, str) and config_val.startswith("!"):
+        val = int(config_val[1:])
+        logger.info(f"Using constant value from config: {val} (from '{config_val}')")
+        return val
+
+    # Not a "!" constant — read from sysfs, fall back to config default
+    fallback = int(config_val) if config_val is not None else 0
+    try:
+        val = int(mock_sensor.read_value(sysfs_path))
+        logger.info(f"Read dynamic value from {sysfs_path}: {val}")
+        return val
+    except Exception as e:
+        logger.warning(f"Failed to read {sysfs_path}, using fallback {fallback}: {e}")
+        return fallback
+
+
+def update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, sensor_file_path):
+    """
+    Update tc_config_dict in-place with the effective val_min/val_max that the TC loop
+    actually uses, so all downstream code (calculate_pwm, temperature sweep range, etc.)
+    automatically uses the correct values without extra parameter passing.
+
+    Replicates the TC loop's read_val_min_max logic (hw_management_thermal_control.py):
+      - Config value starts with "!" → use constant directly
+      - Otherwise → read from the corresponding sysfs file, config value as fallback
+
+    For module sensors, val_min/val_max are derived from temp_crit + offsets:
+        val_max = read(module{N}_temp_crit) + val_max_offset
+        val_min = val_max + val_min_offset
+
+    For asic sensors:
+        val_max = read(asic_temp_crit)  (or "!" constant)
+        val_min = read(asic_temp_norm)  (or "!" constant)
+
+    For other sensors (sodimm, cpu_pack, voltmon, ambient):
+        val_min/val_max = "!" constant, or read from {name}_min/{name}_max
+    """
+    dev_parameters_name = SENSOR_DATA[sensor_type]['dev_parameters_name']
+    sensor_config = tc_config_dict['dev_parameters'][dev_parameters_name]
+    config_val_min = sensor_config.get("val_min")
+    config_val_max = sensor_config.get("val_max")
+
+    if sensor_type == "module":
+        temp_crit_path = sensor_file_path.replace("_temp_input", "_temp_crit")
+        val_max = _resolve_thermal_threshold(mock_sensor, config_val_max, temp_crit_path)
+        # Offsets are defined in the TC loop's internal default config
+        # (hw_management_thermal_control.py thermal_module_sensor), not in tc_config.json.
+        # Defaults: val_max_offset=0, val_min_offset=-20000
+        val_max_offset = sensor_config.get("val_max_offset", 0)
+        val_min_offset = sensor_config.get("val_min_offset", -20000)
+        val_max = val_max + val_max_offset
+        val_min = val_max + val_min_offset
+    elif sensor_type == "asic":
+        # sensor_file_path is like .../thermal/asic (no _temp_input suffix for asic)
+        base_name = os.path.basename(sensor_file_path)
+        temp_crit_path = os.path.join(TC_CONST.HW_THERMAL_FOLDER, f"{base_name}_temp_crit")
+        temp_norm_path = os.path.join(TC_CONST.HW_THERMAL_FOLDER, f"{base_name}_temp_norm")
+        val_max = _resolve_thermal_threshold(mock_sensor, config_val_max, temp_crit_path)
+        val_min = _resolve_thermal_threshold(mock_sensor, config_val_min, temp_norm_path)
+    else:
+        sensor_base = os.path.basename(sensor_file_path)
+        min_path = os.path.join(TC_CONST.HW_THERMAL_FOLDER,
+                                sensor_base.replace("_input", "_min") if "_input" in sensor_base
+                                else f"{sensor_base}_min")
+        max_path = os.path.join(TC_CONST.HW_THERMAL_FOLDER,
+                                sensor_base.replace("_input", "_max") if "_input" in sensor_base
+                                else f"{sensor_base}_max")
+        val_min = _resolve_thermal_threshold(mock_sensor, config_val_min, min_path)
+        val_max = _resolve_thermal_threshold(mock_sensor, config_val_max, max_path)
+
+    logger.info(f"Effective val_min={val_min}, val_max={val_max} for {sensor_type} "
+                f"(config was val_min={config_val_min}, val_max={config_val_max})")
+    sensor_config["val_min"] = val_min
+    sensor_config["val_max"] = val_max
+
+
 def calculate_pwm(tc_config_dict, dev_parameter, temperature):
     """
     @summary: Calculate PWM by formula
@@ -572,24 +662,33 @@ def get_pwm(mock_sensor):
     return pwm
 
 
-def verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None):
-    verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm)
+def verify_pwd_and_rpm_are_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None,
+                                          initial_pwm=None):
+    verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm,
+                                      initial_pwm=initial_pwm)
     verify_rpm_is_expected_value(mock_sensor, tc_config_dict)
 
 
-def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None):
+def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, temperature, expected_pwm=None,
+                                      initial_pwm=None):
     """
     Verify current PWM matches the expected value within ±1% tolerance.
 
     The system PWM is the MAX across all sensors. If expected_pwm is not higher
-    than the current system PWM (initial_pwm) before TC reacts to the mocked
-    temperature, the tested sensor is NOT the dominant contributor — another
-    sensor is already driving the PWM at least as high. In that case the tested
-    sensor's target cannot be validated precisely, so we skip the check.
+    than initial_pwm (the baseline PWM before any mocking), the tested sensor
+    is NOT the dominant contributor — another sensor is already driving the PWM
+    at least as high. In that case the tested sensor's target cannot be validated
+    precisely, so we skip the check.
 
     When expected_pwm > initial_pwm the tested sensor IS the dominant one and
     we apply the strict ±1% tolerance to make sure the smoothing filter
     converges to the correct target (guards against overshoot from stale slope).
+
+    Args:
+        initial_pwm: The baseline PWM captured once before any sensor mocking.
+            Must be provided by the caller. This value stays constant throughout
+            the entire increase/decrease temperature sweep so that the dominance
+            check is not affected by intermediate TC loop adjustments.
     """
     pwm_tolerance = 1  # ±1% PWM tolerance
     with allure.step(f"Verify current PWM matches expected value within ±{pwm_tolerance}%"):
@@ -597,9 +696,10 @@ def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, 
         if not expected_pwm:
             expected_pwm = calculate_pwm(tc_config_dict, dev_parameter, temperature)
 
-        # Read system PWM *before* TC reacts to the newly mocked temperature.
-        # This reflects the PWM driven by all other (non-mocked) sensors.
-        initial_pwm = get_pwm(mock_sensor)
+        if initial_pwm is None:
+            initial_pwm = get_pwm(mock_sensor)
+            logger.warning("initial_pwm not provided, reading current PWM as fallback")
+
         if expected_pwm <= initial_pwm:
             logger.info(f"expected_pwm:{expected_pwm} <= initial_pwm:{initial_pwm}, "
                         f"tested sensor is not the dominant PWM contributor, skip precise check")
@@ -611,7 +711,15 @@ def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, 
         # the max wait time is 15*poll_time and 150 respectively.
         # for the remaining sensor, it just need wait poll_time + TC_CONST.PWM_GROW_TIME),
         # the pwm should be adjusted to the expected one
-        sepcial_sensor_try_times = {"cpu_pack": 15 * poll_time,
+        # Module and asic sensors need extended retry due to TC loop PWM ramp-down
+        # limiting: TC loop raises PWM instantly but lowers it gradually — each
+        # pwm_worker cycle (5s) reduces PWM by at most pwm_max_reduction (10 on
+        # MSN2700). E.g. PWM 100->60 takes ~7 worker cycles x 5s = 35s, plus
+        # sensor poll wait. 60s provides sufficient margin for any sensor.
+        # cpu_pack and sodimm also need extended wait due to input_smooth_level.
+        sepcial_sensor_try_times = {"module": 60,
+                                    "asic": 60,
+                                    "cpu_pack": 15 * poll_time,
                                     "sodimm": 360}
         try_times = sepcial_sensor_try_times.get(sensor_type, poll_time + TC_CONST.PWM_GROW_TIME)
 
