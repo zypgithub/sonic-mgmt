@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import random
 import allure
@@ -39,14 +40,22 @@ def get_generate_minigraph_cmd(setup_info, dut_name, sonic_topo, port_number):
     return cmd
 
 
-def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False):
+def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False, dut_ip=''):
     """
     Method which returns the deploy minigraph command.
     """
+    is_ipv6 = False
+    # Auto-detect IPv6-only management from DUT IP address
+    try:
+        is_ipv6 = isinstance(ipaddress.ip_address(dut_ip), ipaddress.IPv6Address)
+    except ValueError:
+        is_ipv6 = False
+    ipv6_mgmt_flag = "--ipv6-only-mgmt" if is_ipv6 else ""
+
     if dark_mode:
         # when dut is smartswitch and dark mode,
         # we need to deploy the minigraph with the light mode flag set to false
-        cmd = "./testbed-cli.sh deploy-mg {SWITCH}-{TOPO} lab vault -e is_lit_mode=false -vvvvv"
+        cmd = f"./testbed-cli.sh deploy-mg {{SWITCH}}-{{TOPO}} lab vault -e is_lit_mode=false -vvvvv {ipv6_mgmt_flag}"
     else:
         # When dut is smartswitch and light mode, in testbed-cli.sh by default
         # the light mode is set to true, so we don't need to set it
@@ -57,7 +66,7 @@ def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False):
         else:
             # run all tasks except dpu config tasks
             dpu_config_param = '--skip-tags "dpu_config"'
-        cmd = f"./testbed-cli.sh deploy-mg {{SWITCH}}-{{TOPO}} lab vault -vvvvv {dpu_config_param}"
+        cmd = f"./testbed-cli.sh deploy-mg {{SWITCH}}-{{TOPO}} lab vault -vvvvv {dpu_config_param} {ipv6_mgmt_flag}"
     return cmd
 
 
@@ -92,7 +101,8 @@ def check_mst_dark_mode(cli_obj):
         logger.info("MST is healthy, no need to restart")
 
 
-def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_objs, deploy_dpu=False, config_dpu=False):
+def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, topology_obj, cli_objs,
+                      deploy_dpu=False, config_dpu=False, dut_ip=''):
     """
     Method which doing minigraph deploy on DUT
     """
@@ -105,7 +115,7 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
                 # TODO remove WA or parallelize the MST restart
                 for cli_obj in cli_objs:
                     check_mst_dark_mode(cli_obj)
-        cmd_temp = get_deploy_minigraph_cmd(dark_mode, config_dpu)
+        cmd_temp = get_deploy_minigraph_cmd(dark_mode, config_dpu, dut_ip=dut_ip)
         cmd = cmd_temp.format(SWITCH=dut_name, TOPO=sonic_topo)
         logger.info("Running CMD: {}".format(cmd))
         if recover_by_reboot:

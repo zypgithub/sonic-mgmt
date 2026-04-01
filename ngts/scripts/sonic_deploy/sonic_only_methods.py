@@ -657,17 +657,20 @@ class SonicInstallationSteps:
             if setup_name.endswith('-ha'):
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
                                   recover_by_reboot=False, topology_obj=topology_obj,
-                                  cli_objs=None, deploy_dpu=deploy_dpu)
+                                  cli_objs=None, deploy_dpu=deploy_dpu,
+                                  dut_ip=setup_info['duts'][0].get('dut_ip', ''))
             elif is_dualtor_topo(sonic_topo):
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
                                   recover_by_reboot=False, topology_obj=topology_obj,
-                                  cli_objs=[cli])
+                                  cli_objs=[cli],
+                                  dut_ip=setup_info['duts'][0].get('dut_ip', ''))
             else:
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
                     deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                       recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
-                                      cli_objs=[general_cli_obj], deploy_dpu=deploy_dpu)
+                                      cli_objs=[general_cli_obj], deploy_dpu=deploy_dpu,
+                                      dut_ip=dut.get('dut_ip', ''))
                     if deploy_dpu:
                         dut['engine'].run_cmd('sudo config save -y')
                     if is_air:
@@ -795,13 +798,15 @@ class SonicInstallationSteps:
             if setup_name.endswith('-ha'):
                 deploy_minigpraph(ansible_path=ansible_path, dut_name=setup_name, sonic_topo=sonic_topo,
                                   recover_by_reboot=False, topology_obj=topology_obj,
-                                  cli_objs=None, deploy_dpu=True, config_dpu=True)
+                                  cli_objs=None, deploy_dpu=True, config_dpu=True,
+                                  dut_ip=setup_info['duts'][0].get('dut_ip', ''))
             else:
                 for dut in setup_info['duts']:
                     general_cli_obj = dut['cli_obj']
                     deploy_minigpraph(ansible_path=ansible_path, dut_name=dut['dut_name'], sonic_topo=sonic_topo,
                                       recover_by_reboot=recover_by_reboot, topology_obj=topology_obj,
-                                      cli_objs=[general_cli_obj], deploy_dpu=True, config_dpu=True)
+                                      cli_objs=[general_cli_obj], deploy_dpu=True, config_dpu=True,
+                                      dut_ip=dut.get('dut_ip', ''))
             logger.info("Validating DPU configuration")
             for dut in setup_info['duts']:
                 # TODO parallelize this
