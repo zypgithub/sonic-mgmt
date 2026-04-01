@@ -1,7 +1,11 @@
 import json
 import logging
 
+from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from .openapi_command_builder import OpenApiCommandHelper, OpenApiRequest, RequestData
+from ...nvos_constants.constants_nvos import OpenApiConfigVerifyConsts
 from ...nvos_tools.infra.ResultObj import ResultObj
 from ...tests_nvos.general.security.certificate.CertInfo import CertInfo
 
@@ -18,6 +22,69 @@ class OpenApiGeneralCli:
         pass
 
     @staticmethod
+    def _build_revision_root_request_data(engine) -> RequestData:
+        return RequestData(
+            user_name=engine.engine.username,
+            password=engine.engine.password,
+            endpoint_ip=engine.ip,
+            resource_path='/',
+            param_name='',
+            param_value='',
+            open_api_port=engine.open_api_port,
+        )
+
+    @staticmethod
+    def _log_file_content_preview(content: str) -> None:
+        logger.info("File content preview:\n%s...", content[:500])
+
+    @staticmethod
+    def _cat_remote_file(engine, filepath: str) -> str:
+        content = engine.run_cmd(f'cat {filepath}')
+        OpenApiGeneralCli._log_file_content_preview(content)
+        return content
+
+    @staticmethod
+    def _verify_patch_response_failed(patch_res: str) -> bool:
+        return bool(patch_res) and any(
+            m in patch_res for m in OpenApiConfigVerifyConsts.PATCH_BODY_ERROR_SUBSTRINGS
+        )
+
+    @staticmethod
+    def verify_config_from_commands(engine, commands_text, timeout=None, verbose=False):
+        """
+        Verify config from a string of nv commands via API (create revision, patch text, dry-run verify).
+        Same logical behavior as CLI 'nv config verify filename <file>' for the given commands.
+        :param engine: ssh engine object
+        :param commands_text: multiline string of nv set/unset commands
+        :param timeout: unused for API (kept for signature parity with NVUE)
+        :param verbose: if True, use state-controls dry-run "verbose" (TC-7); else "brief"
+        :return: (success: bool, output: str)
+        """
+        logging.info("Verify config from commands using OpenApi (dry-run, verbose=%s)", verbose)
+        request_data = OpenApiGeneralCli._build_revision_root_request_data(engine)
+        res, err = OpenApiRequest.update_nvue_changeset(request_data)
+        if not res:
+            return False, err or "Failed to create revision"
+        patch_res = OpenApiRequest.send_patch_request(request_data, text_content=commands_text)
+        if OpenApiGeneralCli._verify_patch_response_failed(patch_res):
+            OpenApiRequest.clear_changeset_and_payload()
+            return False, patch_res
+        verify_res = OpenApiRequest._verify_config_dry_run(request_data, verbose=verbose)
+        OpenApiRequest.clear_changeset_and_payload()
+        verify_res.ignore_result()
+        return verify_res.result, verify_res.info or ""
+
+    @staticmethod
+    def verify_config_from_file(engine, filepath, timeout=None, verbose=False):
+        """
+        Verify config from a file on the DUT via API (cat file, same pipeline as verify_config_from_commands).
+        """
+        logging.info("Verify config from file using OpenApi (dry-run)")
+        file_content = OpenApiGeneralCli._cat_remote_file(engine, filepath)
+        return OpenApiGeneralCli.verify_config_from_commands(
+            engine, file_content, timeout=timeout, verbose=verbose
+        )
+
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
                      skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None,
                      apply_timeout=None):
@@ -25,6 +92,10 @@ class OpenApiGeneralCli:
         Apply configuration
         :param engine: ssh engine object
         """
+        if isinstance(engine, PexpectSerialEngine):
+            return NvueGeneralCli.apply_config(
+                engine, ask_for_confirmation, option, validate_apply_message, rev_id,
+                skip_no_config_diff_err, verify_execution, client_certs_after_apply, apply_timeout)
         logging.info("Execute config apply using OpenApi")
 
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'APPLY', engine.ip,

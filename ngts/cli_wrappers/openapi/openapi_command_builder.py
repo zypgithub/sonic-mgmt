@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 from retry import retry
 import requests_cache
 
-from ngts.nvos_constants.constants_nvos import OpenApiReqType, NvosConst
+from ngts.nvos_constants.constants_nvos import OpenApiConfigVerifyConsts, OpenApiReqType, NvosConst, SystemConsts
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
@@ -150,6 +150,99 @@ class OpenApiRequest:
             return OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
 
     @staticmethod
+    def _verify_config_dry_run(request_data, verbose=False, client_certs_after_apply: CertInfo = None):
+        """Run NVUE config verify via API (dry-run). Returns ResultObj(True, ...) on dry_run_complete else False.
+        Sends PATCH with body: {"state": "apply", "state-controls": {"dry-run": "brief"}} (or "verbose").
+        The state-controls option is required so the API knows this is verify-only and must not apply changes.
+        """
+        dry_run_mode = (
+            OpenApiConfigVerifyConsts.DRY_RUN_MODE_VERBOSE
+            if verbose
+            else OpenApiConfigVerifyConsts.DRY_RUN_MODE_BRIEF
+        )
+        # -d '{"state": "apply", "state-controls": {"dry-run": "brief"}}'  (or "verbose")
+        apply_payload = {
+            "state": "apply",
+            "state-controls": {"dry-run": dry_run_mode}
+        }
+        url = '{url_end_point}/revision/{req_quote}'.format(
+            url_end_point=OpenApiRequest._get_endpoint_url(request_data),
+            req_quote=requests.utils.quote(OpenApiRequest.changeset, safe=""))
+        logging.info("Verify config (dry-run) for revision %s", OpenApiRequest.changeset)
+        r = requests.patch(url=url, auth=OpenApiRequest._get_http_auth(request_data),
+                           data=json.dumps(apply_payload), headers=REQ_HEADER, **OpenApiRequest._get_client_security_config())
+        OpenApiRequest.print_request(r.request, request_data)
+        OpenApiRequest.print_response(r, OpenApiReqType.PATCH)
+        OpenApiRequest._validate_response(r, OpenApiReqType.PATCH)
+        try:
+            time.sleep(1)
+            return OpenApiRequest._check_dry_run_status(request_data, OpenApiRequest.changeset, client_certs_after_apply)
+        except Exception as e:
+            logging.error("Exception during verify (dry-run) status check: %s", str(e))
+            return ResultObj(False, OpenApiConfigVerifyConsts.RESULT_INFO_VERIFY_FAILED_PREFIX + str(e))
+
+    @staticmethod
+    def _format_issue_from_revision_response(obj):
+        """Same format for all revision error responses (verify failure, apply failure).
+        Returns: message | code=... | location=... | reason=... from transition.issue["00000"].
+        """
+        transition = obj.get("transition") or {}
+        issue = (transition.get("issue") or {}).get("00000") if isinstance(transition.get("issue"), dict) else {}
+        if not isinstance(issue, dict):
+            issue = {}
+        message = issue.get("message", "")
+        code = issue.get("code", "")
+        data = issue.get("data")
+        if not isinstance(data, dict):
+            data = {}
+        location = data.get("location", "")
+        reason = data.get("reason", "")
+        parts = [message] if message else []
+        if code:
+            parts.append("code=%s" % code)
+        if location:
+            parts.append("location=%s" % location)
+        if reason:
+            parts.append("reason=%s" % reason)
+        return " | ".join(parts) if parts else "unknown"
+
+    @staticmethod
+    @retry(Exception, tries=40, delay=5)
+    def _check_dry_run_status(request_data, changeset, client_certs_after_apply: CertInfo = None):
+        """Poll revision until state is dry_run_complete (success) or invalid/verify_error/ready_error (failure)."""
+        req_url = '{url_endpoint}/revision/{req_quote}'.format(
+            url_endpoint=OpenApiRequest._get_endpoint_url(request_data),
+            req_quote=requests.utils.quote(changeset, safe=""))
+        r = requests.get(url=req_url, auth=OpenApiRequest._get_http_auth(request_data), **OpenApiRequest._get_client_security_config())
+        OpenApiRequest.print_request(r.request, request_data)
+        OpenApiRequest.print_response(r, OpenApiReqType.GET)
+        res = OpenApiRequest._validate_response(r, OpenApiReqType.GET)
+        if not res.result:
+            assert all(err not in res.info for err in ERRORS_TO_RETRY_APPLY_CHECK), res.info
+            if any(err in res.info for err in SSL_ERRORS):
+                OpenApiRequest.update_client_certs_info(client_certs_after_apply)
+                raise ValueError(res.info)
+            return ResultObj(False, res.info)
+        obj = json.loads(r.content)
+        if "state" in obj:
+            if obj["state"] == OpenApiConfigVerifyConsts.REVISION_STATE_DRY_RUN_COMPLETE:
+                return ResultObj(True, OpenApiConfigVerifyConsts.RESULT_INFO_VERIFY_DRY_RUN_OK)
+            if str(obj["state"]) in INVALID_RESPONSE:
+                issue_str = OpenApiRequest._format_issue_from_revision_response(obj)
+                return ResultObj(
+                    False,
+                    OpenApiConfigVerifyConsts.RESULT_INFO_VERIFY_CONFIGS_FAILED_PREFIX + issue_str,
+                )
+            if obj["state"] == PENDING_RESPONSE:
+                try:
+                    msg = obj.get("transition", {}).get("issue", {}).get("00000", {}).get("message", "")
+                    if msg and NvosConst.NO_CONFIG_DIFF_APPLY_MSG in str(msg):
+                        return ResultObj(True, NvosConst.NO_CONFIG_DIFF_APPLY_MSG)
+                except Exception:
+                    pass
+                raise Exception(OpenApiConfigVerifyConsts.POLL_WAIT_MESSAGE)
+        raise Exception(OpenApiConfigVerifyConsts.POLL_WAIT_MESSAGE)
+
     def _apply_config(request_data, add_approve, client_certs_after_apply: CertInfo = None):
         with allure.step("Apply NVUE change-set"):
             logging.info("Apply NVUE change-set")

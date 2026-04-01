@@ -1,3 +1,4 @@
+import base64
 import subprocess
 from json.decoder import JSONDecodeError
 
@@ -406,6 +407,88 @@ class NvueGeneralCli(SonicGeneralCliDefault):
         return output
 
     @staticmethod
+    def verify_config(engine, verbose=False, rev_id="", timeout=None):
+        """
+        Run NVUE config verify (dry-run). Does not apply changes.
+        CLI has no explicit --brief flag (use default `nv config verify` or --verbose). OpenAPI dry-run
+        still uses state-controls "brief"|"verbose" via OpenApiGeneralCli.verify_config_from_commands.
+        :param engine: ssh engine object
+        :param verbose: if True, run 'nv config verify --verbose'
+        :param rev_id: if set, run 'nv config verify revision <rev_id>' (else verify pending revision)
+        :param timeout: optional timeout in seconds
+        :return: (success: bool, output: str). success is False if verification failed or error in output.
+                 If the verify command is not supported (e.g. older image), returns (True, output) so callers can proceed.
+        """
+        cmd = 'nv config verify'
+        if verbose:
+            cmd += ' --verbose'
+        if rev_id:
+            cmd += ' revision {}'.format(rev_id)
+        logging.info("Running '%s' on dut (config verify dry-run)", cmd)
+        timeout_kwargs = {'timeout': timeout} if timeout else {}
+        try:
+            output = engine.run_cmd(cmd, **timeout_kwargs)
+        except Exception as e:
+            logging.warning("Verify command failed or not supported: %s. Proceeding without verify.", e)
+            return True, str(e)
+        # Backward compat: if verify command not available, proceed with apply
+        if not output or 'unknown command' in output.lower() or 'command not found' in output.lower():
+            logging.warning("Verify command not available on device. Proceeding without verify.")
+            return True, output
+        # FS failure states: invalid, verify_error, ready_error; CLI may show "Invalid", "Parse error", "Error:"
+        output_lower = output.lower()
+        fail_indicators = ('invalid', 'verify_error', 'ready_error', 'parse error')
+        success = not any(ind in output_lower for ind in fail_indicators) and 'Error:' not in output
+        return success, output
+
+    @staticmethod
+    def verify_config_filename(engine, file_path, timeout=None):
+        """
+        Run 'nv config verify filename <file_path>'. Verifies the config from the given file
+        (temp revision is created, patched via replace, verified, then temp revision deleted).
+        :param engine: ssh engine object
+        :param file_path: path to YAML or plain text config file on the DUT (e.g. /tmp/commands.txt)
+        :param timeout: optional timeout in seconds
+        :return: (success: bool, output: str)
+        """
+        cmd = 'nv config verify filename {}'.format(file_path)
+        logging.info("Running '%s' on dut", cmd)
+        timeout_kwargs = {'timeout': timeout} if timeout else {}
+        try:
+            output = engine.run_cmd(cmd, **timeout_kwargs)
+        except Exception as e:
+            logging.warning("Verify filename command failed: %s", e)
+            return False, str(e)
+        if not output or 'unknown command' in output.lower() or 'command not found' in output.lower():
+            logging.warning("Verify filename not available on device.")
+            return True, output
+        fail_indicators = ('invalid', 'verify_error', 'ready_error', 'Error:')
+        success = not any(ind in output for ind in fail_indicators)
+        return success, output
+
+    @staticmethod
+    def verify_config_from_commands(engine, commands_text, timeout=None, verbose=False):
+        """
+        Verify config from a string of nv commands (same content as a .txt file).
+        Writes commands to a temp file on DUT and runs 'nv config verify filename <file>'.
+        :param engine: ssh engine object
+        :param commands_text: multiline string of nv set/unset commands (e.g. "nv set ...\\nnv set ...")
+        :param timeout: optional timeout in seconds
+        :param verbose: kept for NVUE/OpenAPI signature parity; ignored in NVUE filename verify path.
+        :return: (success: bool, output: str)
+        """
+        path = '/tmp/verify_commands.txt'
+        try:
+            b64 = base64.b64encode(commands_text.encode()).decode()
+            engine.run_cmd("echo '{}' | base64 -d > {}".format(b64, path))
+            success, output = NvueGeneralCli.verify_config_filename(engine, path, timeout=timeout)
+            return success, output
+        finally:
+            try:
+                engine.run_cmd("rm -f {}".format(path))
+            except Exception as e:
+                logging.warning("Cleanup temp file %s: %s", path, e)
+
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
                      skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None,
                      apply_timeout=None):

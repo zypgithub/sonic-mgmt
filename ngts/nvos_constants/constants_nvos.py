@@ -469,6 +469,22 @@ class OpenApiReqType:
     ACTION = 'ACTION'
 
 
+class OpenApiConfigVerifyConsts:
+    """OpenAPI NVUE config verify (dry-run) only — revision state, modes, messages, pre-verify PATCH errors."""
+    # Revision JSON `state` when dry-run validation finished successfully
+    REVISION_STATE_DRY_RUN_COMPLETE = "dry_run_complete"
+    # state-controls value for PATCH {"state": "apply", "state-controls": {"dry-run": ...}}
+    DRY_RUN_MODE_BRIEF = "brief"
+    DRY_RUN_MODE_VERBOSE = "verbose"
+    # ResultObj.info / failure text from verify polling
+    RESULT_INFO_VERIFY_DRY_RUN_OK = "Verify (dry-run) succeeded"
+    RESULT_INFO_VERIFY_CONFIGS_FAILED_PREFIX = "Verify failed for these configs: "
+    RESULT_INFO_VERIFY_FAILED_PREFIX = "Verify failed: "
+    POLL_WAIT_MESSAGE = "Waiting for verify (dry-run) to complete"
+    # text/plain PATCH failed (invalid nv lines, 400, etc.) — skip dry-run
+    PATCH_BODY_ERROR_SUBSTRINGS = ("Error", "Request failed", "Bad Request")
+
+
 class ActionType:
     BOOT_NEXT = '@boot-next'
     CLEANUP = '@cleanup'
