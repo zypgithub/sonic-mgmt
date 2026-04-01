@@ -24,6 +24,8 @@ sys.path = current_path
 
 logger = logging.getLogger(__name__)
 
+LEGACY_DATAPLANE_VLAN_ID = 1000
+
 DPDK_CONTAINER_NAME = "dpdk-app-container"
 DPDK_APP = "nbu-harbor.gtm.nvidia.com/sonic/dpdk-app:latest"
 SWITCH_DATA_PORT = {'x86_64-nvidia_sn4280-r0': 'Ethernet64'}
@@ -60,6 +62,34 @@ def check_byo_status(status, dpuhost):
     return True
 
 
+def _untagged_vlan_id_for_port(duthost, port_name):
+    """
+    Return the numeric VLAN id if port_name is an untagged member of some VLAN in running config.
+    Used to align with smartswitch golden config (e.g. Vlan55 after PR #22902).
+    """
+    vlan_member = duthost.get_running_config_facts().get('VLAN_MEMBER', {})
+    for vlan_name, members in vlan_member.items():
+        if port_name not in members:
+            continue
+        if members[port_name].get('tagging_mode') != 'untagged':
+            continue
+        if not vlan_name.startswith('Vlan'):
+            continue
+        return int(vlan_name[len('Vlan'):])
+    return None
+
+
+def _vlan_table_has_id(duthost, vlan_id):
+    vlans = duthost.get_running_config_facts().get('VLAN', {})
+    return 'Vlan{}'.format(vlan_id) in vlans
+
+
+def _is_untagged_vlan_member(duthost, vlan_id, port_name):
+    vlan_name = 'Vlan{}'.format(vlan_id)
+    ent = duthost.get_running_config_facts().get('VLAN_MEMBER', {}).get(vlan_name, {}).get(port_name, {})
+    return ent.get('tagging_mode') == 'untagged'
+
+
 @pytest.fixture(scope="module", autouse=True)
 def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
     global ptf_port_index
@@ -72,9 +102,22 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
             if ip_interface['attachto'] == switch_data_port:
                 duthost.shell(f"config interface ip remove {ip_interface['attachto']} "
                               f"{ip_interface['addr']}/{ip_interface['mask']}")
-        duthost.shell('config vlan add 1000')
-        duthost.shell(f'config vlan member add 1000 {switch_data_port} --untagged')
         dpu_data_port = dpuhost.npu_dataplane_port
+        dataplane_vlan_from_current = _untagged_vlan_id_for_port(duthost, dpu_data_port)
+        if dataplane_vlan_from_current is None:
+            dataplane_vlan_id = LEGACY_DATAPLANE_VLAN_ID
+            logger.info(
+                "No untagged dataplane VLAN for %s in running config; using legacy VLAN %s",
+                dpu_data_port, dataplane_vlan_id)
+            if not _vlan_table_has_id(duthost, dataplane_vlan_id):
+                duthost.shell('config vlan add {}'.format(dataplane_vlan_id))
+        else:
+            dataplane_vlan_id = dataplane_vlan_from_current
+            logger.info(
+                "Dataplane VLAN from running config for %s: %s", dpu_data_port, dataplane_vlan_id)
+        if not _is_untagged_vlan_member(duthost, dataplane_vlan_id, switch_data_port):
+            duthost.shell(
+                'config vlan member add {} {} --untagged'.format(dataplane_vlan_id, switch_data_port))
         ip_intfs = duthost.show_and_parse("show ip int")
         for ip_intf in ip_intfs:
             if ip_intf['interface'] == dpu_data_port:
@@ -87,7 +130,9 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
                 logger.info(f"Removing the ip address for the DPU data port: {dpu_data_port}")
                 duthost.shell(f"config interface ip remove {dpu_data_port} "
                               f"{ip_intf['ipv4 address/mask']}")
-        duthost.shell(f'config vlan member add 1000 {dpu_data_port} --untagged')
+        if not _is_untagged_vlan_member(duthost, dataplane_vlan_id, dpu_data_port):
+            duthost.shell(
+                'config vlan member add {} {} --untagged'.format(dataplane_vlan_id, dpu_data_port))
         ptf_port_index = mg_facts['minigraph_ptf_indices'][switch_data_port]
     with allure.step("Align the DPU time"):
         # The time on DPU need to be synced for accessing the docker registry
