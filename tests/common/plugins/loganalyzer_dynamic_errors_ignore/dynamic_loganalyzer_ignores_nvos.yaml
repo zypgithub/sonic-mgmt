@@ -2337,3 +2337,11 @@
     - Affected_test_cases:
         - tests_nvos/general/config_commands/test_save_after_reboot.py::test_save_reboot
 
+# NMX package good flow: nv-bridge Version mismatch during package swap (error expected)
+- Errors_list:
+    - '.*WARNING nv-bridge#nv-bridge.*Version mismatch: daemon version.*vs server version.*'
+  Conditions:
+    - Affected_test_cases:
+        - tests_nvos/cluster/test_nmx_package.py::test_nmx_package_good_flow
+
+
