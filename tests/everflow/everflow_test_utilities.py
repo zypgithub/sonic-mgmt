@@ -978,10 +978,40 @@ class BaseEverflowTest(object):
         return command
 
     @staticmethod
+    def _build_mirror_db_command(session_info, policer=None, erspan_ip_ver=4):
+        """Build a sonic-db-cli command to write mirror session directly to CONFIG_DB.
+
+        CLI commands (both legacy and erspan cmd) do not support IPv6
+        addresses, so we bypass the CLI and write to the database directly.
+        """
+        src_ip = session_info['session_src_ip'] if erspan_ip_ver == 4 \
+            else session_info['session_src_ipv6']
+        dst_ip = session_info['session_dst_ip'] if erspan_ip_ver == 4 \
+            else session_info['session_dst_ipv6']
+
+        command = (
+            f"sonic-db-cli CONFIG_DB HSET"
+            f" 'MIRROR_SESSION|{session_info['session_name']}'"
+            f" 'dscp' '{session_info['session_dscp']}'"
+            f" 'dst_ip' '{dst_ip}'"
+            f" 'gre_type' '{session_info['session_gre']}'"
+            f" 'src_ip' '{src_ip}'"
+            f" 'ttl' '{session_info['session_ttl']}'"
+        )
+        if policer:
+            command += f" 'policer' '{policer}'"
+        return command
+
+    @staticmethod
     def apply_mirror_config(duthost, session_info, config_method=CONFIG_MODE_CLI, policer=None,
                             erspan_ip_ver=4, queue_num=None, direction=None):
         if config_method == CONFIG_MODE_CLI:
-            if direction:
+            if erspan_ip_ver == 6:
+                command = BaseEverflowTest._build_mirror_db_command(
+                    session_info, policer=policer, erspan_ip_ver=erspan_ip_ver
+                )
+                duthost.command(command)
+            elif direction:
                 # Try legacy command first (without direction since it
                 # does not support it), then fall back to erspan subcmd.
                 # sonic-utilities PR #4089 added capability checks but
