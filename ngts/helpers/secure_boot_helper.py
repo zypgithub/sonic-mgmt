@@ -175,20 +175,28 @@ class SonicSecureBootHelper(SecureBootHelper):
             logger.info(f"Restore kernel module {SonicSecureBootConsts.KERNEL_MODULE_NAME} original status")
             self.cli_objects.dut.general.install_module(kernel_module_path)
 
+    def _download_image(self, http_image_path):
+        """
+        Download an image to the switch via HTTP with retry.
+        Returns the local file path of the downloaded image.
+        """
+        image_name = http_image_path.split('/')[-1]
+        local_image_file = '/tmp/' + image_name
+        logger.info('Starting download sonic image via http')
+        download_image_cmd = f"wget -O {local_image_file} {http_image_path}"
+        retry_call(self.serial_engine.run_cmd,
+                   fargs=[download_image_cmd, "100%"],
+                   fkwargs={"timeout": 300},
+                   tries=5, delay=2, logger=logger)
+        return local_image_file
+
     def _download_install_image(self, image_path):
         """
         This function will download and install the image on the switch
         """
-        with allure.step("Download the image name"):
-            image_name = image_path.split('/')[-1]
-            local_image_file = '/tmp/' + image_name
+        with allure.step("Download the image"):
             full_image_path = DockerBringupConstants.HTTP_SERVER + image_path
-            logger.info('Starting download sonic image via http')
-            download_image_cmd = f"wget -O {local_image_file} {full_image_path}"
-            retry_call(self.serial_engine.run_cmd,
-                       fargs=[download_image_cmd, "100%"],
-                       fkwargs={"timeout": 300},
-                       tries=5, delay=2, logger=logger)
+            local_image_file = self._download_image(full_image_path)
 
         with allure.step(f"Install {local_image_file}"):
             self.serial_engine.run_cmd(f'onie-nos-install {local_image_file}', 'Installed.*base image.*successfully',
@@ -223,9 +231,30 @@ class SonicSecureBootHelper(SecureBootHelper):
             self.cli_objects.dut.general.save_configuration()
 
         with allure.step("Login from serial port"):
-            self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_USER, DefaultConnectionValues.PASSWORD_REGEX)
-            self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_PASSWORD,
-                                       DefaultConnectionValues.DEFAULT_PROMPTS)
+            self._wait_and_login_serial()
+
+    def _wait_and_login_serial(self, login_timeout=180):
+        """
+        Wait for the serial console to reach the login prompt before sending credentials.
+        This avoids the race condition where username is sent while boot logs are still
+        streaming through the serial buffer, causing the username to be lost.
+        Only match LOGIN_REGEX (not shell prompts) to avoid being fooled by stale
+        buffer content like "ONIE:~ #" left over from before a reboot.
+        """
+        def wait_for_login_prompt():
+            _, respond = self.serial_engine.run_cmd('\r', [DefaultConnectionValues.LOGIN_REGEX], timeout=10)
+            return respond == 0
+
+        logger.info("Waiting for serial console login prompt")
+        success = wait_until(login_timeout, 1, 0, wait_for_login_prompt)
+        if not success:
+            raise RuntimeError(f"Serial console did not reach login prompt within {login_timeout} seconds")
+
+        self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_USER,
+                                   [DefaultConnectionValues.PASSWORD_REGEX] +
+                                   DefaultConnectionValues.DEFAULT_PROMPTS)
+        self.serial_engine.run_cmd(DefaultConnectionValues.DEFAULT_PASSWORD,
+                                   DefaultConnectionValues.DEFAULT_PROMPTS)
 
     def ensure_onie_mode(self):
         _, respond = self.serial_engine.run_cmd('\r', ["ONIE:"],
@@ -420,8 +449,12 @@ class SonicSecureBootHelper(SecureBootHelper):
         with allure.step("Get into ONIE mode"):
             self.get_into_onie_mode(topology_obj)
 
-        with allure.step(f"Install {http_image_path}"):
-            self.serial_engine.run_cmd(f'onie-nos-install {http_image_path}', SonicSecureBootConsts.INVALID_SIGNATURE,
+        with allure.step(f"Download {http_image_path}"):
+            local_image_file = self._download_image(http_image_path)
+
+        with allure.step(f"Install {local_image_file}"):
+            self.serial_engine.run_cmd(f'onie-nos-install {local_image_file}',
+                                       SonicSecureBootConsts.INVALID_SIGNATURE,
                                        SonicSecureBootConsts.SWITCH_RECOVER_TIMEOUT)
 
     @staticmethod
