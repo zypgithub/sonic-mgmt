@@ -1,0 +1,20 @@
+[sonic_latest]
+mtvr-panther-05      ansible_host=10.245.21.72 ansible_hostv6="fe80::e61d:2dff:fef7:d5c2" sonic_version=v2 hwsku="Mellanox-SN2700-C28D8" iface_speed=100000 mgmt_subnet_mask_length=22 vm_base=VM0001
+
+[sonic:children]
+sonic_latest
+
+[ptf]
+ptf-mtvr-panther-05  ansible_host=10.245.42.62 ansible_ssh_user=root ansible_ssh_pass=root
+
+[lab:children]
+sonic
+fanout
+
+[lab:vars]
+mgmt_subnet_mask_length="22"
+
+
+[fanout]
+mtvr-panther-06        ansible_host=10.245.21.55 os=mellanox
+

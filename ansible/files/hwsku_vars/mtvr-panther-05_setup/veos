@@ -1,0 +1,164 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_14:
+    eos:
+      children:
+        vms_14:
+
+    servers:
+      vars:
+        topologies:
+          - t0
+          - t1-lag
+          - ptf32
+          - ptf-any
+          - t0-56
+
+      children:
+        server_14:
+
+vm_host_14:
+  hosts:
+    MTVR-DL360-01:
+      ansible_host: mtvr-dl360-01
+
+vms_14:
+  hosts:
+    VM1401:
+      ansible_host: 10.245.42.63
+    VM1402:
+      ansible_host: 10.245.42.64
+    VM1403:
+      ansible_host: 10.245.42.65
+    VM1404:
+      ansible_host: 10.245.42.66
+    VM1405:
+      ansible_host: 10.245.42.67
+    VM1406:
+      ansible_host: 10.245.42.68
+    VM1407:
+      ansible_host: 10.245.42.69
+    VM1408:
+      ansible_host: 10.245.42.70
+    VM1409:
+      ansible_host: 10.245.42.71
+    VM1410:
+      ansible_host: 10.245.42.72
+    VM1411:
+      ansible_host: 10.245.42.73
+    VM1412:
+      ansible_host: 10.245.42.74
+    VM1413:
+      ansible_host: 10.245.42.75
+    VM1414:
+      ansible_host: 10.245.42.76
+    VM1415:
+      ansible_host: 10.245.42.77
+    VM1416:
+      ansible_host: 10.245.42.78
+    VM1417:
+      ansible_host: 10.245.42.79
+    VM1418:
+      ansible_host: 10.245.42.80
+    VM1419:
+      ansible_host: 10.245.42.81
+    VM1420:
+      ansible_host: 10.245.42.82
+    VM1421:
+      ansible_host: 10.245.42.83
+    VM1422:
+      ansible_host: 10.245.42.84
+    VM1423:
+      ansible_host: 10.245.42.85
+    VM1424:
+      ansible_host: 10.245.42.86
+    VM1425:
+      ansible_host: 10.245.42.87
+    VM1426:
+      ansible_host: 10.245.42.88
+    VM1427:
+      ansible_host: 10.245.42.89
+    VM1428:
+      ansible_host: 10.245.42.90
+    VM1429:
+      ansible_host: 10.245.42.91
+    VM1430:
+      ansible_host: 10.245.42.92
+    VM1431:
+      ansible_host: 10.245.42.93
+    VM1432:
+      ansible_host: 10.245.42.94
+    VM1433:
+      ansible_host: 10.245.42.95
+    VM1434:
+      ansible_host: 10.245.42.96
+    VM1435:
+      ansible_host: 10.245.42.97
+    VM1436:
+      ansible_host: 10.245.42.98
+    VM1437:
+      ansible_host: 10.245.42.99
+    VM1438:
+      ansible_host: 10.245.42.100
+    VM1439:
+      ansible_host: 10.245.42.101
+    VM1440:
+      ansible_host: 10.245.42.102
+    VM1441:
+      ansible_host: 10.245.42.103
+    VM1442:
+      ansible_host: 10.245.42.104
+    VM1443:
+      ansible_host: 10.245.42.105
+    VM1444:
+      ansible_host: 10.245.42.106
+    VM1445:
+      ansible_host: 10.245.42.107
+    VM1446:
+      ansible_host: 10.245.42.108
+    VM1447:
+      ansible_host: 10.245.42.109
+    VM1448:
+      ansible_host: 10.245.42.110
+    VM1449:
+      ansible_host: 10.245.42.111
+    VM1450:
+      ansible_host: 10.245.42.112
+    VM1451:
+      ansible_host: 10.245.42.113
+    VM1452:
+      ansible_host: 10.245.42.114
+    VM1453:
+      ansible_host: 10.245.42.115
+    VM1454:
+      ansible_host: 10.245.42.116
+    VM1455:
+      ansible_host: 10.245.42.117
+    VM1456:
+      ansible_host: 10.245.42.118
+    VM1457:
+      ansible_host: 10.245.42.119
+    VM1458:
+      ansible_host: 10.245.42.181
+    VM1459:
+      ansible_host: 10.245.42.182
+    VM1460:
+      ansible_host: 10.245.42.183
+    VM1461:
+      ansible_host: 10.245.42.184
+    VM1462:
+      ansible_host: 10.245.42.185
+    VM1463:
+      ansible_host: 10.245.42.186
+    VM1464:
+      ansible_host: 10.245.42.187
+
+server_14:
+  children:
+    vm_host_14:
+    vms_14:
+  vars:
+    host_var_file: host_vars/MTVR-DL360-01.yml
+    mgmt_prefixlen: 20

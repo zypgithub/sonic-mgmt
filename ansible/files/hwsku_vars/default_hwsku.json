@@ -270,5 +270,9 @@
     "slm-18_setup": {
         "default_hwsku": "Mellanox-SN6600_LD-P128C2",
         "support_hwsku": ["Mellanox-SN6600_LD-P128C2"]
+    },
+    "mtvr-panther-05_setup": {
+        "default_hwsku": "Mellanox-SN2700",
+        "support_hwsku": ["Mellanox-SN2700", "Mellanox-SN2700-C28D8", "Mellanox-SN2700-D48C8"]
     }
 }
