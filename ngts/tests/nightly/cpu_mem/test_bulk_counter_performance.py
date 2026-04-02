@@ -89,19 +89,22 @@ def setup_thresholds(topology_obj, is_simx, platform_params):
 
 
 @pytest.fixture(scope='module')
-def bulk_counter_cpu_threshold():
+def bulk_counter_cpu_threshold(is_simx):
     """
     Pytest fixture used to return counterpoll cpu usage threshold for watermark
+    :param is_simx: is_simx fixture
     :return: counterpoll cpu usage threshold for watermark
     """
-    counterpoll_cpu_usage_threshold = {CounterpollConstants.WATERMARK: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.PORT: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.RIF: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.PG_DROP: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.QUEUE: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.PORT_BUFFER_DROP: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.ACL: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD,
-                                       CounterpollConstants.TUNNEL_STAT: CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD}
+    threshold = CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD_SIMX if is_simx \
+        else CounterpollConstants.COUNTERPOLL_CPU_USAGE_THRESHOLD
+    counterpoll_cpu_usage_threshold = {CounterpollConstants.WATERMARK: threshold,
+                                       CounterpollConstants.PORT: threshold,
+                                       CounterpollConstants.RIF: threshold,
+                                       CounterpollConstants.PG_DROP: threshold,
+                                       CounterpollConstants.QUEUE: threshold,
+                                       CounterpollConstants.PORT_BUFFER_DROP: threshold,
+                                       CounterpollConstants.ACL: threshold,
+                                       CounterpollConstants.TUNNEL_STAT: threshold}
     return counterpoll_cpu_usage_threshold
 
 
