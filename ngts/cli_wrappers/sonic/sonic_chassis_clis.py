@@ -145,6 +145,14 @@ class SonicChassisCli(ChassisCliCommon):
 
     def get_supported_hwsku_platform_dir(self):
         platform = self.get_platform()
+
+        # this is a workaround to return the default sku for x86_64-nvidia_sn5640_simx-r0
+        # when image implementation supports SN5640-C512S2, this will be removed
+        if platform == 'x86_64-nvidia_sn5640_simx-r0':
+            supported_hwsku = ['Mellanox-SN5640-C512S2', 'ACS-SN5640']
+            logger.info(f"x86_64-nvidia_sn5640_simx-r0 is a special platform, returning {supported_hwsku}")
+            return supported_hwsku
+
         platform_dir = SonicConst.PLATFORM_FOLDER_PATH.format(PLATFORM=platform)
         supported_hwsku_dir = self.engine.run_cmd(f"find {platform_dir} -mindepth 1 -maxdepth 1 -type d -exec sh -c 'test -f \"$1/hwsku.json\" && basename \"$1\"' _ {{}} \\;")
         logger.info(f"supported hwsku dir: {supported_hwsku_dir}")
