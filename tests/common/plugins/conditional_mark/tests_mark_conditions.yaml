@@ -2946,6 +2946,13 @@ gnmi/test_gnmi_configdb.py::test_gnmi_configdb_incremental_02:
       - "is_mgmt_ipv6_only==True"
       - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
+gnmi/test_gnmi_configdb.py::test_gnmi_configdb_set_authenticate:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
+
 gnmi/test_gnmi_configdb.py::test_gnmi_configdb_streaming_onchange_01:
   skip:
     reason: "dut ipv6 mgmt ip not supported"
@@ -3007,6 +3014,13 @@ gnmi/test_gnmi_smartswitch.py:
     reason: 'SmartSwitch gNMI tests require SmartSwitch platform, not applicable to BMC'
     conditions:
       - "'bmc' in topo_type"
+
+gnmi/test_gnmi_stress.py::test_gnmi_latency_01:
+  skip:
+    reason: "dut ipv6 mgmt ip not supported"
+    conditions:
+      - "is_mgmt_ipv6_only==True"
+      - "https://github.com/sonic-net/sonic-mgmt/issues/20395"
 
 gnmi/test_gnoi_killprocess.py:
   skip:
