@@ -48,7 +48,7 @@ def sfp_test_intfs_to_dom_map(duthosts, rand_one_dut_hostname, conn_graph_facts,
 
 @pytest.mark.parametrize("show_eeprom_cmd", SHOW_EEPOMR_CMDS)
 def test_check_sfp_eeprom_with_option_dom(duthosts, rand_one_dut_hostname, show_eeprom_cmd, sfp_test_intfs_to_dom_map,
-                                          get_sw_control_ports, port_list_with_flat_memory):
+                                          get_sw_control_ports, port_list_with_flat_memory, is_cpo_supported):
     """This test case is to check result of  transceiver eeprom with option -d is correct or not for every interface .
     It will do below checks for every available interface
         1. Check if all expected keys exist in the result
