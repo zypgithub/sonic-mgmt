@@ -28,7 +28,7 @@ from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
 from ngts.constants.constants import SerialLoggerConst
-from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
+from ngts.helpers.general_helper import get_all_setups, get_dut_cli_objs_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
@@ -966,16 +966,17 @@ def setups_list():
 
 @pytest.fixture()
 def show_setup_versions(topology_obj):
-    cli_obj: SonicGeneralCliDefault = get_dut_cli_obj_from_topo_obj(topology_obj)
+    cli_objs: dict[str, SonicGeneralCliDefault] = get_dut_cli_objs_from_topo_obj(topology_obj)
 
     def _attach_setup_versions():
-        cli: SonicGeneralCliDefault = cli_obj
+        clis: dict[str, SonicGeneralCliDefault] = cli_objs
         try:
-            with allure.step('get setup versions'):
-                outputs = cli.show_setup_versions()
-            if outputs:
-                with allure.step('attach setup versions outputs to allure report'):
-                    allure.attach(outputs, 'setup_versions', allure.attachment_type.TEXT)
+            for dut_alias, cli in clis.items():
+                with allure.step(f"get setup versions for {dut_alias}"):
+                    outputs = cli.show_setup_versions()
+                if outputs:
+                    with allure.step('attach setup versions outputs to allure report'):
+                        allure.attach(outputs, 'setup_versions', allure.attachment_type.TEXT)
         except Exception:
             logger.info('could not get setup versions')
 

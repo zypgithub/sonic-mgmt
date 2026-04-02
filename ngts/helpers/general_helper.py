@@ -77,10 +77,14 @@ def extract_host_details_from_topo_obj(topology_obj, host):
     return cli_type, dut_alias, dut_ip, dut_name, engine, switch_type
 
 
-def get_dut_cli_obj_from_topo_obj(topology_obj):
-    host = 'dut'
-    cli_type, dut_alias, dut_ip, dut_name, engine, switch_type = extract_host_details_from_topo_obj(topology_obj, host)
-    return get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
+def get_dut_cli_objs_from_topo_obj(topology_obj):
+    dut_cli_objs = dict()
+    for host in topology_obj.players:
+        if host.startswith('dut') and not host.endswith('_serial') and "dpu" not in host:
+            # only pick the SSH dut aliases, not the serial or DPUs
+            cli_type, dut_alias, dut_ip, dut_name, engine, switch_type = extract_host_details_from_topo_obj(topology_obj, host)
+            dut_cli_objs[host] = get_cli_obj(topology_obj, cli_type, switch_type, engine, host, dut_alias)
+    return dut_cli_objs
 
 
 def get_pytest_test_name(request):

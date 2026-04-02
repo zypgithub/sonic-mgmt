@@ -13,14 +13,14 @@ import pytest
 
 from ngts.conftest import update_topology_with_cli_class
 from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF, PytestConst
-from ngts.helpers.general_helper import get_dut_cli_obj_from_topo_obj
+from ngts.helpers.general_helper import get_dut_cli_objs_from_topo_obj
 from ngts.scripts.store_techsupport_on_not_success import dump_simx_data
 from ngts.tools.allure_report.allure_report_attacher import collect_stored_cmds_then_attach_to_allure_report, \
     clean_stored_cmds_with_fixture_scope_list
 from ngts.tools.test_utils.nvos_general_utils import get_switch_type
 from ngts.nvos_constants.constants_nvos import TopologyConsts
 from ngts.tools.infra import get_dumps_folder
-from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases
+from ngts.tools.topology_tools.topology_by_setup import get_topology_by_setup_name_and_aliases, get_dpu_player_key
 
 DUAL_TOR_SIMULATOR_LOG_PREFIXE_REGEX_LIST = ['mux_simulator_*', 'nic_simulator_*']
 DUAL_TOR_SIMULATOR_LOG_FOLDER = '/tmp/'
@@ -211,6 +211,8 @@ def need_implicit_dpu_dump(item):
         return True
     if "dash" in item.location[0]:
         return True
+    if item.location[0].startswith('ha/'):
+        return True
     return False
 
 
@@ -242,8 +244,8 @@ def generate_and_copy_sonic_dump_runner(topology_obj, device_engine, device_alia
     return dest_file
 
 
-def get_dpus_to_dump(topology_obj, item):
-    """The function to get the DPUs to dump
+def get_duts_and_dpus_to_dump(topology_obj, item):
+    """The function to get the DUTs and DPUs to dump
 
     Args:
         topology_obj (_type_): The reference to the topology object
@@ -252,26 +254,33 @@ def get_dpus_to_dump(topology_obj, item):
     Returns:
         dict: The dictionary of the DPUs to with the DPU device info structure
     """
-    cli_obj = get_dut_cli_obj_from_topo_obj(topology_obj)
-    try:
-        dpu_status = cli_obj.get_dpus_status()
-    except Exception as err:
-        logger.info(f"Error getting DPUs status, skipping the DPU dumps: {err}")
-        return dict()
-
-    dpus_to_dump = dict()
-    for device_alias, status_dict in dpu_status.items():
-        device_alias = device_alias.lower()
-        if status_dict['Admin-Status'] != 'up' or status_dict['Oper-Status'] != 'Online':
-            logger.warning(f"DPU {device_alias} is down or offline: {status_dict}, skipping the DPU dump")
+    duts_and_dpus_to_dump = dict()
+    for dut_alias, cli_obj in get_dut_cli_objs_from_topo_obj(topology_obj).items():
+        try:
+            # Add the DUT itself to the dumps
+            duts_and_dpus_to_dump[dut_alias] = topology_obj.players[dut_alias]['engine']
+            dpu_status = cli_obj.get_dpus_status()
+        except Exception as err:
+            logger.info(f"Error getting DPUs status form {dut_alias}, skipping the DPU dumps: {err}")
             continue
 
-        dpu_info = topology_obj.players.get(device_alias)
-        if not dpu_info:
-            logger.warning(f"No DPU player available for {device_alias}, skipping the DPU dump")
-            continue
-        dpus_to_dump[device_alias] = dpu_info['engine']
-    return dpus_to_dump
+        for device_alias, status_dict in dpu_status.items():
+            device_alias = device_alias.lower()
+            if status_dict['Admin-Status'] != 'up' or status_dict['Oper-Status'] != 'Online':
+                logger.warning(f"DPU {device_alias} is down or offline on {dut_alias}: {status_dict}, skipping the DPU dump")
+                continue
+
+            # for the main dut, the dpus are named as dpu0, dpu1, dpu2, dpu3
+            # for the other duts, the dpus are prefixed with the dut alias
+            # as dut-b-dpu0, dut-b-dpu1, dut-b-dpu2, dut-b-dpu3
+            dut_player_key = get_dpu_player_key(dut_alias, device_alias)
+
+            dpu_info = topology_obj.players.get(dut_player_key)
+            if not dpu_info:
+                logger.warning(f"No DPU player available for {dut_player_key} on {dut_alias}, skipping the DPU dump")
+                continue
+            duts_and_dpus_to_dump[dut_player_key] = dpu_info['engine']
+    return duts_and_dpus_to_dump
 
 
 def collect_all_dumps(topology_obj, duts_to_dump, dumps_folder, duration, item_clean_name):
@@ -353,7 +362,7 @@ def generate_and_copy_sonic_dump(topology_obj, dut_engine, dumps_folder, duratio
             # tests that need to dump all available DPUs
             logger.info(f"Implicit DPU dumps required per {item.name}")
             # get dpus to dump implicitly
-            duts_to_dump = get_dpus_to_dump(topology_obj, item)
+            duts_to_dump = get_duts_and_dpus_to_dump(topology_obj, item)
         elif not item.module.__name__.startswith('ngts.'):
             # for community tests, check 'duthosts' fixture and add all available DPUs from it
             logger.info("Checking 'duthosts' fixture for the DPUs to dump")

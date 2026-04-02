@@ -10,6 +10,17 @@ def need_dpu_player(dut_alias, noga_name):
     return dut_alias.startswith("dut") and (not dut_alias.endswith("_serial")) and "bobcat" in noga_name
 
 
+def get_dpu_player_key(dut_alias, device_alias):
+    # for back compatibility,
+    # one if the dut alias is not 'dut', the dpus are prefixed with the dut alias
+    # for the main dut, the dpus are named as dpu0, dpu1, dpu2, dpu3
+    # for the other duts, the dpus are prefixed with the dut alias
+    # as dut-b-dpu0, dut-b-dpu1, dut-b-dpu2, dut-b-dpu3
+    if dut_alias == "dut":
+        return device_alias
+    return f'{dut_alias}-{device_alias}'
+
+
 def get_topology_by_setup_name_and_aliases(
     setup_name, slow_cli, override_type=False
 ):
@@ -59,10 +70,15 @@ def add_dpu_player(topology, slow_cli, override_type, dut_alias, dut_name):
     base_dpu_ssh_nat_port = 5021
 
     for dpu_index in dpu_indexes:
-        dpu_host_name = f'dpu{dpu_index}'
+        # for back compatibility,
+        # one if the dut alias is not 'dut', the dpus are prefixed with the dut alias
+        # for the main dut, the dpus are named as dpu0, dpu1, dpu2, dpu3
+        # for the other duts, the dpus are prefixed with the dut alias
+        # as dut-b-dpu0, dut-b-dpu1, dut-b-dpu2, dut-b-dpu3
+        dpu_host_name = get_dpu_player_key(dut_alias, f"dpu{dpu_index}")
         dpu_player_entry['DESCRIPTION'] = dpu_host_name
         dpu_player_entry['SSH_PORT'] = base_dpu_ssh_nat_port + dpu_index
-        logger.info(f"create dpu{dpu_index} players")
+        logger.info(f"create dpu{dpu_index} player for {dut_name} (dut_alias: {dut_alias})")
         topology.players.update(create_player_entry(dpu_player_entry, slow_cli, override_type))
         if dpu_host_name in topology.players:
             topology.players[dpu_host_name]['attributes'].noga_query_data['attributes']['Common']['Name'] += f"-dpu-{dpu_index}"
