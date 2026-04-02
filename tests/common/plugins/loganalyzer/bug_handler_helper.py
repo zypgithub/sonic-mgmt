@@ -502,6 +502,9 @@ def get_sonic_branch(duthost, cli_type):
     # master branch always has release "none"
     if branch == "none":
         branch_output = duthost.shell("sonic-cfggen -y /etc/sonic/sonic_version.yml -v branch")['stdout']
+        if branch_output.lower() == "detached":
+            build_version = duthost.shell("sonic-cfggen -y /etc/sonic/sonic_version.yml -v build_version")['stdout']
+            branch_output = build_version.split(".")[0]
         if branch_output.lower() in PRIVATE_BRANCHES_TO_ENABLE_BUG_HANDLER_LIST:
             branch = "000000"
         else:
