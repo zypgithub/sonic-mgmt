@@ -108,7 +108,7 @@ def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects, platform
     cli_obj = topology_obj.players['dut']['cli']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed(
         [interfaces.dut_ha_2, interfaces.dut_hb_1, interfaces.dut_hb_2])
-    new_speed = "10G" if platform_params.filtered_platform not in MIRROR_EGRESS_NO_SUPPORT_PLATFORMS else "100G"
+    new_speed = "10G" if platform_params.filtered_platform not in MIRROR_EGRESS_NO_SUPPORT_PLATFORMS else "200G"
     interfaces_config_dict = {
         'dut': [{'iface': interfaces.dut_ha_2, 'speed': new_speed,
                  'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_ha_2, new_speed)}
