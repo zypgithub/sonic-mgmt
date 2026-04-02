@@ -539,7 +539,7 @@
         <name> container_hardening </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 1200 --allure_server_addr=\"10.215.11.120\" \'" --test-scripts container_hardening/test_container_hardening.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 1200 --vendor-specific-privileged-containers what-just-happened --allure_server_addr=\"10.215.11.120\" \'" --test-scripts container_hardening/test_container_hardening.py </static_args>
              </params>
         </cmd>
     </case>
@@ -556,7 +556,7 @@
         <name> process_reboot_cause </name>
         <cmd>
              <params>
-                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --allure_server_addr=\"10.215.11.120\" \'" --test-scripts platform_tests/test_process_reboot_cause.py </static_args>
+                 <static_args> --sonic-mgmt-dir /root/mars/workspace/[[conf:extra_info.sonic_mgmt_repo_name]] --dut-name [[conf:extra_info.dut_name]] --setup-name [[conf:extra_info.setup_name]] --sonic-topo [[conf:extra_info.topology]] --json-root-dir [[conf:extra_info.json_root_dir]] --raw-options "\'--log-cli-level debug  --show-capture=no -ra --showlocals --clean-alluredir --alluredir=/tmp/allure-results --timeout 600 --session-timeout 600 --vendor-specific-privileged-containers what-just-happened --allure_server_addr=\"10.215.11.120\" \'" --test-scripts platform_tests/test_process_reboot_cause.py </static_args>
              </params>
         </cmd>
     </case>
