@@ -6,6 +6,7 @@ import random
 from retry.api import retry_call
 from ngts.helpers.run_process_on_host import run_process_on_host
 from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from ngts.helpers.general_helper import is_smartswitch_platform
 from ngts.constants.constants import SonicConst, RebootTestConstants, PlatformTypesConstants
 from dateutil.parser import parse as time_parse
 from ngts.tests.nightly.app_extension.app_extension_helper import verify_app_container_up_and_repo_status_installed
@@ -26,7 +27,7 @@ expected_traffic_loss_dict = {'fast-reboot': {'data': 30, 'control': 90},
 
 
 @pytest.fixture()
-def validation_type(platform_params, is_simx, reboot_type):
+def validation_type(platform_params, is_simx, reboot_type, topology_obj):
     platform = platform_params.platform
     if platform == PlatformTypesConstants.PLATFORM_PANTHER:
         # WA for https://github.com/sonic-net/sonic-buildimage/issues/25263
@@ -55,6 +56,10 @@ def validation_type(platform_params, is_simx, reboot_type):
         # WA due to #4533180
         expected_traffic_loss_dict[validation_type]['data'] = 260
         expected_traffic_loss_dict[validation_type]['control'] = 220
+
+    elif is_smartswitch_platform(topology_obj) and validation_type == 'reboot':
+        expected_traffic_loss_dict['reboot']['data'] = 240
+        expected_traffic_loss_dict['reboot']['control'] = 240
 
     return validation_type
 
