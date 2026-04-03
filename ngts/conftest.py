@@ -27,7 +27,7 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli, SonicCliStub
 from ngts.cli_wrappers.sonic.sonic_general_clis import SonicGeneralCliDefault
 from ngts.constants.constants import InfraConst, PytestConst, NvosCliTypes, DebugKernelConsts, CliType, SonicConst
-from ngts.constants.constants import SerialLoggerConst
+from ngts.constants.constants import SerialLoggerConst, PlatformTypesConstants
 from ngts.helpers.general_helper import get_all_setups, get_dut_cli_obj_from_topo_obj
 from ngts.helpers.sonic_branch_helper import get_sonic_branch, update_branch_in_topology, update_sanitizer_in_topology, \
     get_sonic_image
@@ -827,6 +827,13 @@ def platform_params(show_platform_summary, setup_name, initial_topology_obj):
         platform_data.hwsku = json.loads(initial_topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['devdescription'])['hwsku']
     else:
         platform_data.hwsku = show_platform_summary['hwsku']
+
+    # workaround for bison simx platform
+    # when image implementation supports SN5640-C512S2, this will be removed
+    if platform_data.platform == PlatformTypesConstants.PLATFORM_BISON_SIMX:
+        platform_data.hwsku = 'Mellanox-SN5640-C512S2'
+        logger.info(f"Bison simx platform, setting hwsku to {platform_data.hwsku}")
+
     platform_data.setup_name = setup_name
     platform_data.asic_type = show_platform_summary["asic_type"]
     platform_data.asic_count = show_platform_summary["asic_count"]
