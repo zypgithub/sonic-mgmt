@@ -18,6 +18,7 @@ counterpoll_name_list = [
     "tunnel",
     "watermark",
     "wredqueue",
+    "wredport",
 ]
 
 
