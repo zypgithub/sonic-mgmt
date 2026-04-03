@@ -47,4 +47,8 @@
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/critical_process_monitoring.cases </cases>
     </test>
 
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/reboot.cases </cases>
+    </test>
+
 </DBDEF>
