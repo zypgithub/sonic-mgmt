@@ -806,6 +806,13 @@ platform_tests/test_reboot.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/test_reboot.py::test_cold_reboot:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4958590"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4958590"
+
 platform_tests/api/test_sfp.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
