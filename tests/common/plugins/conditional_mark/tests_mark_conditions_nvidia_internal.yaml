@@ -224,6 +224,14 @@ tests/nightly/sanity_checker/test_sanity_checker.py::test_cpld_version_check:
     conditions:
     - "'simx' in platform"
 
+tests/nightly/sensors/test_psu.py:
+  skip:
+    reason: "SPC6 simx and liquid cooling platforms are DC and don't have PSUs"
+    conditions_logical_operator: or
+    conditions:
+    - "'_ld' in platform"
+    - "'sn6600' and 'simx' in platform"
+
 tests/push_build_tests/L3/sflow/test_sflow.py:
   skip:
     reason: "sflow still isn't supported on Simx "
