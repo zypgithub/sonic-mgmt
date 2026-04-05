@@ -250,6 +250,20 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_rout
                         files_list = system.techsupport.get_techsupport_empty_files(engines.dut, tech_folder=folder)
                         with allure.independent_step(f'validate files sizes for {folder}'):
                             verify_techsupport_files_sizes(files_list, folder, devices, skynet)
+
+            # sx_core module validation only applies to switches that have the sx_core kernel module.
+            # IB (XDR) switches (Crocodile, Mamba, Taipan) have sx_core; NVLink switches (Juliet, Rosalind) do not.
+            if devices.dut.has_sx_core:
+                with allure.independent_step('validate sx_core modules in dump'):
+                    validate_sx_core_modules_in_dump_nvos(engines.dut, tech_support_dir)
+
+                with allure.independent_step('validate present transceivers in dump'):
+                    result = validate_present_transceivers_in_dump_nvos(engines.dut, tech_support_dir)
+                    if result == "skip":
+                        logger.info('validate_present_transceivers_in_dump_nvos: skipped (no present transceivers)')
+            else:
+                logger.info('Skipping sx_core module validation: not an IB switch (switch_type={})'.format(
+                    devices.dut.switch_type))
     finally:
         if devices.dut.has_nmx and not skynet:
             Cluster().unset(apply=True)
@@ -380,3 +394,180 @@ def verify_secret_obscurity(content: str, pattern: str, file_name: str, secret_n
         if secret:
             assert match.group(1) != secret, f'{secret_name} secret is visible'
         assert match.group(1) == expected_obscurity, f'{secret_name} secret is not obscured correctly'
+
+
+def validate_sx_core_modules_in_dump_nvos(engine, dump_folder_path):
+    """
+    Validate that all sx_core SysFS transceiver module directories from the DUT
+    are properly collected in the techsupport dump, and that collected files are not empty.
+    Answers the question: "Were all module slots collected into the dump?"
+    NVOS version -- uses engine.run_cmd().
+
+    Test flow:
+        1. Verify sx_core SysFS path is accessible on the DUT (assert if not)
+        2. Collect module directory names from the DUT (ground truth)
+        3. Collect module directory names from the techsupport dump
+        4. Compare module counts between DUT and dump
+        5. Compare module names, every DUT module must exist in the dump
+        6. Check for empty files in collected module directories
+
+    :param engine: NVOS SSH engine (engines.dut)
+    :param dump_folder_path: path to folder which has extracted dump file content
+    """
+    # sx_core sysfs is global under asic0 on Mellanox multi-ASIC systems;
+    # all transceiver modules are mapped to asic0 regardless of ASIC count.
+    # If sx_core ever exposes per-asic directories (asic1/2/...), this
+    # validator must be revisited to include asicX in the comparison key.
+    SX_CORE_SYSFS_PATH = "/sys/module/sx_core/asic0"
+
+    with allure.step('Verify sx_core SysFS modules are accessible on the DUT'):
+        # List all module directories under sx_core sysfs and extract just the directory names
+        # Example output: module0\nmodule1\n...\nmodule72
+        dut_modules_output = engine.run_cmd(
+            'ls -d {}/module* | xargs -I{{}} basename {{}}'.format(SX_CORE_SYSFS_PATH))
+        output_lower = dut_modules_output.strip().lower()
+        assert dut_modules_output.strip() and 'module' in output_lower \
+            and "error" not in output_lower and "failed" not in output_lower \
+            and "no such file" not in output_lower and "cannot access" not in output_lower, \
+            'sx_core module path {} not accessible on this switch. ' \
+            'The sx_core kernel module may not be loaded. Output: {}'.format(
+                SX_CORE_SYSFS_PATH, dut_modules_output.strip())
+
+    with allure.step('Collect module names from DUT'):
+        dut_modules = set(dut_modules_output.strip().splitlines())
+        logger.info('DUT has {} sx_core modules: {}'.format(len(dut_modules), sorted(dut_modules)))
+
+    with allure.step('Collect module names from techsupport dump'):
+        # Search the extracted dump for sx_core/asic0 module directories and extract their names.
+        # Matches the exact path generate_dump uses: $TAR_DIR/sdk_sysfs/sx_core/asic0/module*
+        # Use a strict regex that anchors on `module<digits>` only -- otherwise `-path` with `*`
+        # would also match nested directories like `module0/eeprom/pages/0`, polluting the set
+        # with names like `eeprom`, `pages`, `0` and breaking the count comparison below.
+        dump_modules_output = engine.run_cmd(
+            'sudo find {} -regextype posix-extended '
+            '-regex ".*/sx_core/asic0/module[0-9]+" -type d '
+            '-printf "%f\\n" 2>/dev/null || true'.format(dump_folder_path))
+        dump_modules = set(dump_modules_output.strip().splitlines()) if dump_modules_output.strip() else set()
+        logger.info('Dump has {} sx_core modules: {}'.format(len(dump_modules), sorted(dump_modules)))
+
+    with allure.step('Validate module count matches between DUT and dump'):
+        assert len(dump_modules) == len(dut_modules), \
+            ('sx_core module count mismatch: DUT has {} modules but dump has {}. '
+             'DUT: {}, Dump: {}'.format(len(dut_modules), len(dump_modules),
+                                        sorted(dut_modules), sorted(dump_modules)))
+
+    with allure.step('Validate all DUT modules exist in dump'):
+        missing_modules = dut_modules - dump_modules
+        assert not missing_modules, \
+            ('sx_core modules missing from techsupport dump: {}. '
+             'The save_sx_core_files function in generate_dump may not be collecting '
+             'all modules from {}/module*.'.format(sorted(missing_modules), SX_CORE_SYSFS_PATH))
+
+    with allure.step('Validate no empty files in collected module data'):
+        # Search for zero-byte files anywhere inside the module subtree, including nested
+        # paths like `module*/eeprom/pages/N/data`. Unlike the strict regex used for module
+        # directory enumeration above, here the broad `-path module*` pattern is intentional --
+        # any empty file in module data indicates failed collection.
+        empty_files_output = engine.run_cmd(
+            'sudo find {} -path "*/sx_core/asic0/module*" -type f -empty 2>/dev/null || true'.format(dump_folder_path))
+        assert not empty_files_output.strip(), \
+            ('Found empty files in sx_core module data in techsupport dump:\n{}\n'
+             'The module data may not have been read correctly.').format(empty_files_output.strip())
+
+
+def validate_present_transceivers_in_dump_nvos(engine, dump_folder_path):
+    """
+    Cross-validate techsupport dump against transceiver presence data on the DUT.
+    Compares the number of present transceivers (modules with present=1 in sysfs)
+    against modules with present=1 in the dump, and verifies those modules have non-empty files.
+    Answers the question: "Were the plugged-in modules collected with valid data?"
+    NVOS version -- uses engine.run_cmd() and reads sysfs directly.
+
+    Test flow:
+        1. Count modules with present=1 on the DUT (via sysfs)
+        2. Count modules with present=1 in the dump
+        3. Sanity check: if DUT has present modules, dump must have at least one
+        4. Verify all DUT-present modules exist in the dump present set
+        5. Verify present modules in the dump have non-empty data files
+
+    :param engine: NVOS SSH engine (engines.dut)
+    :param dump_folder_path: path to folder which has extracted dump file content
+    """
+    SX_CORE_SYSFS_PATH = "/sys/module/sx_core/asic0"
+
+    with allure.step('Verify sx_core SysFS path exists on the DUT'):
+        # On Mellanox switches sx_core must be loaded; missing = SDK/kernel bug (FAIL, not SKIP)
+        sx_core_check = engine.run_cmd(
+            'ls -d {}/module* 2>/dev/null || true'.format(SX_CORE_SYSFS_PATH))
+        assert sx_core_check.strip(), \
+            'sx_core module path {} not accessible. Cannot validate present transceivers.'.format(
+                SX_CORE_SYSFS_PATH)
+
+    with allure.step('Count modules with present=1 on the DUT'):
+        # For each module's 'present' file in sysfs, read its value;
+        # if "1" (transceiver plugged in), print the module directory name.
+        # The output is captured into dut_present_cmd for later parsing.
+        dut_present_cmd = (
+            'for f in {}/module*/present; do '
+            'val=$(cat "$f" 2>/dev/null); '
+            '[ "$val" = "1" ] && basename $(dirname "$f"); '
+            'done'.format(SX_CORE_SYSFS_PATH))
+        dut_present_output = engine.run_cmd(dut_present_cmd)
+        dut_present_modules = set(dut_present_output.strip().splitlines()) if dut_present_output.strip() else set()
+        dut_present_count = len(dut_present_modules)
+        if dut_present_count == 0:
+            # sx_core exists (verified above) but no transceivers plugged in -- legitimate skip
+            logger.info('No present transceivers on DUT, skipping cross-validation')
+            return "skip"
+        logger.info('DUT has {} modules with present=1: {}'.format(
+            dut_present_count, sorted(dut_present_modules)))
+
+    with allure.step('Count modules with present=1 in dump'):
+        # Same logic but searches the extracted dump for 'present' files under sx_core/asic0.
+        # Use a strict regex anchored on `module<digits>/present` to avoid matching nested
+        # paths like `module0/eeprom/pages/0/present` should the kernel ever expose them.
+        dump_present_cmd = (
+            'for f in $(sudo find {} -regextype posix-extended '
+            '-regex ".*/sx_core/asic0/module[0-9]+/present" -type f 2>/dev/null); do '
+            'val=$(sudo cat "$f" 2>/dev/null); '
+            '[ "$val" = "1" ] && basename $(dirname "$f"); '
+            'done'.format(dump_folder_path))
+        dump_present_output = engine.run_cmd(dump_present_cmd)
+        dump_present_modules = set(dump_present_output.strip().splitlines()) if dump_present_output.strip() else set()
+        dump_present_count = len(dump_present_modules)
+        logger.info('Dump has {} modules with present=1: {}'.format(
+            dump_present_count, sorted(dump_present_modules)))
+
+    with allure.step('Sanity-check DUT vs dump present counts'):
+        logger.info('DUT present count = {}, dump present count = {}'.format(
+            dut_present_count, dump_present_count))
+        assert dump_present_count > 0, \
+            'DUT has {} modules with present=1 but dump has none'.format(dut_present_count)
+
+    with allure.step('Verify all DUT-present modules exist in dump'):
+        # Note: this could fail legitimately if a transceiver was removed between
+        # dump generation and this check, but in regression environments this
+        # should not happen.
+        missing_present = dut_present_modules - dump_present_modules
+        assert not missing_present, \
+            ('Modules present on DUT but missing from dump: {}. '
+             'DUT present: {}, Dump present: {}'.format(
+                 sorted(missing_present), sorted(dut_present_modules),
+                 sorted(dump_present_modules)))
+
+    with allure.step('Validate present modules in dump have non-empty data files'):
+        if dump_present_modules:
+            for module_name in sorted(dump_present_modules):
+                # Find the exact module directory under asic0 and check for zero-byte files
+                empty_check = engine.run_cmd(
+                    'sudo find {} -path "*/sx_core/asic0/{}" -type d -exec '
+                    'find {{}} -type f -empty \\; 2>/dev/null || true'.format(
+                        dump_folder_path, module_name))
+                assert not empty_check.strip(), \
+                    ('Module {} has present=1 but contains empty files in dump:\n{}\n'
+                     'The transceiver data may not have been read correctly.').format(
+                         module_name, empty_check.strip())
+        else:
+            assert False, 'No present modules found in dump to validate'
+
+    return "pass"

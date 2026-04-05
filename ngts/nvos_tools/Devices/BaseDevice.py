@@ -208,6 +208,10 @@ class BaseDevice(ABC):
     def is_ib(self):
         return self.switch_type == NvosConst.IB_SWITCH_TYPE
 
+    @property
+    def has_sx_core(self):
+        return self.is_ib()
+
     def get_lldp_port_name_from_dump(self, lldp_dict):
         """Return the port name from parsed LLDP dump; key is chosen by device type (eth vs ib)."""
         pass
