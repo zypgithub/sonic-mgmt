@@ -2806,6 +2806,12 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         super()._init_constants()
         self.asic_type = NvosConst.NVL6
         self.supported_nvl_speeds = ['200G', '400G', '360G', '328G']  # Rosalind supports all speeds
+        # MHz -> NVL link speeds allowed for that FAE core-clock (operational profile).
+        self.fae_supported_core_clocks = {
+            755: ['400G', '360G', '328G'],
+            800: self.supported_nvl_speeds,
+        }
+        self.default_core_clock = 800
         # Note: Rosalind has no regular FNM (nvl_fnm_ports is empty), only internal FNM
 
         # Rosalind cluster apps expose additional internal defaults in show output.

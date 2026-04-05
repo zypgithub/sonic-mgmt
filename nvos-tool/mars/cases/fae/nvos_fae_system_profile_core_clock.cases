@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> NVOS </group>
+      <name> NVOS - FAE system profile core-clock </name>
+      <info> </info>
+      <owner> Rula Shalata </owner>
+    </Test>
+    <Case>
+      <tags> </tags>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 10800 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+
+  <case>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[rosalind]</value>
+      </condition>
+    </ignore>
+    <name> NVOS - FAE system profile core-clock main flow </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_fae_system_profile_core_clock.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_fae_core_clock_main_flow --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800    \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[rosalind]</value>
+      </condition>
+    </ignore>
+    <name> NVOS - FAE system profile core-clock invalid flow </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_fae_system_profile_core_clock.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_fae_core_clock_invalid_flow --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800    \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+  <case>
+    <ignore>
+      <condition>
+        <key>dut_type</key>
+        <op> not in </op>
+        <value>[rosalind]</value>
+      </condition>
+    </ignore>
+    <name> NVOS - FAE system profile core-clock ports down </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args>  --setup_name [[conf:extra_info.setup_name]]  --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/fae/test_fae_system_profile_core_clock.py --raw_options "\' --rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -k test_fae_core_clock_ports_down --log-level=INFO --default_pass_env_var=[[conf:extra_info.default_pass_env_var]] --clean-alluredir --alluredir=/tmp/allure-results  --showlocals  [[conf:extra_info.additional_options]]  --timeout 1800    \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+</CASEDEF>

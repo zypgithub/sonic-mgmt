@@ -33,6 +33,7 @@ from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.Files import Files
 from ngts.nvos_tools.system.Health import Health
+from ngts.nvos_tools.system.Profile import Profile
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
@@ -217,6 +218,7 @@ class FaeSystem(BaseComponent):
         self.fatal = BaseComponent(self, path='/fatal')
         self.fatal.monitor = BaseComponent(self.fatal, path='/monitor')
         self.serial_console = BaseComponent(self, path='/serial-console')
+        self.profile = Profile(self)
         self.log = FaeLog(self)
         self.control = BaseComponent(self, path='/control')
         self.dockers = BaseComponent(self, path='/control/dockers')

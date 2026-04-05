@@ -1,8 +1,10 @@
 import allure
-from ngts.nvos_constants.constants_nvos import ActionConsts
+from ngts.nvos_constants.constants_nvos import ActionConsts, ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.DutUtilsTool import RebootParams
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+
+CORE_CLOCK_KEY = 'core-clock'
 
 
 class Profile(BaseComponent):
@@ -46,6 +48,43 @@ class Profile(BaseComponent):
                 send_user_confirmation=send_user_confirmation,
                 expected_output=expected_output
             )
+
+            TestToolkit.add_loganalyzer_marker(engine, marker)
+
+            return result
+
+    def action_change_core_clock(
+        self,
+        core_clock_mhz,
+        test_api,
+        engine=None,
+        flags=None,
+        send_user_confirmation=None,
+        reboot_params=True,
+    ):
+        """
+        Execute nv action change fae system profile core-clock.
+        """
+        expected_output = self.PROFILE_CHANGE_RESPONSE_MESSAGES if test_api == ApiType.NVUE else ""
+
+        engine = engine or TestToolkit.get_engine()
+
+        with allure.step(f"Change FAE system profile core-clock to {core_clock_mhz}"):
+            marker = TestToolkit.get_loganalyzer_marker(engine)
+
+            action_kwargs = {
+                "action_str": ActionConsts.CHANGE,
+                "additional_params": {CORE_CLOCK_KEY: core_clock_mhz},
+                "engine": engine,
+                "reboot_params": reboot_params,
+                "expected_output": expected_output,
+            }
+            if flags is not None:
+                action_kwargs["flags"] = flags
+            if send_user_confirmation is not None:
+                action_kwargs["send_user_confirmation"] = send_user_confirmation
+
+            result = self.action(**action_kwargs)
 
             TestToolkit.add_loganalyzer_marker(engine, marker)
 
