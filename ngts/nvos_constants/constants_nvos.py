@@ -1090,6 +1090,7 @@ class ConfigConsts:
 class PlatformConsts:
     PLATFORM_FW = "firmware"
     SYSTEM_TYPE = "system-type"
+    ASIC_REVISION = "asic-revision"
     FW_PATH = "/auto/sw_system_project/MLNX_OS_INFRA/mlnx_os2/sx_mlnx_fw/"
     XDR_FW_PATH = "/auto/mswg/release/sx_mlnx_fw/{asic}/"
     PLATFORM_ENVIRONMENT = "environment"
