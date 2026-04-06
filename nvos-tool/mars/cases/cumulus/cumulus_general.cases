@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CASEDEF>
+  <global>
+    <Test>
+      <group> Cumulus </group>
+      <name> Cumulus General </name>
+      <info> </info>
+      <owner> Yana Port </owner>
+    </Test>
+    <Case>
+      <tags> General </tags>
+      <wrapper> [[run_time:db_tests_path]]/sonic-mgmt/sonic-tool/mars/scripts/canonical_mars_pytest_runner.py </wrapper>
+      <tout> 10800 </tout>
+      <tags>ALL</tags>
+    </Case>
+  </global>
+
+  <case>
+    <name> General SSD usage </name>
+    <info> </info>
+    <tout> 10800 </tout>
+    <cmd>
+      <params>
+          <static_args> --setup_name [[conf:extra_info.setup_name]] --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/general/disk_write_del_test/test_ssd_usage.py --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini -v -m cumulus --log-level=INFO --clean-alluredir  --alluredir=/tmp/allure-results  --disable_cli_coverage --disable_loganalyzer --showlocals  [[conf:extra_info.additional_options]]  --timeout 7800   \'"</static_args>
+      </params>
+    </cmd>
+  </case>
+
+</CASEDEF>

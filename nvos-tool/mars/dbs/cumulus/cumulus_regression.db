@@ -92,6 +92,16 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_fips.cases </cases>
 	</test>
-	
+
+	<!-- Stress Cumulus Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_stress.cases </cases>
+	</test>
+
+	<!-- General Cumulus Tests -->
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/cumulus/cumulus_general.cases </cases>
+	</test>
+
 </DBDEF>
 
