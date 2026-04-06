@@ -1664,7 +1664,7 @@ class JulietSwitch(NvLinkSwitch):
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ]
         self.sdn_fm_config_edits = self.sdn_fm_config_edits_standalone
-        # SM config edits for Juliet (only when has_loopbox)
+        # SM config edits for Juliet (only when has_loopbox or is_simx)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
             "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file}",
@@ -2884,6 +2884,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
 
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0400_versions.json"
+        self.nmx_cluster_apps_versions_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/nmx-versions/rosalind_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6100_ld-r0")
@@ -3044,14 +3045,15 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         # Only apply workaround if bug is active
         if is_bug_active(4910763):
             with allure.step("WA for Bug 4910763: Restart nv-bridge after SM config"):
+                from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
                 logger.info("Stopping nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
 
-                # logger.info("Restarting nv-bridge container")
-                # engines.dut.run_cmd("sudo systemctl restart nv-bridge")
-
                 logger.info("Starting nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
+
+                logger.info("Waiting for nmx-controller to be ready after restart")
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         else:
             logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 

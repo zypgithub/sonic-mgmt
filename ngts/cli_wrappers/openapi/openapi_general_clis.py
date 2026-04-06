@@ -1,15 +1,15 @@
-import json
 import logging
+import json
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from .openapi_command_builder import OpenApiCommandHelper, OpenApiRequest, RequestData
+from ...tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ...nvos_constants.constants_nvos import OpenApiConfigVerifyConsts
 from ...nvos_tools.infra.ResultObj import ResultObj
-from ...tests_nvos.general.security.certificate.CertInfo import CertInfo
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class OpenApiGeneralCli:
@@ -108,7 +108,7 @@ class OpenApiGeneralCli:
         Save configuration
         :param engine: ssh engine object
         """
-        logging.info("Execute config save using OpenApi")
+        logger.info("Execute config save using OpenApi")
 
         resource_path = '/revision/applied'
         return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'PATCH', engine.ip,
@@ -124,7 +124,7 @@ class OpenApiGeneralCli:
         :param output_type: json / str
         :param param: --all/ ''
         """
-        logging.info("Execute config show using OpenApi")
+        logger.info("Execute config show using OpenApi")
 
         resource_path = '/?rev={revision}&filled=False'.format(revision=revision)
         res = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'GET', engine.ip,
@@ -142,7 +142,7 @@ class OpenApiGeneralCli:
         Detach configuration
         :param engine: ssh engine object
         """
-        logging.info("Execute config save using OpenApi")
+        logger.info("Execute config save using OpenApi")
         # TODO: not supported yet
         # return OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'DETACH',
         #                                            engine.ip, 'system/config/detach')
@@ -158,7 +158,7 @@ class OpenApiGeneralCli:
         :param output_type: json / str
         """
         # TODO:
-        logging.info("Execute config diff using OpenApi")
+        logger.info("Execute config diff using OpenApi")
 
         resource_path = '/?rev={revision_2}&filled=False&diff={revision_1}'.format(revision_2=revision_2, revision_1=revision_1)
         res = OpenApiCommandHelper.execute_script(engine.engine.username, engine.engine.password, 'GET', engine.ip,
@@ -261,11 +261,16 @@ class OpenApiGeneralCli:
             open_api_port=engine.open_api_port
         )
 
-        # Step 2: Send REPLACE request (creates revision)
+        # Match NVOS `nv config replace`: clear the revision first, then patch the new content into it.
+        clear_response = OpenApiRequest.send_delete_request(request_data)
+        if clear_response and ('error' in clear_response.lower() or 'failed' in clear_response.lower()):
+            return ResultObj(False, info=f"Clear config failed: {clear_response}", returned_value=clear_response)
+
+        # Step 2: Send PATCH request on the cleared revision
         response = OpenApiRequest.send_patch_request(
             request_data,
             text_content=file_content,
-            replace=True
+            replace=False
         )
 
         # Check if operation failed

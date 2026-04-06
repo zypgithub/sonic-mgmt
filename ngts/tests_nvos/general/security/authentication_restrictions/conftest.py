@@ -1,13 +1,10 @@
 import random
-
 import pytest
 
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.general.security.authentication_restrictions.constants import RestrictionsConsts
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import set_local_users
+from ngts.tests_nvos.general.security.security_test_tools import security_test_utils
 from ngts.tools.test_utils import allure_utils as allure
 
 
@@ -21,9 +18,12 @@ def test_user(engines):
     with allure.step('Configure test user'):
         user_details = random.choice(RestrictionsConsts.TEST_USERS).copy()
         user_details[AaaConsts.USERNAME] += str(random.randint(0, 9999))
-        set_local_users(engines, [user_details], apply=True)
+        security_test_utils.set_local_users(engines, [user_details], apply=True)
 
-    return user_details
+    try:
+        yield user_details
+    finally:
+        security_test_utils.cleanup_local_users(engines, [user_details])
 
 
 @pytest.fixture(scope='function')
@@ -38,10 +38,13 @@ def test_users(engines):
         for _ in range(2):
             user_details = random.choice(RestrictionsConsts.TEST_USERS).copy()
             user_details[AaaConsts.USERNAME] += str(random.randint(0, 9999))
-            set_local_users(engines, [user_details], apply=True)
+            security_test_utils.set_local_users(engines, [user_details], apply=True)
             users.append(user_details)
 
-    return users
+    try:
+        yield users
+    finally:
+        security_test_utils.cleanup_local_users(engines, users)
 
 
 @pytest.fixture(scope='function', autouse=True)

@@ -1,31 +1,68 @@
+from typing import Mapping, Sequence
+import logging
 import random
-
 import pytest
 
-from ngts.tests_nvos.general.security.constants import MAX_TEST_TIMEOUT
-from ngts.tests_nvos.general.security.security_test_tools.constants import AccountingConsts, AuthMode
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_accounting_testing import *
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_remote_aaa_testing import *
-from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
-from ngts.tests_nvos.general.security.security_test_tools.switch_authenticators import SshAuthenticator
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.tacacs.constants import TacacsConsts, TacacsDockerServer1, TacacsDockerServer2, TacacsPhysicalServer
-from ngts.tests_nvos.general.security.tacacs.tacacs_test_utils import get_two_different_tacacs_servers, update_tacacs_server_auth_mode
+from ..security_test_tools.constants import AccountingConsts, AuthMode, AddressingType, AaaConsts, AccountingFields, AuthConsts
+from ..security_test_tools.generic_remote_aaa_testing import generic_aaa_accounting_testing, generic_remote_aaa_testing
+from .constants import TacacsConsts, TacacsDockerServer1, TacacsDockerServer2, TacacsPhysicalServer
+from ..security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
+from ..security_test_tools.tool_classes.RemoteAaaServerInfo import TacacsServerInfo
+from ..security_test_tools import resource_utils as security_resource_utils
+from ..security_test_tools.switch_authenticators import SshAuthenticator
+from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from ngts.nvos_constants.constants_nvos import ApiType, TestFlowType
+from ..security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.System import System
+from ngts.ngts_types import EnginesT, TopologyT
+from .. import constants as security_constants
+from . import tacacs_test_utils
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='session', autouse=True)
-def prepare_scp_test(prepare_scp):
+def prepare_scp_test(prepare_scp: None) -> None:
     return
+
+
+def _pick_reachable_tacacs_server(
+    engines: EnginesT,
+    server_by_addr_type: Mapping[str, TacacsServerInfo],
+    preferred_addressing_types: Sequence[str],
+) -> tuple[TacacsServerInfo, str]:
+    '''
+    Pick a reachable TACACS server from the list of preferred addressing types.
+
+    Args:
+        engines: The engines object.
+        server_by_addr_type: A mapping of addressing types to TACACS server info.
+        preferred_addressing_types: A list of preferred addressing types.
+
+    Returns:
+        A tuple containing the reachable TACACS server and the addressing type.
+
+    Raises:
+        AssertionError: If no reachable TACACS server variants are found.
+    '''
+    for addressing_type in preferred_addressing_types:
+        candidate_server = server_by_addr_type[addressing_type].copy()
+        if candidate_server.verify_availability(dut_engine=engines.dut).result:
+            return candidate_server, addressing_type
+
+    checked_types = ', '.join(preferred_addressing_types)
+    raise AssertionError(f'No reachable TACACS server variants found for addressing types: {checked_types}')
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_set_unset_show(test_api, engines):
+def test_tacacs_set_unset_show(test_api: str, engines: EnginesT) -> None:
     tacacs_obj = System().aaa.tacacs
-    generic_aaa_test_set_unset_show(
+    generic_remote_aaa_testing.generic_aaa_test_set_unset_show(
         test_api=test_api, engines=engines,
         remote_aaa_type=RemoteAaaType.TACACS,
         main_resource_obj=tacacs_obj,
@@ -62,14 +99,14 @@ def test_tacacs_set_unset_show(test_api, engines):
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_set_invalid_param(test_api, engines):
+def test_tacacs_set_invalid_param(test_api: str, engines: EnginesT) -> None:
     """
     @summary: Verify failure for invalid param values
     """
     tacacs_obj = System().aaa.tacacs
     global_tacacs_fields = [AaaConsts.PORT, AaaConsts.SECRET, AaaConsts.TIMEOUT]
     tacacs_server_fields = global_tacacs_fields + [AaaConsts.PRIORITY, AaaConsts.SERVER_AUTH_MODE]
-    generic_aaa_test_set_invalid_param(
+    generic_remote_aaa_testing.generic_aaa_test_set_invalid_param(
         test_api=test_api,
         field_is_numeric=TacacsConsts.FIELD_IS_NUMERIC,
         valid_values=TacacsConsts.VALID_VALUES,
@@ -82,13 +119,21 @@ def test_tacacs_set_invalid_param(test_api, engines):
 
 
 @pytest.mark.check_log_size
-@pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
+@pytest.mark.timeout(security_constants.MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.parametrize('addressing_type', AddressingType.ALL_TYPES)
-def test_tacacs_auth(test_flow, test_api, addressing_type, engines, topology_obj, local_adminuser, request):
+def test_tacacs_auth(
+    test_flow: str,
+    test_api: str,
+    addressing_type: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    local_adminuser: UserInfo,
+    request: pytest.FixtureRequest,
+) -> None:
     """
     @summary: Basic test to verify authentication and authorization through tacacs, using all possible auth mediums:
         SSH, OpenApi, rcon, scp.
@@ -102,20 +147,20 @@ def test_tacacs_auth(test_flow, test_api, addressing_type, engines, topology_obj
     """
     skip_auth_mediums = []
     tacacs = System().aaa.tacacs
-    generic_aaa_test_auth(test_flow=test_flow, test_api=test_api, addressing_type=addressing_type, engines=engines,
-                          topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
-                          remote_aaa_type=RemoteAaaType.TACACS,
-                          remote_aaa_obj=tacacs,
-                          server_by_addr_type=TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE,
-                          test_param=AuthMode.ALL_TYPES,
-                          test_param_update_func=update_tacacs_server_auth_mode,
-                          skip_auth_mediums=skip_auth_mediums)
+    generic_remote_aaa_testing.generic_aaa_test_auth(test_flow=test_flow, test_api=test_api, addressing_type=addressing_type, engines=engines,
+                                                     topology_obj=topology_obj, local_adminuser=local_adminuser, request=request,
+                                                     remote_aaa_type=RemoteAaaType.TACACS,
+                                                     remote_aaa_obj=tacacs,
+                                                     server_by_addr_type=TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE,
+                                                     test_param=AuthMode.ALL_TYPES,
+                                                     test_param_update_func=tacacs_test_utils.update_tacacs_server_auth_mode,
+                                                     skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_bad_secret(test_api, engines, topology_obj):
+def test_tacacs_bad_secret(test_api: str, engines: EnginesT, topology_obj: TopologyT) -> None:
     """
     @summary: Verify that tacacs users can't auth when bad/no secret is configured.
 
@@ -128,16 +173,16 @@ def test_tacacs_bad_secret(test_api, engines, topology_obj):
     """
     tacacs_server = TacacsPhysicalServer.SERVER_IPV4.copy()
     tacacs_server.secret = RandomizationTool.get_random_string(6)
-    generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
-                                           remote_aaa_type=RemoteAaaType.TACACS,
-                                           remote_aaa_obj=System().aaa.tacacs,
-                                           bad_param_name=AaaConsts.SECRET, bad_configured_server=tacacs_server)
+    generic_remote_aaa_testing.generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
+                                                                      remote_aaa_type=RemoteAaaType.TACACS,
+                                                                      remote_aaa_obj=System().aaa.tacacs,
+                                                                      bad_param_name=AaaConsts.SECRET, bad_configured_server=tacacs_server)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_bad_port(test_api, engines, topology_obj):
+def test_tacacs_bad_port(test_api: str, engines: EnginesT, topology_obj: TopologyT) -> None:
     """
     @summary: Verify that tacacs users can't auth when bad port is configured.
 
@@ -148,16 +193,16 @@ def test_tacacs_bad_port(test_api, engines, topology_obj):
     """
     tacacs_server = TacacsPhysicalServer.SERVER_IPV4.copy()
     tacacs_server.port = AaaConsts.AAA_SERVER_BAD_PORT
-    generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
-                                           remote_aaa_type=RemoteAaaType.TACACS,
-                                           remote_aaa_obj=System().aaa.tacacs,
-                                           bad_param_name=AaaConsts.PORT, bad_configured_server=tacacs_server)
+    generic_remote_aaa_testing.generic_aaa_test_bad_configured_server(test_api, engines, topology_obj,
+                                                                      remote_aaa_type=RemoteAaaType.TACACS,
+                                                                      remote_aaa_obj=System().aaa.tacacs,
+                                                                      bad_param_name=AaaConsts.PORT, bad_configured_server=tacacs_server)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_unique_priority(test_api, engines, topology_obj):
+def test_tacacs_unique_priority(test_api: str, engines: EnginesT, topology_obj: TopologyT) -> None:
     """
     @summary: Verify that hostname priority must be unique
 
@@ -166,14 +211,14 @@ def test_tacacs_unique_priority(test_api, engines, topology_obj):
         2. set another hostname with existing priority - expect failure
 
     """
-    generic_aaa_test_unique_priority(test_api, remote_aaa_obj=System().aaa.tacacs)
+    generic_remote_aaa_testing.generic_aaa_test_unique_priority(test_api, remote_aaa_obj=System().aaa.tacacs)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_priority(test_flow, test_api, engines, topology_obj, request):
+def test_tacacs_priority(test_flow: str, test_api: str, engines: EnginesT, topology_obj: TopologyT, request: pytest.FixtureRequest) -> None:
     """
     @summary: Verify that auth is done via the lowest prioritized server
 
@@ -183,16 +228,23 @@ def test_tacacs_priority(test_flow, test_api, engines, topology_obj, request):
         3. advance the lowest prioritized server to be most prioritized
         4. repeat steps 2-3 until reach priority 8 (max)
     """
-    server1, server2 = get_two_different_tacacs_servers()
-    generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.TACACS,
-                              remote_aaa_obj=System().aaa.tacacs, server1=server1, server2=server2)
+    server1, server2 = tacacs_test_utils.get_two_different_tacacs_servers()
+    generic_remote_aaa_testing.generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type=RemoteAaaType.TACACS,
+                                                         remote_aaa_obj=System().aaa.tacacs, server1=server1, server2=server2)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_server_unreachable(test_flow, test_api, engines, topology_obj, local_adminuser, request):
+def test_tacacs_server_unreachable(
+    test_flow: str,
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    local_adminuser: UserInfo,
+    request: pytest.FixtureRequest,
+) -> None:
     """
     @summary: Verify that when a server is unreachable, auth is done via next in line
         (next server or authentication method – local)
@@ -209,19 +261,26 @@ def test_tacacs_server_unreachable(test_flow, test_api, engines, topology_obj, l
         9.	Bring back the first server
         10. Verify auth – success only with lowest server user
     """
-    server1, server2 = get_two_different_tacacs_servers()
-    generic_aaa_test_server_unreachable(test_flow, test_api, engines, topology_obj, request,
-                                        local_adminuser=local_adminuser,
-                                        remote_aaa_type=RemoteAaaType.TACACS,
-                                        remote_aaa_obj=System().aaa.tacacs,
-                                        server1=server1, server2=server2)
+    server1, server2 = tacacs_test_utils.get_two_different_tacacs_servers()
+    generic_remote_aaa_testing.generic_aaa_test_server_unreachable(test_flow, test_api, engines, topology_obj, request,
+                                                                   local_adminuser=local_adminuser,
+                                                                   remote_aaa_type=RemoteAaaType.TACACS,
+                                                                   remote_aaa_obj=System().aaa.tacacs,
+                                                                   server1=server1, server2=server2)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_flow', TestFlowType.ALL_TYPES)
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_auth_error(test_flow, test_api, engines, topology_obj, local_adminuser: UserInfo, request):
+def test_tacacs_auth_error(
+    test_flow: str,
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    local_adminuser: UserInfo,
+    request: pytest.FixtureRequest,
+) -> None:
     """
     @summary: Verify the behavior in case of auth error (username not found or bad credentials).
 
@@ -238,11 +297,11 @@ def test_tacacs_auth_error(test_flow, test_api, engines, topology_obj, local_adm
         6.	Verify auth with 2nd server credentials – expect success
         7.  Verify auth with local user credentials - expect success
     """
-    server1, server2 = get_two_different_tacacs_servers()
-    generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, request, local_adminuser=local_adminuser,
-                                remote_aaa_type=RemoteAaaType.TACACS,
-                                remote_aaa_obj=System().aaa.tacacs,
-                                server1=server1, server2=server2)
+    server1, server2 = tacacs_test_utils.get_two_different_tacacs_servers()
+    generic_remote_aaa_testing.generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, request, local_adminuser=local_adminuser,
+                                                           remote_aaa_type=RemoteAaaType.TACACS,
+                                                           remote_aaa_obj=System().aaa.tacacs,
+                                                           server1=server1, server2=server2)
 
 
 # -------------------- FEATURE SPECIFIC TESTS ---------------------
@@ -259,8 +318,15 @@ NOTES:
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 @pytest.mark.parametrize('addressing_type', AddressingType.ALL_TYPES)
-def test_tacacs_accounting_basic(test_api, addressing_type, engines, topology_obj, request, local_adminuser: UserInfo,
-                                 switch_hostname: str):
+def test_tacacs_accounting_basic(
+    test_api: str,
+    addressing_type: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    switch_hostname: str,
+) -> None:
     """
     @summary: Verify accounting basic functionality
 
@@ -277,17 +343,23 @@ def test_tacacs_accounting_basic(test_api, addressing_type, engines, topology_ob
     test_server.auth_mode = random.choice(AuthMode.ALL_TYPES)
     test_server.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server.auth_mode]
 
-    generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
-                                      remote_aaa_type=RemoteAaaType.TACACS,
-                                      remote_aaa_obj=System().aaa.tacacs,
-                                      server=test_server, skip_auth_mediums=skip_auth_mediums)
+    generic_aaa_accounting_testing.generic_aaa_test_accounting_basic(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
+                                                                     remote_aaa_type=RemoteAaaType.TACACS,
+                                                                     remote_aaa_obj=System().aaa.tacacs,
+                                                                     server=test_server, skip_auth_mediums=skip_auth_mediums)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_lowest_server_only(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                              switch_hostname: str):
+@pytest.mark.parametrize('test_api', [ApiType.NVUE])
+def test_tacacs_accounting_lowest_server_only(
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    switch_hostname: str,
+) -> None:
     """
     @summary: Verify that accounting logs are sent to lowest server only
 
@@ -297,14 +369,24 @@ def test_tacacs_accounting_lowest_server_only(test_api, engines, topology_obj, r
         3. enable tacacs
         4. verify accounting logs on lowest server only for tacacs users events
     """
-    addressing_type1 = random.choice(AddressingType.ALL_TYPES)
     auth_mode1 = random.choice(AuthMode.ALL_TYPES)
-    addressing_type2 = RandomizationTool.select_random_value(AddressingType.ALL_TYPES,
-                                                             [addressing_type1]).get_returned_value()
     auth_mode2 = random.choice(AuthMode.ALL_TYPES)
+    addressing_types = list(AddressingType.ALL_TYPES)
+    random.shuffle(addressing_types)
 
-    test_server1 = TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE[addressing_type1].copy()
-    test_server2 = TacacsDockerServer2.SERVER_BY_ADDRESSING_TYPE[addressing_type2].copy()
+    test_server1, addressing_type1 = _pick_reachable_tacacs_server(
+        engines,
+        TacacsDockerServer1.SERVER_BY_ADDRESSING_TYPE,
+        addressing_types,
+    )
+    # Prefer distinct address forms when available, but fall back to the same type if the lab only reaches one variant.
+    addressing_types_for_server2 = [addr_type for addr_type in addressing_types if addr_type != addressing_type1]
+    addressing_types_for_server2.append(addressing_type1)
+    test_server2, _ = _pick_reachable_tacacs_server(
+        engines,
+        TacacsDockerServer2.SERVER_BY_ADDRESSING_TYPE,
+        addressing_types_for_server2,
+    )
 
     test_server1.priority = 1
     test_server2.priority = 2
@@ -314,19 +396,24 @@ def test_tacacs_accounting_lowest_server_only(test_api, engines, topology_obj, r
     test_server2.auth_mode = auth_mode2
     test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[auth_mode2]
 
-    generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_obj, request, switch_hostname,
-                                                   local_adminuser,
-                                                   remote_aaa_type=RemoteAaaType.TACACS,
-                                                   remote_aaa_obj=System().aaa.tacacs,
-                                                   lowest_server=test_server1, highest_server=test_server2)
+    generic_aaa_accounting_testing.generic_aaa_test_accounting_lowest_server_only(test_api, engines, topology_obj, request, switch_hostname,
+                                                                                  local_adminuser,
+                                                                                  remote_aaa_type=RemoteAaaType.TACACS,
+                                                                                  remote_aaa_obj=System().aaa.tacacs,
+                                                                                  lowest_server=test_server1, highest_server=test_server2)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request,
-                                                     local_adminuser: UserInfo,
-                                                     switch_hostname: str):
+def test_tacacs_accounting_unreachable_lowest_server(
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    switch_hostname: str,
+) -> None:
     """
     @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only
 
@@ -356,18 +443,24 @@ def test_tacacs_accounting_unreachable_lowest_server(test_api, engines, topology
     test_server2.auth_mode = auth_mode2
     test_server2.users = TacacsDockerServer2.USERS_BY_AUTH_MODE[test_server2.auth_mode]
 
-    generic_aaa_test_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, switch_hostname,
-                                                          local_adminuser,
-                                                          remote_aaa_type=RemoteAaaType.TACACS,
-                                                          remote_aaa_obj=System().aaa.tacacs,
-                                                          lowest_server=test_server1, highest_server=test_server2)
+    generic_aaa_accounting_testing.generic_aaa_test_accounting_unreachable_lowest_server(test_api, engines, topology_obj, request, switch_hostname,
+                                                                                         local_adminuser,
+                                                                                         remote_aaa_type=RemoteAaaType.TACACS,
+                                                                                         remote_aaa_obj=System().aaa.tacacs,
+                                                                                         lowest_server=test_server1, highest_server=test_server2)
 
 
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_tacacs_accounting_local_first(test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                       switch_hostname: str):
+def test_tacacs_accounting_local_first(
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    switch_hostname: str,
+) -> None:
     """
     @summary: Verify that when lowest server becomes unreachable, accounting logs are sent to next available server only
 
@@ -387,17 +480,17 @@ def test_tacacs_accounting_local_first(test_api, engines, topology_obj, request,
     test_server.auth_mode = auth_mode
     test_server.users = TacacsDockerServer1.USERS_BY_AUTH_MODE[test_server.auth_mode]
 
-    generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
-                                            remote_aaa_type=RemoteAaaType.TACACS,
-                                            remote_aaa_obj=System().aaa.tacacs,
-                                            server=test_server)
+    generic_aaa_accounting_testing.generic_aaa_test_accounting_local_first(test_api, engines, topology_obj, request, switch_hostname, local_adminuser,
+                                                                           remote_aaa_type=RemoteAaaType.TACACS,
+                                                                           remote_aaa_obj=System().aaa.tacacs,
+                                                                           server=test_server)
 
 
-@pytest.mark.timeout(MAX_TEST_TIMEOUT, func_only=True)
+@pytest.mark.timeout(security_constants.MAX_TEST_TIMEOUT, func_only=True)
 @pytest.mark.security
 @pytest.mark.simx_security
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserInfo):
+def test_tacacs_timeout(test_api: str, engines: EnginesT, topology_obj: TopologyT, local_adminuser: UserInfo):
     """
     @summary: Verify timeout functionality
 
@@ -420,15 +513,15 @@ def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
         with allure.step('Set unreachable tacacs server with some timeout'):
             rand_timeout = random.randint(TacacsConsts.VALID_VALUES[AaaConsts.TIMEOUT][0],
                                           TacacsConsts.VALID_VALUES[AaaConsts.TIMEOUT][-1] // 3)
-            logging.info(f'Chosen timeout: {rand_timeout}')
-            configure_resource(engines, resource_obj=aaa.tacacs.server.server_id['1.2.3.4'], conf={
+            logger.info(f'Chosen timeout: {rand_timeout}')
+            security_resource_utils.configure_resource(engines, resource_obj=aaa.tacacs.server.server_id['1.2.3.4'], conf={
                 AaaConsts.TIMEOUT: rand_timeout,
                 AaaConsts.SECRET: "xyz",
                 AaaConsts.PORT: AaaConsts.AAA_SERVER_BAD_PORT
             })
 
         with allure.step('Set tacacs in authentication order and failthrough off'):
-            configure_resource(engines, resource_obj=aaa.authentication, conf={
+            security_resource_utils.configure_resource(engines, resource_obj=aaa.authentication, conf={
                 AuthConsts.ORDER: [AuthConsts.TACACS, AuthConsts.LOCAL],
                 AuthConsts.FAILTHROUGH: AaaConsts.DISABLED
             }, apply=True, verify_apply=False)
@@ -445,8 +538,8 @@ def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
         with allure.step('Set another unreachable server with timeout'):
             rand_timeout2 = random.randint(TacacsConsts.VALID_VALUES[AaaConsts.TIMEOUT][0],
                                            TacacsConsts.VALID_VALUES[AaaConsts.TIMEOUT][-1] // 3)
-            logging.info(f'Chosen timeout: {rand_timeout2}')
-            configure_resource(engines, resource_obj=aaa.tacacs.server.server_id['2.4.6.8'], conf={
+            logger.info(f'Chosen timeout: {rand_timeout2}')
+            security_resource_utils.configure_resource(engines, resource_obj=aaa.tacacs.server.server_id['2.4.6.8'], conf={
                 AaaConsts.PRIORITY: 2,
                 AaaConsts.TIMEOUT: rand_timeout2,
                 AaaConsts.SECRET: "xyz",
@@ -462,7 +555,7 @@ def test_tacacs_timeout(test_api, engines, topology_obj, local_adminuser: UserIn
             assert timestamp2 - timestamp1 >= rand_timeout + rand_timeout2, \
                 f'Timeout was too short. Expected: {rand_timeout + rand_timeout2}'
     finally:
-        logging.info('Disconnect local engine for cleanup steps')
+        logger.info('Disconnect local engine for cleanup steps')
         engines.dut.disconnect()
 
         # with allure.step('Remote reboot'):

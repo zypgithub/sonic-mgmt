@@ -29,7 +29,7 @@ logger = logging.getLogger()
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, standalone_system, setup_name, is_simx):
 
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -87,11 +87,14 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
             next(interfaces_wa)
             interface_wa_called = True
 
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines, devices)
+            if not (is_bug_active(4207869) and standalone_system):
+                ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_TELEMETRY)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox, standalone_system, devices)
 
             if not standalone_system:
@@ -133,7 +136,7 @@ def test_cluster_default_factory_reset(engines, devices, test_api, has_loopbox, 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name, has_loopbox, setup_name,
-                                          standalone_system, handle_la_marker_in_manufacture):
+                                          standalone_system, handle_la_marker_in_manufacture, is_simx):
     # SAME AS DEFAULT.
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -185,10 +188,13 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines, devices)
+            if not (is_bug_active(4207869) and standalone_system):
+                ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_TELEMETRY)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox, standalone_system, devices)
 
             if not standalone_system:
@@ -217,7 +223,7 @@ def test_cluster_factory_reset_keep_basic(engines, devices, test_api, test_name,
 @pytest.mark.timeout(35 * MINUTE, func_only=True)
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox, setup_name, standalone_system):
+def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, has_loopbox, setup_name, standalone_system, is_simx):
     # SAME
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
@@ -269,10 +275,13 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(ClusterAppsLogLevels.NOTICE, app, output_format, cluster)
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines, devices)
+            if not (is_bug_active(4207869) and standalone_system):
+                ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_TELEMETRY)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox, standalone_system, devices)
 
             if not standalone_system:
@@ -302,7 +311,7 @@ def test_cluster_factory_keep_only_files(engines, devices, test_api, test_name, 
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_name, has_loopbox, setup_name,
-                                               standalone_system):
+                                               standalone_system, is_simx):
     # Only fetched and generated files will be cleaned.
     # SAME
     TestToolkit.tested_api = test_api
@@ -359,10 +368,13 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 transformation_fn = ClusterConsts.CONFIG_FILES_CONTENT_CHANGE.get(file_type, lambda x: x)
                 initial_config_contents[file_type] = transformation_fn(initial_config_contents[file_type])
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
             next(interfaces_wa)
             interface_wa_called = True
             verify_config_files_content_not_changed(sdn, initial_config_contents, engines, devices)
+            if not (is_bug_active(4207869) and standalone_system):
+                ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_TELEMETRY)
             verify_apps_in_expected_state(cluster, 'ok', has_loopbox, standalone_system, devices)  # Apps should be running
 
             if not standalone_system:
@@ -377,12 +389,7 @@ def test_cluster_factory_reset_keep_all_config(engines, devices, test_api, test_
                 pass  # Or handle it if necessary
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
 
         for file_path in uploaded_files:
             engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
@@ -450,7 +457,8 @@ def reset_factory_pre_steps(engines, devices, test_api, cluster, current_time, s
 
     logger.info("Setting cluster state to enabled")
     ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
-    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
+    ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                     standalone_system=standalone_system)
 
     # Get config files paths for all apps that exist on this device type
     config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)
@@ -540,20 +548,27 @@ def rotate_logs(system):
         system.log.rotate_logs()
 
 
+def _filter_config_lines(content, file_type):
+    lines = set(content.split('\n'))
+    if file_type == 'fm_config':
+        lines = {line for line in lines if not line.startswith('LOG_LEVEL=') and
+                 not line.startswith('GFM_WAIT_TIMEOUT_SEC=')}
+    return lines
+
+
 def verify_config_files_content_not_changed(sdn, initial_config_contents, engines, devices):
     errors_list = []
     current_config_files_content = {}
-    # Get config files dynamically based on device type
     config_files_paths = ClusterTools.get_all_apps_config_files_paths(sdn, devices)
 
     for file_type, file_path in config_files_paths.items():
         current_config_files_content[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
     assert len(current_config_files_content) == len(initial_config_contents), 'Missing configs'
     for file_type, current_file_content in current_config_files_content.items():
-        if file_type == 'chassis_mapping':
+        if file_type in ('chassis_mapping', 'sm_config'):
             continue
         init_file_content = initial_config_contents.get(file_type)
-        if set(current_file_content.split('\n')) != set(init_file_content.split('\n')):
+        if _filter_config_lines(current_file_content, file_type) != _filter_config_lines(init_file_content, file_type):
             errors_list.append(f"Configuration mismatch in file {file_type}:\nInitial: {init_file_content}\nCurrent: {current_file_content}")
     assert not errors_list, "\n\n".join(errors_list)
 

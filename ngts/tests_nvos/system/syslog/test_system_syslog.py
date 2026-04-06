@@ -1548,18 +1548,19 @@ def test_syslog_rate_limit_burst(random_api):
             for i in range(3):
                 test_message = f"burst_test_message_{i}"
                 send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO, verify_msg_received=True)
+                                   priority=SyslogSeverityLevels.CRITICAL, verify_msg_received=True)
             # Send 10 messages without checking message received to expire burst limit
             for i in range(3, 10):
                 test_message = f"burst_test_message_{i}"
                 send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO)
+                                   priority=SyslogSeverityLevels.CRITICAL)
             time.sleep(10)
             # Send next 5 messages and verify they are not received (past burst limit)
             for i in range(11, 15):
                 test_message = f"burst_test_message_{i}"
                 send_msg_to_server(test_message, remote_server_ip, remote_server_engine,
-                                   priority=SyslogSeverityLevels.INFO, verify_msg_didnt_received=True)
+                                   priority=SyslogSeverityLevels.CRITICAL, verify_msg_didnt_received=True)
+
         with allure.step("Wait for interval reset and send new message"):
             time.sleep(80)  # Wait for interval reset with buffer time
             test_message = "burst_test_message_after_interval"
@@ -1967,7 +1968,7 @@ def test_syslog_logging_during_system_reboot(engines, random_api):
             TestToolkit.GeneralApi[random_api].save_config(engines.dut)
 
         with allure.step("Perform reboot"):
-            system.action_reboot()
+            system.reboot.action_reboot()
 
             # Wait for system to come back online
             max_wait = 300

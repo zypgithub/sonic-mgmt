@@ -1,23 +1,23 @@
-import json
+import pytest
 import random
+import json
 import re
 
-import pytest
-
 from ngts.nvos_constants.constants_nvos import ApiType, OutputFormat, ActionConsts, SystemConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers import redmine_helpers
+from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.ngts_types import DevicesT, EnginesT
+from ngts.nvos_tools.infra.Fae import Fae
 
 
-def load_nmx_versions_from_json(devices):
+def load_nmx_versions_from_json(devices: DevicesT) -> dict[str, dict[str, str]]:
     """
     Load NMX versions from the JSON file specified in the device configuration.
 
@@ -26,7 +26,7 @@ def load_nmx_versions_from_json(devices):
     """
     try:
         with open(devices.dut.nmx_cluster_apps_versions_file_path, 'r') as f:
-            versions_data = json.load(f)
+            versions_data: dict[str, dict[str, dict[str, str]]] = json.load(f)
         return versions_data['nmx_cluster_apps_versions']
     except (FileNotFoundError, KeyError, json.JSONDecodeError) as e:
         raise Exception(f"Failed to load NMX versions from JSON file: {devices.dut.nmx_cluster_apps_versions_file_path}. Error: {e}")
@@ -43,7 +43,7 @@ def clear_cluster_package_files():
 
 
 @pytest.fixture(scope='session', autouse=True)
-def enable_cluster_and_stop_apps(setup_name, devices):
+def enable_cluster_and_stop_apps(setup_name: str, devices: DevicesT) -> None:
     cluster = Cluster()
     ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
     for app in devices.dut.expected_cluster_apps:
@@ -51,7 +51,7 @@ def enable_cluster_and_stop_apps(setup_name, devices):
 
 
 @pytest.fixture()
-def install_apps_if_needed(devices):
+def install_apps_if_needed(devices: DevicesT) -> bool:
     cluster = Cluster()
     fae = Fae()
     output = cluster.apps.show()
@@ -72,7 +72,7 @@ def install_apps_if_needed(devices):
 @pytest.mark.fae
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_needed):
+def test_nmx_package_good_flow(devices: DevicesT, engines: EnginesT, test_api: str, install_apps_if_needed: bool):
     """
     Test the good flow of NMX package management.
 
@@ -104,7 +104,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_neede
                 nmx_package_flow(app, new_path, new_version)
 
     finally:
-        with allure.step(f'cleanup - returning to default versions'):
+        with allure.step('cleanup - returning to default versions'):
             fae = Fae()
             cluster = Cluster()
             engines.dut.run_cmd(f'sudo cp {ClusterConsts.INITIAL_APPS_PATH}* {ClusterConsts.INFRA_PACKAGES_PATH}')
@@ -115,7 +115,7 @@ def test_nmx_package_good_flow(devices, engines, test_api, install_apps_if_neede
                 delete_package_file(fae, filename)
 
 
-def get_data_from_path(engines, path, app):
+def get_data_from_path(engines: EnginesT, path: str, app: str) -> tuple[str, str]:
     with allure.step(f'Get default version for {app}'):
         pattern = r'_(\d+\.\d+\.\d+)'
         if app == ClusterConsts.NMX_CONTROLLER:
@@ -132,7 +132,7 @@ def get_data_from_path(engines, path, app):
         return file, match.group(1)
 
 
-def fetch_and_verify_package(fae, app, path):
+def fetch_and_verify_package(fae: Fae, app: str, path: str) -> str:
     with allure.step(f'try to fetch nmx cluster package of {app}'):
         fae.cluster.package.action_fetch(path=path).verify_result()
 
@@ -143,7 +143,7 @@ def fetch_and_verify_package(fae, app, path):
     return filename
 
 
-def uninstall_install_and_verify_package(fae, app, filename, expected_version, cluster):
+def uninstall_install_and_verify_package(fae: Fae, app: str, filename: str, expected_version: str, cluster: Cluster) -> None:
     with allure.step(f'try to uninstall nmx package app {app}'):
         fae.cluster.apps.app_name[app].action_uninstall()
 
@@ -152,7 +152,7 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
         ValidationTool.verify_field_value_exist_in_output_dict(output, app).verify_result(False)
 
     with allure.step(f'try to install nmx package file {filename}'):
-        bug_4899223_active = is_bug_active(4899223)
+        bug_4899223_active = redmine_helpers.is_bug_active(4899223)
         # For NVUE CLI, check for "Action succeeded" until bug is fixed
         expected_output = "Action succeeded" if bug_4899223_active else SystemConsts.ACTION_INSTALL_SUCCESS_MESSAGES
         install_result = fae.cluster.package.files.file_name[filename].action_install(
@@ -168,22 +168,30 @@ def uninstall_install_and_verify_package(fae, app, filename, expected_version, c
         ClusterTools.verify_app_version(fae.cluster, app, expected_version)
 
 
-def verify_start_stop(cluster, app):
+def verify_start_stop(cluster: Cluster, app: str) -> None:
     with allure.step(f'try to start stop {app}'):
         cluster.apps.app_name[app].action_start_cluster_app().verify_result()
         nmx_c_expected_state = 'up' if app == ClusterConsts.NMX_CONTROLLER else ''
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(
+            cluster,
+            cluster_expected_state='enabled',
+            nmx_c_expected_state=nmx_c_expected_state,
+        )
         cluster.apps.app_name[app].action_stop_cluster_app().verify_result()
         nmx_c_expected_state = 'down' if app == ClusterConsts.NMX_CONTROLLER else ''
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state=nmx_c_expected_state)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(
+            cluster,
+            cluster_expected_state='enabled',
+            nmx_c_expected_state=nmx_c_expected_state,
+        )
 
 
-def delete_package_file(fae, filename):
+def delete_package_file(fae: Fae, filename: str) -> None:
     with allure.step(f'try to delete fetched file {filename}'):
         fae.cluster.package.files.file_name[filename].action_delete().verify_result()
 
 
-def nmx_package_flow(app, path, new_version):
+def nmx_package_flow(app: str, path: str, new_version: str) -> None:
     """
     Handle the package flow for a given application.
 
@@ -204,7 +212,7 @@ def nmx_package_flow(app, path, new_version):
 @pytest.mark.fae
 @pytest.mark.nmx
 @pytest.mark.parametrize('test_api', random.sample(ApiType.ALL_TYPES, 1))
-def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
+def test_nmx_package_bad_flow(devices: DevicesT, engines: EnginesT, test_name: str, test_api: str):
     """
     Test the bad flow of NMX package management.
 
@@ -240,7 +248,7 @@ def test_nmx_package_bad_flow(devices, engines, test_name, test_api):
     with allure.step(f'try to install nmx package without uninstall {filename} - should fail'):
         fae.cluster.package.files.file_name[filename].action_install(reboot_params=False, force=False).verify_result(False)
 
-    with allure.step(f'verify old version'):
+    with allure.step('verify old version'):
         ClusterTools.verify_app_version(fae.cluster, app_to_test, default_version)
 
     with allure.step(f'try to delete fetched file {filename}'):

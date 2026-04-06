@@ -157,7 +157,7 @@ def test_nmx_t_restart_agent(dut_engines, random_api, setup_name, single_switch)
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_nmx_t_distributed_functionality(engines, dut_engines, devices, random_api, setup_name, standalone_system, has_loopbox, single_switch):
+def test_nmx_t_distributed_functionality(engines, dut_engines, devices, random_api, setup_name, standalone_system, has_loopbox, single_switch, is_simx):
     """
     @summary:
         Verify nmx-telemetry cluster apps status and connectivity.
@@ -273,7 +273,7 @@ def test_nmx_t_distributed_bad_flow(dut_engines, setup_name, single_switch):
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_nmx_t_distributed_reboot(engines, dut_engines, devices, random_api, setup_name, standalone_system, has_loopbox, single_switch):
+def test_nmx_t_distributed_reboot(engines, dut_engines, devices, random_api, setup_name, standalone_system, has_loopbox, single_switch, is_simx):
     """
     @summary:
         Verify nmx-t distributed functionality is retrieved after reboot.
@@ -296,7 +296,7 @@ def test_nmx_t_distributed_reboot(engines, dut_engines, devices, random_api, set
     sdn = Sdn()
     system = System()
     interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines,
-                                                                                  has_loopbox, setup_name, standalone_system)
+                                                                                  has_loopbox, setup_name, standalone_system, is_simx)
 
     primary_engine = random.choice(list(dut_engines.values()))
     if not single_switch:

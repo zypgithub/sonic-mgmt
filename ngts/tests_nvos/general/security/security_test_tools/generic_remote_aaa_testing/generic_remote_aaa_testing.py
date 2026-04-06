@@ -1,40 +1,45 @@
+from __future__ import annotations
+
+from typing import Callable, Any
 import logging
 import random
+import pytest
 import time
-from typing import Dict, List, Callable, Any
 
+from ..constants import AddressingType, AuthConsts, AuthMedium, AaaConsts, UserRole
 from ngts.nvos_constants.constants_nvos import ApiType, ConfState, TestFlowType
-from ngts.nvos_tools.infra.BaseComponent import BaseComponent
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
+from .constants import RemoteAaaConsts, RemoteAaaType, ValidValues
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.system.Aaa import Aaa
-from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource
-from ngts.nvos_tools.system.Server import ServerId
-from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType, AuthConsts, AuthMedium, \
-    AaaConsts, UserRole
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import ValidValues
-from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
-from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.generic_aaa_testing_utils import \
-    detach_config
-from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
-from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import verify_users_auth, \
-    verify_auth_mediums
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo, \
-    update_active_aaa_server
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
+from ngts.tools.test_utils import nvos_general_utils
+from ngts.nvos_tools.system.Server import ServerId
+from ...test_aaa_ldap.constants import LdapConsts
+from ngts.ngts_types import EnginesT, TopologyT
+from ..tool_classes import RemoteAaaServerInfo
+from ..tool_classes.UserInfo import UserInfo
+from ngts.nvos_tools.system.Aaa import Aaa
+from . import generic_aaa_testing_utils
+from .. import security_test_utils
+from .. import resource_utils
+
+logger = logging.getLogger(__name__)
 
 
-def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, main_resource_obj: RemoteAaaResource,
-                                    confs: Dict[BaseComponent, dict],
-                                    server_conf: dict,
-                                    default_confs: Dict[BaseComponent, dict]):
+def generic_aaa_test_set_unset_show(
+    test_api: str,
+    engines: EnginesT,
+    remote_aaa_type: str,
+    main_resource_obj: RemoteAaaResource,
+    confs: dict[BaseComponent, dict],
+    server_conf: dict,
+    default_confs: dict[BaseComponent, dict],
+) -> None:
     """
     @summary: Verify set, unset, show commands for remote AAA feature
 
@@ -69,7 +74,7 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
 
     with allure.step('Set general configuration'):
         for resource, conf in confs.items():
-            configure_resource(engines, resource, conf)
+            resource_utils.configure_resource(engines, resource, conf)
 
     with allure.step('Set servers'):
         server1 = '1.2.3.4'
@@ -78,11 +83,11 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
         server4 = AaaConsts.VM_AAA_SERVER_IPV6_ADDR
         main_resource_obj.server.set(server1)
         server_conf[AaaConsts.PRIORITY] = 2
-        configure_resource(engines, main_resource_obj.server.server_id[server2], server_conf)
+        resource_utils.configure_resource(engines, main_resource_obj.server.server_id[server2], server_conf)
         server_conf[AaaConsts.PRIORITY] = 3
-        configure_resource(engines, main_resource_obj.server.server_id[server3], server_conf)
+        resource_utils.configure_resource(engines, main_resource_obj.server.server_id[server3], server_conf)
         server_conf[AaaConsts.PRIORITY] = 4
-        configure_resource(engines, main_resource_obj.server.server_id[server4], server_conf, apply=True)
+        resource_utils.configure_resource(engines, main_resource_obj.server.server_id[server4], server_conf, apply=True)
         non_default_servers = [server2, server3]
 
     with allure.step('Verify general configurations'):
@@ -159,10 +164,12 @@ def generic_aaa_test_set_unset_show(test_api, engines, remote_aaa_type: str, mai
                                                                 output_dict=cur_conf).verify_result()
 
 
-def generic_aaa_test_set_invalid_param(test_api,
-                                       field_is_numeric: Dict[str, bool],
-                                       valid_values: dict,
-                                       resources_and_fields: Dict[BaseComponent, List[str]]):
+def generic_aaa_test_set_invalid_param(
+    test_api: str,
+    field_is_numeric: dict[str, bool],
+    valid_values: dict,
+    resources_and_fields: dict[BaseComponent, list[str]],
+) -> None:
     """
     @summary: Verify set, unset, show commands for remote AAA feature
 
@@ -178,25 +185,25 @@ def generic_aaa_test_set_invalid_param(test_api,
 
     def check_invalid_set_to_resource(resource_obj, field_name):
         if TestToolkit.tested_api == ApiType.NVUE and field_name != AaaConsts.SECRET:
-            logging.info(f'Set {field_name} to: nothing (incomplete)')
+            logger.info(f'Set {field_name} to: nothing (incomplete)')
             resource_obj.set(field_name, '').verify_result(False)
 
         if valid_values[field_name] != str:
             invalid_value = RandomizationTool.get_random_string(6)
-            logging.info(f'Set {field_name} to: {invalid_value}')
+            logger.info(f'Set {field_name} to: {invalid_value}')
             resource_obj.set(field_name, invalid_value).verify_result(False)
 
         if field_is_numeric[field_name]:
             invalid_value = RandomizationTool.select_random_value(
                 list_of_values=list(range(-1000, 1000)),
                 forbidden_values=valid_values[field_name]).get_returned_value()
-            logging.info(f'Set {field_name} to: {invalid_value}')
+            logger.info(f'Set {field_name} to: {invalid_value}')
             resource_obj.set(field_name, invalid_value).verify_result(False)
 
         if field_name == AaaConsts.SECRET:
-            logging.info(f'Set {field_name} to: empty string (\'""\')')
+            logger.info(f'Set {field_name} to: empty string (\'""\')')
             resource_obj.set(field_name, '""', apply=True).verify_result(False)
-            detach_config()
+            generic_aaa_testing_utils.detach_config()
 
     for resource, fields in resources_and_fields.items():
         for field in fields:
@@ -204,8 +211,13 @@ def generic_aaa_test_set_invalid_param(test_api,
                 check_invalid_set_to_resource(resource, field)
 
 
-def validate_params(test_flow: str = '', test_api: str = '', addressing_type: str = '', remote_aaa_type: str = '',
-                    auth_mediums: List[str] = None):
+def validate_params(
+    test_flow: str = '',
+    test_api: str = '',
+    addressing_type: str = '',
+    remote_aaa_type: str = '',
+    auth_mediums: list[str] = None,
+) -> None:
     if test_flow:
         assert test_flow in TestFlowType.ALL_TYPES, f'{test_flow} is not one of {TestFlowType.ALL_TYPES}'
     if test_api:
@@ -219,25 +231,39 @@ def validate_params(test_flow: str = '', test_api: str = '', addressing_type: st
             assert medium in AuthMedium.ALL_MEDIUMS, f'{medium} is not one of {AuthMedium.ALL_MEDIUMS}'
 
 
-def verify_auth(test_flow, engines, topology_obj,
-                good_flow_users: List[UserInfo] = None, bad_flow_users: List[UserInfo] = None,
-                verify_authorization: bool = True, skip_auth_mediums: List[str] = None):
+def verify_auth(
+    test_flow: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    good_flow_users: list[UserInfo] = None,
+    bad_flow_users: list[UserInfo] = None,
+    verify_authorization: bool = True,
+    skip_auth_mediums: list[str] = None,
+):
     validate_params(test_flow=test_flow, auth_mediums=skip_auth_mediums)
     if test_flow == TestFlowType.GOOD_FLOW and good_flow_users:
-        verify_users_auth(engines, topology_obj, good_flow_users, [True] * len(good_flow_users), verify_authorization,
-                          skip_auth_mediums)
+        security_test_utils.verify_users_auth(engines, topology_obj, good_flow_users, [True] * len(good_flow_users), verify_authorization,
+                                              skip_auth_mediums)
     elif test_flow == TestFlowType.BAD_FLOW and bad_flow_users:
-        verify_users_auth(engines, topology_obj, bad_flow_users, [False] * len(bad_flow_users), verify_authorization,
-                          skip_auth_mediums)
+        security_test_utils.verify_users_auth(engines, topology_obj, bad_flow_users, [False] * len(bad_flow_users), verify_authorization,
+                                              skip_auth_mediums)
 
 
-def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, engines, topology_obj,
-                          local_adminuser: UserInfo, request, remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
-                          server_by_addr_type: Dict[str, RemoteAaaServerInfo],
-                          test_param: List[str] = None,
-                          test_param_update_func: Callable[
-                              [Any, Any, RemoteAaaServerInfo, ServerId, str], None] = None,
-                          skip_auth_mediums: List[str] = None):
+def generic_aaa_test_auth(
+    test_flow: str,
+    test_api: str,
+    addressing_type: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    local_adminuser: UserInfo,
+    request: pytest.FixtureRequest,
+    remote_aaa_type: str,
+    remote_aaa_obj: RemoteAaaResource,
+    server_by_addr_type: dict[str, RemoteAaaServerInfo.RemoteAaaServerInfo],
+    test_param: list[str] = None,
+    test_param_update_func: Callable[[Any, Any, RemoteAaaServerInfo.RemoteAaaServerInfo, ServerId, str], None] = None,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Basic test to verify authentication and authorization through remote aaa, using all possible auth mediums:
         SSH, OpenApi, rcon, scp.
@@ -280,9 +306,9 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
 
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True, verify_res=False)
-        update_active_aaa_server(item, server)
+        RemoteAaaServerInfo.update_active_aaa_server(item, server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     if test_param:
         assert test_param_update_func, 'test_param_update_func function was not specified!'
@@ -292,20 +318,25 @@ def generic_aaa_test_auth(test_flow: str, test_api: str, addressing_type: str, e
                     with allure.step(f'Update test param: {param}'):
                         test_param_update_func(engines, item, server, server_resource, param)
                         if remote_aaa_type == RemoteAaaType.LDAP:
-                            wait_for_ldap_nvued_restart_workaround(item)
+                            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
                     with allure.step('Test auth'):
-                        verify_auth_mediums(test_flow, engines, topology_obj, True, False,
-                                            server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
+                        security_test_utils.verify_auth_mediums(test_flow, engines, topology_obj, True, False,
+                                                                server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
     else:
-        verify_auth_mediums(test_flow, engines, topology_obj, True, False,
-                            server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
+        security_test_utils.verify_auth_mediums(test_flow, engines, topology_obj, True, False,
+                                                server, UserRole.ALL_ROLES, [local_adminuser], skip_auth_mediums=skip_auth_mediums)
 
 
-def generic_aaa_test_bad_configured_server(test_api, engines, topology_obj, remote_aaa_type: str,
-                                           remote_aaa_obj: RemoteAaaResource,
-                                           bad_param_name: str,
-                                           bad_configured_server: RemoteAaaServerInfo,
-                                           skip_auth_mediums: List[str] = None):
+def generic_aaa_test_bad_configured_server(
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    remote_aaa_type: str,
+    remote_aaa_obj: RemoteAaaResource,
+    bad_param_name: str,
+    bad_configured_server: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Verify that when configuring remote AAA server with wrong required value, it is unreachable,
         and remote user can't authenticate
@@ -339,7 +370,7 @@ def generic_aaa_test_bad_configured_server(test_api, engines, topology_obj, remo
                     skip_auth_mediums=skip_auth_mediums)
 
 
-def generic_aaa_test_unique_priority(test_api, remote_aaa_obj: RemoteAaaResource):
+def generic_aaa_test_unique_priority(test_api: str, remote_aaa_obj: RemoteAaaResource) -> None:
     """
     @summary: Verify that server priority must be unique
 
@@ -366,10 +397,17 @@ def generic_aaa_test_unique_priority(test_api, remote_aaa_obj: RemoteAaaResource
                                                         apply=True).verify_result(False)
 
 
-def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, request, remote_aaa_type: str,
-                              remote_aaa_obj: RemoteAaaResource,
-                              server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
-                              skip_auth_mediums: List[str] = None):
+def generic_aaa_test_priority(
+    test_flow: str,
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    remote_aaa_type: str,
+    remote_aaa_obj: RemoteAaaResource,
+    server1: RemoteAaaServerInfo.RemoteAaaServerInfo, server2: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Verify that auth is done via the lowest prioritized server (lowest number - better in priority)
 
@@ -409,9 +447,9 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
         remote_aaa_obj.enable(apply=True, verify_res=False)
         best_server = server2
         worse_server = server1
-        update_active_aaa_server(item, best_server)
+        RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     while True:
         with allure.step('Wait for configuration to be fully applied'):
@@ -434,15 +472,24 @@ def generic_aaa_test_priority(test_flow, test_api, engines, topology_obj, reques
             worse_server_resource.set(AaaConsts.PRIORITY, worse_server.priority, apply=True,
                                       dut_engine=item.active_remote_admin_engine).ignore_result()
             worse_server, best_server = best_server, worse_server
-            update_active_aaa_server(item, best_server)
+            RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
             if remote_aaa_type == RemoteAaaType.LDAP:
-                wait_for_ldap_nvued_restart_workaround(item)
+                nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
 
-def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                        remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
-                                        server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
-                                        skip_auth_mediums: List[str] = None):
+def generic_aaa_test_server_unreachable(
+    test_flow: str,
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    remote_aaa_type: str,
+    remote_aaa_obj: RemoteAaaResource,
+    server1: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    server2: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Verify that when a server is unreachable, auth is done via next in line
         (next server or next authentication method – local)
@@ -488,7 +535,7 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
     with allure.step(f'Enable {remote_aaa_type}'):
         remote_aaa_obj.enable(apply=True)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -497,9 +544,9 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
 
     with allure.step('Configure worse prioritized reachable server'):
         worse_server.configure(engines, set_explicit_priority=True, apply=True)
-        update_active_aaa_server(item, worse_server)
+        RemoteAaaServerInfo.update_active_aaa_server(item, worse_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     with allure.step('Verify auth – success only with worse server user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -508,9 +555,9 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
 
     with allure.step('Make the worse server also unreachable'):
         worse_server.make_unreachable(engines, apply=True, dut_engine=item.active_remote_admin_engine)
-        update_active_aaa_server(item, None)
+        RemoteAaaServerInfo.update_active_aaa_server(item, None)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     with allure.step('Verify auth - success only with local user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -519,9 +566,9 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
 
     with allure.step('Bring back the best server'):
         best_server.make_reachable(engines, apply=True)
-        update_active_aaa_server(item, best_server)
+        RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     with allure.step('Verify auth – success only with best server user'):
         verify_auth(test_flow, engines, topology_obj,
@@ -529,10 +576,19 @@ def generic_aaa_test_server_unreachable(test_flow: str, test_api, engines, topol
                     verify_authorization=False, skip_auth_mediums=skip_auth_mediums)
 
 
-def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, request, local_adminuser: UserInfo,
-                                remote_aaa_type: str, remote_aaa_obj: RemoteAaaResource,
-                                server1: RemoteAaaServerInfo, server2: RemoteAaaServerInfo,
-                                skip_auth_mediums: List[str] = None):
+def generic_aaa_test_auth_error(
+    test_flow: str,
+    test_api: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    request: pytest.FixtureRequest,
+    local_adminuser: UserInfo,
+    remote_aaa_type: str,
+    remote_aaa_obj: RemoteAaaResource,
+    server1: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    server2: RemoteAaaServerInfo.RemoteAaaServerInfo,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Verify the behavior in case of auth error (username not found or bad credentials).
 
@@ -581,9 +637,9 @@ def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, requ
 
     with allure.step(f'Enable {remote_aaa_type} and disable failthrough'):
         remote_aaa_obj.enable(apply=True, verify_res=False)
-        update_active_aaa_server(item, best_server)
+        RemoteAaaServerInfo.update_active_aaa_server(item, best_server)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item)
 
     with allure.step('Verify auth fail with users not from best server'):
         verify_auth(test_flow, engines, topology_obj, bad_flow_users=[worse_server.users[0], local_adminuser],
@@ -593,9 +649,9 @@ def generic_aaa_test_auth_error(test_flow, test_api, engines, topology_obj, requ
         aaa: Aaa = remote_aaa_obj.parent_obj
         aaa.authentication.set(AuthConsts.FAILTHROUGH, AaaConsts.ENABLED, apply=True,
                                dut_engine=item.active_remote_admin_engine).verify_result()
-        update_active_aaa_server(item, None)
+        RemoteAaaServerInfo.update_active_aaa_server(item, None)
         if remote_aaa_type == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=engines.dut)
 
     good_flow_users = [local_adminuser]
     if remote_aaa_type != RemoteAaaType.LDAP:  # with LDAP + failthrough on - only move to next method, and not server

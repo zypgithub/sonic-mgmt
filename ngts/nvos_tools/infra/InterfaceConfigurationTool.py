@@ -367,15 +367,13 @@ class InterfaceConfigurationTool:
             devices: Test devices object containing device configuration
 
         Returns:
-            tuple: (Port object, original_speed_value, new_speed_value, supported_speeds_list)
-
-        Example:
-            >>> port, orig, new, supported = InterfaceConfigurationTool.choose_random_port_and_test_speed_configuration(engines, devices)
-            >>> print(f"Tested {port.name}: {orig} → {new}")  # Output: Tested sw2p1: XDR → hdr
+            tuple: (Port object, original_speed, new_speed, supported_speeds, nvl_access_info)
+                   nvl_access_info is None for IB/trunk, or a dict for NVL access ports.
         """
         from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
         from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
         from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
+        from retry.api import retry_call
         import pytest
 
         with allure.step("Determine system type and choose random ACTIVE port"):
@@ -383,10 +381,49 @@ class InterfaceConfigurationTool:
             current_speed, supported_speeds = InterfaceConfigurationTool.get_current_and_supported_speeds(selected_port, system_type, port_name)
             new_speed = InterfaceConfigurationTool._choose_different_speed(current_speed, supported_speeds, port_name)
 
-            # Test the 3-step speed configuration cycle
-            InterfaceConfigurationTool._test_speed_configuration_cycle(selected_port, current_speed, new_speed, system_type, port_name)
+            is_nvl_access = system_type == NvosConst.NVL_SWITCH_TYPE and port_name.startswith('acp')
 
-            return selected_port, current_speed, new_speed, supported_speeds
+            if is_nvl_access:
+                from ngts.tests_nvos.interfaces.nvl_port.helpers import validate_ports_state_and_speed
+                from ngts.nvos_tools.ib.InterfaceConfiguration.Port import PortRequirements
+                port_names = devices.dut.nvl_access_ports_list
+
+                with allure.step("Verify all access ports are UP before speed change"):
+                    reqs = PortRequirements()
+                    reqs.set_port_state(NvosConsts.LINK_STATE_UP)
+                    up_ports = [p.name for p in Port.get_list_of_ports(port_requirements_object=reqs) if p.name.startswith('acp')]
+                    missing = [p for p in port_names if p not in up_ports]
+                    assert not missing, (
+                        f"The following access ports are NOT UP: {missing}. "
+                        f"Loopbox may be missing or disconnected."
+                    )
+                port_indices = [int(n.replace('acp', '')) for n in port_names]
+                access_ports_range = f'acp{min(port_indices)}-{max(port_indices)}'
+                all_ports = Port(access_ports_range)
+                default_speed = devices.dut.access_port_speed if hasattr(devices.dut, 'access_port_speed') else current_speed
+                logger.info(f"NVL access ports: setting speed {new_speed} on ALL ports via range {access_ports_range}")
+
+                with allure.step(f"Set speed {new_speed} on all access ports: {access_ports_range}"):
+                    all_ports.interface.link.set(
+                        op_param_name='speed', op_param_value=new_speed,
+                        ask_for_confirmation=True, apply=True
+                    ).verify_result()
+                    TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(TestToolkit.get_engine())
+
+                with allure.step(f"Verify ALL access ports reached speed {new_speed}"):
+                    retry_call(validate_ports_state_and_speed, [new_speed, port_names, 'acp'],
+                               exceptions=AssertionError, tries=6, delay=30)
+                    logger.info(f"All access ports reached speed {new_speed}")
+
+                nvl_access_info = {
+                    'port_names': port_names,
+                    'range_name': access_ports_range,
+                    'default_speed': default_speed,
+                }
+                return selected_port, current_speed, new_speed, supported_speeds, nvl_access_info
+
+            InterfaceConfigurationTool._test_speed_configuration_cycle(selected_port, current_speed, new_speed, system_type, port_name)
+            return selected_port, current_speed, new_speed, supported_speeds, None
 
     @staticmethod
     def has_active_ports(device):

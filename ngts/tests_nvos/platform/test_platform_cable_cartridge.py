@@ -14,8 +14,8 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='function', autouse=True)
-def skip_if_missing_data(has_loopbox, standalone_system):
-    if not has_loopbox and standalone_system:
+def skip_if_missing_data(has_loopbox, standalone_system, is_simx):
+    if (not has_loopbox and standalone_system) or is_simx:
         pytest.skip("Testcase skipped since system is standalone and doesn't have loopbox")
 
 

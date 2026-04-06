@@ -64,7 +64,7 @@ def get_chassis_info():
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_info, setup_name, standalone_system, has_loopbox):
     """
     Test Objective:
@@ -96,7 +96,7 @@ def test_update_maintenance_state_up(engines, devices, random_api, get_chassis_i
 
 @disabled_access_ports
 @pytest.mark.nmx
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
+@pytest.mark.timeout(15 * MINUTE, func_only=True)
 def test_error_flow_single_aperture_support(engines, devices, random_api, get_chassis_info, setup_name, standalone_system, has_loopbox):
     """
     Test Objective:

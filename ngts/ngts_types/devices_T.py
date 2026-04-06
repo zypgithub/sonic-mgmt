@@ -1,8 +1,11 @@
-from typing import Union
-from dotted_dict import DottedDict
+from __future__ import annotations
 
-from ngts.nvos_tools.Devices.IbDevice import IbSwitch, NvLinkSwitch, JulietScaleoutSwitch
+from dotted_dict import DottedDict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ngts.nvos_tools.Devices.IbDevice import IbSwitch, NvLinkSwitch, JulietScaleoutSwitch
 
 
 class DevicesT(DottedDict):
-    dut: Union[IbSwitch, NvLinkSwitch, JulietScaleoutSwitch]
+    dut: IbSwitch | NvLinkSwitch | JulietScaleoutSwitch

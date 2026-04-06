@@ -1,5 +1,6 @@
 import logging
 import time
+import re
 
 import pytest
 
@@ -264,3 +265,9 @@ def helper_reboot_via_remote_reboot(engines, devices, topology_obj):
 
     res_obj = DutUtilsTool.wait_on_system_reboot(engines.dut, device=devices.dut, verify_final_result=False)
     assert res_obj.result, 'System reboot failed'
+
+
+def helper_remove_CPLD_number(key):
+    remove_digits_re = re.compile(r"CPLD\d+")
+    removed_CPLD_num = remove_digits_re.sub("CPLD", key)
+    return removed_CPLD_num

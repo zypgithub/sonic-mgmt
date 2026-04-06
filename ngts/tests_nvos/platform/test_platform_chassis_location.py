@@ -14,7 +14,7 @@ logger = logging.getLogger()
 
 
 @pytest.mark.platform
-def test_show_platform_chassis_location(engines, random_api, devices, has_loopbox, standalone_system):
+def test_show_platform_chassis_location(engines, random_api, devices, has_loopbox, standalone_system, is_simx):
     """
     Validates the output of nv show platform chassis-location.
     The OpenAPI test checks the JSON output while the NVUE test checks the auto output.
@@ -29,7 +29,7 @@ def test_show_platform_chassis_location(engines, random_api, devices, has_loopbo
         platform = Platform()
 
     output_dict = OutputParsingTool.parse_show_output_to_dict(platform.chassis_location.show()).get_returned_value()
-    if has_loopbox or not standalone_system:
+    if has_loopbox or is_simx or not standalone_system:
         with allure.step("verifying output for non-standalone switch"):
             if re.match(r"^\d+$", output_dict[ChassisLocationConsts.CHAS_SN]):
                 assert int(output_dict[ChassisLocationConsts.CHAS_SN]) != 0, "chassis_sn can't be zero"

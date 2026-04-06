@@ -60,8 +60,6 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
             assert set(app_names) == set(devices.dut.expected_cluster_apps), f"Expected apps:{devices.dut.expected_cluster_apps} Actual apps:{app_names}"
 
         with allure.step("Verify 'nv show cluster apps' output"):
-            ClusterTools.wait_for_app_healthy(cluster, NMX_TELEMETRY,
-                                              devices.dut.cluster_app[NMX_TELEMETRY])
             if is_bug_active(4207869) and standalone_system:
                 cluster_app_nmx_controller = devices.dut.cluster_app_nmx_controller.copy()
                 cluster_app_nmx_controller['status'] = ExpectedString(regex=".*")
@@ -71,6 +69,8 @@ def test_cluster_app_start_stop(engines, devices, random_api, has_loopbox, stand
             else:
                 ClusterTools.wait_for_app_healthy(cluster, NMX_CONTROLLER,
                                                   devices.dut.cluster_app[NMX_CONTROLLER])
+                ClusterTools.wait_for_app_healthy(cluster, NMX_TELEMETRY,
+                                                  devices.dut.cluster_app[NMX_TELEMETRY])
 
     with allure.step("Create Cluster object"):
         interface_wa_called = False

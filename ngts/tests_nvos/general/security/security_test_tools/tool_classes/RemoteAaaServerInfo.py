@@ -1,25 +1,34 @@
-import copy
-import logging
-import re
-import socket
+from __future__ import annotations
+
 import subprocess
-from typing import Dict, List
+import logging
+import socket
+import copy
+import abc
+import re
 
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from typing_extensions import TypeAlias
 
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.system.Ldap import Ldap
-from ngts.nvos_tools.system.Server import ServerId
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthMedium, UserRole
-from ngts.tests_nvos.general.security.security_test_tools.resource_utils import configure_resource
-from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo import UserInfo
-from ngts.tests_nvos.general.security.test_aaa_ldap.constants import LdapConsts
 from ngts.tools.test_utils import allure_utils as allure
+from ..constants import AaaConsts, AuthMedium, UserRole
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.nvos_tools.system.Server import ServerId
+from ...test_aaa_ldap.constants import LdapConsts
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.system.Ldap import Ldap
+from ..tool_classes.UserInfo import UserInfo
+from .. import resource_utils
 
-UsersPerAuthMedium: TypeAlias = Dict[str, Dict[str, List[UserInfo]]]
+try:
+    UsersPerAuthMedium = dict[str, dict[str, list[UserInfo]]]
+except TypeError:  # backward compatibility for Python 3.7
+    from typing_extensions import TypeAlias
+    from typing import Dict, List
+
+    UsersPerAuthMedium: TypeAlias = Dict[str, Dict[str, List[UserInfo]]]
+
+logger = logging.getLogger(__name__)
 
 
 def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None) -> bool:
@@ -40,7 +49,7 @@ def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None)
         is_ipv6 = ":" in address
         ping_cmd = "ping6" if is_ipv6 else "ping"
         cmd_str = f"{ping_cmd} -c {count} -W {timeout} {address}"
-        logging.debug(f"Running ping command: {cmd_str}")
+        logger.debug(f"Running ping command: {cmd_str}")
 
         if dut_engine:
             result = dut_engine.run_cmd(cmd_str)
@@ -52,19 +61,19 @@ def ping_server(address: str, count: int = 2, timeout: int = 3, dut_engine=None)
             is_reachable = result.returncode == 0
 
         if is_reachable:
-            logging.info(f"Server {address} is reachable")
+            logger.info(f"Server {address} is reachable")
         else:
-            logging.warning(f"Server {address} is not reachable")
+            logger.warning(f"Server {address} is not reachable")
         return is_reachable
     except subprocess.TimeoutExpired:
-        logging.warning(f"Ping to {address} timed out")
+        logger.warning(f"Ping to {address} timed out")
         return False
     except Exception as ex:
-        logging.error(f"Failed to ping {address}: {ex}")
+        logger.error(f"Failed to ping {address}: {ex}")
         return False
 
 
-def check_port(address: str, port: int, timeout: int = 3, dut_engine=None, protocol: str = 'tcp') -> bool:
+def check_port(address: str, port: int, timeout: int = 3, dut_engine=None) -> bool:
     """
     Check if a specific port is open on the server.
 
@@ -74,68 +83,51 @@ def check_port(address: str, port: int, timeout: int = 3, dut_engine=None, proto
         timeout: Timeout in seconds for the connection attempt
         dut_engine: Optional DUT engine to run check from DUT instead of
             test runner
-        protocol: 'tcp' or 'udp'. RADIUS uses UDP, TACACS/LDAP use TCP.
 
     Returns:
         True if port is open, False otherwise
     """
     try:
-        is_udp = protocol == 'udp'
         if dut_engine:
             is_ipv6 = ":" in address
             nc_flag = "-6" if is_ipv6 else "-4"
-            udp_flag = "-u" if is_udp else ""
-            cmd = f"nc -zv {nc_flag} {udp_flag} -w {timeout} {address} {port}"
-            logging.debug(f"Running port check command on DUT: {cmd}")
+            cmd = f"nc -zv {nc_flag} -w {timeout} {address} {port}"
+            logger.debug(f"Running port check command on DUT: {cmd}")
             result = dut_engine.run_cmd(cmd)
             is_open = "succeeded" in result.lower() or "open" in result.lower()
         else:
             is_ipv6 = ":" in address
             family = socket.AF_INET6 if is_ipv6 else socket.AF_INET
-            sock_type = socket.SOCK_DGRAM if is_udp else socket.SOCK_STREAM
-            with socket.socket(family, sock_type) as sock:
-                sock.settimeout(timeout)
-                if is_udp:
-                    # UDP port checks via raw sockets are unreliable — silence
-                    # is ambiguous (open vs filtered). Use nc on the DUT instead
-                    # (via dut_engine) for meaningful UDP checks.
-                    logging.warning(
-                        f"UDP port {port} on {address}: socket-based check is unreliable, "
-                        f"assuming open. Pass dut_engine for accurate nc-based check.")
-                    return True
-                else:
-                    result = sock.connect_ex((address, port))
-                    is_open = result == 0
+            sock = socket.socket(family, socket.SOCK_STREAM)
+            sock.settimeout(timeout)
+            result = sock.connect_ex((address, port))
+            sock.close()
+            is_open = result == 0
 
         if is_open:
-            logging.info(f"Port {port}/{protocol} on {address} is open")
+            logger.info(f"Port {port} on {address} is open")
         else:
-            logging.warning(f"Port {port}/{protocol} on {address} is closed")
+            logger.warning(f"Port {port} on {address} is closed")
         return is_open
-    except ConnectionRefusedError:
-        logging.warning(f"Port {port}/{protocol} on {address} is closed (connection refused)")
-        return False
     except socket.timeout:
-        logging.warning(f"Connection to {address}:{port}/{protocol} timed out")
+        logger.warning(f"Connection to {address}:{port} timed out")
         return False
     except socket.gaierror as ex:
-        logging.error(f"Failed to resolve {address}: {ex}")
+        logger.error(f"Failed to resolve {address}: {ex}")
         return False
     except Exception as ex:
-        logging.error(f"Failed to check port {port}/{protocol} on {address}: {ex}")
+        logger.error(f"Failed to check port {port} on {address}: {ex}")
         return False
 
 
-class RemoteAaaServerInfo:
-    service_protocol = 'tcp'
-
+class RemoteAaaServerInfo(abc.ABC):
     def __init__(
         self,
         hostname,
         priority,
         secret,
         port,
-        users: List[UserInfo],
+        users: list[UserInfo],
         ipv4_addr: str = "",
         docker_name: str = "",
         users_per_auth_medium: UsersPerAuthMedium = None,
@@ -166,8 +158,9 @@ class RemoteAaaServerInfo:
         else:
             return copy.copy(self)
 
+    @abc.abstractmethod
     def configure(self, engines, set_explicit_priority=False, apply=False, dut_engine=None):
-        raise Exception('Method "configure" is not implemented!')
+        ...
 
     def _configure(
         self,
@@ -180,15 +173,17 @@ class RemoteAaaServerInfo:
     ):
         if set_explicit_priority:
             conf_to_set[AaaConsts.PRIORITY] = self.priority
-        configure_resource(
+        resource_utils.configure_resource(
             engines, resource_obj=server_resource_obj, conf=conf_to_set, apply=apply, verify_apply=False, dut_engine=dut_engine
         )
 
+    @abc.abstractmethod
     def make_unreachable(self, engines, apply=False, dut_engine=None):
-        raise Exception('Method "configure" is not implemented!')
+        ...
 
+    @abc.abstractmethod
     def make_reachable(self, engines, apply=False, dut_engine=None):
-        raise Exception('Method "configure" is not implemented!')
+        ...
 
     def get_ping_address(self) -> str:
         """
@@ -225,11 +220,11 @@ class RemoteAaaServerInfo:
                 )
 
             if check_service:
-                service_up = check_port(address, self.port, dut_engine=dut_engine, protocol=self.service_protocol)
+                service_up = check_port(address, self.port, dut_engine=dut_engine)
                 if not service_up:
                     return ResultObj(
                         False,
-                        f"AAA service on {self.hostname}:{self.port}/{self.service_protocol} is not "
+                        f"AAA service on {self.hostname}:{self.port} is not "
                         f"responding from DUT. Server is pingable but service "
                         f"may be down. Cannot run good flow test.",
                     )
@@ -247,9 +242,9 @@ def update_active_aaa_server(item, server: RemoteAaaServerInfo):
         with allure.step("Update to new active remote auth server"):
             item.active_remote_auth_server = server
         with allure.step("Create ssh engine with remote admin user"):
-            logging.info("Find remote admin user to use")
+            logger.info("Find remote admin user to use")
             remote_admin = [user for user in server.users if user.role == "admin"][0]
-            logging.info(f"Create ssh engine with user: {remote_admin.username}")
+            logger.info(f"Create ssh engine with user: {remote_admin.username}")
             item.active_remote_admin_engine = ProxySshEngine(
                 device_type=TestToolkit.engines.dut.device_type,
                 ip=TestToolkit.engines.dut.ip,
@@ -267,10 +262,10 @@ class TacacsServerInfo(RemoteAaaServerInfo):
         port,
         timeout,
         auth_mode,
-        users: List[UserInfo],
+        users: list[UserInfo],
         ipv4_addr: str = "",
         docker_name: str = "",
-        users_per_auth_mode: Dict[str, List[UserInfo]] = None,
+        users_per_auth_mode: dict[str, list[UserInfo]] = None,
         users_per_auth_medium: UsersPerAuthMedium = None,
     ):
         super().__init__(hostname, priority, secret, port, users, ipv4_addr, docker_name, users_per_auth_medium)
@@ -301,7 +296,7 @@ class TacacsServerInfo(RemoteAaaServerInfo):
         ).ignore_result()
 
     def update_auth_mode(self, auth_mode: str, item, dut_engine=None, set_on_dut: bool = True):
-        logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_mode} passwords')
+        logger.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_mode} passwords')
         self.auth_mode = auth_mode
         self.users = self.users_per_auth_mode[auth_mode]
 
@@ -309,7 +304,7 @@ class TacacsServerInfo(RemoteAaaServerInfo):
             self.__update_passwords_of_users_per_auth_medium(auth_mode)
 
         if set_on_dut:
-            assert item, f"argument 'item' was not provided"
+            assert item, "argument 'item' was not provided"
             engine = dut_engine or (item.active_remote_admin_engine if hasattr(item, "active_remote_admin_engine") else None)
             System().aaa.tacacs.server.server_id[self.hostname].set(
                 AaaConsts.SERVER_AUTH_MODE, auth_mode, apply=True, dut_engine=engine
@@ -329,7 +324,7 @@ class LdapServerInfo(RemoteAaaServerInfo):
         priority,
         secret,
         port,
-        users: List[UserInfo],
+        users: list[UserInfo],
         base_dn,
         bind_dn,
         timeout_bind,
@@ -360,7 +355,7 @@ class LdapServerInfo(RemoteAaaServerInfo):
             LdapConsts.VERSION: self.version,
             # LdapConsts.HOSTNAME: self.hostname
         }
-        configure_resource(engines, resource_obj=ldap_obj, conf=conf_to_set, apply=False, dut_engine=dut_engine)
+        resource_utils.configure_resource(engines, resource_obj=ldap_obj, conf=conf_to_set, apply=False, dut_engine=dut_engine)
         ldap_obj.ssl.set(LdapConsts.SSL_CERT_VERIFY, LdapConsts.DISABLED, dut_engine=dut_engine).verify_result()
         self._configure(engines, server_resource_obj, {}, set_explicit_priority, apply, dut_engine)
 
@@ -378,8 +373,6 @@ class LdapServerInfo(RemoteAaaServerInfo):
 
 
 class RadiusServerInfo(RemoteAaaServerInfo):
-    service_protocol = 'udp'
-
     def __init__(
         self,
         hostname,
@@ -388,7 +381,7 @@ class RadiusServerInfo(RemoteAaaServerInfo):
         port,
         timeout,
         auth_type,
-        users: List[UserInfo],
+        users: list[UserInfo],
         retransmit=0,
         statistics=AaaConsts.DISABLED,
         ipv4_addr: str = "",
@@ -411,6 +404,10 @@ class RadiusServerInfo(RemoteAaaServerInfo):
         hostname_resource_obj = System().aaa.radius.server.server_id[self.hostname]
         self._configure(engines, hostname_resource_obj, conf_to_set, set_explicit_priority, apply, dut_engine)
 
+    def verify_availability(self, check_service: bool = True, dut_engine=None) -> ResultObj:
+        # RADIUS auth uses UDP, so the shared TCP port probe produces false failures.
+        return super().verify_availability(check_service=False, dut_engine=dut_engine)
+
     def make_unreachable(self, engines, apply=False, dut_engine=None):
         System().aaa.radius.server.server_id[self.hostname].set(
             AaaConsts.PORT, AaaConsts.AAA_SERVER_BAD_PORT, apply=apply, dut_engine=dut_engine
@@ -422,11 +419,11 @@ class RadiusServerInfo(RemoteAaaServerInfo):
         ).ignore_result()
 
     def update_auth_type(self, auth_type: str, item, dut_engine=None, set_on_dut: bool = True):
-        logging.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_type} passwords')
+        logger.info(f'Update server info of "{self.hostname} - {self.port}" users to use {auth_type} passwords')
         self.auth_type = auth_type
 
         if set_on_dut:
-            assert item, f"argument 'item' was not provided"
+            assert item, "argument 'item' was not provided"
             engine = dut_engine or (item.active_remote_admin_engine if hasattr(item, "active_remote_admin_engine") else None)
             System().aaa.radius.server.server_id[self.hostname].set(
                 AaaConsts.AUTH_TYPE, auth_type, apply=True, dut_engine=engine

@@ -42,6 +42,7 @@ class ClusterConsts:
     RESET_FACTORY_CLUSTER_DISABLED = {'NVUE': RESET_FACTORY_CLUSTER_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_CLUSTER_DISABLED_OPENAPI}
     RESET_FACTORY_NMX_CONN_DISABLED = {'NVUE': RESET_FACTORY_NMX_CONN_DISABLED_NVUE, 'OpenApi': RESET_FACTORY_NMX_CONN_DISABLED_OPENAPI}
 
+    STATE_UNKNOWN = 'unknown'
     NMXC_CONN = 'nmxc-conn'
     NMXC_CONN_STATE_PER_CLUSTER_STATE = {NvosConst.ENABLED: 'up', NvosConst.DISABLED: 'down'}
     WAIT_FOR_APPS_RUNNING = 50  # Reduce to 15 once bug is fixed [NVOS - Design] Bug SW #4099507: [Non-Functional ] [NVL5 - JULIET - NMX] | nmxc-conn takes too long to be in "up" state | Assignee: Or Farfara | Status: Opened on other team

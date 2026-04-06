@@ -1,15 +1,17 @@
+import logging
+import abc
+
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.BaseComponent import BaseComponent
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.Server import Server
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AuthConsts
-import logging
 from ngts.tools.test_utils import allure_utils as allure
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
-class AbstractRemoteAaaResource(BaseComponent):
+class AbstractRemoteAaaResource(BaseComponent, abc.ABC):
 
     def __init__(self, parent_obj=None, resource_name: str = ''):
         super().__init__(parent=parent_obj, path=resource_name)
@@ -19,8 +21,9 @@ class AbstractRemoteAaaResource(BaseComponent):
 
         self._remote_aaa_type_name: str = self._resource_path.replace('/', '')
 
+    @abc.abstractmethod
     def enable(self, failthrough=False, apply=False, engine=None, verify_res=True):
-        raise Exception("method 'enable' is not implemented for object of class 'AbstractRemoteAaaResource'")
+        ...
 
 
 class NVOSRemoteAaaResource(AbstractRemoteAaaResource):

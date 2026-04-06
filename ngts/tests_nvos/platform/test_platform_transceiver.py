@@ -140,8 +140,7 @@ def test_transceiver_status_with_reboot(engines, devices, random_api):
 
 @pytest.mark.platform
 @pytest.mark.transceiver
-@pytest.mark.parametrize('test_api', [ApiType.NVUE])
-def test_transceivers_and_ports(engines, devices, nv_command, random_api, test_api):
+def test_transceivers_and_ports(engines, devices, nv_command, random_api):
     """
     The test verifies all expected modules (by device) exists in transceivers detail output.
 

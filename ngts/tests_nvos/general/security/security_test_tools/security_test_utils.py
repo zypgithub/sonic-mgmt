@@ -1,8 +1,8 @@
-from __future__ import annotations
-
 from datetime import datetime
+from typing import Iterable
 import subprocess
 import logging
+import shlex
 import time
 import pytz
 
@@ -20,6 +20,7 @@ from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.system.gnmi.constants import GnmiMode
+from ngts.ngts_types import EnginesT, TopologyT, DevicesT
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils import nvos_general_utils
 from ngts.nvos_tools.system.System import System
@@ -46,7 +47,73 @@ def _get_system():
     return _cached_system
 
 
-def check_nslcd_service(engines):
+def _local_user_exists(engines: EnginesT, username: str) -> bool:
+    try:
+        output = engines.dut.run_cmd(f'getent passwd {shlex.quote(username)}', validate=False)
+    except Exception:
+        return False
+    return output.startswith(f'{username}:')
+
+
+def _nvue_user_exists(engines: EnginesT, username: str) -> bool:
+    try:
+        output = engines.dut.run_cmd(f'nv show system aaa user {shlex.quote(username)} --output json', validate=False)
+    except Exception:
+        return False
+    normalized_output = output.lower()
+    return bool(output.strip()) and 'does not exist' not in normalized_output
+
+
+def _attach_local_user_state(engines: EnginesT, username: str, title: str) -> None:
+    try:
+        local_output = engines.dut.run_cmd(f'getent passwd {shlex.quote(username)}', validate=False)
+    except Exception as error:
+        local_output = f'<failed to read getent passwd: {error}>'
+    try:
+        nvue_output = engines.dut.run_cmd(f'nv show system aaa user {shlex.quote(username)} --output json', validate=False)
+    except Exception as error:
+        nvue_output = f'<failed to read nv show user: {error}>'
+    allure.attach(
+        title,
+        f'username: {username}\n'
+        f'linux getent:\n{local_output or "<empty>"}\n\n'
+        f'nvue show user:\n{nvue_output or "<empty>"}',
+        log=False,
+    )
+
+
+def _remove_local_only_user(engines: EnginesT, username: str) -> None:
+    quoted_username = shlex.quote(username)
+    engines.dut.run_cmd(f"sudo userdel -r {quoted_username} || sudo userdel {quoted_username} || true", validate=False)
+
+
+def cleanup_local_users(engines: EnginesT, users: Iterable) -> None:
+    with allure.step('Cleanup local users'):
+        for user in users:
+            username = user.username if isinstance(user, UserInfo) else user[AaaConsts.USERNAME]
+            with allure.step(f'Cleanup local user "{username}"'):
+                if _nvue_user_exists(engines, username):
+                    logger.info(f'Disconnect and delete NVUE-managed local user: {username}')
+                    user_obj = System(force_api=ApiType.NVUE).aaa.user.user_id[username]
+                    try:
+                        user_obj.action_disconnect().get_returned_value(False)
+                    except Exception as error:
+                        logger.warning(f'Failed to disconnect user "{username}" before cleanup: {error}')
+                    user_obj.unset(apply=True).verify_result()
+                elif _local_user_exists(engines, username):
+                    logger.warning(f'Removing leaked local-only user through Linux cleanup: {username}')
+                    _attach_local_user_state(engines, username, f'LOCAL-ONLY USER CLEANUP: {username}')
+                    _remove_local_only_user(engines, username)
+                else:
+                    logger.info(f'Local user already absent: {username}')
+                    continue
+
+                if _local_user_exists(engines, username):
+                    _attach_local_user_state(engines, username, f'LOCAL USER CLEANUP FAILED: {username}')
+                    raise AssertionError(f'Cleanup left local user "{username}" on the DUT')
+
+
+def check_nslcd_service(engines: EnginesT):
     """
     @summary: Check the status of nslcd service, and restart it if needed (for next test cases):
     """
@@ -72,7 +139,7 @@ def sleep_before_auth(sleep_time: int = 3):
         time.sleep(wait_time_before_auth_test)
 
 
-def verify_auth_with_medium(medium, user: UserInfo, expect_login_success: bool, verify_authorization: bool, engines,
+def verify_auth_with_medium(medium: AuthMedium, user: UserInfo, expect_login_success: bool, verify_authorization: bool, engines: EnginesT,
                             topology_obj) -> None:
     with allure.step(f'Verify auth with medium: {medium}'):
         user_is_admin = user.role == AaaConsts.ADMIN
@@ -91,6 +158,21 @@ def clear_accounting_logs_on_servers(accounting_server_mngrs: list[AaaServerMana
             mngr.clear_accounting_logs()
 
 
+def _prepare_accounting_logs_for_medium(accounting_server_mngrs: list[AaaServerManager], medium: str) -> None:
+    settle_seconds = 1
+    if medium == AuthMedium.OPENAPI:
+        settle_seconds = 2
+
+    with allure.step(f'Wait {settle_seconds} seconds for pending accounting logs before {medium}'):
+        time.sleep(settle_seconds)
+    clear_accounting_logs_on_servers(accounting_server_mngrs)
+
+    if medium == AuthMedium.OPENAPI:
+        with allure.step('Wait 1 second and clear accounting logs again before OpenApi'):
+            time.sleep(1)
+        clear_accounting_logs_on_servers(accounting_server_mngrs)
+
+
 def check_accounting(after_time: str, switch_hostname: str, client_username: str,
                      accounting_server_mngrs: list[AaaServerManager], expect_accounting_logs: list[bool]):
     with allure.step('Verify accounting logs on given servers'):
@@ -107,7 +189,7 @@ def check_accounting(after_time: str, switch_hostname: str, client_username: str
                     f'Actual raw content:\n{accounting_logs.raw_content}'
 
 
-def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success: bool = True,
+def verify_user_auth(engines: EnginesT, topology_obj: TopologyT, user: UserInfo, expect_login_success: bool = True,
                      verify_authorization: bool = True, skip_auth_mediums: list[str] = None,
                      accounting_servers: list[RemoteAaaServerInfo] = [], expect_accounting_logs: list[bool] = [],
                      switch_hostname: str = ''):
@@ -149,8 +231,7 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
                     continue
 
                 if should_check_accounting:
-                    time.sleep(1)  # Wait for any pending logs from previous medium to be written
-                    clear_accounting_logs_on_servers(accounting_server_mngrs)
+                    _prepare_accounting_logs_for_medium(accounting_server_mngrs, medium)
                 time_at_server: str = datetime.now(pytz.utc).strftime('%b %d %H:%M:%S')  # servers have UTC timezone
                 verify_auth_with_medium(medium, user, expect_login_success, verify_authorization, engines, topology_obj)
 
@@ -165,13 +246,21 @@ def verify_user_auth(engines, topology_obj, user: UserInfo, expect_login_success
             logger.info('\n')
 
 
-def verify_auth_mediums(test_flow: str, engines, topology_obj,
-                        remote_should_work: bool, local_should_work: bool,
-                        server: RemoteAaaServerInfo = None,
-                        remote_users_roles_to_check: list[str] = None, local_users: list[UserInfo] = None,
-                        verify_authorization: bool = True, skip_auth_mediums: list[str] = None,
-                        accounting_servers: list[RemoteAaaServerInfo] = [], expect_accounting_logs: list[bool] = [],
-                        switch_hostname: str = ''):
+def verify_auth_mediums(
+    test_flow: str,
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    remote_should_work: bool,
+    local_should_work: bool,
+    server: RemoteAaaServerInfo = None,
+    remote_users_roles_to_check: list[str] = None,
+    local_users: list[UserInfo] = None,
+    verify_authorization: bool = True,
+    skip_auth_mediums: list[str] = None,
+    accounting_servers: list[RemoteAaaServerInfo] = [],
+    expect_accounting_logs: list[bool] = [],
+    switch_hostname: str = '',
+) -> None:
     '''
     if should check accounting:
         accounting_preparations()
@@ -228,8 +317,14 @@ def verify_auth_mediums(test_flow: str, engines, topology_obj,
                                          expect_accounting_logs)
 
 
-def verify_users_auth(engines, topology_obj, users: list[UserInfo], expect_login_success: list[bool] = None,
-                      verify_authorization: bool = True, skip_auth_mediums: list[str] = None):
+def verify_users_auth(
+    engines: EnginesT,
+    topology_obj: TopologyT,
+    users: list[UserInfo],
+    expect_login_success: list[bool] = None,
+    verify_authorization: bool = True,
+    skip_auth_mediums: list[str] = None,
+) -> None:
     """
     @summary: Verify authentication and authorization for the given users.
         Authentication will be verified via all possible mediums - SSH, OpenApi, rcon, SCP.
@@ -254,7 +349,12 @@ def verify_users_auth(engines, topology_obj, users: list[UserInfo], expect_login
             verify_user_auth(engines, topology_obj, user, expect_login_success[i], verify_authorization, skip_auth_mediums)
 
 
-def validate_users_authorization_and_role(engines, users, login_should_succeed=True, check_nslcd_if_login_failed=False):
+def validate_users_authorization_and_role(
+    engines: EnginesT,
+    users: list[UserInfo],
+    login_should_succeed: bool = True,
+    check_nslcd_if_login_failed: bool = False,
+) -> None:
     """
     @summary:
         in this function we want to iterate on all users given and validate that access to switch
@@ -306,7 +406,7 @@ def validate_users_authorization_and_role(engines, users, login_should_succeed=T
                                      dut_engine=new_engine).verify_result(should_succeed=is_admin)
 
 
-def find_server_admin_user(server_info):
+def find_server_admin_user(server_info: RemoteAaaServerInfo) -> UserInfo:
     with allure.step('Find server admin user'):
         admin_user = None
         for user in server_info[AuthConsts.USERS]:
@@ -316,7 +416,7 @@ def find_server_admin_user(server_info):
         return admin_user
 
 
-def restore_original_engine_credentials(engines, devices):
+def restore_original_engine_credentials(engines: EnginesT, devices: DevicesT) -> None:
     """
     @summary:
         in this fixture we will restore default credentials to dut engine
@@ -327,7 +427,7 @@ def restore_original_engine_credentials(engines, devices):
                                        password=devices.dut.default_password)
 
 
-def validate_authentication_fail_with_credentials(engines, username, password):
+def validate_authentication_fail_with_credentials(engines: EnginesT, username: str, password: str) -> None:
     """
     @summary: in this helper function we want to validate authentication failure while using
     username and password credentials
@@ -337,7 +437,7 @@ def validate_authentication_fail_with_credentials(engines, username, password):
             should_succeed=False)
 
 
-def validate_services_and_dockers_availability(engines, devices):
+def validate_services_and_dockers_availability(engines: EnginesT, devices: DevicesT) -> None:
     """
     @summary: validate all services and dockers are up
     """
@@ -346,8 +446,15 @@ def validate_services_and_dockers_availability(engines, devices):
         devices.dut.verify_services(engines.dut).verify_result()
 
 
-def configure_authentication(engines, devices, order=None, failthrough=None, fallback=None, apply=False,
-                             dut_engine=None):
+def configure_authentication(
+    engines: EnginesT,
+    devices: DevicesT,
+    order: list[str] = None,
+    failthrough: list[str] = None,
+    fallback: list[str] = None,
+    apply=False,
+    dut_engine: ProxySshEngine = None,
+) -> None:
     """
     @summary:
         Configure different authentication settings as given
@@ -379,7 +486,7 @@ def configure_authentication(engines, devices, order=None, failthrough=None, fal
                 DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut)
 
 
-def user_lists_difference(users_a, users_b):
+def user_lists_difference(users_a: list[UserInfo], users_b: list[UserInfo]) -> list[UserInfo]:
     """
     @summary: Get the difference of the two given user lists.
         * Difference (like sets difference): A - B = all elements of A that are not in B.
@@ -400,7 +507,7 @@ def user_lists_difference(users_a, users_b):
         return [user for user in users_a if user[AaaConsts.USERNAME] in usernames_diff]
 
 
-def mutual_users(users_a, users_b):
+def mutual_users(users_a: list[UserInfo], users_b: list[UserInfo]) -> list[UserInfo]:
     """
     @summary: Get the mutual of the two given user lists.
     @param users_a: users list A
@@ -418,7 +525,7 @@ def mutual_users(users_a, users_b):
         return [user for user in users_a if user[AaaConsts.USERNAME] in mutual_usernames]
 
 
-def set_local_users(engines, users, apply=False):
+def set_local_users(engines: EnginesT, users: list[UserInfo], apply: bool = False) -> None:
     """
     @summary: Set the given users on local.
         * users should be a list of users.
@@ -431,6 +538,7 @@ def set_local_users(engines, users, apply=False):
     @param engines: engines object
     @param users: users list (list of dictionaries)
     """
+    staged_users_via_nvue = False
     with allure.step(f'Set {len(users)} local users'):
         for user in users:
             if isinstance(user, UserInfo):
@@ -447,14 +555,15 @@ def set_local_users(engines, users, apply=False):
                 user_obj.set(AaaConsts.PASSWORD, password).verify_result()
                 logger.info(f'Set user: {username} , role: {role}')
                 user_obj.set(AaaConsts.ROLE, role).verify_result()
+                staged_users_via_nvue = True
 
-    if apply:
+    if apply and staged_users_via_nvue:
         with allure.step('Apply changes together'):
             # set_local_users configures users through NVUE objects, so apply via NVUE too.
-            SendCommandTool.execute_command(TestToolkit.GeneralApi[ApiType.NVUE].apply_config, engines.dut, True)
+            SendCommandTool.execute_command(TestToolkit.GeneralApi[ApiType.NVUE].apply_config, engines.dut, True).verify_result()
 
 
-def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, user_should_exist: bool):
+def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, user_should_exist: bool) -> None:
     with allure.step('Get getent passwd output'):
         output = engine.run_cmd('getent passwd | grep ldap')
     with allure.step(f'Verify "{username}" does not exist'):
@@ -468,7 +577,7 @@ def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, us
             assert any(row.startswith(f'{username}:') for row in rows) == user_should_exist, err_msg
 
 
-def check_ldap_user_groups_with_id(engine: ProxySshEngine, username: str, groupname, group_should_exist: bool):
+def check_ldap_user_groups_with_id(engine: ProxySshEngine, username: str, groupname: str, group_should_exist: bool) -> None:
     with allure.step('Get id output'):
         cmd = f'id {username}'
         output = engine.run_cmd(cmd)
@@ -508,7 +617,7 @@ FIPS_PUBKEY_ALGOS = {
 }
 
 
-def configure_ssh_server_fips_algorithms(engines):
+def configure_ssh_server_fips_algorithms(engines: EnginesT) -> None:
     """Configure SSH server algorithms required for FIPS mode"""
     with allure.step('Configure SSH server algorithms'):
         system = _get_system()
@@ -536,7 +645,7 @@ def configure_ssh_server_fips_algorithms(engines):
             logger.info("SSH algorithms already configured for FIPS compliance")
 
 
-def _apply_config_with_expected_disconnect(engine, operation_name="operation"):
+def _apply_config_with_expected_disconnect(engine: ProxySshEngine, operation_name: str = "operation") -> str:
     """
     Apply config when we expect the session to disconnect (e.g., reboot, FIPS mode changes).
     Uses send_command with short timeout and catches expected exceptions.
@@ -578,7 +687,7 @@ def _apply_config_with_expected_disconnect(engine, operation_name="operation"):
             return "applied (disconnected as expected)"
 
 
-def get_fips_state(engines):
+def get_fips_state(engines: EnginesT) -> dict:
     """
     Get and parse current FIPS mode state.
 
@@ -623,7 +732,7 @@ def get_fips_state(engines):
             return {}
 
 
-def switch_fips_mode(engines, on=True, should_reboot=True, expect_disconnect=False):
+def switch_fips_mode(engines: EnginesT, on: bool = True, should_reboot: bool = True, expect_disconnect: bool = False) -> None:
     """
     Switch FIPS mode on or off with optional reboot.
 
@@ -691,17 +800,17 @@ def switch_fips_mode(engines, on=True, should_reboot=True, expect_disconnect=Fal
 
 
 # Backward compatibility aliases
-def enable_fips_mode(engines, should_reboot=True, expect_disconnect=False):
+def enable_fips_mode(engines: EnginesT, should_reboot: bool = True, expect_disconnect: bool = False) -> None:
     """Enable FIPS mode (wrapper for switch_fips_mode)"""
     return switch_fips_mode(engines, on=True, should_reboot=should_reboot, expect_disconnect=expect_disconnect)
 
 
-def disable_fips_mode(engines, should_reboot=True, expect_disconnect=False):
+def disable_fips_mode(engines: EnginesT, should_reboot: bool = True, expect_disconnect: bool = False) -> None:
     """Disable FIPS mode (wrapper for switch_fips_mode)"""
     return switch_fips_mode(engines, on=False, should_reboot=should_reboot, expect_disconnect=expect_disconnect)
 
 
-def _reboot_and_wait_for_system(engines, reboot_timeout=300, system_ready_timeout=600):
+def _reboot_and_wait_for_system(engines: EnginesT, reboot_timeout: int = 300, system_ready_timeout: int = 600) -> None:
     """Reboot the system and wait for it to become functional"""
 
     with allure.step('Reboot system and wait for it to become ready'):
@@ -737,7 +846,7 @@ def _reboot_and_wait_for_system(engines, reboot_timeout=300, system_ready_timeou
         logger.info("System reboot completed and NVOS is functional")
 
 
-def is_fips_enabled(engines):
+def is_fips_enabled(engines: EnginesT) -> bool:
     """Check if FIPS mode is currently enabled (operational state)"""
     with allure.step('Check if FIPS is enabled'):
         try:
@@ -748,12 +857,12 @@ def is_fips_enabled(engines):
             return False
 
 
-def get_fips_status(engines):
+def get_fips_status(engines: EnginesT) -> dict:
     """Get current FIPS mode status (parsed dictionary)"""
     return get_fips_state(engines)
 
 
-def change_max_files(engines, max_files=65535):
+def change_max_files(engines: EnginesT, max_files: int = 65535) -> bool:
     """
     Edit /etc/security/limits.conf to set maximum file descriptor limits for all users.
     Also set the current session limits using ulimit.
@@ -787,7 +896,7 @@ def change_max_files(engines, max_files=65535):
             return False
 
 
-def increase_pty_limit(engines, max_ptys=65535):
+def increase_pty_limit(engines: EnginesT, max_ptys: int = 65535) -> bool:
     """
     Increase the number of PTY devices available on the system.
     """
@@ -824,7 +933,7 @@ def increase_pty_limit(engines, max_ptys=65535):
 # Log Management Functions
 # =============================================================================
 
-def rotate_logs(engines):
+def rotate_logs(engines: EnginesT):
     """
     Reset/rotate the logs on the DUT.
 
@@ -851,7 +960,7 @@ def rotate_logs(engines):
 # Service Management Functions
 # =============================================================================
 
-def run_nginx(engines):
+def run_nginx(engines: EnginesT) -> None:
     """
     Verify and start the nginx service on the DUT if not running.
 
@@ -877,7 +986,7 @@ def run_nginx(engines):
 # SSH Key Management Functions
 # =============================================================================
 
-def add_ssh_key_to_localhost(engines, username: str) -> bool:
+def add_ssh_key_to_localhost(engines: EnginesT, username: str) -> bool:
     """
     Generate an SSH key pair on the DUT and copy it to localhost for passwordless authentication.
 
@@ -960,9 +1069,14 @@ def add_ssh_key_to_localhost(engines, username: str) -> bool:
 # SSH Configuration Functions
 # =============================================================================
 
-def change_ssh_limits(engines, max_sessions: int = 100, max_unauthenticated: int = 500,
-                      throttle_percent: int = 30, throttle_start: int = 500,
-                      additional_ports: list = None):
+def change_ssh_limits(
+    engines: EnginesT,
+    max_sessions: int = 100,
+    max_unauthenticated: int = 500,
+    throttle_percent: int = 30,
+    throttle_start: int = 500,
+    additional_ports: list = None,
+) -> None:
     """
     Change the SSH session limits in the sshd_config.
 
@@ -972,7 +1086,7 @@ def change_ssh_limits(engines, max_sessions: int = 100, max_unauthenticated: int
         max_unauthenticated: Maximum unauthenticated session count (default: 500)
         throttle_percent: Throttle percent for unauthenticated (default: 30)
         throttle_start: Throttle start for unauthenticated (default: 500)
-        additional_ports: list of additional ports to add (default: None)
+        additional_ports: List of additional ports to add (default: None)
 
     Example:
         >>> change_ssh_limits(engines, additional_ports=[40, 41])
@@ -997,7 +1111,7 @@ def change_ssh_limits(engines, max_sessions: int = 100, max_unauthenticated: int
         system.ssh_server.set("port", ports, apply=True, ask_for_confirmation='-y')
 
 
-def add_ssh_port_acl(engines, port: int, rule_id: str):
+def add_ssh_port_acl(engines: EnginesT, port: int, rule_id: str) -> None:
     """
     Add an ACL rule to allow traffic on a new SSH port.
 
@@ -1023,7 +1137,12 @@ def add_ssh_port_acl(engines, port: int, rule_id: str):
 # =============================================================================
 
 
-def configure_non_default_vrf(engines, vrf_name='RED', interface='swp1', ip_address='192.168.100.1/24'):
+def configure_non_default_vrf(
+    engines: EnginesT,
+    vrf_name: str = 'RED',
+    interface: str = 'swp1',
+    ip_address: str = '192.168.100.1/24',
+) -> str:
     """
     Configure a non-default VRF for testing multi-VRF connections.
 
@@ -1074,7 +1193,7 @@ def configure_non_default_vrf(engines, vrf_name='RED', interface='swp1', ip_addr
 # gNMI Configuration Functions
 # =============================================================================
 
-def ensure_gnmic_installed():
+def ensure_gnmic_installed() -> None:
     """
     Ensure gnmic is installed on the local system (test runner).
     """
@@ -1111,7 +1230,7 @@ def ensure_gnmic_installed():
                 raise Exception("Could not install gnmic required for test12")
 
 
-def get_gnmi_subscription_count(engines):
+def get_gnmi_subscription_count(engines: EnginesT) -> int:
     """
     Get the number of active gNMI subscriptions.
 
@@ -1139,7 +1258,7 @@ def get_gnmi_subscription_count(engines):
             return len([line for line in tcp_output.strip().split('\n') if 'ESTAB' in line]) if tcp_output.strip() else 0
 
 
-def verify_gnmi_connections_active(engines, expected_subscriptions=1):
+def verify_gnmi_connections_active(engines: EnginesT, expected_subscriptions: int = 1) -> int:
     """
     Verify that gNMI subscriptions are active using 'nv show system gnmi-server status'.
     """
@@ -1153,7 +1272,7 @@ def verify_gnmi_connections_active(engines, expected_subscriptions=1):
         return active_subscriptions
 
 
-def verify_gnmi_connections_closed(engines):
+def verify_gnmi_connections_closed(engines: EnginesT) -> None:
     """
     Verify that gNMI subscriptions are closed using 'nv show system gnmi-server status'.
     """
@@ -1165,7 +1284,7 @@ def verify_gnmi_connections_closed(engines):
             f"Expected no gNMI subscriptions, but found {active_subscriptions} active subscriptions"
 
 
-def enable_gnmi_server_with_cert(engines, cert_name="gnmi-server-cert"):
+def enable_gnmi_server_with_cert(engines: EnginesT, cert_name: str = "gnmi-server-cert") -> str:
     """
     Enable GNMI server with a self-signed certificate and nginx authenticator.
 
@@ -1258,7 +1377,7 @@ def enable_gnmi_server_with_cert(engines, cert_name="gnmi-server-cert"):
         return cert_name
 
 
-def create_gnmi_client(engines, user, password):
+def create_gnmi_client(engines: EnginesT, user: str, password: str) -> GnmiClient:
     """
     Create a GNMI client instance.
 
@@ -1281,7 +1400,13 @@ def create_gnmi_client(engines, user, password):
         return gnmi_client
 
 
-def create_gnmi_subscription(gnmi_client, user, streaming=True, path='/', prefix=''):
+def create_gnmi_subscription(
+    gnmi_client: GnmiClient,
+    user: str,
+    streaming: bool = True,
+    path: str = '/',
+    prefix: str = '',
+) -> subprocess.Popen:
     """
     Create a GNMI subscription using an existing client.
 
@@ -1325,7 +1450,12 @@ def create_gnmi_subscription(gnmi_client, user, streaming=True, path='/', prefix
         return gnmi_subscription_process
 
 
-def create_gnmi_subscription_session(engines, user, password, streaming=True):
+def create_gnmi_subscription_session(
+    engines: EnginesT,
+    user: str,
+    password: str,
+    streaming: bool = True,
+) -> tuple[GnmiClient, subprocess.Popen]:
     """
     Create a GNMI subscription session (Client + Subscription).
     Wrapper that uses create_gnmi_client and create_gnmi_subscription.
@@ -1345,7 +1475,7 @@ def create_gnmi_subscription_session(engines, user, password, streaming=True):
         return gnmi_client, gnmi_subscription_process
 
 
-def disable_gnmi_server_and_cleanup(engines, cert_name="gnmi-server-cert"):
+def disable_gnmi_server_and_cleanup(engines: EnginesT, cert_name: str = "gnmi-server-cert") -> None:
     """
     Disable GNMI server and cleanup certificates.
 

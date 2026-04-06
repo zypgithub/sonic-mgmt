@@ -20,6 +20,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from retry.api import retry_call
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -59,6 +60,9 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
+        if not (is_bug_active(4207869) and standalone_system):
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER)
+
         if has_loopbox or not standalone_system:
             with allure.step("Verify LIDs bigger than 0 prior to reboot"):
                 ClusterTools.verify_lid_value(devices)
@@ -88,7 +92,13 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
             with allure.step("Verify links Active after reboot"):
                 ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
 
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
+        cluster_reboot_extra_time = 60
+        # Reboot time when cluster is enabled is longer than when cluster is disabled, so we add extra time to the threshold
+        reboot_threshold = devices.dut.expected_operation_durations.get(devices.dut.reboot_type)
+        if reboot_threshold is not None:
+            reboot_threshold += cluster_reboot_extra_time
+        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices,
+                                            threshold=reboot_threshold).verify_result()
 
         with allure.step("Verify DSCP persisted after reboot"):
             show_output = OutputParsingTool.parse_show_output_to_dict(
@@ -112,12 +122,8 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
+
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)

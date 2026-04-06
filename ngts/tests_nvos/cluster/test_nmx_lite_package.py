@@ -48,7 +48,7 @@ def start_cluster_and_sdn_fm_config(engines, setup_name):
                 ClusterTools.stop_cluster(cluster)
 
             with allure.step("Reset sdn factory default"):
-                Sdn().factory_default.action_reset(param='force')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster)
 
 
 @pytest.mark.gpu_tel

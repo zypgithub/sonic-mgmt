@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from typing import Any
 import logging
-import os
 import random
 import string
+import os
 
 from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from infra.tools.general_constants.constants import DefaultConnectionValues
@@ -18,15 +19,17 @@ from ngts.nvos_tools.infra.SshCmdBuilder import SshCmdBuilder
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
+from ngts.ngts_types import EnginesT, TopologyT
 from ..constants import AuthConsts, AuthMedium
 
 logger = logging.getLogger(__name__)
 
 
 class AuthVerifier:
-    def __init__(self, username, password, engines, topology_obj):
+    def __init__(self, username: str, password: str, engines: EnginesT, topology_obj: TopologyT):
         self.api = ApiType.NVUE
         self._log = logger.getChild(self.__class__.__name__)
+        self.topology_obj: TopologyT = topology_obj
         self._log.info(f"Create proxy ssh engine for user: {username}")
         self.engine = LinuxSshEngine(engines.dut.ip, username, password)
 
@@ -66,13 +69,55 @@ class AuthVerifier:
         self._log.info(f"Change test api to: {api}")
         TestToolkit.tested_api = api
 
+    def _build_auth_debug_snapshot(self) -> str:
+        engine = getattr(self, "engine", None)
+        try:
+            serial_attrs: Any = self.topology_obj.players["dut_serial"]["attributes"].noga_query_data["attributes"]
+            serial_specific = serial_attrs.get("Specific", {})
+            serial_conn = serial_attrs.get("Topology Conn.", {})
+        except Exception:
+            serial_specific = {}
+            serial_conn = {}
+
+        password = getattr(engine, "password", None)
+        return "\n".join(
+            [
+                f"verifier_class: {self.__class__.__name__}",
+                f"api: {self.api}",
+                f"tested_api: {getattr(TestToolkit, 'tested_api', 'n/a')}",
+                f"engine_class: {type(engine).__name__ if engine else 'n/a'}",
+                f"engine_ip: {getattr(engine, 'ip', 'n/a')}",
+                f"engine_port: {getattr(engine, 'port', 'n/a')}",
+                f"engine_username: {getattr(engine, 'username', 'n/a')}",
+                f"engine_password_length: {len(password) if isinstance(password, str) else 'n/a'}",
+                f"serial_ip: {serial_specific.get('ip', 'n/a')}",
+                f"serial_conn_user: {serial_conn.get('CONN_USER', 'n/a')}",
+            ]
+        )
+
+    def _attach_auth_failure_snapshot(self, err: Exception) -> None:
+        snapshot = (
+            f"{self._build_auth_debug_snapshot()}\n"
+            f"exception_type: {type(err).__name__}\n"
+            f"exception: {err}"
+        )
+        allure.attach(f"{self.__class__.__name__}_auth_failure_context", snapshot, log=False)
+
     def verify_authentication(self, expect_success=True):
         orig_test_api = TestToolkit.tested_api
         self.change_test_api()
         authentication_success = True
         try:
+            self._log.info(
+                "Verify authentication expect_success=%s ip=%s user=%s api=%s",
+                expect_success,
+                getattr(self.engine, "ip", "n/a"),
+                getattr(self.engine, "username", "n/a"),
+                self.api,
+            )
             self._authenticate(expect_success)
         except Exception as e:
+            self._attach_auth_failure_snapshot(e)
             self._log.info(f"Authentication failed\nException:\n{e}")
             authentication_success = False
         finally:
@@ -115,19 +160,25 @@ class AuthVerifier:
 
 
 class SshAuthVerifier(AuthVerifier):
-    def __init__(self, username, password, engines, topology_obj):
+    def __init__(self, username: str, password: str, engines: EnginesT, topology_obj: TopologyT):
         super().__init__(username, password, engines, topology_obj)
 
     def _authenticate(self, expect_success):
         with allure.step("For SSH - run some linux command on engine to trigger authentication"):
+            self._log.info(
+                "Running SSH auth probe command on %s as %s",
+                getattr(self.engine, "ip", "n/a"),
+                getattr(self.engine, "username", "n/a"),
+            )
             self.engine.run_cmd("id")
 
 
 class OpenApiAuthVerifier(AuthVerifier):
-    def __init__(self, username, password, engines, topology_obj):
+    def __init__(self, username: str, password: str, engines: EnginesT, topology_obj: TopologyT):
         # Don't call super().__init__ to avoid creating SSH connection that generates accounting logs
         self._log = logger.getChild(self.__class__.__name__)
         self.api = ApiType.OPENAPI
+        self.topology_obj = topology_obj
         self.username = username
         self.password = password
         self.engines = engines
@@ -145,7 +196,7 @@ class OpenApiAuthVerifier(AuthVerifier):
 
 
 class RconAuthVerifier(AuthVerifier):
-    def __init__(self, username, password, engines, topology_obj):
+    def __init__(self, username: str, password: str, engines: EnginesT, topology_obj: TopologyT):
         super().__init__(username, password, engines, topology_obj)
         self._log.info(f"Create pexpect serial engine for user: {username}")
         self.engine: PexpectSerialEngine = ConnectionTool.create_serial_engine(
@@ -179,7 +230,7 @@ class RconAuthVerifier(AuthVerifier):
 
 
 class ScpAuthVerifier(AuthVerifier):
-    def __init__(self, username, password, engines, topology_obj):
+    def __init__(self, username: str, password: str, engines: EnginesT, topology_obj: TopologyT):
         super().__init__(username, password, engines, topology_obj)
 
     def _authenticate(self, expect_success):
@@ -251,7 +302,15 @@ class ScpAuthVerifier(AuthVerifier):
 
 
 class PKAAuthVerifier(AuthVerifier):
-    def __init__(self, username, private_key_path, hostname, password=None, engines=None, topology_obj=None):
+    def __init__(
+        self,
+        username: str,
+        private_key_path: str,
+        hostname: str,
+        password: str = None,
+        engines: EnginesT = None,
+        topology_obj: TopologyT = None,
+    ):
         super().__init__(username, password, engines, topology_obj)
         self.username = username
         self.private_key_path = private_key_path

@@ -1,15 +1,15 @@
 import re
 import time
-
 import pytest
 
-from ngts.nvos_constants.constants_nvos import ApiType
-from ngts.nvos_tools.system.System import System
-from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts
-from ngts.tests_nvos.general.security.security_test_tools.security_test_utils import set_local_users
+from ngts.tests_nvos.general.security.security_test_tools import security_test_utils
+from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_tools.system.System import System
+from ngts.ngts_types import EnginesT, DevicesT
 
 
 @pytest.fixture(scope='session')
@@ -21,7 +21,7 @@ def system():
 
 
 @pytest.fixture(scope='function')
-def testing_users(engines, devices, system):
+def testing_users(engines: EnginesT, devices: DevicesT, system: System):
     """
     Fixture that sets new users especially for test (and cleans them afterwards).
     There are 2 test users: 'test_admin' and 'test_monitor'.
@@ -34,7 +34,7 @@ def testing_users(engines, devices, system):
     """
     with allure.step("Before test: set local test users"):
         users_info = devices.dut.local_test_users
-        set_local_users(engines, users_info, apply=True)
+        security_test_utils.set_local_users(engines, users_info, apply=True)
 
         users = {
             user[AaaConsts.USERNAME]: {
@@ -43,11 +43,14 @@ def testing_users(engines, devices, system):
             } for user in users_info
         }
 
-    return users
+    try:
+        yield users
+    finally:
+        security_test_utils.cleanup_local_users(engines, users_info)
 
 
 @pytest.fixture(scope='function')
-def init_time(engines, system):
+def init_time(engines: EnginesT, system: System):
     """
     Prepare test in perspective of time. including:
         - disable ntp before test, and re-enable it after

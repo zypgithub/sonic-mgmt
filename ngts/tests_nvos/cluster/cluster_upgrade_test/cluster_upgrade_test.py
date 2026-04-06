@@ -25,7 +25,7 @@ logger = logging.getLogger()
 @pytest.mark.parametrize('test_api', [ApiType.NVUE])
 @pytest.mark.timeout(55 * MINUTE, func_only=True)
 def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, engines, has_loopbox, standalone_system,
-                                  base_version_realpath, target_version_realpath, handle_la_marker_in_manufacture):
+                                  base_version_realpath, target_version_realpath, handle_la_marker_in_manufacture, is_simx):
     '''
     Test will install a base version (Taken from regression).
     On base version perform the following:
@@ -43,24 +43,24 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
     '''
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
-
-    interface_wa_called = False
-    target_image_installed = False
-    cli_obj = NvueGeneralCli(engines.dut, devices.dut)
-
-    NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, base_version_realpath)
-    TestToolkit.engines.dut.disconnect()
-    with allure.step("Create Cluster object"):
-        cluster = Cluster()
-        system = System()
-        sdn = Sdn()
-        all_config_files_paths = {}
-        initial_config_contents = {}
-        initial_configs_paths_to_restore = {}
-        log_levels = {}
-        uploaded_files = []
-        initial_configuration_restored = False
     try:
+        interface_wa_called = False
+        target_image_installed = False
+        cli_obj = NvueGeneralCli(engines.dut, devices.dut)
+
+        NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, base_version_realpath)
+        TestToolkit.engines.dut.disconnect()
+        with allure.step("Create Cluster object"):
+            cluster = Cluster()
+            system = System()
+            sdn = Sdn()
+            all_config_files_paths = {}
+            initial_config_contents = {}
+            initial_configs_paths_to_restore = {}
+            log_levels = {}
+            uploaded_files = []
+            initial_configuration_restored = False
+
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -73,11 +73,12 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         with allure.step("Enable cluster and perform configurations"):
             ClusterTools.start_cluster(cluster, setup_name, output_format, verify_nmx_c=False, devices=devices)  # remove verify=False once base version for regression is different than 1638.
 
-            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+            interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system, is_simx)
             next(interfaces_wa)
             interface_wa_called = True
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                             standalone_system=standalone_system)
 
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in devices.dut.expected_cluster_apps:
@@ -147,7 +148,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
 
         with allure.step("Before upgrade, verify apps are running"):
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format,
-                                             standalone_system, has_loopbox)
+                                             standalone_system, has_loopbox, is_simx)
 
         with allure.step("Performing upgrade:"):
             bin_filename = target_version_realpath.split('/')[-1]
@@ -162,6 +163,13 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                 TestToolkit.engines.dut.disconnect()  # if install succeeded, need to replace dut engine
             target_image_installed = True
 
+        with allure.step("Install sm_config after upgrade"):
+            sm_result = ClusterTools.edit_sm_config(sdn, engines, devices, standalone_system, has_loopbox, is_simx)
+            if sm_result:
+                # Apply device-specific workaround after SM config is installed (e.g., Rosalind Bug 4910763)
+                if hasattr(devices.dut, 'wa_restart_nv_bridge_after_sm_config'):
+                    devices.dut.wa_restart_nv_bridge_after_sm_config(cluster, engines)
+
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -171,10 +179,9 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{NvosConst.ENABLED}"
 
-        ClusterTools.reboot_compute_nodes_gpus(setup_name)
-
         with allure.step("Validate apps are still running"):
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
+                                             has_loopbox, retries=6, is_simx=is_simx)
         with allure.step("Check log level"):
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
@@ -210,12 +217,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
 
         if not target_image_installed:
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)

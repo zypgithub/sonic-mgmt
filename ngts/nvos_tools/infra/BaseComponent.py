@@ -1,11 +1,9 @@
 import logging
 import os
-import time
 
 from typing import Dict, Iterable, Tuple, Union
 
-from infra.tools.validations.traffic_validations.port_check.port_checker import validate_port_in_expected_state, \
-    check_port_status_till_alive
+from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.base_cli import BaseCli
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
@@ -19,7 +17,7 @@ from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
 from ngts.tools.test_utils import allure_utils as allure
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class BaseComponent:
@@ -132,7 +130,7 @@ class BaseComponent:
                         exception_str = str(e).lower()
                         if 'eof' in exception_str and 'eof' in expected_str:
                             from ngts.nvos_tools.infra.ResultObject import ResultObj
-                            logging.info(f"Session disconnected as expected: {e}")
+                            logger.info(f"Session disconnected as expected: {e}")
                             result_obj = ResultObj(True, f"Session disconnected as expected: {e}")
                         else:
                             # Unexpected exception
@@ -206,7 +204,7 @@ class BaseComponent:
                         # If disconnection message in output, confirm success
                         if "Session terminated by NVUE" in output:
                             logger.info("FIPS disconnection detected in output - treating as success")
-                            result_obj = ResultObj(True, f"Configuration applied (FIPS disconnection detected in output)")
+                            result_obj = ResultObj(True, "Configuration applied (FIPS disconnection detected in output)")
 
                     except Exception as e:
                         # If any exception (including timeout), treat as expected FIPS disconnection
@@ -263,7 +261,7 @@ class BaseComponent:
                                          dut_engine, client_certs_after_apply, check_engine_connectivity,
                                          is_fips_mode, fips_timeout)
             else:
-                logging.info('Run set with no params')
+                logger.info('Run set with no params')
                 op_param_value = '' if TestToolkit.tested_api == ApiType.NVUE else {}
                 return self._set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,
                                  dut_engine, client_certs_after_apply, check_engine_connectivity,
@@ -395,20 +393,29 @@ class BaseComponent:
                                                                 deny_reboot=deny_reboot, topology_obj=topology_obj,
                                                                 expected_output=expected_output)
 
-    def action_fetch(self, path, base_url=None, engine=None, device=None, expected_output='File fetched successfully',
+    def action_fetch(self, path, base_url=None, engine=None, device=None, expected_output=None,
                      timeout=None) -> ResultObj:
         """
         nv action fetch <resource-path> <remote-url>
         :param path: Absolute file-path in the network drive, e.g. '/auto/path/to/file.img'.
         :param base_url: e.g. 'scp://user:password@host'. If None, the default credentials are used. If empty string
             then the `path` parameter needs to contain the full URL.
+        :param engine: Engine to use for the fetch command. None uses the default.
+        :param device: Device to use for the fetch command. None uses the default.
+        :param expected_output: Expected output from the fetch command. None uses the default.
         :param timeout: Timeout in seconds for the fetch command. None uses the default.
         """
         url = (ImageConsts.SCP_PATH if base_url is None else base_url) + path
         with allure.step(f"Fetching: {url}"):
-            return self.action(ActionConsts.FETCH, (ActionParamConsts.REMOTE_URL, url), engine=engine, device=device,
-                               expected_output=['File fetched successfully', 'File has been successfully fetched'],
-                               timeout=timeout)
+            expected_output = expected_output or ['File fetched successfully', 'File has been successfully fetched', 'Action succeeded']
+            return self.action(
+                ActionConsts.FETCH,
+                (ActionParamConsts.REMOTE_URL, url),
+                engine=engine,
+                device=device,
+                expected_output=expected_output,
+                timeout=timeout,
+            )
 
     def action_fetch_local(self, file_url, engine=None, device=None) -> ResultObj:
         """

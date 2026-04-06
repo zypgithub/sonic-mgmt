@@ -104,7 +104,7 @@ def test_simulated_cluster_partition(engines, devices, test_api):
 @pytest.mark.nmx
 @pytest.mark.disable_loganalyzer
 @pytest.mark.timeout(10 * MINUTE, func_only=True)
-def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name):
+def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_loopbox, standalone_system, setup_name, check_device_type_for_partition, is_simx):
 
     output_format = OutputFormat.json
     with allure.step("Create Cluster object"):
@@ -199,7 +199,7 @@ def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_lo
 
             wait_for_partition_update()
             TestToolkit.tested_api = ApiType.NVUE
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox, is_simx)
             TestToolkit.tested_api = test_api
 
         with allure.step("Add GPU with wrong mcast_limit"):
@@ -221,4 +221,4 @@ def test_simulated_cluster_partition_bad_flow(engines, devices, test_api, has_lo
                 err_msg = INVALID_MCAST_NVUE_ERROR
             assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
             TestToolkit.tested_api = ApiType.NVUE
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox, is_simx)

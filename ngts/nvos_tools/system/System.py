@@ -4,6 +4,7 @@ import time
 from typing import Tuple, Union, Dict
 import pytest
 from retry import retry
+
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.openapi.openapi_system_clis import OpenApiSystemCli
 from ngts.constants.constants import InfraConst

@@ -1,10 +1,53 @@
 import logging
 import random
+import subprocess
 
 from ngts.tests_nvos.cluster.cluster_consts import AnsiblePlaybooksConsts
-from ngts.nvos_tools.infra.DutUtilsTool import run_ssh_command
 
 logger = logging.getLogger()
+
+
+def _run_ssh_command_with_logging(command, ip_address, username, password):
+    """
+    Same as run_ssh_command but logs every output line via logger.info
+    so playbook output survives MARS timeout kills.
+    """
+    logger.info(f"Initializing SSH connection to {ip_address}")
+
+    ssh_command = [
+        'sshpass', '-p', password,
+        'ssh', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no',
+        '-o', 'TCPKeepAlive=yes', '-o', 'ServerAliveInterval=60', '-o', 'ConnectTimeout=30',
+        f'{username}@{ip_address}', command
+    ]
+
+    try:
+        output_lines = []
+        process = subprocess.Popen(
+            ssh_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            stripped = line.strip()
+            print(stripped)
+            if stripped:
+                logger.info(stripped)
+            output_lines.append(line)
+
+        process.wait()
+        full_output = ''.join(output_lines)
+        return full_output
+
+    except Exception as e:
+        logger.error(f"SSH command failed: {e}")
+        return None
 
 
 class AnsiblePlaybooksTool:
@@ -36,8 +79,7 @@ class AnsiblePlaybooksTool:
         username = AnsiblePlaybooksConsts.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['user']
         password = AnsiblePlaybooksConsts.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['pass']
 
-        playbook_output = run_ssh_command(playbook_cmd, ansible_machine, username, password)
-        logger.info(f"Playbook output:\n{playbook_output}")
+        playbook_output = _run_ssh_command_with_logging(playbook_cmd, ansible_machine, username, password)
 
         status = AnsiblePlaybooksTool._check_if_playbook_failed(playbook_output)
         return status
@@ -59,7 +101,6 @@ class AnsiblePlaybooksTool:
         Returns:
             bool: True if playbook succeeded, False if failed
         """
-        # Build the command
         playbook_cmd = AnsiblePlaybooksConsts.get_playbook_command(
             playbook_key, inventory_file, component_paths_dict
         )
@@ -67,7 +108,6 @@ class AnsiblePlaybooksTool:
         logger.info(f"Running playbook '{playbook_key}'")
         logger.info(f"Command: {playbook_cmd}")
 
-        # Use provided ansible machine or select random
         if not ansible_machine:
             ansible_machine = random.choice(AnsiblePlaybooksConsts.ANSIBLE_MACHINES)
             username = AnsiblePlaybooksConsts.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['user']
@@ -75,17 +115,12 @@ class AnsiblePlaybooksTool:
 
         logger.info(f"Using ansible machine: {ansible_machine}")
 
-        # Execute via SSH
-        playbook_output = run_ssh_command(playbook_cmd, ansible_machine, username, password)
+        playbook_output = _run_ssh_command_with_logging(playbook_cmd, ansible_machine, username, password)
 
-        # FIX: Check for None output from SSH failure
         if playbook_output is None:
             logger.error(f"SSH command failed - no output received from {ansible_machine}")
             return False
 
-        logger.info(f"Playbook output:\n{playbook_output}")
-
-        # Check result
         status = AnsiblePlaybooksTool._check_if_playbook_failed(playbook_output)
 
         if status:
@@ -113,16 +148,12 @@ class AnsiblePlaybooksTool:
         """
         logger.info(f"Running command: {playbook_cmd}")
 
-        # Select ansible machine
         ansible_machine = random.choice(AnsiblePlaybooksConsts.ANSIBLE_MACHINES)
         username = AnsiblePlaybooksConsts.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['user']
         password = AnsiblePlaybooksConsts.ANSIBLE_MACHINES_CREDENTIALS[ansible_machine]['pass']
 
-        # Execute via SSH
-        playbook_output = run_ssh_command(playbook_cmd, ansible_machine, username, password)
-        logger.info(f"Playbook output:\n{playbook_output}")
+        playbook_output = _run_ssh_command_with_logging(playbook_cmd, ansible_machine, username, password)
 
-        # Check result
         status = AnsiblePlaybooksTool._check_if_playbook_failed(playbook_output)
 
         if status:
