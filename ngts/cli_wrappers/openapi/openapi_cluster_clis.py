@@ -245,3 +245,14 @@ class OpenApiClusterCli(OpenApiBaseCli):
             expected_output='',
             device=None,
         )
+
+    @staticmethod
+    def show_file(engine, file='', exit_cmd=''):
+        # Not used simply return path to file
+        return ""
+
+    @staticmethod
+    def action_run_sdn_cmd(engine, resource_path, sdn_cmd_str):
+        params = {"state": "start", "parameters": {"cmd": sdn_cmd_str}}
+        return OpenApiCommandHelper.execute_action(ActionType.RUN, engine.engine.username, engine.engine.password,
+                                                   engine.ip, engine.open_api_port, resource_path, params)

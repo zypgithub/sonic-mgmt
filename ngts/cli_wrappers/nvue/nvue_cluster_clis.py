@@ -185,3 +185,17 @@ class NvueClusterCli(NvueBaseCli):
         cmd = f"nv action delete {path}"
         logging.info(f"Running '{cmd}' on dut using NVUE")
         return engine.run_cmd(cmd)
+
+    @staticmethod
+    @check_output
+    def show_file(engine, file='', exit_cmd=''):
+        cmd = "nv show sdn cmd files {file}".format(file=file)
+        logging.info("Running '{cmd}' on dut using NVUE".format(cmd=cmd))
+        return engine.run_cmd_after_cmd([cmd, exit_cmd])
+
+    @staticmethod
+    def action_run_sdn_cmd(engine, resource_path, sdn_cmd_str):
+        path = resource_path.replace('/', ' ').strip()
+        cmd = f'nv action run {path} cmd "{sdn_cmd_str}"'
+        logging.info("Running '%s' on dut using NVUE", cmd[:200] + ("..." if len(cmd) > 200 else ""))
+        return engine.run_cmd(cmd)

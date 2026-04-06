@@ -21,6 +21,9 @@ from .ResultObj import ResultObj
 
 logger = logging.getLogger()
 
+# All 128 ASCII characters
+ALL_ASCII = bytes(range(128)).decode("ascii")
+
 
 def random_api():
     return random.choice(ApiType.ALL_TYPES)

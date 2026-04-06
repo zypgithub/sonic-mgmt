@@ -2025,6 +2025,28 @@ class SyslogSeverityLevels:
                            CRITICAL: CRIT}
 
 
+class SdnCmdConsts:
+    HELP = 'help'
+    DOMAIN_STATE_INFO = 'DomainStateInfo'
+    TOPOLOGY_INFO = 'TopologyInfo'
+    SWITCH_NODE_INFO_LIST = 'SwitchNodeInfoList'
+    COMPUTE_NODE_INFO_LIST = 'ComputeNodeInfoList'
+    GPU_INFO_LIST = 'GpuInfoList'
+    SET_STATIC_CONFIG = 'SetStaticConfig'
+    STATIC_CONFIG = 'StaticConfig'
+    FACTORY_RESET = 'FactoryReset'
+    CREATE_PARTITION = 'CreatePartition'
+    DELETE_PARTITION = 'DeletePartition'
+    REMOVE_GPUS_FROM_PARTITION = 'RemoveGpusFromPartition'
+    ADD_GPUS_TO_PARTITION = 'AddGpusToPartition'
+    GET_COMMAND_LIST = [
+        HELP, DOMAIN_STATE_INFO, TOPOLOGY_INFO, SWITCH_NODE_INFO_LIST,
+        COMPUTE_NODE_INFO_LIST, GPU_INFO_LIST,
+    ]
+    SET_COMMAND_BASE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET]
+    SET_COMMAND_NON_STANDALONE_LIST = [SET_STATIC_CONFIG, FACTORY_RESET, CREATE_PARTITION, REMOVE_GPUS_FROM_PARTITION]
+
+
 class HealthConsts:
     OK = "OK"
     NOT_OK = "Not OK"
