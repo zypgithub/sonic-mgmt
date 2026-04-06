@@ -13,3 +13,4 @@ nic_simulator_grpc_port:
   sonic-dual-tor-tigon-dualtor-mixed: 50075
   sonic-dual-tor-tigon-01-dualtor-aa: 50075
   sonic-dual-tor-tigon-01-dualtor-aa-64: 50075
+  vms-kvm-dual-vpp-t0-2: 50075
