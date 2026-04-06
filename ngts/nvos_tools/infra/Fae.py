@@ -127,6 +127,7 @@ class FaePlatform(BaseComponent):
         self.write_protection = WriteProtection(self)
         self.secure_state = SecureState(self)
         self.voltage_dpc = VoltageDpc(self)
+        self.bkv = BaseComponent(self, path="/bkv")
 
 
 class WriteProtection(BaseComponent):

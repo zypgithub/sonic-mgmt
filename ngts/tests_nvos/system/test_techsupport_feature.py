@@ -5,6 +5,7 @@ from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.Devices.IbDevice import CrocodileSwitch
 from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -234,6 +235,9 @@ def test_techsupport_expected_files(engines, devices, test_name, skynet, ib_rout
             assert not verify_file_in_folder(engines.dut, 'applied_configuration', f'{tech_support_dir}/etc/sonic/nvue.d'), 'applied_configuration exist in /etc/sonic/nvue.d'
 
         with allure.step("validate each expected file name and size"):
+            with allure.independent_step('validate dump/bkv matches nv show fae platform bkv'):
+                validate_techsupport_bkv_output(engines.dut, tech_support_dir, expected_files_dict['dump'])
+
             with allure.independent_step('validate files names'):
                 # Clean timestamps from SDK dump file names for all ASICs
                 for folder_key in techsupport_files_dict.keys():
@@ -325,6 +329,25 @@ def cleanup_techsupport(engine, before, after):
     new_folders = [file for file in after if file not in before]
     for dump in new_folders:
         engine.run_cmd('sudo rm -rf ' + dump)
+
+
+def validate_techsupport_bkv_output(dut_engine, tech_support_dir: str, expected_dump_files: list) -> None:
+    """
+    When the device expects a BKV file in dump/ (per expected_dump_files, from the device class and
+    test-specific adjustments), verify dump/bkv matches nv show fae platform bkv.
+    """
+    if 'bkv' not in expected_dump_files:
+        return
+    fae = Fae()
+    bkv_show = OutputParsingTool.parse_json_str_to_dictionary(
+        fae.platform.bkv.show(output_format=OutputFormat.json, dut_engine=dut_engine)).get_returned_value()
+    version = bkv_show.get('version')
+    assert version is not None and str(version).strip(), (
+        f"Unexpected nv show fae platform bkv output: {bkv_show!r}")
+    bkv_path = f'{tech_support_dir}/dump/bkv'
+    content = dut_engine.run_cmd(f'sudo cat {bkv_path}')
+    assert str(version) in content, (
+        f"BKV operational version {version!r} not found in tech-support file {bkv_path!r}: {content!r}")
 
 
 def verify_techsupport_files_names(files_list, expected_files):

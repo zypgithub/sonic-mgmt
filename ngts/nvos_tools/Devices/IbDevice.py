@@ -610,7 +610,8 @@ class IbSwitch(BaseSwitch):
             "nv set fae interface {port} link phy-recovery step-2",
             "nv show fae interface {port} link low-power",
             "nv set fae interface {port} link low-power state",
-            "nv unset fae interface {port} link low-power state"
+            "nv unset fae interface {port} link low-power state",
+            "nv show fae platform bkv",
         ]
 
         self.memory_size: List[float] = [15.0]
@@ -3009,6 +3010,8 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         }
         self.memory_size: List[float] = [30.77, 31.21]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
+        self.constants = self.constants._replace(
+            dump_files=self.constants.dump_files + ['bkv'])
 
     def _init_fan_list(self):
         """Rosalind does not have fans (100% liquid cooled)"""
