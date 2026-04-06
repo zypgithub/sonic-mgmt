@@ -21,6 +21,7 @@ from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsC
 from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts
 from ngts.constants.performance_constants import PerfConsts, Cl_Consts
 from ngts.scripts.sonic_deploy.image_preparetion_methods import get_real_paths, prepare_images
+from ngts.tools.align_components.nogaq import CACHE_FILE_NAME as NOGA_CACHE_FILE
 from ngts.helpers.general_helper import extract_host_details_from_topo_obj, get_cli_obj
 from ngts.scripts.sonic_deploy.sonic_only_methods import is_community
 from ngts.nvos_tools.Devices.IbDevice import BlackMambaSwitch, CrocodileSwitch
@@ -528,8 +529,21 @@ class DeployMultiNosHelper:
             logger.info(f"Set cli type of {dut['dut_name']} to {target_cli_type} and switch type to "
                         f"{CliType.NOS_TO_TYPE_DICT[target_cli_type]}")
             upload_data_to_noga(data_query)
+        DeployMultiNosHelper._remove_noga_cache()
         if is_performance:
             DeployMultiNosHelper.multi_nos_install_traffic_generator(duts, deploy_sequential=deploy_sequential)
+
+    @staticmethod
+    def _remove_noga_cache():
+        """Remove local Noga cache so subsequent test runs fetch fresh credentials
+        matching the newly deployed OS. Stale cache entries cause SSH auth failures
+        on SONiC (OpenSSH >= 9.8) due to PerSourcePenalties."""
+        try:
+            if os.path.exists(NOGA_CACHE_FILE):
+                os.remove(NOGA_CACHE_FILE)
+                logger.info(f"Removed stale Noga cache: {NOGA_CACHE_FILE}")
+        except OSError as e:
+            logger.warning(f"Failed to remove Noga cache {NOGA_CACHE_FILE}: {e}")
 
     @staticmethod
     def multi_nos_install_traffic_generator(duts, deploy_sequential=False):

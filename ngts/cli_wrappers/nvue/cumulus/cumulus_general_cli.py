@@ -128,7 +128,7 @@ class CumulusGeneralCli(NvueGeneralCli):
         with allure.step('wait for System is ready in serial'):
             logger.info(f"Waiting for system to be ready")
             system_ready_pattern = 'login:'
-            serial_engine.run_cmd('', system_ready_pattern, timeout=2 * self.device.timeout_system_is_ready, send_without_enter=True)
+            serial_engine.run_cmd('', system_ready_pattern, timeout=2 * self.device.timeout_system_is_ready)
         with allure.step('Set default password'):
             logging.info(f"Login using default user {self.device.default_username}")
             _, index = serial_engine.run_cmd(self.device.default_username, ["Password:"], timeout=5)
@@ -217,21 +217,10 @@ class CumulusGeneralCli(NvueGeneralCli):
             grub_menu_pointer = 0
             onie_menu_pointer = 1
             cumulus_esc_pointer = 2
-            login_prompt_pointer = 3
-
-            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN, 'login:']
+            grub_shell_pointer = 3
+            login_prompt_pointer = 4
+            grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN, GrubMenuTool.GRUB_SHELL_PATTERN, 'login:']
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
-
-            # Actively spam ESC keys to catch GRUB menu before it times out
-            respond = self._wait_for_grub_with_key_spam(serial_engine, all_patterns, timeout=240)
-
-        if respond == login_prompt_pointer:
-            # Missed GRUB window, switch booted to Cumulus - need to reboot from within
-            with allure.step('Missed GRUB window, rebooting from Cumulus to ONIE'):
-                logger.info('Switch booted to login prompt - missed GRUB window. Trying grub-reboot method.')
-                self._reboot_to_onie_from_cumulus(serial_engine, topology_obj, dut_alias, onie_menu_entry)
-                return
-
         if respond != onie_menu_pointer:
             if respond == cumulus_esc_pointer:
                 with allure.step('Grub menu new style handle'):
@@ -239,6 +228,13 @@ class CumulusGeneralCli(NvueGeneralCli):
                     output, respond = serial_engine.run_cmd(GrubMenuTool.ESCAPE_CHAR, expected_value=all_patterns,
                                                             timeout=240, send_without_enter=True)
                     time.sleep(1)
+
+            if respond == grub_shell_pointer:
+                with allure.step('Recover from GRUB shell'):
+                    logger.info('Detected grub> shell, attempting recovery to ONIE menu')
+                    output, respond = GrubMenuTool.recover_from_grub_shell(
+                        serial_engine, all_patterns, timeout=60
+                    )
 
             if respond >= len(grub_menu_patterns):
                 with allure.step('Secure boot error - handle'):

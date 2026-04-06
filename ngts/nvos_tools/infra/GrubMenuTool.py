@@ -18,6 +18,7 @@ class GrubMenuTool:
     MAX_GRUB_ITEMS_LIMIT = 100
     GRUB_ESC_PATTERN = 'Press the ESC'
     CUMULUS_ESC_PATTERN = 'error: terminal `serial\' isn\'t found.'
+    GRUB_SHELL_PATTERN = 'grub>'
     NAVIGATION_FAILED = f'Grub menu navigation tool failed'
 
     @classmethod
@@ -77,3 +78,39 @@ class GrubMenuTool:
         if not item_reached:
             item_reached = cls.make_grub_menu_steps_in_one_direction(serial_engine, cls.MAX_GRUB_ITEMS_LIMIT, cls.DIRECTION_DOWN, item_pattern, time_between_steps)
         assert item_reached, f'{cls.NAVIGATION_FAILED}: failed to navigate to item "{item_pattern}"'
+
+    @classmethod
+    def recover_from_grub_shell(cls, serial_engine: PexpectSerialEngine, target_patterns, timeout=60):
+        """
+        Recover from a bare grub> shell by loading the ONIE GRUB config.
+        This handles the case where Cumulus GRUB has a broken grub.cfg
+        (e.g. references a non-existent serial terminal) causing it to
+        drop to the grub> command line instead of showing the boot menu.
+        """
+        logger = logging.getLogger()
+        logger.info("Detected grub> shell — attempting ONIE config recovery")
+
+        try:
+            output, index = serial_engine.run_cmd(
+                'configfile (hd0,gpt1)/grub/grub.cfg',
+                target_patterns, timeout=timeout
+            )
+            logger.info("GRUB recovery succeeded via direct ONIE partition")
+            return output, index
+        except (pexpect.exceptions.TIMEOUT, Exception) as e:
+            logger.warning(f"Direct ONIE configfile failed: {e}")
+
+        try:
+            serial_engine.run_cmd(
+                'search --no-floppy --label --set=root ONIE-BOOT',
+                cls.GRUB_SHELL_PATTERN, timeout=10
+            )
+        except (pexpect.exceptions.TIMEOUT, Exception):
+            pass
+
+        output, index = serial_engine.run_cmd(
+            'configfile /grub/grub.cfg',
+            target_patterns, timeout=timeout
+        )
+        logger.info("GRUB recovery succeeded via ONIE-BOOT label search")
+        return output, index

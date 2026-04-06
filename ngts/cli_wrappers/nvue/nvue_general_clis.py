@@ -135,8 +135,9 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             # Extract filename from URL
             filename = image_url.split('/')[-1]
 
+        dest_path = f'/tmp/{filename}'
         # Run wget command with retry logic
-        wget_cmd = f'wget {image_url}'
+        wget_cmd = f'wget -O {dest_path} {image_url}'
         _, index = serial_engine.run_cmd(
             wget_cmd,
             ['100%', 'ERROR', 'failed', 'wget:'],
@@ -145,7 +146,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
 
         if index == 0:  # Success - found '100%'
             logger.info(f'Successfully downloaded image: {filename}')
-            return filename
+            return dest_path
         else:
             # Wget failed - raise exception to trigger retry
             raise Exception(f'wget failed with pattern index {index}')
@@ -489,6 +490,7 @@ class NvueGeneralCli(SonicGeneralCliDefault):
             except Exception as e:
                 logging.warning("Cleanup temp file %s: %s", path, e)
 
+    @staticmethod
     def apply_config(engine, ask_for_confirmation=False, option='', validate_apply_message='', rev_id="",
                      skip_no_config_diff_err=True, verify_execution=False, client_certs_after_apply: CertInfo = None,
                      apply_timeout=None):
