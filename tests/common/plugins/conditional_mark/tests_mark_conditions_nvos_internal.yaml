@@ -586,4 +586,9 @@ tests_nvos/general/security/platform_certificate/test_platform_certificate.py::t
     conditions:
       - "'rosalind-eb1-10' in testbed"
 
+tests_nvos/cluster/test_nmx_t_distributed.py:
+  skip:
+    reason: "nmx-t distributed tests are supported only on Rosalind systems"
+    conditions:
+      - "'rosalind' not in testbed"
 ########################## NVOS IGNORE END ##########################
