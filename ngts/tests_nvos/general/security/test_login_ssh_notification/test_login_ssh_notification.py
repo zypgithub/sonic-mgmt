@@ -232,7 +232,7 @@ def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip
                                                         last_successful_login=successful_login_time)
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_ssh_login_notifications_allowed_user(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
     """
     Validate SSH connection is allowed only for user configured in allow-users.
@@ -276,7 +276,7 @@ def test_ssh_login_notifications_allowed_user(engines, login_source_ip_addresses
         ).format(engines.dut.username, user_name)
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_verify_switchd_restart(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
     """
     Verify SSH server config persists after switchd restart.
@@ -334,7 +334,7 @@ def test_verify_switchd_restart(engines, login_source_ip_addresses, monitor_user
         system.ssh_server.unset(apply=True, ask_for_confirmation=True).verify_result()
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_verify_reboot(engines, login_source_ip_addresses, monitor_user_for_ssh_allowed):
     """
     Verify SSH server config persists after node reboot.
@@ -398,7 +398,7 @@ def test_verify_reboot(engines, login_source_ip_addresses, monitor_user_for_ssh_
         system.ssh_server.unset(apply=True, ask_for_confirmation=True).verify_result()
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_verify_nv_show(engines):
     """
     Verify nv show system ssh-server active-sessions displays correct output.
@@ -434,7 +434,7 @@ def test_verify_nv_show(engines):
         authenticator.close_ssh_login_session()
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_verify_max_session_per_connection(engines):
     """
     Verify max-sessions-per-connection limit is enforced per TCP connection.
@@ -500,7 +500,7 @@ def test_verify_max_session_per_connection(engines):
         system.ssh_server.unset(Consts.SSH_MAX_SESSIONS_PER_CONNECTION, apply=True, ask_for_confirmation=True).verify_result()
 
 
-@pytest.mark.cumulus
+@pytest.mark.cumulus_only
 def test_verify_permit_root_login():
     """
     Verify permit-root-login SSH server option set/show/unset for each value.
