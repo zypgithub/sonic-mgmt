@@ -51,7 +51,7 @@ def test_show_platform_environment(engines, devices, random_api, output_format):
         ValidationTool.validate_set_equal(output.keys(),
                                           devices.dut.psu_fan_list + devices.dut.fan_list + devices.dut.psu_list +
                                           temperature_sensor_list + devices.dut.led_list +
-                                          devices.dut.voltage_sensors).verify_result()
+                                          devices.dut.voltage_sensors + devices.dut.list_of_leakages).verify_result()
 
 
 @pytest.mark.platform

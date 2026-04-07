@@ -412,6 +412,7 @@ class IbSwitch(BaseSwitch):
         self.ztp_dev_json = 'uninstall.json'
         self.ztp_complex_prod_json = 'complex_prod.json'
         self.ztp_complex_dev_json = 'complex.json'
+        self.list_of_leakages = []
 
         # Techsupport constants for IB devices
         self.techsupport_files_path = SystemConsts.TECHSUPPORT_FILES_PATH
