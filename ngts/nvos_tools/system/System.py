@@ -116,7 +116,20 @@ class System(BaseComponent):
                 time.sleep(5)
 
             health_output = OutputParsingTool.parse_json_str_to_dictionary(self.health.show(dut_engine=dut_engine)).get_returned_value()
-            health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_output[HealthConsts.ISSUES].items())
+            health_issues = health_output[HealthConsts.ISSUES]
+
+            # WA for Redmine #4963780: filter out known missing fan issues per device
+            from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
+            engine_ip = getattr(dut_engine, 'ip', None)
+            ignored_fan_prefixes = Configurations.devices_with_missing_fans.get(engine_ip, set())
+            if ignored_fan_prefixes:
+                health_issues = {k: v for k, v in health_issues.items()
+                                 if not any(k.startswith(prefix) for prefix in ignored_fan_prefixes)}
+                if not health_issues:
+                    logger.info(f"All health issues are known missing fans on {engine_ip} (Redmine #4963780) - passing health check")
+                    return
+
+            health_issues_str = '\n'.join(f'{k}: {v}' for k, v in health_issues.items())
             exception_str = "Unexpected health status.\nExpected: {}, but got :{}," \
                 " with the following health issues:\n{}".\
                 format(expected_status, health_output[HealthConsts.STATUS], health_issues_str)

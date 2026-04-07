@@ -92,6 +92,11 @@ class Configurations:
     }
 
     devices_missing_psus = {"10.7.148.138"}
+    # WA for Redmine #4963780: mtvr-q3400-05 has missing fans and burned FAN5 sockets
+    devices_with_missing_fans = {
+        "10.245.23.5": {"FAN5/"},
+        "10.245.21.64": {"FAN5/"}
+    }
     devices_to_configure_ndr_ports = ndr_ports.keys()
     devices_requested_factory_reset = []  # ['10.7.148.248']
 
