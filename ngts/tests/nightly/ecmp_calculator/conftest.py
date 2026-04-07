@@ -180,6 +180,17 @@ def pre_configure_for_interface_vlan_vrf(request, engines, topology_obj, interfa
     IpConfigTemplate.configuration(topology_obj, ip_config_dict, request)
     RouteConfigTemplate.configuration(topology_obj, static_route_config_dict, request)
 
+    # Enable arp_ignore on hb to prevent ARP cross-replies between its two interfaces
+    # in the same Vlan300 subnet. Without this, both hb interfaces respond to each other's
+    # ARP requests (due to Linux default arp_ignore=0), causing random neighbor MAC swaps
+    # on the DUT that break ECMP egress port verification.
+    changed = _set_arp_ignore(engines.hb, 1, interfaces.hb_dut_1, interfaces.hb_dut_2)
+    if changed:
+        def restore_arp_ignore():
+            for intf, orig_val in changed.items():
+                _set_arp_ignore(engines.hb, orig_val, intf)
+        request.addfinalizer(restore_arp_ignore)
+
     # generate arp by pinging from host
     gen_arp_table_via_ping(players, ping_info_list)
     logger.info("Collecting arp and mac table")
@@ -499,3 +510,28 @@ def gen_arp_table_via_ping(players, ping_info_list, only_ping_v4=False):
     ping_ports(V4_CONFIG)
     if not only_ping_v4:
         ping_ports(V6_CONFIG)
+
+
+def _set_arp_ignore(host_engine, value, *interfaces):
+    """Set arp_ignore on host interfaces and return a dict of original values.
+
+    When multiple interfaces on the same host share a VLAN/subnet, Linux default
+    arp_ignore=0 causes each interface to reply to ARP requests for IPs on any
+    other interface, using its own MAC. This leads to random neighbor MAC swaps
+    on the DUT. Setting arp_ignore=1 restricts each interface to only reply for
+    IPs configured on itself.
+
+    Returns {intf: original_value} for interfaces that were changed, or empty
+    dict if all interfaces already had the requested value.
+    """
+    changed = {}
+    for intf in interfaces:
+        original = host_engine.run_cmd(f"sysctl -n net.ipv4.conf.{intf}.arp_ignore").strip()
+        if original == str(value):
+            logger.info(f"arp_ignore for {intf} already set to {value}, skipping")
+            continue
+        host_engine.run_cmd(f"sysctl -w net.ipv4.conf.{intf}.arp_ignore={value}")
+        actual = host_engine.run_cmd(f"sysctl -n net.ipv4.conf.{intf}.arp_ignore").strip()
+        logger.info(f"arp_ignore for {intf}: {original} -> {actual}")
+        changed[intf] = original
+    return changed
