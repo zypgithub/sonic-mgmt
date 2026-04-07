@@ -1773,7 +1773,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                 },
                 "rbac": {
                     "rbac-file": "",
-                    "rbac-mode": ""
+                    "rbac-mode": "disabled"
                 }
             },
             ClusterConsts.NMX_TELEMETRY: {
@@ -1791,7 +1791,7 @@ class JulietScaleoutSwitch(JulietSwitch):
                 },
                 "rbac": {
                     "rbac-file": "",
-                    "rbac-mode": ""
+                    "rbac-mode": "disabled"
                 }
             }
         }
@@ -2438,12 +2438,12 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             ClusterConsts.NMX_CONTROLLER: {
                 **{key: value for key, value in self.cluster_app_nmx_controller.items() if key not in []},
                 'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "disabled"},
-                "rbac": {"rbac-file": "", "rbac-mode": ""}
+                "rbac": {"rbac-file": "", "rbac-mode": "disabled"}
             },
             ClusterConsts.NMX_TELEMETRY: {
                 **{key: value for key, value in self.cluster_app_nmx_telemetry.items() if key not in []},
                 'manager': {"ca-certificate": "", "certificate": "", "crl": "", "encryption": "disabled", "state": "enabled"},
-                "rbac": {"rbac-file": "", "rbac-mode": ""}
+                "rbac": {"rbac-file": "", "rbac-mode": "disabled"}
             }
         }
 
