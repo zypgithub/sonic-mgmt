@@ -250,7 +250,7 @@ class BaseDevice(ABC):
             if relevant_ga_num_for_conf == 0:
                 relevant_ga_num_for_conf = 4000
             return f'nvos_config_ga_{relevant_ga_num_for_conf}.yml'
-        return 'nvos_config_ga_3000.yml'
+        return 'nvos_config_ga_8000.yml'
 
     def verify_databases(self, dut_engine):
         """
