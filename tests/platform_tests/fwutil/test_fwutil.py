@@ -12,13 +12,6 @@ DEVICES_PATH = "/usr/share/sonic/device"
 
 SN4280_PLATFORM = "x86_64-nvidia_sn4280-r0"
 
-FWUTIL_LOG_IGNORE_TESTS = {
-    "test_fwutil_install_file",
-    "test_fwutil_install_url",
-    "test_fwutil_update_current",
-    "test_fwutil_update_next",
-}
-
 FWUTIL_DPU_RESET_IGNORE_REGEX = [
     r".*ERR.*kernel.*i2c.*Failed to complete workqueue.*",
     r".*ERR.*kernel:.*mlx5_core.*",
@@ -26,9 +19,9 @@ FWUTIL_DPU_RESET_IGNORE_REGEX = [
     r".*ERR pmon#sensord: Error getting sensor data.*",
 ]
 
-@pytest.fixture(autouse=True)
-def ignore_fwutil_expected_dpu_reset_errors(request, loganalyzer, duthost, component):
-    if request.node.originalname not in FWUTIL_LOG_IGNORE_TESTS or 'FPGA' not in component:
+@pytest.fixture(autouse=False)
+def ignore_fwutil_expected_dpu_reset_errors(loganalyzer, duthost, component):
+    if 'FPGA' not in component:
         return
     if duthost.facts.get("platform") != SN4280_PLATFORM:
         return
@@ -51,7 +44,7 @@ def test_fwutil_show(duthost):
     assert show_fw_comp_set == platform_comp_set
 
 
-def test_fwutil_install_file(request, duthost, localhost, pdu_controller, component, fw_pkg):
+def test_fwutil_install_file(request, duthost, localhost, pdu_controller, component, fw_pkg, ignore_fwutil_expected_dpu_reset_errors):
     """Tests manually installing firmware to a component from a file."""
     call_fwutil(request,
                 duthost,
@@ -62,7 +55,7 @@ def test_fwutil_install_file(request, duthost, localhost, pdu_controller, compon
                 basepath=os.path.join(DEVICES_PATH, duthost.facts['platform']))
 
 
-def test_fwutil_install_url(request, duthost, localhost, pdu_controller, component, fw_pkg, host_firmware):
+def test_fwutil_install_url(request, duthost, localhost, pdu_controller, component, fw_pkg, host_firmware, ignore_fwutil_expected_dpu_reset_errors):
     """Tests manually installing firmware to a component from a URL."""
     call_fwutil(request,
                 duthost,
@@ -88,7 +81,7 @@ def test_fwutil_install_bad_path(duthost, component):
     assert find_pattern(out['stderr_lines'], pattern)
 
 
-def test_fwutil_update_current(request, duthost, localhost, pdu_controller, component, fw_pkg):
+def test_fwutil_update_current(request, duthost, localhost, pdu_controller, component, fw_pkg, ignore_fwutil_expected_dpu_reset_errors):
     """Tests updating firmware from current image using fwutil update"""
     call_fwutil(request,
                 duthost,
@@ -98,7 +91,7 @@ def test_fwutil_update_current(request, duthost, localhost, pdu_controller, comp
                 component=component)
 
 
-def test_fwutil_update_next(request, duthost, localhost, pdu_controller, component, next_image, fw_pkg):
+def test_fwutil_update_next(request, duthost, localhost, pdu_controller, component, next_image, fw_pkg, ignore_fwutil_expected_dpu_reset_errors):
     """Tests updating firmware from the "next" image using fwutil update"""
     call_fwutil(request,
                 duthost,
