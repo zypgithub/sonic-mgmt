@@ -589,7 +589,8 @@ class IbSwitch(BaseSwitch):
             "nv set fae interface {port} link phy-recovery step-2",
             "nv show fae interface {port} link low-power",
             "nv set fae interface {port} link low-power state",
-            "nv unset fae interface {port} link low-power state"
+            "nv unset fae interface {port} link low-power state",
+            "nv show fae system sto-debug"
         ]
 
         self.memory_size: List[float] = [15.0]

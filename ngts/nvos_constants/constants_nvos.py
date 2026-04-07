@@ -2850,3 +2850,13 @@ class PeerPortConsts:
                                      ApiType.OPENAPI: {"under_limit": LOWER_INTERVAL_ERR_MSG,
                                                        "over_limit": HIGHER_INTERVAL_ERR_MSG}}
     ASSOCIATED_SWITCH_PORT = "associated-switch-port"
+
+
+class StoDebug:
+    ENABLED = 'enabled'
+    DISABLED = 'disabled'
+    STATE = 'state'
+    STO_EVENT_LOG = 'NVLink STO event'
+    CONTAIN_DRAIN_EVENT = 'Contain_and_drain'
+    DEBUG_STO_DUMP_FOLDER = '/var/log/mellanox/'
+    STO_DEBUG_DUMPS = 'sdk-wrn-dumps'
