@@ -1133,6 +1133,29 @@ def _verify_and_cleanup_speed_after_upgrade(selected_port, original_speed, expec
     _verify_speed_back_to_original_after_unset(selected_port, original_speed, device)
 
 
+def _verify_and_cleanup_speed_after_upgrade_nvl_access(selected_port, original_speed, expected_speed, device, nvl_access_info):
+    """Verify speed preserved on a sample port, then unset ALL access ports and verify restoration."""
+    from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+    from ngts.tests_nvos.interfaces.nvl_port.helpers import validate_ports_state_and_speed
+    from retry.api import retry_call
+
+    _verify_speed_preserved_after_upgrade(selected_port, expected_speed, device)
+
+    port_names = nvl_access_info['port_names']
+    access_ports_range = nvl_access_info['range_name']
+    default_speed = nvl_access_info['default_speed']
+    all_ports = Port(access_ports_range)
+
+    with allure.step(f"Unset speed on all access ports: {access_ports_range}"):
+        all_ports.interface.link.unset(op_param='speed', apply=True, ask_for_confirmation=True).verify_result()
+        logger.info(f"Unset speed on {access_ports_range}")
+
+    with allure.step(f"Verify all access ports restored to {default_speed}"):
+        retry_call(validate_ports_state_and_speed, [default_speed, port_names, 'acp'],
+                   exceptions=AssertionError, tries=6, delay=30)
+        logger.info(f"All access ports restored to {default_speed}")
+
+
 def _verify_speed_preserved_after_upgrade(selected_port, expected_speed, device):
     """Verify that the speed configuration is preserved after upgrade."""
     InterfaceConfigurationTool.verify_speed_configuration(

@@ -3016,17 +3016,15 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         # Only apply workaround if bug is active
         if is_bug_active(4910763):
             with allure.step("WA for Bug 4910763: Restart nv-bridge after SM config"):
+                from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
                 logger.info("Stopping nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
-
-                # logger.info("Restarting nv-bridge container")
-                # engines.dut.run_cmd("sudo systemctl restart nv-bridge")
 
                 logger.info("Starting nmx-controller app")
                 cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
 
-                logger.info("Waiting for nmx-conn to be up")
-                ClusterTools.validate_cluster_enabled(cluster)
+                logger.info("Waiting for nmx-controller to be ready after restart")
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
         else:
             logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 

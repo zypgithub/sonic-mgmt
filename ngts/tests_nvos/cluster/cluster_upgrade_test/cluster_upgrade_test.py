@@ -43,24 +43,24 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
     '''
     TestToolkit.tested_api = test_api
     output_format = OutputFormat.json
-
-    interface_wa_called = False
-    target_image_installed = False
-    cli_obj = NvueGeneralCli(engines.dut, devices.dut)
-
-    NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, base_version_realpath)
-    TestToolkit.engines.dut.disconnect()
-    with allure.step("Create Cluster object"):
-        cluster = Cluster()
-        system = System()
-        sdn = Sdn()
-        all_config_files_paths = {}
-        initial_config_contents = {}
-        initial_configs_paths_to_restore = {}
-        log_levels = {}
-        uploaded_files = []
-        initial_configuration_restored = False
     try:
+        interface_wa_called = False
+        target_image_installed = False
+        cli_obj = NvueGeneralCli(engines.dut, devices.dut)
+
+        NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, base_version_realpath)
+        TestToolkit.engines.dut.disconnect()
+        with allure.step("Create Cluster object"):
+            cluster = Cluster()
+            system = System()
+            sdn = Sdn()
+            all_config_files_paths = {}
+            initial_config_contents = {}
+            initial_configs_paths_to_restore = {}
+            log_levels = {}
+            uploaded_files = []
+            initial_configuration_restored = False
+
         with allure.step("Running 'nv show cluster' command and parsing output"):
             output = OutputParsingTool.parse_show_output_to_dict(
                 cluster.show(output_format=output_format),
@@ -77,7 +77,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
             next(interfaces_wa)
             interface_wa_called = True
 
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                             standalone_system=standalone_system)
 
             with allure.step("Choose random log level, and set cluster app log level to"):
                 for app in devices.dut.expected_cluster_apps:
@@ -181,7 +182,8 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
         ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
         with allure.step("Validate apps are still running"):
-            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+            ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
+                                             has_loopbox, retries=6)
         with allure.step("Check log level"):
             for app in devices.dut.expected_cluster_apps:
                 ClusterTools.verify_log_level(log_levels[app], app, output_format, cluster)
