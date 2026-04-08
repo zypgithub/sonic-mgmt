@@ -599,18 +599,17 @@ class GenerateGoldenConfigDBModule(object):
         if "localhost" not in ori_config_db["DEVICE_METADATA"]:
             ori_config_db["DEVICE_METADATA"]["localhost"] = {}
 
-        # TODO: this caused test failure, pending fix from upstream
-        # see details in https://redmine.mellanox.com/issues/4667530
         # Older version image may not support ZMQ feature flag
-        # rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
-        # if "orch_northbond_route_zmq_enabled" in out:
-        #     ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
         rc, out, err = self.module.run_command("sudo cat /usr/local/yang-models/sonic-device_metadata.yang")
         if "orch_northbond_route_zmq_enabled" in out:
             if self.topo_name == "t1-smartswitch-ha":
                 ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "false"
             else:
-                ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "true"
+                # TODO: We have 2 issues caused by orch_northbond_route_zmq_enabled config
+                # 1. https://redmine.mellanox.com/issues/4667530
+                # 2. https://redmine.mellanox.com/issues/4958271
+                # Set the value always as false to WA the issues.
+                ori_config_db["DEVICE_METADATA"]["localhost"]["orch_northbond_route_zmq_enabled"] = "false"
 
         return json.dumps(ori_config_db, indent=4)
 
