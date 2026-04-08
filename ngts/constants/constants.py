@@ -1,7 +1,6 @@
 import copy
 import os
 from datetime import datetime
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class PytestConst:
