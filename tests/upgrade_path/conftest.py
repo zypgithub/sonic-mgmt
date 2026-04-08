@@ -1,5 +1,7 @@
 import pytest
 
+from tests.common.helpers.upgrade_helpers import xcvr_skip_list  # noqa: F401
+
 
 def pytest_addoption(parser):
     parser.addoption('--downgrade_type', action='store', default='sonic',
