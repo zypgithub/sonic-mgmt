@@ -12,23 +12,12 @@ from tests.common.fixtures.ptfhost_utils import run_icmp_responder, run_garp_ser
 from tests.common.utilities import wait_until
 from tests.common.dualtor.dual_tor_common import cable_type, CableType                                     # noqa: F401
 from tests.common.helpers.counterpoll_helper import ConterpollHelper
-from tests.common.constants import CounterpollConstants
 
 logger = logging.getLogger(__name__)
 
 pytestmark = [pytest.mark.topology("dualtor")]
 
 SERVER_IPV4 = "192.168.0.100"
-
-COUNTERPOLL_TYPES = [
-    CounterpollConstants.QUEUE,
-    CounterpollConstants.PORT,
-    CounterpollConstants.PORT_BUFFER_DROP,
-    CounterpollConstants.RIF,
-    CounterpollConstants.WATERMARK,
-    CounterpollConstants.PG_DROP,
-    CounterpollConstants.ACL,
-]
 
 
 @pytest.fixture
@@ -167,6 +156,7 @@ def common_setup_teardown(
 def test_mac_move_during_switchover(
     common_setup_teardown,
     toggle_all_simulator_ports_to_rand_unselected_tor,  # noqa: F811
+    restore_counter_poll,                               # noqa: F811
     rand_selected_dut,
     rand_unselected_dut,
     ptfadapter,
@@ -177,9 +167,10 @@ def test_mac_move_during_switchover(
     """
     Trigger a MAC move during a switchover and verify that the switchover still completes successfully
     """
-    
-    # Disable counterpolls to avoid timeout
-    ConterpollHelper.disable_counterpoll(rand_selected_dut, COUNTERPOLL_TYPES)
+
+    # Disable all counterpolls during the switchover flow and let the fixture restore them.
+    available_types = ConterpollHelper.get_available_counterpoll_types(rand_selected_dut)
+    ConterpollHelper.disable_counterpoll(rand_selected_dut, available_types)
 
     # Learn the neighbor on the DUT
     testutils.send(ptfadapter, common_setup_teardown["ptf_intf1"], neigh_learn_pkt)
@@ -221,6 +212,3 @@ def test_mac_move_during_switchover(
 
     # recover mux conifg
     rand_selected_dut.shell("config mux mode auto all")
-
-    # Recover counterpolls
-    ConterpollHelper.enable_counterpoll(rand_selected_dut, COUNTERPOLL_TYPES)

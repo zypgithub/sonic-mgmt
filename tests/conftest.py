@@ -78,6 +78,8 @@ from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 from tests.common.helpers.parallel import patch_ansible_worker_process
 from tests.common.helpers.parallel import fix_logging_handler_fork_lock
 from tests.common.mellanox_data import is_mellanox_device
+from tests.common.helpers.counterpoll_helper import ConterpollHelper
+
 
 import tests.common.gnmi_setup as gnmi_setup
 
@@ -4020,3 +4022,17 @@ def yang_validation_check(request, duthosts):
             error_summary.append(f"{host}: {result['error']}")
 
         pt_assert(False, "post-test YANG validation failed:\n" + "\n".join(error_summary))
+
+
+@pytest.fixture(scope="function", autouse=False)
+def restore_counter_poll(rand_selected_dut):
+    counter_poll_show = ConterpollHelper.get_counterpoll_show_output(rand_selected_dut)
+    parsed_counterpoll_before = ConterpollHelper.get_parsed_counterpoll_show(counter_poll_show)
+    yield
+    counter_poll_show = ConterpollHelper.get_counterpoll_show_output(rand_selected_dut)
+    parsed_counterpoll_after = ConterpollHelper.get_parsed_counterpoll_show(counter_poll_show)
+    ConterpollHelper.restore_counterpoll_status(
+        rand_selected_dut,
+        parsed_counterpoll_before,
+        parsed_counterpoll_after
+    )
