@@ -63,6 +63,7 @@ from ngts.nvos_constants.constants_nvos import (
 )
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.Devices import IbDevice
+from ngts.nvos_tools.infra.CertificateGenerator import CertificateGenerator
 from ngts.nvos_tools.infra.CrlValidator import ClientConfig, RevokeConfig
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
@@ -105,9 +106,11 @@ from ngts.tests_nvos.general.security.gnmi_server.mtls.spiffe_id.test_gnmi_serve
 )
 from ngts.tests_nvos.general.security.helpers import (
     cleanup_certs_for_tests,
+    generate_certs,
     get_test_certs_dir_location,
     import_cas_safely,
     import_certs_safely,
+    import_crl_safely,
     setup_certs_for_tests,
 )
 from ngts.tests_nvos.general.security.mtls.generic_testing.helpers import get_scp_player, verify_ca_configuration, verify_connection
@@ -121,10 +124,16 @@ from ngts.tests_nvos.general.security.nmx_cert.test_cluster_app_mngr_security im
     setup_cluster_app_mngr_security_checker,
 )
 from ngts.tests_nvos.general.security.nv_bridge.helpers import (
+    build_internal_bridge_cert,
+    import_internal_certs,
     verify_cluster_app_internal_cert_files,
+    verify_cluster_app_internal_crl_show,
     verify_cluster_app_internal_show,
+    verify_cluster_app_internal_spiffe_json,
     verify_system_internal_cert_files,
+    verify_system_internal_crl_show,
     verify_system_internal_show,
+    verify_system_internal_spiffe_json,
     wait_for_cluster_app_update,
 )
 from ngts.tests_nvos.general.security.radius.constants import (
@@ -1007,6 +1016,146 @@ def _check_nv_bridge_system_encryption(engines: EnginesT, devices: DevicesT, **k
             nmx_c_app.internal.ca_certificate.action_restore()
 
 
+@_requires_compatibility(IbDevice.RosalindSurrogateSwitch, minimal_version="25.03.0600")
+def _check_nv_bridge_internal_crl_spiffe(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify NV Bridge internal CRL + SPIFFE config survives upgrade.
+
+    Test flow:
+        1. Enable cluster
+        2. Generate SPIFFE certs for system/cluster and a CRL revoking an unrelated cert
+        3. Configure system internal: SPIFFE cert + CA + mTLS + CRL
+        4. Configure cluster internal: SPIFFE cert + CA + mTLS + CRL
+        5. Verify config pre-upgrade
+        6. Save config and do upgrade
+        7. Verify SPIFFE + CRL + cert config persisted after upgrade
+    """
+    cluster = Cluster()
+    system = System()
+    dut_hostname = engines.dut.ip
+    scp_player = get_scp_player(engines)
+    verify_gnmi_client_tools_installed()
+    spiffe_uri = "spiffe://nvbridge/default"
+
+    with allure.step("enable cluster"):
+        enable_cluster()
+
+    with allure.step("generate SPIFFE certificates for system and cluster"):
+        certs_location = get_test_certs_dir_location("nv_bridge_crl_spiffe_upgrade", dut_hostname)
+        spiffe_certs_dir = os.path.join(certs_location, "spiffe_certs")
+
+        system_cert = build_internal_bridge_cert(
+            cert_name="upgrade-spiffe-sys",
+            cert_info="system SPIFFE cert for upgrade",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-sys",
+            spiffe_uri=spiffe_uri,
+        )
+        cluster_cert = build_internal_bridge_cert(
+            cert_name="upgrade-spiffe-cluster",
+            cert_info="cluster SPIFFE cert for upgrade",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-cluster",
+            spiffe_uri=spiffe_uri,
+        )
+        generate_certs(spiffe_certs_dir, [system_cert, cluster_cert])
+
+    with allure.step("generate CRL revoking unrelated cert"):
+        crl_certs_dir = os.path.join(certs_location, "crl_certs")
+        revoked_cert = build_internal_bridge_cert(
+            cert_name="upgrade-revoked",
+            cert_info="cert to revoke for CRL generation",
+            dut_hostname=dut_hostname,
+            dut_ip=engines.dut.ip,
+            cert_cn="nv-bridge-upgrade-revoked",
+        )
+        generate_certs(crl_certs_dir, [revoked_cert])
+
+        crl_name = "upgrade-bridge-crl"
+        cert_gen = CertificateGenerator()
+        ca_dest = os.path.dirname(revoked_cert.cacert) if revoked_cert.cacert else ""
+        ca_name = os.path.splitext(os.path.basename(revoked_cert.cacert))[0] if revoked_cert.cacert else "ca"
+        crl_path = cert_gen.revoke_cert(
+            crl_certs_dir, crl_name, revoked_cert.name,
+            ca_dest=ca_dest, ca_name=ca_name,
+        )
+
+    with allure.step("import certificates and CRL"):
+        import_internal_certs(engines, [system_cert, cluster_cert], [system_cert, cluster_cert])
+        import_crl_safely(crl_name, crl_path, scp_player)
+
+    nmx_c_app = cluster.apps.app_name[ClusterConsts.NMX_CONTROLLER]
+
+    with allure.step("configure system internal: SPIFFE cert + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(system_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(system_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name).verify_result()
+
+        verify_system_internal_show(
+            expect_cert=system_cert.name,
+            expect_cacert=system_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+        )
+        verify_system_internal_crl_show(expect_crl=crl_name)
+
+    with allure.step("configure cluster nmx_c internal: SPIFFE cert + CA + mTLS + CRL"):
+        nmx_c_app.internal.certificate.action_update(cluster_cert.name).verify_result()
+        nmx_c_app.internal.ca_certificate.action_update(cluster_cert.cacert_name).verify_result()
+        nmx_c_app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+        nmx_c_app.internal.crl.action_update(crl_name).verify_result()
+
+        verify_cluster_app_internal_show(
+            ClusterConsts.NMX_CONTROLLER,
+            expect_cert=cluster_cert.name,
+            expect_cacert=cluster_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+        )
+        verify_cluster_app_internal_crl_show(ClusterConsts.NMX_CONTROLLER, expect_crl=crl_name)
+
+    try:
+        with allure.step("save config"):
+            NvueGeneralCli.save_config(engines.dut)
+
+        yield  # Do upgrade
+
+        with allure.step("verify SPIFFE + CRL + cert config persisted after upgrade"):
+            verify_system_internal_show(
+                expect_cert=system_cert.name,
+                expect_cacert=system_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
+            )
+            verify_system_internal_crl_show(expect_crl=crl_name)
+            verify_system_internal_spiffe_json(engines.dut, expected_cert_spiffe=spiffe_uri)
+
+            verify_cluster_app_internal_show(
+                ClusterConsts.NMX_CONTROLLER,
+                expect_cert=cluster_cert.name,
+                expect_cacert=cluster_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
+            )
+            verify_cluster_app_internal_crl_show(ClusterConsts.NMX_CONTROLLER, expect_crl=crl_name)
+            verify_cluster_app_internal_spiffe_json(
+                engines.dut,
+                ClusterConsts.NMX_CONTROLLER,
+                expected_cert_spiffe=spiffe_uri,
+            )
+
+    finally:
+        with allure.step("restore system and cluster internal config"):
+            system.internal.crl.action_restore()
+            system.internal.encryption.action_restore()
+            system.internal.certificate.action_restore()
+            system.internal.ca_certificate.action_restore()
+            nmx_c_app.internal.crl.action_restore()
+            nmx_c_app.internal.encryption.action_restore()
+            nmx_c_app.internal.certificate.action_restore()
+            nmx_c_app.internal.ca_certificate.action_restore()
+
+
 @_requires_compatibility(minimal_version="25.02.6000")
 def _check_ssh_cert_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
@@ -1416,6 +1565,7 @@ _CHECKERS: list[CheckerFn] = [
     _check_nmx_controller_rbac,
     _check_nmx_telemetry_rbac,
     _check_nv_bridge_system_encryption,
+    _check_nv_bridge_internal_crl_spiffe,
     _check_speed_configuration,
     _check_ssh_cert_auth,
     _check_api_compression,

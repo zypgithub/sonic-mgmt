@@ -25,6 +25,7 @@ from ngts.tests_nvos.general.security.certificate.test_cert_cacert_mgmt import (
     certs_mgmt_factory_reset_no_params_check,
 )
 from ngts.tests_nvos.general.security.crl.test_crl import crl_factory_reset_keep_only_files_check
+from ngts.tests_nvos.general.security.nv_bridge.helpers import nv_bridge_internal_factory_reset_no_params_check
 from ngts.tests_nvos.general.security.gnmi_server.mtls.spiffe_id.test_gnmi_server_spiffe_id import (
     gnmi_spiffe_factory_reset_keep_basic_check,
     gnmi_spiffe_factory_reset_no_params_check,
@@ -81,6 +82,7 @@ API_SPIFFE_ID = "API SPIFFE ID + CRL"
 GNMI_SPIFFE_ID = "GNMI SPIFFE ID + CRL"
 NMX_CONTROLLER_RBAC = "NMX Controller RBAC"
 NMX_TELEMETRY_RBAC = "NMX Telemetry RBAC"
+NV_BRIDGE_INTERNAL = "NV Bridge Internal"
 
 CHECKERS_SKIP_RULES: dict[str, CheckerSkipRule] = {
     # NMX checkers only run on Juliet and Rosalind
@@ -107,6 +109,8 @@ NO_PARAMS_CHECKERS: dict[str, Generator[None, None, None]] = {
     NMX_TELEMETRY_RBAC: nmx_telemetry_rbac_factory_reset_no_params_check(),
     # SSH certificate authentication
     SSH_CERT_AUTH: ssh_cert_auth_factory_reset_no_params_check(),
+    # NV Bridge internal encryption
+    NV_BRIDGE_INTERNAL: nv_bridge_internal_factory_reset_no_params_check(),
 }
 
 KEEP_BASIC_CHECKERS: dict[str, Generator[None, None, None]] = {

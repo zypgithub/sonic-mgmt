@@ -518,6 +518,8 @@ class ActionConsts:
     POWER_CYCLE = 'power-cycle'
     REBOOT = 'reboot'
     RENEW = 'renew'
+    RESTORE = 'restore'
+    ROTATE = 'rotate'
     ACTIVATE = 'activate'
 
 

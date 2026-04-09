@@ -18,6 +18,7 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
     ALTERNATE_CERTIFICATE,
     CA_CERTIFICATE,
     CERTIFICATE,
+    CRL,
     ENCRYPTION,
     Defaults,
 )
@@ -2813,6 +2814,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
             ALTERNATE_CERTIFICATE: Defaults.ALTERNATE_CERTIFICATE,
             CA_CERTIFICATE: Defaults.CACERT,
             CERTIFICATE: Defaults.CERT,
+            CRL: "",
             ENCRYPTION: Defaults.ENCRYPTION,
         }
         for app_name, app_data in self.cluster_app.items():

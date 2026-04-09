@@ -18,9 +18,8 @@ import time
 import pytest
 
 import ngts.tools.test_utils.allure_utils as allure
-from ngts.nvos_constants.constants_nvos import AclConsts, ApiType, ClusterApps
-from ngts.nvos_tools.acl.acl import Acl, AclID
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_constants.constants_nvos import ApiType, ClusterApps
 from ngts.nvos_tools.infra.NvBridgeTool import NvBridgeTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OpenSslSClient import OpenSslSClient
@@ -34,55 +33,28 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
 from ngts.tests_nvos.general.security.nmx_cert.helpers import (
     enable_cluster,
 )
+from ngts.tests_nvos.general.security.nv_bridge.conftest import BridgeCrlCerts, BridgeSpiffeCerts
 from ngts.tests_nvos.general.security.nv_bridge.helpers import (
     reset_cluster_app,
     rotate_cluster_internal_and_verify,
     rotate_system_internal_and_verify,
     verify_cluster_app_internal_cert_files,
+    verify_cluster_app_internal_crl_show,
     verify_cluster_app_internal_has_empty_defaults,
     verify_cluster_app_internal_json,
     verify_cluster_app_internal_show,
+    verify_cluster_app_internal_spiffe_json,
     verify_nv_bridge_has_connection,
     verify_system_internal_cert_files,
+    verify_system_internal_crl_show,
     verify_system_internal_has_empty_defaults,
     verify_system_internal_json,
     verify_system_internal_show,
+    verify_system_internal_spiffe_json,
     wait_for_cluster_app_update,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def open_port_via_sys_control_plane_acl(acl_name: str, port: int, rule_id: str = "20") -> AclID:
-    """
-    Open a TCP port via system control-plane ACL.
-
-    Args:
-        acl_name: Name of the ACL to create
-        port: TCP port number to open
-        rule_id: Rule ID for the ACL rule
-
-    Returns:
-        Acl object for later cleanup
-    """
-    with allure.step(f"Create ACL {acl_name} to permit TCP port {port}"):
-        acl = Acl()
-        mgmt_port0 = Port("eth0")
-        acl.set(acl_name).verify_result()
-        acl_obj = acl.acl_id[acl_name]
-        acl_obj.set(AclConsts.TYPE, "ipv4").verify_result()
-
-        acl_obj.rule.set(rule_id).verify_result()
-        rule_obj = acl_obj.rule.rule_id[rule_id]
-        rule_obj.action.set(AclConsts.PERMIT).verify_result()
-        rule_obj.match.ip.set_protocol("tcp").verify_result()
-        rule_obj.match.ip.tcp.dest_port.set(port).verify_result()
-
-    with allure.step(f"Attach ACL {acl_name} to sys control-plane inbound"):
-        mgmt_port0.interface.acl.acl_id[acl_name].inbound.set(AclConsts.CONTROL_PLANE).verify_result()
-
-    logger.info(f"ACL {acl_name} configured to permit TCP port {port}")
-    return acl_obj
 
 
 @pytest.mark.system
@@ -135,7 +107,12 @@ def test_bridge_cluster_encryption_show(engines, devices, random_api, app_name):
 @pytest.mark.nmx
 @pytest.mark.usefixtures("restore_system_internal_config")
 @pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
-def test_bridge_system_encryption_set(engines, devices, test_api, import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo]):
+def test_bridge_system_encryption_set(
+    engines,
+    devices,
+    test_api,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
+):
     """
     Test Objective: Verify system internal encryption action update works as
     expected
@@ -172,13 +149,19 @@ def test_bridge_system_encryption_set(engines, devices, test_api, import_certs_w
         with allure.step("Verify show reflects ca-certificate update"):
             verify_system_internal_show(expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name)
         with allure.step("Verify ca-certificate file exists"):
-            verify_system_internal_cert_files(engines.dut, expected_cert_id=bridge_cert.name, expected_cacert_id=bridge_cert.cacert_name)
+            verify_system_internal_cert_files(
+                engines.dut,
+                expected_cert_id=bridge_cert.name,
+                expected_cacert_id=bridge_cert.cacert_name,
+            )
 
     with allure.step("Update system internal encryption to mtls"):
         system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
         with allure.step("Verify show reflects encryption update"):
             verify_system_internal_show(
-                expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name, expect_encryption=EncryptionMode.MTLS
+                expect_cert=bridge_cert.name,
+                expect_cacert=bridge_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
             )
             verify_system_internal_json(
                 engines.dut,
@@ -189,7 +172,9 @@ def test_bridge_system_encryption_set(engines, devices, test_api, import_certs_w
 
     with allure.step("Verify nv show system internal has all required values"):
         verify_system_internal_show(
-            expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name, expect_encryption=EncryptionMode.MTLS
+            expect_cert=bridge_cert.name,
+            expect_cacert=bridge_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
         )
 
 
@@ -198,7 +183,11 @@ def test_bridge_system_encryption_set(engines, devices, test_api, import_certs_w
 @pytest.mark.nmx
 @pytest.mark.usefixtures("enable_cluster")
 def test_bridge_cluster_encryption_set(
-    engines, devices, random_api, restore_cluster_app_internal_config, import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo]
+    engines,
+    devices,
+    random_api,
+    restore_cluster_app_internal_config,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
 ):
     """
     Test Objective: Verify cluster internal encryption actions work as expected
@@ -239,10 +228,17 @@ def test_bridge_cluster_encryption_set(
     with allure.step(f"Update cluster apps {app_name} internal ca-certificate"):
         app.internal.ca_certificate.action_update(bridge_cert.cacert_name).verify_result()
         with allure.step("Verify show reflects ca-certificate update"):
-            verify_cluster_app_internal_show(app_name, expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name)
+            verify_cluster_app_internal_show(
+                app_name,
+                expect_cert=bridge_cert.name,
+                expect_cacert=bridge_cert.cacert_name,
+            )
         with allure.step("Verify ca-certificate file exists"):
             verify_cluster_app_internal_cert_files(
-                app_name, engines.dut, expected_cert_id=bridge_cert.name, expected_cacert_id=bridge_cert.cacert_name
+                app_name,
+                engines.dut,
+                expected_cert_id=bridge_cert.name,
+                expected_cacert_id=bridge_cert.cacert_name,
             )
 
     with allure.step(f"Update cluster apps {app_name} internal encryption to mtls"):
@@ -250,21 +246,35 @@ def test_bridge_cluster_encryption_set(
         wait_for_cluster_app_update(cluster, engines.dut)
         with allure.step("Verify show reflects encryption update"):
             verify_cluster_app_internal_show(
-                app_name, expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name, expect_encryption=EncryptionMode.MTLS
+                app_name,
+                expect_cert=bridge_cert.name,
+                expect_cacert=bridge_cert.cacert_name,
+                expect_encryption=EncryptionMode.MTLS,
             )
 
     with allure.step(f"Verify nv show cluster apps {app_name} internal shows all updated fields"):
         verify_cluster_app_internal_show(
-            app_name, expect_cert=bridge_cert.name, expect_cacert=bridge_cert.cacert_name, expect_encryption=EncryptionMode.MTLS
+            app_name,
+            expect_cert=bridge_cert.name,
+            expect_cacert=bridge_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
         )
 
 
 @pytest.mark.system
 @pytest.mark.security
 @pytest.mark.nmx
-@pytest.mark.usefixtures("enable_cluster", "restore_cluster_app_internal_config", "restore_system_internal_config")
+@pytest.mark.usefixtures(
+    "enable_cluster",
+    "restore_cluster_app_internal_config",
+    "restore_system_internal_config",
+)
 def test_bridge_cluster_rotation(
-    engines, devices, random_api, restore_cluster_app_internal_config, import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo]
+    engines,
+    devices,
+    random_api,
+    restore_cluster_app_internal_config,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
 ):
     """
     Test Objective: Verify certificate rotation flow with connection verification
@@ -439,7 +449,11 @@ def test_bridge_cluster_rotation(
 @pytest.mark.nmx
 @pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
 def test_bridge_main_flow(
-    engines, devices, random_api, import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo], restore_cluster_app_internal_config
+    engines,
+    devices,
+    random_api,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
+    restore_cluster_app_internal_config,
 ):
     """
     Test Objective: Verify NV Bridge encryption main flow with grpc requests.
@@ -453,6 +467,7 @@ def test_bridge_main_flow(
        and mtls
     6. Perform encrypted grpc request to bridge
     """
+    TestToolkit.tested_api = random_api
     cluster = Cluster()
     system = System()
     app_name = restore_cluster_app_internal_config
@@ -614,7 +629,11 @@ def test_bridge_tls_handshake_verification(
 @pytest.mark.nmx
 @pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
 def test_bridge_cluster_encryption_negative(
-    engines, devices, random_api, import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo], restore_cluster_app_internal_config
+    engines,
+    devices,
+    random_api,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
+    restore_cluster_app_internal_config,
 ):
     """
     Test Objective: Verify all negative nv-bridge cases for cluster.
@@ -632,6 +651,7 @@ def test_bridge_cluster_encryption_negative(
     10. Perform request with system cert - expect fail
     11. Perform request with cluster cert - expect fail
     """
+    TestToolkit.tested_api = random_api
     cluster = Cluster()
     app_name = restore_cluster_app_internal_config
     app = cluster.apps.app_name[app_name]
@@ -763,3 +783,918 @@ def _verify_tls_handshake_negative_scenarios(
             expected_error=r"(self[- ]signed|unable to get local issuer|verify)",
         )
         logger.info(f"{service_name} TLS failure (no CA): return_code={result.return_code}, error={result.error_message}")
+
+
+# ===========================================================================
+# New CRL/SPIFFE tests (test plan 4.1 – 4.9)
+# ===========================================================================
+
+
+# ---------------------------------------------------------------------------
+# 4.1 – CRL: System internal CRL show lifecycle
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_system_internal_crl_show(
+    engines,
+    devices,
+    test_api,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: Verify system internal CRL update, show, and restore.
+
+    Test Flow:
+    1. Verify system internal CRL show has default empty value
+    2. Generate and import a CRL revoking a non-active cert
+    3. Configure system internal with cert + CA (prerequisite for CRL binding)
+    4. Bind CRL to system internal via action update
+    5. Verify CRL name appears in show output
+    6. Restore system internal CRL
+    7. Verify CRL is cleared in show output
+    """
+    TestToolkit.tested_api = test_api
+    system = System()
+
+    primary_cert = import_crl_bridge_certs.primary_cert
+    crl_name = "sys_internal_crl"
+
+    with allure.step("Verify system internal CRL show has default empty value"):
+        verify_system_internal_crl_show(expect_crl="")
+
+    with allure.step("Generate and import CRL"):
+        bridge_crl_factory(
+            crl_name=crl_name,
+            cert_to_revoke=import_crl_bridge_certs.revoked_primary_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    with allure.step("Configure system internal with cert + CA"):
+        system.internal.certificate.action_update(primary_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+
+    with allure.step("Bind CRL to system internal"):
+        system.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step("Verify CRL name appears in show output"):
+        verify_system_internal_crl_show(expect_crl=crl_name)
+
+    with allure.step("Restore system internal CRL"):
+        system.internal.crl.action_restore().verify_result()
+
+    with allure.step("Verify CRL is cleared after restore"):
+        verify_system_internal_crl_show(expect_crl="")
+
+
+# ---------------------------------------------------------------------------
+# 4.2 – CRL: Cluster app internal CRL show lifecycle
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nmx
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("enable_cluster")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_cluster_internal_crl_show(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: Verify cluster app internal CRL update, show, and restore.
+
+    Test Flow:
+    1. Verify cluster app internal CRL show has default empty value
+    2. Generate and import a CRL revoking a non-active cert
+    3. Configure cluster app internal with cert + CA (prerequisite for CRL binding)
+    4. Bind CRL to cluster app internal via action update
+    5. Verify CRL name appears in show output
+    6. Restore cluster app internal CRL
+    7. Verify CRL is cleared in show output
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    primary_cert = import_crl_bridge_certs.primary_cert
+    crl_name = "cluster_internal_crl"
+
+    with allure.step(f"Verify cluster app {app_name} internal CRL show has default empty value"):
+        verify_cluster_app_internal_crl_show(app_name, expect_crl="")
+
+    with allure.step("Generate and import CRL"):
+        bridge_crl_factory(
+            crl_name=crl_name,
+            cert_to_revoke=import_crl_bridge_certs.revoked_primary_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    with allure.step(f"Configure cluster app {app_name} internal with cert + CA"):
+        app.internal.certificate.action_update(primary_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+
+    with allure.step(f"Bind CRL to cluster app {app_name} internal"):
+        app.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step("Verify CRL name appears in show output"):
+        verify_cluster_app_internal_crl_show(app_name, expect_crl=crl_name)
+
+    with allure.step(f"Restore cluster app {app_name} internal CRL"):
+        app.internal.crl.action_restore().verify_result()
+
+    with allure.step("Verify CRL is cleared after restore"):
+        verify_cluster_app_internal_crl_show(app_name, expect_crl="")
+
+
+# ---------------------------------------------------------------------------
+# 4.3 – CRL: Allow connection with empty CRL (unrelated cert revoked)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_crl_allow_connection_empty_crl(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: CRL that revokes an unrelated cert should NOT block the
+    active cert. Configure full mTLS + CRL on both system and cluster scopes.
+    Bridge connection and gRPC hello should still work.
+
+    Test Flow:
+    1. Generate CRL revoking an unrelated cert
+    2. Configure system internal: cert + CA + mTLS + CRL
+    3. Configure cluster app internal: cert + CA + mTLS + CRL
+    4. Reset cluster app and verify bridge connection
+    5. Verify gRPC hello succeeds with the active cert
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    primary_cert = import_crl_bridge_certs.primary_cert
+    crl_name = "bridge_unrelated_crl"
+
+    with allure.step("Generate CRL revoking an unrelated cert"):
+        bridge_crl_factory(
+            crl_name=crl_name,
+            cert_to_revoke=import_crl_bridge_certs.revoked_primary_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    with allure.step("Configure system internal: cert + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(primary_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step(f"Configure cluster app {app_name} internal: cert + CA + mTLS + CRL"):
+        app.internal.certificate.action_update(primary_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        app.internal.crl.action_update(crl_name).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+
+    with allure.step("Reset cluster app and verify bridge connection"):
+        reset_cluster_app(cluster, app_name, engines.dut)
+        verify_nv_bridge_has_connection(engines.dut, expect_connection=True)
+
+    with allure.step("Verify gRPC hello succeeds with active cert"):
+        nv_bridge_tool = NvBridgeTool(host=engines.dut.ip)
+        nv_bridge_tool.run_bridge_hello(
+            client_cert=primary_cert,
+            client_cacert=primary_cert,
+            plaintext=False,
+            expect_success=True,
+        )
+
+
+# ---------------------------------------------------------------------------
+# 4.4 – CRL: Revocation negative (revoked cert blocks mTLS / rotation)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_crl_revocation_negative(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: Combined negative test.
+    Part A: Revoked primary cert blocks mTLS enable on both scopes.
+    Part B: Revoked alt cert blocks alt-cert update and rotation.
+
+    Test Flow:
+    Part A — Revoked primary blocks mTLS enable:
+    1. Generate CRL revoking primary cert
+    2. Config system: cert + CA + CRL (succeeds)
+    3. Try enable mTLS on system → fails
+    4. Config cluster: cert + CA + CRL (succeeds)
+    5. Try enable mTLS on cluster → fails
+    Part B — Revoked alt blocks update and rotation:
+    6. Restore both scopes
+    7. Generate CRL revoking alt cert
+    8. Config system: valid primary + CA + mTLS + CRL
+    9. Try set revoked alt on system → fails
+    10. Config cluster: valid primary + CA + mTLS + CRL
+    11. Try set revoked alt on cluster → fails
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    primary_cert = import_crl_bridge_certs.primary_cert
+    alt_cert = import_crl_bridge_certs.alt_cert
+
+    # Both CRLs share the same CA (bridge_crl certs), so OpenSSL's index.txt
+    # is cumulative. Generate alt CRL first so it contains ONLY the alt serial.
+    # If primary were revoked first, the alt CRL would also list the primary.
+    crl_name_b = "crl_revoked_alt"
+    crl_name_a = "crl_revoked_primary"
+
+    with allure.step("Generate CRL revoking alt cert (clean index — alt only)"):
+        bridge_crl_factory(
+            crl_name=crl_name_b,
+            cert_to_revoke=import_crl_bridge_certs.alt_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    with allure.step("Generate CRL revoking primary cert"):
+        bridge_crl_factory(
+            crl_name=crl_name_a,
+            cert_to_revoke=import_crl_bridge_certs.primary_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    # --- Part A: Revoked primary blocks mTLS enable ---
+
+    with allure.step("Config system: cert + CA + CRL with revoked primary"):
+        system.internal.certificate.action_update(primary_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        system.internal.crl.action_update(crl_name_a).verify_result()
+
+    with allure.step("Try enable mTLS on system - expect fail (cert is revoked)"):
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result(should_succeed=False)
+
+    with allure.step(f"Config cluster {app_name}: cert + CA + CRL with revoked primary"):
+        app.internal.certificate.action_update(primary_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        app.internal.crl.action_update(crl_name_a).verify_result()
+
+    with allure.step("Try enable mTLS on cluster - expect fail (cert is revoked)"):
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result(should_succeed=False)
+
+    # --- Part B: Revoked alt blocks update and rotation ---
+
+    with allure.step("Part B: Restore both scopes for clean state"):
+        system.internal.crl.action_restore().verify_result()
+        system.internal.certificate.action_restore().verify_result()
+        system.internal.ca_certificate.action_restore().verify_result()
+        app.internal.crl.action_restore().verify_result()
+        app.internal.certificate.action_restore().verify_result()
+        app.internal.ca_certificate.action_restore().verify_result()
+
+    with allure.step("Config system: valid primary + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(primary_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name_b).verify_result()
+
+    with allure.step("Try set revoked alt on system - expect fail"):
+        system.internal.alternate_certificate.action_update(alt_cert.name).verify_result(should_succeed=False)
+
+    with allure.step(f"Config cluster {app_name}: valid primary + CA + mTLS + CRL"):
+        app.internal.certificate.action_update(primary_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+        app.internal.crl.action_update(crl_name_b).verify_result()
+
+    with allure.step("Try set revoked alt on cluster - expect fail"):
+        app.internal.alternate_certificate.action_update(alt_cert.name).verify_result(should_succeed=False)
+
+
+# ---------------------------------------------------------------------------
+# 4.5 – CRL: Wrong CA chain blocks CRL update (P2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_crl_wrong_chain_block_update_negative(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    import_certs_with_alt: tuple[CertInfo, CertInfo, CertInfo],
+    bridge_crl_factory,
+):
+    """
+    Test Objective: CRL from a different CA chain is rejected when bound to
+    system or cluster internal scope.
+
+    Test Flow:
+    1. Configure system: cert + CA (chain A from CRL certs) + mTLS
+    2. Generate CRL from chain B (import_certs_with_alt CA)
+    3. Try bind wrong-chain CRL to system → fails
+    4. Configure cluster: cert + CA (chain A) + mTLS
+    5. Try bind wrong-chain CRL to cluster → fails
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    chain_a_cert = import_crl_bridge_certs.primary_cert
+    chain_b_cert, _, _ = import_certs_with_alt
+    wrong_chain_crl_name = "wrong_chain_crl"
+
+    with allure.step("Configure system: cert + CA (chain A) + mTLS"):
+        system.internal.certificate.action_update(chain_a_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(chain_a_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+
+    with allure.step("Generate CRL from chain B"):
+        # certs_dir intentionally omitted: factory derives it from chain_b_cert
+        # (a different CA chain than chain_a_cert).
+        bridge_crl_factory(
+            crl_name=wrong_chain_crl_name,
+            cert_to_revoke=chain_b_cert,
+        )
+
+    with allure.step("Try bind wrong-chain CRL to system - expect fail"):
+        system.internal.crl.action_update(wrong_chain_crl_name).verify_result(should_succeed=False)
+
+    with allure.step(f"Configure cluster {app_name}: cert + CA (chain A) + mTLS"):
+        app.internal.certificate.action_update(chain_a_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(chain_a_cert.cacert_name).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+
+    with allure.step("Try bind wrong-chain CRL to cluster - expect fail"):
+        app.internal.crl.action_update(wrong_chain_crl_name).verify_result(should_succeed=False)
+
+
+# ---------------------------------------------------------------------------
+# 4.6 – CRL: Restore + reset connections after CRL removal (P2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+def test_bridge_restore_reset_cleanup_crl_positive(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_crl_bridge_certs: BridgeCrlCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: Restore CRL clears show output. Reset connections works
+    gracefully after CRL removal on both system and cluster scopes.
+
+    Test Flow:
+    1. Configure system: cert + CA + mTLS + CRL
+    2. Verify CRL in system show
+    3. Restore system CRL → verify cleared
+    4. Configure cluster: cert + CA + mTLS + CRL
+    5. Verify CRL in cluster show
+    6. Restore cluster CRL → verify cleared
+    7. Reset cluster connections → no error
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    primary_cert = import_crl_bridge_certs.primary_cert
+    crl_name = "restore_cleanup_crl"
+
+    with allure.step("Generate CRL revoking unrelated cert"):
+        bridge_crl_factory(
+            crl_name=crl_name,
+            cert_to_revoke=import_crl_bridge_certs.revoked_primary_cert,
+            certs_dir=import_crl_bridge_certs.certs_dir,
+        )
+
+    # --- System scope ---
+
+    with allure.step("Configure system: cert + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(primary_cert.name).verify_result()
+        system.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step("Verify CRL appears in system show"):
+        verify_system_internal_crl_show(expect_crl=crl_name)
+
+    with allure.step("Restore system CRL"):
+        system.internal.crl.action_restore().verify_result()
+
+    with allure.step("Verify CRL is cleared in system show"):
+        verify_system_internal_crl_show(expect_crl="")
+
+    # --- Cluster scope ---
+
+    with allure.step(f"Configure cluster {app_name}: cert + CA + mTLS + CRL"):
+        app.internal.certificate.action_update(primary_cert.name).verify_result()
+        app.internal.ca_certificate.action_update(primary_cert.cacert_name).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+        app.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step("Verify CRL appears in cluster show"):
+        verify_cluster_app_internal_crl_show(app_name, expect_crl=crl_name)
+
+    with allure.step("Restore cluster CRL"):
+        app.internal.crl.action_restore().verify_result()
+
+    with allure.step("Verify CRL is cleared in cluster show"):
+        verify_cluster_app_internal_crl_show(app_name, expect_crl="")
+
+    with allure.step("Reset cluster connections after CRL removal"):
+        reset_cluster_app(cluster, app_name, engines.dut)
+
+
+# ---------------------------------------------------------------------------
+# 4.7 – SPIFFE: Positive flow (JSON extraction + functional connection)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.spiffe
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+@pytest.mark.parametrize(
+    "generate_spiffe_bridge_certs",
+    ["same_spiffe_pair", "different_spiffe_pair"],
+    indirect=True,
+)
+def test_bridge_spiffe_positive_flow(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_spiffe_bridge_certs: BridgeSpiffeCerts,
+):
+    """
+    Test Objective: End-to-end SPIFFE positive test parametrized across
+    multiple SPIFFE configurations.
+
+    SPIFFE extraction works on both the primary cert and the alternate cert
+    independently. At least one must carry a SPIFFE SAN URI. The primary and
+    alternate certs do NOT need to have matching SPIFFE URIs.
+
+    Variants:
+    - same_spiffe_pair:      both certs carry the same SPIFFE URI
+    - different_spiffe_pair: certs carry different SPIFFE URIs (both valid)
+
+    Test Flow:
+    Part A — SPIFFE extraction:
+    1. Verify system JSON has no SPIFFE initially
+    2. Update system primary cert → verify cert SPIFFE in JSON
+    3. Update system alt-cert → verify alt SPIFFE in JSON
+    4. Repeat for cluster scope
+    Part B — Functional connection:
+    5. Set CA + enable mTLS on both scopes
+    6. Reset cluster app → verify connection
+    7. Reset system connections → verify connection
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    spiffe_certs = import_spiffe_bridge_certs
+    params = spiffe_certs.params
+
+    # --- Part A: SPIFFE extraction to JSON ---
+
+    with allure.step("Verify system JSON has no SPIFFE initially"):
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe="",
+            expected_alt_cert_spiffe="",
+        )
+
+    with allure.step("Update system primary cert and verify SPIFFE JSON"):
+        system.internal.certificate.action_update(
+            spiffe_certs.system_primary_cert.name,
+        ).verify_result()
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+            expected_alt_cert_spiffe="",
+        )
+
+    with allure.step("Update system alt-cert and verify SPIFFE JSON"):
+        system.internal.alternate_certificate.action_update(
+            spiffe_certs.system_alt_cert.name,
+        ).verify_result()
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+            expected_alt_cert_spiffe=params.alternate_cert_spiffe,
+        )
+
+    with allure.step("Verify cluster JSON has no SPIFFE initially"):
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe="",
+            expected_alt_cert_spiffe="",
+        )
+
+    with allure.step(f"Update cluster {app_name} primary cert and verify SPIFFE JSON"):
+        app.internal.certificate.action_update(
+            spiffe_certs.cluster_primary_cert.name,
+        ).verify_result()
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+            expected_alt_cert_spiffe="",
+        )
+
+    with allure.step(f"Update cluster {app_name} alt-cert and verify SPIFFE JSON"):
+        app.internal.alternate_certificate.action_update(
+            spiffe_certs.cluster_alt_cert.name,
+        ).verify_result()
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+            expected_alt_cert_spiffe=params.alternate_cert_spiffe,
+        )
+
+    # --- Part B: Functional connection ---
+
+    with allure.step("Set CA + enable mTLS on system"):
+        system.internal.ca_certificate.action_update(
+            spiffe_certs.system_primary_cert.cacert_name,
+        ).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+
+    with allure.step(f"Set CA + enable mTLS on cluster {app_name}"):
+        app.internal.ca_certificate.action_update(
+            spiffe_certs.cluster_primary_cert.cacert_name,
+        ).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+
+    with allure.step("Reset cluster app and verify bridge connection"):
+        reset_cluster_app(cluster, app_name, engines.dut)
+        verify_nv_bridge_has_connection(engines.dut, expect_connection=True)
+
+
+# ---------------------------------------------------------------------------
+# 4.7b – SPIFFE: Partial URI coverage negative (P2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.spiffe
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+@pytest.mark.parametrize(
+    "generate_spiffe_bridge_certs",
+    ["cert_only_spiffe", "alt_only_spiffe"],
+    indirect=True,
+)
+def test_bridge_spiffe_partial_uri_negative(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_spiffe_bridge_certs: BridgeSpiffeCerts,
+):
+    """
+    Test Objective: Verify that mTLS enable is rejected when only one of the
+    primary/alternate certs carries a SPIFFE URI.
+
+    Variants:
+    - cert_only_spiffe: only the primary cert has a SPIFFE URI; alt is empty
+    - alt_only_spiffe:  only the alternate cert has a SPIFFE URI; primary is empty
+
+    Test Flow:
+    1. Update system and cluster primary + alt certs
+    2. Verify SPIFFE JSON extraction (empty where cert lacks SPIFFE URI)
+    3. Set CA on both scopes
+    4. Try to enable mTLS — expect rejection due to partial SPIFFE coverage
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    spiffe_certs = import_spiffe_bridge_certs
+    params = spiffe_certs.params
+
+    with allure.step("Update system primary and alt certs"):
+        system.internal.certificate.action_update(
+            spiffe_certs.system_primary_cert.name,
+        ).verify_result()
+        system.internal.alternate_certificate.action_update(
+            spiffe_certs.system_alt_cert.name,
+        ).verify_result()
+
+    with allure.step("Verify system SPIFFE JSON extraction"):
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+            expected_alt_cert_spiffe=params.alternate_cert_spiffe,
+        )
+
+    with allure.step(f"Update cluster {app_name} primary and alt certs"):
+        app.internal.certificate.action_update(
+            spiffe_certs.cluster_primary_cert.name,
+        ).verify_result()
+        app.internal.alternate_certificate.action_update(
+            spiffe_certs.cluster_alt_cert.name,
+        ).verify_result()
+
+    with allure.step(f"Verify cluster {app_name} SPIFFE JSON extraction"):
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+            expected_alt_cert_spiffe=params.alternate_cert_spiffe,
+        )
+
+    with allure.step("Set CA on both scopes"):
+        system.internal.ca_certificate.action_update(
+            spiffe_certs.system_primary_cert.cacert_name,
+        ).verify_result()
+        app.internal.ca_certificate.action_update(
+            spiffe_certs.cluster_primary_cert.cacert_name,
+        ).verify_result()
+
+    with allure.step("Enable mTLS on system - expect rejection (partial SPIFFE)"):
+        system.internal.encryption.action_update(
+            EncryptionMode.MTLS,
+        ).verify_result(should_succeed=False)
+
+    with allure.step(f"Enable mTLS on cluster {app_name} - expect rejection (partial SPIFFE)"):
+        app.internal.encryption.action_update(
+            EncryptionMode.MTLS,
+        ).verify_result(should_succeed=False)
+
+
+# ---------------------------------------------------------------------------
+# 4.8 – SPIFFE: Cluster-system URI mismatch negative (P2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.spiffe
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+@pytest.mark.parametrize("generate_spiffe_bridge_certs", ["cluster_system_primary_mismatch"], indirect=True)
+def test_bridge_spiffe_cluster_system_uri_mismatch_negative(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_spiffe_bridge_certs: BridgeSpiffeCerts,
+):
+    """
+    Test Objective: System uses a different SPIFFE URI than cluster, so the
+    bridge connection should fail.
+
+    Test Flow:
+    1. Configure system: cert (spiffe://system) + CA + mTLS
+    2. Configure cluster: cert (spiffe://cluster) + CA + mTLS
+    3. Verify SPIFFE URIs differ between scopes
+    4. Reset cluster app and verify connection fails
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    spiffe_certs = import_spiffe_bridge_certs
+    params = spiffe_certs.params
+
+    with allure.step("Configure system: cert + CA + mTLS"):
+        system.internal.certificate.action_update(
+            spiffe_certs.system_primary_cert.name,
+        ).verify_result()
+        system.internal.ca_certificate.action_update(
+            spiffe_certs.system_primary_cert.cacert_name,
+        ).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+
+    with allure.step(f"Configure cluster {app_name}: cert + CA + mTLS"):
+        app.internal.certificate.action_update(
+            spiffe_certs.cluster_primary_cert.name,
+        ).verify_result()
+        app.internal.ca_certificate.action_update(
+            spiffe_certs.cluster_primary_cert.cacert_name,
+        ).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+
+    with allure.step("Verify SPIFFE URIs differ"):
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+        )
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+        )
+        assert params.system_primary_spiffe != params.cluster_primary_spiffe, (
+            "Test requires different SPIFFE URIs between system and cluster"
+        )
+
+    with allure.step("Reset cluster app and verify connection fails"):
+        reset_cluster_app(cluster, app_name, engines.dut)
+        verify_nv_bridge_has_connection(engines.dut, expect_connection=False)
+
+
+# ---------------------------------------------------------------------------
+# 4.9 – Reboot persistence: CRL + SPIFFE + mTLS survives reboot
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.system
+@pytest.mark.security
+@pytest.mark.nv_bridge
+@pytest.mark.crl
+@pytest.mark.spiffe
+@pytest.mark.reboot
+@pytest.mark.track_serial_console
+@pytest.mark.usefixtures("enable_cluster", "restore_system_internal_config")
+@pytest.mark.parametrize("test_api", ApiType.ALL_TYPES)
+@pytest.mark.parametrize("generate_spiffe_bridge_certs", ["same_spiffe_pair"], indirect=True)
+def test_bridge_upgrade_reboot_persistence_crl_spiffe(
+    engines,
+    devices,
+    test_api,
+    restore_cluster_app_internal_config,
+    import_spiffe_bridge_certs: BridgeSpiffeCerts,
+    bridge_crl_factory,
+):
+    """
+    Test Objective: Full config (SPIFFE certs + CRL + mTLS) survives a system
+    DUT reboot. Both scopes are configured, but only the system DUT is saved
+    and rebooted; cluster config is re-verified for consistency.
+
+    Test Flow:
+    1. Configure system: SPIFFE cert + CA + mTLS + CRL
+    2. Configure cluster: SPIFFE cert + CA + mTLS + CRL
+    3. Verify all config pre-reboot
+    4. Save config and reboot system DUT
+    5. Verify all config persisted after reboot
+    6. Verify bridge connection after reboot
+    """
+    TestToolkit.tested_api = test_api
+    cluster = Cluster()
+    system = System()
+    app_name = restore_cluster_app_internal_config
+    app = cluster.apps.app_name[app_name]
+    spiffe_certs = import_spiffe_bridge_certs
+    params = spiffe_certs.params
+    crl_name = "reboot_persist_crl"
+
+    with allure.step("Generate CRL revoking unrelated cert from the same CA"):
+        bridge_crl_factory(
+            crl_name=crl_name,
+            cert_to_revoke=spiffe_certs.system_alt_cert,
+            certs_dir=spiffe_certs.certs_dir,
+        )
+
+    with allure.step("Configure system: SPIFFE cert + CA + mTLS + CRL"):
+        system.internal.certificate.action_update(
+            spiffe_certs.system_primary_cert.name,
+        ).verify_result()
+        system.internal.ca_certificate.action_update(
+            spiffe_certs.system_primary_cert.cacert_name,
+        ).verify_result()
+        system.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        system.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step(f"Configure cluster {app_name}: SPIFFE cert + CA + mTLS + CRL"):
+        app.internal.certificate.action_update(
+            spiffe_certs.cluster_primary_cert.name,
+        ).verify_result()
+        app.internal.ca_certificate.action_update(
+            spiffe_certs.cluster_primary_cert.cacert_name,
+        ).verify_result()
+        app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        wait_for_cluster_app_update(cluster, engines.dut)
+        app.internal.crl.action_update(crl_name).verify_result()
+
+    with allure.step("Verify all config pre-reboot"):
+        verify_system_internal_show(
+            expect_cert=spiffe_certs.system_primary_cert.name,
+            expect_cacert=spiffe_certs.system_primary_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+            expect_crl=crl_name,
+        )
+        verify_system_internal_crl_show(expect_crl=crl_name)
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+        )
+        verify_cluster_app_internal_show(
+            app_name,
+            expect_cert=spiffe_certs.cluster_primary_cert.name,
+            expect_cacert=spiffe_certs.cluster_primary_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+            expect_crl=crl_name,
+        )
+        verify_cluster_app_internal_crl_show(app_name, expect_crl=crl_name)
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+        )
+
+    with allure.step("Save config and reboot DUT"):
+        NvueGeneralCli.save_config(engines.dut)
+        System().action_reboot("force", engine=engines.dut).verify_result()
+        engines.dut.disconnect()
+
+    with allure.step("Wait for cluster readiness after reboot"):
+        wait_for_cluster_app_update(cluster, engines.dut)
+
+    with allure.step("Verify all config persisted after reboot"):
+        verify_system_internal_show(
+            expect_cert=spiffe_certs.system_primary_cert.name,
+            expect_cacert=spiffe_certs.system_primary_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+            expect_crl=crl_name,
+        )
+        verify_system_internal_crl_show(expect_crl=crl_name)
+        verify_system_internal_spiffe_json(
+            engines.dut,
+            expected_cert_spiffe=params.system_primary_spiffe,
+        )
+        verify_cluster_app_internal_show(
+            app_name,
+            expect_cert=spiffe_certs.cluster_primary_cert.name,
+            expect_cacert=spiffe_certs.cluster_primary_cert.cacert_name,
+            expect_encryption=EncryptionMode.MTLS,
+            expect_crl=crl_name,
+        )
+        verify_cluster_app_internal_crl_show(app_name, expect_crl=crl_name)
+        verify_cluster_app_internal_spiffe_json(
+            engines.dut,
+            app_name,
+            expected_cert_spiffe=params.cluster_primary_spiffe,
+        )
+
+    with allure.step("Verify bridge connection after reboot"):
+        verify_nv_bridge_has_connection(engines.dut, expect_connection=True)

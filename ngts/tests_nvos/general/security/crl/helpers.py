@@ -5,10 +5,11 @@ from ngts.nvos_constants.constants_nvos import ClusterApps, ClusterConsts
 from ngts.nvos_tools.infra.CrlValidator import ClientConfig, CrlValidator
 from ngts.nvos_tools.infra.CurlCmdBuilder import CurlCmdBuilder
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
+from ngts.nvos_tools.infra.NvBridgeTool import NvBridgeTool
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, EncryptionMode
+from ngts.tests_nvos.general.security.nmx_cert.constants import CA_CERTIFICATE, CERTIFICATE, NV_BRIDGE_SERVER_PORT, EncryptionMode
 from ngts.tests_nvos.general.security.nmx_cert.helpers import (
     disable_cluster,
     disable_cluster_app_manager_state,
@@ -230,3 +231,139 @@ class NmxTelemetryCrlValidator(NmxCrlValidator):
         super().__init__(
             host, ip, ClusterApps.NMX_TELEMETRY, ClusterConsts.NMX_TELEMETRY_ENVOY_PORT, ClusterConsts.NMX_TELEMETRY_PROTO_PATH
         )
+
+
+class BridgeInternalCrlValidator(CrlValidator):
+    """Base CRL validator for nv-bridge internal resources."""
+
+    def __init__(self, host: str, ip: str):
+        super().__init__(host, ip)
+        self.cluster = Cluster()
+
+    @property
+    def _internal_resource(self):
+        raise NotImplementedError
+
+    @property
+    def _internal_crl_resource(self):
+        raise NotImplementedError
+
+    @staticmethod
+    def _verify_expected_crl(output: dict, crl_name: str, context: str):
+        assert "crl" in output, f"No crl found in {context} output"
+        crl_value = output["crl"]
+        if isinstance(crl_value, list):
+            assert crl_name in crl_value, f"Expected CRL '{crl_name}' not found in {context} output: {crl_value}"
+            return
+        assert str(crl_value) == crl_name or crl_name in str(crl_value), (
+            f"Expected CRL '{crl_name}' not found in {context} output: {crl_value}"
+        )
+
+    def _do_bind_crl(self, crl_name: str, ask_confirm: bool, should_succeed: bool) -> None:
+        self._internal_crl_resource.action_update(crl_name).verify_result(should_succeed=should_succeed)
+
+    def _post_bind_crl(self) -> None:
+        pass
+
+    def _verify_crl_bound(self, crl_name: str) -> None:
+        with allure.independent_step("verify crl shown in internal show output"):
+            self._verify_expected_crl(self._internal_resource.parse_show(), crl_name, "internal")
+        with allure.independent_step("verify crl shown in internal crl show output"):
+            self._verify_expected_crl(self._internal_crl_resource.parse_show(), crl_name, "internal-crl")
+
+    def _do_unbind_crl(self) -> None:
+        self._internal_crl_resource.action_restore().verify_result()
+
+    def run_client(self, config: ClientConfig | None = None):
+        if config is None:
+            config = ClientConfig()
+
+        port = config.port or NV_BRIDGE_SERVER_PORT
+        bridge_tool = NvBridgeTool(self.ip, port)
+        client_cert = config.client_cert or self.configured_server_cert
+        client_cacert = config.client_cacert or self.configured_client_ca
+        plaintext = config.run_insecure and not client_cert and not client_cacert
+        bridge_tool.run_bridge_hello(
+            client_cert=client_cert,
+            client_cacert=client_cacert,
+            plaintext=plaintext,
+            expect_success=config.expect_success,
+        )
+
+
+class BridgeSystemInternalCrlValidator(BridgeInternalCrlValidator):
+    """CRL validator for system internal nv-bridge scope."""
+
+    @property
+    def _internal_resource(self):
+        return self.system.internal
+
+    @property
+    def _internal_crl_resource(self):
+        return self.system.internal.crl
+
+    def _bind_mtls_certs(self, server_cert: CertInfo, client_ca: CertInfo) -> None:
+        internal = self.system.internal
+        internal.certificate.action_update(server_cert.name).verify_result()
+        internal.ca_certificate.action_update(client_ca.cacert_name).verify_result()
+        internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+
+    def _do_cleanup(self) -> None:
+        internal = self.system.internal
+        internal.encryption.action_restore().verify_result()
+        internal.crl.action_restore().verify_result()
+        internal.certificate.action_restore().verify_result()
+        internal.ca_certificate.action_restore().verify_result()
+        internal.alternate_certificate.action_restore().verify_result()
+
+
+class BridgeClusterInternalCrlValidator(BridgeInternalCrlValidator):
+    """CRL validator for cluster app internal nv-bridge scope."""
+
+    SUPPORTED_APPS = [ClusterApps.NMX_CONTROLLER, ClusterApps.NMX_TELEMETRY]
+
+    def __init__(self, host: str, ip: str, app_name: str):
+        app_name = self._normalize_app_name(app_name)
+        super().__init__(host, ip)
+        self.app_name = app_name
+
+    @classmethod
+    def _normalize_app_name(cls, app_name: str) -> str:
+        if app_name in cls.SUPPORTED_APPS:
+            return app_name
+        if app_name.startswith(ClusterConsts.NMX_CONTROLLER_PREFIX):
+            return ClusterApps.NMX_CONTROLLER
+        if app_name.startswith(ClusterConsts.NMX_TELEMETRY_PREFIX):
+            return ClusterApps.NMX_TELEMETRY
+        raise ValueError(
+            f"Unsupported cluster app '{app_name}'. Supported apps: {cls.SUPPORTED_APPS}, "
+            f"prefixes: {ClusterConsts.NMX_CONTROLLER_PREFIX}, {ClusterConsts.NMX_TELEMETRY_PREFIX}"
+        )
+
+    @property
+    def _cluster_app(self):
+        return self.cluster.apps.app_name[self.app_name]
+
+    @property
+    def _internal_resource(self):
+        return self._cluster_app.internal
+
+    @property
+    def _internal_crl_resource(self):
+        return self._cluster_app.internal.crl
+
+    def _bind_mtls_certs(self, server_cert: CertInfo, client_ca: CertInfo) -> None:
+        enable_cluster()
+        internal = self._internal_resource
+        internal.certificate.action_update(server_cert.name).verify_result()
+        internal.ca_certificate.action_update(client_ca.cacert_name).verify_result()
+        internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
+        time.sleep(1)
+
+    def _do_cleanup(self) -> None:
+        internal = self._internal_resource
+        internal.encryption.action_restore().verify_result()
+        internal.crl.action_restore().verify_result()
+        internal.certificate.action_restore().verify_result()
+        internal.ca_certificate.action_restore().verify_result()
+        internal.alternate_certificate.action_restore().verify_result()
