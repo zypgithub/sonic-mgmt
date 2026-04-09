@@ -139,6 +139,8 @@ class AdvancedReboot:
         if 'sonic' in self.neighborType:
             self.neighborType = 'sonic'
         self.ceosNeighLacpMultiplier = self.request.config.getoption("--ceos_neighbor_lacp_multiplier")
+        if 'sonic' in self.neighborType:
+            self.neighborType = 'sonic'
 
         # Set default reboot limit if it is not given
         if self.rebootLimit is None:
