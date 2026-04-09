@@ -574,11 +574,6 @@ tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_
     conditions:
       - "'rosalind' in testbed"
 
-tests_nvos/system/test_system_asic_debug_config.py::test_asic_debug_config_pgbc:
-  skip:
-    reason: "Testcase skipped due to we don't have rosalind system with connected gpu"
-    conditions:
-      - "'rosalind' in testbed"
 
 tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate:
   skip:
