@@ -19,8 +19,6 @@ from ngts.tests_nvos.general.security.certificate.helpers import (
     delete_certificates,
 )
 from ngts.tests_nvos.general.security.helpers import generate_certs, get_test_certs_dir_location
-from ngts.tests_nvos.general.security.nmx_cert.constants import ENABLED
-from ngts.tests_nvos.general.security.nmx_cert.helpers import set_cluster_state
 from ngts.tests_nvos.general.security.nv_bridge.helpers import (
     generate_internal_certs,
     import_internal_certs,
@@ -94,7 +92,6 @@ def enable_cluster(setup_name, engines):
             op_param_value=engines.dut.ip,
         )
         cluster_tools.start_cluster(cluster, setup_name)
-        set_cluster_state(ENABLED, True)
     yield cluster
     with allure.step("Disable cluster"):
         cluster.unset().verify_result()
