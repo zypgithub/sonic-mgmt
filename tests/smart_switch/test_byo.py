@@ -104,7 +104,13 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
                               f"{ip_interface['addr']}/{ip_interface['mask']}")
         dpu_data_port = dpuhost.npu_dataplane_port
         dataplane_vlan_from_current = _untagged_vlan_id_for_port(duthost, dpu_data_port)
-        if dataplane_vlan_from_current is None:
+        if dpu_data_port.startswith("Vlan"):
+            dataplane_vlan_id = int(dpu_data_port.split("Vlan")[1])
+            logger.info("DPU dataplane port is a VLAN interface %s, using VLAN %s directly",
+                dpu_data_port, dataplane_vlan_id)
+            if not _vlan_table_has_id(duthost, dataplane_vlan_id):
+                duthost.shell('config vlan add {}'.format(dataplane_vlan_id))
+        elif dataplane_vlan_from_current is None:
             dataplane_vlan_id = LEGACY_DATAPLANE_VLAN_ID
             logger.info(
                 "No untagged dataplane VLAN for %s in running config; using legacy VLAN %s",
@@ -130,7 +136,7 @@ def setup(duthost, tbinfo, dpuhost, platform, enable_dpu_mgmt_forwarding):
                 logger.info(f"Removing the ip address for the DPU data port: {dpu_data_port}")
                 duthost.shell(f"config interface ip remove {dpu_data_port} "
                               f"{ip_intf['ipv4 address/mask']}")
-        if not _is_untagged_vlan_member(duthost, dataplane_vlan_id, dpu_data_port):
+        if not dpu_data_port.startswith("Vlan") and not _is_untagged_vlan_member(duthost, dataplane_vlan_id, dpu_data_port):
             duthost.shell(
                 'config vlan member add {} {} --untagged'.format(dataplane_vlan_id, dpu_data_port))
         ptf_port_index = mg_facts['minigraph_ptf_indices'][switch_data_port]
