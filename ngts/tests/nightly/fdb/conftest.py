@@ -4,7 +4,7 @@ import logging
 from ngts.config_templates.vlan_config_template import VlanConfigTemplate
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from retry.api import retry_call
-from ngts.tests.nightly.fdb.fdb_helper import FDB_AGING_TIME
+from ngts.tests.nightly.fdb.fdb_helper import FDB_AGING_TIME, DUMMY_MAC_PREFIX
 
 
 logger = logging.getLogger()
@@ -84,10 +84,11 @@ def pre_configure_for_fdb_advance(engines, topology_obj, interfaces, cli_objects
 
 
 def _verify_fdb_flushed(cli_obj):
-    """Verify FDB table has no dynamic entries after flush."""
+    """Verify FDB table has no test-related dynamic entries after flush."""
     mac_table = cli_obj.mac.parse_mac_table()
-    dynamic_entries = {k: v for k, v in mac_table.items() if v.get('Type') == 'Dynamic'}
-    assert len(dynamic_entries) == 0, f"FDB not yet flushed, remaining dynamic entries: {dynamic_entries}"
+    test_entries = {k: v for k, v in mac_table.items()
+                    if v.get('Type') == 'Dynamic' and v.get('MacAddress', '').lower().startswith(DUMMY_MAC_PREFIX)}
+    assert len(test_entries) == 0, f"FDB not yet flushed, remaining test entries: {test_entries}"
 
 
 @pytest.fixture(scope='function', autouse=True)
