@@ -441,10 +441,29 @@ def get_sai_sdk_dump_file(duthost, dump_file_name):
     duthost.shell(cmd_gen_sdk_dump)
 
     compressed_dump_file = f"/tmp/{dump_file_name}.tar.gz"
-    duthost.archive(path=full_path_dump_file, dest=compressed_dump_file, format='gz')
+    gz_dump_path = f"{full_path_dump_file}.gz"
+    gz_dump_local = f"/tmp/{dump_file_name}.gz"
 
-    duthost.fetch(src=compressed_dump_file, dest="/tmp/", flat=True)
-    allure.attach.file(compressed_dump_file, dump_file_name, extension=".tar.gz")
+    def _fetch_and_attach(src_path, local_path, extension):
+        duthost.fetch(src=src_path, dest="/tmp/", flat=True)
+        allure.attach.file(local_path, dump_file_name, extension=extension)
+
+    # Prefer raw file if available: compress and upload.
+    raw_dump_stat = duthost.stat(path=full_path_dump_file)
+    if raw_dump_stat and raw_dump_stat.get("stat", {}).get("exists"):
+        duthost.archive(path=full_path_dump_file, dest=compressed_dump_file, format='gz')
+        _fetch_and_attach(compressed_dump_file, compressed_dump_file, ".tar.gz")
+    else:
+        # If raw file is missing but .gz exists, upload .gz directly.
+        gz_stat = duthost.stat(path=gz_dump_path)
+        if gz_stat and gz_stat.get("stat", {}).get("exists"):
+            _fetch_and_attach(gz_dump_path, gz_dump_local, ".gz")
+        else:
+            pytest_assert(
+                False,
+                "Cannot find SDK dump file to upload, neither '{}' nor '{}' exists."
+                .format(full_path_dump_file, gz_dump_path)
+            )
 
 
 def is_mellanox_devices(hwsku):
