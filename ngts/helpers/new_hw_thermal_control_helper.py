@@ -215,7 +215,15 @@ class MockSensors:
             if not file_status['exists']:
                 raise SysfsNotExistError('{} not exist'.format(file_path))
             if file_status['islink']:
-                self._unlink(file_path)
+                # Suspend TC loop during unlink-to-write to prevent sensor_read_error
+                # from pushing PWM to 100% when the file is momentarily empty.
+                self.cli_object.hw_mgmt.suspend_thermal_control()
+                try:
+                    self._unlink(file_path)
+                    self.dut.run_cmd(f'sudo echo {value} > {file_path}')
+                finally:
+                    self.cli_object.hw_mgmt.resume_thermal_control()
+                return
             else:
                 self._cache_regular_file_value(file_path)
         self.dut.run_cmd(f'sudo echo {value} > {file_path}')

@@ -26,27 +26,30 @@ class TestNewTc:
         self.dut_engine = engines.dut
         self.topology_obj = topology_obj
 
-    @pytest.fixture(autouse=False)
-    def hide_thermalctld(self):
+    def _stop_thermal_services(self):
         """
-        Currently we use different services to update the thermal sensor value
-        and it's still evolving, so we need to stop the services to avoid the
-        thermal sensor value being updated by the services.
-        Refer to below FRs to get more details:
-        - https://redmine.mellanox.com/issues/4818037
-        - https://redmine.mellanox.com/issues/4808309
+        Stop services that write asic/module temperature sysfs files, so that
+        mocked values are not overwritten. Only needed for asic/module sensors.
+
+        thermalctld creates a suspend file on stop — we remove it via
+        resume_thermal_control() so the TC loop stays in RUNNING state.
+
+        Must NOT be called when testing cpu_pack/ambient sensors: stopping
+        thermalctld causes module temp files to go stale, triggering TC loop
+        total_err_cnt >= 2 protection which locks PWM at 100%.
         """
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
+        self.cli_objects.dut.hw_mgmt.resume_thermal_control()
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
-        # stop the service to update asic thermals
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
-        yield
-        self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")
+
+    def _start_thermal_services(self):
+        """Restart services stopped by _stop_thermal_services()."""
         self.dut_engine.run_cmd("sudo systemctl start hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl start hw-management-thermal-updater")
+        self.dut_engine.run_cmd("docker exec pmon supervisorctl start thermalctld")
 
     @allure.title('test temperature sweep')
-    @pytest.mark.usefixtures("hide_thermalctld")
     def test_temperature_sweep(self, request, get_dut_supported_sensors_and_tc_config, platform_params):
         """
         This test is to verify temperature sweep
@@ -101,59 +104,69 @@ class TestNewTc:
                                                   initial_pwm=initial_pwm)
 
         for sensor_type in tested_sensors:
-            with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
-                file_path_list = get_sensor_temperature_file_name(sensor_type, platform_params)
-                dev_parameters_name = SENSOR_DATA[sensor_type]['dev_parameters_name']
+            # Stop services that would overwrite mocked asic/module temp files.
+            # cpu_pack/ambient are maintained by kernel drivers — no services
+            # need stopping for them. See _stop_thermal_services() docstring.
+            need_stop_services = sensor_type in ("asic", "module")
+            if need_stop_services:
+                self._stop_thermal_services()
+            try:
+                with MockSensors(self.dut_engine, self.cli_objects) as mock_sensor:
+                    file_path_list = get_sensor_temperature_file_name(sensor_type, platform_params)
+                    dev_parameters_name = SENSOR_DATA[sensor_type]['dev_parameters_name']
 
-                # Update tc_config_dict in-place with the effective val_min/val_max
-                # that the TC loop actually uses. For module/asic sensors this reads
-                # temp_crit/temp_norm from sysfs and applies offsets. For sensors
-                # with "!" prefix this uses the constant directly.
-                update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, file_path_list[0])
+                    # Update tc_config_dict in-place with the effective val_min/val_max
+                    # that the TC loop actually uses. For module/asic sensors this reads
+                    # temp_crit/temp_norm from sysfs and applies offsets. For sensors
+                    # with "!" prefix this uses the constant directly.
+                    update_effective_val_min_max(mock_sensor, tc_config_dict, sensor_type, file_path_list[0])
 
-                temperature_max = get_temperature_digit(
-                    tc_config_dict['dev_parameters'][dev_parameters_name]['val_max'])
-                temperature_min = get_temperature_digit(
-                    tc_config_dict['dev_parameters'][dev_parameters_name]['val_min'])
-                logger.info(
-                    f"\n sensor_type:{sensor_type}, \n sensor_path: {file_path_list},"
-                    f" \n dev_parameters_name :{dev_parameters_name},"
-                    f" \n temp max:{temperature_max}, \ntemp min: {temperature_min}")
+                    temperature_max = get_temperature_digit(
+                        tc_config_dict['dev_parameters'][dev_parameters_name]['val_max'])
+                    temperature_min = get_temperature_digit(
+                        tc_config_dict['dev_parameters'][dev_parameters_name]['val_min'])
+                    logger.info(
+                        f"\n sensor_type:{sensor_type}, \n sensor_path: {file_path_list},"
+                        f" \n dev_parameters_name :{dev_parameters_name},"
+                        f" \n temp max:{temperature_max}, \ntemp min: {temperature_min}")
 
-                # Capture initial PWM before any mocking — this reflects the baseline
-                # PWM driven by all other (non-mocked) sensors and stays constant
-                # throughout the entire increase/decrease sweep.
-                initial_pwm = get_pwm(mock_sensor)
-                logger.info(f"Initial PWM before mocking: {initial_pwm}")
+                    # Capture initial PWM before any mocking — this reflects the baseline
+                    # PWM driven by all other (non-mocked) sensors and stays constant
+                    # throughout the entire increase/decrease sweep.
+                    initial_pwm = get_pwm(mock_sensor)
+                    logger.info(f"Initial PWM before mocking: {initial_pwm}")
 
-                tested_temperature_file = file_path_list[0]
-                with allure.step(f'Mock {tested_temperature_file} to  temperature_min:{temperature_min}'):
-                    mock_temp_and_check(tested_temperature_file, temperature_min, initial_pwm)
+                    tested_temperature_file = file_path_list[0]
+                    with allure.step(f'Mock {tested_temperature_file} to  temperature_min:{temperature_min}'):
+                        mock_temp_and_check(tested_temperature_file, temperature_min, initial_pwm)
 
-                if sensor_type == "ambient":
-                    # for ambient, we have port_amb and fan_amb,
-                    # pwm will be changed based on the min(port_amb_temp, fan_amb_temp).
-                    # to test pwm will be changed based the tested amb, set the temp of the other one amb to max
-                    with allure.step(f'For ambient, Mock {file_path_list[1]} to  temperature_max:{temperature_max}'):
-                        mock_sensor.mock_temperature(file_path_list[1], temperature_max)
+                    if sensor_type == "ambient":
+                        # for ambient, we have port_amb and fan_amb,
+                        # pwm will be changed based on the min(port_amb_temp, fan_amb_temp).
+                        # to test pwm will be changed based the tested amb, set the temp of the other one amb to max
+                        with allure.step(f'For ambient, Mock {file_path_list[1]} to  temperature_max:{temperature_max}'):
+                            mock_sensor.mock_temperature(file_path_list[1], temperature_max)
 
-                # 10 degree centigrade
-                temp_change_step = 10000
-                temperature = temperature_min + temp_change_step
-                with allure.step(
-                        f'Mock temperature of {tested_temperature_file} increase from {temperature_min} to {temperature_max} with step {temp_change_step}'):
-                    while temperature <= temperature_max:
-                        with allure.step(f'mock {sensor_type} temperature increase to {temperature}'):
-                            mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
-                            temperature += temp_change_step
+                    # 10 degree centigrade
+                    temp_change_step = 10000
+                    temperature = temperature_min + temp_change_step
+                    with allure.step(
+                            f'Mock temperature of {tested_temperature_file} increase from {temperature_min} to {temperature_max} with step {temp_change_step}'):
+                        while temperature <= temperature_max:
+                            with allure.step(f'mock {sensor_type} temperature increase to {temperature}'):
+                                mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
+                                temperature += temp_change_step
 
-                temperature = temperature_max - temp_change_step
-                with allure.step(
-                        f'Mock temperature of {tested_temperature_file} decrease from {temperature_max} to {temperature_min} with step {temp_change_step}'):
-                    while temperature >= temperature_min:
-                        with allure.step(f'mock {sensor_type} temperature decrease to {temperature}'):
-                            mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
-                            temperature -= temp_change_step
+                    temperature = temperature_max - temp_change_step
+                    with allure.step(
+                            f'Mock temperature of {tested_temperature_file} decrease from {temperature_max} to {temperature_min} with step {temp_change_step}'):
+                        while temperature >= temperature_min:
+                            with allure.step(f'mock {sensor_type} temperature decrease to {temperature}'):
+                                mock_temp_and_check(tested_temperature_file, temperature, initial_pwm)
+                                temperature -= temp_change_step
+            finally:
+                if need_stop_services:
+                    self._start_thermal_services()
 
     @pytest.mark.parametrize("sensor_err_type", SENSOR_ERR_TEST_DATA.keys())
     @allure.title('test sensor errors')
