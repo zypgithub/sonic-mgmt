@@ -629,7 +629,7 @@ def test_rsyslog_filter(engines, random_api, devices):
             create_selector_configuration(selector_id=SyslogConsts.DEFAULT_SELECTOR_NAME)
 
         with allure.step("Configure remote syslog server {} with exclude filter and validate".format(remote_server_ip)):
-            system.syslog.servers.set_server(remote_server_ip)
+            system.syslog.servers.set_server(remote_server_ip, apply=True)
             if TestToolkit.devices.dut.is_eth():
                 system.syslog.servers.servers_dict[remote_server_ip].set_vrf(vrf=TestToolkit.devices.dut.vrf_mgmt, apply=True, ask_for_confirmation=True)
             system.syslog.servers.servers_dict[remote_server_ip].set_selector_priority(1, SyslogConsts.DEFAULT_SELECTOR_NAME,
@@ -743,7 +743,7 @@ def test_rsyslog_filter(engines, random_api, devices):
             with allure.step("Validate show commands"):
                 if devices.dut.is_eth():
                     system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].show(should_succeed=False)
-                if devices.dut.is_ib():
+                else:
                     expected_selector_dictionary.update({SyslogConsts.FILTER: {}})
                     system.syslog.selectors.selectors_dict[SyslogConsts.DEFAULT_SELECTOR_NAME].verify_filter_options(
                         expected_selector_dictionary)
@@ -1159,10 +1159,10 @@ def test_syslog_selector_priority_with_all_options(random_api):
 
         with allure.step("Unset selector priority and Validate"):
             system.syslog.servers.servers_dict[remote_server_ip].unset_selector_priority(priority, apply=True)
-            if TestToolkit.devices.dut.is_ib():
-                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
             if TestToolkit.devices.dut.is_eth():
                 expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].pop(SyslogConsts.SELECTOR)
+            else:
+                expected_syslog_dictionary[SyslogConsts.SERVER][remote_server_ip].update({SyslogConsts.SELECTOR: {}})
             system.syslog.verify_show_syslog_output(expected_syslog_dictionary)
             system.syslog.servers.servers_dict[remote_server_ip].verify_show_server_output(expected_server_dictionary[remote_server_ip])
 
