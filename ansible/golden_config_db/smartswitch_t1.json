@@ -9,20 +9,20 @@
             "client_auth": "true",
             "log_level": "2",
             "port": "50052"
+        }
+    },
+    "DPU": {
+        "dpu0": {
+            "gnmi_port": "50052"
         },
-        "DPU": {
-            "dpu0": {
-                "gnmi_port": "50052"
-            },
-            "dpu1": {
-                "gnmi_port": "50052"
-            },
-            "dpu2": {
-                "gnmi_port": "50052"
-            },
-            "dpu3": {
-                "gnmi_port": "50052"
-            }
+        "dpu1": {
+            "gnmi_port": "50052"
+        },
+        "dpu2": {
+            "gnmi_port": "50052"
+        },
+        "dpu3": {
+            "gnmi_port": "50052"
         }
     }
 }
