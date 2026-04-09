@@ -72,11 +72,66 @@ def check_partitions_capacity(partition_name: str = DiskConsts.DEFAULT_PARTITION
         disk_tool.unmount_partitions(partitions)
 
 
-def wait_for_ldap_nvued_restart_workaround(test_item, engine_to_use=None):
+_LDAP_WORKAROUND_TIMEOUT = 15
+_LDAP_WORKAROUND_POLL_INTERVAL = 1
+_LDAP_WORKAROUND_SETTLE_TIME = 5
+_LDAP_SERVICES_TO_POLL = ('nvued', 'nslcd')
+
+
+def wait_for_ldap_nvued_restart_workaround(test_item=None, engine_to_use=None):
+    """Wait for nvued to become responsive after an LDAP configuration change.
+
+    Args:
+        test_item: Unused — kept for backward compatibility with callers that
+            pass a pytest item as the first argument (e.g. ``extra_setup_func`` callbacks
+            in ``feature_checkers.py``).
+        engine_to_use: When provided, polls ``systemctl is-active`` for both
+            nvued and nslcd until both services are active (up to
+            ``_LDAP_WORKAROUND_TIMEOUT`` seconds), then waits an additional
+            settle period.  Falls back to a flat sleep when no engine is
+            available.
+    """
     with allure.step('After LDAP configuration - wait for NVUE restart Workaround'):
-        workaround_max_time = 1
-        with allure.step(f'sleep for {workaround_max_time} seconds'):
-            time.sleep(workaround_max_time)
+        if engine_to_use is not None:
+            _poll_ldap_services_active(engine_to_use)
+        else:
+            with allure.step(f'No engine provided - sleep {_LDAP_WORKAROUND_TIMEOUT}s'):
+                time.sleep(_LDAP_WORKAROUND_TIMEOUT)
+
+
+def _poll_ldap_services_active(engine):
+    """Poll nvued and nslcd until both report 'active', then settle.
+
+    nslcd is the LDAP name-service daemon that PAM/SSH depend on.
+    Even after both services report 'active', PAM and the SSH daemon need
+    additional time to reinitialize, hence the settle period.
+    """
+    deadline = time.monotonic() + _LDAP_WORKAROUND_TIMEOUT
+    services_desc = ', '.join(_LDAP_SERVICES_TO_POLL)
+    with allure.step(f'Poll services [{services_desc}] active (timeout={_LDAP_WORKAROUND_TIMEOUT}s)'):
+        while True:
+            all_active = True
+            for service in _LDAP_SERVICES_TO_POLL:
+                try:
+                    output = engine.run_cmd(f'systemctl is-active {service}').strip()
+                    if output != 'active':
+                        logging.debug('Service %s not yet active (status: %s)', service, output)
+                        all_active = False
+                        break
+                except Exception:
+                    logging.debug('Service %s check failed (engine error)', service)
+                    all_active = False
+                    break
+            if all_active:
+                break
+            if time.monotonic() >= deadline:
+                logging.warning('Services [%s] did not all become active within %ss, proceeding anyway',
+                                services_desc, _LDAP_WORKAROUND_TIMEOUT)
+                break
+            time.sleep(_LDAP_WORKAROUND_POLL_INTERVAL)
+
+    with allure.step(f'Post-activation settle ({_LDAP_WORKAROUND_SETTLE_TIME}s)'):
+        time.sleep(_LDAP_WORKAROUND_SETTLE_TIME)
 
 
 def get_version_info(version: str) -> Tuple[str, str]:

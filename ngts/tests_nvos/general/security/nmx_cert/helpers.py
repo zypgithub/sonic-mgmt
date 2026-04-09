@@ -153,8 +153,6 @@ def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: 
                               num_requests: int = 1, delay_between_requests: int = 1, skip_etc_mapping: bool = False) -> ResultObj:
     app_consts: nmx_cert_constants.ClusterAppConsts = nmx_cert_constants.APP_CONSTS[app_name]
 
-    result = ResultObj(result=True, info=f'client successfully communicated with {app_name}', returned_value=True)
-
     with allure.step('create config for grpc client'):
         config = GrpcConfig(
             server=GrpcServerConfig(address=server_cert.dn or server_cert.ip, port=app_consts.external_manager_port,
@@ -169,11 +167,14 @@ def run_manager_hello_request(app_name: str, client_tls_mode: str, server_cert: 
                 responses = NmxControllerClientApp.run_nmx_c_grpc_client(config, TestToolkit.engines.dut.ip, skip_etc_mapping)
             else:
                 responses = NmxTelemetryClientApp.run_nmx_t_grpc_client(config, TestToolkit.engines.dut.ip, skip_etc_mapping)
-        result.returned_value = responses
     except Exception as e:
-        result = ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
+        return ResultObj(result=False, info=f'client failed:\n{e}', returned_value=None)
 
-    return result
+    return ResultObj(
+        result=True,
+        info=f'client successfully communicated with {app_name}',
+        returned_value=responses,
+    )
 
 
 def get_user_config_json_file_content(app_name, dut_engine: LinuxSshEngine) -> str:

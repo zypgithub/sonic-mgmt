@@ -91,7 +91,7 @@ def test_gnmi_authentication(test_flow, addressing_type, engines, local_adminuse
                     with allure.step(f'enable {auth_method} authentication'):
                         auth.set(AuthConsts.ORDER, [auth_method, AuthConsts.LOCAL], apply=True).verify_result()
                         if auth_method == RemoteAaaType.LDAP:
-                            wait_for_ldap_nvued_restart_workaround(None)
+                            wait_for_ldap_nvued_restart_workaround(None, engine_to_use=engines.dut)
                         else:
                             time.sleep(3)
                 verify_gnmi_client(test_flow, host_address, GnmiConsts.GNMI_DEFAULT_PORT, user.username,
@@ -168,7 +168,7 @@ def test_gnmi_auth_failthrough(test_flow, engines, local_adminuser, aaa_users):
     with allure.step(f'set failthrough: {failthrough}'):
         system.aaa.authentication.set(AuthConsts.FAILTHROUGH, failthrough, apply=True).verify_result()
         if rand_aaa_method == RemoteAaaType.LDAP:
-            wait_for_ldap_nvued_restart_workaround(None)
+            wait_for_ldap_nvued_restart_workaround(None, engine_to_use=engines.dut)
         else:
             time.sleep(3)
 
