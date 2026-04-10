@@ -1746,14 +1746,6 @@ def is_issu_enabled(duthost):
     return True if output == "1" else False
 
 
-def get_reload_type_list(duthost):
-    reload_types = ["reload", "cold", "fast", "warm"]
-    if not is_issu_enabled(duthost):
-        logger.info("ISSU is not enabled on the Mellanox device, remove warm reboot from the list")
-        reload_types.remove("warm")
-    logger.info(f"Reload types: {reload_types}")
-    return reload_types
-
 class SED_Change_Password_Mellanox(SED_Change_Password_General):
     PRIMARY_SED_TPM_BANK = '0x81010001'
     SECONDARY_SED_TPM_BANK = '0x81010002'
