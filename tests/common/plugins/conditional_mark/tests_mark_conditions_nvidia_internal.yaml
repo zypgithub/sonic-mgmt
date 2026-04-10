@@ -542,6 +542,24 @@ everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_e
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/16087
 
+gnmi/test_gnoi_system.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4958590"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4958590"
+
+gnmi/test_gnoi_os.py:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4958590"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4958590"
+
+smartswitch/platform_tests/test_reload_dpu.py::test_cold_reboot_dpus[gnoi_based:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4958590"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4958590"
+
 iface_loopback_action/test_iface_loopback_action_wjh.py:
   skip:
     reason: "Testcase ignored due to dualtor topology."
