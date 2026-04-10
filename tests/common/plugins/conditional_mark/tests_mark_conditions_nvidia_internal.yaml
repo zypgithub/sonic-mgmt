@@ -460,18 +460,6 @@ dash/test_dash_crm.py::TestDashCRM::test_dash_crm_cleanup:
     conditions:
     - "https://redmine.mellanox.com/issues/4531681"
 
-dash/test_fnic.py:
-  skip:
-    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4937990"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4937990"
-
-dash/test_fnic_tunnel.py:
-  skip:
-    reason: "Skip due to RM issue: https://redmine.mellanox.com/issues/4937990"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4937990"
-
 dns/test_dns_resolv_conf.py::test_dns_resolv_conf:
   xfail:
     reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
