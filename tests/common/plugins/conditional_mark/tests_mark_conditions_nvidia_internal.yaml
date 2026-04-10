@@ -109,6 +109,10 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_fw_stuck_du
     conditions:
     - "'simx' in platform"
     - "'ASAN' in build_version"
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4967073"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4967073"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sdk_dump[PLL_LOCK_EVENT-syncd]:
   skip:
@@ -122,6 +126,22 @@ tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_mellanox_sd
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform"
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4967073"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4967073"
+
+tests/nightly/show_techsupport/test_health_event.py::test_health_event_collect:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4967073"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4967073"
+
+tests/nightly/show_techsupport/test_health_event.py::test_health_event_suppression:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4967073"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4967073"
 
 tests/nightly/show_techsupport/test_techsupport.py::test_techsupport_validate_api_sniffer_dumps:
   skip:
