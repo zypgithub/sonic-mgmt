@@ -93,7 +93,7 @@ def run_test(fanouthosts, duthost, conn_graph_facts, enum_fanout_graph_facts, le
                         intf.startswith('Ethernet') and
                         int_status[intf]['admin_state'] == 'up' and
                         int_status[intf]['oper_state'] == 'up' and
-                        intf not in dpus]
+                        intf not in dpus and
                         intf in conn_facts]
     only_lossless_rx_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
     no_xon_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
