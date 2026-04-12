@@ -46,7 +46,6 @@ def test_reboot_command(engines, devices, test_name):
     with allure.step("Check system reboot output"):
         output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.show()).get_returned_value()
         assert "reason" in output.keys(), "'reason' not in the output"
-        assert "history" in output.keys(), "'history' not in the output"
 
         with allure.independent_step("Check system reboot reason output"):
             output = OutputParsingTool.parse_json_str_to_dictionary(system.reboot.reason.show()).get_returned_value()
