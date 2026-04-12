@@ -3,18 +3,17 @@ import re
 import time
 import pytest
 import logging
-from typing import Callable, Dict, Generator, List, Optional, Tuple, TypedDict
+from typing import Callable, Generator, Optional, TypedDict
 from ngts.ngts_types.devices_T import DevicesT
 from ngts.nvos_constants.constants_nvos import ConfState, NvosConst, LowPowerConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.tests_nvos.interfaces.nvl_port.nvl6.test_port_phy_role import verify_link_diagnostic
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.interfaces.nvl_port.helpers import is_nvl_device, is_qtm3_device, is_qtm4_device
+from ngts.tests_nvos.interfaces.nvl_port import helpers as nvl_helpers
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.ib.InterfaceConfiguration.Link import LowPower
 
@@ -37,7 +36,7 @@ LowPowerFaeParamsOutputT = TypedDict('LowPowerFaeParamsOutputT', {
 
 
 LOW_POWER_STATE_REGEX = rf"{NvosConst.STATE}\s+({'|'.join([NvosConst.ENABLED, NvosConst.DISABLED])})\s+({'|'.join([NvosConst.ENABLED, NvosConst.DISABLED])})"
-LOW_POWER_FAE_PARAMS_REGEX: Dict[str, any] = {
+LOW_POWER_FAE_PARAMS_REGEX: dict[str, any] = {
     LowPowerConsts.PEC_DURATION: rf"{LowPowerConsts.PEC_DURATION}\s+(\d+)\s+(\d+)",
     LowPowerConsts.PEC_RECAL_PERIOD: rf"{LowPowerConsts.PEC_RECAL_PERIOD}\s+(\d+)\s+(\d+)",
     LowPowerConsts.PEC_RECAL_FORCE_PERIOD: rf"{LowPowerConsts.PEC_RECAL_FORCE_PERIOD}\s+({'|'.join(LowPowerConsts.PecRecalPeriodForce.all())})\s+({'|'.join(LowPowerConsts.PecRecalPeriodForce.all())})"
@@ -48,17 +47,17 @@ def should_skip_if_low_power_not_supported() -> bool:
     return is_bug_active(4831699) or is_bug_active(4850191)
 
 
-def get_linked_ports_objs(devices: DevicesT, linked_ports_pair: Tuple[str, str]) -> Tuple[Port, Port]:
-    if is_qtm3_device(devices):
+def get_linked_ports_objs(devices: DevicesT, linked_ports_pair: tuple[str, str]) -> tuple[Port, Port]:
+    if nvl_helpers.is_qtm3_device(devices):
         return tuple(Fae(port_name=port).port for port in linked_ports_pair)
-    elif is_qtm4_device(devices):
+    elif nvl_helpers.is_qtm4_device(devices):
         return tuple(Port(name=port) for port in linked_ports_pair)
     else:
         raise pytest.fail("Unsupported device type for low_power_obj fixture.")
 
 
 @pytest.fixture(scope="session")
-def linked_ports_objs(devices: DevicesT, linked_ports_pair: Tuple[str, str]) -> Tuple[Port, Port]:
+def linked_ports_objs(devices: DevicesT, linked_ports_pair: tuple[str, str]) -> tuple[Port, Port]:
     return get_linked_ports_objs(devices, linked_ports_pair)
 
 
@@ -78,8 +77,8 @@ def _get_low_power_output(port_obj: Port) -> LowPowerStateOutputT:
 
 
 def low_power_state_case(
-    ports_to_set: Optional[List[Tuple[Port, str]]] = None,
-    expected_values: Optional[List[Tuple[Port, str, str]]] = None
+    ports_to_set: Optional[list[tuple[Port, str]]] = None,
+    expected_values: Optional[list[tuple[Port, str, str]]] = None
 ) -> None:
     if ports_to_set is not None:
         for port, value in ports_to_set:
@@ -94,8 +93,8 @@ def low_power_state_case(
                 port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
     if expected_values is not None:
         with allure.step("Verify link diagnostic"):
-            port_names: List[str] = [port.name for port, _ in ports_to_set]
-            verify_link_diagnostic(port_names)
+            port_names: list[str] = [port.name for port, _ in ports_to_set]
+            nvl_helpers.verify_link_diagnostic(port_names)
         with allure.step("Verify low power states"):
             for port, expected_operational, expected_applied in expected_values:
                 output: LowPowerStateOutputT = _get_low_power_output(port)
@@ -104,7 +103,7 @@ def low_power_state_case(
 
 
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_link_low_power(devices: DevicesT, linked_ports_objs: Tuple[Port, Port], test_api: ApiType):
+def test_link_low_power(devices: DevicesT, linked_ports_objs: tuple[Port, Port], test_api: ApiType):
     """
     Test low power functionality on NVL ports.
     This test verifies the low power feature on NVL devices, which allows a port to be configured to
@@ -118,7 +117,7 @@ def test_link_low_power(devices: DevicesT, linked_ports_objs: Tuple[Port, Port],
     """
     if should_skip_if_low_power_not_supported():
         pytest.skip("Low power is not supported")
-    if not is_nvl_device(devices):
+    if not nvl_helpers.is_nvl_device(devices):
         pytest.skip("Low power is only supported on NVL devices")
 
     TestToolkit.tested_api = test_api
@@ -167,7 +166,7 @@ def _get_low_power_fae_params_output(port_obj: Port) -> LowPowerFaeParamsOutputT
         return output
 
 
-def _verify_fae_low_power_values(fae_low_power_obj: LowPower, expected_dict: Dict[str, str]):
+def _verify_fae_low_power_values(fae_low_power_obj: LowPower, expected_dict: dict[str, str]):
     with allure.step("Verify fae low power values"):
         output_dict = TestToolkit.tools.OutputParsingTool.parse_json_str_to_dictionary(fae_low_power_obj.show()).get_returned_value()
         for param, value in expected_dict.items():
@@ -175,8 +174,8 @@ def _verify_fae_low_power_values(fae_low_power_obj: LowPower, expected_dict: Dic
                 ValidationTool.validate_field_value_in_output(output_dict, param, value).verify_result()
 
 
-def _aggreed_function_exp_dict(set_dict: Dict[str, str]) -> Dict[str, str]:
-    exp_dict: Dict[str, str] = {}
+def _aggreed_function_exp_dict(set_dict: dict[str, str]) -> dict[str, str]:
+    exp_dict: dict[str, str] = {}
     if LowPower.PEC_RECAL_FORCE_PERIOD in set_dict:
         exp_dict[LowPower.PEC_RECAL_FORCE_PERIOD] = set_dict[LowPower.PEC_RECAL_FORCE_PERIOD]
     if LowPower.PEC_DURATION in set_dict:
@@ -187,7 +186,7 @@ def _aggreed_function_exp_dict(set_dict: Dict[str, str]) -> Dict[str, str]:
 
 
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: Tuple[str, str], linked_ports_objs: Tuple[Port, Port], test_api: ApiType):
+def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: tuple[str, str], linked_ports_objs: tuple[Port, Port], test_api: ApiType):
     """
     Test low power functionality on NVL ports with FAE parameters.
     This test verifies the low power feature on NVL devices with FAE parameters, which allows a port to be configured to
@@ -203,11 +202,11 @@ def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: Tuple[s
     """
     if should_skip_if_low_power_not_supported():
         pytest.skip("Low power is not supported")
-    if not is_qtm4_device(devices):
+    if not nvl_helpers.is_qtm4_device(devices):
         pytest.skip("Low power is only supported on NVL QTM4 devices")
 
     TestToolkit.tested_api = test_api
-    fae_low_power_objs: Tuple[LowPower, LowPower] = tuple(Fae(port_name=port).port.interface.link.low_power for port in linked_ports_pair)
+    fae_low_power_objs: tuple[LowPower, LowPower] = tuple(Fae(port_name=port).port.interface.link.low_power for port in linked_ports_pair)
     with allure.step("Verify low power states on both ports after setting to enabled"):
         low_power_state_case(
             ports_to_set=[((port_obj, NvosConst.ENABLED) for port_obj in linked_ports_objs)],
@@ -218,7 +217,7 @@ def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: Tuple[s
             _verify_fae_low_power_values(fae_low_power_obj, expected_dict={name: field["default"] for name, field in LowPower.FAE_FIELDS.items()})
     low_power_obj_1 = fae_low_power_objs[0]
     with allure.step("Verify fae low power set values"):
-        fae_params_dict: Dict[str, Dict[str, Dict[str, str]]] = {
+        fae_params_dict: dict[str, dict[str, dict[str, str]]] = {
             "min": {'set_dict': {name: field["values"][0] for name, field in LowPower.FAE_FIELDS.items().exclude(LowPower.PEC_RECAL_FORCE_PERIOD)}},
             "max": {'set_dict': {name: field["values"][-1] for name, field in LowPower.FAE_FIELDS.items().exclude(LowPower.PEC_RECAL_FORCE_PERIOD)}},
         }
@@ -230,7 +229,7 @@ def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: Tuple[s
                     low_power_obj_1.set(op_param_name=param, op_param_value=value, apply=True).verify_result()
                 _verify_fae_low_power_values(low_power_obj_1, expected_dict=fae_params_dict[fae_test]['exp_dict'])
     with allure.step("Verify fae low power random values"):
-        fae_params_dict: Dict[str, Dict[str, Dict[str, str]]] = {
+        fae_params_dict: dict[str, dict[str, dict[str, str]]] = {
             "random": {'set_dict': {name: random.choice(field["values"]) for name, field in LowPower.FAE_FIELDS.items().exclude(LowPower.PEC_RECAL_FORCE_PERIOD)}}
         }
         fae_params_dict['random']['exp_agreed_dict'] = _aggreed_function_exp_dict(fae_params_dict['random']['set_dict'])
@@ -251,7 +250,7 @@ def test_link_low_power_fae_params(devices: DevicesT, linked_ports_pair: Tuple[s
             _verify_fae_low_power_values(fae_low_power_obj, expected_dict={name: field["default"] for name, field in LowPower.FAE_FIELDS.items()})
     with allure.step("Verify fae low power counters"):
         output_dict = TestToolkit.tools.OutputParsingTool.parse_json_str_to_dictionary(fae_low_power_objs[0].show(op_param=LowPower.COUNTERS)).get_returned_value()
-        initial_counters: Dict[str, str] = {}
+        initial_counters: dict[str, str] = {}
         for counter in LowPower.ALL_COUNTERS:
             assert output_dict.get(counter) is not None, f"Counter {counter} is not found in the output"
             initial_counters[counter] = output_dict.get(counter)

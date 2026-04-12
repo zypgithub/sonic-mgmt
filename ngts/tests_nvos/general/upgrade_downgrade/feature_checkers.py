@@ -61,13 +61,13 @@ from ngts.nvos_constants.constants_nvos import (
     SystemConsts,
     TestFlowType,
 )
+from ngts.nvos_constants import constants_nvos as consts_nv
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD
 from ngts.nvos_tools.Devices import IbDevice
 from ngts.nvos_tools.infra.CrlValidator import ClientConfig, RevokeConfig
 from ngts.nvos_tools.infra.InterfaceConfigurationTool import InterfaceConfigurationTool
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.SSDTool import SSDTool
 from ngts.nvos_tools.infra.NmxRbacTool import NmxRbacTool
@@ -188,6 +188,7 @@ from ngts.tests_nvos.interfaces.nvl_port.test_link_low_power import (
     low_power_state_case,
     should_skip_if_low_power_not_supported
 )
+from ngts.tests_nvos.helpers.interfaces.nvl_port.nvl6 import link_training_helpers
 from ngts.tests_nvos.system.aaa.helpers import create_new_user
 from ngts.tests_nvos.system.gnmi.helpers import verify_gnmi_client_tools_installed
 from ngts.tests_nvos.system.test_system_api_compression import verify_api_compression_state
@@ -1107,7 +1108,7 @@ def _check_phy_role(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator
         2. Verify ports phy-role after upgrade
     """
     with allure.step("Get linked ports pair"):
-        linked_ports_pair: List[str] = list(get_linked_ports_pair(devices, engines))
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
         logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
         fae_port_1, fae_port_2 = get_fae_objs(linked_ports_pair)
 
@@ -1165,7 +1166,7 @@ def _check_low_power(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
         Skipped("Low power is not supported")
 
     with allure.step("Get linked ports pair"):
-        linked_ports_pair: List[str] = list(get_linked_ports_pair(devices, engines))
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
         logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
         linked_ports_objs = get_linked_ports_objs(devices, linked_ports_pair)
 
@@ -1196,6 +1197,58 @@ def _check_low_power(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
                 port_obj.interface.link.low_power.unset(apply=True).verify_result()
             for port_obj in linked_ports_objs:
                 port_obj.port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
+
+
+@_requires_compatibility(IbDevice.RosalindSwitch, minimal_version="25.03.0500")
+def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
+    """
+    Verify link training fec-measure-mode on NVL ports survives upgrade.
+    Test Steps:
+        1. Set fec-measure-mode to enabled on both ports
+        2. Verify fec-measure-mode is enabled on both ports
+        3. Save configuration
+        4. Do upgrade
+        5. Verify fec-measure-mode is still enabled after upgrade
+        6. Cleanup fec-measure-mode configuration
+    """
+    with allure.step("Get linked ports pair"):
+        linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
+        logger.info(f"Linked ports pair: {linked_ports_pair[0]} <-> {linked_ports_pair[1]}")
+        fae_port_1, fae_port_2 = get_fae_objs(linked_ports_pair)
+        fae_objs_tuple = (fae_port_1, fae_port_2)
+
+    try:
+        with allure.step("Set fec-measure-mode to enabled on both ports"):
+            for fae in fae_objs_tuple:
+                fae.interface.link.kr.set(
+                    op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE,
+                    op_param_value=consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                    apply=True,
+                    ask_for_confirmation=True,
+                ).verify_result()
+            link_training_helpers.wait_and_verify_link(fae_objs_tuple)
+            expected_enabled = {
+                consts_nv.ConfState.OPERATIONAL: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                consts_nv.ConfState.APPLIED: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+            }
+            link_training_helpers.verify_fec_measure_mode([
+                (fae_port_1, expected_enabled),
+                (fae_port_2, expected_enabled),
+            ])
+
+        with allure.step("Save configuration"):
+            NvueGeneralCli.save_config(engines.dut)
+
+        yield  # Do upgrade
+
+        with allure.step("Verify fec-measure-mode after upgrade"):
+            link_training_helpers.verify_fec_measure_mode([
+                (fae_port_1, expected_enabled),
+                (fae_port_2, expected_enabled),
+            ])
+
+    finally:
+        link_training_helpers.cleanup_fec_measure_mode(fae_objs_tuple)
 
 # #################### End of Feature Checkers ###################
 
@@ -1420,6 +1473,7 @@ _CHECKERS: list[CheckerFn] = [
     _check_ssh_cert_auth,
     _check_api_compression,
     _check_phy_role,
+    _check_link_training,
 ]
 
 _CHECKERS.append(

@@ -1,9 +1,7 @@
 import random
 import re
 import pytest
-import time
 import logging
-from typing import Tuple
 
 from retry.api import retry_call
 
@@ -13,7 +11,8 @@ from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
@@ -96,7 +95,18 @@ def is_nvl_device(devices: DevicesT) -> bool:
     return is_qtm3_device(devices) or is_qtm4_device(devices)
 
 
-def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> Tuple[str, str]:
+EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
+
+
+def verify_link_diagnostic(ports: list[str]) -> None:
+    output = NvueIbInterfaceCli.show_interface(TestToolkit.engines.dut, port_name='--view link-diagnostics')
+    output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
+    for port_name in ports:
+        port_diagnostics = output_dict[port_name]['link']['diagnostics']
+        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is not 0"
+
+
+def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> tuple[str, str]:
     switches_list = IbnetdiscoverTool.run_ibnetdiscover(engines)
     with allure.step("Get a pair of linked port names"):
         random_switch = random.choice(switches_list)
