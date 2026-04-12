@@ -318,6 +318,45 @@ class PhyRecoveryConsts:
     MODES = [ENABLED, DISABLED, FW_DEFAULT]
 
 
+class TxBwLossMonitorConsts:
+    """Constants for tx-bandwidth-loss-monitor (zombie link) feature."""
+
+    # Field names in show output
+    STATE: str = 'state'
+    MONITOR_STATUS: str = 'monitor-status'
+
+    class State(Enum):
+        ENABLED: str = 'enabled'
+        DISABLED: str = 'disabled'
+        FW_DEFAULT: str = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    class MonitorStatus(Enum):
+        NORMAL: str = 'normal'
+        NA: str = 'N/A'
+        WARNING: str = 'warning'
+        ALARM: str = 'alarm'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+    # Default show values (port up, no config applied)
+    DEFAULT_OPER_STATE: str = State.DISABLED.value
+    DEFAULT_APPLIED_STATE: str = State.FW_DEFAULT.value
+    DEFAULT_MONITOR_STATUS: str = MonitorStatus.NA.value
+
+    # Link-down diagnostics opcode for BW-loss threshold exceeded
+    BW_LOSS_DIAG_CODE: str = '45'
+    BW_LOSS_DIAG_STATUS: str = 'BW_loss_threshold_exceeded'
+
+    # Expected error fragment for invalid state input
+    ERR_MSG_INVALID_STATE: str = "is not one of"
+
+
 class DataBaseNames:
     CONFIG_DB = "ConfigDb"
     STATE_DB = 'StateDb'

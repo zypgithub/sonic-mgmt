@@ -24,5 +24,6 @@ class LinkMgmt(BaseComponent):
         self.phy_recovery = BaseComponent(self, path='/phy-recovery')
         self.kr = BaseComponent(self, path='/link-training')
         self.plr = BaseComponent(self, path='/plr')
+        self.tx_bandwidth_loss_monitor = BaseComponent(self, path='/tx-bandwidth-loss-monitor')
         self.ib_subnet = BaseComponent(self, path='/ib-subnet')
         self.low_power = LowPower(self)
