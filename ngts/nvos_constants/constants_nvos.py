@@ -1514,6 +1514,26 @@ class LowPowerConsts:
     ALL_COUNTERS: List[str] = [L1_TOTAL_ENTRIES, AVERAGE_LOCAL_FULL_BW_EXIT]
 
 
+class LinkTrainingConsts:
+    FEC_MEASURE_MODE: str = 'fec-measure-mode'
+
+    class FecMeasureMode(Enum):
+        ENABLED = 'enabled'
+        DISABLED = 'disabled'
+        FW_DEFAULT = 'fw-default'
+
+        @classmethod
+        def all(cls):
+            return [member.value for member in cls]
+
+        @classmethod
+        def operational(cls):
+            return [cls.ENABLED.value, cls.DISABLED.value]
+
+    FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.DISABLED
+    FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
+
+
 class ImageConsts:
     NEXT_IMG = 'next'
     CURRENT_IMG = 'current'

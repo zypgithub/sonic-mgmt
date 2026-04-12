@@ -2,22 +2,16 @@ import random
 import re
 import pytest
 import logging
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Optional, TypedDict, Union
 from ngts.ngts_types.devices_T import DevicesT
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tests_nvos.interfaces.nvl_port.helpers import validate_ports_state_and_speed
+from ngts.tests_nvos.interfaces.nvl_port import helpers as nvl_helpers
 from ngts.nvos_constants.constants_nvos import ApiType, PhyRoleConsts, ConfState
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.tests_nvos.interfaces.nvl_port.helpers import is_qtm4_device
 from ngts.nvos_tools.infra.Fae import Fae
-from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 
 logger: logging.Logger = logging.getLogger(__name__)
-
-EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
 
 PhyRoleOutputT = TypedDict('PhyRoleOutputT', {
     ConfState.OPERATIONAL: PhyRoleConsts.PhyRole,
@@ -38,10 +32,10 @@ PHY_ROLE_REGEX = rf"{PhyRoleConsts.PHY_ROLE}\s+({'|'.join(PhyRoleConsts.PhyRole.
 CONSTANT_ROLE_REGEX = rf"{PhyRoleConsts.CONSTANT_ROLE}\s+({'|'.join(PhyRoleConsts.ConstantRole.all())})\s+({'|'.join(PhyRoleConsts.ConstantRole.all())})"
 
 
-def is_device_set_simplex(fae_objs: Tuple[Fae, Fae]) -> bool:
+def is_device_set_simplex(fae_objs: tuple[Fae, Fae]) -> bool:
     # Check if the device is set to simplex
     try:
-        validate_ports_state_and_speed(IbInterfaceConsts.XDR_SLOW_SPEED, [fae.port.name for fae in fae_objs], "acp")
+        nvl_helpers.validate_ports_state_and_speed(IbInterfaceConsts.XDR_SLOW_SPEED, [fae.port.name for fae in fae_objs], "acp")
     except AssertionError:
         return False
     # If the device is set to simplex, verify that the phy-role is N/A
@@ -53,12 +47,12 @@ def is_device_set_simplex(fae_objs: Tuple[Fae, Fae]) -> bool:
     return True
 
 
-def get_fae_objs(linked_ports_pair: Tuple[str, str]) -> Tuple[Fae, Fae]:
+def get_fae_objs(linked_ports_pair: tuple[str, str]) -> tuple[Fae, Fae]:
     return tuple(Fae(port_name=port) for port in linked_ports_pair)
 
 
 @pytest.fixture(scope="session")
-def fae_objs(linked_ports_pair: Tuple[str, str]) -> Tuple[Fae, Fae]:
+def fae_objs(linked_ports_pair: tuple[str, str]) -> tuple[Fae, Fae]:
     return get_fae_objs(linked_ports_pair)
 
 
@@ -82,15 +76,7 @@ def _get_phy_roles_output(fae_obj: Fae) -> PhyRolesOutputT:
         }
 
 
-def verify_link_diagnostic(ports: List[str]) -> None:
-    output = NvueIbInterfaceCli.show_interface(TestToolkit.engines.dut, port_name='--view link-diagnostics')
-    output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
-    for port_name in ports:
-        port_diagnostics = output_dict[port_name]['link']['diagnostics']
-        assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is not 0"
-
-
-def _verify_role_output(role_output: Union[PhyRoleOutputT, ConstantRoleOutputT], operational_expected: Union[str, List[str]], applied_expected: Union[str, List[str]]) -> None:
+def _verify_role_output(role_output: Union[PhyRoleOutputT, ConstantRoleOutputT], operational_expected: Union[str, list[str]], applied_expected: Union[str, list[str]]) -> None:
     with allure.step("Verify role output matches expected values"):
         if isinstance(operational_expected, list):
             assert role_output[ConfState.OPERATIONAL] in operational_expected, \
@@ -107,10 +93,10 @@ def _verify_role_output(role_output: Union[PhyRoleOutputT, ConstantRoleOutputT],
 
 
 def role_case(
-    roles_to_set: Optional[List[Tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], str]]] = None,
-    expected_values: Optional[List[Tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], Union[str, List[str]], Union[str, List[str]]]]] = None
-) -> Optional[Dict[Fae, PhyRolesOutputT]]:
-    roles_outputs: Optional[Dict[Fae, PhyRolesOutputT]] = None
+    roles_to_set: Optional[list[tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], str]]] = None,
+    expected_values: Optional[list[tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], Union[str, list[str]], Union[str, list[str]]]]] = None
+) -> Optional[dict[Fae, PhyRolesOutputT]]:
+    roles_outputs: Optional[dict[Fae, PhyRolesOutputT]] = None
     if roles_to_set is not None:
         for fae, role, value in roles_to_set:
             with allure.step(f"Set {role} to {value} on {fae.port.name}"):
@@ -125,10 +111,10 @@ def role_case(
                 seen.add(fae.port.name)
                 fae.port.interface.wait_for_port_state(NvosConsts.LINK_STATE_UP).verify_result()
     if expected_values is not None:
-        roles_outputs: Dict[Fae, PhyRolesOutputT] = {}
+        roles_outputs: dict[Fae, PhyRolesOutputT] = {}
         with allure.step("Verify link diagnostic"):
-            port_names: List[str] = [fae.port.name for fae, _, _, _ in expected_values]
-            verify_link_diagnostic(port_names)
+            port_names: list[str] = [fae.port.name for fae, _, _, _ in expected_values]
+            nvl_helpers.verify_link_diagnostic(port_names)
         with allure.step("Get ports roles output"):
             seen = set()
             for fae, _, _, _ in expected_values:
@@ -144,7 +130,7 @@ def role_case(
 
 def verify_phy_role_default(fae_port_1: Fae, fae_port_2: Fae) -> None:
     with allure.step("Verify default phy-role on both ports"):
-        roles_outputs: Optional[Dict[Fae, PhyRolesOutputT]] = role_case(
+        roles_outputs: Optional[dict[Fae, PhyRolesOutputT]] = role_case(
             expected_values=[
                 (fae_port_1, PhyRoleConsts.PHY_ROLE, [PhyRoleConsts.PhyRole.PRIMARY.value, PhyRoleConsts.PhyRole.SECONDARY.value], PhyRoleConsts.PhyRole.FW_DEFAULT.value),
                 (fae_port_2, PhyRoleConsts.PHY_ROLE, [PhyRoleConsts.PhyRole.PRIMARY.value, PhyRoleConsts.PhyRole.SECONDARY.value], PhyRoleConsts.PhyRole.FW_DEFAULT.value)
@@ -157,7 +143,7 @@ def verify_phy_role_default(fae_port_1: Fae, fae_port_2: Fae) -> None:
 
 
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_port_phy_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_api: ApiType):
+def test_port_phy_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_api: ApiType):
     """
     Test phy role functionality on NVL ports.
     This test verifies the phy role feature on QTM4 devices, which allows a port to be configured to
@@ -170,7 +156,7 @@ def test_port_phy_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_api: A
         4. Set first port to auto role
         5. Unset both ports
     """
-    if not is_qtm4_device(devices):
+    if not nvl_helpers.is_qtm4_device(devices):
         pytest.skip("Phy role is only supported on QTM4 devices")
     if is_device_set_simplex(fae_objs):
         pytest.skip("Phy role is not supported on devices set to simplex")
@@ -229,7 +215,7 @@ def test_port_phy_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_api: A
 
 
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
-def test_port_constant_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_api: ApiType):
+def test_port_constant_role(devices: DevicesT, fae_objs: tuple[Fae, Fae], test_api: ApiType):
     """
     Test constant role functionality on NVL ports.
     This test verifies the constant-role feature on QTM4 devices, which allows a port to maintain
@@ -241,7 +227,7 @@ def test_port_constant_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_a
         3. Verify role sticks after port state flip (down/up)
         4. Unset constant-role on both ports
     """
-    if not is_qtm4_device(devices):
+    if not nvl_helpers.is_qtm4_device(devices):
         pytest.skip("Constant role is only supported on QTM4 devices")
     if is_device_set_simplex(fae_objs):
         pytest.skip("Phy role is not supported on devices set to simplex")
@@ -250,7 +236,7 @@ def test_port_constant_role(devices: DevicesT, fae_objs: Tuple[Fae, Fae], test_a
     fae_port_1, fae_port_2 = fae_objs
     with allure.step("Verify default phy-role and constant-role on both ports"):
         verify_phy_role_default(fae_port_1, fae_port_2)
-        roles_outputs: Dict[Fae, PhyRolesOutputT] = role_case(
+        roles_outputs: dict[Fae, PhyRolesOutputT] = role_case(
             expected_values=[
                 (fae_port_1, PhyRoleConsts.CONSTANT_ROLE, PhyRoleConsts.ConstantRole.ENABLED.value, PhyRoleConsts.ConstantRole.ENABLED.value),
                 (fae_port_2, PhyRoleConsts.CONSTANT_ROLE, PhyRoleConsts.ConstantRole.ENABLED.value, PhyRoleConsts.ConstantRole.ENABLED.value)
