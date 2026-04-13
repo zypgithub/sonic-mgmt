@@ -2614,7 +2614,7 @@ def test_exceeding_headroom(duthosts, rand_one_dut_hostname,
             # This should make it exceed the limit, so the profile should not applied to the APPL_DB
             time.sleep(20)
             size_in_appldb = duthost.shell(
-                f'redis-cli hget "BUFFER_PROFILE_TABLE: test-headroom" {param_name}')['stdout']
+                f'redis-cli hget "BUFFER_PROFILE_TABLE:test-headroom" {param_name}')['stdout']
             pytest_assert(size_in_appldb == maximum_profile[param_name],
                           f'The profile with a large size was applied to APPL_DB, which can make headroom exceeding. '
                           f'size_in_appldb: {size_in_appldb}, '
