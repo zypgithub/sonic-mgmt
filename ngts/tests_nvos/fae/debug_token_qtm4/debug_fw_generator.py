@@ -279,7 +279,7 @@ class DebugFirmwareGenerator:
         with allure.step('Generate debug firmware'):
             try:
                 # Find required FW version using NvosGitTool
-                _, fw_version = self.git_tool.find_previous_fw_version(self.target_version)
+                _, fw_version, _ = self.git_tool.find_previous_fw_version(self.target_version)
                 logger.info(f"Required FW version: {fw_version}")
 
                 # Check for existing firmware
