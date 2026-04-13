@@ -8,13 +8,6 @@ Usage:
     pytest tests/high_frequency_telemetry_with_wjh/test_high_frequency_telemetry_with_wjh.py
 """
 import inspect
-
-# Import the original test module
-from tests.high_frequency_telemetry.conftest import (  # noqa: F401
-    ensure_swss_ready,
-    cleanup_high_frequency_telemetry,
-    disable_flex_counters,
-)
 import tests.high_frequency_telemetry.test_high_frequency_telemetry as original_tests
 
 # Dynamically import all test functions (functions starting with 'test_')

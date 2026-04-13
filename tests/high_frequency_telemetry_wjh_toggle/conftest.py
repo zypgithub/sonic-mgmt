@@ -11,13 +11,11 @@
 
 import pytest
 import logging
-import inspect
-import tests.high_frequency_telemetry.conftest as original_conftest
 
-# Dynamically import all fixtures (functions decorated with @pytest.fixture)
-for name, obj in inspect.getmembers(original_conftest):
-    if hasattr(obj, '_pytestfixturefunction'):
-        globals()[name] = obj
+# Import all fixtures from the original HFT conftest via pytest's plugin mechanism.
+# This automatically makes all fixtures (current and future) available without
+# manual imports or dynamic hacks.
+pytest_plugins = ["tests.high_frequency_telemetry.conftest"]
 
 logger = logging.getLogger(__name__)
 
