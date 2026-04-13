@@ -725,7 +725,17 @@ def verify_pwm_matches_expected_value(mock_sensor, tc_config_dict, sensor_type, 
         # MSN2700). E.g. PWM 100->60 takes ~7 worker cycles x 5s = 35s, plus
         # sensor poll wait. 60s provides sufficient margin for any sensor.
         # cpu_pack and sodimm also need extended wait due to input_smooth_level.
+        # ambient (sensor_amb) needs extended retry because its poll_time is
+        # 30s and the default formula (poll_time + PWM_GROW_TIME = 32) leaves
+        # only 2s margin — insufficient for the TC loop PWM ramp-down phase.
+        # The TC _pwm_worker uses a halving algorithm to lower PWM:
+        #   step = min(round(diff/2 + 0.5), pwm_max_reduction)
+        # running every PWM_WORKER_POLL_TIME (5s). E.g. PWM 40->30:
+        #   cycle1: step=6 -> 34, cycle2: step=2 -> 32, cycle3: step=2 -> 30
+        # = 15s of ramp-down. Worst case: 30s poll + 15s ramp = 45s.
+        # Using 60 for sufficient margin.
         sepcial_sensor_try_times = {"module": 60,
+                                    "ambient": 60,
                                     "asic": 60,
                                     "cpu_pack": 15 * poll_time,
                                     "sodimm": 360}
