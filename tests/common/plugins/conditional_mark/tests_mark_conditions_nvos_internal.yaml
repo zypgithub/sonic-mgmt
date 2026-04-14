@@ -564,16 +564,9 @@ tests_nvos/ib_router/test_ib_router_functional.py::test_port_migration:
 
 tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_trunk_ports:
   skip:
-    reason: "serdes-eq-mode is not supported on Rosalind systems"
+    reason: "Rosalind systems do not support trunk ports"
     conditions:
       - "'rosalind' in testbed"
-
-tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_recovery_access_ports:
-  skip:
-    reason: "serdes-eq-mode is not supported on Rosalind systems"
-    conditions:
-      - "'rosalind' in testbed"
-
 
 tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate:
   skip:
