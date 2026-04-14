@@ -225,8 +225,8 @@ class TokenSigningCommands:
 class DebugFwPatterns:
     """Pre-compiled regex patterns for firmware version extraction."""
 
-    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin -> groups (41, 2018, 0220)
-    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)')
+    # Pattern to extract version from filename: debug_fw_41_2018_0220.bin or debug_fw_41_2018_0526_004.bin
+    VERSION_FROM_FILENAME = re.compile(r'debug_fw_(\d+)_(\d+)_(\d+)(?:_(\d+))?')
 
-    # Pattern to extract version with underscores: debug_fw_41_2018_0220.bin -> "41_2018_0220"
-    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+)')
+    # Pattern to extract version with underscores: "41_2018_0220" or "41_2018_0526_004"
+    VERSION_WITH_UNDERSCORES = re.compile(r'debug_fw_(\d+_\d+_\d+(?:_\d+)?)')
