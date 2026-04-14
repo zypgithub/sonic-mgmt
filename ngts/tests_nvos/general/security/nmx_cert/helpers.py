@@ -29,16 +29,16 @@ def set_cluster_state(cluster_state, nmc_state, force_wait: bool = False):
         cluster = Cluster()
         res: ResultObj = cluster.set(nmx_cert_constants.STATE, cluster_state, apply=True)
         if force_wait or res.apply_occurred():
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_state, nmc_state)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state=cluster_state, nmx_c_expected_state=nmc_state)
         res.verify_result()
 
 
 def enable_cluster(force_wait: bool = False):
-    set_cluster_state(nmx_cert_constants.ENABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.ENABLED], force_wait)
+    set_cluster_state(nmx_cert_constants.ENABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.ENABLED], force_wait=force_wait)
 
 
 def disable_cluster(force_wait: bool = False):
-    set_cluster_state(nmx_cert_constants.DISABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.DISABLED], force_wait)
+    set_cluster_state(nmx_cert_constants.DISABLED, _CLUSTER_STATE_TO_NMX_CONN[nmx_cert_constants.DISABLED], force_wait=force_wait)
 
 
 def update_cluster_app_manager_state(manager: Manager, state):
