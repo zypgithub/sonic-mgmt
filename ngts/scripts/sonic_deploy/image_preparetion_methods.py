@@ -16,11 +16,13 @@ logger = logging.getLogger()
 
 def get_real_file_path(file_path: str) -> str:
     """
-    @summary: Get the real file path from a given path
+    @summary: Get the real file path from a given path.
+    Avoids resolving symlinks to prevent crossing NFS automount boundaries
+    that may not be accessible inside Docker containers.
     """
-    real_path = os.path.realpath(file_path)
-    containing_dir = os.path.dirname(real_path)
-    filename = os.path.basename(real_path)
+    abs_path = os.path.abspath(file_path)
+    containing_dir = os.path.dirname(abs_path)
+    filename = os.path.basename(abs_path)
     dir_content = os.listdir(containing_dir)
     matching_filename = [dir_file for dir_file in dir_content if fnmatch.fnmatch(dir_file, filename)][0]
     real_file_path = os.path.join(containing_dir, matching_filename)
@@ -69,7 +71,7 @@ def set_image_path(image_path, image_key, image_dict, cli_type=None):
         path = image_path
     else:
         verify_file_exists(image_path)
-        logger.info("Image {} path is: {}".format(image_key, os.path.realpath(image_path)))
+        logger.info("Image {} path is: {}".format(image_key, os.path.abspath(image_path)))
         path = get_installer_url_from_nfs_path(image_path)
     image_dict[image_key] = path
 
