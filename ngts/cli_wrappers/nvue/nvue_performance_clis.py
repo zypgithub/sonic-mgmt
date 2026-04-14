@@ -400,7 +400,7 @@ class NvuePerformanceCli(PerformanceCommon):
                 right_left_port_dict["left_ports"].append(port)
         return right_left_port_dict
 
-    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num):
+    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num, sequential=False):
         ports = self.get_right_left_ports_dict()
         left_ports = copy.deepcopy(ports["left_ports"])
         right_ports = copy.deepcopy(ports["right_ports"])
@@ -411,6 +411,23 @@ class NvuePerformanceCli(PerformanceCommon):
         upstream = left_ports[upstream_start_index:upstream_end_index]
         downstream = right_ports[downstream_start_index:downstream_end_index]
         return upstream, downstream
+
+    def configure_dummy_acls(self, template_path, dut_ports, num_acls):
+        """Configure dummy ACLs on Cumulus using 'nv set acl' + 'nv config apply'."""
+        for acl_idx in range(num_acls):
+            acl_name = f"DUMMY_ACL_{acl_idx}"
+            self.engine.run_cmd(f"nv set acl {acl_name} type ipv6")
+            src_ipv6 = f"fd00:ffff:ffff:ffff::{acl_idx + 1}/128"
+            self.engine.run_cmd(f"nv set acl {acl_name} rule 1 match ip source-ip {src_ipv6}")
+            self.engine.run_cmd(f"nv set acl {acl_name} rule 1 action deny")
+            for port in dut_ports:
+                self.engine.run_cmd(f"nv set interface {port} acl {acl_name} inbound")
+        self.engine.run_cmd("nv config apply -y")
+
+    def remove_dummy_acls(self):
+        """Remove all ACLs on Cumulus using 'nv unset acl' + 'nv config apply'."""
+        self.engine.run_cmd("nv unset acl")
+        self.engine.run_cmd("nv config apply -y")
 
     def get_configuration_file(self, scenario, conf_args, template_suite=PerfConsts.DEFAULT_PERF_TEMPLATES_DIR):
         func_dict = {"get_right_left_ports_dict": self.get_right_left_ports_dict,

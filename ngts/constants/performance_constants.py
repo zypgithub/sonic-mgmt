@@ -664,6 +664,15 @@ class MRCConsts:
     TC_OCC_ALLOWED_DEVIATION = 0.15
     TC_OCC_ALLOWED_DEVIATION_BISECTION = 1
 
+    # Drop Over Max constants per chip type
+    DROP_OVER_MAX_BY_CHIP_TYPE = {
+        "SPC5": {
+            "packet_size": 3072,
+            "mrc_num_packets": 10,
+            "num_dummy_acls": 25,
+        },
+    }
+
 
 class PowerConsts:
     POWER_TH_PER_ASIC = {

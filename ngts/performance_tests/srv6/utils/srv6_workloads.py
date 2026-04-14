@@ -1,3 +1,4 @@
+import ipaddress
 import os
 import random
 from infra.tools.exceptions.test_issue import TestIssue
@@ -83,6 +84,8 @@ def create_workload1_stream(player_alias, cli_obj, src_ports, dst_port, traffic_
     | Total                 | 13                |
     +------------------------+------------------+
     """
+    mrc1_num_packets = traffic_parameters.get("mrc_num_packets", mrc1_num_packets)
+    mrc2_num_packets = traffic_parameters.get("mrc_num_packets", mrc2_num_packets)
     set_workload_traffic_parameters(cli_obj, traffic_parameters, mloops_dict, src_ports, dst_port,
                                     dut_interfaces_ipv6_configuration_dict, traffic_type)
     get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,
@@ -165,10 +168,21 @@ def get_mrc_data_stream(player_alias, traffic_parameters, src_ports, dst_port,
                         mrc_num_packets, mrc_dscp, rtt_dscp, stream_list,
                         send_roce_ack=False, send_rtt_and_probe_ack=False,
                         congestion=False, stream_num=1, roce_num_packets=2, cnp_num_packets=1):
-    mrc_stream = get_mrc_stream(player_alias, traffic_parameters, mrc_num_packets,
-                                src_ports=src_ports, dst_port=dst_port,
-                                mrc_dscp=mrc_dscp, mrc_stream_name=stream_num)
-    stream_list.append(mrc_stream)
+    if traffic_parameters.get("vary_src_ip"):
+        base_src_ipv6 = ipaddress.ip_address(traffic_parameters["IPV6"]["src"])
+        original_src = traffic_parameters["IPV6"]["src"]
+        for i in range(mrc_num_packets):
+            traffic_parameters["IPV6"]["src"] = str(base_src_ipv6 + i)
+            mrc_stream = get_mrc_stream(player_alias, traffic_parameters, 1,
+                                        src_ports=src_ports, dst_port=dst_port,
+                                        mrc_dscp=mrc_dscp, mrc_stream_name=f"{stream_num}_pkt{i}")
+            stream_list.append(mrc_stream)
+        traffic_parameters["IPV6"]["src"] = original_src
+    else:
+        mrc_stream = get_mrc_stream(player_alias, traffic_parameters, mrc_num_packets,
+                                    src_ports=src_ports, dst_port=dst_port,
+                                    mrc_dscp=mrc_dscp, mrc_stream_name=stream_num)
+        stream_list.append(mrc_stream)
 
     if send_rtt_and_probe_ack:
         rtt_stream = get_rtt_stream(player_alias, traffic_parameters, src_ports, dst_port,
@@ -200,7 +214,9 @@ def set_workload_traffic_parameters(cli_obj, traffic_parameters,
 
 def get_mrc_stream(player_alias, traffic_parameters, mrc_num_packets,
                    src_ports, dst_port, mrc_dscp, mrc_stream_name,
-                   packet_size=MRCConsts.MRC_DATA_PACKET_SIZE, payload=True):
+                   packet_size=None, payload=True):
+    if packet_size is None:
+        packet_size = traffic_parameters.get("mrc_data_packet_size", MRCConsts.MRC_DATA_PACKET_SIZE)
     traffic_parameters["num_packets"] = mrc_num_packets
     traffic_parameters["packet_size"] = packet_size
     mrc_stream = create_srv6_json_traffic_stream(player_alias, traffic_parameters,

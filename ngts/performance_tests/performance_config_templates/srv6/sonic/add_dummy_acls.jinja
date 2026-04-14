@@ -1,0 +1,21 @@
+{
+    "ACL_TABLE": {
+        {% for acl_idx in range(num_acls) %}
+        "DUMMY_ACL_{{acl_idx}}": {
+            "policy_desc": "dummy_acl_{{acl_idx}}_for_pipeline_lookup_stress",
+            "ports": {{ports_list | tojson}},
+            "stage": "ingress",
+            "type": "L3V6"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    },
+    "ACL_RULE": {
+        {% for acl_idx in range(num_acls) %}
+        "DUMMY_ACL_{{acl_idx}}|MISS_RULE_1": {
+            "SRC_IPV6": "fd00:ffff:ffff:ffff::{{acl_idx + 1}}/128",
+            "PACKET_ACTION": "DROP",
+            "PRIORITY": "{{100 + acl_idx}}"
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    }
+}

@@ -231,17 +231,18 @@ class SonicAclCli:
         cmd = f'sonic-db-cli CONFIG_DB del "ACL_TABLE_TYPE|{tbl_type_name}"'
         return self.engine.run_cmd(cmd)
 
-    def load_acl_rules_from_template(self, template_path, template_name, ports_list):
+    def load_acl_rules_from_template(self, template_path, template_name, ports_list, **kwargs):
         """
         Load ACL rules from jinja template
         :param template_path: template path
         :param template_name: template name
         :param ports_list: ports list to apply the acl rules
+        :param kwargs: additional template variables passed to jinja render
         :return: command output
         """
         env = Environment(loader=FileSystemLoader(template_path))
         jinja_template = env.get_template(template_name)
-        template_string = jinja_template.render(ports_list=ports_list)
+        template_string = jinja_template.render(ports_list=ports_list, **kwargs)
         acl_conf = json.loads(template_string)
         acl_file_name = "acl.json"
         full_path = os.path.join("/tmp", acl_file_name)

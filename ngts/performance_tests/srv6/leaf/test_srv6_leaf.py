@@ -1,6 +1,5 @@
 import os
 import allure
-import json
 import logging
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_many_to_few_traffic
 import pytest
@@ -8,7 +7,6 @@ import pandas as pd
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, Validation, stop_traffic,
                                                                 run_traffic, run_validation,
                                                                 add_test_mongo_metadata,
-                                                                update_port_group_in_df,
                                                                 skip_test_on_unsupported_os,
                                                                 skip_performance_test_conditionally, skip_test_on_unsupported_chip_type,
                                                                 set_shaper_on_traffic_gen)
@@ -56,37 +54,66 @@ class TestSRv6Leaf(TestSRv6Base):
 
     @pytest.mark.parametrize("workload", MRCConsts.MRC_REGRESSION_WORKLOADS_LIST)
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
-    def test_bisection_srv6(self, request, traffic_type, workload, packet_size=4096):
+    @pytest.mark.parametrize("is_drop_over_max", [False, True])
+    @pytest.mark.FR_4911232()
+    def test_bisection_srv6(self, request, traffic_type, workload, is_drop_over_max):
         condition, skip_message = get_srv6_tests_skip_condition(self.cli_object, self.chip_type)
         skip_performance_test_conditionally(condition, skip_message)
+        if is_drop_over_max:
+            skip_test_on_unsupported_os(self.cli_object, CliType.NVUE)
         with allure.step(f"Set test correct allure title with {self.ip} parameter"):
             test_name = get_perf_test_name(request)
             num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
             upstream, downstream, port_group_df = get_upstream_downstream_port_group_df(self.players, upstream_ports_num=num_of_ports,
-                                                                                        downstream_ports_num=num_of_ports)
+                                                                                        downstream_ports_num=num_of_ports,
+                                                                                        sequential=is_drop_over_max)
             self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
-            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"bisection",
+            add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: "bisection",
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                                 MongoDbConsts.PORT_GROUP_DF: port_group_df})
 
+        drop_over_max_config = None
+        if is_drop_over_max:
+            drop_over_max_config = MRCConsts.DROP_OVER_MAX_BY_CHIP_TYPE.get(self.chip_type)
+            skip_performance_test_conditionally(drop_over_max_config is None,
+                                                f"Drop Over Max not configured for chip type {self.chip_type}")
+            with allure.step(f"Configure {drop_over_max_config['num_dummy_acls']} dummy ACLs for pipeline lookup stress"):
+                dut_ports = upstream + downstream
+                self.cli_object.performance.configure_dummy_acls(
+                    self.conf_args["template_path"],
+                    dut_ports, drop_over_max_config['num_dummy_acls'])
+
         with allure.step(f"Run bisection traffic pattern on {len(upstream)} upstream ports <-> {len(downstream)} downstream ports"):
             create_workload_stream = get_workload_method(workload)
+            packet_size = drop_over_max_config['packet_size'] if is_drop_over_max else None
+            mrc_num_packets = drop_over_max_config['mrc_num_packets'] if is_drop_over_max else None
             traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                   self.dut_interfaces_ipv6_configuration_dict,
-                                                  create_workload_stream, upstream_ports=upstream, downstream_ports=downstream)
+                                                  create_workload_stream, upstream_ports=upstream, downstream_ports=downstream,
+                                                  packet_size=packet_size, mrc_num_packets=mrc_num_packets,
+                                                  vary_src_ip=is_drop_over_max)
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=self.shaper_value)
             run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
 
-        with allure.step(f"Verifying the traffic for all egress ports"):
-            additional_validations = self.get_additional_validations(traffic_type, tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION_BISECTION)
+        with allure.step("Verifying the traffic for all egress ports"):
+            additional_validations = self.get_additional_validations(traffic_type,
+                                                                     tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION_BISECTION,
+                                                                     drop_over_max_sample_port=upstream[0] if is_drop_over_max else None)
             config = ValidationConfig(players=self.players, test_name=test_name, scenario=self.scenario,
                                       chip_type=self.chip_type,
-                                      bw_threshold=self.get_bisection_bw_threshold(),
+                                      bw_threshold=self.get_bisection_bw_threshold() if not is_drop_over_max else None,
                                       tc_occ_threshold=MRCConsts.OCC_TH_DICT,
                                       power_threshold=self.power_thresholds_by_chip_type,
+                                      run_validate_counters=not is_drop_over_max,
+                                      run_validate_no_drops_on_tg_ports=not is_drop_over_max,
                                       additional_validations=additional_validations)
-            run_validation(config)
+            try:
+                run_validation(config)
+            finally:
+                if is_drop_over_max:
+                    with allure.step("Remove dummy ACLs"):
+                        self.cli_object.performance.remove_dummy_acls()
             set_shaper_on_traffic_gen(self.players, speed=self.conf_args["speed"], shaper_value=MRCConsts.SHAPER_VALUE_AFTER_TEST)
 
     @pytest.mark.parametrize("traffic_type", MRCConsts.REGRESSION_TRAFFIC_TYPE_LIST)
@@ -102,10 +129,10 @@ class TestSRv6Leaf(TestSRv6Base):
                                                                                                          downstream_ports_num=round_robin_ports_num,
                                                                                                          num_of_groups=round_robin_groups_num)
         self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
-        with allure.step(f"Set test configuration description"):
+        with allure.step("Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:
-                                     f"leaf-round-robin",
+                                     "leaf-round-robin",
                                      MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                      MongoDbConsts.PORT_GROUP_DF: port_group_df})
         self.round_robin_traffic_test_runner(test_name, traffic_type, upstream_groups, downstream_groups)
@@ -121,7 +148,7 @@ class TestSRv6Leaf(TestSRv6Base):
         test_name = get_perf_test_name(request)
         egress_port, ingress_ports, port_group_df = self.cli_object.performance.get_leaf_many_to_few_port_group_df(ingress_ports_num, ingress_ports_num)
         self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
-        with allure.step(f"Set test configuration description"):
+        with allure.step("Set test configuration description"):
             add_test_mongo_metadata(test_name, {MongoDbConsts.CONF_NAME: f"{ingress_ports_num}_to_one_traffic",
                                                 MongoDbConsts.TEST_WORKLOAD: workload,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
@@ -139,9 +166,9 @@ class TestSRv6Leaf(TestSRv6Base):
         num_of_ports = MRCConsts.UPSTREAM_DOWNSTREAM_NUM_OF_PORTS_BY_CHIP_TYPE[self.chip_type]
         egress_ports, ingress_ports, port_group_df = self.cli_object.performance.get_leaf_many_to_few_port_group_df(M, num_of_ports)
         self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
-        with allure.step(f"Set test configuration description"):
+        with allure.step("Set test configuration description"):
             add_test_mongo_metadata(test_name,
-                                    {MongoDbConsts.CONF_NAME: f"leaf-many-to-few",
+                                    {MongoDbConsts.CONF_NAME: "leaf-many-to-few",
                                      MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                      MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type,
                                      MongoDbConsts.TEST_WORKLOAD: workload})
@@ -156,36 +183,36 @@ class TestSRv6Leaf(TestSRv6Base):
         skip_test_on_unsupported_chip_type(self.chip_type, "SPC4")
         skip_performance_test_conditionally(isinstance(self.cli_object, NvueCli), "This test is to verify a FW bug, it's not OS related, so it can run on 1 OS and not all")
         test_name = get_perf_test_name(request)
-        with allure.step(f"Set test configuration description"):
+        with allure.step("Set test configuration description"):
             add_test_mongo_metadata(test_name,
                                     {MongoDbConsts.CONF_NAME:
                                      f"leaf-victim-flow-{traffic_type}"})
-        with allure.step(f"Set test correct port group dataframe"):
+        with allure.step("Set test correct port group dataframe"):
             bisection_left, bisection_right, many_to_one_ingress_ports, many_to_one_egress_ports, port_group_df = get_victim_flow_port_group_df(self.players)
             bisection_ports = bisection_left + bisection_right
             self.cli_object.performance.update_port_group_df_on_dut(port_group_df)
             add_test_mongo_metadata(test_name, {MongoDbConsts.PORT_GROUP_DF: port_group_df,
                                                 MongoDbConsts.TEST_TRAFFIC_TYPE: traffic_type})
             allure.attach(pd.DataFrame(port_group_df).to_html(), MongoDbConsts.PORT_GROUP_DF, allure.attachment_type.HTML)
-        with allure.step(f"get bisection traffic json for traffic generators"):
+        with allure.step("get bisection traffic json for traffic generators"):
             bisection_traffic_jsons = get_bisection_traffic(self.players, self.conf_args, traffic_type,
                                                             self.dut_interfaces_ipv6_configuration_dict,
                                                             create_workload_stream=get_workload_method(MRCConsts.MRC2_DATA_ONLY_WORKLOAD_NAME),
                                                             upstream_ports=bisection_left,
                                                             downstream_ports=bisection_right)
-        with allure.step(f"get many to one traffic json for traffic generators"):
+        with allure.step("get many to one traffic json for traffic generators"):
             many_to_one_traffic_jsons = get_many_to_few_traffic(self.players, self.conf_args, traffic_type,
                                                                 self.dut_interfaces_ipv6_configuration_dict,
                                                                 egress_ports=many_to_one_egress_ports,
                                                                 ingress_ports=many_to_one_ingress_ports,
                                                                 create_workload_stream=get_workload_method(MRCConsts.MRC1_DATA_ONLY_WORKLOAD_NAME),
                                                                 congestion=True)
-        with allure.step(f"Clear counters"):
+        with allure.step("Clear counters"):
             self.cli_object.interface.clear_counters()
             self.cli_object.interface.clear_queue_counters()
-        with allure.step(f"run bisection traffic"):
+        with allure.step("run bisection traffic"):
             run_traffic(self.players, self.scenario, bisection_traffic_jsons)
-        with allure.step(f"run many to one traffic"):
+        with allure.step("run many to one traffic"):
             run_traffic(self.players, self.scenario, many_to_one_traffic_jsons)
 
         with allure.step(f"Verifying the traffic for packet size {packet_size}"):
@@ -202,9 +229,9 @@ class TestSRv6Leaf(TestSRv6Base):
                                       samples_params_dict=samples_params_dict,
                                       additional_validations=additional_validations)
             traffic_validation_jsons_list, violations_list = run_validation(config, ignore_violations=True)
-        with allure.step(f"stop traffic"):
+        with allure.step("stop traffic"):
             stop_traffic(self.players)
-        with allure.step(f"validate no dropped packets on queues"):
+        with allure.step("validate no dropped packets on queues"):
             self.cli_object.trimming.validate_trimmed_untrimmed_dropped_percentages(bisection_ports,
                                                                                     trimming_queue=MRCConsts.TRIMMING_TC,
                                                                                     drop_queues=MRCConsts.MRC_DATA_ONLY_WORKLOAD_TC_LIST,

@@ -15,7 +15,7 @@ def skip_test_conditionally(players):
     yield
 
 
-def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstream_ports_num):
+def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstream_ports_num, sequential=False):
     """
     This function creates a port group dataframe for the upstream and downstream groups.
     The ports are selected consecutively from the left and right ports.
@@ -24,13 +24,16 @@ def get_upstream_downstream_port_group_df(players, upstream_ports_num, downstrea
         players: dictionary containing the players
         upstream_ports_num: number of ports in the upstream group
         downstream_ports_num: number of ports in the downstream group
+        sequential: if True, select the first N ports instead of random sampling.
+            This ensures all 8 logical ports of each physical OSFP panel port are utilized.
     Returns:
         upstream: list of ports in the upstream group
         downstream: list of ports in the downstream group
         port_group_df: list of dictionaries containing the port and the port group name
     """
     port_group_df = []
-    upstream, downstream = players['dut']['cli'].performance.get_upstream_downstream_ports_dict(upstream_ports_num, downstream_ports_num)
+    upstream, downstream = players['dut']['cli'].performance.get_upstream_downstream_ports_dict(upstream_ports_num, downstream_ports_num,
+                                                                                                sequential=sequential)
     sdk_port_list_upstream = players['dut']['cli'].performance.get_sdk_ports(upstream)
     sdk_port_list_downstream = players['dut']['cli'].performance.get_sdk_ports(downstream)
     for port in sdk_port_list_upstream:

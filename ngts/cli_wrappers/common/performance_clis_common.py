@@ -54,6 +54,14 @@ class PerformanceCommon:
         self.dut_alias = dut_alias
         self.cli_obj = cli_obj
 
+    def configure_dummy_acls(self, template_path, dut_ports, num_acls):
+        """Configure dummy ACLs for pipeline lookup stress. Must be implemented by child class."""
+        raise NotImplementedError
+
+    def remove_dummy_acls(self):
+        """Remove all dummy ACLs. Must be implemented by child class."""
+        raise NotImplementedError
+
     # Mandatory functions to be implemented by child class
     def get_cmd_for_sdk(self, cmd, env_variables=None):
         """
@@ -631,6 +639,84 @@ class PerformanceCommon:
                               overwrite_file=True, verify_file=False, direction='get')
 
         return _read_sdk_dump_support_gzip(sonic_mgmt_path)
+
+    def get_pg_buffer_attributes_from_sdk_dump(self, sdk_dump_str, port, pg=0):
+        """
+        Parse SDK dump text to extract buffer attributes for a specific port and PG.
+
+        The SDK dump contains pipe-delimited tables per port like:
+            Port Data PGs 0x10001
+            ---...---
+            PG|Pool|Size|HR Size|...|PL Size|...|MBD|
+            ---...---
+             0|   2|   0|   106|...|    106|...|1600|
+
+        Extracts HR Size (headroom size) and MBD (max borrowing depth)
+        for the specified PG from the port's table.
+
+        Args:
+            sdk_dump_str: The SDK dump contents as a string (from create_sdk_dump)
+            port: Port name (e.g. 'Ethernet0') — will be converted to SDK hex port
+            pg: Priority group number (default 0)
+
+        Returns:
+            dict: {'hr_size': int or None, 'mbd': int or None} in cells
+        """
+        sdk_port = self.get_sdk_port(port)
+        port_section_pattern = re.compile(rf'Port Data PGs\s+{re.escape(sdk_port)}\b', re.IGNORECASE)
+
+        result = {'hr_size': None, 'mbd': None, 'max_hr_util': None}
+        required_columns = {'PG', 'HR Size', 'MBD', 'Max HR Util'}
+        lines = sdk_dump_str.splitlines()
+        in_port_section = False
+        header_indices = {}
+
+        for line in lines:
+            if port_section_pattern.search(line):
+                in_port_section = True
+                header_indices = {}
+                continue
+
+            if not in_port_section:
+                continue
+
+            stripped = line.strip()
+
+            # Skip separator lines
+            if stripped.startswith('---'):
+                continue
+
+            columns = [col.strip() for col in stripped.split('|')]
+
+            # Parse header row to find column indices by splitting on '|' first
+            if not header_indices:
+                if required_columns.issubset(set(columns)):
+                    for i, col in enumerate(columns):
+                        header_indices[col] = i
+                    continue
+
+            # Parse data rows once we have the header
+            if header_indices:
+                if not columns or not columns[0]:
+                    continue
+                try:
+                    row_pg = int(columns[header_indices['PG']])
+                except (ValueError, KeyError, IndexError):
+                    # End of table or non-data row — stop searching this port section
+                    in_port_section = False
+                    continue
+                if row_pg == pg:
+                    try:
+                        result['hr_size'] = int(columns[header_indices['HR Size']])
+                        result['mbd'] = int(columns[header_indices['MBD']])
+                        result['max_hr_util'] = int(columns[header_indices['Max HR Util']])
+                    except (ValueError, KeyError, IndexError) as e:
+                        logging.warning(f"Failed to parse PG{pg} buffer attributes for {port}: {e}")
+                    break
+
+        logging.info(f"SDK dump PG buffer attributes for {port} ({sdk_port}) PG{pg}: "
+                     f"hr_size={result['hr_size']}, mbd={result['mbd']}, max_hr_util={result['max_hr_util']}")
+        return result
 
     def write_shared_json(self, key=None, json_path='/tmp', data=None, raise_on_existing=True):
         """

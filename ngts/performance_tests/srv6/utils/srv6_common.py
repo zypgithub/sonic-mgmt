@@ -16,8 +16,8 @@ from ngts.helpers.performance.traffic_helpers import (pick_random_non_consecutiv
 from ngts.helpers.performance.performance_setup_helpers import (Validation, ValidationConfig, run_traffic,
                                                                 stop_traffic, run_validation, configure_mloops,
                                                                 skip_test_on_unsupported_os, add_test_mongo_metadata,
-                                                                set_shaper_on_traffic_gen)
-from ngts.constants.constants import CliType, InfraConst
+                                                                set_shaper_on_traffic_gen, create_sdk_dump)
+from ngts.constants.constants import CliType, InfraConst, BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, MRCConsts, ValidationConsts
 from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import (get_round_robin_traffic, get_many_to_few_traffic, get_many_to_one_traffic)
@@ -26,6 +26,60 @@ from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
+
+
+def validate_drop_over_max_watermark(traffic_json, players, sample_port, violations_list,
+                                     pg_to_validate=0):
+    """
+    Validate that PG headroom max utilization is within the expected range for Drop Over Max.
+
+    Reads HR Size, MBD, and Max HR Util from the SDK dump (sx_api_dbg_generate_dump.py)
+    for the specified lossy PG. Validates:
+    - Max HR Util > HR Size (confirming borrowing is occurring)
+    - Max HR Util < HR Size + MBD (confirming borrowing limit is respected)
+
+    Args:
+        traffic_json: Traffic validation JSON from run_validation (unused, required by validation signature)
+        players: Test players configuration (used to generate SDK dump)
+        sample_port: Port name to read attributes for (e.g. 'Ethernet0')
+        violations_list: List to append violations to
+        pg_to_validate: Priority group number to validate (default 0)
+    """
+    cli_object = players[PerfConsts.DUT_ALIAS]['cli']
+    sdk_dump_path = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                 "sdk_dumps", "srv6", "sdk_dump_drop_over_max")
+    with allure.step("Generate SDK dump and read HR Size, MBD, and Max HR Util"):
+        sdk_dump_str = create_sdk_dump(players, sdk_dump_path)
+        allure.attach(sdk_dump_str, "SDK dump", allure.attachment_type.TEXT)
+        pg_attrs = cli_object.performance.get_pg_buffer_attributes_from_sdk_dump(sdk_dump_str, sample_port,
+                                                                                 pg=pg_to_validate)
+        hr_size = pg_attrs['hr_size']
+        mbd = pg_attrs['mbd']
+        max_hr_util = pg_attrs['max_hr_util']
+        if hr_size is None or mbd is None or max_hr_util is None:
+            violations_list.append(
+                f"Drop Over Max: Failed to parse PG{pg_to_validate} buffer attributes from SDK dump "
+                f"for port {sample_port}. hr_size={hr_size}, mbd={mbd}, max_hr_util={max_hr_util}")
+            return
+
+    upper_limit = hr_size + mbd
+    logger.info(f"Drop Over Max - HR Size: {hr_size}, MBD: {mbd}, Max HR Util: {max_hr_util}, "
+                f"upper_limit: {upper_limit}, sample_port: {sample_port}")
+    allure.attach(f"HR Size: {hr_size} cells\n"
+                  f"MBD: {mbd} cells\n"
+                  f"Max HR Util: {max_hr_util} cells\n"
+                  f"upper_limit (HR Size + MBD): {upper_limit} cells\n"
+                  f"sample_port: {sample_port}",
+                  "Drop Over Max - DUT Buffer Config", allure.attachment_type.TEXT)
+    with allure.step(f"Validate Max HR Util: {hr_size} < {max_hr_util} < {upper_limit}"):
+        if max_hr_util <= hr_size:
+            violations_list.append(
+                f"Drop Over Max: PG{pg_to_validate} Max HR Util ({max_hr_util}) <= "
+                f"HR Size ({hr_size}) for port {sample_port}. Borrowing is not occurring.")
+        if max_hr_util > upper_limit:
+            violations_list.append(
+                f"Drop Over Max: PG{pg_to_validate} Max HR Util ({max_hr_util}) > "
+                f"HR Size + MBD ({upper_limit}) for port {sample_port}. Borrowing limit exceeded.")
 
 
 class TestSRv6Base:
@@ -245,7 +299,8 @@ class TestSRv6Base:
         return {MRCConsts.EGRESS_PORT_GROUP_NAME: {ValidationConsts.MAX_WATERMARK: tc_max_occ_th},
                 MRCConsts.INGRESS_PORT_GROUP_NAME: {}}
 
-    def get_additional_validations(self, traffic_type, tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION):
+    def get_additional_validations(self, traffic_type, tc_occ_allowed_deviation=MRCConsts.TC_OCC_ALLOWED_DEVIATION,
+                                   drop_over_max_sample_port=None):
         additional_validations = {}
         if traffic_type == MRCConsts.TRAFFIC_TYPE_SRV6:
             ipv6_validation_json_path = os.getenv(PerfConsts.TRAFFIC_VALIDATION_JSON_PATH)
@@ -272,6 +327,10 @@ class TestSRv6Base:
                                                                                                                        'latency_keys': [ValidationConsts.TC_AVG_LATENCY],
                                                                                                                        'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
                                                                                                                        'allowed_deviation': MRCConsts.LATENCY_ALLOWED_DEVIATION})
+        if drop_over_max_sample_port is not None:
+            additional_validations['validate_drop_over_max_watermark'] = Validation(
+                validate_drop_over_max_watermark,
+                {'players': self.players, 'sample_port': drop_over_max_sample_port})
         return additional_validations
 
     def get_many_to_few_additional_validations(self, egress_ports, tc_threshold):

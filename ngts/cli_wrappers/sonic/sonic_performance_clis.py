@@ -529,7 +529,7 @@ class SonicPerformanceCli(PerformanceCommon):
             Group 2 (port_number): label port number      (e.g., 1)
             Group 3 (lane_map):    lane bitmap hex        (e.g., 0x01)
         """
-        sdk_port_mapping_cmd = f"sx_api_ports_mapping_dump.py"
+        sdk_port_mapping_cmd = "sx_api_ports_mapping_dump.py"
         sdk_port_mapping_info = self.execute_cmd(self.get_cmd_for_sdk(sdk_port_mapping_cmd))
         regex = r"\|\s+(0x[\d|\w]*)\|\s+\d+\|\s+\d+\|\s+(\d+)\|\s+ENABLED\|\s+\d+\|\s+(0x[\da-fA-F]+)\|\s+\d+\|"
         sdk_port_mapping = re.findall(regex, sdk_port_mapping_info)
@@ -631,17 +631,46 @@ class SonicPerformanceCli(PerformanceCommon):
         right_left_ports_dict = {"left_ports": dut_ports[:middle], "right_ports": dut_ports[middle:]}
         return right_left_ports_dict
 
-    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num):
-        """
+    def get_upstream_downstream_ports_dict(self, upstream_ports_num, downstream_ports_num, sequential=False):
+        """Select upstream (uplink) and downstream (downlink) DUT ports for T0 traffic tests.
+        Ports are taken from the fixed groups in ``MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT``.
+
+        Args:
+            upstream_ports_num: Number of uplink ports to return.
+            downstream_ports_num: Number of downlink ports to return.
+            sequential: If True, take the first ``upstream_ports_num`` / ``downstream_ports_num`` ports
+                from each group in order (deterministic; useful so all logical ports on a physical panel
+                are used as intended). If False, sample ports uniformly at random without replacement.
+
         Returns:
-        A dict of ports in the dut connect to the upstream and downstream TG, i.e,
-        {'upstream_ports': ['Ethernet0', ...,], 'downstream_ports': ['Ethernet256',...]}
+            A tuple ``(upstream, downstream)`` where each element is a list of SONiC interface names
+            (e.g. ``Ethernet0``) for uplinks and downlinks respectively.
         """
         upstream_ports = copy.deepcopy(MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.UPLINKS])
         downstream_ports = copy.deepcopy(MRCConsts.T0_UPSTREAM_DOWNSTREAM_PORT_GROUPS_DICT[MRCConsts.DOWNLINKS])
-        upstream = random.sample(upstream_ports, upstream_ports_num)
-        downstream = random.sample(downstream_ports, downstream_ports_num)
+        if sequential:
+            if len(upstream_ports) < upstream_ports_num:
+                raise TestIssue(f"Not enough upstream ports for sequential selection: "
+                                f"requested {upstream_ports_num}, available {len(upstream_ports)}")
+            if len(downstream_ports) < downstream_ports_num:
+                raise TestIssue(f"Not enough downstream ports for sequential selection: "
+                                f"requested {downstream_ports_num}, available {len(downstream_ports)}")
+            upstream = upstream_ports[:upstream_ports_num]
+            downstream = downstream_ports[:downstream_ports_num]
+        else:
+            upstream = random.sample(upstream_ports, upstream_ports_num)
+            downstream = random.sample(downstream_ports, downstream_ports_num)
         return upstream, downstream
+
+    def configure_dummy_acls(self, template_path, dut_ports, num_acls):
+        """Configure dummy ACLs on SONiC using Jinja template + sonic-cfggen --write-to-db."""
+        self.cli_obj.acl.load_acl_rules_from_template(
+            template_path, "add_dummy_acls.jinja", dut_ports, num_acls=num_acls)
+        self.cli_obj.acl.apply_acl_rules("/tmp/acl.json")
+
+    def remove_dummy_acls(self):
+        """Remove all ACLs on SONiC using acl-loader delete."""
+        self.cli_obj.acl.delete_config()
 
     def get_mloops_tuples_list(self):
         mloops_tuples_list = []

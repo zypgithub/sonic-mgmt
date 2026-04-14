@@ -11,12 +11,25 @@ from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_tg_bisec
 def get_bisection_traffic(players, conf_args, traffic_type,
                           dut_interfaces_ipv6_configuration_dict, create_workload_stream,
                           upstream_ports, downstream_ports,
-                          template_suite="traffic_packets_json_files"):
+                          template_suite="traffic_packets_json_files",
+                          packet_size=None, mrc_num_packets=None, vary_src_ip=False):
+    """Build bisection traffic JSONs for each TG.
+
+    Args:
+        packet_size: If set, MRC data streams use this size. If omitted, MRC data
+            size defaults to ``MRCConsts.MRC_DATA_PACKET_SIZE`` in stream creation.
+        mrc_num_packets: If set, overrides the number of MRC data packets per stream.
+            If omitted, defaults to 6 per MRC class in workload_1.
+        vary_src_ip: If True, each MRC data packet uses a different consecutive src IPv6
+            address so the switch treats each packet as a unique flow.
+    """
     traffic_jsons = {}
     tg_src_dst_port_bisection_pairs_dict = sort_bisection_pairs_by_tg_alias(players, upstream_ports, downstream_ports)
     for tg_alias, bisection_pairs in tg_src_dst_port_bisection_pairs_dict.items():
         get_tg_bisection_traffic_params(players, tg_alias, conf_args, traffic_type, template_suite, create_workload_stream,
-                                        dut_interfaces_ipv6_configuration_dict, traffic_jsons, bisection_pairs)
+                                        dut_interfaces_ipv6_configuration_dict, traffic_jsons, bisection_pairs,
+                                        mrc_data_packet_size=packet_size, mrc_num_packets=mrc_num_packets,
+                                        vary_src_ip=vary_src_ip)
 
     return traffic_jsons
 

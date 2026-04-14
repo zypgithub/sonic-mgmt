@@ -36,6 +36,7 @@ HDLC
 ICMP
 ICMPs
 IGMP
+IGNORECASE
 IO
 IOS
 IP
@@ -190,6 +191,7 @@ flowmon
 forwarder
 frr
 gre
+gzip
 gw
 hardcoded
 hostname
@@ -290,6 +292,7 @@ sonic
 srcip
 srcmac
 stp
+sudo
 subcommand
 subcommands
 subinterface
