@@ -837,6 +837,12 @@ platform_tests/test_cpu_memory_usage.py:
     conditions:
     - "'simx' in platform"
 
+platform_tests/fwutil/test_fwutil.py::test_fwutil_update_current[CPLD:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4970573 for sn6600 platform"
+    conditions:
+      - "https://redmine.mellanox.com/issues/4970573 and ('sn6600_ld' in platform or 'sn5810_ld' in platform)"
+
 platform_tests/fwutil/test_fwutil.py::test_fwutil_update_next:
   skip:
     reason: "Test flow is covered by push gate with upgrade flow"
