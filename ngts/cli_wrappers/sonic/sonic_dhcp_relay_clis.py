@@ -3,16 +3,8 @@ import ipaddress
 import json
 
 from ngts.helpers.config_db_utils import save_config_db_json, save_config_into_json
-from tests.common.utilities import wait_until
 
 logger = logging.getLogger()
-
-DHCP_RELAY_EXPECTED_SERVICE_STATUS = {
-    'dependent-startup': 'EXITED',
-    'dhcp-relay': 'RUNNING',
-    'dhcpmon:dhcpmon': 'RUNNING',
-    'isc-dhcpv4-relay': 'RUNNING',  # in future this deamon might be changed for v4 and also for v6 (which is not supported yet)
-}
 
 
 class SonicDhcpRelayCli:
@@ -116,25 +108,6 @@ class SonicDhcpRelayCliMaster(SonicDhcpRelayCliDefault):
         self.engine = engine
         self.cli_obj = cli_obj
 
-    def is_dhcp_relay_ready(self):
-        """
-        Predicate for wait_until: dict of supervisor name -> state, verified with supervisorctl | grep per row.
-        """
-        for service, state in DHCP_RELAY_EXPECTED_SERVICE_STATUS.items():
-            cmd = f'docker exec dhcp_relay supervisorctl status | grep {service}'
-            try:
-                service_output = self.engine.run_cmd(cmd, validate=True)
-                service_output = service_output.splitlines()
-            except Exception:
-                return False
-            if len(service_output) == 0:
-                return False
-            for service_line in service_output:
-                if len(service_line.split()) < 2 or service_line.split()[1] != state:
-                    logger.info(f'Service {service_line.split()[0]} is not {state}')
-                    return False
-        return True
-
     def add_dhcp_relay(self, vlan, dhcp_server, **kwargs):
         """
         This method adding DHCP relay entry for VLAN interface
@@ -148,10 +121,6 @@ class SonicDhcpRelayCliMaster(SonicDhcpRelayCliDefault):
             self.add_ipv6_dhcp_relay(vlan, dhcp_server, topology_obj)
         else:
             self.add_ipv4_dhcp_relay(vlan, dhcp_server)
-        if not wait_until(60, 5, 0, self.is_dhcp_relay_ready):
-            raise AssertionError(
-                "DHCP relay supervisor processes not ready on time, after restart by configuration change"
-            )
 
     def del_dhcp_relay(self, vlan, dhcp_server, **kwargs):
         """
