@@ -722,8 +722,8 @@ class DvsPerformance(PerformanceCommon):
         This is needed because SPC5 comes up with ports already split after dvs_start.sh
         """
         logging.info("Unsplit all ports")
-        get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
-        self.execute_cmd(get_player_ports_cmd)
+        unsplit_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
+        self.execute_cmd(unsplit_ports_cmd)
         self.update_player_ports()
         self.base_ports, self.ports_lanes = self.get_base_ports()
         self.right_left_ports_dict = self.get_right_left_ports_dict()

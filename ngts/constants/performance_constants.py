@@ -130,6 +130,7 @@ class PerfConsts:
     REQUIRMENTS_DIR = os.path.join(BugHandlerConst.NGTS_PATH, 'performance_tests/')
     SDK_DEB_DIR_TEMPLATE = "/auto/sw_system_release/sx_sdk_eth/sx_sdk_eth-{SDK_VERSION}/DEBS/6.1.0-29-2-amd64/"
     SDK_VERSION_PATH = "/auto/sw_system_release/sx_sdk_eth/"
+    DVS_LATEST_VERSION_FILE = "dvs_latest.properties"
     SDK_INSTALL_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/install_sdk_wrapper.py"
     SDK_DUMP_FILE_SYSTEM = '/var/log/sdk_dbg'
     CLEAN_SWITCH_PATH = "/auto/mswg/projects/sx_mlnx_os/sx_fit_regression/libs/scripts/sx_sdk_clean_logs.py"
@@ -246,8 +247,6 @@ class PerfConsts:
 
     # Images and Grub Paths
     SONIC_GA_IMAGE = "/auto/sw_system_release/sonic/202311/202311/dev/sonic-mellanox.bin"
-    DVS_GA_IMAGE = ("/auto/sw/release/sw_system/sx_mlnx_evb/dvs-os-sonic_4.8.1902_DEV_x86-64-0/"
-                    "dvs-os-sonic_4.8.1902_DEV_LK6.1.123_x86-64_installer.bin")
     SONIC_DVS_GRUB_PATH = 'host'
     GRUB_PATH_DICT = {
         "SONiC": SONIC_DVS_GRUB_PATH,

@@ -14,6 +14,7 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.scripts.sonic_deploy.dvs_only_methods import DvsInstallationSteps
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
 from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
@@ -71,7 +72,6 @@ class DvsGeneralCli(GeneralCliCommon):
         sdk_version = self.get_sdk_version()
         sdk_branch = self.get_sdk_branch(sdk_version)
         self.overlay_perf_sys_sdk_to_sys_sdk(sdk_branch)
-        self.engine.run_cmd(f"{PerfConsts.DVS_RUN_TEST_PATH} -si")
 
     def get_fw_version_from_sdk(self, sdk_version):
         fw_version_path = os.path.join(PerfConsts.SDK_VERSION_PATH, sdk_version, PerfConsts.FW_VERSION_FILE)
@@ -82,8 +82,9 @@ class DvsGeneralCli(GeneralCliCommon):
     def dvs_restart(self):
         logger.info("Performing restart to DVS")
         clean_switch_alias_cmd = f"alias clean_switch={PerfConsts.CLEAN_SWITCH_PATH}"
+        self.engine.run_cmd_set([clean_switch_alias_cmd], validate=True)
         restart_cmd = "dvs_stop.sh && clean_switch && dvs_start.sh --sdk_bridge_mode=HYBRID"
-        self.engine.run_cmd_set([clean_switch_alias_cmd, restart_cmd], validate=True)
+        self.engine.run_cmd(restart_cmd, validate=True)
 
     def apply_mount(self):
         with allure.step("Apply mount and configure switch"):
@@ -128,12 +129,71 @@ class DvsGeneralCli(GeneralCliCommon):
 
     def post_installation_steps(self, context, image_helper=None):
         """Execute DVS post-installation steps"""
-        DvsInstallationSteps.post_installation_steps(context.setup_info['duts'], context.target_version)
+        DvsInstallationSteps.post_installation_steps(context.setup_info['duts'], context.target_version,
+                                                     deploy_sequential=context.deploy_sequential)
+
+    @staticmethod
+    def _bin_path_from_dvs_release_properties(props_path):
+        """Read ``BIN_PATH`` from ``dvs_release.properties``.
+
+        Args:
+            props_path: Absolute path to ``dvs_release.properties``.
+
+        Returns:
+            str: Installer path.
+
+        Raises:
+            ValueError: If the key is missing or the value is empty.
+        """
+        BIN_PATH_KEY = "BIN_PATH"
+        prefix = f"{BIN_PATH_KEY}="
+        with open(props_path, encoding='utf-8', errors='replace') as props_file:
+            for line in props_file:
+                line = line.strip()
+                if line.startswith(prefix):
+                    value = line.split('=', 1)[1].strip()
+                    if not value:
+                        raise ValueError(f"Empty {BIN_PATH_KEY} in {props_path}")
+                    return value
+        raise ValueError(f"{BIN_PATH_KEY} not found in {props_path}")
+
+    @staticmethod
+    def _resolve_dvs_os_installer_path(target_image_url):
+        """Pick DVS OS ONIE installer path from deploy args or default GA image.
+
+        Args:
+            target_image_url: SDK release root (e.g. ``.../sx_sdk_eth/lastrc_master``), resolving
+                symlinks to ``sx_sdk_eth-<ver>`` and reading ``BIN_PATH`` from ``dvs_release.properties``;
+                or a direct path to ``*_installer.bin``; or a directory containing exactly one
+                ``*installer.bin``. Empty uses ``PerfConsts.DVS_GA_IMAGE``.
+                HTTP URLs are normalized to ``/auto/...`` NFS paths.
+
+        Returns:
+            str: NFS-style path passed to ONIE install (wget via nbu-nfs HTTP).
+
+        Raises:
+            ValueError: If ``dvs_release.properties`` exists but ``BIN_PATH`` is missing or empty.
+            AssertionError: If a directory is given but the installer cannot be resolved.
+        """
+        path = str(target_image_url).strip()
+        dir_path = os.path.realpath(path.rstrip('/'))
+        if os.path.isdir(dir_path):
+            props_file = os.path.join(dir_path, PerfConsts.DVS_LATEST_VERSION_FILE)
+            if os.path.isfile(props_file):
+                bin_path = DvsGeneralCli._bin_path_from_dvs_release_properties(props_file)
+                logger.info(f"Using BIN_PATH from {props_file}: {bin_path}")
+                return bin_path
+        return path
 
     def deploy_image_steps(self, topology_obj, setup_name, platform_params, image_url, deploy_type,
                            apply_base_config, reboot_after_install, is_shutdown_bgp, fw_pkg_path,
-                           target_image_url='', destination_hwsku=None, setup_info=None, dut_alias=None,
+                           target_image_url, destination_hwsku=None, setup_info=None, dut_alias=None,
                            fanout_deploy_threads=None, serial_log_analyzers=None, dut_ip='',
                            fanout_target_version=None):
-        """Execute DVS deploy image steps"""
-        self.deploy_image(PerfConsts.DVS_GA_IMAGE, topology_obj, dut_alias)
+        """Execute DVS deploy image steps.
+
+        Uses ``target_image_url`` (SDK root like ``.../sx_sdk_eth/lastrc_master``) when set
+        """
+        dvs_image_path = self._resolve_dvs_os_installer_path(target_image_url)
+        logger.info(f"DVS deploy installer path: {dvs_image_path}")
+        self.deploy_image(dvs_image_path, topology_obj, dut_alias)
