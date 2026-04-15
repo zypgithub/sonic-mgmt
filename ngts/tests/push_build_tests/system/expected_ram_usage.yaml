@@ -146,7 +146,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 380
-    orchagent: 90
+    orchagent: 118
     thermalctld: 107
     telemetry: 90
     dialout: 90
@@ -155,7 +155,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 1600
     syncd: 350
-    orchagent: 90
+    orchagent: 118
     thermalctld: 107
     telemetry: 90
     dialout: 90
@@ -166,7 +166,7 @@ master:
     syncd: 380
     sonic_ax_impl: 60
     redis: 80
-    orchagent: 90
+    orchagent: 118
     thermalctld: 107
     telemetry: 100
     dialout: 90
@@ -178,7 +178,7 @@ master:
     syncd: 380
     sonic_ax_impl: 60
     redis: 80
-    orchagent: 100
+    orchagent: 128
     thermalctld: 107
     telemetry: 100
     dialout: 90

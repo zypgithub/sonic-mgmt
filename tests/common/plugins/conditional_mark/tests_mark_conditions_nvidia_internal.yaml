@@ -336,9 +336,11 @@ tests/push_build_tests/system/test_cpu_ram_hdd_usage.py::TestCpuRamHddUsage::tes
     conditions:
     - "'simx' in platform"
   xfail:
-    reason: "Testcase ignored due to RM issue:https://redmine.mellanox.com/issues/4970711"
+    reason: "Testcase ignored due to RM issues"
+    conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4970711"
+    - "https://redmine.mellanox.com/issues/4975253"
 
 tests/push_build_tests/L3/evpn_vxlan/test_evpn_vxlan.py:
   skip:
