@@ -166,6 +166,11 @@ def test_acl_ipv6(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
         pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
+    TestToolkit.tested_api = random_api
+    # Check if DUT has IPv6 configured before running the test
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    switch_ipv6_addr = IpTool.verify_ipv6_available(mgmt_port_name)
+
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'
         ipv6_prefix_or_netmask = sonic_mgmt_ipv6_addr + '/64'
