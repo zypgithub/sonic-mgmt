@@ -3,6 +3,7 @@ import ipaddress
 import json
 
 from ngts.helpers.config_db_utils import save_config_db_json, save_config_into_json
+from tests.common.utilities import wait_until
 
 logger = logging.getLogger()
 
@@ -108,6 +109,14 @@ class SonicDhcpRelayCliMaster(SonicDhcpRelayCliDefault):
         self.engine = engine
         self.cli_obj = cli_obj
 
+    def is_dhcp_relay_ready(self):
+        cmd = 'docker exec dhcp_relay supervisorctl status | grep dhc | awk \'{print $2}\''
+        output = self.engine.run_cmd(cmd, validate=True).splitlines()
+        is_ready = len(output) != 0 and all(element == 'RUNNING' for element in output)
+        if not is_ready:
+            logger.info(f'DHCP relay is not ready: {output}')
+        return is_ready
+
     def add_dhcp_relay(self, vlan, dhcp_server, **kwargs):
         """
         This method adding DHCP relay entry for VLAN interface
@@ -121,6 +130,10 @@ class SonicDhcpRelayCliMaster(SonicDhcpRelayCliDefault):
             self.add_ipv6_dhcp_relay(vlan, dhcp_server, topology_obj)
         else:
             self.add_ipv4_dhcp_relay(vlan, dhcp_server)
+        if not wait_until(80, 5, 0, self.is_dhcp_relay_ready):
+            raise AssertionError(
+                "DHCP relay supervisor processes not ready on time, after restart by configuration change"
+            )
 
     def del_dhcp_relay(self, vlan, dhcp_server, **kwargs):
         """
