@@ -132,5 +132,15 @@ class TransceiversConsts:
             upgrade_version_number="47.230.18",
             downgrade_version_number="47.230.14",
             installation_time=60
+        ),
+        '110': Transceiver(
+            transceiver_type='Wolverine2-sian3',
+            last_release_path=f"{TRANSCEIVERS_FIRMWARES_PATH}980-9IAU6-00XM0M/{TRANSCEIVERS_RELEASE}",
+            test_versions_path=f"{TRANSCEIVERS_APPROVED_FIRMWARES_PATH}980-9IAU6-00XM0M/",
+            upgrade_version_name="fw_110_030_00079_dev_signed.bin",
+            downgrade_version_name="fw_110_030_00046_dev_signed.bin",
+            upgrade_version_number="110.30.79",
+            downgrade_version_number="110.30.46",
+            installation_time=240
         )
     }

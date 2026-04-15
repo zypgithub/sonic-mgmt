@@ -81,8 +81,8 @@ def test_reset_transceiver_firmware_positive(engines, test_api):
         default_fw = OutputParsingTool.parse_json_str_to_dictionary(default_output).verify_result()[PlatformConsts.FW_ACTUAL]
         platform.transceiver.action_reset(random_transceiver).verify_result()
 
-        with allure.step("sleep for 10 sec - waiting for after reset action"):
-            time.sleep(10)
+        with allure.step("sleep for 15 sec - waiting for after reset action"):
+            time.sleep(15)
 
         with allure.step(f"verify all {random_transceiver} fields back to the same values"):
             output_after_reset = OutputParsingTool.parse_json_str_to_dictionary(output_json=platform.transceiver.show(random_transceiver + ' firmware')).verify_result()
