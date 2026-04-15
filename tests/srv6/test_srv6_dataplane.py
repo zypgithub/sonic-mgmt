@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 pytestmark = [
     pytest.mark.asic("mellanox", "broadcom", "vpp"),
-    pytest.mark.topology("t0", "t1")
+    pytest.mark.topology("t0", "t1"),
+    pytest.mark.disable_memory_utilization
 ]
 
 
