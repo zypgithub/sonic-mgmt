@@ -252,7 +252,9 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     engines.sonic_mgmt.run_cmd(f"sudo rm -f {file_path}")
 
             with allure.step("Restore log level"):
-                cluster.apps.app_name[app].loglevel.action_restore_cluster()
+                for app in devices.dut.expected_cluster_apps:
+                    if app in log_levels:
+                        cluster.apps.app_name[app].loglevel.action_restore_cluster()
 
             if interface_wa_called:
                 try:
