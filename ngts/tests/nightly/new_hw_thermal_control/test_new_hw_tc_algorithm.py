@@ -26,22 +26,39 @@ class TestNewTc:
         self.dut_engine = engines.dut
         self.topology_obj = topology_obj
 
+    def _wait_tc_loop_resume(self, retries=30):
+        """Wait for the hw-management TC loop to exit suspend mode.
+
+        After the suspend file is removed, the TC loop needs up to one
+        iteration cycle to detect the change and drive PWM back to
+        sensor-driven levels.  Poll until PWM drops below 100 %.
+        """
+        for _ in range(retries):
+            pwm = get_pwm(MockSensors(self.dut_engine, self.cli_objects))
+            if pwm < TC_CONST.PWM_MAX_PERCENT:
+                logger.info(f"TC loop resumed, PWM={pwm}")
+                return
+            time.sleep(1)
+        logger.warning(f"TC loop did not resume within {retries} retries, PWM still at 100%")
+
     def _stop_thermal_services(self):
         """
         Stop services that write asic/module temperature sysfs files, so that
         mocked values are not overwritten. Only needed for asic/module sensors.
 
         thermalctld creates a suspend file on stop — we remove it via
-        resume_thermal_control() so the TC loop stays in RUNNING state.
+        resume_thermal_control() and wait for the TC loop to stabilize so
+        PWM is back to sensor-driven levels before the test begins.
 
         Must NOT be called when testing cpu_pack/ambient sensors: stopping
         thermalctld causes module temp files to go stale, triggering TC loop
         total_err_cnt >= 2 protection which locks PWM at 100%.
         """
         self.dut_engine.run_cmd("docker exec pmon supervisorctl stop thermalctld")
-        self.cli_objects.dut.hw_mgmt.resume_thermal_control()
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-sync")
         self.dut_engine.run_cmd("sudo systemctl stop hw-management-thermal-updater")
+        self.cli_objects.dut.hw_mgmt.resume_thermal_control()
+        self._wait_tc_loop_resume()
 
     def _start_thermal_services(self):
         """Restart services stopped by _stop_thermal_services()."""
