@@ -906,7 +906,7 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
-            validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
+            validate_interface_ip_address(engines.dut.ip, ipv4_output, validate_in=True, run_show=True, mgmt_port=mgmt_port)
             NvueGeneralCli.save_config(engine=serial_engine)
 
 
