@@ -443,6 +443,16 @@ def validate_dump_file_content(duthost, dump_folder_path, is_bmc_present):
     assert len(log), "Folder 'log' in dump archive is empty. Expected not empty folder"
     assert "interface.xcvrs.eeprom.raw" in dump, "EEPROM hexdump no exist in the dump"
 
+    # Check SSD dump for platforms with NVME device
+    if duthost.facts['asic_type'] in ["mellanox"]:
+        nvme_check = duthost.shell("ls /dev/nvme0 2>/dev/null", module_ignore_errors=True)
+        if nvme_check["rc"] == 0:
+            assert "ssd.dump" in dump, \
+                "SSD dump file (ssd.dump) not found in dump folder of techsupport archive"
+            ssd_dump_path = "{}/dump/ssd.dump".format(dump_folder_path)
+            ssd_size = int(duthost.command("stat -c '%s' {}".format(ssd_dump_path))["stdout"].strip())
+            assert ssd_size > 0, "SSD dump file exists but is empty"
+
 
 def add_asic_arg(format_str, cmds_list, asic_num):
     """
