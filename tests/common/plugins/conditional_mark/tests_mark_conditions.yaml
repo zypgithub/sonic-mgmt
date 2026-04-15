@@ -210,7 +210,7 @@ arp/test_arp_update.py::test_ptf_arp_learns_mac:
     conditions_logical_operator: or
     conditions:
       - "'dualtor' in topo_name"
-      - "'-v6-' in topo_name and 'https://github.com/sonic-net/sonic-mgmt/issues/23560'"
+      - "'-v6-' in topo_name and https://github.com/sonic-net/sonic-mgmt/issues/23560"
 
 arp/test_neighbor_mac_noptf.py:
   skip:
