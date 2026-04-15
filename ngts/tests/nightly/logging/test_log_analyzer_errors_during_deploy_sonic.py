@@ -51,6 +51,17 @@ def dut_host(engines, flavor, topology_obj):
         return engines.dut
 
 
+@pytest.fixture(scope="session", autouse=True)
+def run_only_once():
+    indicator_path = "/tmp/test_log_analyzer_errors_during_deploy_sonic_done"
+    if os.path.exists(indicator_path):
+        pytest.skip("Skip the test because it has already been run once before")
+
+    yield
+
+    os.system(f"touch {indicator_path}")
+
+
 @pytest.mark.loganalyzer_hosts(include='dpu')
 def test_check_errors_in_log_during_deploy_sonic_image(dut_host, request, loganalyzer, flavor, topology_obj):
     """
