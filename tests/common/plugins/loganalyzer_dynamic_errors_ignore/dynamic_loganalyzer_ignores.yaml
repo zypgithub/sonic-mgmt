@@ -919,6 +919,16 @@
     - 3272016
 
 - Errors_list:
+  - '.* ERR syncd#SDK: \[CORE_API.ERR\] client_pid=\d*, The estimated buffer size\[\d*\] are bigger than received buffer size\[\d*\]'
+  - '.* ERR wjhd\[\d*\]: \[WJH_LIB.ERROR\s+\]: sx_acl_helper_acl_description_get failed, acl_id: \(\d*\), rule_id: \(\d*\), error.*'
+  - '.* INFO supervisord: wjhd .* ERROR\s+SX_API_ACL: client_pid=\d*, sx_api_send_command_wrapper failed rc = Command Error.*'
+  - '.* INFO supervisord: wjhd .* ERROR\s+SX_ACL_HELPER: client_pid=\d*, Failed to get rules.*'
+  - '.* ERR wjhd\[\d*\]: \[WJH_LIB.ERROR\s+\]: __wjh_acl_attributes_get failed, err:.*'
+  Conditions:
+  - Affected_test_cases:
+    - show_techsupport/test_techsupport.py::test_techsupport\[acl
+
+- Errors_list:
   - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/timeout - FileNotFoundError.*No such file or directory.*'
   - '.*ERR watchdogutil: Failed to read from file /run/hw-management/watchdog/main/state - FileNotFoundError.*No such file or directory*'
   Conditions:
