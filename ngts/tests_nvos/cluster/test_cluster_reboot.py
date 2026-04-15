@@ -122,12 +122,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
         cluster.unset(apply=True)
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
