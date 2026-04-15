@@ -8,7 +8,7 @@ from tests.common.helpers.platform_api import sfp
 from tests.common.utilities import skip_release
 from tests.common.utilities import skip_release_for_platform
 from tests.common.platform.interface_utils import get_physical_port_indices
-from tests.common.platform.interface_utils import check_interface_status_of_up_ports
+from tests.common.platform.interface_utils import check_interface_status_of_up_ports, get_port_indexes_with_flat_memory
 from tests.common.port_toggle import default_port_toggle_wait_time, WAIT_TIME_AFTER_INTF_SHUTDOWN
 from tests.common.platform.transceiver_utils import I2C_WAIT_TIME_AFTER_SFP_RESET
 from tests.common.utilities import wait_until
@@ -75,6 +75,7 @@ def setup(request, duthosts, enum_rand_one_per_hwsku_hostname,
         pytest.skip("skip the tests due to no spf port")
     sfp_setup["sfp_test_port_indices"] = sorted(sfp_port_indices)
 
+
     # Fetch SFP names from platform.json
     sfp_fact_names = []
     sfp_fact_list = duthost.facts.get("chassis").get("sfps")
@@ -85,6 +86,7 @@ def setup(request, duthosts, enum_rand_one_per_hwsku_hostname,
     if request.cls is not None:
         request.cls.sfp_setup = sfp_setup
 
+    sfp_setup["indexes_with_flat_memory"] = get_port_indexes_with_flat_memory(duthost)
 
 @pytest.mark.usefixtures("setup")
 class TestSfpApi(PlatformApiTestBase):
@@ -362,15 +364,18 @@ class TestSfpApi(PlatformApiTestBase):
             return 0.3
         return 0
 
-    def is_xcvr_support_lpmode(self, xcvr_info_dict):
+    def is_xcvr_support_lpmode(self, xcvr_info_dict, port_index=None):
         """Returns True if transceiver is support low power mode, False if not supported"""
         xcvr_type = xcvr_info_dict["type"]
         # Amphenol 800G Backplane cartridge does not support lpmode.
         if xcvr_type == "Backplane Cartridge" and xcvr_info_dict['manufacturer'].rstrip() == "Amphenol":
             return False
 
-        ext_identifier = xcvr_info_dict["ext_identifier"]
-        if ("QSFP" not in xcvr_type and "OSFP" not in xcvr_type) or "Power Class 1" in ext_identifier:
+        if port_index is not None and port_index in self.sfp_setup["indexes_with_flat_memory"]:
+            logger.info("Skipping lpmode test for transceiver {} as it is in flat memory".format(port_index))
+            return False
+
+        if ("QSFP" not in xcvr_type and "OSFP" not in xcvr_type):
             return False
 
         # Temporarily add this logic to skip lpmode test for some transceivers with known issue
@@ -415,7 +420,7 @@ class TestSfpApi(PlatformApiTestBase):
                 continue
 
             info_dict = port_index_to_info_dict[sfp_port_idx]
-            if self.is_xcvr_support_lpmode(info_dict):
+            if self.is_xcvr_support_lpmode(info_dict, sfp_port_idx):
                 logger.info("Flapping interface {} - xcvr supports lpmode and needs to be flapped".format(intf))
                 interfaces_to_flap.append(intf)
         return interfaces_to_flap
@@ -567,7 +572,6 @@ class TestSfpApi(PlatformApiTestBase):
                                             localhost, platform_api_conn, port_list_with_flat_memory):  # noqa: F811
         duthost = duthosts[enum_rand_one_per_hwsku_hostname]
         skip_release_for_platform(duthost, ["202012"], ["arista", "mlnx"])
-
         index_physical_port_map = {port: index for index, port in self.sfp_setup["physical_port_index_map"].items()}
         for i in self.sfp_setup["sfp_test_port_indices"]:
             if index_physical_port_map[i] in port_list_with_flat_memory[duthost.hostname]:
@@ -799,32 +803,6 @@ class TestSfpApi(PlatformApiTestBase):
                             "Transceiver {} TX power data appears incorrect".format(i))
         self.assert_expectations()
 
-    def get_interfaces_to_flap_after_sfp_reset(self, port_index_to_info_dict, duthost):
-        intf_list = []
-        admin_up_port_list = set(duthost.get_admin_up_ports())
-        for intf in self.sfp_setup['conn_interfaces']:
-            logger.info("Processing interface {} for flap after SFP reset".format(intf))
-            if intf not in admin_up_port_list:
-                # skip interfaces which are not in admin up state.
-                logger.info("Skipping interface {} as it is not in admin up state".format(intf))
-                continue
-
-            # skip if info_dict is not retrieved during reset, which also means reset was not performed.
-            sfp_port_idx = self.sfp_setup['physical_port_index_map'][intf]
-            if sfp_port_idx not in port_index_to_info_dict:
-                logger.info("Skipping interface {} as SFP reset was not performed on port index {}".format(intf, sfp_port_idx))
-                continue
-
-            info_dict = port_index_to_info_dict[sfp_port_idx]
-
-            # If the xcvr supports low-power mode then it needs to be flapped
-            # to come out of low-power mode after sfp_reset().
-            if self.is_xcvr_support_lpmode(info_dict):
-                logger.info("Flapping interface {} as it has CMIS optics".format(intf))
-                intf_list.append(intf)
-            else:
-                logger.info("Skipping interface {} as it does not have CMIS optics".format(intf))
-        return intf_list
 
     def test_reset(self,
                    request,
@@ -965,7 +943,7 @@ class TestSfpApi(PlatformApiTestBase):
             if not self.expect(info_dict is not None, "Unable to retrieve transceiver {} info".format(i)):
                 continue
 
-            if not self.is_xcvr_support_lpmode(info_dict):
+            if not self.is_xcvr_support_lpmode(info_dict, i):
                 logger.warning(
                     "test_lpmode: Skipping transceiver {} (not applicable for this transceiver type)"
                     .format(i))

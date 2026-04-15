@@ -660,7 +660,7 @@ def test_check_sfputil_reset(duthosts, enum_rand_one_per_hwsku_frontend_hostname
 
 def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend_hostname,
                                       enum_frontend_asic_index, conn_graph_facts,
-                                      tbinfo, xcvr_skip_list, shutdown_ebgp):   # noqa: F811
+                                      tbinfo, xcvr_skip_list, shutdown_ebgp, port_list_with_flat_memory):   # noqa: F811
     """
     @summary: Check SFP low power mode
 
@@ -704,7 +704,6 @@ def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend
 
     not_supporting_lpm_physical_ports = set()
     sfp_type_data = get_sfp_module_type(duthost, dev_conn)
-    power_class_data = get_power_class(duthost, dev_conn)
     for intf in dev_conn:
         if intf not in xcvr_skip_list[duthost.hostname]:
             phy_intf = portmap[intf][0]
@@ -713,8 +712,8 @@ def test_check_sfputil_low_power_mode(duthosts, enum_rand_one_per_hwsku_frontend
                     "skip tested SFPs {} to avoid repeating operating physical interface {}".format(intf, phy_intf))
                 continue
             sfp_type = sfp_type_data[intf]
-            power_class = power_class_data[intf]
-            if ("QSFP" not in sfp_type and "OSFP" not in sfp_type) or "Power Class 1" in power_class:
+            if ("QSFP" not in sfp_type and "OSFP" not in sfp_type) \
+                or intf in port_list_with_flat_memory[duthost.hostname]:
                 logging.info("skip testing port {} which doesn't support LPM".format(intf))
                 not_supporting_lpm_physical_ports.add(phy_intf)
                 continue
