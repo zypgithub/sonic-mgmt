@@ -1,6 +1,8 @@
 import logging
 import os
 
+from ngts.nvos_tools.system.System import System
+
 logger = logging.getLogger()
 
 
@@ -16,17 +18,28 @@ class CumulusInstallationSteps:
         Post-installation steps for NVOS NOS
             Update /etc/sudoers file to permit NOPASSWD for sudo
         """
-        cl_password = os.getenv("CUMULUS_SWITCH_PASSWORD")
         root_password = os.getenv("CUMULUS_ROOT_PASSWORD")
         for dut in setup_info['duts']:
             logging.info("Updating /etc/sudoers file to permit NOPASSWD for sudo")
-            dut['engine'].run_cmd_set(["sudo sed -i --follow-symlinks 's/%sudo.*ALL=(ALL:ALL) ALL/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers",
-                                       cl_password], patterns_list=["password_for_cumulus"])
-            logging.info("Updated /etc/sudoers file to permit NOPASSWD for sudo")
-            logging.info("Permitting root login for dut")
-            dut['engine'].run_cmd_set(["sudo passwd root", root_password, root_password], patterns_list=["New password", "Retype new password", "passwd: password updated successfully"])
-            dut['engine'].run_cmd_set(["nv set system ssh-server permit-root-login enabled", "nv config apply -y"], patterns_list=["applied_and_saved"])
-            logging.info("Root login for dut enabled")
+            dut['cli_obj'].update_sudoers_nopasswd()
+            logging.info("Updated and verified /etc/sudoers file to permit NOPASSWD for sudo")
+            if root_password:
+                logging.info("Permitting root login for dut")
+                dut['engine'].run_cmd_set(
+                    ["sudo passwd root", root_password, root_password],
+                    patterns_list=["New password", "Retype new password", "passwd: password updated successfully"]
+                )
+                system = System()
+                system.ssh_server.set(
+                    'permit-root-login',
+                    'enabled',
+                    dut_engine=dut['engine'],
+                    apply=True,
+                    ask_for_confirmation='-y'
+                ).verify_result()
+                logging.info("Root login for dut enabled")
+            else:
+                logging.warning("CUMULUS_ROOT_PASSWORD is not set; skipping root password and root SSH login configuration")
             logging.info("Updating /etc/apt/sources.list")
             CumulusInstallationSteps.update_apt_sources_list(dut)
             if is_performance:

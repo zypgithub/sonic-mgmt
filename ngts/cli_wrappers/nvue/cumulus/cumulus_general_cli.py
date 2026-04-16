@@ -2,9 +2,11 @@ import logging
 import re
 import os
 import glob
+import shlex
 import time
 import pexpect
 from retry import retry
+from infra.tools.general_constants.constants import DefaultConnectionValues
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import NvosConst
@@ -159,13 +161,39 @@ class CumulusGeneralCli(NvueGeneralCli):
             sudoers_content = self.read_file('/etc/sudoers', is_sudo=True)
             assert "cumulus ALL=(ALL) NOPASSWD: ALL" in sudoers_content, "Failed to add cumulus user to sudoers file"
 
-    def update_sudoers_nopasswd(self):
-        """Replace %sudo line in /etc/sudoers to add NOPASSWD so sudo does not prompt for password."""
-        with allure.step('Update sudoers: NOPASSWD for %sudo group'):
-            self.engine.run_cmd(
-                f'echo "{self.engine.password}" | sudo -S '
-                'sed -i "s/^%sudo\\s\\+ALL=(ALL:ALL) ALL/%sudo  ALL=(ALL:ALL) NOPASSWD: ALL/" /etc/sudoers'
+    def _run_ssh_sudo_cmd(self, command, timeout=10):
+        prompt_regex = DefaultConnectionValues.DEFAULT_PROMPT_REGEX
+        password_regex = DefaultConnectionValues.PASSWORD_REGEX
+        expected_string = f'({password_regex}|{prompt_regex})'
+
+        output = self.engine.send_cmd_with_retry(
+            cmd=f'sudo {command}',
+            timeout=timeout,
+            normalize=True,
+            auto_find_prompt=False,
+            expected_string=expected_string
+        )
+        if re.search(password_regex, output):
+            output += self.engine.send_cmd_with_retry(
+                cmd=self.engine.password,
+                timeout=timeout,
+                normalize=True,
+                auto_find_prompt=False,
+                expected_string=f'({prompt_regex})'
             )
+        return self.engine.validate_command(output)
+
+    def update_sudoers_nopasswd(self):
+        """Replace %sudo line in /etc/sudoers and verify passwordless sudo is active."""
+        with allure.step('Update sudoers: NOPASSWD for %sudo group'):
+            self._run_ssh_sudo_cmd(
+                "sed -i --follow-symlinks -E "
+                "'s/^[[:space:]]*%sudo[[:space:]]+ALL=\\((ALL|ALL:ALL)\\)[[:space:]]+ALL[[:space:]]*$/%sudo ALL=(ALL:ALL) NOPASSWD: ALL/I' "
+                "/etc/sudoers",
+                timeout=10
+            )
+            self.engine.run_cmd('sudo -k', validate=True)
+            self.engine.run_cmd('sudo -n true', validate=True)
 
     def init_telemetry_keys(self):
         pass
@@ -221,6 +249,13 @@ class CumulusGeneralCli(NvueGeneralCli):
             login_prompt_pointer = 4
             grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN, GrubMenuTool.GRUB_SHELL_PATTERN, 'login:']
             all_patterns = grub_menu_patterns + SecureBootConsts.INVALID_SIGNATURE
+            respond = self._wait_for_grub_with_key_spam(serial_engine, all_patterns, timeout=240)
+
+        if respond == login_prompt_pointer:
+            with allure.step('Missed GRUB menu, retry from Cumulus login prompt'):
+                self._reboot_to_onie_from_cumulus(serial_engine, topology_obj, dut_alias, onie_menu_entry)
+                return
+
         if respond != onie_menu_pointer:
             if respond == cumulus_esc_pointer:
                 with allure.step('Grub menu new style handle'):
@@ -269,19 +304,54 @@ class CumulusGeneralCli(NvueGeneralCli):
         with allure.step('Try to set GRUB to boot ONIE on next reboot'):
             try:
                 logger.info("Trying to set GRUB to boot ONIE on next reboot via grub-reboot")
-                # Try different possible ONIE entry names
-                for onie_entry in ['ONIE', 'ONIE>ONIE: Install OS', '2', '2>0']:
+                # Prefer the explicit install entry; generic "ONIE" may boot rescue on some systems.
+                for onie_entry in ['ONIE>ONIE: Install OS', 'ONIE: Install OS', '2>0', '2', 'ONIE']:
                     try:
-                        output = self.engine.run_cmd(f'sudo grub-reboot "{onie_entry}"', timeout=10)
-                        if 'error' not in output.lower() and 'not found' not in output.lower():
-                            logger.info(f"Successfully set grub-reboot to '{onie_entry}'")
-                            return True
-                    except Exception:
-                        continue
+                        quoted_entry = shlex.quote(onie_entry)
+                        self.engine.run_cmd(f'sudo -n grub-reboot {quoted_entry}', validate=True, timeout=10)
+                        logger.info(f"Successfully set grub-reboot to '{onie_entry}'")
+                        return True
+                    except Exception as err:
+                        logger.info("Failed to set grub-reboot to '%s': %s", onie_entry, err)
                 logger.info("grub-reboot command not available or failed - will rely on manual GRUB navigation")
             except Exception as e:
                 logger.info(f"Could not set grub-reboot: {e} - will rely on manual GRUB navigation")
             return False
+
+    def _run_serial_sudo_cmd(self, serial_engine, command, login_password, timeout=10):
+        password_patterns = [r'\[sudo\].*[Pp]assword.*:', r'[Pp]assword.*:']
+        prompt_patterns = ['\\$', '#', 'cumulus@']
+        expected_patterns = password_patterns + prompt_patterns
+
+        output, respond = serial_engine.run_cmd(f'sudo {command}', expected_patterns, timeout=timeout)
+        if respond >= len(password_patterns):
+            return output
+
+        password_output, respond = serial_engine.run_cmd(login_password, expected_patterns, timeout=timeout)
+        output += password_output
+        if respond < len(password_patterns):
+            raise RuntimeError(f"sudo password prompt repeated while running '{command}' over serial")
+        return output
+
+    def _trigger_serial_sudo_reboot(self, serial_engine, login_password, timeout=5):
+        password_patterns = [r'\[sudo\].*[Pp]assword.*:', r'[Pp]assword.*:']
+        prompt_patterns = ['\\$', '#', 'cumulus@']
+        expected_patterns = password_patterns + prompt_patterns
+
+        try:
+            output, respond = serial_engine.run_cmd('sudo reboot', expected_patterns, timeout=timeout)
+        except (pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF):
+            return
+        if respond < len(password_patterns):
+            try:
+                password_output, respond = serial_engine.run_cmd(login_password, expected_patterns, timeout=timeout)
+            except (pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF):
+                return
+            output += password_output
+            if respond < len(password_patterns):
+                raise RuntimeError("sudo password prompt repeated while rebooting over serial")
+
+        raise RuntimeError(f"'sudo reboot' returned to shell instead of rebooting: {output.strip()}")
 
     def _wait_for_grub_with_key_spam(self, serial_engine, patterns, timeout=240):
         '''
@@ -319,24 +389,64 @@ class CumulusGeneralCli(NvueGeneralCli):
             logger.info("Logging into Cumulus to set grub-reboot and trigger reboot to ONIE")
 
             # Login to Cumulus via serial
+            login_password = self.device.default_password
             try:
                 serial_engine.run_cmd(self.device.default_username, ['[Pp]assword:'], timeout=10)
                 serial_engine.run_cmd(self.device.default_password, ['\\$', '#', 'cumulus@'], timeout=10)
             except Exception as e:
                 logger.warning(f"Login with default password failed: {e}, trying alternate passwords")
                 try:
+                    login_password = self.device.manufacture_password
                     serial_engine.run_cmd(self.device.manufacture_password, ['\\$', '#', 'cumulus@'], timeout=10)
                 except Exception:
                     logger.error("Failed to login to Cumulus - cannot proceed with grub-reboot method")
                     raise
 
             # Set grub-reboot to ONIE
-            logger.info("Setting grub-reboot to ONIE")
-            serial_engine.run_cmd('sudo grub-reboot ONIE', ['\\$', '#'], timeout=10)
+            logger.info("Setting grub-reboot to ONIE install entry")
+            install_entries = ['ONIE>ONIE: Install OS', 'ONIE: Install OS', '2>0', '2', 'ONIE']
+            grub_reboot_set = False
+            for onie_entry in install_entries:
+                try:
+                    self._run_serial_sudo_cmd(
+                        serial_engine,
+                        f'grub-reboot {shlex.quote(onie_entry)}',
+                        login_password,
+                        timeout=10
+                    )
+                    grub_env_output = self._run_serial_sudo_cmd(
+                        serial_engine,
+                        'grub-editenv list',
+                        login_password,
+                        timeout=10
+                    )
+                except (pexpect.exceptions.TIMEOUT, pexpect.exceptions.EOF) as err:
+                    logger.warning(
+                        "Transient serial failure while trying grub-reboot entry '%s': %s. "
+                        "Trying the next ONIE entry.",
+                        onie_entry,
+                        err
+                    )
+                    continue
+                normalized_grub_env = grub_env_output.replace('"', '').lower()
+                normalized_entry = onie_entry.lower()
+                if any(
+                    f'{field}={normalized_entry}' in normalized_grub_env
+                    for field in ('next_entry', 'saved_entry', 'boot_once')
+                ):
+                    logger.info(f"Successfully set grub-reboot to '{onie_entry}'")
+                    grub_reboot_set = True
+                    break
+                logger.info(
+                    f"grub-editenv did not confirm '{onie_entry}' after grub-reboot. "
+                    f"Output: {grub_env_output.strip()}"
+                )
+            if not grub_reboot_set:
+                raise RuntimeError('Failed to configure grub-reboot for ONIE install entry')
 
             # Reboot
             logger.info("Rebooting switch to ONIE")
-            serial_engine.run_cmd('sudo reboot', '.*', timeout=5, send_without_enter=False)
+            self._trigger_serial_sudo_reboot(serial_engine, login_password, timeout=5)
 
             # Wait for GRUB menu with key spam
             grub_menu_patterns = ['ONIE\\s+', onie_menu_entry, GrubMenuTool.CUMULUS_ESC_PATTERN]
