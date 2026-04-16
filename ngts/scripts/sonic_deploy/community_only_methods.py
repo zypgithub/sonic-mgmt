@@ -4,6 +4,8 @@ import random
 import allure
 import shlex
 import subprocess
+import os
+import json
 
 from ngts.scripts.reset_fanout.fanout_reset_factory_test import test_fanout_reset_factory
 from ngts.constants.constants import MarsConstants
@@ -61,6 +63,14 @@ def get_deploy_minigraph_cmd(dark_mode=False, config_dpu=False, dut_ip=''):
         # the light mode is set to true, so we don't need to set it
         # when dut is not smartswitch, we don't need to set the light mode too
         if config_dpu:
+            # Update ansible/golden_config_db/smartswitch_dpu_extra.json timezone to Asia/Jerusalem
+            dpu_extra_config_path = os.path.join(MarsConstants.SONIC_MGMT_DIR,
+                                                 'ansible/golden_config_db/smartswitch_dpu_extra.json')
+            with open(dpu_extra_config_path, 'r') as f:
+                dpu_extra_config = json.load(f)
+                dpu_extra_config['DEVICE_METADATA']['localhost']['timezone'] = 'Asia/Jerusalem'
+            with open(dpu_extra_config_path, 'w') as f:
+                json.dump(dpu_extra_config, f, indent=4)
             # run only dpu config tasks
             dpu_config_param = '--tags "dpu_config"'
         else:
