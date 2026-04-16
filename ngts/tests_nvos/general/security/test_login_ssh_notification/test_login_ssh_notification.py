@@ -12,6 +12,7 @@ from retry import retry
 from infra.tools.connection_tools.utils import generate_strong_password
 from infra.tools.general_constants.constants import DefaultConnectionValues
 from infra.tools.linux_tools.linux_tools import scp_file
+from ngts.ngts_types.devices_T import DevicesT
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, CumulusConsts
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.system.UserManager import delete_user
@@ -60,59 +61,79 @@ def test_ssh_login_notification_password_change_admin(engines, login_source_ip_a
             4. Validate SSH login notification with password-change message
     """
     system = System(force_api=ApiType.NVUE)
+    username = None
 
-    with allure.step("Create new user"):
-        username, password = system.aaa.user.set_new_user(apply=True)
-        new_password = generate_strong_password()
+    try:
+        with allure.step("Create new user"):
+            username, password = system.aaa.user.set_new_user(apply=True)
+            new_password = generate_strong_password()
 
-    with allure.step("Connect to switch and collect successful login time"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(username, password, engines.dut.ip).attempt_login_success()
+        with allure.step("Connect to switch and collect successful login time"):
+            successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+            SshAuthenticator(username, password, engines.dut.ip).attempt_login_success()
 
-    with allure.step("Change user password"):
-        change_username_password(engines, username=username,
-                                 curr_password=password,
-                                 new_password=new_password)
+        with allure.step("Change user password"):
+            change_username_password(engines, username=username,
+                                     curr_password=password,
+                                     new_password=new_password)
 
-    with allure.step("Validate ssh login notification with password change"):
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                        username=username,
-                                                        password=new_password,
-                                                        capability=Consts.ADMIN_CAPABITILY,
-                                                        check_password_change_msg=True,
-                                                        last_successful_login=successful_login_time)
+        with allure.step("Validate ssh login notification with password change"):
+            validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                            username=username,
+                                                            password=new_password,
+                                                            capability=Consts.ADMIN_CAPABITILY,
+                                                            check_password_change_msg=True,
+                                                            last_successful_login=successful_login_time)
+    finally:
+        if username:
+            with allure.step("Cleanup: delete created user"):
+                try:
+                    delete_user(engines, username)
+                except Exception:
+                    logger.warning("Failed to delete user %s during cleanup", username)
 
 
 @pytest.mark.cumulus
-def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses):
+def test_ssh_login_notification_role_new_user(engines, login_source_ip_addresses, devices: DevicesT):
     """
     Validate new user role change is reflected in SSH login notification.
         Test flow:
-            1. Create new user with system-admin role
+            1. Create new user with admin role
             2. Connect to switch and collect successful login time
-            3. Change user role to nvue-monitor
+            3. Change user role to monitor role
             4. Validate SSH login notification with role-change message
     """
     system = System(force_api=ApiType.NVUE)
+    admin_role = devices.dut.aaa_admin_role
+    monitor_role = devices.dut.aaa_monitor_role
+    user_name = None
 
-    with allure.step("Create new user"):
-        user_name, password = system.aaa.user.set_new_user(role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True)
+    try:
+        with allure.step(f"Create new user with role {admin_role}"):
+            user_name, password = system.aaa.user.set_new_user(role=admin_role, apply=True)
 
-    with allure.step("Connect to switch and collect successful login time"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
+        with allure.step("Connect to switch and collect successful login time"):
+            successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+            SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
 
-    with allure.step(f"Change user role to {CumulusConsts.ROLE_NVUE_MONITOR}"):
-        system.aaa.user.user_id[user_name].set(SystemConsts.USER_ROLE, CumulusConsts.ROLE_NVUE_MONITOR, apply=True).verify_result()
+        with allure.step(f"Change user role to {monitor_role}"):
+            system.aaa.user.user_id[user_name].set(SystemConsts.USER_ROLE, monitor_role, apply=True).verify_result()
 
-    with allure.step("Validate ssh login notification with role change"):
-        validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
-                                                        username=user_name,
-                                                        password=password,
-                                                        capability=CumulusConsts.ROLE_NVUE_MONITOR,
-                                                        check_password_change_msg=False,
-                                                        check_role_change_msg=True,
-                                                        last_successful_login=successful_login_time)
+        with allure.step("Validate ssh login notification with role change"):
+            validate_ssh_login_notifications_default_fields(engines, login_source_ip_addresses,
+                                                            username=user_name,
+                                                            password=password,
+                                                            capability=monitor_role,
+                                                            check_password_change_msg=False,
+                                                            check_role_change_msg=True,
+                                                            last_successful_login=successful_login_time)
+    finally:
+        if user_name:
+            with allure.step("Cleanup: delete created user"):
+                try:
+                    delete_user(engines, user_name)
+                except Exception:
+                    logger.warning("Failed to delete user %s during cleanup", user_name)
 
 
 @pytest.mark.cumulus
@@ -182,11 +203,11 @@ def test_login_ssh_notification_performance(engines, login_source_ip_addresses):
 
 
 @pytest.mark.cumulus
-def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_addresses):
+def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip_addresses, devices: DevicesT):
     """
     Validate that one user's login failures are not shown in another user's SSH login notification.
         Test flow:
-            1. Create new user with system-admin role
+            1. Create new user with admin role
             2. Connect with cumulus user (clear failed messages)
             3. Connect with newly created user and collect successful login time
             4. Fail N times connecting with newly created user
@@ -195,41 +216,51 @@ def test_ssh_login_notifications_diff_user_notification(engines, login_source_ip
             7. Connect with newly created user and validate failed-attempt count in notification
     """
     system = System(force_api=ApiType.NVUE)
+    admin_role = devices.dut.aaa_admin_role
+    user_name = None
 
-    with allure.step("Create new user"):
-        user_name, password = system.aaa.user.set_new_user(
-            role=CumulusConsts.ROLE_SYSTEM_ADMIN, apply=True
-        )
+    try:
+        with allure.step(f"Create new user with role {admin_role}"):
+            user_name, password = system.aaa.user.set_new_user(
+                role=admin_role, apply=True
+            )
 
-    with allure.step("Connect to switch with cumulus user"):
-        connect_with_cumulus_user_before_validation(engines)
+        with allure.step("Connect to switch with cumulus user"):
+            connect_with_cumulus_user_before_validation(engines)
 
-    with allure.step("Connect to switch with newly created user and collect successful login time"):
-        successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
-        SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
+        with allure.step("Connect to switch with newly created user and collect successful login time"):
+            successful_login_time = ClockTools.get_local_time_object_from_show_system_date_time_output(system.datetime.show())
+            SshAuthenticator(user_name, password, engines.dut.ip).attempt_login_success()
 
-    random_number_of_connection_fails = random.randint(5, 7)
-    with allure.step(f"Fail {random_number_of_connection_fails} times connecting to device with newly created user"):
-        authenticator = SshAuthenticator(user_name, password, engines.dut.ip)
-        for index in range(random_number_of_connection_fails):
-            logger.info(f"Attempt number {index + 1}")
-            authenticator.attempt_login_failure()
+        random_number_of_connection_fails = random.randint(5, 7)
+        with allure.step(f"Fail {random_number_of_connection_fails} times connecting to device with newly created user"):
+            authenticator = SshAuthenticator(user_name, password, engines.dut.ip)
+            for index in range(random_number_of_connection_fails):
+                logger.info(f"Attempt number {index + 1}")
+                authenticator.attempt_login_failure()
 
-    with allure.step("Connect to switch with cumulus user and parse login notification"):
-        second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, engines.dut.username, engines.dut.password)
+        with allure.step("Connect to switch with cumulus user and parse login notification"):
+            second_login_notification_message = parse_ssh_login_notification(engines.dut.ip, engines.dut.username, engines.dut.password)
 
-    with allure.step("Validate failed attempts are not in the cumulus user login notification"):
-        actual_failed = second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN]
-        assert actual_failed is None, (f"Expected no failed-attempt count for cumulus user; got: {actual_failed}")
+        with allure.step("Validate failed attempts are not in the cumulus user login notification"):
+            actual_failed = second_login_notification_message[Consts.NUMBER_OF_UNSUCCESSFUL_ATTEMPTS_SINCE_LAST_LOGIN]
+            assert actual_failed is None, (f"Expected no failed-attempt count for cumulus user; got: {actual_failed}")
 
-    with allure.step("Validate failed attempts in notification with newly created user"):
-        validate_ssh_login_notifications_default_fields(engines,
-                                                        login_source_ip_addresses,
-                                                        username=user_name,
-                                                        password=password,
-                                                        already_login_failed=random_number_of_connection_fails,
-                                                        capability=CumulusConsts.ROLE_SYSTEM_ADMIN,
-                                                        last_successful_login=successful_login_time)
+        with allure.step("Validate failed attempts in notification with newly created user"):
+            validate_ssh_login_notifications_default_fields(engines,
+                                                            login_source_ip_addresses,
+                                                            username=user_name,
+                                                            password=password,
+                                                            already_login_failed=random_number_of_connection_fails,
+                                                            capability=admin_role,
+                                                            last_successful_login=successful_login_time)
+    finally:
+        if user_name:
+            with allure.step("Cleanup: delete created user"):
+                try:
+                    delete_user(engines, user_name)
+                except Exception:
+                    logger.warning("Failed to delete user %s during cleanup", user_name)
 
 
 @pytest.mark.cumulus_only

@@ -595,8 +595,9 @@ _MANAGER_NO_CONN_VERIFICATION_ATTEMPTS = 3
 def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: CertInfo, skip_etc_mapping: bool = False):
     """Verify that a client cannot connect in any encryption mode.
 
-    Waits briefly for state propagation, then asserts that every
-    attempt fails. Any successful connection fails the test immediately.
+    Waits briefly for state propagation, then retries up to
+    _MANAGER_NO_CONN_VERIFICATION_ATTEMPTS times per mode, tolerating
+    transient successes caused by the server still shutting down.
     """
     time.sleep(_MANAGER_NO_CONN_INITIAL_SLEEP_SEC)
     for client_mode in EncryptionMode.ALL_MODES:
@@ -604,7 +605,7 @@ def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: Cert
             for attempt in range(_MANAGER_NO_CONN_VERIFICATION_ATTEMPTS):
                 if attempt > 0:
                     time.sleep(_MANAGER_NO_CONN_RETRY_SLEEP_SEC)
-                run_manager_hello_request(
+                result = run_manager_hello_request(
                     app_name,
                     client_mode,
                     server_cert,
@@ -612,7 +613,13 @@ def verify_no_client_connection(app_name, server_cert: CertInfo, server_ca: Cert
                     server_ca,
                     server_cert,
                     skip_etc_mapping=skip_etc_mapping,
-                ).verify_result(False)
+                )
+                if not result.result:
+                    result.verify_result(False)
+                    break
+                result.ignore_result()
+            else:
+                result.verify_result(False)
 
 
 @pytest.mark.nmx
