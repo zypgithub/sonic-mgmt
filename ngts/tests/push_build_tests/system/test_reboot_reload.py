@@ -14,6 +14,7 @@ from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_
     add_to_pytest_args_disable_loganalyzer, remove_allure_server_project_id_arg, \
     prepare_pytest_cmd_with_custom_allure_dir, add_to_pytest_args_custom_cache_dir, generate_report, \
     add_to_pytest_args_disable_exporting_test_results_to_mars_db
+from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 logger = logging.getLogger()
@@ -37,12 +38,17 @@ def validation_type(platform_params, is_simx, reboot_type, topology_obj):
         # WA for https://redmine.mellanox.com/issues/4901668
         # Panther A0 has weak CPU, cold reboot data plane recovery time exceeds 180s (~183-200s)
         # due to orchagent single-threaded QoS mapping blocking forwarding plane updates
-        from infra.tools.redmine.redmine_api import is_redmine_issue_active
         if is_redmine_issue_active([4901668])[0]:
             expected_traffic_loss_dict['reboot']['data'] = 200
             logger.info('Redmine #4901668 is active, increasing cold reboot data plane traffic loss '
                         'threshold from 180s to 200s for Panther A0')
     supported_reboot_reload_list = get_supported_reboot_reload_types_list(platform)
+
+    # WA for https://redmine.mellanox.com/issues/4978842
+    if is_redmine_issue_active([4978842])[0] and 'reboot' in supported_reboot_reload_list:
+        supported_reboot_reload_list.remove('reboot')
+        logger.info('Redmine #4978842 is active, removing reboot from the list of supported reboot types')
+
     validation_type = random.choice(supported_reboot_reload_list)
 
     if reboot_type:
