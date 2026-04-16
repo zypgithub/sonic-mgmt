@@ -551,6 +551,33 @@ dut_console/test_console_baud_rate.py::test_baud_rate_sonic_connect:
   skip:
     reason: "test not supported for non-sonic console switch."
 
+dualtor_io/test_link_failure.py::test_active_link_down_downstream_active_soc[active-active]:
+  xfail:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4978928"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4978928"
+
+dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_dest_ip_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
+  regex: true
+  xfail:
+    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4978928"
+
+dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_icmp_source_ip_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
+  regex: true
+  xfail:
+    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4978928"
+
+dualtor_io.test_tor_failure.py::TestMultiBindingAcl::test_l4_sport_match_dropped.ipv4-ingress-uplink.*downlink-default-Vlan1000:
+  regex: true
+  xfail:
+    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978928"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4978928"
+
 ecmp/inner_hashing:
   skip:
     reason: "Testcase ignored due to platform msn2"
