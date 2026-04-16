@@ -1155,3 +1155,9 @@ tests/push_build_tests/general/qos/test_qos_reload.py::test_qos_reload_ports:
     reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4854055 on simx platform"
     conditions:
     - "https://redmine.mellanox.com/issues/4854055 and 'simx' in platform"
+
+telemetry/test_events.py::test_events:
+  xfail:
+    reason: "Testcase xfailed due to RM issue: https://redmine.mellanox.com/issues/4978323"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4978323"
