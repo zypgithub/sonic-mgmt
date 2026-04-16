@@ -499,6 +499,8 @@ def test_check_sfputil_error_status(duthosts, enum_rand_one_per_hwsku_frontend_h
     physical_port_index_map = get_physical_port_indices(duthost, conn_graph_facts["device_conn"][duthost.hostname])
     check_sw_control_enabled_intfs = {intf: physical_port_index_map[intf] for intf in dev_conn}
     all_intf_sw_control_status = get_sw_control_enabled_map(duthost, check_sw_control_enabled_intfs)
+    admin_up_port_set = set(duthost.get_admin_up_ports())
+
     for intf in dev_conn:
         if intf not in xcvr_skip_list[duthost.hostname]:
             expected_state = 'OK'
@@ -506,6 +508,8 @@ def test_check_sfputil_error_status(duthosts, enum_rand_one_per_hwsku_frontend_h
             is_intf_sw_control_enabled = all_intf_sw_control_status[intf][intf_index]
             if cmd_sfp_error_status == "sudo sfputil show error-status --fetch-from-hardware" \
                     and is_mellanox_device(duthost) and is_intf_sw_control_enabled:
+                if intf not in admin_up_port_set:
+                    continue
                 expected_state = get_port_expected_error_state_for_mellanox_device_on_sw_control_enabled(
                     intf, passive_cable_ports[duthost.hostname], cmis_cable_ports_and_ver[duthost.hostname])
             elif "Not supported" in sfp_error_status['stdout']:
