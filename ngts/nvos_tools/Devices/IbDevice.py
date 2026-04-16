@@ -1629,7 +1629,7 @@ class JulietSwitch(NvLinkSwitch):
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ]
         self.sdn_fm_config_edits = self.sdn_fm_config_edits_standalone
-        # SM config edits for Juliet (only when has_loopbox)
+        # SM config edits for Juliet (only when has_loopbox or is_simx)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
             "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file}",

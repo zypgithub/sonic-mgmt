@@ -219,12 +219,7 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
 
         if not target_image_installed:
             NvueGeneralCli(engines.dut, devices.dut).install_image_via_onie(topology_obj, target_version_realpath)
