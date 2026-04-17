@@ -81,7 +81,6 @@ from tests.common.helpers.parallel import fix_logging_handler_fork_lock
 from tests.common.mellanox_data import is_mellanox_device
 from tests.common.helpers.counterpoll_helper import ConterpollHelper
 
-
 import tests.common.gnmi_setup as gnmi_setup
 
 try:
