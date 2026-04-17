@@ -424,17 +424,17 @@ autorestart/test_container_autorestart.py::test_containers_autorestart[r-tigris-
     conditions:
     - "https://redmine.mellanox.com/issues/3587377"
 
-bgp/test_bgp_suppress_fib.py:
-  xfail:
-    reason: "Testcase skipped due to https://github.com/sonic-net/sonic-mgmt/issues/18998"
-    conditions:
-    - https://github.com/sonic-net/sonic-mgmt/issues/18998
-
 bgp/test_bgp_sentinel.py:
   xfail:
-    reason: "Testcase skipped due to https://github.com/sonic-net/sonic-mgmt/issues/18998"
+    reason: "Testcase expected to fail due to RM issue https://redmine.mellanox.com/issues/4978910"
     conditions:
-    - https://github.com/sonic-net/sonic-mgmt/issues/18998
+    - https://redmine.mellanox.com/issues/4978910
+
+crm/test_crm.py::test_crm_nexthop_group:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4978891"
+    conditions:
+    - https://redmine.mellanox.com/issues/4978891
 
 bgp/:
   skip:
