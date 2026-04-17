@@ -1074,9 +1074,9 @@ everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
 
 high_frequency_telemetry/test_high_frequency_telemetry.py:
   xfail:
-    reason: "xfail due to RM issue 4774921"
+    reason: "xfail due to RM issue 4983538"
     conditions:
-    - "https://redmine.mellanox.com/issues/4774921"
+    - "https://redmine.mellanox.com/issues/4983538"
 
 high_frequency_telemetry/test_high_frequency_telemetry.py:
   skip:
