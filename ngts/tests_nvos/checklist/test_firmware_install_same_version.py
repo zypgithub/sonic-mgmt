@@ -13,12 +13,21 @@ from ngts.tests_nvos.constants import (FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_C
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_in_out_or_err, verify_msg_not_in_out_or_err
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup(engines):
+    """Single reboot after all tests in this module (not per test that used skip-version-check)."""
+    yield
+    with allure.step("Reboot for cleanup"):
+        System().reboot.action_reboot(params="force", engine=engines.dut).verify_result()
 
 
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
