@@ -54,7 +54,8 @@ REDFISH_EVENT_SUBSCRIPTIONS_ENDPOINT = "/redfish/v1/EventService/Subscriptions"
 # Curl command templates (for session tests)
 CURL_TOKEN_AUTH_GET = "curl -k -H \"X-Auth-Token: {}\" -X GET https://{}{}"
 CURL_TOKEN_AUTH_GET_WITH_HEADERS = "curl -k -i -H \"X-Auth-Token: {}\" -X GET https://{}{}"
-CURL_TOKEN_AUTH_POST = "curl -k -i -H \"X-Auth-Token: {}\" -H \"Content-Type: application/json\" -X POST https://{}{} -d '{}'"
+CURL_TOKEN_AUTH_POST = ("curl -k -i -H \"X-Auth-Token: {}\" -H \"Content-Type: application/json\""
+                        " -X POST https://{}{} -d '{}'")
 CURL_TOKEN_AUTH_DELETE = "curl -i -k -H \"X-Auth-Token: {}\" -X DELETE https://{}{}"
 CURL_BASIC_AUTH_GET = "curl -k -u {}:{} -X GET https://{}{}"
 CURL_BASIC_AUTH_GET_WITH_HEADERS = "curl -k -i -u {}:{} -X GET https://{}{}"
@@ -261,6 +262,16 @@ class TestBMCApi(PlatformApiTestBase):
         if not bmc.is_bmc_exists(duthost):
             pytest.skip("BMC is not present, skipping BMC platform API tests")
 
+    @pytest.fixture(scope="class")
+    def bmc_ip(self, duthosts, enum_rand_one_per_hwsku_hostname, skip_if_no_bmc):
+        duthost = duthosts[enum_rand_one_per_hwsku_hostname]
+        platform = duthost.shell("sudo show platform summary | grep Platform | awk '{print $2}'")["stdout"]
+        bmc_config_file = f"/usr/share/sonic/device/{platform}/bmc.json"
+        duthost.fetch(src=bmc_config_file, dest='/tmp')
+        with open(f'/tmp/{duthost.hostname}/{bmc_config_file}', "r") as f:
+            bmc_config = json.load(f)
+        yield bmc_config["bmc_addr"]
+
     @pytest.fixture(autouse=True)
     def prepare_param(self, creds):
         self.bmc_root_user = creds['sonic_bmc_root_user']
@@ -439,7 +450,9 @@ class TestBMCApi(PlatformApiTestBase):
                     logger.info(f"Deleted {len(existing_subs)} existing subscriptions")
                     return len(existing_subs)
             except (json.JSONDecodeError, KeyError, TypeError) as e:
-                logger.warning(f"Failed to parse subscription list response: {e}, response: {get_subs_result['stdout']}")
+                logger.warning(
+                    f"Failed to parse subscription list response: {e}, "
+                    f"response: {get_subs_result['stdout']}")
                 return 0
         return 0
 
@@ -618,8 +631,9 @@ class TestBMCApi(PlatformApiTestBase):
             with allure.step("Step 1: Reset password to default state"):
                 reset_result = duthost.command(BMC_RESET_ROOT_PASSWORD_COMMAND)
                 pytest_assert(reset_result["rc"] == 0, f"Failed to reset BMC root password: {reset_result['stderr']}")
-                pytest_assert("BMC root password reset successful" in reset_result["stdout"],
-                            f"Unexpected output: {reset_result['stdout']}")
+                pytest_assert(
+                    "BMC root password reset successful" in reset_result["stdout"],
+                    f"Unexpected output: {reset_result['stdout']}")
                 logger.info("BMC root password reset to default state successfully")
 
             with allure.step("Step 2: Change password from default to new password"):
@@ -629,47 +643,58 @@ class TestBMCApi(PlatformApiTestBase):
                     self.bmc_root_user, self.bmc_root_password, bmc_ip,
                     "/redfish/v1/AccountService/Accounts/root", password_data)
                 change_result = duthost.command(change_pwd_cmd)
-                pytest_assert(re.match(r"^HTTP/\S+\s+20\d", change_result["stdout"]),
-                            f"Failed to change password: {change_result['stdout']}")
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+20\d", change_result["stdout"]),
+                    f"Failed to change password: {change_result['stdout']}")
                 logger.info("BMC root password changed to new password successfully")
 
             with allure.step("Step 3: Verify new password works"):
                 verify_new_pwd_cmd = CURL_BASIC_AUTH_GET_WITH_HEADERS.format(
                     self.bmc_root_user, temp_password, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
                 verify_result = duthost.command(verify_new_pwd_cmd)
-                pytest_assert(re.match(r"^HTTP/\S+\s+20\d", verify_result["stdout"]),
-                            f"New password should work, got: {verify_result['stdout']}")
+
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+20\d", verify_result["stdout"]),
+                    f"New password should work, got: {verify_result['stdout']}")
                 logger.info("New password verified successfully")
 
             with allure.step("Step 4: Verify old default password is denied"):
                 verify_old_pwd_cmd = CURL_BASIC_AUTH_GET_WITH_HEADERS.format(
                     self.bmc_root_user, self.bmc_root_password, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
                 verify_old_result = duthost.command(verify_old_pwd_cmd, module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+401", verify_old_result["stdout"]),
-                            f"Old default password should be denied with HTTP 401, got: {verify_old_result['stdout']}")
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+401", verify_old_result["stdout"]),
+                    "Old default password should be denied with HTTP 401, "
+                    f"got: {verify_old_result['stdout']}")
                 logger.info("Old default password is correctly denied")
 
             with allure.step("Step 5: Reset password back to default"):
                 reset_result = duthost.command(BMC_RESET_ROOT_PASSWORD_COMMAND)
                 pytest_assert(reset_result["rc"] == 0, f"Failed to reset BMC root password: {reset_result['stderr']}")
-                pytest_assert("BMC root password reset successful" in reset_result["stdout"],
-                            f"Unexpected output: {reset_result['stdout']}")
+                pytest_assert(
+                    "BMC root password reset successful" in reset_result["stdout"],
+                    f"Unexpected output: {reset_result['stdout']}")
                 logger.info("BMC root password reset back to default successfully")
 
             with allure.step("Step 6: Verify default password works again"):
                 verify_default_cmd = CURL_BASIC_AUTH_GET_WITH_HEADERS.format(
                     self.bmc_root_user, self.bmc_root_password, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
                 verify_default_result = duthost.command(verify_default_cmd)
-                pytest_assert(re.match(r"^HTTP/\S+\s+20\d", verify_default_result["stdout"]),
-                            f"Default password should work after reset, got: {verify_default_result['stdout']}")
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+20\d", verify_default_result["stdout"]),
+                    "Default password should work after reset, "
+                    f"got: {verify_default_result['stdout']}")
                 logger.info("Default password verified successfully after reset")
 
             with allure.step("Step 7: Verify previous new password is denied"):
                 verify_temp_pwd_cmd = CURL_BASIC_AUTH_GET_WITH_HEADERS.format(
                     self.bmc_root_user, temp_password, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
                 verify_temp_result = duthost.command(verify_temp_pwd_cmd, module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+401", verify_temp_result["stdout"]),
-                            f"Previous new password should be denied with HTTP 401, got: {verify_temp_result['stdout']}")
+
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+401", verify_temp_result["stdout"]),
+                    "Previous new password should be denied with HTTP 401, "
+                    f"got: {verify_temp_result['stdout']}")
                 logger.info("Previous new password is correctly denied after reset")
         finally:
             duthost.command(BMC_RESET_ROOT_PASSWORD_COMMAND)
@@ -771,9 +796,17 @@ class TestBMCApi(PlatformApiTestBase):
             token_match.group(1) if token_match else None
         )
 
+    def _parse_bmc_session(self, output):
+        """Parse BMC session output to extract session ID and token"""
+        session_id_match = re.search(r'Session ID:\s*(\S+)', output)
+        token_match = re.search(r'Token:\s*(\S+)', output)
+        return (
+            session_id_match.group(1) if session_id_match else None,
+            token_match.group(1) if token_match else None
+        )
+
     def _extract_ids_from_members(self, data):
         """Extract IDs from Redfish Members list (works for both sessions and subscriptions)
-
         Extracts the last path segment from @odata.id field in each Member.
         Example: "/redfish/v1/SessionService/Sessions/abc123" -> "abc123"
         Filters out empty or invalid IDs.
@@ -787,7 +820,8 @@ class TestBMCApi(PlatformApiTestBase):
                     ids.add(id_segment)
         return ids
 
-    def test_bmc_session_open_close(self, duthosts, enum_rand_one_per_hwsku_hostname, bmc_ip, cleanup_bmc_subscriptions):
+    def test_bmc_session_open_close(self, duthosts, enum_rand_one_per_hwsku_hostname,
+                                    bmc_ip, cleanup_bmc_subscriptions):
         """
         Test CLIs commands for open and close BMC session
 
@@ -804,7 +838,9 @@ class TestBMCApi(PlatformApiTestBase):
         try:
             with allure.step("Open BMC session"):
                 open_session_result = duthost.command(BMC_OPEN_SESSION_COMMAND)
-                pytest_assert(open_session_result["rc"] == 0, f"Failed to open session: {open_session_result['stderr']}")
+                pytest_assert(
+                    open_session_result["rc"] == 0,
+                    f"Failed to open session: {open_session_result['stderr']}")
                 session_id, token = self._parse_bmc_session(open_session_result["stdout"])
                 logger.info(f"Session opened: {session_id}")
                 pytest_assert(session_id and token, "Session ID or token not returned")
@@ -815,7 +851,10 @@ class TestBMCApi(PlatformApiTestBase):
                 try:
                     sessions_data = json.loads(sessions_result["stdout"])
                 except json.JSONDecodeError as e:
-                    pytest_assert(False, f"Failed to parse sessions response as JSON: {e}, response: {sessions_result['stdout']}")
+                    pytest_assert(
+                        False,
+                        f"Failed to parse sessions response as JSON: {e}, "
+                        f"response: {sessions_result['stdout']}")
                 member_session_ids = self._extract_ids_from_members(sessions_data)
                 pytest_assert(session_id in member_session_ids,
                               f"Session {session_id} not found in Members: {member_session_ids}")
@@ -829,7 +868,7 @@ class TestBMCApi(PlatformApiTestBase):
                 # Extract subscription ID from Location header
                 location_match = re.search(r'Location:\s*.+/([^/\s]+)', subscription_result["stdout"], re.IGNORECASE)
                 subscription_id = location_match.group(1) if location_match else None
-                pytest_assert(subscription_id, f"Failed to extract subscription ID")
+                pytest_assert(subscription_id, "Failed to extract subscription ID")
                 logger.info(f"Subscription created: {subscription_id}")
 
             with allure.step("Close session and verify token becomes invalid"):
@@ -838,35 +877,50 @@ class TestBMCApi(PlatformApiTestBase):
                 logger.info(f"Session {session_id} closed")
                 session_id = None  # Mark as closed
 
-                invalid_get_cmd = CURL_TOKEN_AUTH_GET_WITH_HEADERS.format(token, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
-                invalid_get_result = duthost.command(invalid_get_cmd, module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+401", invalid_get_result["stdout"]),
-                             f"GET with invalid token should return HTTP 401, got: {invalid_get_result['stdout']}")
+                invalid_get_cmd = CURL_TOKEN_AUTH_GET_WITH_HEADERS.format(
+                    token, bmc_ip, REDFISH_SESSION_SERVICE_ENDPOINT)
+                invalid_get_result = duthost.command(
+                    invalid_get_cmd, module_ignore_errors=True)
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+401", invalid_get_result["stdout"]),
+                    "GET with invalid token should return HTTP 401, "
+                    f"got: {invalid_get_result['stdout']}")
 
                 invalid_post_result = duthost.command(create_subscription_cmd, module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+401", invalid_post_result["stdout"]),
-                              f"POST with invalid token should return HTTP 401, got: {invalid_post_result['stdout']}")
+                pytest_assert(
+                    invalid_post_result["stdout"].startswith("HTTP/1.1 401 Unauthorized"),
+                    f"POST with invalid token should return HTTP 401 Unauthorized, "
+                    f"got: {invalid_post_result['stdout']}")
 
             with allure.step("Open new session and cleanup subscription"):
                 new_session_result = duthost.command(BMC_OPEN_SESSION_COMMAND)
-                pytest_assert(new_session_result["rc"] == 0, f"Failed to open new session: {new_session_result['stderr']}")
+                pytest_assert(
+                    new_session_result["rc"] == 0,
+                    f"Failed to open new session: {new_session_result['stderr']}")
                 new_session_id, new_token = self._parse_bmc_session(new_session_result["stdout"])
                 pytest_assert(new_session_id and new_token, "New session ID or token not returned")
                 logger.info(f"New session opened: {new_session_id}")
 
                 # Delete subscription
+                delete_sub_endpoint = (
+                    f"{REDFISH_EVENT_SUBSCRIPTIONS_ENDPOINT}/{subscription_id}")
                 delete_result = duthost.command(
-                    CURL_TOKEN_AUTH_DELETE.format(new_token, bmc_ip, f"{REDFISH_EVENT_SUBSCRIPTIONS_ENDPOINT}/{subscription_id}"),
+                    CURL_TOKEN_AUTH_DELETE.format(
+                        new_token, bmc_ip, delete_sub_endpoint),
                     module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+20\d", delete_result["stdout"]),
-                              f"DELETE should return HTTP 2xx, got: {delete_result['stdout']}")
+                pytest_assert(delete_result["stdout"].startswith("HTTP/1.1 200 OK") or
+                              delete_result["stdout"].startswith("HTTP/1.1 204 No Content"),
+                              f"DELETE should return HTTP 200 OK or 204 No Content, got: {delete_result['stdout']}")
 
                 # Verify subscription is deleted by checking the specific subscription returns 404
                 verify_deleted_cmd = CURL_TOKEN_AUTH_GET_WITH_HEADERS.format(
-                    new_token, bmc_ip, f"{REDFISH_EVENT_SUBSCRIPTIONS_ENDPOINT}/{subscription_id}")
-                verify_deleted_result = duthost.command(verify_deleted_cmd, module_ignore_errors=True)
-                pytest_assert(re.match(r"^HTTP/\S+\s+404", verify_deleted_result["stdout"]),
-                              f"GET deleted subscription should return HTTP 404, got: {verify_deleted_result['stdout']}")
+                    new_token, bmc_ip, delete_sub_endpoint)
+                verify_deleted_result = duthost.command(
+                    verify_deleted_cmd, module_ignore_errors=True)
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+404", verify_deleted_result["stdout"]),
+                    "GET deleted subscription should return HTTP 404, "
+                    f"got: {verify_deleted_result['stdout']}")
                 logger.info(f"Subscription {subscription_id} deleted and verified (404 status)")
 
         finally:
