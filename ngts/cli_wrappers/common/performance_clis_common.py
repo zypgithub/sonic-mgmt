@@ -6,6 +6,7 @@ import json
 import fcntl
 import pandas as pd
 from retry import retry
+from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
 from ngts.nvos_tools.infra.FilesTool import FilesTool
 from infra.tools.exceptions.test_issue import TestIssue
@@ -230,6 +231,57 @@ class PerformanceCommon:
             error_msg = f"Command: {cmd} failed on {self.dut_alias} with error:\n{e}\n"
             logging.error(error_msg)
             raise TestIssue(msg=error_msg) from e
+
+    @staticmethod
+    def _parse_ports_dump(ports_dump, bonus_ports_to_remove=0):
+        """Parse sx_api_ports_dump.py output and classify ports as connected/unconnected.
+
+        Extracts (log_port, oper_state, module_state) from each row of the dump table.
+        Ports with module_state == "PLUGGED" are connected; all others are unconnected.
+        ASIC-specific bonus ports are trimmed from the tail of the list.
+
+        Args:
+            ports_dump: Raw string output of sx_api_ports_dump.py.
+            bonus_ports_to_remove: Number of trailing rows to discard (management/bonus ports).
+
+        Returns:
+            tuple: (sorted_connected, sorted_unconnected) — each a sorted list of
+                   SDK logical port numbers as ints.
+        """
+        _log_port_hex = r"\|\s+(0x[\da-fA-F]+)\|"
+        _four_numeric_columns = r"(?:\s+\d+\|){4}"
+        _two_skip_columns = r"(?:\s+\S+\|){2}"
+        _oper_state = r"\s+(\S+)\|"
+        _module_state = r"\s+(\S+)\|"
+        port_status_list = re.findall(
+            _log_port_hex + _four_numeric_columns + _two_skip_columns + _oper_state + _module_state,
+            ports_dump,
+        )
+        if bonus_ports_to_remove > 0:
+            port_status_list = port_status_list[:-bonus_ports_to_remove]
+        connected, unconnected = [], []
+        for log_port, _, module_s in port_status_list:
+            log_port_int = int(log_port, 16)
+            if module_s == "PLUGGED":
+                connected.append(log_port_int)
+            else:
+                unconnected.append(log_port_int)
+        return sorted(connected), sorted(unconnected)
+
+    def _save_player_ports(self, player_ports, dst_dut_dir="/tmp"):
+        """Save player ports dict to local JSON and copy to the switch.
+
+        Args:
+            player_ports: dict with 'connected_ports' and 'unconnected_ports' lists.
+            dst_dut_dir: Remote directory for tg_ports.json (default /tmp).
+        """
+        get_ports_output = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests",
+                                        f"{self.dut_alias}_ports.json")
+        with open(get_ports_output, "w") as f:
+            json.dump(player_ports, f, indent=4)
+        self.execute_cmd(f"sudo rm -f {dst_dut_dir}/tg_ports.json")
+        self.engine.copy_file(source_file=get_ports_output, file_system=dst_dut_dir, dest_file="tg_ports.json",
+                              overwrite_file=True, verify_file=False, direction='put')
 
     def get_port_mapping_df(self):
         sdk_port_to_local_port_mapping = {}

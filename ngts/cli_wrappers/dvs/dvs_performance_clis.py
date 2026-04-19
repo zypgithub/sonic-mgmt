@@ -347,23 +347,36 @@ class DvsPerformance(PerformanceCommon):
             self.execute_cmd(set_port_cmd)
 
     def get_player_ports(self, dst_dut_dir="/tmp"):
-        """
+        """Classify switch ports as connected or unconnected by parsing sx_api_ports_dump.py output.
+
+        Runs sx_api_ports_dump.py on the switch, which produces a table like:
+
+            | log_port | dev | local | phy | ... | oper  | module   |
+            | 0x10001  |  1  |   1   |  0  | ... | DOWN  | UNPLUGGED|
+            | 0x10041  |  1  |  65   | 64  | ... | UP    | PLUGGED  |
+
+        The regex extracts (log_port, oper_state, module_state) from each row.
+        Ports with module_state == "PLUGGED" are classified as connected (cable present),
+        all others as unconnected. ASIC-specific bonus ports are excluded from the tail.
+
+        The result is also saved as tg_ports.json on the switch and locally as
+        {dut_alias}_ports.json.
+
         Args:
             dst_dut_dir: by default /tmp, where the file tg_ports.json is saved
 
         Returns:
-        {'connected_ports': [65537, 65539, ...], 'unconnected_ports': [65659, 65661, ...]}
+            tuple: (connected_ports, unconnected_ports) where each is a sorted
+                   list of SDK logical port numbers (int).
         """
-        logging.info("Getting player connected and unconnected ports")
-        get_player_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_GET_PORTS}"
-        self.execute_cmd(get_player_ports_cmd)
-        get_ports_output = os.path.join(BugHandlerConst.NGTS_PATH, "performance_tests", f"{self.dut_alias}_ports.json")
-        self.engine.copy_file(source_file="tg_ports.json", file_system=dst_dut_dir, dest_file=get_ports_output,
-                              overwrite_file=True, verify_file=False, direction='get')
-        with open(get_ports_output) as f:
-            player_ports = json.load(f)
-        self.connected_ports = sorted(player_ports["connected_ports"])
-        self.unconnected_ports = sorted(player_ports["unconnected_ports"])
+        bonus_ports_to_remove = self.get_bonus_ports_to_remove()
+        ports_dump = self.execute_cmd("sx_api_ports_dump.py")
+        self.connected_ports, self.unconnected_ports = self._parse_ports_dump(
+            ports_dump, bonus_ports_to_remove
+        )
+        player_ports = {"connected_ports": self.connected_ports,
+                        "unconnected_ports": self.unconnected_ports}
+        self._save_player_ports(player_ports, dst_dut_dir)
         return self.connected_ports, self.unconnected_ports
 
     def get_player_unconnected_connected_ports_aliases(self):
