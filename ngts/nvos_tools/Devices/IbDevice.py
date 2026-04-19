@@ -2851,6 +2851,10 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         # Flag to indicate this device needs pre-cluster setup
         self.sdn_needs_pre_cluster_setup = True
 
+        self.nmx_cluster_apps_versions_file_path = (
+            "/auto/sw_system_project/NVOS_INFRA/verification_files/nmx-versions/rosalind_versions.json"
+        )
+
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0400_versions.json"
         # will be updated
