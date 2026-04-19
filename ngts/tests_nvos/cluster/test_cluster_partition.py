@@ -49,8 +49,14 @@ def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name
                                                              standalone_system=standalone_system)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
-            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                                   output_format=output_format).get_returned_value()
+            for _ in range(3):
+                initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                       output_format=output_format).get_returned_value()
+                if initial_partition_output:
+                    break
+                logger.info("Trying after 2 seconds...")
+                time.sleep(2)
+
             partition_ids = list(initial_partition_output.keys())
             default_partition_id = partition_ids[0]
             default_partition_type = initial_partition_output[default_partition_id]['partition-type']
