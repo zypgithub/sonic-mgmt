@@ -15,7 +15,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 
-from .helpers import _generate_new_key, keys_path
+from ngts.tests_nvos.general.security.test_ssh_pka.helpers import _generate_new_key, keys_path
 
 logger = logging.getLogger(__name__)
 

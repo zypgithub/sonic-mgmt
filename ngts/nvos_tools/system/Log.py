@@ -4,6 +4,7 @@ from typing import Dict
 from datetime import datetime
 
 from ngts.nvos_constants.constants_nvos import NvosConst, RemarkableLogsConsts, LogsSources
+from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
@@ -138,10 +139,15 @@ class File(BaseComponent):
         """Show system log file. exempted_err_msgs: optional tuple of keywords to allow in output (e.g. 'Not Found')."""
         with allure.step('Show logs'):
             resource_path = self.get_resource_path()
-            return SendCommandTool.execute_command_expected_str(
-                self.api_obj[TestToolkit.tested_api].show_log,
-                expected_str, TestToolkit.get_engine(), resource_path,
-                param, exit_cmd, exempted_err_msgs=exempted_err_msgs).get_returned_value()
+            original_api = TestToolkit.tested_api
+            try:
+                TestToolkit.tested_api = ApiType.NVUE
+                return SendCommandTool.execute_command_expected_str(
+                    self.api_obj[TestToolkit.tested_api].show_log,
+                    expected_str, TestToolkit.get_engine(), resource_path,
+                    param, exit_cmd, exempted_err_msgs=exempted_err_msgs).get_returned_value()
+            finally:
+                TestToolkit.tested_api = original_api
 
 
 class FileId(BaseComponent):
