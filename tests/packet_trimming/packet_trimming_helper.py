@@ -2633,6 +2633,8 @@ def verify_normal_packet(duthost, ptfadapter, ingress_port, egress_port, send_pk
         logger.info(f"Sending {packet_count} packets from port {ingress_port['ptf_id']}")
         retries = 0
         send_success = False
+
+        last_exception = None
         while not send_success and retries < SEND_MAX_RETRIES:
             try:
                 testutils.send(
@@ -2643,6 +2645,8 @@ def verify_normal_packet(duthost, ptfadapter, ingress_port, egress_port, send_pk
                 )
                 send_success = True
             except Exception as e:
+
+                last_exception = e
                 retries += 1
                 logger.warning(f"Send failed (attempt {retries}/{SEND_MAX_RETRIES}): {e}")
                 time.sleep(2)
@@ -2650,8 +2654,9 @@ def verify_normal_packet(duthost, ptfadapter, ingress_port, egress_port, send_pk
 
         if not send_success:
             raise RuntimeError(
-                f"Failed to send packets from port {ingress_port['ptf_id']} after {SEND_MAX_RETRIES} retries: {e}"
-            ) from e
+                f"Failed to send packets from port {ingress_port['ptf_id']} after {SEND_MAX_RETRIES} retries: "
+                f"{last_exception}"
+            ) from last_exception
 
         # Get verify port
         if isinstance(egress_port['ptf_id'], list):
