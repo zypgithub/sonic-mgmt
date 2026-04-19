@@ -12,6 +12,7 @@ FS_RW_TEMPLATE = "/host/image-{}/rw"
 FS_WORK_TEMPLATE = "/host/image-{}/work"
 FS_MOUNTPOINT_TEMPLATE = "/tmp/image-{}-fs"
 OVERLAY_MOUNTPOINT_TEMPLATE = "/tmp/image-{}-overlay"
+LOCAL_HTTP_SERVER_PORT = 8081
 
 
 def pytest_addoption(parser):
@@ -68,11 +69,11 @@ def component(request, duthost, fw_pkg):
 
 @pytest.fixture(scope='function')
 def host_firmware(localhost, duthost):
-    port = 8081
-    logger.info("Starting local python server on port {} to test URL firmware update....".format(port))
-    comm = "python3 -m http.server {} --directory {}".format(port, os.path.join(DEVICES_PATH, duthost.facts['platform']))
+    logger.info("Starting local python server on port {} to test URL firmware update".format(LOCAL_HTTP_SERVER_PORT))
+    comm = "python3 -m http.server {} --directory {}".format(
+        LOCAL_HTTP_SERVER_PORT, os.path.join(DEVICES_PATH, duthost.facts['platform']))
     duthost.command(comm, module_async=True)
-    yield "http://localhost:{}/".format(port)
+    yield "http://localhost:{}/".format(LOCAL_HTTP_SERVER_PORT)
     logger.info("Stopping local python server.")
     duthost.command('pkill -f "{}"'.format(comm), module_ignore_errors=True)
 
