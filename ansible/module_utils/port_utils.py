@@ -675,7 +675,7 @@ def get_port_alias_to_name_map(hwsku, asic_name=None):
             port_alias_to_name_map['etp65'] = "Ethernet512"
             port_alias_to_name_map['etp66'] = "Ethernet520"
             port_alias_to_name_map['etp67'] = "Ethernet528"
-            port_alias_to_name_map['etp68'] = "Ethernet536
+            port_alias_to_name_map['etp68'] = "Ethernet536"
         elif hwsku in ["Mellanox-SN6600_LD-V512C2", "Mellanox-SN6600_LD-V448P16C2"]:
             split_alias_list = ["a", "b", "c", "d", "e", "f", "g", "h"]
             for i in range(1, 65):

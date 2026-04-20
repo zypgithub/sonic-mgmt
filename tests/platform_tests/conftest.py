@@ -9,8 +9,7 @@ from tests.common.mellanox_data import is_mellanox_device
 from .args.counterpoll_cpu_usage_args import add_counterpoll_cpu_usage_args
 from tests.common.helpers.mellanox_thermal_control_test_helper import suspend_hw_tc_service, resume_hw_tc_service
 from tests.common.platform.device_utils import MGFX_HWSKU, MGFX_XCVR_INTF
-from tests.common.platform.transceiver_utils import \
-    get_passive_cable_port_list, get_cmis_cable_ports_and_ver
+from tests.common.platform.transceiver_utils import get_passive_cable_port_list, get_cmis_cable_ports_and_ver
 from tests.common.helpers.firmware_helper import PLATFORM_COMP_PATH_TEMPLATE
 from tests.common.platform.interface_utils import get_ports_with_flat_memory
 
