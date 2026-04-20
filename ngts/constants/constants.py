@@ -1297,9 +1297,9 @@ class MarsConstants:
 
     BRANCH_PTF_MAPPING = {'202012': '42007',
                           '202106': '42007',
-                          'master': '944509'
+                          'master': '1092864'
                           }
-    DEFAULT_PTF_TAG = '944509'
+    DEFAULT_PTF_TAG = '1092864'
 
 
 class AppExtensionInstallationConstants:
