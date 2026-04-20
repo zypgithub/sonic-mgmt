@@ -9,6 +9,7 @@ RANDOM_SEED = 'random_seed'
 CUSTOM_MSG_PREFIX = "sonic_custom_msg"
 DUT_CHECK_NAMESPACE = "dut_check_result"
 PTF_TIMEOUT = 60
+ERSPAN_GRE_TYPE = 0x8949
 
 # Describe upstream neighbor of dut in different topos
 UPSTREAM_NEIGHBOR_MAP = {
