@@ -44,6 +44,7 @@ from ngts.nvos_tools.system.Version import Version
 from ngts.nvos_tools.system.Ztp import Ztp
 from ngts.nvos_tools.system.Dns import Dns
 from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.system.GrpcTunnel import GrpcTunnel
 
 logger = logging.getLogger()
 
@@ -79,6 +80,7 @@ class System(BaseComponent):
         self.health = Health(self)
         self.datetime = DateTime(self)
         self.gnmi_server = GnmiServer(self)
+        self.grpc_tunnel = GrpcTunnel(self)
         self.web_server_api = WebServerAPI(self)
         self.api = Api(self)
         self.ptp = BaseComponent(self, path='/ptp')
