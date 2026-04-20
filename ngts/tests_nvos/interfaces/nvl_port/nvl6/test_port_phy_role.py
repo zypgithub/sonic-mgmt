@@ -2,7 +2,7 @@ import random
 import re
 import pytest
 import logging
-from typing import Optional, TypedDict, Union
+from typing import TypedDict
 from ngts.ngts_types.devices_T import DevicesT
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.tools.test_utils import allure_utils as allure
@@ -76,7 +76,7 @@ def _get_phy_roles_output(fae_obj: Fae) -> PhyRolesOutputT:
         }
 
 
-def _verify_role_output(role_output: Union[PhyRoleOutputT, ConstantRoleOutputT], operational_expected: Union[str, list[str]], applied_expected: Union[str, list[str]]) -> None:
+def _verify_role_output(role_output: PhyRoleOutputT | ConstantRoleOutputT, operational_expected: str | list[str], applied_expected: str | list[str]) -> None:
     with allure.step("Verify role output matches expected values"):
         if isinstance(operational_expected, list):
             assert role_output[ConfState.OPERATIONAL] in operational_expected, \
@@ -93,10 +93,10 @@ def _verify_role_output(role_output: Union[PhyRoleOutputT, ConstantRoleOutputT],
 
 
 def role_case(
-    roles_to_set: Optional[list[tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], str]]] = None,
-    expected_values: Optional[list[tuple[Fae, Union[PhyRoleConsts.PhyRole, PhyRoleConsts.ConstantRole], Union[str, list[str]], Union[str, list[str]]]]] = None
-) -> Optional[dict[Fae, PhyRolesOutputT]]:
-    roles_outputs: Optional[dict[Fae, PhyRolesOutputT]] = None
+    roles_to_set: list[tuple[Fae, PhyRoleConsts.PhyRole | PhyRoleConsts.ConstantRole, str]] | None = None,
+    expected_values: list[tuple[Fae, PhyRoleConsts.PhyRole | PhyRoleConsts.ConstantRole, str | list[str], str | list[str]]] | None = None
+) -> dict[Fae, PhyRolesOutputT] | None:
+    roles_outputs: dict[Fae, PhyRolesOutputT] | None = None
     if roles_to_set is not None:
         for fae, role, value in roles_to_set:
             with allure.step(f"Set {role} to {value} on {fae.port.name}"):
@@ -130,7 +130,7 @@ def role_case(
 
 def verify_phy_role_default(fae_port_1: Fae, fae_port_2: Fae) -> None:
     with allure.step("Verify default phy-role on both ports"):
-        roles_outputs: Optional[dict[Fae, PhyRolesOutputT]] = role_case(
+        roles_outputs: dict[Fae, PhyRolesOutputT] | None = role_case(
             expected_values=[
                 (fae_port_1, PhyRoleConsts.PHY_ROLE, [PhyRoleConsts.PhyRole.PRIMARY.value, PhyRoleConsts.PhyRole.SECONDARY.value], PhyRoleConsts.PhyRole.FW_DEFAULT.value),
                 (fae_port_2, PhyRoleConsts.PHY_ROLE, [PhyRoleConsts.PhyRole.PRIMARY.value, PhyRoleConsts.PhyRole.SECONDARY.value], PhyRoleConsts.PhyRole.FW_DEFAULT.value)

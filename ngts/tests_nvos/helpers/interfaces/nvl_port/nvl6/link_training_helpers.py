@@ -1,12 +1,10 @@
-import re
 import logging
 from typing import TypedDict
 
 from ngts.nvos_constants import constants_nvos as consts_nv
 from ngts.nvos_tools.ib.InterfaceConfiguration import nvos_consts as ib_consts
-from ngts.nvos_tools.infra import Fae as fae_mod
-from ngts.nvos_tools.infra import NvosTestToolkit as tt
-from ngts.nvos_tools.infra import ValidationTool as vt
+from ngts.nvos_tools.infra import Fae
+from ngts.nvos_tools.infra import ValidationTool
 from ngts.tests_nvos.interfaces.nvl_port import helpers as nvl_port_helpers
 from ngts.tools.test_utils import allure_utils as allure
 
@@ -14,59 +12,51 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 OperationalAppliedT = TypedDict('OperationalAppliedT', {
-    consts_nv.ConfState.OPERATIONAL: str,
-    consts_nv.ConfState.APPLIED: str,
+    consts_nv.ConfState.OPERATIONAL: dict[str, str],
+    consts_nv.ConfState.APPLIED: dict[str, str],
 })
 
-FEC_MEASURE_MODE_REGEX: re.Pattern = re.compile(
-    rf"{consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE}\s+"
-    rf"({'|'.join(consts_nv.LinkTrainingConsts.FecMeasureMode.all())})\s+"
-    rf"({'|'.join(consts_nv.LinkTrainingConsts.FecMeasureMode.all())})"
-)
-
-FEC_MEASURE_MODE_DEFAULT: OperationalAppliedT = {
-    consts_nv.ConfState.OPERATIONAL: consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE_OPERATIONAL_DEFAULT.value,
-    consts_nv.ConfState.APPLIED: consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE_APPLIED_DEFAULT.value,
+LINK_TRAINING_DEFAULTS: OperationalAppliedT = {
+    consts_nv.ConfState.OPERATIONAL: {
+        consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE_OPERATIONAL_DEFAULT.value,
+        consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION_OPERATIONAL_DEFAULT.value,
+    },
+    consts_nv.ConfState.APPLIED: {
+        consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE_APPLIED_DEFAULT.value,
+        consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION_APPLIED_DEFAULT.value,
+    },
 }
 
 
-def get_fec_measure_mode_output(fae_obj: fae_mod.Fae) -> OperationalAppliedT:
-    with allure.step(f"Get fec-measure-mode output for port {fae_obj.port.name}"):
-        show_cmd = f"nv show {fae_obj.interface.link.kr.get_resource_path().replace('/', ' ')}"
-        output = tt.TestToolkit.engines.dut.run_cmd(show_cmd)
-        match = FEC_MEASURE_MODE_REGEX.search(output)
-        assert match is not None, f"No fec-measure-mode match in output: {output}"
-        return {
-            consts_nv.ConfState.OPERATIONAL: match.group(1),
-            consts_nv.ConfState.APPLIED: match.group(2),
-        }
-
-
-def wait_and_verify_link(fae_objs: tuple[fae_mod.Fae, ...]) -> None:
+def wait_and_verify_link(fae_objs: tuple[Fae.Fae, ...], timeout: int = ib_consts.InternalNvosConsts.DEFAULT_TIMEOUT) -> None:
     port_names: list[str] = [fae.port.name for fae in fae_objs]
     with allure.step("Wait for port state to be up on both ports"):
         for fae in fae_objs:
-            fae.port.interface.wait_for_port_state(ib_consts.NvosConsts.LINK_STATE_UP).verify_result()
+            fae.port.interface.wait_for_port_state(
+                ib_consts.NvosConsts.LINK_STATE_UP, timeout=timeout,
+            ).verify_result()
     with allure.step("Verify link diagnostics on both ports"):
         nvl_port_helpers.verify_link_diagnostic(port_names)
 
 
-def verify_fec_measure_mode(expected_values: list[tuple[fae_mod.Fae, OperationalAppliedT]]) -> None:
-    with allure.step("Verify fec-measure-mode on both ports"):
+def verify_link_training(
+    expected_values: list[tuple[Fae.Fae, OperationalAppliedT]],
+) -> None:
+    with allure.step("Verify link-training params"):
         for fae, expected in expected_values:
-            actual = get_fec_measure_mode_output(fae)
-            vt.ValidationTool.compare_dictionaries(actual, expected).verify_result()
+            with allure.step(f"Verify port {fae.port.name}"):
+                actual: OperationalAppliedT = {
+                    consts_nv.ConfState.OPERATIONAL: fae.interface.link.kr.parse_show(rev=consts_nv.ConfState.OPERATIONAL),
+                    consts_nv.ConfState.APPLIED: fae.interface.link.kr.parse_show(rev=consts_nv.ConfState.APPLIED),
+                }
+                ValidationTool.ValidationTool.compare_nested_dictionary_content(
+                    actual, expected,
+                ).verify_result()
 
 
-def cleanup_fec_measure_mode(fae_objs: tuple[fae_mod.Fae, ...]) -> None:
-    with allure.step("Cleanup: unset fec-measure-mode, wait for link, verify defaults"):
+def cleanup_link_training(fae_objs: tuple[Fae.Fae, ...]) -> None:
+    with allure.step("Cleanup: unset link-training component, wait for link, verify defaults"):
         for fae in fae_objs:
-            fae.interface.link.kr.unset(
-                op_param=consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE,
-                apply=True,
-                ask_for_confirmation=True,
-            ).verify_result()
+            fae.interface.link.kr.unset(apply=True, ask_for_confirmation=True).verify_result()
         wait_and_verify_link(fae_objs)
-        verify_fec_measure_mode([
-            (fae, FEC_MEASURE_MODE_DEFAULT) for fae in fae_objs
-        ])
+        verify_link_training([(fae, LINK_TRAINING_DEFAULTS) for fae in fae_objs])

@@ -1351,14 +1351,15 @@ def _check_low_power(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
 @_requires_compatibility(IbDevice.RosalindSwitch, minimal_version="25.03.0500")
 def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Generator[None, None, None]:
     """
-    Verify link training fec-measure-mode on NVL ports survives upgrade.
+    Verify link training params on NVL ports survive upgrade.
     Test Steps:
         1. Set fec-measure-mode to enabled on both ports
-        2. Verify fec-measure-mode is enabled on both ports
-        3. Save configuration
-        4. Do upgrade
-        5. Verify fec-measure-mode is still enabled after upgrade
-        6. Cleanup fec-measure-mode configuration
+        2. Set fec-measure-fail-action to a random non-default value on both ports
+        3. Verify both params on both ports
+        4. Save configuration
+        5. Do upgrade
+        6. Verify both params are still set after upgrade
+        7. Cleanup link-training configuration
     """
     with allure.step("Get linked ports pair"):
         linked_ports_pair: list[str] = list(get_linked_ports_pair(devices, engines))
@@ -1376,28 +1377,46 @@ def _check_link_training(engines: EnginesT, devices: DevicesT, **kwargs) -> Gene
                     ask_for_confirmation=True,
                 ).verify_result()
             link_training_helpers.wait_and_verify_link(fae_objs_tuple)
-            expected_enabled = {
-                consts_nv.ConfState.OPERATIONAL: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
-                consts_nv.ConfState.APPLIED: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
-            }
-            link_training_helpers.verify_fec_measure_mode([
-                (fae_port_1, expected_enabled),
-                (fae_port_2, expected_enabled),
-            ])
+
+        random_fail_action = random.choice(consts_nv.LinkTrainingConsts.FecMeasureFailAction.operational())
+        with allure.step(f"Set fec-measure-fail-action to '{random_fail_action}' on both ports"):
+            for fae in fae_objs_tuple:
+                fae.interface.link.kr.set(
+                    op_param_name=consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION,
+                    op_param_value=random_fail_action,
+                    apply=True,
+                    ask_for_confirmation=True,
+                ).verify_result()
+            link_training_helpers.wait_and_verify_link(fae_objs_tuple)
+
+        expected_after_set: link_training_helpers.OperationalAppliedT = {
+            consts_nv.ConfState.OPERATIONAL: {
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
+            },
+            consts_nv.ConfState.APPLIED: {
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_MODE: consts_nv.LinkTrainingConsts.FecMeasureMode.ENABLED.value,
+                consts_nv.LinkTrainingConsts.FEC_MEASURE_FAIL_ACTION: random_fail_action,
+            },
+        }
+        link_training_helpers.verify_link_training([
+            (fae_port_1, expected_after_set),
+            (fae_port_2, expected_after_set),
+        ])
 
         with allure.step("Save configuration"):
             NvueGeneralCli.save_config(engines.dut)
 
         yield  # Do upgrade
 
-        with allure.step("Verify fec-measure-mode after upgrade"):
-            link_training_helpers.verify_fec_measure_mode([
-                (fae_port_1, expected_enabled),
-                (fae_port_2, expected_enabled),
+        with allure.step("Verify link-training params after upgrade"):
+            link_training_helpers.verify_link_training([
+                (fae_port_1, expected_after_set),
+                (fae_port_2, expected_after_set),
             ])
 
     finally:
-        link_training_helpers.cleanup_fec_measure_mode(fae_objs_tuple)
+        link_training_helpers.cleanup_link_training(fae_objs_tuple)
 
 # #################### End of Feature Checkers ###################
 

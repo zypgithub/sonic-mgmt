@@ -38,14 +38,14 @@
   </case>
 
   <case>
-    <name> nvl6 link training mismatch test </name>
-    <info> Test FEC measure mode mismatch (enabled vs disabled) on NVL6 QTM4 devices </info>
+    <name> nvl6 link training fail action test </name>
+    <info> Test FEC measure fail action lifecycle and behavior on NVL6 QTM4 devices </info>
     <tout> 10800 </tout>
     <cmd>
       <params>
           <static_args>
             --setup_name [[conf:extra_info.setup_name]]
-            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_mismatch
+            --test_script /root/mars/workspace/sonic-mgmt/ngts/tests_nvos/interfaces/nvl_port/nvl6/test_link_training.py::test_link_training_negotiation
             --raw_options "\'--rootdir=/root/mars/workspace/sonic-mgmt/ngts
             -c /root/mars/workspace/sonic-mgmt/ngts/pytest.ini
             --release_name=[[conf:extra_info.release_name]]

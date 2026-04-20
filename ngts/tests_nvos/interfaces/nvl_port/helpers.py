@@ -1,15 +1,14 @@
 import random
 import pytest
 import logging
+
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch
+from ngts.nvos_tools.ib.InterfaceConfiguration import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import PhyRecoveryConsts
-from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
@@ -19,7 +18,7 @@ from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.nvos_tools.infra.IbnetdiscoverTool import IbnetdiscoverTool
 from ngts.tools.test_utils import allure_utils as allure
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 def show_interface_and_validate(engines, devices, ports_list, command=''):
@@ -115,8 +114,7 @@ EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
 
 
 def verify_link_diagnostic(ports: list[str]) -> None:
-    output = NvueIbInterfaceCli.show_interface(TestToolkit.engines.dut, port_name='--view link-diagnostics')
-    output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
+    output_dict = Interface.Interface(parent_obj=None).parse_show(op_param='--view link-diagnostics')
     for port_name in ports:
         port_diagnostics = output_dict[port_name]['link']['diagnostics']
         assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is not 0"

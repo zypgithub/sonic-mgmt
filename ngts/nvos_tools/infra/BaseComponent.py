@@ -83,9 +83,9 @@ class BaseComponent:
         else:
             return result_obj
 
-    def parse_show(self, op_param="", dut_engine=None, should_succeed=True):
+    def parse_show(self, op_param="", dut_engine=None, should_succeed=True, rev=ConfState.OPERATIONAL):
         with allure.step('Parse show for {}'.format(self.get_resource_path())):
-            output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed)
+            output = self.show(op_param, OutputFormat.json, dut_engine, should_succeed, rev=rev)
             return OutputParsingTool.parse_json_str_to_dictionary(output).verify_result()
 
     def _set(self, param_name, param_value, expected_str='', apply=False, ask_for_confirmation=False, dut_engine=None,
