@@ -148,6 +148,7 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
     mtu_info = None
     json_acl_rules = None
     cp_acl_bindings = None
+    acl_persist_mangle_state = None
 
     if not downgrade_version_realpath:
         pytest.skip("Cannot run test because base_version parameter is missing from the setup file")
@@ -201,12 +202,16 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             include_mtu_testing=has_active_ports, verify_result=True)
 
         # ACL + control-plane baseline after config is applied on downgraded image (before upgrade to target)
+        with allure.step("Add ACL/control-plane configs for persistence checks (before baseline capture)"):
+            acl_persist_mangle_state = system_helpers.add_acl_new_configs_for_persistence_checks(
+                dut_engine=engines.dut)
+
         with allure.step("Save default ACL rules baseline (before upgrade to target image)"):
-            json_acl_rules = system_helpers.extract_acl_rules()
-            logger.info("ACL baseline captured: %s", json_acl_rules)
+            json_acl_rules = system_helpers.extract_acl_rules(dut_engine=engines.dut)
+            logger.info("ACL baseline captured for %d default ACL object(s)", len(json_acl_rules))
 
         with allure.step("Save control-plane ACL bindings baseline (nv show system control-plane acl)"):
-            cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings()
+            cp_acl_bindings = system_helpers.extract_control_plane_acl_bindings(dut_engine=engines.dut)
             logger.info("Control-plane ACL bindings captured: %s", cp_acl_bindings)
 
         logger.info("After replacing configuration file, system may ask for new password. Restoring password:")
@@ -228,16 +233,25 @@ def test_downgrade_upgrade(release_name, random_api, original_version, devices, 
             run_post_upgrade_cheks(topology_obj, engines, ib_router)
 
             with allure.independent_step('cleanup test'):
-                cleanup_test(system, original_images, original_image_partition, [fetched_image, target_fetched_image], config_file_path=config_file_path, orig_engine=orig_engine, target_version_realpath=target_version_realpath)
+                cleanup_test(system, original_images, original_image_partition,
+                             [fetched_image, target_fetched_image],
+                             config_file_path=config_file_path, orig_engine=orig_engine,
+                             target_version_realpath=target_version_realpath)
 
             with allure.independent_step('Verify MTU preserved after upgrade'):
                 InterfaceConfigurationTool.verify_and_cleanup_mtu(mtu_info)
 
-            with allure.independent_step('Verify default ACL rules preserved after upgrade'):
-                system_helpers.verify_acl_rules_preserved(json_acl_rules)
+            if json_acl_rules is not None:
+                with allure.independent_step('Verify default ACL JSON preserved after upgrade (nv show acl)'):
+                    system_helpers.verify_acl_rules_preserved(json_acl_rules, dut_engine=engines.dut)
+            if cp_acl_bindings is not None:
+                with allure.independent_step(
+                    'Verify control-plane ACL bindings + loopback defaults on interface lo after upgrade'
+                ):
+                    system_helpers.verify_control_plane_acl_bindings(cp_acl_bindings, dut_engine=engines.dut)
 
-            with allure.independent_step('Verify default ACLs still bound to control-plane after upgrade'):
-                system_helpers.verify_control_plane_acl_bindings(cp_acl_bindings)
+        with allure.step('Clear ACL persistence mangle state (if any)'):
+            system_helpers.clear_acl_configs(acl_persist_mangle_state, dut_engine=engines.dut)
 
 
 @pytest.mark.checklist
