@@ -65,7 +65,7 @@ def test_cluster_chassis_id(engines, devices, random_api):
             path = dict_output[filename]['path']
             current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
             expected_contect = f'chassisId{mapping_id} {chassis_id_serial}'
-            ValidationTool.verify_expected_output(current_config_content, expected_contect)
+            ValidationTool.verify_expected_output(current_config_content, expected_contect).verify_result()
 
     finally:
         with allure.step("Delete config file"):
