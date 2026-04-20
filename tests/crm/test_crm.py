@@ -475,9 +475,10 @@ def configure_nexthop_groups(amount, interface, duthost, asichost, test_name):
     ip {{ns_prefix}} neigh replace 2.0.0.1 lladdr 11:22:33:44:55:66 dev {{iface}}""" % (NS_PREFIX_TEMPLATE)
 
     del_template = Template(del_template)
-    neigh_template = Template(neigh_template)
-    route_template = Template(route_template)
-    init_template = Template(init_template)
+    
+    neigh_template = Template(neigh_template, autoescape=True)
+    route_template = Template(route_template, autoescape=True)
+    init_template = Template(init_template, autoescape=True)
 
     ip_addr_list = generate_neighbors(amount + 1, "4")
     remaining_ips = ip_addr_list[1:]
