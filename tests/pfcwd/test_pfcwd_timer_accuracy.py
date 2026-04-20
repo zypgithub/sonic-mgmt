@@ -76,6 +76,7 @@ def pfcwd_timer_setup_restore(setup_pfc_test, enum_fanout_graph_facts, duthosts,
     timers = setup_info['pfc_timers']
     eth0_ip = setup_info['eth0_ip']
     dynamic_timers = calculate_pfcwd_default_timers(duthost)
+    logger.info(f"Updating timers: original={timers}, dynamic={dynamic_timers}")
     timers.update(dynamic_timers)
     # In Python2, dict.keys() returns list object, but in Python3 returns an iterable but not indexable object.
     # So that convert to list explicitly.

@@ -355,9 +355,7 @@ def calculate_pfcwd_default_timers(duthost):
 
     multiply = max(1, (port_num - 1) // PFCWD_DEFAULT_PORT_NUM + 1)
 
-    poll_interval = PFCWD_DEFAULT_POLL_INTERVAL * multiply
-    if poll_interval > PFCWD_MAX_POLL_INTERVAL:
-        poll_interval = PFCWD_MAX_POLL_INTERVAL
+    poll_interval = min(PFCWD_DEFAULT_POLL_INTERVAL * multiply, PFCWD_MAX_POLL_INTERVAL)
 
     pfc_timers = {
         'pfc_wd_detect_time': PFCWD_DEFAULT_DETECT_TIME * multiply,
