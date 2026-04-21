@@ -502,9 +502,9 @@ dash/test_dash_privatelink_redirect.py::TestPrivateLinkRedirectPLNSG::test_dst_p
 
 dns/test_dns_resolv_conf.py::test_dns_resolv_conf:
   xfail:
-    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4692207"
+    reason: "xfail due to RM issue: https://redmine.mellanox.com/issues/4988940"
     conditions:
-    - "https://redmine.mellanox.com/issues/4692207 and 'sn5640' in platform"
+    - "https://redmine.mellanox.com/issues/4988940 and 'sn5640' in platform"
 
 drop_packets/test_wjh.py:
   skip:
