@@ -15,8 +15,11 @@ SN4280_PLATFORM = "x86_64-nvidia_sn4280-r0"
 FWUTIL_DPU_RESET_IGNORE_REGEX = [
     r".*ERR.*kernel.*i2c.*Failed to complete workqueue.*",
     r".*ERR.*kernel:.*mlx5_core.*",
+    r".*WARNING.*kernel:.*mlx5_core.*",
     r".*ERR.*kernel.*Device error state:.*",
+    r".*ERR pmon#chassisd.*: Failed to check watchdog reason for DPU.*",
     r".*ERR pmon#sensord: Error getting sensor data.*",
+    r".*DEBUG.*kernel:.*pci_channel_io_normal.*",
 ]
 
 @pytest.fixture(autouse=False)
