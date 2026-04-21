@@ -2848,7 +2848,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.sdn_needs_pre_cluster_setup = True
 
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
-        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0400_versions.json"
+        self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_0600_versions.json"
         # will be updated
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6100_ld-r0")
