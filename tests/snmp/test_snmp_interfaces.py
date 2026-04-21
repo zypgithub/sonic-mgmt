@@ -304,8 +304,7 @@ def verify_snmp_counter(duthost, localhost, creds_all_duts, hostip, mg_facts, ri
     if not check_counter_with_margin(int(rif_snmp_facts['ifInErrors']), COUNTER_VALUE * num_port_intfs, 'ifInErrors'):
         return False
 
-    if not check_counter_with_margin(
-        int(rif_snmp_facts['ifOutErrors']), COUNTER_VALUE * num_port_intfs, 'ifOutErrors'):
+    if not check_counter_with_margin(int(rif_snmp_facts['ifOutErrors']), COUNTER_VALUE * num_port_intfs, 'ifOutErrors'):
         return False
 
     return True
