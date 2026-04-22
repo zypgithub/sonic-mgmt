@@ -29,6 +29,7 @@ def main():
     create_parser.add_argument("--custom_links_path", default="", help="Custom links path json file name")
     create_parser.add_argument("--organization_name", default="SONIC", help="Organization name")
     create_parser.add_argument("--dbs_to_run", default="", help="path to file containing dbs to run, for example \"communty/pretest.db,canonical/nightly.db\"")
+    create_parser.add_argument("--topology", default=None, help="SONiC test topology, e.g. t0, t1, ptf-any. Required for community topology_type.")
     create_parser.set_defaults(func=handle_create)
     list_parser = subparsers.add_parser("list", help="List all air simulations of the current user")
     list_parser.set_defaults(func=handle_list)

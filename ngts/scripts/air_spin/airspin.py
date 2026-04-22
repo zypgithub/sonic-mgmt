@@ -5,7 +5,7 @@ import re
 
 from jinja2 import Environment, FileSystemLoader
 from .message import Message
-from .config import AIR_WEBSITE_SIMULATIONS_URL, RESULTS_FOLDER_PATH, SETUPS_FOLDER_PATH, TOPO_FOLDER_PATH, TEMPLATE_FOLDER_PATH
+from .config import AIR_WEBSITE_SIMULATIONS_URL, SETUPS_FOLDER_PATH, TOPO_FOLDER_PATH, TEMPLATE_FOLDER_PATH
 from .config import SETUP_TEMPLATE_FILE, TOPO_TEMPLATE_FILE, SPIN_AIR_RESULTS_FOLDER_PATH, STM, STM_PASSWORD, STM_USER
 
 msg = Message()
@@ -23,6 +23,13 @@ class AirSpin:
         self.custom_links_path = kwargs.get("custom_links_path")
         self.dbs_to_run = kwargs.get("dbs_to_run")
         self.username = kwargs.get("username")
+        if self.topology_type == "community":
+            self.topology = kwargs.get("topology")
+            if not self.topology:
+                raise ValueError("topology is required for community topology_type")
+        else:
+            self.topology = "ptf-any"
+        self.sonic_mgmt_repo_branch = "develop"
         self.topology_file_path = None
         self.setup_path = None
         self.docker_mac = None
@@ -77,7 +84,8 @@ class AirSpin:
         self._run_cmd_in_stm(f"docker pull {docker_image}")
         msg.info(f"Pulled ngts docker image successfully.")
         try:
-            self._run_cmd_in_stm(f"docker run -dt --name {self.ngts_docker_name} --env-file <(env) {docker_image}")
+            service_key = os.environ.get("SONIC_AIR_SERVICE_KEY", "")
+            self._run_cmd_in_stm(f"docker run -dt --privileged --entrypoint bash --name {self.ngts_docker_name} -e SONIC_AIR_SERVICE_KEY={service_key} {docker_image}")
             cmd = f"PYTHONPATH=/devts /ngts_venv/bin/python /devts/scripts/airspin_simulation_mgmt.py --list --username {self.username}"
             result = self._run_cmd_in_stm(f"docker exec -i {self.ngts_docker_name} sh -c \'{cmd}\'")
             simulation_list = []
@@ -115,7 +123,7 @@ class AirSpin:
         msg.success(f"Simulation completed successfully")
 
     def prepare_results_dir(self):
-        setup_path = os.path.join(RESULTS_FOLDER_PATH, self.setup_name)
+        setup_path = os.path.join(SPIN_AIR_RESULTS_FOLDER_PATH, self.setup_name)
         self._create_dir(setup_path)
         setup_logs_path = os.path.join(setup_path, "logs")
         self._create_dir(setup_logs_path)
