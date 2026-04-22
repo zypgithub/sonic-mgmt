@@ -234,10 +234,14 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         sonic_mgmt_path.extend(['tests', test_script_path])
         test_script_fullpath = '/'.join(sonic_mgmt_path)
         topology_mark_pattern = r'pytest\.mark\.topology\(.+\)'
+        need_dpu_pattern = False
         try:
             with open(test_script_fullpath) as test_script_file:
                 for line in test_script_file:
-                    if re.search(topology_mark_pattern, line):
+                    match = re.search(topology_mark_pattern, line)
+                    if match and "smartswitch" in match.group(0):
+                        need_dpu_pattern = True
+                    if match:
                         if self.sonic_topo:
                             self.convert_topos()
                             self.raw_options += " --topology %s" % self.topology
@@ -293,7 +297,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          TESTBED=testbed,
                          SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
-        if 'bobcat' in self.dut_name and self.run_test_on_dpu_only != "True":
+        if need_dpu_pattern:
             cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file

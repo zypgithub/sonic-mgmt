@@ -15,7 +15,6 @@ from tests.common.dash_utils import verify_tunnel_packets
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology("t1"),
     pytest.mark.topology("smartswitch"),
     pytest.mark.skip_check_dut_health
 ]

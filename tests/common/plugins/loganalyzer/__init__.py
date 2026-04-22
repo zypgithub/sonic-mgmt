@@ -87,13 +87,28 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
     should_rotate_log = request.config.getoption("--loganalyzer_rotate_logs")
     is_modular_chassis = duthosts[0].get_facts().get("modular_chassis") if duthosts else False
 
+    # Import here, not at module load: conftest imports common before loganalyzer
+    # finishes loading; a top-level import creates a circular import.
+    try:
+        from tests.conftest import get_specified_dpus
+        # Get dpuhosts if the --dpu-pattern is provided to enable loganalyzer on dpus
+        dpuhosts = request.getfixturevalue("dpuhosts") if get_specified_dpus(request) else []
+    except Exception:
+        dpuhosts = []
+
+    analyzer_hosts = []
+    for duthost in duthosts:
+        analyzer_hosts.append(duthost)
+    for dpuhost in dpuhosts:
+        analyzer_hosts.append(dpuhost)
+
     # We make sure only run logrotate as "function" scope for non-modular chassis for optimisation purpose.
     # For modular chassis please refer to "log_rotate_modular_chassis" fixture
     if should_rotate_log and not is_modular_chassis:
-        parallel_run(analyzer_logrotate, [], {}, duthosts, timeout=120)
+        parallel_run(analyzer_logrotate, [], {}, analyzer_hosts, timeout=120)
 
     no_duthost = False
-    for duthost in duthosts:
+    for duthost in analyzer_hosts:
         if duthost is None:
             no_duthost = True
         else:
@@ -103,7 +118,7 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
 
     with allure.step("Marker"):
         markers_start_time = time.time()
-        markers = parallel_run(analyzer_add_marker, [analyzers], {}, duthosts, timeout=120)
+        markers = parallel_run(analyzer_add_marker, [analyzers], {}, analyzer_hosts, timeout=120)
         markers_end_time = time.time()
         markers_execution_time = markers_end_time - markers_start_time
         logging.info(f"Marker took {markers_execution_time:.2f} seconds to execute")
@@ -121,7 +136,7 @@ def loganalyzer(duthosts, request, log_rotate_modular_chassis):
                         f"a network error.")
 
     # It's possible we modify the analyzers in tests to skip some duthosts
-    analyzer_hosts = [duthost for duthost in duthosts if duthost.hostname in analyzers]
+    analyzer_hosts = [duthost for duthost in analyzer_hosts if duthost.hostname in analyzers]
 
     logging.info("Starting to analyse on all DUTs")
     la_results = parallel_run(

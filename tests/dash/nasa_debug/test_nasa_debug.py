@@ -14,7 +14,7 @@ from ngts.constants.constants import PytestConst
 
 logger = logging.getLogger(__name__)
 pytestmark = [
-    pytest.mark.topology("any")
+    pytest.mark.topology("smartswitch")
 ]
 
 @pytest.fixture(autouse=True)

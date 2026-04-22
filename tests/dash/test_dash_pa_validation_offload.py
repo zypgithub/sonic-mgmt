@@ -23,7 +23,7 @@ ACL_PERMIT_RULE_KEY_PATTERN = "ACL_RULE_TABLE:DASH_PA_VALIDATION_DPU.*:RULE(?!.*
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t1'),
+    pytest.mark.topology('smartswitch'),
     pytest.mark.skip_check_dut_health
 ]
 

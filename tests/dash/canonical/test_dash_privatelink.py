@@ -13,7 +13,7 @@ from tests.common.helpers.smartswitch_util import get_dpu_dataplane_port
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('any')
+    pytest.mark.topology('smartswitch')
 ]
 
 DUT_IP_ON_DUT_HOST_A_0 = "10.10.10.2"

@@ -7,7 +7,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from tests.common.helpers.assertions import pytest_assert
 
 pytestmark = [
-    pytest.mark.topology('any'),
+    pytest.mark.topology('smartswitch'),
     pytest.mark.skip_check_dut_health
 ]
 

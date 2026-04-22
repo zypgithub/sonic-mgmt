@@ -19,7 +19,6 @@ import ptf.packet as scapy
 logger = logging.getLogger(__name__)
 
 pytestmark = [
-    pytest.mark.topology('t1'),
     pytest.mark.topology('smartswitch')
 ]
 

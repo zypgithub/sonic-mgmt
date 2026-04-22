@@ -78,7 +78,6 @@ from tests.common.plugins.ptfadapter.dummy_testutils import DummyTestUtils
 from tests.common.helpers.multi_thread_utils import SafeThreadPoolExecutor
 from tests.common.helpers.parallel import patch_ansible_worker_process
 from tests.common.helpers.parallel import fix_logging_handler_fork_lock
-from tests.common.mellanox_data import is_mellanox_device
 from tests.common.helpers.counterpoll_helper import ConterpollHelper
 
 import tests.common.gnmi_setup as gnmi_setup
@@ -187,7 +186,7 @@ def pytest_addoption(parser):
 
     # FEC test options
     parser.addoption("--toggles_num", action="store", default=1, type=int, help="Number of toggles for FEC test")
-    
+
     # read_mac options
     parser.addoption('--image1', action='store', type=str, help='1st image to download and install')
     parser.addoption('--image2', action='store', type=str, help='2nd image to download and install')
@@ -348,7 +347,12 @@ def pytest_addoption(parser):
     ############################
     #   SmartSwitch options    #
     ############################
-    parser.addoption("--dpu-pattern", action="store", default="all", help="dpu host name")
+    parser.addoption(
+        "--dpu-pattern",
+        action="store",
+        default="None",
+        help="Smartswitch dpus that should be involved in the test (e.g. 'dut-dpu-0,dut-dpu-1')"
+    )
     parser.addoption(
         "--ss_target_index",
         action="store",
