@@ -430,6 +430,12 @@ bgp/test_bgp_sentinel.py:
     conditions:
     - https://redmine.mellanox.com/issues/4978910
 
+bgp/test_bgp_bbr.py::test_bbr_enabled_dut_asn_in_aspath:
+  xfail:
+    reason: "Testcase expected to fail due to RM issue https://redmine.mellanox.com/issues/4989648"
+    conditions:
+    - "platform == 'x86_64-mlnx_msn2700-r0' and https://redmine.mellanox.com/issues/4989648"
+
 crm/test_crm.py::test_crm_nexthop_group:
   xfail:
     reason: "Testcase expected to fail due to RM issue: https://redmine.mellanox.com/issues/4978891"
