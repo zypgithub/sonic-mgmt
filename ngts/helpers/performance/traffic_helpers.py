@@ -519,7 +519,9 @@ def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validat
         reference_json: reference validation json, can be from a previous test run or from a reference file
         pg_keys: list of pg keys, i.e [ValidationConsts.OCC_AVG, ValidationConsts.OCC_MAX]
         pg_to_validate: list of pg to validate, i.e [1, 2]
-        allowed_deviation: allowed deviation from the reference PG occupancy, i.e +-1
+        allowed_deviation: allowed deviation from the reference PG occupancy.
+            If a float between 0 and 1, interpreted as a percentage (e.g. 0.15 = +-15%).
+            Otherwise interpreted as an absolute value (e.g. 4 = +-4 cells).
         violations_list: list of violations
         pg_buffer_type: which PG buffer to validate - ValidationConsts.PG_HEADROOM_DATAFRAME or
                        ValidationConsts.PG_BUFFER_DATAFRAME (REQUIRED - must be explicitly specified)
@@ -539,7 +541,10 @@ def compare_pg_to_reference(traffic_json, reference_json, pg_keys, pg_to_validat
                             pg_occ = pg_dict[key]
                             reference_pg_occ = get_pg_occ_from_traffic_json(reference_json, port_group_name, key, pg_name,
                                                                             pg_buffer_type)
-                            min_limit, max_limit = reference_pg_occ - allowed_deviation, reference_pg_occ + allowed_deviation
+                            if isinstance(allowed_deviation, float) and 0 < allowed_deviation < 1:
+                                min_limit, max_limit = reference_pg_occ * (1 - allowed_deviation), reference_pg_occ * (1 + allowed_deviation)
+                            else:
+                                min_limit, max_limit = reference_pg_occ - allowed_deviation, reference_pg_occ + allowed_deviation
                             if pg_occ < min_limit or pg_occ > max_limit:
                                 violations_list.append(f"In sample {sample_id} for port group {port_group_name} - PG {pg_name} {buffer_type_name} {key} is not within reference comparison range {min_limit} - {max_limit}, current value: {pg_occ}")
 

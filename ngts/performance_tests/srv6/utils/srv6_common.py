@@ -254,8 +254,13 @@ class TestSRv6Base:
                     ipv6_validation_json = json.load(f)
                 additional_validations['compare_tc_occ_to_reference'] = Validation(compare_tc_occ_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                                  'tc_keys': [ValidationConsts.OCC_AVG],
-                                                                                                                 'tc_to_validate': MRCConsts.TRIMMING_ELEGABLE_QUEUE_NUM,
+                                                                                                                 'tc_to_validate': MRCConsts.TRIMMING_DATA_QUEUE_NUM,
                                                                                                                  'allowed_deviation': tc_occ_allowed_deviation})
+                tc3_occ_threshold = {ValidationConsts.OCC_AVG: MRCConsts.MRC_RETRANSMISSION_TC_OCC_AVG_THRESHOLD}
+                additional_validations['validate_tc3_occ_below_threshold'] = Validation(validate_per_tc, {'tc_occ_threshold': tc3_occ_threshold,
+                                                                                                          'tc_to_validate': MRCConsts.MRC_RETRANSMISSION_TC_NUM,
+                                                                                                          'tolerance': None,
+                                                                                                          'port_group_name_to_validate_list': []})
                 additional_validations['compare_pg_to_reference'] = Validation(compare_pg_to_reference, {'reference_json': ipv6_validation_json,
                                                                                                          'pg_keys': [ValidationConsts.OCC_AVG],
                                                                                                          'pg_to_validate': MRCConsts.PG_LIST,
