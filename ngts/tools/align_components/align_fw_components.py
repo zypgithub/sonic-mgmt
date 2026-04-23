@@ -10,6 +10,7 @@ from Component import Component, BmcComponent
 from ComponentManager import ComponentManager
 from Redfish_rest_api import RedFishRestApi
 from Constants import Defaults, NogaConstants, RedfishCollection
+from ip_utils import resolve_bmc_ip
 
 
 def get_switch_info(setup_name: str) -> List[str]:
@@ -29,7 +30,7 @@ def get_provisioning(switch_info: dict) -> str:
 
 def start_components_update(_args):
     switch_info = get_switch_info(_args.setup_name)
-    bmc_ip = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.BMC_IP]
+    bmc_ip = resolve_bmc_ip(switch_info)
     provisioning = get_provisioning(switch_info)
     switch_name = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name'].strip()
     assert bmc_ip, "No bmc ip found in noga"

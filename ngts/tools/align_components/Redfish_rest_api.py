@@ -3,6 +3,8 @@ import urllib.parse
 
 import requests
 
+from ip_utils import bracket_for_url
+
 # Suppress the warning for insecure requests
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
@@ -39,9 +41,10 @@ class RedFishRestApi:
         self.ip = ip
         self.username = user
         self.password = password
+        print(f"[redfish] base URL https://{bracket_for_url(self.ip)} (ip={self.ip})")
 
     def _gen_url(self, endpoint):
-        url = urllib.parse.urljoin(f"https://{self.ip}", endpoint)
+        url = urllib.parse.urljoin(f"https://{bracket_for_url(self.ip)}", endpoint)
         return url
 
     def get_query(self, endpoint):

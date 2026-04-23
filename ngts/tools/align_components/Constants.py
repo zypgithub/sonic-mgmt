@@ -39,6 +39,10 @@ class NogaConstants:
     NAME = "NAME"
     ATTRIBUTES = 'attributes'
     BMC_IP = 'bmc_ip'
+    BMC_IPV6 = 'bmc_ipv6'
+    MGMT_IPV6 = 'ipv6'
+    HARDWARE_STATE_DETAILS = 'Hardware_state_details'
+    IPV6_MARKER = 'IPv6 setup'
     REMOTE_REBOOT = 'remote_reboot'
     SPECIFIC = 'Specific'
     BIOS_VERSION = 'bios_version'

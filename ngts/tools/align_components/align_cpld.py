@@ -6,12 +6,13 @@ from ComponentManager import ComponentManager
 from Constants import NogaConstants, Defaults
 from align_fw_components import get_switch_info, parse_args, create_json_dict, verify_install_path
 from Redfish_rest_api import RedFishRestApi
+from ip_utils import resolve_bmc_ip, resolve_switch_mgmt_ip
 
 
 def perform_cpld_update(_args):
     switch_info = get_switch_info(_args.setup_name)
-    hostname = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.COMMON]['Name']
-    bmc_ip = switch_info[NogaConstants.ATTRIBUTES][NogaConstants.SPECIFIC][NogaConstants.BMC_IP]
+    hostname = resolve_switch_mgmt_ip(switch_info)
+    bmc_ip = resolve_bmc_ip(switch_info)
     assert bmc_ip, "No bmc ip found in noga"
     if _args.cpld_path:
         install_path = _args.cpld_path

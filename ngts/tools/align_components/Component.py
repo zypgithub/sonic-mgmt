@@ -5,7 +5,17 @@ from abc import ABC, abstractmethod
 
 import rf_progress
 from Constants import NogaConstants, RedfishCollection, Defaults
+from ip_utils import bracket_for_url, is_ipv6
 from Redfish_rest_api import RedFishRestApi
+
+
+def _redact_sshpass(cmd_list):
+    """Return a copy of the subprocess command list with the sshpass password masked."""
+    redacted = list(cmd_list)
+    for i, tok in enumerate(redacted[:-1]):
+        if tok == '-p':
+            redacted[i + 1] = '***'
+    return redacted
 
 
 class Component(ABC):
@@ -145,8 +155,10 @@ class CpldComponent(Component):
             'sshpass', '-p', self.ssh_pass,
             'ssh', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no',
             '-o', 'TCPKeepAlive=yes', '-o', 'ServerAliveInterval=30',
-            f'{self.ssh_user}@{self.switch_ip}'
         ]
+        if is_ipv6(self.switch_ip):
+            ssh_command.append('-6')
+        ssh_command.append(f'{self.ssh_user}@{self.switch_ip}')
 
         if isinstance(command, str):
             ssh_command.append(command)
@@ -155,6 +167,7 @@ class CpldComponent(Component):
         else:
             raise Exception(f'Unsupported command type {type(command)}')
 
+        print(f"[ssh] dispatching: {' '.join(_redact_sshpass(ssh_command))}")
         try:
             process = subprocess.Popen(
                 ssh_command,
@@ -186,10 +199,16 @@ class CpldComponent(Component):
         ssh_command = [
             'sshpass', '-p', self.ssh_pass,
             'scp', '-o', 'PubkeyAuthentication=no', '-o', 'StrictHostKeyChecking=no',
-            '-o', 'UserKnownHostsFile=/dev/null', f'{self.install_path}',
-            f'{self.ssh_user}@{self.switch_ip}:{remote_path}'
+            '-o', 'UserKnownHostsFile=/dev/null',
         ]
+        if is_ipv6(self.switch_ip):
+            ssh_command.append('-6')
+        ssh_command.extend([
+            f'{self.install_path}',
+            f'{self.ssh_user}@{bracket_for_url(self.switch_ip)}:{remote_path}'
+        ])
 
+        print(f"[scp] dispatching: {' '.join(_redact_sshpass(ssh_command))}")
         try:
             process = subprocess.Popen(
                 ssh_command,
