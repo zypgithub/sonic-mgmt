@@ -208,6 +208,9 @@ def basic_sflow_cleanup(engines, cli_objects, interfaces):
             cli_obj.sflow.disable_sflow_feature()
         with allure.step("Remove sflowtool sample files"):
             remove_tmp_sample_file(engines)
+        with allure.step("Delete sflow entries from redis db"):
+            for table in SflowConsts.SFLOW_REDIS_GENERAL_TABLES:
+                cli_obj.general.delete_redis_table(table)
 
 
 def analyze_sample(sample_file, interface_name=None, loopback=False):
