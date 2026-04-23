@@ -1,42 +1,53 @@
-from tests.common.fixtures.conn_graph_facts import conn_graph_facts, enum_fanout_graph_facts     # noqa: F401
-from tests.common.helpers.pfc_counters import leaf_fanouts      # noqa: F401
-from tests.common.helpers.pfc_counters import run_test
+"""
+Shared helpers for PFC counter tests.
+
+Provides ``setup_testbed``, ``run_test``, and the ``leaf_fanouts`` fixture so
+that any feature-specific test module (qos, macsec, …) can exercise PFC
+counter verification without cross-feature imports.
+"""
+
+from tests.common.platform.device_utils import eos_to_linux_intf, nxos_to_linux_intf, sonic_to_linux_intf
+import os
+import time
 import pytest
 import logging
 
-"""
-This module implements test cases for PFC counters of SONiC.
-The PFC Rx counter should be increased when the switch receives a priority-based flow control (PFC) pause/unpause frame.
-The PFC Rx counter should NOT be updated when the switch receives a global flow control pause/unpause frame.
-
-In each test case, we send a specific number of pause/unpause frames to a given priority queue of a given port at the
-device under test (DUT). Then we check the SONiC PFC Rx counters.
-"""
-
-pytestmark = [
-    pytest.mark.topology('any')
-]
-
 logger = logging.getLogger(__name__)
 
+PFC_GEN_FILE_PATH = os.path.normpath(os.path.join(
+    os.path.dirname(__file__), '..', '..', '..',
+    'ansible', 'roles', 'test', 'files', 'helpers', 'pfc_gen.py'))
+""" Expected PFC generator path at the leaf fanout switch """
+PFC_GEN_FILE_DEST = r'~/pfc_gen.py'
+PFC_GEN_FILE_ABSOLUTE_PATH = r'/root/pfc_gen_cpu.py'
 
-@pytest.fixture(scope='module', autouse=True)
-def enable_flex_port_counter(rand_selected_dut):
-    get_cmd = 'sonic-db-cli CONFIG_DB hget "FLEX_COUNTER_TABLE|PORT" "FLEX_COUNTER_STATUS"'
-    status = rand_selected_dut.shell(get_cmd)['stdout']
-    if status == 'enable':
-        yield
-        return
-    set_cmd = 'sonic-db-cli CONFIG_DB hset "FLEX_COUNTER_TABLE|PORT" "FLEX_COUNTER_STATUS" "{}"'
-    logger.info("Enable flex counter for port")
-    rand_selected_dut.shell(set_cmd.format('enable'))
-    yield
-    logger.info("Disable flex counter for port")
-    rand_selected_dut.shell(set_cmd.format('disable'))
+""" Number of generated packets for each test case """
+PKT_COUNT = 10
+""" Number of switch priorities """
+PRIO_COUNT = 8
 
 
-<<<<<<< HEAD
-def setup_testbed(fanouthosts, duthost, leaf_fanouts):           # noqa: F811
+@pytest.fixture(scope="module")
+def leaf_fanouts(conn_graph_facts):                                      # noqa: F811
+    """
+    @summary: Fixture for getting the list of leaf fanout switches
+    @param conn_graph_facts: Topology connectivity information
+    @return: Return the list of leaf fanout switches
+    """
+    leaf_fanouts = []
+    conn_facts = conn_graph_facts['device_conn']
+
+    """ for each interface of DUT """
+    for _, value in list(conn_facts.items()):
+        for _, val in list(value.items()):
+            peer_device = val['peerdevice']
+            if peer_device not in leaf_fanouts:
+                leaf_fanouts.append(peer_device)
+
+    return leaf_fanouts
+
+
+def setup_testbed(fanouthosts, duthost, leaf_fanouts):                   # noqa: F811
     """
     @Summary: Set up the duthost, including clearing counters,
               and copying the PFC generator to the leaf fanout switches.
@@ -52,9 +63,7 @@ def setup_testbed(fanouthosts, duthost, leaf_fanouts):           # noqa: F811
             continue
 
         peerdev_ans = fanouthosts[peer_device]
-        file_src = os.path.join(os.path.dirname(
-            __file__), PFC_GEN_FILE_RELATIVE_PATH)
-        peerdev_ans.host.copy(src=file_src, dest=PFC_GEN_FILE_DEST, force=True)
+        peerdev_ans.host.copy(src=PFC_GEN_FILE_PATH, dest=PFC_GEN_FILE_DEST, force=True)
 
 
 def run_test(fanouthosts, duthost, conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts,       # noqa: F811
@@ -74,14 +83,11 @@ def run_test(fanouthosts, duthost, conn_graph_facts, enum_fanout_graph_facts, le
     onyx_pfc_container_name = 'storm'
     int_status = asic.show_interface(command="status")[
         'ansible_facts']['int_status']
-    """ We only test active physical interfaces """
-    dpus = get_dpu_npu_ports_from_hwsku(duthost)
     """ We only test active physical interfaces that have connection graph entries """
     active_phy_intfs = [intf for intf in int_status if
                         intf.startswith('Ethernet') and
                         int_status[intf]['admin_state'] == 'up' and
                         int_status[intf]['oper_state'] == 'up' and
-                        intf not in dpus and
                         intf in conn_facts]
     only_lossless_rx_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
     no_xon_counters = "Cisco-8122" in asic.sonichost.facts["hwsku"]
@@ -218,44 +224,3 @@ def run_test(fanouthosts, duthost, conn_graph_facts, enum_fanout_graph_facts, le
                             "PFC RX counter value is not zero for interface {} and priority {}. "
                             "Expected value: 0, but got {}."
                         ).format(intf, i, pfc_rx[intf]['Rx'][i])
-
-
-=======
->>>>>>> bf6808f3a8 ([macsec]: Add test for receiving PFC frames on macsec link (#23928))
-def test_pfc_pause(fanouthosts, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                   conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts):          # noqa: F811
-    """ @Summary: Run PFC pause frame (pause time quanta > 0) tests """
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    run_test(fanouthosts, duthost, conn_graph_facts,
-             enum_fanout_graph_facts, leaf_fanouts)
-
-
-def test_pfc_unpause(fanouthosts, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                     conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts):        # noqa: F811
-    """ @Summary: Run PFC unpause frame (pause time quanta = 0) tests """
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    run_test(fanouthosts, duthost, conn_graph_facts,
-             enum_fanout_graph_facts, leaf_fanouts, pause_time=0)
-
-
-def test_fc_pause(fanouthosts, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                  conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts):           # noqa: F811
-    """ @Summary: Run FC pause frame (pause time quanta > 0) tests """
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    run_test(fanouthosts, duthost, conn_graph_facts,
-             enum_fanout_graph_facts, leaf_fanouts, is_pfc=False)
-
-
-def test_fc_unpause(fanouthosts, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                    conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts):         # noqa: F811
-    """ @Summary: Run FC pause frame (pause time quanta = 0) tests """
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    run_test(fanouthosts, duthost, conn_graph_facts,
-             enum_fanout_graph_facts, leaf_fanouts, is_pfc=False, pause_time=0)
-
-
-def test_continous_pfc(fanouthosts, duthosts, enum_rand_one_per_hwsku_frontend_hostname,
-                       conn_graph_facts, enum_fanout_graph_facts, leaf_fanouts):     # noqa: F811
-    duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
-    run_test(fanouthosts, duthost, conn_graph_facts,
-             enum_fanout_graph_facts, leaf_fanouts, check_continuous_pfc=True)
