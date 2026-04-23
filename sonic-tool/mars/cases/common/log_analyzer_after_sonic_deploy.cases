@@ -14,13 +14,6 @@
   </global>
 
   <case>
-    <ignore>
-      <condition>
-        <key> skip_log_analyzer_after_sonic_deploy </key>
-        <op> == </op>
-        <value> yes </value>
-      </condition>
-    </ignore>
     <name> LogAnalyzer after SONiC image deploy </name>
     <info> </info>
     <cmd>
