@@ -93,8 +93,28 @@ def _get_asic_instance_count(system, instance_id):
         HealthConsts.Component.UNHEALTHY_COUNT])
 
 
-def _set_asic_health_fatal_state(engines, value):
-    """Set STATE_DB ASIC_HEALTH|STATE fatal_state to 'true' or 'false'. When true, all ASICs are marked unhealthy."""
+def _set_asic_health_fatal_state(engines, value, fire_and_forget=False, timeout_sec=10):
+    """Set STATE_DB ASIC_HEALTH|STATE fatal_state to 'true' or 'false'.
+
+    Default behavior is a normal (blocking) ``sonic-db-cli hset`` on
+    ``engines.dut``.
+
+    When ``fire_and_forget=True``, the hset is issued via
+    ``DutUtilsTool.run_cmd_with_disconnect`` with ``timeout_sec``. This is
+    used for the recovery write (setting back to 'false') because after
+    fatal_state is asserted the SSH prompt changes to
+    ``[System_Fatal_State]...$`` which netmiko does not recognize, so it hangs
+    waiting for the original prompt even though the command actually ran. On
+    timeout the stale channel is torn down and the next call on
+    ``engines.dut`` reconnects automatically.
+    """
+    if fire_and_forget:
+        cmd = (f'sonic-db-cli {DatabaseConst.STATE_DB_NAME} hset '
+               f'"{_STATE_DB_ASIC_HEALTH_STATE}" "{_ASIC_HEALTH_FATAL_FIELD}" "{value}"')
+        logger.info(f"Setting ASIC_HEALTH fatal_state={value} (fire-and-forget, "
+                    f"timeout={timeout_sec}s): {cmd}")
+        DutUtilsTool.run_cmd_with_disconnect(engines.dut, cmd, timeout=timeout_sec)
+        return
     DatabaseTool.sonic_db_cli_hset(
         engines.dut, "", DatabaseConst.STATE_DB_NAME,
         _STATE_DB_ASIC_HEALTH_STATE, _ASIC_HEALTH_FATAL_FIELD, value)
@@ -580,11 +600,20 @@ def test_asic_health_unhealthy_triggers_and_recovery(engines):
 
 @pytest.mark.system
 @pytest.mark.health
+@pytest.mark.disable_loganalyzer
 def test_asic_health_fatal_state_marks_all_unhealthy(engines):
     """
     When ASIC_HEALTH fatal_state is set to true in STATE_DB, all ASIC instances are marked unhealthy (new image logic).
     Steps: set ASIC_HEALTH|STATE fatal_state 'true' -> wait health cycle -> all ASICs UNHEALTHY ->
            set fatal_state 'false' -> wait -> all ASICs HEALTHY -> clear counters.
+
+    The recovery write (fatal_state=false) is issued as fire-and-forget because
+    once fatal_state is asserted the SSH prompt changes to
+    ``[System_Fatal_State]...$`` which netmiko does not recognize, causing it
+    to hang waiting for the prompt even though the command ran.
+
+    LogAnalyzer is disabled because triggering fatal_state intentionally emits
+    error logs on the DUT which would otherwise fail the run.
     """
     TestToolkit.update_engines(engines)
     system = System()
@@ -606,7 +635,8 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
                                       tries=3, delay=_HEALTH_POLL_WAIT_SEC)
 
         with allure.step("Set ASIC_HEALTH fatal_state to false (recovery)"):
-            _set_asic_health_fatal_state(engines, "false")
+            _set_asic_health_fatal_state(engines, "false", fire_and_forget=True)
+        _wait_health_cycle()
         _wait_health_cycle()
         with allure.step("Validate all ASIC instances are HEALTHY"):
             for inst in instance_ids:
@@ -617,7 +647,7 @@ def test_asic_health_fatal_state_marks_all_unhealthy(engines):
         with allure.step("Validate nv show system health - status OK (all components healthy)"):
             system.validate_health_status(HealthConsts.OK, dut_engine=engines.dut)
     finally:
-        _set_asic_health_fatal_state(engines, "false")
+        _set_asic_health_fatal_state(engines, "false", fire_and_forget=True)
 
     with allure.step("Clear system health component unhealthy counters after ASIC fatal test"):
         system.health.component.action(ActionConsts.CLEAR)
@@ -642,24 +672,44 @@ def test_software_component_unhealthy_count_lldp_stop(engines):
         pytest.skip("Software component has no ALL instance")
     initial_count = int(software_instances["ALL"][HealthConsts.Component.UNHEALTHY_COUNT])
     sw, inst = HealthConsts.Component.Software, "ALL"
+    docker_to_stop = "lldp"
 
-    with allure.step("Stop LLDP container"):
-        engines.dut.run_cmd("docker stop lldp")
-    time.sleep(5)
-    with allure.step("Validate software UNHEALTHY and unhealthy-count incremented by 1"):
-        _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY)
-        _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, str(initial_count + 1))
+    try:
+        with allure.step("Stop {} docker auto restart".format(docker_to_stop)):
+            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
+                                           db_config="FEATURE|{}".format(docker_to_stop),
+                                           param=NvosConst.DOCKER_AUTO_RESTART,
+                                           value=NvosConst.DOCKER_STATUS_DISABLED)
 
-    with allure.step("Start LLDP container"):
-        engines.dut.run_cmd("docker start lldp")
-    with allure.step("Validate software state HEALTHY"):
-        _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY, tries=10)
-
-    with allure.step("Clear system health component unhealthy counters"):
-        system.health.component.action(ActionConsts.CLEAR)
+        with allure.step("Stop LLDP container"):
+            engines.dut.run_cmd("docker stop {}".format(docker_to_stop))
         time.sleep(5)
-    with allure.step("Validate software unhealthy count is 0"):
-        _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, "0", tries=3, delay=2)
+        with allure.step("Validate software UNHEALTHY and unhealthy-count incremented by 1"):
+            _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.UNHEALTHY)
+            _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, str(initial_count + 1))
+
+        with allure.step("Start LLDP container"):
+            engines.dut.run_cmd("docker start {}".format(docker_to_stop))
+        with allure.step("Validate software state HEALTHY"):
+            _assert_component_instance(system, sw, inst, HealthConsts.Component.STATE, HealthConsts.Component.HEALTHY, tries=10)
+
+        with allure.step("Clear system health component unhealthy counters"):
+            system.health.component.action(ActionConsts.CLEAR)
+            time.sleep(5)
+        with allure.step("Validate software unhealthy count is 0"):
+            _assert_component_instance(system, sw, inst, HealthConsts.Component.UNHEALTHY_COUNT, "0", tries=3, delay=2)
+    finally:
+        # since we are disabling docker auto restart, we need to ensure the docker is running
+        with allure.step("Ensure {} docker is running".format(docker_to_stop)):
+            if docker_to_stop not in engines.dut.run_cmd("docker ps"):
+                engines.dut.run_cmd("docker start {}".format(docker_to_stop))
+                validate_docker_is_up(engines.dut, docker_to_stop)
+        # enable docker auto restart
+        with allure.step("Restore {} docker auto restart".format(docker_to_stop)):
+            DatabaseTool.sonic_db_cli_hset(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME,
+                                           db_config="FEATURE|{}".format(docker_to_stop),
+                                           param=NvosConst.DOCKER_AUTO_RESTART,
+                                           value=NvosConst.DOCKER_STATUS_ENABLED)
 
 
 @pytest.mark.system
