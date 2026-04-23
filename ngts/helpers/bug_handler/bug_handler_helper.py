@@ -524,9 +524,8 @@ def get_tech_support_from_switch(bug_handler_params):
     if cli_type == "Sonic":
         platform = duthost.shell("show platform summary | grep Platform | awk '{print $2}'")['stdout']
         if "_simx" in platform:
-            setup_name = "sonic_simx_" + duthost.hostname
             try:
-                topology_obj = get_topology_by_setup_name(setup_name=setup_name, slow_cli=True)
+                topology_obj = get_topology_by_setup_name(setup_name=testbed, slow_cli=True)
                 dumps_files.extend(dump_simx_data(topology_obj, dumps_folder))
             except Exception as e:
                 logger.error(f"Exception while collecting the simx dump {str(e)}")
