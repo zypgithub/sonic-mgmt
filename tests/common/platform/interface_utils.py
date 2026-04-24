@@ -390,31 +390,6 @@ def get_ports_with_flat_memory(dut, conn_graph_facts):
     return ports_with_flat_memory
 
 
-def get_port_indexes_with_flat_memory(dut):
-    """
-    This method is to get port indexes with flat memory
-    """
-    cmd = """
-cat << EOF > get_port_indexes_with_flat_memory.py
-import sonic_platform.platform as P
-num_sfps = P.Platform().get_chassis().get_num_sfps()
-port_indexes_with_flat_memory = []
-for i in range(1, num_sfps + 1):
-    xcvr_api = P.Platform().get_chassis().get_sfp(i).get_xcvr_api()
-    if xcvr_api is None:
-        continue
-    if xcvr_api.is_flat_memory():
-        port_indexes_with_flat_memory.append(i)
-print(port_indexes_with_flat_memory)
-EOF
-"""
-    dut.shell(cmd)
-    port_indexes_with_flat_memory = dut.shell("python3 get_port_indexes_with_flat_memory.py")["stdout"]
-    port_indexes_with_flat_memory = ast.literal_eval(port_indexes_with_flat_memory)
-    logging.info(f"Port indexes with flat memory: {port_indexes_with_flat_memory}")
-    return port_indexes_with_flat_memory
-
-
 def get_xcvr_presence_data(duthost, asic_index=None):
     """
     @summary: Returns a dictionary of transceiver presence status for each interface.
@@ -475,8 +450,10 @@ import sonic_platform.platform as P
 num_sfps = P.Platform().get_chassis().get_num_sfps()
 port_indexes_with_flat_memory = []
 for i in range(1, num_sfps + 1):
-    is_flat_memory = P.Platform().get_chassis().get_sfp(i).get_xcvr_api().is_flat_memory()
-    if is_flat_memory:
+    xcvr_api = P.Platform().get_chassis().get_sfp(i).get_xcvr_api()
+    if xcvr_api is None:
+        continue
+    if xcvr_api.is_flat_memory():
         port_indexes_with_flat_memory.append(i)
 print(port_indexes_with_flat_memory)
 EOF
