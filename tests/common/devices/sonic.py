@@ -2894,7 +2894,7 @@ Totals               6450                 6449
         res: ShellResult = self.shell(f"sudo lsof {device_path}", module_ignore_errors=True)
         return True if res["stdout"] else False
 
-    def _get_serial_device_prefix(self) -> str:
+    def get_serial_device_prefix(self) -> str:
         """
         Get the serial device prefix for the platform.
 
@@ -2939,7 +2939,7 @@ print(device_prefix)
         Returns:
             str: The full device path (e.g., "/dev/C0-1", "/dev/ttyUSB1")
         """
-        device_prefix = self._get_serial_device_prefix()
+        device_prefix = self.get_serial_device_prefix()
         return f"{device_prefix}{port}"
 
     def set_loopback(self, port: int, baud_rate: int = 9600, flow_control: bool = False) -> None:
@@ -3212,7 +3212,7 @@ print(device_prefix)
             logging.error(error_msg)
             raise RuntimeError(error_msg)
 
-        device_prefix = self._get_serial_device_prefix()
+        device_prefix = self.get_serial_device_prefix()
         pattern = f"{device_prefix}*"
 
         # Find all related serial port processes
