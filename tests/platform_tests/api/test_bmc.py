@@ -16,7 +16,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from .platform_api_test_base import PlatformApiTestBase
 from tests.common.helpers.firmware_helper import (
     show_firmware, FW_TYPE_UPDATE, PLATFORM_COMP_PATH_TEMPLATE,
-    get_bmc_version_from_firmware_data, get_bmc_firmware_list, get_bmc_ip
+    get_bmc_firmware_list, get_bmc_ip
 )
 from infra.tools.redmine.redmine_api import is_redmine_issue_active
 
@@ -74,6 +74,7 @@ def _get_bmc_version(duthost, timeout=120):
         for entry in res:
             if entry['component'] == 'BMC' and entry['version'] != 'N/A':
                 return entry['version']
+        time.sleep(5)
 
 
 def _is_bmc_busy(duthost, bmc_ip, bmc_root_user, bmc_root_password):
@@ -182,9 +183,8 @@ def bmc_ip(duthosts, enum_rand_one_per_hwsku_hostname):
     """Module-scoped fixture to get BMC IP address. Returns None if BMC is not present."""
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
     if not bmc.is_bmc_exists(duthost):
-        yield None
-        return
-    yield get_bmc_ip(duthost)
+        return None
+    return get_bmc_ip(duthost)
 
 
 @pytest.fixture(scope="module")
@@ -196,6 +196,10 @@ def recover_bmc_firmware(duthosts, enum_rand_one_per_hwsku_hostname, fw_pkg, bmc
     between each parametrized run.
     """
     yield
+
+    if bmc_ip is None:
+        logger.info("Recovery: BMC is not present, skipping recovery")
+        return
 
     duthost = duthosts[enum_rand_one_per_hwsku_hostname]
 
@@ -262,113 +266,10 @@ class TestBMCApi(PlatformApiTestBase):
         if not bmc.is_bmc_exists(duthost):
             pytest.skip("BMC is not present, skipping BMC platform API tests")
 
-    @pytest.fixture(scope="class")
-    def bmc_ip(self, duthosts, enum_rand_one_per_hwsku_hostname, skip_if_no_bmc):
-        duthost = duthosts[enum_rand_one_per_hwsku_hostname]
-        platform = duthost.shell("sudo show platform summary | grep Platform | awk '{print $2}'")["stdout"]
-        bmc_config_file = f"/usr/share/sonic/device/{platform}/bmc.json"
-        duthost.fetch(src=bmc_config_file, dest='/tmp')
-        with open(f'/tmp/{duthost.hostname}/{bmc_config_file}', "r") as f:
-            bmc_config = json.load(f)
-        yield bmc_config["bmc_addr"]
-
     @pytest.fixture(autouse=True)
     def prepare_param(self, creds):
         self.bmc_root_user = creds['sonic_bmc_root_user']
         self.bmc_root_password = creds['sonic_bmc_root_password']
-
-    def _is_bmc_busy(self, duthost, bmc_ip):
-        """
-        Check if BMC is busy by querying BackgroundCopyStatus from Redfish API
-
-        Args:
-            duthost: DUT host object
-            bmc_ip: BMC IP address
-        Returns:
-            bool: True if BMC is busy (BackgroundCopyStatus != "Completed"), False otherwise
-        """
-        res = duthost.command(
-            BMC_GET_STATUS_COMMAND.format(self.bmc_root_user, self.bmc_root_password, bmc_ip))["stdout"]
-        pytest_assert(res is not None, "Failed to query BMC status")
-
-        try:
-            response_json = json.loads(res)
-            background_copy_status = response_json.get("Oem", {}).get("Nvidia", {}).get("BackgroundCopyStatus", "")
-            logger.info(f"BMC BackgroundCopyStatus: {background_copy_status}")
-
-            return background_copy_status != BMC_COMPLETE_STATUS
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
-            logger.warning(f"Failed to parse BMC status response: {e}, response: {res}")
-            return True
-
-    def _update_bmc_firmware(self, duthost, fw_image, bmc_ip, method='api',
-                             cli_type=None, timeout=EROT_STABLE_TIMEOUT):
-        """
-        Update BMC firmware with retry mechanism for ERoT busy scenarios
-
-        Args:
-            duthost: DUT host object
-            fw_image: Path to firmware image file
-            bmc_ip: BMC IP address
-            method: Update method - 'api' or 'cli' (default: 'api')
-            cli_type: CLI command type when method='cli' - FW_TYPE_INSTALL or FW_TYPE_UPDATE
-            timeout: Maximum time to wait for update (default: EROT_STABLE_TIMEOUT)
-
-        Returns:
-            bool: True if update successful, False otherwise
-        """
-        start_time = time.time()
-        cli_suffix = f" ({cli_type})" if method == 'cli' and cli_type else ""
-        logger.info(f"Starting BMC firmware update via {method.upper()}{cli_suffix}")
-
-        while True:
-            if time.time() - start_time > timeout:
-                logger.warning(f"Timeout after {timeout} seconds while updating BMC firmware")
-                return False
-            time.sleep(WAIT_TIME)
-
-            if method == 'api':
-                ret_code, (message, _) = bmc.update_firmware(duthost, fw_image)
-
-                if EROT_BUSY_MSG in message:
-                    logger.info(f"{EROT_BUSY_MSG}, waiting for {WAIT_TIME} seconds")
-                    continue
-                elif ret_code != 0:
-                    logger.warning(f"Failed to update BMC firmware: return code: {ret_code}, message: {message}")
-                    return False
-                else:
-                    logger.info("BMC firmware updated successfully via API!")
-                    break
-
-            elif method == 'cli':
-                if cli_type is None:
-                    logger.error("cli_type must be specified when method='cli'")
-                    return False
-
-                is_bmc_busy = self._is_bmc_busy(duthost, bmc_ip)
-                if is_bmc_busy:
-                    logger.info(f"BMC is busy, waiting for {WAIT_TIME} seconds")
-                    continue
-
-                if cli_type == FW_TYPE_UPDATE:
-                    res = duthost.command(BMC_UPDATE_COMMAND.format(cli_type))
-                else:
-                    res = duthost.command(BMC_INSTALL_COMMAND.format(cli_type, fw_image))
-
-                if res['rc'] == 0:
-                    logger.info(f"BMC firmware updated successfully via CLI ({cli_type})!")
-                else:
-                    logger.info(f"Failed to update BMC firmware: {res['stdout']}")
-                break
-            else:
-                logger.error(f"Unknown update method: {method}")
-                return False
-
-        if method == 'api':
-            logger.info("Requesting BMC reset after successful update by platform api")
-            bmc.request_bmc_reset(duthost)
-
-        return True
 
     def _generate_password(self):
         password_length = random.choice(range(BMC_SHORTEST_PASSWD_LEN, BMC_LONGEST_PASSWD_LEN))
@@ -455,22 +356,6 @@ class TestBMCApi(PlatformApiTestBase):
                     f"response: {get_subs_result['stdout']}")
                 return 0
         return 0
-
-    def _get_bmc_version(self, duthost, timeout=120):
-        start_time = time.time()
-
-        while True:
-            if time.time() - start_time > timeout:
-                logger.warning(f"Timeout after {timeout} seconds while getting BMC version")
-                return None
-
-            fw_data = show_firmware(duthost)
-            bmc_version, _ = get_bmc_version_from_firmware_data(fw_data)
-
-            if bmc_version and bmc_version != 'N/A':
-                return bmc_version
-
-            time.sleep(5)
 
     def _generate_platform_file(self, duthost, chassis_name, fw_path, fw_version):
         """
@@ -796,15 +681,6 @@ class TestBMCApi(PlatformApiTestBase):
             token_match.group(1) if token_match else None
         )
 
-    def _parse_bmc_session(self, output):
-        """Parse BMC session output to extract session ID and token"""
-        session_id_match = re.search(r'Session ID:\s*(\S+)', output)
-        token_match = re.search(r'Token:\s*(\S+)', output)
-        return (
-            session_id_match.group(1) if session_id_match else None,
-            token_match.group(1) if token_match else None
-        )
-
     def _extract_ids_from_members(self, data):
         """Extract IDs from Redfish Members list (works for both sessions and subscriptions)
         Extracts the last path segment from @odata.id field in each Member.
@@ -888,8 +764,8 @@ class TestBMCApi(PlatformApiTestBase):
 
                 invalid_post_result = duthost.command(create_subscription_cmd, module_ignore_errors=True)
                 pytest_assert(
-                    invalid_post_result["stdout"].startswith("HTTP/1.1 401 Unauthorized"),
-                    f"POST with invalid token should return HTTP 401 Unauthorized, "
+                    re.match(r"^HTTP/\S+\s+401", invalid_post_result["stdout"]),
+                    f"POST with invalid token should return HTTP 401, "
                     f"got: {invalid_post_result['stdout']}")
 
             with allure.step("Open new session and cleanup subscription"):
@@ -908,9 +784,9 @@ class TestBMCApi(PlatformApiTestBase):
                     CURL_TOKEN_AUTH_DELETE.format(
                         new_token, bmc_ip, delete_sub_endpoint),
                     module_ignore_errors=True)
-                pytest_assert(delete_result["stdout"].startswith("HTTP/1.1 200 OK") or
-                              delete_result["stdout"].startswith("HTTP/1.1 204 No Content"),
-                              f"DELETE should return HTTP 200 OK or 204 No Content, got: {delete_result['stdout']}")
+                pytest_assert(
+                    re.match(r"^HTTP/\S+\s+20\d", delete_result["stdout"]),
+                    f"DELETE should return HTTP 2xx, got: {delete_result['stdout']}")
 
                 # Verify subscription is deleted by checking the specific subscription returns 404
                 verify_deleted_cmd = CURL_TOKEN_AUTH_GET_WITH_HEADERS.format(
