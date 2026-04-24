@@ -415,6 +415,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
+        "sonic_main_ngci_test_gz": False,
+        "sonic_ci_test_gz": False,
         "nvos_ci": False
     }
 
@@ -427,6 +429,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
+        "sonic_main_ngci_test_gz": False,
+        "sonic_ci_test_gz": False,
         "nvos_ci": False
     }
 
@@ -439,6 +443,8 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         "sonic_ci": False,
         "sonic_dpu_ci": False,
         "sonic_ci_app_extension": False,
+        "sonic_main_ngci_test_gz": False,
+        "sonic_ci_test_gz": False,
         "nvos_ci": False
     }
 
@@ -450,7 +456,10 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions)
         _update_bug_handler_actions(request, bug_handler_actions)
         # Set ci_mode for CI projects when both create and update are False
-        ci_projects = ["sonic_ci", "sonic_dpu_ci", "sonic_ci_app_extension"]
+        ci_projects = [
+            "sonic_ci", "sonic_dpu_ci", "sonic_ci_app_extension",
+            "sonic_main_ngci_test_gz", "sonic_ci_test_gz",
+        ]
         if project in ci_projects and not bug_handler_actions['create'] and not bug_handler_actions['update']:
             bug_handler_actions['ci_mode'] = True
         logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
