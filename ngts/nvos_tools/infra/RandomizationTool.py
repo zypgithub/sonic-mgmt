@@ -8,7 +8,7 @@ from typing import MutableSequence, Optional, List, Tuple
 
 import allure
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts, IbInterfaceConsts

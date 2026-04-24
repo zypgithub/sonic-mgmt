@@ -10,7 +10,7 @@ from ngts.constants.constants import BugHandlerConst, CliType
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts
 from ngts.helpers.thread_log_filter import redirect_thread_stdout
 from ngts.helpers.custom_catch_exception_thread import CatchExceptionThread, parse_threads_exceptions_at_join
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_bw, validate_tc, validate_counters, validate_no_drops_on_tg_ports
 from ngts.helpers.performance.performance_counter_helpers import validate_performance_counters

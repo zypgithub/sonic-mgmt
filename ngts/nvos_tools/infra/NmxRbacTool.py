@@ -15,7 +15,7 @@ from ngts.tests_nvos.helpers.general_helpers import run_cmd, run_ssh_cmd_with_rc
 from ngts.tests_nvos.general.security.api_server.mtls.spiffe_id.constants import BAD_RESPONSE_KEYWORDS
 from ngts.tests_nvos.system.gnmi.helpers import get_scp_player
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tools.test_utils.nvos_general_utils import generate_scp_uri_using_player
 
 

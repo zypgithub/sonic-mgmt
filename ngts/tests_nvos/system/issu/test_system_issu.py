@@ -7,8 +7,8 @@ import shlex
 import subprocess
 import time
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_constants.constants_nvos import (ActionConsts, ApiType, DatabaseConst, HealthConsts, IbConsts, IpConsts,
                                                 IssuConsts, NvosConst, PlatformConsts, SystemConsts)
 from ngts.tests_nvos.constants import FW_COMPONENT_SSD

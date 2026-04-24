@@ -27,7 +27,7 @@ from ngts.tests_nvos.system.reboot_telemetry_helpers import (
 )
 from ngts.tools.test_utils import allure_utils as allure
 from retry.api import retry_call
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 

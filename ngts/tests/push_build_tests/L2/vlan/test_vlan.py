@@ -4,7 +4,7 @@ import pytest
 
 from retry.api import retry_call
 
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.cli_util.verify_cli_show_cmd import verify_show_cmd
 
 

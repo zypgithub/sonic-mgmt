@@ -6,8 +6,8 @@ from retry.api import retry_call
 from ngts.config_templates.vlan_config_template import VlanConfigTemplate
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.dhcp_relay_config_template import DhcpRelayConfigTemplate
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.helpers.general_helper import is_smartswitch_platform
 
 logger = logging.getLogger()

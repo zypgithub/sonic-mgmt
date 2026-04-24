@@ -4,7 +4,7 @@ import pytest
 from ngts.constants.constants import VxlanConstants
 from ngts.helpers.vxlan_helper import send_and_validate_traffic, restart_bgp_session
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.tests.push_build_tests.conftest import is_evpn_support
 
 """

@@ -6,9 +6,9 @@ from ngts.helpers.performance.traffic_helpers import generate_ip_address_dict
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import PerfConsts, PowerConsts, ValidationConsts
 from ngts.cli_wrappers.common.performance_clis_common import PerformanceCommon
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.tools.infra import get_chip_type
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, UndefinedError, meta
 
 

@@ -6,7 +6,7 @@ from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.tests.nightly.adaptive_routing.constants import ArConsts
 from ngts.helpers.adaptive_routing_helper import ArHelper
 from ngts.helpers.vxlan_helper import validate_dest_files_exist_in_tarball, get_tech_support_tar_file
-from infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
+from devts.infra.tools.validations.traffic_validations.iperf.iperf_runner import IperfChecker
 from retry.api import retry_call
 
 logger = logging.getLogger()

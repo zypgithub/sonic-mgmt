@@ -7,7 +7,7 @@ from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_c.client import NmxContr
 from ngts.tests_nvos.general.security.nmx_cert.grpc.nmx_t.client import NmxTelemetryClientApp
 from ngts.tests_nvos.general.security.nmx_cert import constants as nmx_cert_constants
 from ngts.tests_nvos.general.security.certificate.CertInfo import CertInfo
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import ClusterApps, OutputFormat
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools

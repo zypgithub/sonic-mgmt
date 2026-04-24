@@ -22,7 +22,7 @@ from ngts.nvos_tools.infra.Fae import Fae
 from ngts.ngts_types import EnginesT
 # TODO: remove this once KR feature is supported on all systems
 from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.ngts_types import DevicesT
 
 from . import helpers

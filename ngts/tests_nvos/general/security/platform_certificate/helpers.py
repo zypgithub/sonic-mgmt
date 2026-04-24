@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.security.platform_certificate.constants import (
     REMOTE_URL_TEMPLATE,
     REMOTE_PATH_HTTPS,

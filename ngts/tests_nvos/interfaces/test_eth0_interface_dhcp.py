@@ -4,7 +4,7 @@ import re
 import pytest
 
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import SystemConsts, ActionConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import *

@@ -32,7 +32,7 @@ from ngts.helpers.rocev2_acl_counter_helper import copy_apply_rocev2_acl_config,
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.constants.constants import AppExtensionInstallationConstants
 from ngts.common.checkers import is_feature_ready
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 PRE_UPGRADE_CONFIG = '/tmp/config_db_{}_base.json'
@@ -356,7 +356,7 @@ def push_gate_configuration(topology_obj, cli_objects, engines, interfaces, plat
                 # then confirm L3 reachability from HA to DUT via ping with retries
                 # (up to 10 attempts, 10s apart) to tolerate post-upgrade settling time.
                 with allure.step('Verify DUT is ready after sonic-to-sonic upgrade'):
-                    from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+                    from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
                     cli_objects.dut.general.port_reload_reboot_checks(ports_list)
                     ping_validation = {'sender': 'ha', 'args': {'count': 3,
                                                                 'dst': ip_config_dict['dut'][1]['ips'][0][0]}}

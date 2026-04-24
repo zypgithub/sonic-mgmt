@@ -9,13 +9,13 @@ import time
 import yaml
 
 import allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 try:
     from netmiko.ssh_exception import NetmikoAuthenticationException
 except ImportError:
     from netmiko.exceptions import NetmikoAuthenticationException
-from infra.tools.topology_tools.nogaq import upload_data_to_noga
-from infra.tools.general_constants.constants import NogaConstants
+from devts.infra.tools.topology_tools.nogaq import upload_data_to_noga
+from devts.infra.tools.general_constants.constants import NogaConstants
 
 from ngts.constants.constants import PlayersAliases, SonicDeployConstants, MarsConstants, SerialLoggerConst, CliType
 from ngts.constants.constants import PlayersAliases, SerialLoggerConst, SSHConsts

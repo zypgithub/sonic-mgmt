@@ -17,7 +17,7 @@ from ngts.helpers.performance.performance_setup_helpers import (save_base_config
                                                                 restore_basic_configuration,
                                                                 apply_test_configuration,
                                                                 skip_test_on_unsupported_os)
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.performance_tests.conftest import get_all_players_ports
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts, MultiNosSharedData
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name, add_test_mongo_metadata

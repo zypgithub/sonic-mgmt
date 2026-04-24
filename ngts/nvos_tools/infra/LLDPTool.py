@@ -3,8 +3,8 @@ import re
 import time
 
 from retry import retry
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.nvos_constants.constants_nvos import TcpDumpConsts
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.tools.test_utils import allure_utils as allure

@@ -1,7 +1,7 @@
 import logging
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues, DefaultVMCred
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues, DefaultVMCred
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OnieTool import OnieTool
 from ngts.nvos_tools.infra.PxeTool import PxeTool

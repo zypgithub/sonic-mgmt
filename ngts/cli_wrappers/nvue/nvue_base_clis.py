@@ -2,7 +2,7 @@ from netmiko.exceptions import ReadTimeout
 import functools
 import logging
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
 from ngts.nvos_constants.constants_nvos import OutputFormat, RebootConsts, ActionConsts
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams

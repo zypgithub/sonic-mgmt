@@ -5,7 +5,7 @@ import pytest
 import random
 import pytz
 
-from infra.tools.linux_tools.linux_tools import LinuxSshEngine
+from devts.infra.tools.linux_tools.linux_tools import LinuxSshEngine
 
 from ngts.tests_nvos.general.security.password_hardening.PwhConsts import PwhConsts
 from ngts.nvos_tools.system.RemoteAaaResource import RemoteAaaResource

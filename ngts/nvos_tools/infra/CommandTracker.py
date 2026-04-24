@@ -330,8 +330,8 @@ def _monkey_patch_engine_classes():
     This ensures that any engine created during testing gets tracking.
     """
     try:
-        from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-        from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+        from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+        from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
         # Store original __init__ methods
         original_linux_init = LinuxSshEngine.__init__

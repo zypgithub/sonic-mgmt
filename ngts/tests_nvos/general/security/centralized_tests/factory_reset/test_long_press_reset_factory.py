@@ -24,7 +24,7 @@ from ngts.tests_nvos.general.security.security_test_tools.tool_classes.UserInfo 
 from ngts.tests_nvos.general.security.security_test_tools.constants import AaaConsts, AddressingType, AuthConsts
 from ngts.tests_nvos.general.security.security_test_tools.generic_remote_aaa_testing.constants import RemoteAaaType
 from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import RemoteAaaServerInfo
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 
 logger = logging.getLogger(__name__)
 DEFAULT_TEST_PASSWORD = 'Aa123456!'

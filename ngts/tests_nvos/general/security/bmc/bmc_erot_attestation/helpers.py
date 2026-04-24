@@ -5,7 +5,7 @@ import random
 import traceback
 from typing import List, Tuple
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.nvos_constants.constants_nvos import TestFlowType
 from ngts.nvos_tools.infra.CmdRunner import CmdRunner

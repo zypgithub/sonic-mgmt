@@ -4,7 +4,7 @@ import os
 from retry.api import retry_call
 
 import pytest
-from infra.tools.yaml_tools.yaml_loops import ip_range
+from devts.infra.tools.yaml_tools.yaml_loops import ip_range
 
 from ngts.cli_wrappers.sonic.sonic_route_clis import SonicRouteCli
 from ngts.config_templates.ip_config_template import IpConfigTemplate

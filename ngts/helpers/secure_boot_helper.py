@@ -11,11 +11,11 @@ from tests.common.utilities import wait_until
 from ngts.constants.constants import MarsConstants
 from ngts.helpers.json_file_helper import extract_fw_data
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
-from infra.tools.general_constants.constants import DockerBringupConstants
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DockerBringupConstants
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.cli_wrappers.sonic.sonic_onie_clis import SonicOnieCli
 from ngts.tests.nightly.secure.constants import SecureBootConsts, SonicSecureBootConsts, SecureUpgradeConsts
 

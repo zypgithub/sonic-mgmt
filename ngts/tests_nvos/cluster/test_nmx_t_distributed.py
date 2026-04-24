@@ -18,7 +18,7 @@ from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts, NmxTelemetryCo
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.ib.Ib import Ib
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import pexpect
 
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 
 logger = logging.getLogger(__name__)
 

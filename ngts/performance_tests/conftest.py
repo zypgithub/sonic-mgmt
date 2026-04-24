@@ -14,7 +14,7 @@ from ngts.helpers.performance.performance_db_helpers import (create_performance_
                                                              create_test_validation_entry_to_db,
                                                              add_test_mongo_metadata, get_perf_test_name)
 from ngts.helpers.thread_log_filter import config_root_logger
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
 

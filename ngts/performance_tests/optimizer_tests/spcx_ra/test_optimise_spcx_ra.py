@@ -2,7 +2,7 @@ import json
 import allure
 import logging
 import pytest
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.performance_setup_helpers import (run_traffic, get_topology_obj, validate_traffic_results)
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts

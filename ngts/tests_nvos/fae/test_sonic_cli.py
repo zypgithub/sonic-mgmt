@@ -1,7 +1,7 @@
 import logging
 import pytest
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.nvos_constants.constants_nvos import ApiType, ActionConsts
 from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tools.test_utils import allure_utils as allure

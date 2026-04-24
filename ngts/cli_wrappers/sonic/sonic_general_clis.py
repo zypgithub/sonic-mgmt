@@ -14,13 +14,13 @@ from retry.api import retry_call
 import ngts.helpers.json_file_helper as json_file_helper
 from ngts.helpers.system_helpers import set_timezone as system_set_timezone
 from ngts.scripts.sonic_deploy.sonic_only_methods import validate_and_get_asic_count
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
-from infra.tools.general_constants.air_constants import HostsConstants
-from infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
-from infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultTestServerCred, SonicSimxConstants
+from devts.infra.tools.general_constants.air_constants import HostsConstants
+from devts.infra.tools.nvidia_air_tools.air import get_dhcp_ips_dict
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.utilities.onie_sonic_clis import SonicOnieCli as SonicOnieCliDevts
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_util.cli_constants import SonicConstant
 from ngts.cli_util.cli_parsers import generic_sonic_output_parser
 from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon

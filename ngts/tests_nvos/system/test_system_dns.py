@@ -8,7 +8,7 @@ from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_constants.constants_nvos import SystemConsts, CumulusConsts, ImageConsts
 from ngts.nvos_constants.constants_nvos import ApiType
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
 from ngts.nvos_tools.vrf.vrf import Vrf
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
@@ -18,7 +18,7 @@ import re
 import ipaddress
 import time
 import crypt
-from infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.connection_tools.utils import generate_strong_password
 from retry.api import retry_call
 
 logger = logging.getLogger()

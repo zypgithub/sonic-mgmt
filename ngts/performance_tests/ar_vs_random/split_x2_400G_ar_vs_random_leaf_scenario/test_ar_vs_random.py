@@ -10,7 +10,7 @@ from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.ar_vs_random.conftest import get_ar_vs_random_traffic
 from ngts.performance_tests.ar_vs_random.split_x2_400G_ar_vs_random_leaf_scenario.conftest import LEFT_PORTS_LEAF_TO_SPINE, RIGHT_PORTS_LEAF_TO_HOST
-from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 
 
 logger = logging.getLogger()

@@ -5,7 +5,7 @@ from datetime import datetime
 from collections import defaultdict
 from ngts.constants.constants import InfraConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, PowerConsts, MRCConsts
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 import logging
 
 logger = logging.getLogger()

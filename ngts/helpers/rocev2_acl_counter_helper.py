@@ -4,7 +4,7 @@ import os
 import struct
 
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry import retry
 from scapy.all import Ether, IP, IPv6, UDP, ICMP, wrpcap
 from ngts.common.checkers import is_ver1_greater_or_equal_ver2

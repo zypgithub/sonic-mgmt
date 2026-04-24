@@ -3,7 +3,7 @@ import allure
 import os
 import pathlib
 from os.path import join
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 import logging
 from retry import retry
 logger = logging.getLogger()

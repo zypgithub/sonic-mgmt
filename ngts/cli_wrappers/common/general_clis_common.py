@@ -14,10 +14,10 @@ from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.run_process_on_host import run_process_on_host
 from ngts.helpers.secure_boot_helper import SecureBootHelper
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.topology_tools.nogaq import get_noga_entire_resource_data
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.cli_wrappers.common.sdk_clis_common import SdkCliCommon
 
 logger = logging.getLogger()

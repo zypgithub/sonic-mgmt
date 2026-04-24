@@ -14,8 +14,8 @@ import xml.etree.ElementTree as ET
 from ngts.helpers.general_helper import get_all_setups, get_all_setups_platform
 from ngts.constants.constants import DbConstants, InfraConst, ResultUploaderConst, \
     MarsConstants, SonicConst, LinuxConsts
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.redmine.redmine_api import get_issue_development_items
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.redmine.redmine_api import get_issue_development_items
 from ngts.scripts.upload_regression_results_to_msft.oracle_db import OracleDb
 
 logger = logging.getLogger()

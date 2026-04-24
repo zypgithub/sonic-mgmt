@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from typing import Union, Iterable, Dict
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import EventConsts
 from ngts.nvos_tools.Devices import IbDevice
 from ngts.nvos_tools.infra.NvCommand import NvCommand

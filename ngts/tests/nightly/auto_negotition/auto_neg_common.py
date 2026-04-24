@@ -4,7 +4,7 @@ import pytest
 from retry.api import retry_call
 from copy import deepcopy
 from ngts.config_templates.ip_config_template import IpConfigTemplate
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.tests.nightly.auto_negotition.conftest import get_all_advertised_speeds_sorted_string, get_interface_cable_width, \
     get_matched_types, convert_speeds_to_mb_format
 from ngts.constants.constants import AutonegCommandConstants, PlatformTypesConstants

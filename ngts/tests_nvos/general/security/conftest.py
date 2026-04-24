@@ -3,8 +3,8 @@ import pexpect
 import pytest
 import time
 
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli

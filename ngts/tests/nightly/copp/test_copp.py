@@ -12,7 +12,7 @@ import codecs
 from retry.api import retry_call
 
 from abc import abstractmethod
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.common.checkers import verify_deviation, verify_deviation_for_simx
 from .conftest import pause_lldp_before_copp_test, pause_lldp_after_reboot
 

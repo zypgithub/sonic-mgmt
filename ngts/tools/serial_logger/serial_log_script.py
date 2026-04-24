@@ -17,7 +17,7 @@ from typing import List, Dict
 
 import psutil
 
-from infra.tools.general_constants.constants import NogaConstants
+from devts.infra.tools.general_constants.constants import NogaConstants
 
 # this code is necessary for the imports below to work
 path = os.path.abspath(__file__)
@@ -25,7 +25,7 @@ sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 sys.path.append(os.path.join(sonic_mgmt_path, "sonic-tool", "mars", "scripts"))
 
-from infra.tools.topology_tools import nogaq  # noqa: E402
+from devts.infra.tools.topology_tools import nogaq  # noqa: E402
 from ngts.constants.constants import SerialLoggerConst  # noqa: E402
 from ngts.tools.serial_logger import serial_log_formatter  # noqa: E402
 

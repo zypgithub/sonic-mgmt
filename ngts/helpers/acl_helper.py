@@ -4,7 +4,7 @@ import json
 import jinja2
 
 from ngts.cli_wrappers.sonic.sonic_acl_clis import SonicAclCli
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry.api import retry_call
 
 

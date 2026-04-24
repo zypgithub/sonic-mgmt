@@ -7,8 +7,8 @@ import tarfile
 import gzip
 from pathlib import Path
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.topology_tools.nogaq import get_noga_resource_data
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.topology_tools.nogaq import get_noga_resource_data
 
 logger = logging.getLogger()
 

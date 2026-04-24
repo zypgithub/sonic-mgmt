@@ -3,7 +3,7 @@ import pandas as pd
 from collections import defaultdict
 from ngts.constants.performance_constants import ValidationConsts, MongoDbConsts, PerfConsts
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.performance_db_helpers import restructure_performance_counters, restructure_bw
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata
 

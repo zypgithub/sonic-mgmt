@@ -5,7 +5,7 @@ from typing import List
 
 import requests
 
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.nvue_cluster_clis import NvueClusterCli
 from ngts.cli_wrappers.nvue.nvue_platform_clis import NvuePlatformCli

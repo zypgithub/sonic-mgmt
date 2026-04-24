@@ -5,7 +5,7 @@ from abc import abstractmethod, ABCMeta, ABC
 from collections import namedtuple
 from typing import Tuple, List
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst, FansConsts, NvosConst, PlatformConsts, SystemConsts, \
     DiskConsts, DateTimeConsts, CumulusConsts, ActionConsts, RebootConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active

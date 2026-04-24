@@ -3,7 +3,7 @@ import pytest
 import logging
 
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.tests.push_build_tests.conftest import is_vxlan_evpn_configuration_supported
 
 logger = logging.getLogger()

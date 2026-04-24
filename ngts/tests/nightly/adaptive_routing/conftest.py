@@ -12,7 +12,7 @@ from ngts.tests.nightly.adaptive_routing.constants import ArConsts
 from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_list
 from ngts.tests.conftest import get_dut_loopbacks
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 logger = logging.getLogger()

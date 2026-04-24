@@ -5,7 +5,7 @@ from ngts.performance_tests.lossy_lossless.lossy_lossless_scenario_6_7.conftest 
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.performance_setup_helpers import (ValidationConfig, run_traffic, run_validation)
 from ngts.constants.performance_constants import PerfConsts, ValidationConsts
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
 LOSSY_LOSSLESS_SCENARIOS_LIST = ["scenario_6a", "scenario_6b", "scenario_7a", "scenario_7b", "scenario_7c"]

@@ -5,7 +5,7 @@ from retry.api import retry_call
 import re
 import logging
 import tarfile
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.sonic_branch_helper import get_sonic_branch
 from ngts.common.checkers import is_ver1_greater_or_equal_ver2
 

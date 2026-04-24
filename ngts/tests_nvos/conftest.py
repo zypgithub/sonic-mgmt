@@ -19,14 +19,14 @@ import pytest
 from dotted_dict import DottedDict
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.exceptions.setup_issue import SetupIssue
-from infra.tools.general_constants.air_constants import NvidiaAirConstants
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.exceptions.setup_issue import SetupIssue
+from devts.infra.tools.general_constants.air_constants import NvidiaAirConstants
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.tools.mars_test_cases_results.Connect_to_MSSQL import ConnectMSSQL
+from devts.infra.tools.sql.connect_to_mssql import ConnectMSSQL
 from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli

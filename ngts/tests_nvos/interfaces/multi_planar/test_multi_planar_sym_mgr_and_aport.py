@@ -5,7 +5,7 @@ import random
 import time
 
 # from ngts.cli_wrappers.common.general_clis_common import GeneralCliCommon
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_constants.constants_nvos import ApiType, IbConsts, MultiPlanarConsts, LogsSources
 from ngts.nvos_tools.ib.Ib import Ib

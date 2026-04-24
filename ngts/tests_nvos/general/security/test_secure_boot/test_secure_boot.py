@@ -14,9 +14,9 @@ import time
 
 import pytest
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
 from ngts.tests_nvos.constants import MINUTE

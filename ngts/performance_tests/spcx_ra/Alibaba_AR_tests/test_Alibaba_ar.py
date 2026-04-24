@@ -10,7 +10,7 @@ from ngts.constants.constants import InfraConst
 from ngts.performance_tests.spcx_ra.Alibaba_AR_tests.conftest import (AlibabaScenarioToconfiguration,
                                                                       get_alibaba_traffic, extract_acl_counters,
                                                                       get_conf_args)
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.helpers.performance.performance_counter_helpers import should_validate_performance_counters
 
 logger = logging.getLogger()

@@ -120,7 +120,7 @@ def deploy_minigpraph(ansible_path, dut_name, sonic_topo, recover_by_reboot, top
         dark_mode = None
         if 'bobcat' in dut_name and not deploy_dpu:
             dark_mode = True
-            from infra.tools.redmine.redmine_api import is_redmine_issue_active
+            from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
             if is_redmine_issue_active([4518602])[0] and cli_objs is not None:
                 # TODO remove WA or parallelize the MST restart
                 for cli_obj in cli_objs:

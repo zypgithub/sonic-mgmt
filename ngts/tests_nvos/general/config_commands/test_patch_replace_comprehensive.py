@@ -14,7 +14,7 @@ import json
 import time
 import os
 
-from infra.tools.linux_tools import linux_tools
+from devts.infra.tools.linux_tools import linux_tools
 
 from ngts.nvos_constants.constants_nvos import SystemConsts, OutputFormat
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool

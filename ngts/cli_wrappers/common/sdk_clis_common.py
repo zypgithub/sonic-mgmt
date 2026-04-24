@@ -6,7 +6,7 @@ import re
 from ngts.constants.constants import InfraConst, Sonic_Cache
 from ngts.constants.performance_constants import PerfConsts
 from ngts.helpers.system_helpers import copy_files_to_syncd
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 logger = logging.getLogger()
 

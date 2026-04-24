@@ -1,4 +1,4 @@
-from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name, create_player_entry
+from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name, create_player_entry
 from ngts.constants.constants import PlayersAliases
 import logging
 from ngts.common.util import get_specified_installed_dpu_indexes

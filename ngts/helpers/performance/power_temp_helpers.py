@@ -5,8 +5,8 @@ import logging
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli
 from ngts.constants.performance_constants import PerfConsts, SPCControllers, PowerConsts, ValidationConsts, MongoDbConsts
 from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metadata, get_base_df, calculate_avg_on_all_samples
-from infra.tools.exceptions.test_issue import TestIssue
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 logger = logging.getLogger()
 

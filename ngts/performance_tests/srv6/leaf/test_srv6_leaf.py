@@ -21,8 +21,8 @@ from ngts.performance_tests.srv6.utils.srv6_workloads import get_workload_method
 from ngts.performance_tests.srv6.leaf.conftest import get_bisection_traffic
 from ngts.helpers.performance.performance_db_helpers import get_perf_test_name
 from ngts.helpers.performance.traffic_helpers import validate_per_tc
-from infra.tools.exceptions.test_issue import TestIssue
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 

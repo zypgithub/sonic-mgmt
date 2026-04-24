@@ -20,9 +20,9 @@ from datetime import datetime, timedelta
 from ngts.constants.constants import BugHandlerConst, InfraConst, FILE_INCLUDE_FAILED_SANITY_CHECKER_CASE
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.nvos_tools.infra import ExceptionTool
-from infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value
+from devts.infra.tools.redmine.redmine_api import get_issue_fixed_in_version_value
 from ngts.scripts.collect_simx_logs_on_not_success import collect_hypervisor_logs, dump_simx_data
-from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
+from devts.infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 from ngts.helpers.redmine_cache_helper import access_redmine_cache
 
 logger = logging.getLogger(__name__)

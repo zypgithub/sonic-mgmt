@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.nvos_tools.infra.GrpcCmdBuilder import GrpcCmdBuilder
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool

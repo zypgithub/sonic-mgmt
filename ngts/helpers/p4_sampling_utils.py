@@ -1,6 +1,6 @@
 import logging
 import allure
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.constants.constants import P4SamplingConsts
 from ngts.constants.constants import P4SamplingEntryConsts
 from ngts.helpers.p4nspect_utils import get_p4nspect_query_parsed
@@ -143,7 +143,7 @@ class P4SamplingUtils:
 
         P4SamplingUtils.verify_cli_table_entry(cli_obj, table_name, entries, expected_match)
         # TODO: un-comment it after the ticket is resolved #2799656:
-        #P4SamplingUtils.verify_p4nspect_table_entry(engine, table_name, entries, expected_match)
+        # P4SamplingUtils.verify_p4nspect_table_entry(engine, table_name, entries, expected_match)
         engine.run_cmd("docker exec -i syncd bash -c 'sx_api_flex_acl_dump.py'")
 
     @staticmethod

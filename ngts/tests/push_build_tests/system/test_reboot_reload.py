@@ -5,7 +5,7 @@ import json
 import random
 from retry.api import retry_call
 from ngts.helpers.run_process_on_host import run_process_on_host
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 from ngts.helpers.general_helper import is_smartswitch_platform
 from ngts.constants.constants import SonicConst, RebootTestConstants, PlatformTypesConstants
 from dateutil.parser import parse as time_parse
@@ -14,7 +14,7 @@ from ngts.helpers.reboot_reload_helper import get_supported_reboot_reload_types_
     add_to_pytest_args_disable_loganalyzer, remove_allure_server_project_id_arg, \
     prepare_pytest_cmd_with_custom_allure_dir, add_to_pytest_args_custom_cache_dir, generate_report, \
     add_to_pytest_args_disable_exporting_test_results_to_mars_db
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 logger = logging.getLogger()

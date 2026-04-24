@@ -10,8 +10,8 @@ from retry import retry
 import copy
 import allure
 from collections import defaultdict
-from infra.tools.exceptions.test_issue import TestIssue
-from infra.tools.exceptions.real_issue import RealIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.real_issue import RealIssue
 from ngts.constants.constants import BugHandlerConst, ResultUploaderConst
 from ngts.constants.performance_constants import MongoDbConsts, PerfConsts, Cl_Consts, ValidationConsts
 from dataclasses import dataclass

@@ -8,7 +8,7 @@ import random
 import os
 from retry import retry
 from ngts.constants.constants import *
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 
 SCAPY_TEMPLATE_DIR = MarsConstants.SONIC_MGMT_DIR + '/ngts/helpers/scapy_send_template.py'
 

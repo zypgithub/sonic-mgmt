@@ -8,8 +8,8 @@ from email.mime.text import MIMEText
 from enum import Enum
 from typing import Dict
 
-from infra.tools.redmine.redmine_api import REDMINE_STATUS_NAME_ID_MAPPING, get_issues, close_issue
-from infra.tools.sql.constants import SkynetGeneralConstants
+from devts.infra.tools.redmine.redmine_api import REDMINE_STATUS_NAME_ID_MAPPING, get_issues, close_issue
+from devts.infra.tools.sql.constants import SkynetGeneralConstants
 
 
 def send_report(report, recipients):

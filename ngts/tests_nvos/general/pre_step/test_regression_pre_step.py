@@ -9,7 +9,7 @@ import os
 import time
 import pytest
 from retry import retry
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.DutUtilsTool import ping_device
 
 logger = logging.getLogger()

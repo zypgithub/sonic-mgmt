@@ -3,7 +3,7 @@ import re
 
 from perscache import Cache
 
-from infra.tools.topology_tools.topology_setup_utils import get_all_setups_per_group
+from devts.infra.tools.topology_tools.topology_setup_utils import get_all_setups_per_group
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.cli_wrappers.sonic.sonic_cli import SonicCli

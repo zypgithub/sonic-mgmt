@@ -7,7 +7,7 @@ import re
 import pandas as pd
 from retry import retry
 from collections import defaultdict
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from jsonmerge import merge
 import allure
 from ngts.helpers.system_helpers import copy_files_to_syncd
@@ -20,7 +20,7 @@ from ngts.helpers.config_db_utils import save_config_db_json
 from jinja2 import Environment, FileSystemLoader
 from ngts.helpers.performance.traffic_helpers import is_ipv6, pick_random_non_consecutive_ports
 from ngts.performance_tests.srv6.utils.srv6_traffic_patterns import get_ingress_egress_ports_pairing_for_debug
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 
 
 class SonicPerformanceCli(PerformanceCommon):

@@ -2,10 +2,10 @@ import base64
 import subprocess
 from json.decoder import JSONDecodeError
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.linux_tools.linux_tools import scp_file
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.cli_wrappers.nvue.nvue_system_clis import NvueSystemCli
 from ngts.cli_wrappers.sonic.sonic_general_clis import *
 from ngts.constants.constants import InfraConst

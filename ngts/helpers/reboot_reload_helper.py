@@ -5,7 +5,7 @@ import re
 import logging
 
 from ngts.constants.constants import PytestConst
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active
 logger = logging.getLogger()
 
 

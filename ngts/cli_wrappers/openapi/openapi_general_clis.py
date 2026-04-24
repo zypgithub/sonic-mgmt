@@ -1,7 +1,7 @@
 import logging
 import json
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from .openapi_command_builder import OpenApiCommandHelper, OpenApiRequest, RequestData

@@ -4,7 +4,7 @@ import subprocess
 import re
 
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from ngts.tests_nvos.general.security.ssh_hardening.constants import SshHardeningConsts
 
 
@@ -19,7 +19,7 @@ def get_ssh_verbose_output(server_engine: ProxySshEngine, timeout: int = SshHard
     """
     with allure.step('Run ssh -vvvv to get info'):
         cmd = f'timeout {timeout} ssh -vvvv{" " + ssh_options if ssh_options else ""} ' \
-              f'{server_engine.username}@{server_engine.ip}'
+            f'{server_engine.username}@{server_engine.ip}'
         try:
             logging.info(f"Run: '{cmd}'")
             res = subprocess.run(
@@ -200,8 +200,8 @@ def verify_switch_ssh_property(engines, property_name, expected_value, value_ext
                 value = set(value)
                 expected_value = set(expected_value)
             assert value == expected_value, f'{property_name} not as expected\n' \
-                                            f'Expected: {expected_value}\n' \
-                                            f'Actual: {value}'
+                f'Expected: {expected_value}\n' \
+                f'Actual: {value}'
 
 
 def verify_ssh_with_option(engines, devices, good_flow: bool, option_to_check: str, get_option_list_function):

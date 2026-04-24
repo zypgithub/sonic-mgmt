@@ -5,7 +5,7 @@ import pytest
 from retry.api import retry_call
 
 from ngts.cli_wrappers.linux.linux_dhcp_clis import LinuxDhcpCli
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from ngts.helpers.network import get_bpf_filter_for_ipv6_address
 
 

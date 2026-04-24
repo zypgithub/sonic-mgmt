@@ -1,5 +1,5 @@
 import pytest
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 from ngts.ngts_types import DevicesT
 from ngts.nvos_tools.infra.TpmTool import TpmTool

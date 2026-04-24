@@ -8,7 +8,7 @@ import time
 
 import allure
 import pytest
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry.api import retry_call
 from scapy.all import IP, UDP, Ether, IPv6, wrpcap
 

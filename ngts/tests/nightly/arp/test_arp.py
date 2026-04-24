@@ -11,7 +11,7 @@ from ngts.helpers.arp_helper import verify_arp_entry_in_arp_table, \
     clear_dynamic_arp_table_and_check_the_specified_arp_entry_deleted, \
     send_arp_request_and_check_update_corresponding_entry_into_arp_table
 from ngts.helpers.network import gen_new_mac_based_old_mac
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 
 logger = logging.getLogger()
 

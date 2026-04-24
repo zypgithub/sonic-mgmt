@@ -2,7 +2,7 @@ import logging
 import os
 import time
 
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from devts.infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 
 from ngts.nvos_tools.infra.PexpectTool import PexpectTool
 from ngts.tests_nvos.general.security.constants import SSN_OPTIONS

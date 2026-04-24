@@ -5,7 +5,7 @@ import allure
 from ngts.config_templates.ip_config_template import IpConfigTemplate
 from ngts.config_templates.route_config_template import RouteConfigTemplate
 from ngts.constants.constants import P4ExamplesConsts
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from dotted_dict import DottedDict
 import ngts.helpers.p4nspect_utils as p4nspect_utils
 
@@ -422,8 +422,8 @@ def verify_traffic(topology_obj, traffic_param_dict, count, expected_count):
                             {'receiver': f'{receiver}',
                              'receive_args': {'interface': f"{receiver_port}",
                                               'filter': traffic_filter, 'count': expected_count}}
-                    ]
-                    }
+    ]
+    }
     scapy_r = ScapyChecker(topology_obj.players, validation_r)
     scapy_r.run_validation()
 

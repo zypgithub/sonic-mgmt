@@ -4,7 +4,7 @@ from typing import Dict
 
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import DatabaseConst
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime

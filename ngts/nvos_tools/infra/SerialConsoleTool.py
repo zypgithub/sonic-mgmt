@@ -2,9 +2,9 @@ import time
 
 from retry import retry
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.connection_tools.utils import generate_strong_password
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.tests.nightly.secure.conftest import serial_engine
 from ngts.tools.test_utils import allure_utils as allure
 

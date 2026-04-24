@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from retry.api import retry_call
-from infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
+from devts.infra.tools.validations.traffic_validations.ping.ping_runner import PingChecker
 
 logger = logging.getLogger()
 

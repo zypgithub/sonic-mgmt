@@ -9,8 +9,8 @@ sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 sys.path.append(os.path.join(sonic_mgmt_path, "sonic-tool", "mars", "scripts"))
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.OnieTool import OnieTool
 from ngts.nvos_tools.infra.PxeTool import PxeTool

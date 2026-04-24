@@ -4,6 +4,7 @@ from typing import Dict
 
 import pytest
 import requests
+
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.infra.BmcTool import BmcTool

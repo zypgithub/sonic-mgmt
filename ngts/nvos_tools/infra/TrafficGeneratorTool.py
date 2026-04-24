@@ -9,9 +9,9 @@ from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.ResultObj import ResultObj
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.validations.traffic_validations.ip_over_ib_traffic.ip_over_ib_traffic_runner import IPoIBTrafficChecker
-from infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_checker import IBTrafficChecker
-from infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_const import IBTrafficConst
+from devts.infra.tools.validations.traffic_validations.ip_over_ib_traffic.ip_over_ib_traffic_runner import IPoIBTrafficChecker
+from devts.infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_checker import IBTrafficChecker
+from devts.infra.tools.validations.traffic_validations.ib_traffic.ib_traffic_const import IBTrafficConst
 
 logger = logging.getLogger()
 

@@ -1,7 +1,7 @@
 import logging
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
 from ngts.tests.nightly.wcmp.constants import WcmpConsts
-from infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
+from devts.infra.tools.validations.traffic_validations.scapy.scapy_runner import ScapyChecker
 from retry import retry
 logger = logging.getLogger()
 

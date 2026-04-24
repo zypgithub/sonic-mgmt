@@ -12,7 +12,7 @@ path = os.path.abspath(__file__)
 sonic_mgmt_path = path.split('/ngts/')[0]
 sys.path.append(sonic_mgmt_path)
 
-from infra.tools.redmine.redmine_api import get_issues_status  # noqa F401
+from devts.infra.tools.redmine.redmine_api import get_issues_status  # noqa F401
 from ngts.constants.constants import LinuxConsts  # noqa F401
 from ruamel.yaml.emitter import Emitter  # noqa F401
 

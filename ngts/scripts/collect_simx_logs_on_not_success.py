@@ -4,7 +4,7 @@ import time
 import logging
 import re
 
-from infra.tools.general_constants.constants import DefaultTestServerCred, DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultTestServerCred, DefaultConnectionValues
 
 logger = logging.getLogger()
 # Because there is memory buffer limitation when use tee to get log by telnet， When syslog size is too larger,

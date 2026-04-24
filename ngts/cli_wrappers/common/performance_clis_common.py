@@ -9,7 +9,7 @@ from retry import retry
 from ngts.constants.constants import BugHandlerConst
 from ngts.constants.performance_constants import PerfConsts, MongoDbConsts, ValidationConsts, MultiNosSharedData
 from ngts.nvos_tools.infra.FilesTool import FilesTool
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 
 
 def _file_is_gzip(filepath):

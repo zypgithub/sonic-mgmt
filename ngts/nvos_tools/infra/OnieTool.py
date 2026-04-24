@@ -10,7 +10,7 @@ from ngts.constants.constants import PlayersAliases
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
 from ngts.nvos_tools.infra.BiosTools.BiosFactory import BiosFactory
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 
 logger = logging.getLogger()

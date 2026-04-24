@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.security.helpers import import_certs_safely, import_cas_safely, delete_all_imported_certs, \
     delete_all_imported_cas
 from ngts.tests_nvos.general.security.security_test_tools.constants import AddressingType

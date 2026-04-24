@@ -3,7 +3,7 @@ import allure
 import logging
 
 from ngts.scripts.sonic_deploy.deploy_helper_methods import DeployTopologyHelper
-from infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
 
 
 logger = logging.getLogger()

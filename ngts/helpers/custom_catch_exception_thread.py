@@ -1,6 +1,6 @@
 import threading
 import logging
-from infra.tools.exceptions.test_issue import TestIssue
+from devts.infra.tools.exceptions.test_issue import TestIssue
 from ngts.helpers.performance.Performance_log_print import print_players_logs
 
 logger = logging.getLogger()

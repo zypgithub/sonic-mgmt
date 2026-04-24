@@ -4,7 +4,7 @@ import pytest
 import time
 from retry import retry
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_constants.constants_nvos import PlatformConsts, ApiType
 from ngts.nvos_tools.infra.CurlTool import CurlTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -16,7 +16,7 @@ from ngts.tests_nvos.general.security.bmc.bmc_creds.helpers import enable_mctp_p
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.infra.BmcSshEngine import BmcSshEngine
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_constants.constants_nvos import PlatformConsts
 

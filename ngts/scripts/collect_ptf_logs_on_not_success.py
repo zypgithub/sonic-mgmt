@@ -4,7 +4,7 @@ import time
 import logging
 import pytest
 
-from infra.tools.general_constants.constants import DefaultTestServerCred
+from devts.infra.tools.general_constants.constants import DefaultTestServerCred
 from ngts.constants.constants import SETUPS_WITH_NON_DEFAULT_PTF
 logger = logging.getLogger()
 

@@ -9,9 +9,9 @@ import time
 import paramiko
 import pytest
 from retry import retry
-from infra.tools.connection_tools.utils import generate_strong_password
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.linux_tools.linux_tools import scp_file
+from devts.infra.tools.connection_tools.utils import generate_strong_password
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.linux_tools.linux_tools import scp_file
 from ngts.ngts_types.devices_T import DevicesT
 from ngts.nvos_constants.constants_nvos import SystemConsts, ApiType, CumulusConsts
 from ngts.nvos_tools.system.System import System

@@ -6,9 +6,9 @@ import random
 import string
 import os
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from infra.tools.general_constants.constants import DefaultConnectionValues
-from infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.general_constants.constants import DefaultConnectionValues
+from devts.infra.tools.linux_tools.linux_tools import LinuxSshEngine, scp_file
 
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
 from ngts.nvos_constants.constants_nvos import ApiType, SystemConsts

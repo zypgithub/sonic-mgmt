@@ -10,7 +10,7 @@ from ngts.helpers.performance.performance_db_helpers import add_test_mongo_metad
 from ngts.constants.performance_constants import PerfConsts, SPCXRAConsts, MongoDbConsts
 from ngts.performance_tests.spcx_ra.conftest import get_spcx_ra_spine_traffic, get_spcx_ra_leaf_traffic
 from ngts.performance_tests.spcx_ra.split_x1_800G_configuration.conftest import get_conf_args
-from infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
+from devts.infra.tools.redmine.redmine_api import is_redmine_issue_active, get_issues_status
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 
 logger = logging.getLogger()

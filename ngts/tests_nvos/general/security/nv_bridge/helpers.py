@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import time
 
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 
 import ngts.tools.test_utils.allure_utils as allure
 from ngts.ngts_types import EnginesT

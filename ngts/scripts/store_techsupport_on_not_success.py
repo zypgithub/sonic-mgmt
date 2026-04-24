@@ -4,7 +4,7 @@ import time
 import logging
 import pytest
 
-from infra.tools.general_constants.constants import DefaultTestServerCred, DefaultConnectionValues
+from devts.infra.tools.general_constants.constants import DefaultTestServerCred, DefaultConnectionValues
 from ngts.scripts.sonic_deploy.community_only_methods import is_dualtor_topo
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
 from ngts.nvos_tools.system.System import System

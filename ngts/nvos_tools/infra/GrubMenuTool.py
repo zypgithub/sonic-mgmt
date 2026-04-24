@@ -3,7 +3,7 @@ import time
 
 import pexpect
 
-from infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from ngts.tools.test_utils import allure_utils as allure
 
 

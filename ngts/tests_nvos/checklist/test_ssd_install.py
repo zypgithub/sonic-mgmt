@@ -17,8 +17,8 @@ from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine  # type: ignore
-from infra.tools.validations.traffic_validations.ping.send import ping_till_alive
+from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine  # type: ignore
+from devts.infra.tools.validations.traffic_validations.ping.send import ping_till_alive
 from ngts.tests_nvos.platform.firmware_telemetry_helpers import (
     assert_gnmi_firmware_version_matches_nvue,
 )
