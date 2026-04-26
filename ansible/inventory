@@ -942,9 +942,9 @@ croc-simx-93 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQ
 croc-simx-94-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 croc-simx-94 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700             serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'mqm9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
-# NVOS testbed croc-simx-95 topologies
-croc-simx-95-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
-croc-simx-95 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700             serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'mqm9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+# NVOS testbed rosalind-simx-95 topologies
+rosalind-simx-95-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
+rosalind-simx-95 ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700             serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'mqm9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
 
 # NVOS testbed croc-simx-96 topologies
 croc-simx-96-ptf-any ansible_host=nvidia-arm-orion  sonic_version=v2  sonic_hwsku=ACS-MQM9700            serial_console="telnet fit-l-vrt-660 10097" ptf_host=ptf-dummy ptf_portmap="" pdu_host=pdu-10-208-2-33 base_mac=00:50:56:30:06:58 serial=MT2142X05750 model=MQM9700-WS2F_QP1 syseeprom_info="{'0x28': u'x86_64-mlnx_MQM9700', '0x29': u'2021.05-5.3.0008-9600', '0x22': u'MQM9700-WS2F_QP1', '0x23': u'MT2142X05750', '0x21': u'mqm9700', '0x26': u'17', '0x24': u'08:c0:eb:58:7f:90', '0x25': u'04/01/2021 22:27:42', '0xfe': u'0xF3E7B840', '0x2b': u'Mellanox', '0x2a': u'254'}"
@@ -2624,8 +2624,8 @@ croc-simx-93
 croc-simx-94-ptf-any
 croc-simx-94
 
-croc-simx-95-ptf-any
-croc-simx-95
+rosalind-simx-95-ptf-any
+rosalind-simx-95
 
 croc-simx-96-ptf-any
 croc-simx-96

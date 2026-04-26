@@ -1468,7 +1468,7 @@ def validate_upload_health_files(engines, system, health_files=[HealthConsts.HEA
     validate upload health files with scp and sftp
     """
     upload_protocols = ['scp', 'sftp']
-    player = engines['sonic_mgmt']
+    player = engines.get('sonic_mgmt') or engines.oob_mgmt_server
     file_to_upload = random.choice(health_files)
 
     with allure.step(

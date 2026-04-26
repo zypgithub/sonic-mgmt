@@ -729,7 +729,7 @@ juliet-simx-86-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,serve
 juliet-simx-87-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-simx-87,Mellanox MTR testbed
 juliet-simx-88-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,juliet-simx-88,Mellanox MTR testbed
 croc-simx-93-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-simx-93,Mellanox MTR testbed
-croc-simx-95-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-simx-95,Mellanox MTR testbed
+rosalind-simx-95-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,rosalind-simx-95,Mellanox MTR testbed
 croc-simx-91-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-simx-91,Mellanox MTR testbed
 croc-simx-97-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-simx-97,Mellanox MTR testbed
 croc-chipsim-62-ptf-any,vm-t1,ptf-any,docker-ptf-mlnx,ptf-dummy,1.1.1.1/16,,server_54,VM0000,croc-chipsim-62,Mellanox MTR testbed
