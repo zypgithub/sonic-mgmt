@@ -13,9 +13,9 @@ logger = logging.getLogger()
 
 # ── smpquery nd constants ─────────────────────────────────────────────────────
 
-SMPQUERY_ND_CMD = 'sudo smpquery nd -D {dr_path}'
-SMPQUERY_RETRIES = 3
-SMPQUERY_RETRY_DELAY_S = 2
+SMPQUERY_ND_CMD = 'sudo smpquery -t 5000 nd -D {dr_path}'
+SMPQUERY_RETRIES = 5
+SMPQUERY_RETRY_DELAY_S = 5
 NV_SHOW_FAE_INTERFACE_JSON = 'nv show fae interface -o json'
 NV_SHOW_FAE_INTERFACE_PORT_JSON = 'nv show fae interface {port} -o json'
 

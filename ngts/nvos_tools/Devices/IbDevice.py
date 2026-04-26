@@ -3361,6 +3361,8 @@ class PortiaSimx(RosalindSwitch):
             PlatformConsts.SYSTEM_TYPE: "N7170_LD",
             "asic-model": self.asic_type,
         })
+        self.nvl_internal_fnm_ports = ['fnma0p1', 'fnma0p3', 'fnma1p1', 'fnma1p3', 'fnma2p1', 'fnma2p3', 'fnma3p1', 'fnma3p3']
+        self.mgmt_ports = ['eth0']
 
 
 # -------------------------- PortiaSA Switch ----------------------------
