@@ -9,8 +9,8 @@ from copy import deepcopy
 
 from tests.common.utilities import wait_until
 from tests.common.reboot import SONIC_SSH_REGEX
-from tests.common.helpers.firmware_helper import show_firmware, resolve_bmc_flavor, load_bmc_creds, get_bmc_ip
 from tests.common.helpers.assertions import pytest_assert
+from tests.common.helpers.firmware_helper import show_firmware, resolve_bmc_flavor, load_bmc_creds, get_bmc_ip
 
 logger = logging.getLogger(__name__)
 
