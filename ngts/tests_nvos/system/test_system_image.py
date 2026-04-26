@@ -274,26 +274,24 @@ def test_system_image_upload(engines, release_name, random_api, original_version
 
     _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
     image_file = system.image.files.file_name[image_name]
-    upload_protocols = ['scp', 'sftp']
     player = engines['sonic_mgmt']
+    uri_builders = {
+        'scp': nvos_general_utils.generate_scp_uri_using_player,
+        'sftp': nvos_general_utils.generate_sftp_uri_using_player,
+    }
+    upload_protocols = list(uri_builders.keys())
 
     try:
         with allure.step("Upload image to player {} with the next protocols : {}".format(player.ip, upload_protocols)):
             for protocol in upload_protocols:
                 with allure.step("Upload image to player with {} protocol".format(protocol)):
-                    base_upload_prefix = TestToolkit.devices.dut.get_upload_prefix()
-                    upload_path = f"{protocol}{base_upload_prefix}{image_name}"
-
+                    upload_path = uri_builders[protocol](player, f'/tmp/{image_name}')
                     image_file.action_upload(upload_path).verify_result()
 
                 with allure.step("Validate file was uploaded to player and delete it"):
-                    if TestToolkit.devices.dut.is_eth():
-                        logger.info("Skipping fit70 SSH verification for ETH device - upload already verified via verify_result()")
-                        logger.info(f"Image {image_name} was successfully uploaded (verified by action_upload.verify_result())")
-                    else:
-                        assert player.run_cmd(
-                            cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
-                        player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
+                    assert player.run_cmd(
+                        cmd='ls /tmp/ | grep {}'.format(image_name)), "Did not find the file with ls cmd"
+                    player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete file from switch"):
             system.image.files.delete_files([image_name]).verify_result()
