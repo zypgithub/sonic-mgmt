@@ -234,16 +234,16 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         sonic_mgmt_path.extend(['tests', test_script_path])
         test_script_fullpath = '/'.join(sonic_mgmt_path)
         topology_mark_pattern = r'pytest\.mark\.topology\(.+\)'
-        need_dpu_pattern = False
+        is_smartswitch_test = False
         try:
             with open(test_script_fullpath) as test_script_file:
                 for line in test_script_file:
                     match = re.search(topology_mark_pattern, line)
                     if match and "smartswitch" in match.group(0):
-                        need_dpu_pattern = True
+                        is_smartswitch_test = True
                     if match:
                         if self.sonic_topo:
-                            self.convert_topos()
+                            self.convert_topos(is_smartswitch_test)
                             self.raw_options += " --topology %s" % self.topology
                         break
         except Exception as e:
@@ -297,7 +297,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                          TESTBED=testbed,
                          SONIC_MGMT_PATH=self.sonic_mgmt_path
                          )
-        if need_dpu_pattern:
+        if is_smartswitch_test:
             cmd += f" --dpu-pattern {','.join(dpu_duts)}"
         # Take the first epoint as just one is specified in *.setup file. Currently supported are: SONIC_MGMT or NGTS
         # Take the first player as just one is specified in *.setup file
@@ -345,7 +345,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
                 self.Logger.warning("Failed to get junit xml test report %s from remote player" % self.report_file)
         return ErrorCode.SUCCESS
 
-    def convert_topos(self):
+    def convert_topos(self, is_smartswitch_test=False):
         # Convert the topology name to topology type(for example, t0-64 to t0)
         # and append type "any" for 'any' type in the topology mark
         testbed_type_index = 0
@@ -355,7 +355,7 @@ class RunPytest(TermHandlerMixin, StandaloneWrapper):
         # Need to add t0 for dualtor topology as some community dualtor tests only mark topology as t0
         if 'dualtor' in self.sonic_topo:
             topos.append('t0')
-        if 'bobcat' in self.dut_name and 't1' in self.sonic_topo:
+        if 'bobcat' in self.dut_name and is_smartswitch_test:
             topos.append('smartswitch')
         self.topology = ",".join(topos)
 
