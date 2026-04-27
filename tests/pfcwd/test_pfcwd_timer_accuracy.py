@@ -2,6 +2,7 @@ import logging
 import pytest
 import time
 import re
+import json
 
 from tests.common.fixtures.conn_graph_facts import enum_fanout_graph_facts      # noqa: F401
 from tests.common.helpers.assertions import pytest_assert
@@ -166,6 +167,29 @@ def set_storm_params(dut, fanout_info, fanout, peer_params):
                             pfc_send_period=pfc_send_time, peer_info=peer_params)
     storm_handle.deploy_pfc_gen()
     return storm_handle
+
+
+def save_test_results_to_file(test_func_name, test_data, topo_name):
+    """
+    Save test results to JSON file.
+
+    Args:
+        test_func_name (str): test function name
+        test_data (dict): metrics to persist
+    """
+    try:
+        formatted_data = {}
+        for key, value in test_data.items():
+            if isinstance(value, float):
+                formatted_data[key] = round(value, 2)
+            else:
+                formatted_data[key] = value
+        report_filename = f'/tmp/test_pfcwd_timer_accuracy_{test_func_name}_{topo_name}.json'
+        with open(report_filename, 'w') as f:
+            json.dump(formatted_data, f, indent=2)
+        logger.info("Saved test results to: %s", report_filename)
+    except Exception as err:
+        logger.error("Failed to save test results to file. Error: %s", err)
 
 
 @pytest.mark.usefixtures('pfcwd_timer_setup_restore', 'start_background_traffic')
@@ -471,7 +495,7 @@ class TestPfcwdAllTimer(object):
             duthost.command("pfcwd start_default")
 
     def test_pfcwd_timer_accuracy(self, duthosts, ptfhost, enum_rand_one_per_hwsku_frontend_hostname,
-                                  pfcwd_timer_setup_restore, fanouthosts, set_pfc_time_cisco_8000):
+                                  pfcwd_timer_setup_restore, fanouthosts, set_pfc_time_cisco_8000, tbinfo):
         """
         Tests PFCwd timer accuracy
 
@@ -523,5 +547,17 @@ class TestPfcwdAllTimer(object):
             pytest.fail(str(e))
 
         finally:
+            dt, rt = sorted(self.all_detect_time), sorted(self.all_restore_time)
+            n = len(dt)
+            topo_name = tbinfo['topo']['name']
+            data = {
+                'detect_time_min': dt[0], 'detect_time_max': dt[-1],
+                'detect_time_median': (dt[n // 2] + dt[n // 2 - 1]) / 2 if n % 2 == 0 else dt[n // 2],
+                'restore_time_min': rt[0], 'restore_time_max': rt[-1],
+                'restore_time_median': (rt[n // 2] + rt[n // 2 - 1]) / 2 if n % 2 == 0 else rt[n // 2],
+                'sample_count': n
+            }
+            save_test_results_to_file('test_pfcwd_timer_accuracy', data, topo_name)
+
             if self.storm_handle:
                 self.storm_handle.stop_storm()

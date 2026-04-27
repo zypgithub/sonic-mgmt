@@ -33,7 +33,8 @@ def collect_tests_data_to_sql(request):
         'tests/push_build_tests/system/test_startup_time_degradation.py::TestStartupTime::test_startup_time_degradation': StartupTimeCollector,
         'platform_tests/test_advanced_reboot.py::test_fast_reboot': AdvancedRebootCollector,
         'platform_tests/test_advanced_reboot.py::test_warm_reboot': AdvancedRebootCollector,
-        'upgrade_path/test_upgrade_path.py::test_upgrade_path': UpgradePathCollector
+        'upgrade_path/test_upgrade_path.py::test_upgrade_path': UpgradePathCollector,
+        'pfcwd/test_pfcwd_timer_accuracy.py::TestPfcwdAllTimer::test_pfcwd_timer_accuracy': PfcwdTimerCollector,
     }
 
     yield
@@ -445,3 +446,27 @@ class SkynetNvosSSDUsageCollector(SkynetGenericCollector):
         with open(test_report_filename) as test_report_file_obj:
             test_report_dict = json.load(test_report_file_obj)
             self.test_data = test_report_dict
+
+class PfcwdTimerCollector(SonicDataCollector):
+    """
+    Class which collects PFCwd timer result for PFCwd timer accuracy test case
+    """
+    def __init__(self, request):
+        super(PfcwdTimerCollector, self).__init__(request)
+
+    def get_test_results(self):
+        """
+        Collect PFCwd timer result from JSON file
+        """
+        # Extract the test function name from the full test node id
+        test_func_name = self.test_name.split('::')[-1].split('[')[0]
+
+        # Get topology name and build the report file path
+        tbinfo = self.request.getfixturevalue('tbinfo')
+        topo_name = tbinfo['topo']['name']
+        test_report_filename = os.path.join('/tmp/', f'test_pfcwd_timer_accuracy_{test_func_name}_{topo_name}.json')
+
+        # Read and parse the test report file
+        with open(test_report_filename, 'r') as f:
+            self.test_data = json.load(f)
+        logger.info(f'Successfully loaded test data from {test_report_filename}')
