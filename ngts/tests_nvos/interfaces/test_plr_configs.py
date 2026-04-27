@@ -1,4 +1,5 @@
 from functools import partial
+from typing import Iterable
 import logging
 import random
 import pytest
@@ -58,6 +59,16 @@ def _cleanup(port: Port):
     helpers.reboot_gpus()
 
 
+def _dedupe_ports(*ports_groups: Iterable[Port]) -> list[Port]:
+    """Keep ports in stable order while removing duplicates by name."""
+    deduped_ports = {}
+    for ports_group in ports_groups:
+        for port in ports_group:
+            deduped_ports.setdefault(port.name, port)
+
+    return list(deduped_ports.values())
+
+
 @retry.retry(exceptions=ExceptionGroup, tries=5, delay=5)
 def _verify_plr_configuration(port: Port, mode: str):
     """
@@ -97,6 +108,16 @@ def _verify_plr_configuration(port: Port, mode: str):
                     assert actual_value == expected_value, error_msg
 
 
+def _verify_plr_configuration_on_ports(ports: Iterable[Port], mode: str, step_name: str) -> None:
+    verification_ports = list(ports)
+    logger.info(f"{step_name}. Verification ports: {[port.name for port in verification_ports]}")
+
+    with allure.step(step_name):
+        for port in verification_ports:
+            with allure.independent_step(f'Verify PLR configuration on port {port.name}'):
+                _verify_plr_configuration(port, mode)
+
+
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
 def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, register_cleanup, unregister_cleanup):
     last_acp_port_name = max(devices.dut.nvl_access_ports_list, key=lambda p: int(p.replace(NvlInterfaceConsts.ACP_PORT_TYPE, '')))
@@ -123,6 +144,10 @@ def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, 
             logger.info(f"Validating reject-mode in output against pattern: {reject_modes_regex}")
             assert re.search(f'reject-mode: ({reject_modes_regex})', output, flags=re.M), f"Output format is not as expected. Expected: {reject_modes}, Actual: {output}"
 
+    with allure.step('Select fixed verification ports'):
+        verification_ports = _dedupe_ports((port,), helpers.get_random_ports(engines.dut)[1])
+        logger.info(f"Using fixed verification ports for this test run: {[port_.name for port_ in verification_ports]}")
+
     with allure.step('Select random PLR mode'):
         port_mode: str = port.interface.link.plr.parse_show()['mode']
         logger.info(f"Current port mode: {port_mode}")
@@ -139,10 +164,7 @@ def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, 
 
         logger.info(f"Verifying PLR configuration after setting mode to {random_mode}")
 
-        with allure.step("Verify PLR configuration"):
-            for port_ in helpers.get_random_ports(engines.dut)[1]:
-                with allure.independent_step(f'Verify PLR configuration on port {port_.name}'):
-                    _verify_plr_configuration(port_, random_mode)
+        _verify_plr_configuration_on_ports(verification_ports, random_mode, "Verify PLR configuration on fixed ports")
 
     with allure.step('Unset PLR mode'):
         logger.info(f"Unsetting PLR mode on port {port.name}")
@@ -151,10 +173,7 @@ def test_plr_cli_flow(engines: EnginesT, devices: DevicesT, access_ports: Port, 
             port.wait_for_port_state(port, NvosConsts.LINK_STATE_UP)
         helpers.reboot_gpus()  # need to reboot the GPUs to ensure that link will go up
 
-        with allure.step("Verify PLR mode reverted to default"):
-            for port_ in helpers.get_random_ports(engines.dut)[1]:
-                with allure.independent_step(f'Wait for port {port_.name} to be up'):
-                    _verify_plr_configuration(port_, PLR_DEFAULT_MODE)
+        _verify_plr_configuration_on_ports(verification_ports, PLR_DEFAULT_MODE, "Verify PLR mode reverted to default on fixed ports")
 
         # the test successfully returned to the original state,
         # so we can unregister the cleanup function

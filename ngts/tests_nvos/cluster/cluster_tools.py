@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from paramiko import SSHClient, AutoAddPolicy
 from collections import defaultdict
 import functools
 import inspect
@@ -12,7 +13,6 @@ import re
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_constants.constants_nvos import IbConsts, OutputFormat, SystemConsts
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
@@ -676,10 +676,7 @@ class ClusterTools:
                     f"Polling until cluster state is {cluster_expected_state} "
                     f"and nmx-c state is {nmx_c_expected_state}"
             ):
-                if (
-                        (cluster_expected_state and actual_cluster_state != cluster_expected_state) or
-                        (nmx_c_expected_state and actual_nmxc_state != nmx_c_expected_state)
-                ):
+                if (cluster_expected_state and actual_cluster_state != cluster_expected_state) or (nmx_c_expected_state and actual_nmxc_state != nmx_c_expected_state):
                     logger.info(f"Cluster state not as expected yet (attempt {attempt + 1}/{max_retries}). Retrying...")
                     logger.info(f"Expected: cluster {cluster_expected_state}, nmx_c {nmx_c_expected_state}.\n Actual: cluster {actual_cluster_state}, nmx_c {actual_nmxc_state}")
                     logger.info("Sleeping for 4 seconds between iterations")
@@ -781,15 +778,34 @@ class ClusterTools:
                 assert not files, f"Expected to get empty output, but instead received {files}"
 
     @staticmethod
-    def reboot_compute_nodes_gpus(setup_name):
+    def reboot_compute_nodes_gpus(setup_name: str) -> None:
         if setup_name in list(Configurations.compute_nodes_per_system.keys()):
             for node in Configurations.compute_nodes_per_system[setup_name]:
-                ip_address = node['ip_address']
-                username = node['username']
-                password = node['password']
-                new_engine = LinuxSshEngine(ip_address, username, password)
-                new_engine.run_cmd(f"echo {password} | sudo -S nvidia-smi -r ; sleep 1")
-                new_engine.run_cmd(f"{password}")
+                # we moved from LinuxSshEngine to paramiko SSHClient because LinuxSshEngine is using netmiko under the hood,
+                # and it causes an SSH race between this client and the engine dut client and makes the operation get stuck.
+                with SSHClient() as client:
+                    client.set_missing_host_key_policy(AutoAddPolicy())
+                    kwargs = {"hostname": node['ip_address'], "username": node['username'], "password": node['password']}
+                    logger.info(f"Connecting to {node['ip_address']!r} with username {node['username']!r}")
+                    client.connect(**kwargs, look_for_keys=False, allow_agent=False, timeout=60)
+
+                    logger.info(f"Executing sudo command: {(cmd := f"echo {node['password']} | sudo -S -p '' nvidia-smi -r")!r}")
+                    _, stdout, stderr = client.exec_command(cmd, get_pty=True)   # get_pty=True is important for many sudo configurations
+
+                    logger.info("Receiving exit code")
+                    exit_code = stdout.channel.recv_exit_status()
+
+                    logger.info("Reading stdout/stderr")
+                    out = stdout.read().decode(errors="replace").rstrip()
+                    err = stderr.read().decode(errors="replace").rstrip()
+
+                    assert exit_code == 0, f"Failed to execute sudo command: {err}"  # not sure if we need to raise an exception here
+                    if err.strip():
+                        logger.warning(f"nvidia-smi -r output: {err}")
+
+                    logger.info(f"nvidia-smi -r output: {out}")
+
+            logger.debug("Sleeping for 10 seconds after rebooting GPUs")
             time.sleep(10)
 
     @staticmethod
