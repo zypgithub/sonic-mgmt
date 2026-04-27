@@ -1,12 +1,18 @@
 import logging
+import os
+import time
+
 import pytest
 
-from ngts.nvos_constants.constants_nvos import OutputFormat, ApiType
+from ngts.nvos_constants.constants_nvos import NvosConst, OutputFormat, ApiType
+from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
+from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.tests_nvos.cluster.ansible_playbooks_tool import AnsiblePlaybooksTool
 from ngts.tests_nvos.cluster.cluster_consts import AnsiblePlaybooksConsts as Ansible
+from ngts.tests_nvos.cluster.cluster_mpi_prei import _run_cluster_mpi_with_optional_prei
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tools.test_utils import allure_utils as allure
@@ -17,6 +23,44 @@ logger = logging.getLogger()
 # Measure ALL device writes during traffic to catch any excessive I/O.
 # Start low to surface real numbers, then adjust based on observed baselines.
 TRAFFIC_TOTAL_WRITE_THRESHOLD_KB = 50 * 1024  # 50 MB total across all devices
+
+# Fixed ACP for interface-counter visibility during cluster MPI (align with lab topology).
+_CLUSTER_TRAFFIC_COUNTERS_IFACE = "acp1"
+
+
+def _post_mpi_interface_counter_settle_sec() -> float:
+    """Optional delay before ``after MPI`` counter snapshot so NVUE/async counters can settle."""
+    raw = os.environ.get("CLUSTER_TRAFFIC_POST_MPI_COUNTER_SETTLE_SEC", "").strip()
+    if not raw:
+        return 0.0
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return 0.0
+
+
+def _sleep_post_mpi_counter_settle() -> None:
+    sec = _post_mpi_interface_counter_settle_sec()
+    if sec <= 0:
+        return
+    logger.info(
+        "Post-MPI interface counter settle sleep: %.2fs (CLUSTER_TRAFFIC_POST_MPI_COUNTER_SETTLE_SEC)",
+        sec,
+    )
+    time.sleep(sec)
+
+
+def _nv_show_interface_counters_json(engine, iface: str) -> str:
+    """``nv show interface <iface> counters`` (not link counters)."""
+    port = Port(iface, "", "")
+    return port.interface.counters.show(dut_engine=engine, output_format=OutputFormat.json)
+
+
+def _nv_show_fae_interface_counters_json(engine, iface: str) -> str:
+    """``nv show fae interface <iface> counters`` (JSON string)."""
+    return Fae(port_name=iface).interface.counters.show(
+        dut_engine=engine, output_format=OutputFormat.json
+    )
 
 
 def _snapshot_all_writes(engine):
@@ -97,6 +141,32 @@ def _check_disk_writes(engine, initial_writes):
         return True
 
 
+_ANSIBLE_CLUSTER_TRAFFIC_STEPS = frozenset({"status check", "configure NMX", "traffic test"})
+
+
+def _ansible_cluster_traffic_failure_appendix() -> str:
+    """Context for STATUS_HEALTH / SOFTWARE_CONFIGURE_SWITCH / TESTS_EXECUTE failures."""
+    lines = [
+        "",
+        "--- Ansible cluster steps (status / NMX / traffic) ---",
+        "These run over SSH on the ansible runner host (not on the DUT).",
+        "Fix SSH to the runner, inventory, or the playbook on that host.",
+        f"Runner host(s): {Ansible.ANSIBLE_MACHINES}",
+        f"VM_USER set: {bool(NvosConst.ROOT_USER)}, VM_PASSWORD set: {bool(NvosConst.ROOT_PASSWORD)}",
+    ]
+    key = getattr(AnsiblePlaybooksTool, "last_playbook_key", None)
+    out = getattr(AnsiblePlaybooksTool, "last_playbook_output", None) or ""
+    if key:
+        lines.append(f"Last playbook key: {key}")
+    if not out.strip():
+        lines.append("Last playbook output: (empty — often SSH/sshpass failure or runner did not return stdout)")
+    else:
+        tail = out[-8000:] if len(out) > 8000 else out
+        lines.append("Last playbook output (tail; full stream is in logs above):")
+        lines.append(tail)
+    return "\n".join(lines)
+
+
 def _assert_test_results(status_check, configure_nmx_status, traffic_status, disk_write_ok=True):
     """Assert test results and provide detailed failure information"""
     failed_components = []
@@ -124,6 +194,8 @@ def _assert_test_results(status_check, configure_nmx_status, traffic_status, dis
 
     if failed_components:
         failure_msg = f"Test failed on: {', '.join(failed_components)}"
+        if _ANSIBLE_CLUSTER_TRAFFIC_STEPS & set(failed_components):
+            failure_msg += _ansible_cluster_traffic_failure_appendix()
         assert False, failure_msg
 
 
@@ -187,6 +259,13 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
 
     if standalone_system:
         pytest.skip(f"Skipping test - Standalone system, traffic not supported.")
+
+    acp1_counters_after = None
+    need_after_mpi_counter_snapshot = False
+    initial_writes = None
+    status_check = configure_nmx_status = traffic_status = None
+    disk_write_ok = True
+
     try:
         with allure.step("Enable Cluster"):
             cluster = Cluster()
@@ -197,24 +276,100 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
             status_check = AnsiblePlaybooksTool.run_playbook_by_key(
                 Ansible.STATUS_HEALTH,
                 ansible_inventory_file,
-                {}
+                {},
             )
 
         with allure.step("Configure NMX"):
             configure_nmx_status = AnsiblePlaybooksTool.run_playbook_by_key(
                 Ansible.SOFTWARE_CONFIGURE_SWITCH,
                 ansible_inventory_file,
-                {}
+                {},
             )
 
         with allure.step("Snapshot disk writes before traffic (bug 5653301)"):
             initial_writes = _snapshot_all_writes(engines.dut)
 
+        with allure.step(
+            "Snapshot before MPI: nv show interface {} counters".format(
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+        ):
+            acp1_counters_before = _nv_show_interface_counters_json(
+                engines.dut, _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+            logger.info(
+                "Interface counters before MPI (%s): %s",
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE,
+                acp1_counters_before,
+            )
+            allure.attach(
+                "interface_counters_{}_before_mpi".format(_CLUSTER_TRAFFIC_COUNTERS_IFACE),
+                acp1_counters_before,
+            )
+
+        with allure.step(
+            "Snapshot before MPI: nv show fae interface {} counters".format(
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+        ):
+            fae_counters_before = _nv_show_fae_interface_counters_json(
+                engines.dut, _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+            logger.info(
+                "FAE interface %s counters before MPI: %s",
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE,
+                fae_counters_before,
+            )
+            allure.attach(
+                "fae_interface_{}_counters_before_mpi".format(_CLUSTER_TRAFFIC_COUNTERS_IFACE),
+                fae_counters_before,
+            )
+
+        need_after_mpi_counter_snapshot = True
         with allure.step("Running run_mpi_all_test"):
-            traffic_status = AnsiblePlaybooksTool.run_playbook_by_key(
-                Ansible.TESTS_EXECUTE,
+            traffic_status = _run_cluster_mpi_with_optional_prei(
+                engines,
+                devices,
                 ansible_inventory_file,
-                {}
+                Ansible.TESTS_EXECUTE,
+                enable_prei=True,
+            )
+
+        _sleep_post_mpi_counter_settle()
+        with allure.step(
+            "Snapshot after MPI: nv show interface {} counters".format(
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+        ):
+            acp1_counters_after = _nv_show_interface_counters_json(
+                engines.dut, _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+            logger.info(
+                "Interface counters after MPI (%s): %s",
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE,
+                acp1_counters_after,
+            )
+            allure.attach(
+                "interface_counters_{}_after_mpi".format(_CLUSTER_TRAFFIC_COUNTERS_IFACE),
+                acp1_counters_after,
+            )
+
+        with allure.step(
+            "Snapshot after MPI: nv show fae interface {} counters".format(
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+        ):
+            fae_counters_after = _nv_show_fae_interface_counters_json(
+                engines.dut, _CLUSTER_TRAFFIC_COUNTERS_IFACE
+            )
+            logger.info(
+                "FAE interface %s counters after MPI: %s",
+                _CLUSTER_TRAFFIC_COUNTERS_IFACE,
+                fae_counters_after,
+            )
+            allure.attach(
+                "fae_interface_{}_counters_after_mpi".format(_CLUSTER_TRAFFIC_COUNTERS_IFACE),
+                fae_counters_after,
             )
 
         with allure.step("Check disk writes during traffic (bug 5653301)"):
@@ -223,4 +378,7 @@ def test_cluster_traffic_all_test(engines, devices, test_api, has_loopbox, stand
         _assert_test_results(status_check, configure_nmx_status, traffic_status, disk_write_ok)
 
     finally:
-        pass
+        with allure.step(f"Cleanup: clear interface counters on {_CLUSTER_TRAFFIC_COUNTERS_IFACE}"):
+            Port(_CLUSTER_TRAFFIC_COUNTERS_IFACE, "", "").interface.counters.clear_counters(
+                dut_engine=engines.dut
+            ).verify_result()

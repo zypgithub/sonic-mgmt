@@ -14,8 +14,9 @@ Functions are organized into categories:
 """
 
 import logging
+import re
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import pytest
 from retry.api import retry_call
@@ -133,6 +134,31 @@ def get_all_ib_ports_range() -> Optional[str]:
 # Device Information Helpers
 # =============================================================================
 
+def _candidate_fae_interface_names(port_name: str) -> List[str]:
+    """
+    Candidate names for ``nv show fae interface <name>`` when resolving MST/local-port for PREI.
+
+    - Try the base name first (e.g. ``acp1``).
+    - For ``acp<N>``, also try ``nvl<N>`` (NVUE sometimes exposes NVL ports under this name).
+    - Try IB lane suffixes ``pl1``..``pl4``.
+    """
+    out: List[str] = []
+    seen = set()
+
+    def add(name: str) -> None:
+        if name and name not in seen:
+            seen.add(name)
+            out.append(name)
+
+    add(port_name)
+    m = re.fullmatch(r"(?i)acp(\d+)$", port_name)
+    if m:
+        add(f"nvl{m.group(1)}")
+    for lane_suffix in IbPhyRecoveryConfig.LANES:
+        add(f"{port_name}{lane_suffix}")
+    return out
+
+
 def get_local_port_and_mst_device(port_name: str) -> Tuple[str, str]:
     """
     Get the local port number and MST device from a port's lane.
@@ -210,6 +236,78 @@ def get_local_port_and_mst_device(port_name: str) -> Tuple[str, str]:
             f"Could not retrieve local_port or mst_device for port {port_name} "
             f"from any lane ({lanes_to_try}). Last output: {last_output}"
         )
+
+
+def get_local_port_and_mst_device_nvlink(port_name: str, dut_engine: Any) -> Tuple[str, str]:
+    """
+    NVLink/cluster resolution for PREI (mlxreg): resolve local-port and MST device on a specific DUT engine.
+
+    This is intended for NVL access ports (e.g. ``acp1``) where lane probing alone is insufficient and where
+    the caller must run NVUE commands on an explicit engine (cluster setups).
+    """
+    candidates = _candidate_fae_interface_names(port_name)
+    last_output: Dict[str, Any] = {}
+
+    with allure.step(
+        f"Get local port and MST device from {port_name} (candidates: {candidates[:8]}"
+        f"{'…' if len(candidates) > 8 else ''})"
+    ):
+        for fae_if_name in candidates:
+            logger.debug("Trying fae interface name: %s", fae_if_name)
+            try:
+                fae = Fae(port_name=fae_if_name)
+                output = OutputParsingTool.parse_json_str_to_dictionary(
+                    fae.interface.show(dut_engine=dut_engine)
+                ).get_returned_value()
+                last_output = output if isinstance(output, dict) else {}
+
+                primary_asic_device = last_output.get(IbInterfaceConsts.PRIMARY_ASIC_DEVICE)
+                logger.debug(
+                    "FAE %s - primary-asic-device type: %s, value: %s",
+                    fae_if_name,
+                    type(primary_asic_device).__name__,
+                    primary_asic_device,
+                )
+
+                if isinstance(primary_asic_device, dict):
+                    local_port = str(primary_asic_device.get(IbInterfaceConsts.LOCAL_PORT, ""))
+                    mst_device = primary_asic_device.get(IbInterfaceConsts.PRIMARY_ASIC_DEVICE, "")
+                else:
+                    local_port = ""
+                    mst_device = primary_asic_device if isinstance(primary_asic_device, str) else ""
+
+                local_port = local_port or str(last_output.get(IbInterfaceConsts.LOCAL_PORT, ""))
+                mst_device = mst_device or str(last_output.get(IbInterfaceConsts.PRIMARY_ASIC_DEVICE, ""))
+
+                if not local_port and isinstance(last_output, dict):
+                    aport = last_output.get("aport-number")
+                    if aport is not None:
+                        local_port = str(aport)
+
+                if local_port and mst_device:
+                    logger.info(
+                        "Port %s (via fae interface %s): local_port=%s, mst_device=%s",
+                        port_name,
+                        fae_if_name,
+                        local_port,
+                        mst_device,
+                    )
+                    return local_port, mst_device
+
+                logger.debug(
+                    "FAE name %s did not return valid data: local_port=%r, mst_device=%r",
+                    fae_if_name,
+                    local_port,
+                    mst_device,
+                )
+            except Exception as e:
+                logger.debug("FAE name %s failed with exception: %s", fae_if_name, e)
+                continue
+
+    raise ValueError(
+        f"Could not retrieve local_port or mst_device for port {port_name} "
+        f"(tried {candidates}). Last output: {last_output}"
+    )
 
 
 # =============================================================================
