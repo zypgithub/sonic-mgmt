@@ -329,9 +329,6 @@ class DvsPerformance(PerformanceCommon):
         switch_attributes = self.topology_obj.players['dut']['attributes'].noga_query_data['attributes']
         if get_chip_type(switch_attributes) == "SPC5":
             self.unsplit_all_ports()
-        self.connected_ports = self.original_connected_ports
-        self.unconnected_ports = self.original_unconnected_ports
-        self.ports_lanes = self.original_port_lanes
 
     def clear_syslog(self):
         """
@@ -725,8 +722,12 @@ class DvsPerformance(PerformanceCommon):
         unsplit_ports_cmd = f"{PerfConsts.DVS_RUN_TEST_PATH} --names {PerfConsts.DVS_UNSPLIT_ALL_PORTS}"
         self.execute_cmd(unsplit_ports_cmd)
         self.update_player_ports()
-        self.base_ports, self.ports_lanes = self.get_base_ports()
+        self.get_base_ports()
         self.right_left_ports_dict = self.get_right_left_ports_dict()
+        self.original_connected_ports = self.connected_ports
+        self.original_unconnected_ports = self.unconnected_ports
+        self.original_base_ports = self.base_ports
+        self.original_port_lanes = self.ports_lanes
 
     def dynamic_configuration_helper(self, scenario, performance_parameters):
         """
