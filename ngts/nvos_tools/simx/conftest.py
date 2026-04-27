@@ -1,4 +1,6 @@
 import logging
+import os
+
 import pytest
 
 logger = logging.getLogger()
@@ -21,6 +23,15 @@ def pytest_addoption(parser):
                                                                                       'information from NOGA')
     parser.addoption('--chipsim-version', type=str, action='store', default=None, help='ChipSim version, e.g. master-1.3.149')
     parser.addoption('--custom-flags', type=str, action='store', default=None, help='Custom flags for chipsim')
+    parser.addoption('--chipsim-extra-args', type=str, action='store', default=None,
+                     help='Free-form args appended to run_nvos_in_chipsim.py (quote as one shell token if needed). '
+                          'Or use --pelican-tag / --cable-script / --chipsim-force, or CHIPSIM_EXTRA_ARGS env.')
+    parser.addoption('--pelican-tag', type=str, action='store', default=None,
+                     help='Pass-through to run_nvos_in_chipsim.py --pelican-tag')
+    parser.addoption('--cable-script', type=str, action='store', default=None,
+                     help='Pass-through to run_nvos_in_chipsim.py --cable-script')
+    parser.addoption('--chipsim-force', action='store_true', default=False,
+                     help='Pass-through to run_nvos_in_chipsim.py --force')
     parser.addoption('--chipsim-script-branch', type=str, action='store', default=None,
                      help='Override the chipsim branch/release name for regression runs, e.g. 25-03-0400')
 
@@ -60,6 +71,29 @@ def chipsim_version(request):
 @pytest.fixture(scope="session", autouse=True)
 def custom_flags(request):
     return request.config.getoption('--custom-flags')
+
+
+@pytest.fixture(scope="session", autouse=True)
+def chipsim_extra_args(request):
+    opt = request.config.getoption('--chipsim-extra-args')
+    if opt is None:
+        opt = os.environ.get('CHIPSIM_EXTRA_ARGS') or None
+    return opt
+
+
+@pytest.fixture(scope="session", autouse=True)
+def pelican_tag(request):
+    return request.config.getoption('--pelican-tag')
+
+
+@pytest.fixture(scope="session", autouse=True)
+def cable_script(request):
+    return request.config.getoption('--cable-script')
+
+
+@pytest.fixture(scope="session", autouse=True)
+def chipsim_force(request):
+    return request.config.getoption('--chipsim-force')
 
 
 @pytest.fixture(scope="session", autouse=True)

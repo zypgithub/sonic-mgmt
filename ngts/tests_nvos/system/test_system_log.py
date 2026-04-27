@@ -588,10 +588,6 @@ def test_delete_log_files(engines, topology_obj):
             _delete_log_files(engines, component, file_name=LogComponentsConsts.NVUE_LOG)
 
 
-@pytest.mark.system
-@pytest.mark.log
-@pytest.mark.simx
-@pytest.mark.disable_loganalyzer
 def _delete_log_files(engines, system_log_obj, file_name):
     """
     Check user can delete debug-log files
@@ -817,3 +813,10 @@ def get_random_component(system):
     output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
     component_name = random.choice(list(output_dictionary.keys()))
     return system.log.component.component_id[component_name]
+
+
+@retry(Exception, tries=2, delay=2)
+def _validate_system_log_rotation_output(system_log_obj, attribute, expected_value):
+    show_output = system_log_obj.rotation.show()
+    output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(show_output).get_returned_value()
+    ValidationTool.verify_field_value_in_output(output_dictionary, attribute, expected_value).verify_result()

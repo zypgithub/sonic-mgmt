@@ -34,7 +34,21 @@ NETWORK_NAME = "containers_network"
 GET_NETWORK_CMD = "docker network ls | grep '{}'".format(NETWORK_NAME)
 SONIC_MGMT_SSH_PORT = 2222
 SONIC_MGMT_RPYC_PORT = 18812
-SETUPS_LOCATION = "/.autodirect/sw_regression/system/SONIC/MARS/conf/setups"
+NVOS = "NVOS"
+SONIC = "SONIC"
+SETUPS_LOCATION = {SONIC: "/.autodirect/sw_regression/system/SONIC/MARS/conf/setups",
+                   NVOS: "/.autodirect/sysgwork/G/MARS_conf/stm_nvos/setups"}
+
+def _test_server_needs_ipv6(topo):
+    """
+    Check if the test server should enable IPv6 routing based on topology metadata.
+    Returns True if the TEST_SERVER has ENABLE_IPV6=true.
+    """
+    test_server = topo.get_device_by_topology_id(constants.TEST_SERVER_DEVICE_ID)
+    enable_ipv6 = getattr(test_server, 'ENABLE_IPV6', None)
+    if isinstance(enable_ipv6, bytes):
+        enable_ipv6 = enable_ipv6.decode('utf-8')
+    return str(enable_ipv6).lower() == 'true'
 
 
 def _parse_args():
@@ -169,7 +183,8 @@ def create_secrets_vars_script(conn, parsed_mars_docker_env_secrets, container_n
 # we got intermittent threaded socket errors randomly occurs in CI
 # there's a similar issue reported https://github.com/paramiko/paramiko/issues/998
 @retry(ThreadException, tries=3, delay=10)
-def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases, air_setup):
+def create_and_start_container(conn, image_name, image_tag, container_name, mac_address, skip_weekend_cases, air_setup,
+                               setup_name, enable_ipv6=False):
     """
     @summary: Create and start specified container from specified image
     @param conn: Fabric connection to the host server
@@ -179,18 +194,39 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     @param mac_address: MAC address of the container's management interface
     @param skip_weekend_cases: Skip weekend cases
     @param air_setup: Air setup
+    @param setup_name: Setup name (used to detect project type via _get_os_type)
+    @param enable_ipv6: If True, configure default IPv6 route for dual-stack switch access
     """
     container_iface_mac = mac_address
     create_mgmt_network(conn)
-    container_mountpoints_dict = constants.SONIC_MGMT_MOUNTPOINTS.items()
+    mountpoints = dict(constants.COMMON_MOUNTPOINTS)
+    if not air_setup:
+        mountpoints.update(constants.BARE_METAL_MOUNTPOINTS)
+    if _get_os_type(setup_name) == NVOS:
+        mountpoints.update(constants.NVOS_MOUNTPOINTS)
+    else:
+        mountpoints.update(constants.SONIC_MOUNTPOINTS)
     if conn.host in constants.MTBC_SERVER_LIST:
-        container_mountpoints_dict += constants.SONIC_MGMT_MOUNTPOINTS_MTBC.items()
+        mountpoints.update(constants.SONIC_MGMT_MOUNTPOINTS_MTBC)
     if conn.host in constants.MTL_NVOS_SERVER_LIST:
-        container_mountpoints_dict += constants.MTL_NVOS_MOUNTPOINTS.items()
-    if air_setup:
-        container_mountpoints_dict = constants.AIR_SONIC_MGMT_MOUNTPOINTS.items()
+        mountpoints.update(constants.MTL_NVOS_MOUNTPOINTS)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     container_mountpoints_list = []
-    for key, value in container_mountpoints_dict:
+    for key, value in mountpoints.items():
         if key == "/workspace":
             container_mountpoints_list.append("-v {}:{}:rw".format(key, value))
         else:
@@ -249,7 +285,7 @@ def create_and_start_container(conn, image_name, image_tag, container_name, mac_
     if air_setup:
         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo /etc/init.d/ssh restart"'
             .format(CONTAINER_NAME=container_name))
-    elif not configure_docker_route(conn, container_name):
+    elif not configure_docker_route(conn, container_name, enable_ipv6):
         logger.error("Configure docker container failed.")
         sys.exit(1)
 
@@ -268,12 +304,32 @@ def validate_docker_is_up(conn, container_name):
                 .format(CONTAINER_NAME=container_name))
     conn.run("docker exec {CONTAINER_NAME} bash -c \"echo \"UP\"\"".format(CONTAINER_NAME=container_name))
 
-def configure_docker_route(conn, container_name):
+def _get_macvlan_ipv6_gateway(conn):
+    """
+    Derive the IPv6 gateway from the hypervisor's physical interface.
+    Uses the same logic as create_mgmt_network: first global-scope IPv6 on the
+    default-route interface, gateway = network_address + 1.
+    """
+    ip_route_info = conn.run('ip route | grep default').stdout.strip()
+    ip_iface = ip_route_info.split()[4]
+    ipv6_line = conn.run(
+        "ip -6 addr show {iface} | grep 'inet6' | grep 'scope global' | head -1".format(iface=ip_iface)
+    ).stdout.strip()
+    addr_str = ipv6_line.split()[1]
+    if isinstance(addr_str, bytes):
+        addr_str = addr_str.decode('utf-8')
+    ipv6_iface = IPv6Interface(u'{}'.format(addr_str))
+    return str(ipv6_iface.network.network_address + 1)
+
+
+def configure_docker_route(conn, container_name, enable_ipv6=False):
     """
     @summary: Configure docker container.
-    For the sonic-mgmt container to get IP address from LAB DHCP server
+    For the sonic-mgmt container to get IP address from LAB DHCP server.
+    Optionally adds a default IPv6 route for dual-stack access to the switch.
     @param conn: Fabric connection to the host server
     @param container_name: Docker container name to be started
+    @param enable_ipv6: If True, add default IPv6 route via the macvlan network gateway
     @return: Returns True if configurations are successful. In case of exception, return False.
     """
     try:
@@ -304,6 +360,15 @@ def configure_docker_route(conn, container_name):
         # Run dhclient on macvlan network and get public IP/default route from DHCP server based on MAC address
         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo dhclient {CONTAINER_IFACE} -v"'
                  .format(CONTAINER_NAME=container_name, CONTAINER_IFACE=CONTAINER_IFACE))
+        # Add default IPv6 route for dual-stack access to the switch.
+        # The macvlan network already gives the container an IPv6 address via SLAAC.
+        # We just need a default route via the macvlan gateway (derived from hypervisor's interface).
+        if enable_ipv6:
+            ipv6_gw = _get_macvlan_ipv6_gateway(conn)
+            logger.info("Adding default IPv6 route via macvlan gateway %s on %s", ipv6_gw, CONTAINER_IFACE)
+            conn.run('docker exec {CONTAINER_NAME} bash -c "sudo ip -6 route add default via {GW} dev {IFACE}"'
+                     .format(CONTAINER_NAME=container_name, GW=ipv6_gw,
+                             IFACE=CONTAINER_IFACE), warn=True)
         conn.run('docker exec {CONTAINER_NAME} bash -c "sudo /etc/init.d/ssh restart"'
                  .format(CONTAINER_NAME=container_name))
         logger.info("Successfully configured route and executed dhclient on container")
@@ -322,14 +387,23 @@ def cleanup_dangling_docker_images(test_server):
     """
     test_server.run("docker system prune --all -f", warn=True)
 
+def _get_os_type(setup_name):
+    if setup_name and NVOS in setup_name:
+        return NVOS
+    else:
+        return SONIC
+
 def get_test_server_device(args, topo):
     """
     Get test server device
     """
     test_server_device_username = os.getenv("TEST_SERVER_USER")
     test_server_device_password = os.getenv("TEST_SERVER_PASSWORD")
+
     if args.air_setup:
-        simulation_details_path = '{}/{}/simulation_details.json'.format(SETUPS_LOCATION, args.setup_name)
+        setup_type = _get_os_type(args.setup_name)
+        logger.info("Setup type: {}".format(setup_type))
+        simulation_details_path = '{}/{}/simulation_details.json'.format(SETUPS_LOCATION[setup_type], args.setup_name)
         with open(simulation_details_path, 'r') as file:
             simulation_details = json.load(file)
         server_ssh_service = next(
@@ -349,7 +423,8 @@ def get_test_server_device(args, topo):
 
 def main():
     args = _parse_args()
-    registry_url = '{}/sonic'.format(constants.DOCKER_REGISTRY)
+    docker_registry = constants.AIR_DOCKER_REGISTRY if args.air_setup else constants.DOCKER_REGISTRY
+    registry_url = '{}/sonic'.format(docker_registry)
     logger.info("Default registry_url=%s" % registry_url)
     if args.registry_url:
         registry_url = args.registry_url
@@ -366,6 +441,9 @@ def main():
     topo = parse_topology(args.topo)
     docker_host = topo.get_device_by_topology_id(constants.SONIC_MGMT_DEVICE_ID)
     mac = docker_host.MAC_ADDRESS
+    enable_ipv6 = _test_server_needs_ipv6(topo)
+    if enable_ipv6:
+        logger.info("Test server has ENABLE_IPV6 - will configure dual-stack routing on sonic-mgmt container")
     test_server = get_test_server_device(args, topo)
     test_server.open()
     test_server.transport.set_keepalive(30)
@@ -394,7 +472,7 @@ def main():
             else:
                 logger.info("The {} docker container using expected image is stopped. Try to start it")
                 if start_container(test_server, container_name, max_retries=3):
-                    if configure_docker_route(test_server, container_name):
+                    if configure_docker_route(test_server, container_name, enable_ipv6):
                         logger.info("################### DONE ###################")
                         sys.exit(0)
                     else:
@@ -406,7 +484,8 @@ def main():
                     delete_container_required = True
     logger.info("Need to create and start sonic-mgmt container")
     create_and_start_container(test_server, "{}/{}".format(registry_url, docker_image_name),
-                               docker_tag, container_name, mac, args.skip_weekend_cases, args.air_setup)
+                               docker_tag, container_name, mac, args.skip_weekend_cases, args.air_setup,
+                               args.setup_name, enable_ipv6)
 
     logger.info("Try to delete dangling docker images to save space")
     cleanup_dangling_docker_images(test_server)

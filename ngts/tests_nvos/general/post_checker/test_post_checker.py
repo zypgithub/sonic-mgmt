@@ -12,7 +12,6 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.switch_recovery import check_switch_connectivity
 from ngts.constants.constants import FatalStateConsts
-from scripts.setup_status import get_setup_info_from_noga
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 

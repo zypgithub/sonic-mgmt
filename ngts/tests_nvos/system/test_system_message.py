@@ -78,6 +78,7 @@ def verify_system_messages_with_retry(system, expected_pre_login, expected_post_
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
+@pytest.mark.air
 def test_show_system_message(engines, devices, random_api):
     """
     Run show/set/unset system message command and verify the required pre-login message
@@ -136,6 +137,7 @@ def test_show_system_message(engines, devices, random_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 @pytest.mark.cumulus
 def test_set_system_message_pre_login(engines, devices, random_api):
     """
@@ -204,6 +206,7 @@ def test_set_system_message_pre_login(engines, devices, random_api):
 @pytest.mark.banner
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 @pytest.mark.cumulus
 def test_set_system_message_post_login(engines, devices, random_api):
     """
@@ -261,6 +264,7 @@ def test_set_system_message_post_login(engines, devices, random_api):
 
 @pytest.mark.banner
 @pytest.mark.system
+@pytest.mark.air
 @pytest.mark.simx
 @pytest.mark.cumulus
 def test_set_system_message_post_logout(engines, devices, random_api):

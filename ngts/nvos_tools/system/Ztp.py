@@ -20,12 +20,9 @@ class Ztp(BaseComponent):
             if not device:
                 device = TestToolkit.get_device()
 
-            marker = TestToolkit.get_loganalyzer_marker(engine)
-
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp, engine, device,
                                                   self.get_resource_path(), params_dict)
 
-            TestToolkit.add_loganalyzer_marker(engine, marker)
             if reboot_expected:
                 DutUtilsTool.wait_on_system_reboot(TestToolkit.get_engine())
                 DutUtilsTool.wait_for_nvos_to_become_functional(engine)
@@ -41,8 +38,6 @@ class Ztp(BaseComponent):
             if not device:
                 device = TestToolkit.get_device()
 
-            marker = TestToolkit.get_loganalyzer_marker(engine)
-
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_abort_ztp, engine, device,
                                                   self.get_resource_path(), params_dict)
 
@@ -55,7 +50,6 @@ class Ztp(BaseComponent):
             if not device:
                 device = TestToolkit.get_device()
 
-            marker = TestToolkit.get_loganalyzer_marker(engine)
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_run_ztp_url, engine, device, self.get_resource_path(), params_dict, url, exempted_err_msgs=exempted_err_msgs)
 
             return res
@@ -66,8 +60,6 @@ class Ztp(BaseComponent):
                 engine = TestToolkit.get_engine()
             if not device:
                 device = TestToolkit.get_device()
-
-            marker = TestToolkit.get_loganalyzer_marker(engine)
 
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_enable_ztp, engine, device,
                                                   self.get_resource_path(), params_dict)
@@ -80,8 +72,6 @@ class Ztp(BaseComponent):
                 engine = TestToolkit.get_engine()
             if not device:
                 device = TestToolkit.get_device()
-
-            marker = TestToolkit.get_loganalyzer_marker(engine)
 
             res = SendCommandTool.execute_command(self.api_obj[TestToolkit.tested_api].action_disable_ztp, engine, device,
                                                   self.get_resource_path(), params_dict)

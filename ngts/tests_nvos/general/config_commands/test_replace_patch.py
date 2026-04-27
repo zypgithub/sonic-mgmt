@@ -17,6 +17,7 @@ from ngts.tests_nvos.general.config_commands.helpers import verify_new_config_ou
 @pytest.mark.cumulus
 @pytest.mark.general
 @pytest.mark.simx
+@pytest.mark.air
 def test_replace_empty_file(engines):
     """
     Test flow:
@@ -54,6 +55,7 @@ def test_replace_empty_file(engines):
 
 @pytest.mark.general
 @pytest.mark.simx
+@pytest.mark.air
 def test_replace_positive(engines, devices):
     """
 
@@ -81,8 +83,8 @@ def test_replace_positive(engines, devices):
     with allure.step('set hostname to be {hostname} - without apply'.format(hostname=new_hostname_value)):
         system.set(SystemConsts.HOSTNAME, new_hostname_value, apply=False)
 
-    switch_type = devices.dut.switch_type.lower()
-    port = RandomizationTool.select_random_port(requested_ports_state=None, requested_ports_type=switch_type).get_returned_value()
+    port = RandomizationTool.select_random_port(requested_ports_state=None,
+                                                requested_ports_type=devices.dut.nvl_port_type).get_returned_value()
     OutputParsingTool.parse_show_interface_output_to_dictionary(port.interface.show()).get_returned_value()
 
     new_ib0_description = '"ib0description"'

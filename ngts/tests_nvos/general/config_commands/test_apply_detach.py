@@ -21,6 +21,7 @@ logger = logging.getLogger()
 @pytest.mark.nvos_ci
 @pytest.mark.configuration
 @pytest.mark.simx
+@pytest.mark.air
 def test_detach(engines):
     """
         Test flow:
@@ -49,6 +50,7 @@ def test_detach(engines):
 @pytest.mark.general
 @pytest.mark.configuration
 @pytest.mark.simx
+@pytest.mark.air
 def test_apply_assume(engines):
     """
         Test flow:

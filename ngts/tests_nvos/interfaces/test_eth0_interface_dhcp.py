@@ -260,6 +260,7 @@ def test_interface_eth0_mtu(engines, topology_obj):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 def test_interface_eth0_description(engines, topology_obj):
     """
     Verify default description on mgmt interface, configure, check changes,
@@ -389,6 +390,7 @@ def test_interface_eth0_ip_address(engines, topology_obj, serial_engine):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 def test_interface_eth0_show_dhcp(engines, topology_obj):
     """
     Verify all default fields in nv show interface eth0 ipv4 dhcp-client and ipv6 dhcp-client
@@ -578,6 +580,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
 @pytest.mark.eth0
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 def test_mgmt_interface_default(engines, topology_obj):
     """
     Verify default fields, stats, logs

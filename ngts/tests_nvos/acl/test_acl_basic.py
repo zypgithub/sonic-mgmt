@@ -72,6 +72,7 @@ RULE_CONFIG_FUNCTION = {
 
 
 @pytest.mark.acl
+@pytest.mark.air
 def test_show_acls(engines, devices, random_api):
     """
     Validate ACL show commands and verify new ACL structure after migration.
@@ -166,6 +167,9 @@ def test_acl_ipv6(engines, random_api, topology_obj, sonic_mgmt_ipv6_addr):
     if not IpTool.is_dhcp_client6_has_lease(engines.dut):
         pytest.skip("DUT DHCP client6 has no lease; cannot run this IPv6 test.")
 
+    mgmt_port_name = DutUtilsTool.get_engine_interface_name(engines.dut, topology_obj)
+    switch_ipv6_addr = IpTool.verify_ipv6_available(mgmt_port_name)
+
     with allure.step("Define ACLs with rule"):
         acl_type = 'ipv6'
         ipv6_prefix_or_netmask = sonic_mgmt_ipv6_addr + '/64'
@@ -222,6 +226,7 @@ def test_acl_loopback(engines, random_api):
 
 
 @pytest.mark.acl
+@pytest.mark.air
 def test_show_acl_commands(devices, engines, random_api, topology_obj):
     """
     Validate acl show commands.

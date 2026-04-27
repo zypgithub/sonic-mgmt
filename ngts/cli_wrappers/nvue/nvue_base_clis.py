@@ -48,6 +48,12 @@ class NvueBaseCli(BaseCli):
         cmd = cls.get_nv_action_string(action_str, resource_path, main_param, flags, additional_params)
         netmiko_engine = engine.engine
         with allure.step('Running cmd: ' + cmd):
+            # Todo: Instead of send_command_timing, use send_command to expect one of [expected_output, prompt_message,
+            #  other stuff ?] with proper timeout settings so it doesn't wait too long if we encounter an unexpected
+            #  response. Also, find a way to keep getting input from the shell if the action takes a long time
+            #  ("Action executing...") and print it to the log, instead of waiting for the action to finish and only
+            #  then printing everything all at once.
+            # Use custom read_timeout for long-running operations (e.g., ISSU)
             timing_kwargs = {}
             if timeout is not None:
                 timing_kwargs['read_timeout'] = timeout

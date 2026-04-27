@@ -107,6 +107,7 @@ class InventoryBmcTest(InventoryItemBaseTest):
 @pytest.mark.nvos_ci
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
+@pytest.mark.air
 def test_show_platform_inventory(engines, devices, test_api):
     """nv show platform inventory"""
     test_classes = [cls for cls in InventoryItemBaseTest.__subclasses__()
@@ -155,6 +156,7 @@ def test_show_platform_inventory_psu(engines, devices, test_api):
 
 @pytest.mark.platform
 @pytest.mark.cumulus
+@pytest.mark.air
 def test_show_platform_inventory_switch(engines, devices, test_api):
     InventorySwitchTest.test_show_item(engines, devices, test_api)
 

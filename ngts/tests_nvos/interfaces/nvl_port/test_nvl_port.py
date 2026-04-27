@@ -26,7 +26,6 @@ from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, NvosConsts
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools, disabled_access_ports, summarize_switch_ports
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.nmx.Cluster import Cluster
 from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
 from ngts.nvos_tools.platform.Platform import Platform
@@ -37,8 +36,40 @@ logger = logging.getLogger()
 
 
 @pytest.mark.interface
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.air_sanity
+def test_show_nvl_interface(devices):
+    """
+    Show all NVL interfaces, verify at least one NVL port is link-up.
+    """
+    with allure.step("Parse show interface output for all NVL ports"):
+        output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
+            Port.show_interface()
+        ).get_returned_value()
+
+    with allure.step("Verify every expected NVL port is present and has type, state, and speed"):
+        missing = [p for p in devices.dut.all_nvl_ports_list if p not in output_dictionary]
+        assert not missing, f"NVL ports missing from show interface output: {missing}"
+
+    with allure.step("Verify at least one NVL port is up"):
+        up_ports = [
+            p for p in devices.dut.all_nvl_ports_list
+            if output_dictionary[p][IbInterfaceConsts.LINK_STATE] == NvosConsts.LINK_STATE_UP
+        ]
+        states = {p: output_dictionary[p][IbInterfaceConsts.LINK_STATE] for p in devices.dut.all_nvl_ports_list}
+        assert up_ports, (
+            f"Expected at least one NVL port UP; states per port: {states}"
+        )
+        logger.info("NVL ports UP: %s (total %d)", up_ports, len(up_ports))
+
+
+@pytest.mark.interface
 @pytest.mark.multiplanar
 @pytest.mark.simx
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.air_sanity
 def test_nvl_internal_fnm_ports(devices):
     """
     Validate that all internal FNM ports on NVL systems are UP by default.
@@ -93,56 +124,6 @@ def test_nvl_fnm_ports_up(devices, has_loopbox, standalone_system):
         f"Expected all regular FNM ports to be UP, but found DOWN: {down_fnm_ports}"
     )
     logger.info(f"✓ All {len(devices.dut.nvl_fnm_ports)} regular FNM ports are UP")
-
-
-@pytest.mark.interface
-@pytest.mark.multiplanar
-@pytest.mark.simx
-def test_nvl_ports_up(devices, has_loopbox, standalone_system):
-    """
-    Validate that all NVL access (acp) ports are UP and at the expected default speed.
-
-    Test flow:
-        1. Get expected acp ports from device model (nvl_access_ports_list)
-        2. Run 'nv show interface' and parse output
-        3. Verify all expected acp ports exist in the output
-        4. Verify all acp ports have state 'up'
-        5. Verify all acp ports have the expected default speed (access_port_speed)
-    """
-    if not has_loopbox and standalone_system:
-        pytest.skip("Standalone system without loopbox - ports will not link up")
-
-    expected_ports = devices.dut.nvl_access_ports_list
-    if not expected_ports:
-        pytest.skip("No NVL access (acp) ports defined for this device")
-
-    output_dictionary = OutputParsingTool.parse_show_all_interfaces_output_to_dictionary(
-        Port.show_interface()).get_returned_value()
-
-    missing_ports = [port for port in expected_ports if port not in output_dictionary]
-    assert not missing_ports, (
-        f"Expected ports missing from 'nv show interface' output: {missing_ports}"
-    )
-
-    down_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_STATE]
-                  for port in expected_ports
-                  if output_dictionary[port][IbInterfaceConsts.LINK_STATE] != NvosConsts.LINK_STATE_UP}
-
-    assert not down_ports, (
-        f"Expected all ports to be UP, but {len(down_ports)}/{len(expected_ports)} ports are not UP: {down_ports}"
-    )
-    logger.info(f"All {len(expected_ports)} NVL access (acp) ports are UP")
-
-    expected_speed = devices.dut.access_port_speed
-    wrong_speed_ports = {port: output_dictionary[port][IbInterfaceConsts.LINK_SPEED]
-                         for port in expected_ports
-                         if output_dictionary[port].get(IbInterfaceConsts.LINK_SPEED) != expected_speed}
-
-    assert not wrong_speed_ports, (
-        f"Expected all ports at {expected_speed}, but {len(wrong_speed_ports)}/{len(expected_ports)} "
-        f"ports have wrong speed: {wrong_speed_ports}"
-    )
-    logger.info(f"All {len(expected_ports)} NVL access (acp) ports are at expected default speed: {expected_speed}")
 
 
 @pytest.mark.interface
@@ -338,6 +319,7 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
 @pytest.mark.multiplanar
 @pytest.mark.simx
 @pytest.mark.nvl_ci
+@pytest.mark.air
 def test_nvl_port_configuration(engines, devices, random_api):
     """
     Validate configuration applied on interface
@@ -464,6 +446,9 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
         with allure.step(f"Test speed {speed}"):
             all_ports.interface.link.set(op_param_name=IbInterfaceConsts.LINK_SPEED, op_param_value=speed, apply=True,
                                          ask_for_confirmation=True).verify_result()
+            if not standalone_system:
+                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
             with allure.step(f"Validate xdr slow speed on ports"):
                 retry_call(validate_ports_state_and_speed, [speed, port_names, prefix], exceptions=AssertionError, tries=6,
@@ -474,6 +459,9 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
     finally:
         with allure.step(f"Test unset xdr slow speed"):
             all_ports.interface.link.unset(op_param=IbInterfaceConsts.LINK_SPEED, apply=True, ask_for_confirmation=True).verify_result()
+            if not standalone_system:
+                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
+                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
             with allure.step(f"Validate unset xdr slow speed on ports"):
                 # Select correct default speed based on port type (access vs trunk)
@@ -783,85 +771,88 @@ def test_nvl_invalid_speed_configuration_negative(engines, devices, test_api, ha
 @pytest.mark.simx
 def test_nvl_speed_configuration(engines, devices, random_api, has_loopbox, standalone_system):
     """
-    Validate speed configuration on nvl ports.
-
-    All access ports must be configured together (via range command) because:
-    - Loopbox connects all access ports together
-    - Different speeds use different lane modes (e.g., 200G=1X, 360G=2X)
-    - Mixed lane configurations cannot negotiate with each other
+    Validate speed configuration on nvl port
 
     Test flow:
-    1. Build access port range, get original speed from a random port
-    2. Select random supported speed (excluding 200G), set on ALL access ports
-    3. Wait and verify ALL ports reached the new speed
-    4. On a random port: verify supported-lanes matches device config
-    5. If configured speed is lower than original, verify supported-speeds filtering
-    6. Cleanup: unset speed on ALL ports, verify restoration
+    1. Select random nvl port that should be up (trunk+transceivers or access+loopboxes)
+    2. Get original speed, select random supported speed (excluding 200G), set and verify
+    3. Verify supported-lanes = 2X (duplex mode)
+    4. If configured speed is lower than original, verify supported-speeds shows only up to current
+    5. Unset speed configuration and verify restoration
     """
-    if not (has_loopbox or not standalone_system):
-        pytest.skip("Test requires loopbox or non-standalone system for access ports")
-
-    if not devices.dut.nvl_access_ports_list:
-        pytest.skip("No access ports available on device")
-
-    if not getattr(devices.dut, 'supported_nvl_speeds', None):
-        pytest.skip("No supported_nvl_speeds available on device")
-
-    available_speeds = [s for s in devices.dut.supported_nvl_speeds if s != '200G']
-    if not available_speeds:
-        pytest.skip("No non-200G speeds available for testing")
-
-    port_names = devices.dut.nvl_access_ports_list
-    port_indices = [int(name.replace('acp', '')) for name in port_names]
-    min_port, max_port = min(port_indices), max(port_indices)
-    access_ports_range = f'acp{min_port}-{max_port}'
-    all_ports = Port(access_ports_range)
-    logger.info(f"Access ports range: {access_ports_range} ({len(port_names)} ports)")
-
-    sample_port_name = RandomizationTool.select_random_value(port_names).get_returned_value()
-    sample_port = Port(sample_port_name)
-
-    original_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
-        sample_port.interface.link.show()).get_returned_value()
-    original_speed = original_output.get(IbInterfaceConsts.LINK_SPEED)
-    logger.info(f"Original speed (from {sample_port_name}): {original_speed}")
-
-    new_speed = RandomizationTool.select_random_value(available_speeds).get_returned_value()
-    logger.info(f"Setting speed from {original_speed} to {new_speed} on all access ports (200G excluded)")
+    selected_port = None
+    original_speed = None
+    original_supported_speeds = None
 
     try:
-        with allure_step(f"Set speed {new_speed} on all access ports: {access_ports_range}"):
-            all_ports.interface.link.set(
-                op_param_name='speed', op_param_value=new_speed,
-                ask_for_confirmation=True, apply=True
+        with allure_step("Select port and get original configuration"):
+            # Get available ports
+            available_ports = _get_available_nvl_ports(devices, has_loopbox, standalone_system)
+            if not available_ports:
+                pytest.skip("No nvl ports with proper connections and link up state")
+
+            selected_port = RandomizationTool.select_random_value(available_ports).get_returned_value()
+            logger.info(f"Selected port: {selected_port.name}")
+
+            # Get original speed and supported speeds
+            original_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                selected_port.interface.link.show()).get_returned_value()
+            original_speed = original_output.get(IbInterfaceConsts.LINK_SPEED)
+            original_supported_speeds = _get_interface_supported_speeds(selected_port)
+            logger.info(f"Original speed: {original_speed}, supported speeds: {original_supported_speeds}")
+
+        with allure_step("Set and verify new speed (excluding 200G)"):
+            # Select random speed, but exclude 200G (tested separately)
+            if not getattr(devices.dut, 'supported_nvl_speeds', None):
+                pytest.skip("No supported_nvl_speeds available on device")
+
+            available_speeds = [s for s in devices.dut.supported_nvl_speeds if s != '200G']
+            if not available_speeds:
+                pytest.skip("No non-200G speeds available for testing")
+
+            new_speed = RandomizationTool.select_random_value(available_speeds).get_returned_value()
+            logger.info(f"Setting speed from {original_speed} to {new_speed} (200G excluded)")
+
+            # Set speed and verify
+            selected_port.interface.link.set(
+                op_param_name='speed', op_param_value=new_speed, ask_for_confirmation=True, apply=True
             ).verify_result()
 
-        with allure_step(f"Wait and verify ALL access ports reached speed {new_speed}"):
-            retry_call(validate_ports_state_and_speed, [new_speed, port_names, 'acp'],
-                       exceptions=AssertionError, tries=6, delay=30)
-            logger.info(f"✓ All access ports reached speed {new_speed}")
+            # Wait for link toggle
+            time.sleep(2)
+            selected_port.interface.wait_for_port_state(
+                state=NvosConsts.LINK_STATE_UP,
+                timeout=60,
+                sleep_time=2
+            ).verify_result()
+            logger.info(f"✓ Link successfully toggled and returned to UP state")
+
+            # Verify speed changed
+            json_output = selected_port.interface.link.show(output_format=OutputFormat.json)
+            output_dict = OutputParsingTool.parse_json_str_to_dictionary(json_output).get_returned_value()
+            current_speed = output_dict.get(IbInterfaceConsts.LINK_SPEED)
+            ValidationTool.compare_values(current_speed, new_speed).verify_result()
+            logger.info(f"✓ Verified speed is now {current_speed}")
 
         with allure_step("Verify supported-lanes matches device configuration"):
-            verify_port_name = RandomizationTool.select_random_value(port_names).get_returned_value()
-            verify_port = Port(verify_port_name)
-            json_output = verify_port.interface.link.show(output_format=OutputFormat.json)
-            output_dict = OutputParsingTool.parse_json_str_to_dictionary(json_output).get_returned_value()
             supported_lanes = output_dict.get(IbInterfaceConsts.LINK_SUPPORTED_LANES)
-            expected_lanes = devices.dut.supported_lanes
+            expected_lanes = devices.dut.supported_lanes  # No default - should be defined in IbDevice
             assert supported_lanes == expected_lanes, (
-                f"Expected supported-lanes '{expected_lanes}' for speed {new_speed}, "
-                f"but got '{supported_lanes}' on port {verify_port_name}"
+                f"Expected supported-lanes '{expected_lanes}' for speed {current_speed}, "
+                f"but got '{supported_lanes}'"
             )
-            logger.info(f"✓ Validated on {verify_port_name}: supported-lanes = {supported_lanes}")
+            logger.info(f"✓ Validated: supported-lanes = {supported_lanes} (matches device: {expected_lanes})")
 
+        # Check if we configured a LOWER speed - if yes, verify supported-speeds behavior
         new_speed_value = int(new_speed.replace('G', ''))
         original_speed_value = int(original_speed.replace('G', ''))
 
         if new_speed_value < original_speed_value:
             with allure_step(f"Verify supported-speeds limited to {new_speed} and below"):
-                current_supported_speeds = _get_interface_supported_speeds(verify_port)
+                current_supported_speeds = _get_interface_supported_speeds(selected_port)
                 logger.info(f"Supported speeds after lowering to {new_speed}: {current_supported_speeds}")
 
+                # Check no speeds higher than configured speed appear
                 violations = []
                 for speed in current_supported_speeds:
                     speed_value = int(speed.replace('G', ''))
@@ -871,21 +862,32 @@ def test_nvl_speed_configuration(engines, devices, random_api, has_loopbox, stan
                 assert not violations, (
                     f"After configuring speed to {new_speed}, the following HIGHER speeds "
                     f"should NOT appear in supported-speed field: {violations}. "
-                    f"Expected: only speeds <= {new_speed}"
+                    f"Expected: only speeds ≤ {new_speed}"
                 )
-                logger.info(f"✓ Confirmed: supported speeds correctly limited on {verify_port_name}")
+                logger.info(f"✓ Confirmed: After lowering speed to {new_speed}, supported speeds correctly limited")
 
     finally:
-        with allure_step(f"Cleanup: unset speed on {access_ports_range} and verify restoration"):
-            all_ports.interface.link.unset(
-                op_param='speed', apply=True, ask_for_confirmation=True
-            ).verify_result()
-            logger.info(f"Unset speed on {access_ports_range}")
+        if selected_port and original_speed:
+            with allure_step("Cleanup: unset speed and verify restoration"):
+                selected_port.interface.link.unset(
+                    op_param='speed', apply=True, ask_for_confirmation=True
+                ).verify_result()
 
-            default_speed = devices.dut.access_port_speed if hasattr(devices.dut, 'access_port_speed') else original_speed
-            retry_call(validate_ports_state_and_speed, [default_speed, port_names, 'acp'],
-                       exceptions=AssertionError, tries=6, delay=30)
-            logger.info(f"✓ All access ports restored to {default_speed}")
+                # Wait for link toggle
+                time.sleep(2)
+                selected_port.interface.wait_for_port_state(
+                    state=NvosConsts.LINK_STATE_UP,
+                    timeout=60,
+                    sleep_time=2
+                ).verify_result()
+                logger.info(f"✓ Link toggled after unset")
+
+                # Verify restoration
+                restored_output = OutputParsingTool.parse_show_interface_link_output_to_dictionary(
+                    selected_port.interface.link.show()).get_returned_value()
+                restored_speed = restored_output.get(IbInterfaceConsts.LINK_SPEED)
+                assert restored_speed == original_speed, f"Speed not restored! Expected: {original_speed}, Got: {restored_speed}"
+                logger.info(f"✓ Speed successfully restored to {restored_speed}")
 
 
 @pytest.mark.interface

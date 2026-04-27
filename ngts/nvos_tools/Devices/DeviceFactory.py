@@ -13,8 +13,10 @@ from ngts.nvos_tools.Devices.IbDevice import (GorillaSwitch, GorillaSwitchBF3, C
                                               JulietNonScaleoutSwitch, JulietAriel, JulietNonScaleoutSwitchNoNCI,
                                               JulietArielPS, JulietNonScaleoutSwitchNoNCI5600,
                                               JulietNonScaleoutSwitchGB300, JulietNonScaleoutSwitchGB300QS,
-                                              RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch, RosalindStackedSwitch, RosalindStackedSimx,
-                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch, PortiaSimx)
+                                              RosalindSimx, RosalindSwitch, RosalindSurrogateSwitch,
+                                              RosalindStackedSwitch, RosalindStackedSimx,
+                                              JulietNonScaleoutSwitchGB300PS, RosalindChipless, TaipanSwitch,
+                                              PortiaSimx, PortiaSA, RosalindSA)
 
 logger = logging.getLogger()
 
@@ -68,10 +70,11 @@ class DeviceFactory:
             'N6150_LD - RosalindSurrogate': RosalindSurrogateSwitch,
             'N6100_LD - RosalindChipless': RosalindChipless,
             'N6100_LD_simx - Rosalind': RosalindSimx,
-            "N6100_LD_simx - Rosalind_SA": RosalindSimx,
+            "N6100_LD_simx - Rosalind_SA": RosalindSA,
             "N6300_LD - RosalindStacked": RosalindStackedSwitch,
             "N6300_LD_simx - RosalindStacked": RosalindStackedSimx,
-            "N7170_LD_simx - PortiaSimx": PortiaSimx
+            "N7170_LD_simx - Portia": PortiaSimx,
+            "N7170_LD_simx - Portia_SA": PortiaSA
         }
 
     @staticmethod
@@ -86,8 +89,8 @@ class DeviceFactory:
                     device_name = 'Mellanox SN4600c'
                 elif "_LD-Juliet" in device_name:
                     device_name = device_name.replace('_LD-Juliet', '_LD - Juliet')
-                elif "simx-Rosalind" in device_name:
-                    device_name = device_name.replace('simx-Rosalind', 'simx - Rosalind')
+                elif "simx-" in device_name:
+                    device_name = device_name.replace('simx-', 'simx - ')
                 else:
                     device_name = device_name[0:7]
             instance_type = DeviceFactory.device_type_dict[device_name]

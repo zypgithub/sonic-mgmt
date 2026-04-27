@@ -28,7 +28,9 @@ logger = logging.getLogger()
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system(test_api, engines, devices, topology_obj, nv_command, test_name):
     """
     Run show system message command and verify the required message
@@ -79,12 +81,14 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
                                                             SystemConsts.HOSTNAME, new_hostname_value,
                                                             apply=True, ask_for_confirmation=True)
             res_obj.verify_result()
-            time.sleep(3)
         with allure.step('verify duration'):
             OperationTime.verify_operation_time(duration, 'set hostname', devices).verify_result()
         with allure.step('verify change in show'):
-            system_output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
-            ValidationTool.verify_field_value_in_output(system_output, SystemConsts.HOSTNAME, new_hostname_value).verify_result()
+            def _check_hostname():
+                output = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show()).get_returned_value()
+                ValidationTool.verify_field_value_in_output(output, SystemConsts.HOSTNAME, new_hostname_value).verify_result()
+            ValidationTool.retry_until_valid(_check_hostname, tries=5, delay=3,
+                                             description=f"wait for hostname to become '{new_hostname_value}'")
 
     with allure.step('Run unset system hostname command and verify that hostname is updated'):
         with allure.step('unset hostname'):
@@ -104,6 +108,8 @@ def test_system(test_api, engines, devices, topology_obj, nv_command, test_name)
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
+@pytest.mark.air
+@pytest.mark.air_sanity
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_system_message(test_api, engines, devices, nv_command):
     """
@@ -196,6 +202,7 @@ def test_show_system_reboot(test_api, engines, devices, nv_command):
 @pytest.mark.cumulus
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_memory(test_api, engines, devices, nv_command):
     """
@@ -235,6 +242,7 @@ def test_show_system_memory(test_api, engines, devices, nv_command):
 
 @pytest.mark.system
 @pytest.mark.simx
+@pytest.mark.air
 @pytest.mark.cumulus
 @pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
 def test_show_system_cpu(test_api, engines, devices, nv_command):
@@ -250,7 +258,6 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
     TestToolkit.tested_api = test_api
 
     with allure.step('Run show system cpu command and verify that each field has a value'):
-        time.sleep(10)
         output_dictionary = OutputParsingTool.parse_json_str_to_dictionary(nv_command.system.show("cpu")).get_returned_value()
 
         for key, value in output_dictionary.items():
@@ -273,7 +280,8 @@ def test_show_system_cpu(test_api, engines, devices, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_contact_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message
@@ -297,7 +305,8 @@ def test_system_contact_set(test_api, engines, nv_command):
 @pytest.mark.system
 @pytest.mark.simx
 @pytest.mark.cumulus
-@pytest.mark.parametrize('test_api', [random.choice(ApiType.ALL_TYPES)])
+@pytest.mark.air
+@pytest.mark.parametrize('test_api', ApiType.ALL_TYPES)
 def test_system_location_set(test_api, engines, nv_command):
     """
     Run show system message command and verify the required message

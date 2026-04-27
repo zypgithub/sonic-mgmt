@@ -8,6 +8,8 @@ import json
 import pandas as pd
 import numpy as np
 import re
+
+from infra.tools.general_constants.air_constants import NvidiaAirConstants
 from infra.tools.topology_tools.topology_setup_utils import get_topology_by_setup_name
 from ngts.constants.constants import SerialConsts
 
@@ -242,8 +244,13 @@ if __name__ == "__main__":
     parser.add_argument("--dut", help="DUT name", type=str, required=True)
     parser.add_argument("--mgmt_repo", help="Path to the sonic-mgmt repo", type=str, required=True)
     parser.add_argument("--setup_name", help="Setup name", type=str, required=False)
+    parser.add_argument("--force_air_external_ips", dest="force_air_external_ips", action="store_true",
+                        help="If passed, the script will force the use of external IPs instead of configured by simulation.")
 
     args = parser.parse_args()
+
+    if args.force_air_external_ips:
+        os.environ[NvidiaAirConstants.EXTERNAL_CONNECTION_MODE_ENV_VAR] = 'yes'
 
     dut_name = args.dut
     setup_name = args.setup_name

@@ -312,11 +312,11 @@ class OutputParsingTool:
             if start != -1 and end != -1 and start < end:
                 output_json = output_json[start:end + 1]
                 output_json = output_json.replace("\\r", "").replace("\\n", "")
-        with allure.step('Create a dictionary according to provided JSON string'):
-            try:
-                return ResultObj(True, "", json.loads(output_json))
-            except json.JSONDecodeError as err:
-                return ResultObj(False, f"Json could not parse to dict: \n{err}")
+        logger.info('Create a dictionary according to provided JSON string')
+        try:
+            return ResultObj(True, "", json.loads(output_json))
+        except json.JSONDecodeError as err:
+            return ResultObj(False, f"Json could not parse to dict: \n{err}")
 
     @staticmethod
     def parse_show_files_to_dict(output_json) -> ResultObj:

@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 @pytest.fixture(scope='module', autouse=True)
 @pytest.mark.timeout(20 * MINUTE, func_only=True)  # 20 minutes - setup typically takes 7-15 minutes
-def rosalind_simx_setup(engines, devices):
+def rosalind_simx_setup(engines, devices, is_air, is_simx):
     """
     RosalindSimx specific setup configuration that runs once per test module (.py file).
 
@@ -35,6 +35,11 @@ def rosalind_simx_setup(engines, devices):
     Note: 20 minute timeout allows for variability in setup time (typically 7-15 minutes).
     Individual tests still have 900s timeout from MARS configuration.
     """
+    if is_air or is_simx:
+        logger.info("Skipping MLOOP workaround on AIR/SIMX")
+        yield
+        return
+
     # Skip setup if bug 4681425 is active (SIMX instability with loopback config)
     if is_bug_active(4681425):
         logger.warning("Bug 4681425 is active - skipping RosalindSimx loopback setup, tests will run without it")

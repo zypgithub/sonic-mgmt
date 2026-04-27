@@ -1,6 +1,50 @@
 import copy
 import os
 from datetime import datetime
+from enum import StrEnum
+
+REGRESSION_TYPE_ENV_VAR = "REGRESSION_TYPE"
+
+
+class RegressionType(StrEnum):
+    """Regression test run types from REGRESSION_TYPE environment variable.
+    This enum is used to categorize different types of regression tests based on their execution environment and purpose.
+
+    Modes: local (unset), MARS (regression), CI (ci_types or relaxed_error_handling_types).
+    """
+    REGRESSION = "regression"
+    SONIC_MAIN = "sonic_main"
+    SONIC_PUBLIC = "sonic_public"
+    SONIC_DPU_BUILD = "sonic_dpu_build"
+    SONIC_CI = "sonic_ci"
+    SONIC_DPU_CI = "sonic_dpu_ci"
+    SONIC_CI_APP_EXTENSION = "sonic_ci_app_extension"
+    NVOS_CI = "nvos_ci"
+    SONIC_MGMT_CI = "sonic_mgmt_ci"
+
+    @classmethod
+    def ci_types(cls):
+        """All CI project types (sonic_ci, sonic_dpu_ci, sonic_ci_app_extension, nvos_ci, sonic_mgmt_ci)."""
+        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION, cls.NVOS_CI, cls.SONIC_MGMT_CI}
+
+    @classmethod
+    def relaxed_error_handling_types(cls):
+        """CI projects where known issues (matched to bugs) pass the test.
+
+        Unlike regular CI: fails on unknown errors only, passes on known (UPDATE decisions).
+        Subset of ci_types: {sonic_ci, sonic_dpu_ci, sonic_ci_app_extension} only.
+        """
+        return {cls.SONIC_CI, cls.SONIC_DPU_CI, cls.SONIC_CI_APP_EXTENSION}
+
+    @classmethod
+    def mars_types(cls):
+        """Non-CI regression types (regression, sonic_main, sonic_public, sonic_dpu_build)."""
+        return set(cls) - cls.ci_types()
+
+    @classmethod
+    def bug_create_types(cls):
+        """Projects that create Redmine bugs on unknown log analyzer errors."""
+        return {cls.REGRESSION, cls.SONIC_MAIN, cls.SONIC_PUBLIC, cls.SONIC_DPU_BUILD, cls.SONIC_MGMT_CI}
 
 
 class PytestConst:
@@ -165,7 +209,7 @@ class FanoutConfigFile:
 
 class DbConstants:
     METADATA_PATH = "/.autodirect/sw_regression/system/SONIC/MARS/metadata/"
-    METADATA_PATH_NVOS = "/auto/sw_system_project/MLNX_OS_INFRA/NVOS-SONIC/MARS/metadata/"
+    METADATA_PATH_NVOS = "/.autodirect/sw_regression/system/NVOS/MARS/metadata/"
     METADATA_DVS_PATH = "/auto/sw_regression/system/SDK_SWITCH/MARS/metadata/"
 
     CLI_TYPE_PATH_MAPPING = {CliType.SONIC: METADATA_PATH,

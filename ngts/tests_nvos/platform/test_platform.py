@@ -17,6 +17,7 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.nvos_ci
+@pytest.mark.air
 def test_show_platform(engines, random_api, devices, nv_command):
     """
     Validates the output of nv show platform.

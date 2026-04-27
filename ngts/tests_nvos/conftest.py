@@ -22,6 +22,7 @@ from retry import retry
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
 from infra.tools.exceptions.setup_issue import SetupIssue
+from infra.tools.general_constants.air_constants import NvidiaAirConstants
 from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.helpers.object_filters import filter_objects
 from ngts.nvos_tools.infra.BmcTool import BmcTool
@@ -58,7 +59,7 @@ from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic imp
 from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
 from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
+from ngts.tools.test_utils.nvos_general_utils import is_ipv6_setup, wait_for_ldap_nvued_restart_workaround
 from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
 from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
 from ngts.ngts_types import EnginesT
@@ -77,34 +78,6 @@ EXPECTED_KERNEL_PATTERNS = [
 pytest_plugins = [
     "ngts.common.plugins.valgrind.plugin",
 ]
-
-
-def pytest_configure(config):
-    """
-    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
-    This hook runs before session start and any fixtures.
-
-    For MARS runs, secrets are already provided via environment variables.
-    For local runs, we fetch secrets from Vault.
-
-    This only runs when NVOS tests are being executed.
-    """
-    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
-    args = config.args if hasattr(config, 'args') else config.invocation_params.args
-    if not args or not any('tests_nvos' in str(arg) for arg in args):
-        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
-        return
-
-    mars_key_id = config.getoption("--mars_key_id", default=None)
-    session_id = config.getoption("--session_id", default=None)
-    if mars_key_id or session_id:
-        logger.info("MARS run detected - secrets already in environment, skipping Vault")
-        return
-
-    from ngts.nvos_tools.infra.VaultClient import VaultClient
-
-    logger.info("Local run detected - loading secrets from Vault...")
-    VaultClient.fetch_and_export_secrets()
 
 
 def pytest_configure(config):
@@ -167,6 +140,37 @@ def pytest_addoption(parser: pytest.Parser):
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
     run_nvos_pytest_items_modification(config, items)
+
+
+def pytest_collection_finish(session: pytest.Session):
+    """Fail explicitly when a MARS-managed run selects zero tests.
+
+    Without this guard, an incorrect marker/keyword combination silently
+    deselects every test and the session exits with code 0 (pass).
+    """
+    if session.items:
+        return
+
+    mars_key_id = session.config.getoption('--mars_key_id', default=None)
+    session_id = session.config.getoption('--session_id', default=None)
+    if not mars_key_id and not session_id:
+        return
+
+    markexpr = session.config.option.markexpr or ''
+    keyword = session.config.option.keyword or ''
+
+    filters = []
+    if markexpr:
+        filters.append(f"-m '{markexpr}'")
+    if keyword:
+        filters.append(f"-k '{keyword}'")
+    filter_desc = ' '.join(filters) if filters else 'no marker/keyword filters'
+
+    pytest.exit(
+        f"CI/Regression run (session_id={session_id}) selected 0 tests with {filter_desc}. "
+        "All collected tests were deselected — check marker and keyword filters.",
+        returncode=pytest.ExitCode.USAGE_ERROR
+    )
 
 
 @pytest.fixture
@@ -312,7 +316,7 @@ def track_serial_console(request, topology_obj, engines, devices):
 
 
 @pytest.fixture(scope='session')
-def engines(topology_obj, devices, request, is_ipv6):
+def engines(topology_obj, devices, request):
     from ngts.nvos_tools.infra.CommandTracker import command_tracker
 
     engines_data = DottedDict()
@@ -321,8 +325,10 @@ def engines(topology_obj, devices, request, is_ipv6):
     for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
         engine = player['engine']
         engines_data[player_name] = engine
-    if not is_ipv6:
-        update_engine_dut_mgmt_port(topology_obj, engines_data.dut, devices.dut)
+        device = devices[player_name]
+        is_ipv6 = is_ipv6_setup(topology_obj, player_name)
+        update_engine_dut_mgmt_port(topology_obj, engine, device, player_name, is_ipv6)
+        logger.info(f'Updated engine management port for {player_name} (ipv6={is_ipv6})')
 
     # ha and hb are the traffic dockers
     if "ha" in topology_obj.players:
@@ -539,41 +545,65 @@ def uninstall_requests_cache():
         ExceptionTool.log_exception(e, "Failed to uninstall requests cache")
 
 
-def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
-    def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
-        attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
-                      f'Chosen port: {chosen_port_name} - {chosen_port_ip}')
-        allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session',
-                                  allure.orig_allure.attachment_type.TEXT)
+def _apply_mgmt_port(dut_engine, dut_device, chosen_port, chosen_ip, chosen_ssh_port):
+    """Apply chosen management port to engine and device."""
+    dut_engine.ip = chosen_ip
+    dut_engine.ssh_port = chosen_ssh_port
+    dut_device.update_mgmt_port(chosen_port, chosen_ip)
+    TestToolkit.update_dut_eth0_ip(chosen_ip)
 
+
+def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice,
+                                player_name: str, is_ipv6_setup: bool = False):
     mgmt_ports = dut_device.get_mgmt_ports()
+    if not mgmt_ports:
+        raise ValueError(f"Device {type(dut_device).__name__} returned no mgmt ports — "
+                         f"get_mgmt_ports() must return a non-empty list")
 
-    dut_device.update_mgmt_port(mgmt_ports[0], dut_engine.ip)
-    TestToolkit.update_dut_eth0_ip(dut_engine.ip)
+    specific = topology.players[player_name]['attributes'].noga_query_data['attributes']['Specific']
+    if is_ipv6_setup:
+        mgmt_ips = [specific.get('ipv6'), specific.get('ipv6_2')]
+    else:
+        mgmt_ips = [specific.get('ip_address'), specific.get('ip_address_2')]
+    mgmt_ssh_ports = [dut_engine.ssh_port, specific.get('ssh_port_2')]
 
-    if not mgmt_ports or len(mgmt_ports) == 1:
-        logger.info('keep original dut engine ip')
-        attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
+    available = [(ip, port) for ip, port in zip(mgmt_ips, mgmt_ssh_ports) if ip and port is not None]
+    if not available:
+        raise ValueError(f"No valid mgmt IP/port pairs for {player_name} "
+                         f"(ipv6={is_ipv6_setup}, ips={mgmt_ips}, ports={mgmt_ssh_ports})")
+
+    # Default to first available mgmt port
+    chosen_port = mgmt_ports[0]
+    chosen_ip, chosen_ssh_port = available[0]
+    _apply_mgmt_port(dut_engine, dut_device, chosen_port, chosen_ip, chosen_ssh_port)
+
+    if len(mgmt_ports) == 1:
+        logger.info('Single mgmt port — dut engine ip: %s:%s', chosen_ip, chosen_ssh_port)
+        _attach_mgmt_selection_to_allure(mgmt_ports, None, chosen_port, chosen_ip, chosen_ssh_port)
         return
 
-    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes'][
-        'Specific']
-    setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
-    available_mgmt_ips = [ip for ip in setup_mgmt_ips if ip != '']
-    if len(available_mgmt_ips) != len(mgmt_ports):
-        logger.info('keep original dut engine ip')
-        attach_res_to_allure(mgmt_ports, available_mgmt_ips, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
+    if len(available) != len(mgmt_ports):
+        logger.info('Mgmt ip count (%d) != port count (%d) — keeping dut engine ip: %s:%s',
+                    len(available), len(mgmt_ports), chosen_ip, chosen_ssh_port)
+        _attach_mgmt_selection_to_allure(mgmt_ports, mgmt_ips, chosen_port, chosen_ip, chosen_ssh_port)
         return
 
-    logger.info(f'device mgmt ports names: {mgmt_ports}')
-    logger.info(f'setup mgmt ports ips: {available_mgmt_ips}')
+    # Randomly select a management port for the session
+    chosen_port = random.choice(mgmt_ports)
+    chosen_ip, chosen_ssh_port = available[mgmt_ports.index(chosen_port)]
+    _apply_mgmt_port(dut_engine, dut_device, chosen_port, chosen_ip, chosen_ssh_port)
 
-    chosen_mgmt_port = random.choice(mgmt_ports)
-    chosen_mgmt_port_ip = available_mgmt_ips[mgmt_ports.index(chosen_mgmt_port)]
-    logger.info(f'chosen mgmt port for dut engine: {chosen_mgmt_port} - {chosen_mgmt_port_ip}')
-    dut_engine.ip = chosen_mgmt_port_ip
-    dut_device.update_mgmt_port(chosen_mgmt_port, chosen_mgmt_port_ip)
-    attach_res_to_allure(mgmt_ports, available_mgmt_ips, chosen_mgmt_port, dut_engine.ip)
+    logger.info('Available mgmt ports: %s — ips: %s', mgmt_ports, [f'{ip}:{port}' for ip, port in available])
+    logger.info('Chosen mgmt port: %s — %s:%s', chosen_port, chosen_ip, chosen_ssh_port)
+    _attach_mgmt_selection_to_allure(mgmt_ports, mgmt_ips, chosen_port, chosen_ip, chosen_ssh_port)
+
+
+def _attach_mgmt_selection_to_allure(available_ports_names, available_ports_ips, chosen_port_name,
+                                     chosen_port_ip, chosen_port_ssh_port):
+    attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
+                  f'Chosen port: {chosen_port_name} - {chosen_port_ip}:{chosen_port_ssh_port}')
+    allure.orig_allure.attach(attachment, 'dut_engine_mgmt_port_used_for_session',
+                              allure.orig_allure.attachment_type.TEXT)
 
 
 @pytest.fixture(scope="session")
@@ -757,14 +787,21 @@ def branch_name(request):
     return TestToolkit.branch
 
 
-@pytest.fixture(scope='session', autouse=True)
-def api_type(nvos_api_type):
-    apitype = ApiType.NVUE
-    if nvos_api_type.lower() == "openapi":
-        apitype = ApiType.OPENAPI
+@pytest.fixture(scope='session')
+def force_external_ips_in_air(pytestconfig, is_mars_run, is_ci_run):
+    """Override for NVOS: automatically force external IPs for local (non-MARS, non-CI) runs.
+    The --force_air_external_ips flag can still be used to force it explicitly."""
+    force_external = pytestconfig.getoption('--force_air_external_ips', default=False)
+    if not force_external and not is_mars_run and not is_ci_run:
+        logger.info('Local NVOS run detected — automatically forcing external AIR IPs')
+        force_external = True
+    os.environ[NvidiaAirConstants.EXTERNAL_CONNECTION_MODE_ENV_VAR] = str(force_external).lower()
 
-    logger.info('updating API type to: ' + apitype)
-    TestToolkit.update_apis(apitype)
+
+@pytest.fixture(scope='session', autouse=True)
+def api_type():
+    logger.info('updating API type to: ' + ApiType.NVUE)
+    TestToolkit.update_apis(ApiType.NVUE)
 
 
 @pytest.fixture(scope='session')
@@ -1033,7 +1070,7 @@ def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def insert_operation_time_to_db(setup_name, session_id, platform_params, topology_obj):
+def insert_operation_time_to_db(setup_name, session_id, platform_params, topology_obj, is_ci_run, is_mars_run):
     '''
     @summary:   insert operation times to operation_time table DB.
     during the tests we will add to pytest.operation_list the operations that we want to measure,
@@ -1046,7 +1083,7 @@ def insert_operation_time_to_db(setup_name, session_id, platform_params, topolog
             type = platform_params['filtered_platform']
             version = System().version.get_nvos_image_version()
             release_name = TestToolkit.version_to_release(version)
-            if not TestToolkit.is_special_run() and pytest.is_mars_run and release_name and not pytest.is_ci_run:
+            if not TestToolkit.is_special_run() and is_mars_run and release_name and not is_ci_run:
                 insert_operation_duration_to_db(setup_name, type, version, session_id, release_name)
         except Exception as err:
             logger.warning("Failed to save operation duration data, because: {}".format(err))
@@ -1136,7 +1173,8 @@ def run_cli_coverage(item, markers):
             'no_cli_coverage_run' not in markers and \
             not pytest.is_sanitizer and \
             pytest.is_mars_run and \
-            not pytest.disable_cli_coverage:
+            not pytest.disable_cli_coverage and \
+            not pytest.is_air:
         logging.info("API type is NVUE and is it not a sanitizer version, so CLI coverage script will run")
         NVUECliCoverage.run(item=item, start_time=pytest.s_time,
                             project=TestToolkit.devices.dut.cli_coverage_project_name, department='verification',
@@ -1247,11 +1285,12 @@ def downgrade_version_realpath(downgrade_version, base_version):
     return version_path
 
 
-@pytest.fixture(params=ApiType.ALL_TYPES)
+@pytest.fixture
 def test_api(request):
     """This fixture runs the test twice (once for each api)."""
-    TestToolkit.tested_api = request.param
-    return request.param
+    if hasattr(request, 'param'):
+        TestToolkit.tested_api = request.param
+    return TestToolkit.tested_api
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc):
@@ -1261,13 +1300,14 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
     """
     if random_api.__name__ in metafunc.fixturenames:
         is_collecting = metafunc.config.getoption("--collect-only")
+        test_name = metafunc.function.__name__
 
         if is_collecting:
             param_list = ApiType.ALL_TYPES
-            logging.warning(f"  -> COLLECT MODE: Parametrizing with all values: {param_list}")
+            logging.warning(f"  -> [{test_name}] COLLECT MODE: Parametrizing with all values: {param_list}")
         else:
             random_api_choice = random.choice(ApiType.ALL_TYPES)
-            logging.warning(f"  -> Test run Selected API: {random_api_choice}")
+            logging.warning(f"  -> [{test_name}] Test run Selected API: {random_api_choice}")
             param_list = [random_api_choice]
 
         metafunc.parametrize('random_api', param_list, indirect=True)

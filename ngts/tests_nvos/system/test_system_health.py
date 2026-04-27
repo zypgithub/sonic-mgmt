@@ -22,7 +22,7 @@ from ngts.nvos_tools.infra.Simulator import HWSimulator
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.nvos_tools.infra.Tools import Tools
 from ngts.nvos_constants.constants_nvos import ActionConsts
-from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts, CumulusConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, NvosConst, PlatformConsts, FansConsts
 from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
@@ -305,6 +305,7 @@ def test_reboot_test(validate_health_history, verify_no_kernel_errors, engines):
 
 
 @pytest.mark.system
+@pytest.mark.air
 @pytest.mark.health
 def test_show_system_health(devices):
     """
@@ -367,6 +368,7 @@ def test_show_system_health(devices):
 
 @pytest.mark.system
 @pytest.mark.health
+@pytest.mark.air
 def test_show_system_health_component(devices):
     """
     Validate all three health component show endpoints (command coverage):
@@ -714,6 +716,9 @@ def test_software_component_unhealthy_count_lldp_stop(engines):
 
 @pytest.mark.system
 @pytest.mark.health
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.air_sanity
 def test_system_health_files(engines):
     """
     Will validate the health files requirements:
@@ -760,7 +765,7 @@ def test_ignore_health_issue(engines, devices, loganalyzer, reset_health_service
     system = System()
     thermal_directory = devices.dut.fan_direction_dir
     validate_min_psus_for_redundancy(devices, Platform())
-    health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path())
+    health_config_file = EngineFile(engines.dut, get_system_health_monitoring_config_file_path(engines.dut))
     verify_health_before_test()
 
     try:
@@ -1334,11 +1339,10 @@ def verify_devices_health_status_in_issues_list(system, devices_list):
     assert set(devices_list) <= set(list(issues_dict.keys()))
 
 
-def get_system_health_monitoring_config_file_path():
+def get_system_health_monitoring_config_file_path(engine):
     with allure.step("Get path of system_health_monitoring_config.json"):
-        output = OutputParsingTool.parse_json_str_to_dictionary(Platform().show()).get_returned_value()
-        platform_name = output[PlatformConsts.SYSTEM_TYPE].lower()
-        ret = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(platform_name)
+        platform = engine.run_cmd("sonic-cfggen -H -v DEVICE_METADATA.localhost.platform").strip()
+        ret = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(platform)
         logger.info(ret)
         return ret
 
@@ -1602,7 +1606,7 @@ def simulate_health_issue_using_config_file(engine):
         for device, issue in SIMULATED_ISSUES.items():
             checker_file.write(f'print("{device}:{issue}")')
 
-        with EngineFile(engine, get_system_health_monitoring_config_file_path()) as config_file:
+        with EngineFile(engine, get_system_health_monitoring_config_file_path(engine)) as config_file:
             with allure.step("Update monitoring config file with my_checker file"):
                 config_dict = config_file.json_read()
                 config_dict[USER_DEFINED_CHECKERS_KEY].append(f'python {checker_file.path}')

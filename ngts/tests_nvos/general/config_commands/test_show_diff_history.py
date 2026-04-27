@@ -15,6 +15,7 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.general
 @pytest.mark.simx
+@pytest.mark.air
 def test_show_diff_history(engines):
     """
     Test flow:

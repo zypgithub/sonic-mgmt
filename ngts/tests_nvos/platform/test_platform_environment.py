@@ -29,6 +29,9 @@ logger = logging.getLogger()
 @pytest.mark.simx
 @pytest.mark.nvos_ci
 @pytest.mark.skynet
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.air_sanity
 def test_show_platform_environment(engines, devices, random_api, output_format):
     """
     Show platform environment test
@@ -121,6 +124,7 @@ def _test_specific_fan(fan, output_format, expected, output, platform):
 @pytest.mark.cumulus
 @pytest.mark.simx
 @pytest.mark.skynet
+@pytest.mark.air
 def test_show_platform_environment_led(engines, devices, random_api):
     """
     Show platform environment led test

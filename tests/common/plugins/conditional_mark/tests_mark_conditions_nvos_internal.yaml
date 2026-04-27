@@ -343,17 +343,23 @@ tests_nvos/platform/test_recover_from_bmc_reset.py::test_recover_from_bmc_reset:
       - "'rosalind' in testbed or 'portia' in testbed"
       - https://redmine.mellanox.com/issues/4742847
 
-tests_nvos/system/test_system_ztp.py::test_ztp_nmx_negative:
+tests_nvos/system/ztp/test_system_ztp.py::test_ztp_nmx_negative:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
     conditions:
       - "'juliet' not in testbed and 'rosalind' not in testbed"
 
-tests_nvos/system/test_system_ztp.py::test_ztp_nmx_positive:
+tests_nvos/system/ztp/test_system_ztp.py::test_ztp_nmx_positive:
   skip:
     reason: "Testcase skipped on non Juliet systems due to lack of nmx support"
     conditions:
       - "'juliet' not in testbed and 'rosalind' not in testbed"
+
+tests_nvos/system/ztp/test_system_ztp_air.py:
+  skip:
+    reason: "ZTP DHCP discovery test requires AIR simulation environment"
+    conditions:
+      - "'air' not in testbed"
 
 tests_nvos/platform/test_platform_transceiver.py::test_transceiver_status_with_reboot:
   skip:
@@ -591,4 +597,23 @@ tests_nvos/cluster/test_nmx_t_distributed.py:
     reason: "nmx-t distributed tests are supported only on Rosalind systems"
     conditions:
       - "'rosalind' not in testbed"
+
+tests_nvos/system/test_system_health.py::test_show_system_health:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4969519"
+    conditions:
+      - https://redmine.mellanox.com/issues/4969519
+
+tests_nvos/system/test_system_log.py::test_show_log(_files)?$:
+  regex: true
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4969519"
+    conditions:
+      - https://redmine.mellanox.com/issues/4969519
+
+tests_nvos/cluster/test_start_stop_cluster.py::test_cluster_app_start_stop:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/4975521"
+    conditions:
+      - https://redmine.mellanox.com/issues/4975521
 ########################## NVOS IGNORE END ##########################

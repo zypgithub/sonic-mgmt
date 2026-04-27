@@ -49,9 +49,23 @@ class IbnetdiscoverTool:
         switches_list: List[SwitchInfoT] = []
         for switch_output in output_switches_list[1:]:
             tmp_switch: SwitchInfoT = {}
-            m = re.search(r"Switch\s+74\s*\"\w+-([^\"]+)[^/]+/U(\d+)\"", switch_output)
-            tmp_switch['switch_guid'] = m.group(1)
-            tmp_switch['order'] = int(m.group(2))
+            # Prefer the actual GUID from the switchguid= line so it matches
+            # the S-<hex> references used in port connection lines.
+            m_guid = re.search(r'switchguid=0x[0-9a-f]+\(([0-9a-f]+)\)', switch_output, re.IGNORECASE)
+            if m_guid:
+                tmp_switch['switch_guid'] = m_guid.group(1)
+            else:
+                m_name = re.search(r'Switch\s+\d+\s*"([^"]+)"', switch_output)
+                if m_name is None:
+                    logger.warning("Could not parse switch GUID or name, skipping block")
+                    continue
+                tmp_switch['switch_guid'] = m_name.group(1)
+            # Order comes from /U<n> in the switch name (handles any port count and any prefix).
+            m_order = re.search(r'Switch\s+\d+\s*"[^"]+/U(\d+)"', switch_output)
+            if m_order:
+                tmp_switch['order'] = int(m_order.group(1))
+            else:
+                tmp_switch['order'] = len(switches_list) + 1
             logger.info(f"Parsing ports for switch {tmp_switch['switch_guid']}")
             tmp_switch['ports'] = []
             for port_match in re.finditer(r"\[(\d+)\][^\"]*\"S-([^\"]+)\"\s*\[(\d+)\]", switch_output):

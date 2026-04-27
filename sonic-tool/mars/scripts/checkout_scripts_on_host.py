@@ -61,6 +61,8 @@ def main():
     host = Connection(host_device.BASE_IP, port=host_ssh_port, user=host_device_username,
                       config=Config(overrides={"run": {"echo": True}}), inline_ssh_env=True,
                       connect_kwargs={"password": host_device_password})
+    host.open()
+    host.transport.set_keepalive(30)
 
     logger.info("Check if {} exists ".format(workspace_path))
     if host.run("test -d {}".format(workspace_path), warn=True).ok:

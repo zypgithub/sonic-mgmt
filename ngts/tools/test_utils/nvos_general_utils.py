@@ -120,6 +120,15 @@ def generate_file_location_uri(file_path: str, localhost: bool = False) -> str:
     return f'file://{file_path}'
 
 
+def is_ipv6_setup(topology, player_name: str) -> bool:
+    """Check if a player is on an IPv6-only setup via NOGA attributes."""
+    try:
+        specific = topology.players[player_name]['attributes'].noga_query_data['attributes']['Specific']
+        return 'IPv6 setup' in specific.get('Hardware_state_details', '')
+    except (KeyError, AttributeError):
+        return False
+
+
 def get_switch_type(topology):
     switch_type = TopologyConsts.SONIC
     try:

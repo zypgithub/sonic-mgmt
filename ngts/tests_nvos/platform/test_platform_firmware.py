@@ -19,6 +19,9 @@ logger = logging.getLogger()
 @pytest.mark.cumulus
 @pytest.mark.nvos_ci
 @pytest.mark.nvl_ci
+@pytest.mark.air
+@pytest.mark.air_ci
+@pytest.mark.air_sanity
 @pytest.mark.timeout(2 * MINUTE, func_only=True)
 def test_show_platform_firmware(engines, devices, random_api, output_format):
     """Tests nv show platform firmware"""

@@ -2,6 +2,7 @@ import logging
 import pytest
 import allure
 import os
+import shlex
 import time
 import argparse
 from retry import retry
@@ -21,7 +22,8 @@ ci_chipsim_script_path = "{ci_temp_path}/scripts/run_nvos_in_chipsim.py"
 
 
 def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_image, use_master_script, is_regression_run,
-                              chip, platform, chipsim_version, custom_flags, chipsim_script_branch):
+                              chip, platform, chipsim_version, custom_flags, chipsim_extra_args, pelican_tag,
+                              cable_script, chipsim_force, chipsim_script_branch):
     with allure.step("Get server and dut details"):
         dut_engine = topology_obj.players['dut']['engine']
         server_name = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['serial_conn_command'].split()[1]
@@ -46,12 +48,14 @@ def test_run_nvos_simx_docker(topology_obj, target_version, devices, use_bin_ima
             server_engine = ConnectionTool.create_ssh_conn(server_name, os.getenv("TEST_SERVER_USER"),
                                                            os.getenv("TEST_SERVER_PASSWORD")).returned_value
             start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script,
-                              chip, platform, chipsim_version, custom_flags)
+                              chip, platform, chipsim_version, custom_flags, chipsim_extra_args, pelican_tag,
+                              cable_script, chipsim_force)
             _wait_till_switch_is_ready(dut_engine)
 
 
 def start_simx_docker(target_version, dut_engine, server_engine, devices, path_to_chipsim_script,
-                      chip='', platform=None, chipsim_version=None, custom_flags=None):
+                      chip='', platform=None, chipsim_version=None, custom_flags=None,
+                      chipsim_extra_args=None, pelican_tag=None, cable_script=None, chipsim_force=False):
     image_type = "--nos-image" if ".bin" in target_version else "--simulator-image"
     cmd = f"sudo {path_to_chipsim_script} --ip {dut_engine.ip} {image_type} {target_version}"
     if chip:
@@ -62,6 +66,14 @@ def start_simx_docker(target_version, dut_engine, server_engine, devices, path_t
         cmd += f" --chipsim-version {chipsim_version}"
     if custom_flags:
         cmd += f' --custom-flags " {custom_flags}"'
+    if pelican_tag:
+        cmd += f" --pelican-tag {shlex.quote(pelican_tag)}"
+    if cable_script:
+        cmd += f" --cable-script {shlex.quote(cable_script)}"
+    if chipsim_force:
+        cmd += " --force"
+    if chipsim_extra_args:
+        cmd += " " + chipsim_extra_args.strip()
     logger.debug('Running chipsim command: ' + cmd)
     output = server_engine.run_cmd(cmd)
     time.sleep(5)

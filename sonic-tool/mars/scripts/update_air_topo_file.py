@@ -9,33 +9,32 @@ from infra.tools.nvidia_air_tools.air import (
     generate_port_mapping_dict,
     get_air_api_object,
     get_public_port_for_host,
-    get_simulation_hosts_services_dict
+    get_simulation_hosts_services_dict,
+    get_project_from_simulation_name
 )
 from infra.tools.general_constants.air_constants import HostsConstants, Project
 from infra.tools.nvidia_air_tools.air_metadata import SimulationMetadataHandler, SimulationMetadata
 
-MARS_TOPO_FOLDER_PATH = "/auto/sw_regression/system/SONIC/MARS/conf/topo/"
+SETUPS_LOCATION = {Project.SONIC: "/auto/sw_regression/system/SONIC/MARS/conf/topo/",
+                   **{p: "/auto/sysgwork/G/MARS_conf/stm_nvos/topo/" for p in Project.get_team_projects('NVOS')}}
 
-def get_xml_parsed_topo(setup_name):
-    topo_file_path = MARS_TOPO_FOLDER_PATH + setup_name + "/topology.xml"
+def get_xml_parsed_topo(topo_file_path):
     with open(topo_file_path, "r") as file:
         topo_xml = file.read()
     topo = ET.fromstring(topo_xml)
     return topo
 
-def get_setup_topo(setup_name):
-    topo_file_path = MARS_TOPO_FOLDER_PATH + setup_name + "/topology.xml"
+def get_setup_topo(topo_file_path):
     with open(topo_file_path, "r") as file:
         topo_xml = file.read()
     topo = ET.fromstring(topo_xml)
     return topo
 
-def get_simulation_connections(setup_name):
-    air = get_air_api_object(Project.SONIC)
-    simulation = air.simulations.list(title=setup_name)
+def get_simulation_connections(setup_name, project):
+    air = get_air_api_object(project)
+    simulation = next(air.simulations.list(name=setup_name), None)
     if not simulation:
         raise Exception(f'Simulation {setup_name} not available. Please check that simulation started.')
-    simulation = next(simulation)
     handler = SimulationMetadataHandler(simulation)
     simulation_metadata = handler.retrieve()
     topology_type = simulation_metadata.get(SimulationMetadata.TOPOLOGY_TYPE, '').upper()
@@ -86,7 +85,7 @@ def update_air_topo(topo, simulation_connections):
 
     update_topo_player('SONIC_MGMT', parent_map, simulation_connections[HostsConstants.SONIC_MGMT])
 
-def write_air_topo_file(topo, setup_name):
+def write_air_topo_file(topo, topo_file_path):
     rough_string = ET.tostring(topo, encoding='unicode')
     reparsed = xml.dom.minidom.parseString(rough_string)
 
@@ -108,7 +107,7 @@ def write_air_topo_file(topo, setup_name):
     if lines[0].startswith('<?xml'):
         lines[0] = '<?xml version="1.0" encoding="UTF-8"?>'
     pretty_xml = '\n'.join(lines)
-    with open(MARS_TOPO_FOLDER_PATH + setup_name + "/topology.xml", "w") as file:
+    with open(topo_file_path, "w") as file:
         file.write(pretty_xml)
 
 def _parse_args():
@@ -118,11 +117,13 @@ def _parse_args():
 
 if __name__ == "__main__":
     args = _parse_args()
-    simulation_connections = get_simulation_connections(args.setup_name)
+    project = get_project_from_simulation_name(args.setup_name)
+    simulation_connections = get_simulation_connections(args.setup_name, project)
     for simulation_node in simulation_connections:
         node_connections = simulation_connections[simulation_node]
         if None in node_connections.values():
             raise Exception(f"Simulation {simulation_node} has empty connection values: {node_connections}")
-    topo = get_xml_parsed_topo(args.setup_name)
+    topo_file_path = SETUPS_LOCATION[project] + args.setup_name + "/topology.xml"
+    topo = get_xml_parsed_topo(topo_file_path)
     update_air_topo(topo, simulation_connections)
-    write_air_topo_file(topo, args.setup_name)
+    write_air_topo_file(topo, topo_file_path)

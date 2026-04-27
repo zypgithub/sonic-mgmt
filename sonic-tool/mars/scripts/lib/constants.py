@@ -20,22 +20,20 @@ DOCKER_NGTS_IMAGE_NAME = "docker-ngts"
 DOCKER_NGTS_DEFAULT_TAG = "1.3.67"
 
 SONIC_MGMT_REPO_URL = "http://10.7.77.140:8080/switchx/sonic/sonic-mgmt"
-SONIC_MGMT_MOUNTPOINTS = {
-    '/.autodirect/mswg/projects': '/.autodirect/mswg/projects',
-    '/auto/cumulus': '/auto/cumulus',
-    '/.autodirect/cumulus': '/.autodirect/cumulus',
-    '/auto/sw_system_project': '/auto/sw_system_project',
-    '/auto/sw_system_release': '/auto/sw_system_release',
-    '/.autodirect/sw_system_release/': '/.autodirect/sw_system_release/',
+
+COMMON_MOUNTPOINTS = {
     '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
+    '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
+    '/auto/sw_system_release': '/auto/sw_system_release',
+}
+BARE_METAL_MOUNTPOINTS = {
+    '/.autodirect/mswg/projects': '/.autodirect/mswg/projects',
+    '/.autodirect/sw_system_release/': '/.autodirect/sw_system_release/',
+    '/auto/sw_system_project': '/auto/sw_system_project',
     '/.autodirect/sw_regression/system/SONIC/MARS': '/.autodirect/sw_regression/system/SONIC/MARS',
     '/workspace': '/workspace',
     '/.autodirect/LIT/SCRIPTS': '/.autodirect/LIT/SCRIPTS',
-    '/auto/sw_regression/system/NVOS/MARS': '/auto/sw_regression/system/NVOS/MARS',
-    '/.autodirect/sw_regression/system/NVOS/MARS': '/.autodirect/sw_regression/system/NVOS/MARS',
-    '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/': '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/',
     '/etc/localtime': '/etc/localtime',
-    '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
     "/.autodirect/LIT/LOGS/RR": "/.autodirect/LIT/LOGS/RR",
     '/.autodirect/sw/release/': '/.autodirect/sw/release/',
     '/auto/sw/tools/comet/': '/auto/sw/tools/comet/',
@@ -43,12 +41,21 @@ SONIC_MGMT_MOUNTPOINTS = {
     '/auto/LIT/SCRIPTS/': '/auto/LIT/SCRIPTS/',
     '/auto/LIT/LOGS/RR/': '/auto/LIT/LOGS/RR/',
     '/auto/mswg/utils/bin/': '/auto/mswg/utils/bin/',
+    '/auto/cumulus': '/auto/cumulus',
+    '/.autodirect/cumulus': '/.autodirect/cumulus',
 }
-AIR_SONIC_MGMT_MOUNTPOINTS = {
-    '/auto/sw_regression/system/SONIC/MARS': '/auto/sw_regression/system/SONIC/MARS',
-    '/auto/sw_tools/Internal/BugHandling/RELEASES': '/auto/sw_tools/Internal/BugHandling/RELEASES',
-    '/auto/sw_system_release': '/auto/sw_system_release',
+NVOS_MOUNTPOINTS = {
+    '/auto/sw_regression/system/NVOS/MARS': '/auto/sw_regression/system/NVOS/MARS',
+    '/.autodirect/sw_regression/system/NVOS/MARS': '/.autodirect/sw_regression/system/NVOS/MARS',
+    '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/': '/.autodirect/sysgwork/G/MARS_conf/stm_nvos/',
+    '/auto/sw_system_project': '/auto/sw_system_project',
 }
+SONIC_MOUNTPOINTS = {}
+
+# for backwards compatibility.
+SONIC_MGMT_MOUNTPOINTS = {}
+for mountpoints in (COMMON_MOUNTPOINTS, BARE_METAL_MOUNTPOINTS, NVOS_MOUNTPOINTS, SONIC_MOUNTPOINTS):
+    SONIC_MGMT_MOUNTPOINTS.update(mountpoints)
 
 SONIC_MGMT_MOUNTPOINTS_MTBC = {
     '/auto/sw_regression/mtbcsw/system/SONIC/MARS': '/auto/sw_regression/mtbcsw/system/SONIC/MARS',

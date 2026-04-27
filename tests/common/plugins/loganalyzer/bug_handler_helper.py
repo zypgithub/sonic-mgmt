@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from tests.common.helpers.parallel import parallel_run
 from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
 from tests.common.plugins.allure_wrapper import allure_step_wrapper as allure
-from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes
+from ngts.constants.constants import BugHandlerConst, InfraConst, NvosCliTypes, REGRESSION_TYPE_ENV_VAR, RegressionType
 from ngts.nvos_constants.constants_nvos import SystemConsts
 from ngts.helpers.bug_handler.bug_handler_helper import create_session_tmp_folder, clear_files, bug_handler_wrapper_err_msg, \
     create_log_analyzer_yaml_file, deduplicate_log_errors, group_log_errors_by_timestamp, summarize_la_bug_handler
@@ -406,61 +406,19 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
         'ci_mode': False
     }
 
-    project_bug_create_map = {
-        "regression": True,
-        "sonic_mgmt_ci": True,
-        "sonic_main": True,
-        "sonic_public": True,
-        "sonic_dpu_build": True,
-        "sonic_ci": False,
-        "sonic_dpu_ci": False,
-        "sonic_ci_app_extension": False,
-        "sonic_main_ngci_test_gz": False,
-        "sonic_ci_test_gz": False,
-        "nvos_ci": False
-    }
-
-    project_bug_update_map = {
-        "regression": True,
-        "sonic_mgmt_ci": False,
-        "sonic_main": False,
-        "sonic_public": False,
-        "sonic_dpu_build": False,
-        "sonic_ci": False,
-        "sonic_dpu_ci": False,
-        "sonic_ci_app_extension": False,
-        "sonic_main_ngci_test_gz": False,
-        "sonic_ci_test_gz": False,
-        "nvos_ci": False
-    }
-
-    project_bug_only_check_map = {
-        "regression": False,
-        "sonic_mgmt_ci": False,
-        "sonic_main": False,
-        "sonic_public": False,
-        "sonic_dpu_build": False,
-        "sonic_ci": False,
-        "sonic_dpu_ci": False,
-        "sonic_ci_app_extension": False,
-        "sonic_main_ngci_test_gz": False,
-        "sonic_ci_test_gz": False,
-        "nvos_ci": False
-    }
+    project_bug_create_map = {rt: rt in RegressionType.bug_create_types() for rt in RegressionType}
+    project_bug_update_map = {rt: rt == RegressionType.REGRESSION for rt in RegressionType}
+    project_bug_only_check_map = {rt: False for rt in RegressionType}
 
     if not only_check:
-        project = os.environ.get("REGRESSION_TYPE")
+        project = os.environ.get(REGRESSION_TYPE_ENV_VAR)
         bug_handler_actions['create'] = project_bug_create_map.get(project, False)
         bug_handler_actions['update'] = project_bug_update_map.get(project, False)
         bug_handler_actions['only_check'] = project_bug_only_check_map.get(project, True)
         _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions)
         _update_bug_handler_actions(request, bug_handler_actions)
         # Set ci_mode for CI projects when both create and update are False
-        ci_projects = [
-            "sonic_ci", "sonic_dpu_ci", "sonic_ci_app_extension",
-            "sonic_main_ngci_test_gz", "sonic_ci_test_gz",
-        ]
-        if project in ci_projects and not bug_handler_actions['create'] and not bug_handler_actions['update']:
+        if project in RegressionType.relaxed_error_handling_types() and not bug_handler_actions['create'] and not bug_handler_actions['update']:
             bug_handler_actions['ci_mode'] = True
         logger.info(f"The bug handler actions for the {project} is: {bug_handler_actions}")
 
@@ -469,7 +427,7 @@ def get_bug_handler_actions(request, log_analyzer_handler_info, only_check=False
 
 def _update_bug_handler_actions_for_private_image(project, log_analyzer_handler_info, bug_handler_actions):
     cli_type = log_analyzer_handler_info['cli_type']
-    if project != "regression" or cli_type != "Sonic":
+    if project != RegressionType.REGRESSION or cli_type != "Sonic":
         return
     branch = log_analyzer_handler_info["branch"]
     is_private_branch = False if re.match("^[0-9]{6,6}$", branch) else True

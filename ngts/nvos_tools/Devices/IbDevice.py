@@ -2459,6 +2459,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.asic_type = NvosConst.NVL5
         self.supported_nvl_speeds = ['200G', '400G']
         self.category_list = ['temperature', 'cpu', 'disk', 'mgmt-interface', 'voltage', 'asic-power']
+        self.nvl_port_type = 'acp'
         # Override mst device names for Rosalind Surrogate (4 ASICs) to mt54008 devices
         self.mst_dev_name = tuple(f'/dev/mst/mt54008_pciconf{i}' for i in range(self.asic_amount))
         self.sma_amount = 2
@@ -3225,8 +3226,8 @@ class RosalindStackedSimx(RosalindStackedSwitch):
 
 class RosalindSimx(RosalindSwitch):
 
-    def __init__(self):
-        super().__init__(asic_amount=4)
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=asic_amount)
         self.require_mloop_setup = True
 
     def _init_constants(self):
@@ -3235,7 +3236,7 @@ class RosalindSimx(RosalindSwitch):
         self.health_monitor_config_file_path = HealthConsts.HEALTH_MONITOR_CONFIG_FILE_PATH.format(
             "x86_64-nvidia_n6100_ld-r0")
         self.show_platform_output.update({
-            "product-name": "N6100_LD",
+            "system-type": "N6100_LD",
             "asic-model": self.asic_type,
         })
 
@@ -3330,13 +3331,22 @@ class RosalindSimx(RosalindSwitch):
         ]
 
 
+# -------------------------- RosalindSA Switch ----------------------------
+
+
+class RosalindSA(RosalindSimx):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
+
+
 # -------------------------- PortiaSimx Switch ----------------------------
 
 
 class PortiaSimx(RosalindSwitch):
 
-    def __init__(self):
-        super().__init__(asic_amount=4)
+    def __init__(self, asic_amount=4):
+        super().__init__(asic_amount=asic_amount)
         self.require_mloop_setup = True
 
     def _init_constants(self):
@@ -3348,6 +3358,15 @@ class PortiaSimx(RosalindSwitch):
             PlatformConsts.SYSTEM_TYPE: "N7170_LD",
             "asic-model": self.asic_type,
         })
+
+
+# -------------------------- PortiaSA Switch ----------------------------
+
+
+class PortiaSA(PortiaSimx):
+
+    def __init__(self):
+        super().__init__(asic_amount=1)
 
 
 # -------------------------- Caiman Switch ----------------------------

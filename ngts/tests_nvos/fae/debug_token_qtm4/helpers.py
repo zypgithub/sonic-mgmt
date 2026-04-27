@@ -426,6 +426,24 @@ class DebugTokenFileHelper:
         return asic_dictionary[first_asic_name]["actual-firmware"]
 
     @staticmethod
+    def is_fw_source_default(nv_command) -> bool:
+        """
+        Check if the ASIC firmware source is set to default.
+
+        Args:
+            nv_command: NV command object
+
+        Returns:
+            True if fw-source is 'default', False otherwise
+        """
+        output = OutputParsingTool.parse_json_str_to_dictionary(
+            nv_command.platform.firmware.asic.show()
+        ).get_returned_value()
+        fw_source = output.get(PlatformConsts.FW_SOURCE, PlatformConsts.FW_SOURCE_DEFAULT)
+        logger.info(f"Current fw-source: {fw_source}")
+        return fw_source == PlatformConsts.FW_SOURCE_DEFAULT
+
+    @staticmethod
     def verify_firmware_version(nv_command, expected_version: str, step_description: str = ""):
         """
         Verify the firmware version matches the expected version.

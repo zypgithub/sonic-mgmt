@@ -144,6 +144,7 @@ def check_dhcp(mgmt_port, ipv4=True):
 @pytest.mark.simx
 @pytest.mark.skynet
 @pytest.mark.interfaces
+@pytest.mark.air
 @pytest.mark.nvos_chipsim_ci
 @pytest.mark.parametrize('test_api', [ApiType.OPENAPI])
 def test_show_interface_ip_dhcp(engines, test_api):

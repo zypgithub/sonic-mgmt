@@ -1,12 +1,12 @@
 import logging
 import os
+import re
 import socket
 import subprocess
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-import requests
 from netmiko import ConnectHandler, ReadTimeout
 from paramiko.ssh_exception import AuthenticationException
 from retry.api import retry_call, retry
@@ -242,12 +242,13 @@ class DutUtilsTool:
 
     @staticmethod
     def get_engine_interface_name(engine, topology) -> str:
-        dut_setup_specific_attributes: Dict[str, str] = \
+        specific: Dict[str, str] = \
             topology.players['dut']['attributes'].noga_query_data['attributes']['Specific']
-        setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
+        setup_mgmt_ips = [specific.get('ip_address'), specific.get('ip_address_2')]
+        setup_mgmt_ipv6s = [specific.get('ipv6'), specific.get('ipv6_2')]
         interface = ''
-        for index, mgmt_ip in enumerate(setup_mgmt_ips):
-            if mgmt_ip == engine.ip:
+        for index, (mgmt_ip, mgmt_ipv6) in enumerate(zip(setup_mgmt_ips, setup_mgmt_ipv6s)):
+            if engine.ip in (mgmt_ip, mgmt_ipv6):
                 interface = 'eth' + str(index)
         logger.info(f"engine interface name {interface}")
         return interface
@@ -275,6 +276,41 @@ class DutUtilsTool:
             reboot_cmd = skip_str + '/.autodirect/mswg/utils/bin/rreboot ' + dhcp_hostname + ' ' + psu_state
             ssh_conn.run_cmd(reboot_cmd)
             time.sleep(2)
+
+    @staticmethod
+    def follow_journal_until_pattern(engine: LinuxSshEngine, service: str, patterns: list[str], timeout: int = 300,
+                                     since_boot: bool = False):
+        """
+        Follow a systemd journal service and return as soon as any pattern matches.
+        Raises TimeoutError if no pattern is matched within the given timeout.
+
+        Uses ``timeout Xs journalctl -fu SERVICE | sed '/PATTERN/ q'`` which exits
+        cleanly (rc 0) on match and with rc 143 on timeout.
+
+        :param engine:   SSH engine (LinuxSshEngine / ProxySshEngine)
+        :param service:  systemd service name (e.g. 'ztp')
+        :param patterns: list of regex patterns to watch for
+        :param timeout:  max seconds to wait (default 300)
+        :param since_boot: if True, read from the start of the current boot (-b flag)
+        :return: journal output up to and including the matched line
+        :raises TimeoutError: if none of the patterns appeared within *timeout* seconds
+        """
+        sed_pattern = '|'.join(patterns)
+        boot_flag = '-b --no-tail ' if since_boot else ''
+        cmd = f"timeout {timeout}s journalctl {boot_flag}-fu {service} | sed -E '/{sed_pattern}/ q'"
+        output = engine.run_cmd(cmd, validate=False, timeout=timeout + 10, retry_run=False)
+        allure.attach(f'{service} journal output', output)
+        rc = engine.run_cmd('echo $?', validate=False).strip()
+        if rc == '0':
+            for i, pattern in enumerate(patterns):
+                if re.search(pattern, output):
+                    return i, output
+            else:
+                raise RuntimeError(f'None of the expected patterns appeared in the journal, {output=}')
+
+        raise TimeoutError(
+            f'Journal follow for {service!r} timed out after {timeout}s without matching any of: {patterns}\n'
+        )
 
 
 def ping_device(ip_add):

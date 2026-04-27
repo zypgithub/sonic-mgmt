@@ -22,6 +22,7 @@ from dotted_dict import DottedDict
 from paramiko.ssh_exception import SSHException
 
 from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.general_constants.air_constants import NvidiaAirConstants
 from ngts.cli_wrappers.dvs.dvs_cli import DvsCli
 from ngts.cli_wrappers.linux.linux_cli import LinuxCli, LinuxCliStub
 from ngts.cli_wrappers.nvue.nvue_cli import NvueCli
@@ -39,7 +40,7 @@ from ngts.tools.allure_report.allure_report_attacher import add_fixture_end_tag,
     clean_stored_cmds_with_fixture_scope, update_fixture_scope_list, enable_record_cmds
 from ngts.tools.infra import get_platform_info, get_devinfo, is_deploy_run, get_chip_type
 from ngts.tools.infra import get_topology_from_noga
-from ngts.tools.test_utils.nvos_general_utils import get_switch_type
+from ngts.tools.test_utils.nvos_general_utils import get_switch_type, is_ipv6_setup
 from ngts.nvos_tools.infra.IpTool import IpTool
 from ngts.scripts.sonic_deploy.sonic_only_methods import detect_asic_count, SonicInstallationSteps
 
@@ -168,7 +169,6 @@ def pytest_addoption(parser):
                      help='''Provide path to application extensions json file.
                           'Example of content: {"p4-sampling":"nbu-harbor.gtm.nvidia.com/sonic-p4/p4-sampling:0.2.0",
                                       "what-just-happened":"nbu-harbor.gtm.nvidia.com/sonic-wjh/docker-wjh:1.0.1"} ''')
-    parser.addoption("--nvos_api_type", action="store", default='nvue', help="nvue/openapi")
     parser.addoption("--current_topo", dest="current_topo",
                      help="Current topology for example: t0, t1, t1-lag, ptf32, ...")
     parser.addoption("--expected_topo", dest="expected_topo",
@@ -203,9 +203,10 @@ def pytest_addoption(parser):
                           'analyze, analyze_and_open_bugs')
     parser.addoption('--store_dump_on_fail', required=False, action='store_true', default=False,
                      help='Store techsupport dump on test fail during manual run')
-    parser.addoption("--ipv6_add", action="store", default=None, help="Provide static ipv6 address")
     parser.addoption("--skip_coredump_check", action="store_true", default=False, help="Skip coredump check fixture")
     parser.addoption("--ib_router", action="store_true", default=False, help="a boolean parameter to force ib router configuration")
+    parser.addoption("--force_air_external_ips", action="store_true", default=False,
+                     help="For AIR setups - force external IP/port resolution regardless of simulation metadata")
 
 
 def pytest_runtest_call(item):
@@ -291,16 +292,6 @@ def downgrade_version(request):
     :return: downgrade_version argument value
     """
     return request.config.getoption('--downgrade_version')
-
-
-@pytest.fixture(scope="session")
-def is_ipv6(request):
-    """
-    Method for getting is_ipv6 from pytest arguments
-    :param request: pytest builtin
-    :return: is_ipv6 argument value
-    """
-    return request.config.getoption('--is_ipv6')
 
 
 @pytest.fixture(scope="session")
@@ -477,8 +468,19 @@ def set_asic_for_dut_clis(topology, tested_asic_index):
     topology.players['dut']['stub_cli'].set_asic(tested_asic_index)
 
 
+@pytest.fixture(scope='session')
+def force_external_ips_in_air(pytestconfig):
+    """
+    For AIR setups - allow connecting to DUTs from external network.
+    This overrides the default behavior which is defined in the AIR simulation metadata.
+    """
+    os.environ[NvidiaAirConstants.EXTERNAL_CONNECTION_MODE_ENV_VAR] = str(pytestconfig.getoption(
+        '--force_air_external_ips', default=False
+    )).lower()
+
+
 @pytest.fixture(scope='session', autouse=True)
-def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic, is_ipv6):
+def topology_obj(force_external_ips_in_air, initial_topology_obj, tested_asic_index, is_multi_asic):
     topo = initial_topology_obj
     if is_multi_asic:
         for side in ('ha', 'hb'):
@@ -491,7 +493,7 @@ def topology_obj(initial_topology_obj, tested_asic_index, is_multi_asic, is_ipv6
 
 
 @pytest.fixture(scope='session')
-def initial_topology_obj(setup_name, request, is_performance, is_ipv6):
+def initial_topology_obj(setup_name, request, is_performance):
     """
     Fixture which create topology object before run tests and doing cleanup for ssh engines after test executed
     :param setup_name: example: sonic_tigris_r-tigris-06
@@ -521,7 +523,7 @@ def initial_topology_obj(setup_name, request, is_performance, is_ipv6):
             config_db = topology.players['dut']['cli'].general.get_config_db()
             topology.players_all_ports['dut'] = list(config_db['PORT'].keys())
 
-    if is_ipv6 and 'sonic-mgmt' in topology.players:
+    if 'sonic-mgmt' in topology.players and is_ipv6_setup(topology, 'dut'):
         sonic_mgmt_engine = topology.players['sonic-mgmt']['engine']
         ipv6_addr = IpTool.get_routable_ipv6_from_any_interface(sonic_mgmt_engine)
         if ipv6_addr:
@@ -529,7 +531,7 @@ def initial_topology_obj(setup_name, request, is_performance, is_ipv6):
             logger.info(f'Set sonic-mgmt switch_reachable_ip to {ipv6_addr}')
         else:
             logger.error(
-                'IPv6 mode enabled but no routable IPv6 found on sonic-mgmt. '
+                'IPv6 setup detected but no routable IPv6 found on sonic-mgmt. '
                 'SCP operations from switch will use IPv4 and likely fail.'
             )
 
@@ -568,29 +570,6 @@ def update_topology_for_mlnxos_setups(topology, request):
         topology.players['dut_serial'] = topology.players.pop('sl_serial')
     if 'vm_player' in topology.players.keys():
         topology.players['server'] = topology.players.pop('vm_player')
-
-    if request.config.getoption("--is_ipv6"):
-        logger.info("IPv6 testing mode enabled")
-        _update_ipv6_add(topology,
-                         request.config.getoption("--ipv6_add", None))
-
-
-def _update_ipv6_add(topology, ipv6_addr=None):
-    """
-    Update the IPv6 address for the given engine.
-    """
-    if not ipv6_addr:
-        logger.info("No IPv6 address provided, attempting to get from DUT")
-        ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli("eth0",
-                                                                                 topology.players['dut']['engine'])
-
-    if ipv6_addr:
-        logger.info(f"Setting DUT IP to IPv6 address: {ipv6_addr}")
-        topology.players['dut']['engine'].ip = ipv6_addr
-    else:
-        error_msg = "IPv6 testing enabled but no valid IPv6 address found for DUT"
-        logger.error(error_msg)
-        raise Exception(error_msg)
 
 
 @pytest.fixture(scope='session')
@@ -893,6 +872,7 @@ def is_air(platform_params):
     is_air_setup = False
     if re.search('air', platform_params.setup_name.lower()):
         is_air_setup = True
+    pytest.is_air = is_air_setup
     return is_air_setup
 
 
@@ -904,16 +884,6 @@ def cleanup_last_config_in_stack(cleanup_list):
     """
     func, args = cleanup_list.pop()
     func(*args)
-
-
-@pytest.fixture(scope="session")
-def nvos_api_type(request):
-    """
-    Method for getting nvos_api_type from pytest arguments
-    :param request: pytest builtin
-    :return: nvos_api_type argument value
-    """
-    return request.config.getoption('--nvos_api_type')
 
 
 @pytest.fixture(scope='session')
