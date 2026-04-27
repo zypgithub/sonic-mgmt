@@ -1,6 +1,9 @@
 import re
 import logging
 
+# Known vendor pn's that does not support Channel Monitor values.
+CHANNEL_MONITOR_DISABLED_VENDOR_PNS = {"980-9IAM2-00X001", "980-9IAM1-00X001", "NMA4OPT-XRJALMU0"}
+
 
 def check_sfp_eeprom_info(duthost, sfp_eeprom_info, is_support_dom, show_eeprom_cmd, is_flat_memory):
     """
@@ -45,8 +48,7 @@ def check_sfp_eeprom_info(duthost, sfp_eeprom_info, is_support_dom, show_eeprom_
         expected_keys = expected_keys - excluded_keys
 
     vendor_pn = (sfp_eeprom_info.get("Vendor PN", "") or "").strip().upper()
-    is_xodin = vendor_pn.startswith("980-9IA")
-    if is_xodin:
+    if vendor_pn in CHANNEL_MONITOR_DISABLED_VENDOR_PNS:
         excluded_keys = excluded_keys | {"ChannelMonitorValues"}
         expected_keys = expected_keys - {"ChannelMonitorValues"}
 
