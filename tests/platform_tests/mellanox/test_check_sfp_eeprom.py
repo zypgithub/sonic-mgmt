@@ -70,7 +70,6 @@ def test_check_sfp_eeprom_with_option_dom(duthosts, rand_one_dut_hostname, show_
         if is_cpo_supported:
             with allure.step("Run: {} to get interface status".format(SHOW_INTF_STATUS_CMDS)):
                 intf_status = duthost.show_and_parse(SHOW_INTF_STATUS_CMDS)
-                assert intf_status["rc"] == 0, "Failed to read interface status"
                 intf_status_dict = {row["interface"]: row for row in intf_status}
 
         for intf, inft_support_dom in list(sfp_test_intfs_to_dom_map.items()):
