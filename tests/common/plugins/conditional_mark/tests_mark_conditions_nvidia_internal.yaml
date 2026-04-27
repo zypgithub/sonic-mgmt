@@ -600,6 +600,18 @@ everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror::test_eve
     conditions:
     - https://github.com/sonic-net/sonic-mgmt/issues/16087
 
+everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror::test_everflow_egress_mirror_mtu_drop:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5005586"
+    conditions:
+    - https://redmine.mellanox.com/issues/5005586
+
+everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6::test_everflow_egress_mirror_mtu_drop_ipv6:
+  skip:
+    reason: "Testcase skipped due to RM issue: https://redmine.mellanox.com/issues/5005586"
+    conditions:
+    - https://redmine.mellanox.com/issues/5005586
+
 everflow/test_everflow_testbed.py::TestEverflowV4IngressAclIngressMirror::test_everflow_dscp_with_policer:
   skip:
     reason: "Testcase ignored due to https://github.com/sonic-net/sonic-mgmt/issues/16087"
@@ -1126,18 +1138,6 @@ drop_packets/test_drop_counters.py::test_no_egress_drop_on_down_link:
     reason: "Test is skipped - simx dut port not affected by the shutdown of fanout port"
     conditions:
     - "'simx' in platform"
-
-everflow/test_everflow_testbed.py::TestEverflowV4EgressAclEgressMirror:
-  skip:
-    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
-    conditions:
-    - "'sn6600' in platform"
-
-everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
-  skip:
-    reason: "Egress mirror in not supported on SN6600 platform - FR https://redmine.mellanox.com/issues/4498596"
-    conditions:
-    - "'sn6600' in platform"
 
 high_frequency_telemetry/test_high_frequency_telemetry.py:
   skip:

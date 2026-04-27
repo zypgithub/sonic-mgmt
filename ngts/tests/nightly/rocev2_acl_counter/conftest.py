@@ -21,7 +21,7 @@ ROCEV2_ACL_COUNTER_TEMPLATE_PATH = os.path.join(os.path.dirname(os.path.abspath(
 
 logger = logging.getLogger()
 DUT_PORTCHANNEL_NAME = "PortChannel1"
-MIRROR_EGRESS_NO_SUPPORT_PLATFORMS = ["sn6600", "sn6600_ld", "sn6810_ld"]
+HIGH_SPEED_LAG_PLATFORMS = ["sn6600", "sn6600_ld", "sn6810_ld"]
 
 
 def generate_arp(players, interface, sender, dst_ip):
@@ -108,7 +108,7 @@ def adapt_speed_for_lag(engines, topology_obj, interfaces, cli_objects, platform
     cli_obj = topology_obj.players['dut']['cli']
     dut_original_interfaces_speeds = cli_obj.interface.get_interfaces_speed(
         [interfaces.dut_ha_2, interfaces.dut_hb_1, interfaces.dut_hb_2])
-    new_speed = "10G" if platform_params.filtered_platform not in MIRROR_EGRESS_NO_SUPPORT_PLATFORMS else "200G"
+    new_speed = "10G" if platform_params.filtered_platform not in HIGH_SPEED_LAG_PLATFORMS else "200G"
     interfaces_config_dict = {
         'dut': [{'iface': interfaces.dut_ha_2, 'speed': new_speed,
                  'original_speed': dut_original_interfaces_speeds.get(interfaces.dut_ha_2, new_speed)}
@@ -153,7 +153,7 @@ def pre_configure(request, engines, topology_obj, interfaces, cli_objects, playe
     LagLacpConfigTemplate.configuration(topology_obj, lag_lacp_config_dict)
     IpConfigTemplate.configuration(topology_obj, ip_config_dict)
     cmd = f"sudo config mirror_session span add port0 {interfaces.dut_hb_2} {interfaces.dut_ha_1},{DUT_PORTCHANNEL_NAME}"
-    if platform_params.filtered_platform in MIRROR_EGRESS_NO_SUPPORT_PLATFORMS:
+    if platform_params.filtered_platform in HIGH_SPEED_LAG_PLATFORMS:
         cmd += " rx"
     engines.dut.run_cmd(cmd)
 
@@ -197,8 +197,6 @@ def gen_acl_rule_list(interfaces, platform_params):
             logger.info(f"Selected bth_opcode is{tested_bth_opcode}")
 
         for acl_rule in ROCEV2_ACL_BASIC_TEST_DATA:
-            if platform_params.filtered_platform in MIRROR_EGRESS_NO_SUPPORT_PLATFORMS and "e_mirror" in acl_rule["name"]:
-                continue
             acl_rule_new = copy.copy(acl_rule)
             acl_rule_new.update(test_scenario)
             if test_scenario['scenario'] == "bth_aeth_together_random":
