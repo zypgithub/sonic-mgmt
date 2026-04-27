@@ -17,14 +17,28 @@ logger = logging.getLogger()
 def get_real_file_path(file_path: str) -> str:
     """
     @summary: Get the real file path from a given path.
-    Avoids resolving symlinks to prevent crossing NFS automount boundaries
-    that may not be accessible inside Docker containers.
+    Avoids resolving symlinks in the normal path to prevent crossing NFS
+    automount boundaries that may not be accessible inside Docker containers.
+    If the original path cannot be listed, retries the same filename
+    resolution against the resolved real path.
     """
     abs_path = os.path.abspath(file_path)
     containing_dir = os.path.dirname(abs_path)
     filename = os.path.basename(abs_path)
-    dir_content = os.listdir(containing_dir)
-    matching_filename = [dir_file for dir_file in dir_content if fnmatch.fnmatch(dir_file, filename)][0]
+    try:
+        dir_content = os.listdir(containing_dir)
+    except OSError as err:
+        resolved_abs_path = os.path.realpath(abs_path)
+        containing_dir = os.path.dirname(resolved_abs_path)
+        filename = os.path.basename(resolved_abs_path)
+        logger.warning(
+            "Image path %s could not be listed (%s), trying resolved path %s",
+            abs_path, err, resolved_abs_path
+        )
+        dir_content = os.listdir(containing_dir)
+    matching_filename = next((dir_file for dir_file in dir_content if fnmatch.fnmatch(dir_file, filename)), None)
+    if not matching_filename:
+        raise FileNotFoundError("No file matching {} found under {}".format(filename, containing_dir))
     real_file_path = os.path.join(containing_dir, matching_filename)
     return real_file_path
 
