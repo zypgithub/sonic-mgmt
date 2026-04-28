@@ -303,4 +303,7 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_update_replication.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/bgp_max_route.cases </cases>
+    </test>
 </DBDEF>

@@ -67,5 +67,8 @@
     <test>
         <cases> sonic-mgmt/sonic-tool/mars/cases/community/duplicate_route.cases </cases>
     </test>
+    <test>
+        <cases> sonic-mgmt/sonic-tool/mars/cases/community/route_map_check.cases </cases>
+    </test>
 
 </DBDEF>
