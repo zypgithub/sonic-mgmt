@@ -179,8 +179,6 @@ def test_upgrade_with_nmx_enabled(test_api, devices, topology_obj, setup_name, e
                     f"{output[SystemConsts.STATE]}, Expected to be: " \
                     f"{NvosConst.ENABLED}"
 
-        ClusterTools.reboot_compute_nodes_gpus(setup_name)
-
         with allure.step("Validate apps are still running"):
             ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system,
                                              has_loopbox, retries=6)
