@@ -2495,6 +2495,7 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.constants.erots.clear()
         self.constants.erots.extend([PlatformConsts.EROT_BMC_PATH_NAME, PlatformConsts.EROT_CPU_PATH_NAME])
         self.constants.firmware.remove(PlatformConsts.FW_FPGA)
+        self.constants.firmware.remove('transceiver')
         log_dump_files = ["audit", "auth.log.gz", "btmp.gz", "cron.log.gz",
                           "firewall_packet_capture.log.gz", "health_history.gz",
                           "nv-cli.log.gz", "nvued.log.gz", "syslog.gz", "wtmp.gz", "ztp.log.gz"]
