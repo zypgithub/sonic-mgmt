@@ -2205,6 +2205,20 @@ class JulietNonScaleoutSwitchGB300(JulietNonScaleoutSwitch):
         self.ztp_dev_json = 'uninstall_juliet_gb300.json'
         self.ztp_complex_prod_json = 'complex_prod_juliet_gb300.json'
         self.ztp_complex_dev_json = 'complex_juliet_gb300.json'
+        self.power_capping_profiles_default_dict = {
+            'compute': {
+                'long-term-power-allocation': '475',
+                'short-term-power-allocation': '575'
+            },
+            'networking': {
+                'long-term-power-allocation': '575',
+                'short-term-power-allocation': '575'
+            },
+            'reduced-bandwidth': {
+                'long-term-power-allocation': '380',
+                'short-term-power-allocation': '475'
+            }
+        }
 
     def _init_fan_list(self):
         # GB300 is 100% liquid cooled
@@ -2635,6 +2649,20 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
         self.psu_list = []
         self.psu_fan_list = []
         self.transceiver_list = []
+        self.power_capping_profiles_default_dict = {
+            'compute': {
+                'long-term-power-allocation': '495',
+                'short-term-power-allocation': '630'
+            },
+            'networking': {
+                'long-term-power-allocation': '630',
+                'short-term-power-allocation': '630'
+            },
+            'reduced-bandwidth': {
+                'long-term-power-allocation': '400',
+                'short-term-power-allocation': '550'
+            }
+        }
 
     def _init_gnmi_consts(self):
         super()._init_gnmi_consts()

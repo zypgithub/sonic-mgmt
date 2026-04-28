@@ -75,7 +75,7 @@ class CumulusConsts:
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
     NTP_SYNCHRONIZATION_MAX_TIME = 300
     NTP_LOGS_COMPONENT_ID = "nvue"
-    LOG_MSG_SET_NTP = ["nv set system ntp server 10.80.74.100 state"]
+    LOG_MSG_SET_NTP = ["nv set system ntp server 10.7.77.134 state"]
 
     DISK_MODE_FULL_DISK = 'full-disk'
     DISK_MODE_USAGE = 'usage'
@@ -136,7 +136,7 @@ class NvosConst:
     QTM3 = "Quantum3"
     QTM4 = "Quantum4"
     NVL5 = 'NVLink-5 switch'
-    NVL6 = 'NVLink-6 Switch'
+    NVL6 = 'NVLink-6 switch'
     NVL7 = 'NVLink-7 Switch'
     QTM3_AND_NEWER = [QTM3, QTM4]
     DESCRIPTION = 'description'
@@ -161,6 +161,7 @@ class NvosConst:
     PATH_TO_CONFIG_FILES_ON_DUT = "/host/config_files"
     PATH_TO_TMP_ON_DUT = "/tmp/"
     PATH_TO_FW_IMAGES = "/host/fw-images"
+    PATH_TO_DPC_ON_DUT = "/etc/fae_platform_dpc"
 
     DOCKERS_LIST = ['pmon', 'syncd-ibv0', 'swss-ibv0', 'database']
     DOCKER_PER_ASIC_LIST = ['syncd-ibv0', 'swss-ibv0', 'database']
@@ -907,10 +908,6 @@ class SystemConsts:
         "is successfully installed",
     )
 
-    ACTION_INSTALL_SUCCESS_MESSAGES = (
-        "is successfully installed",
-    )
-
     LOCALHOST = "127.0.0.1"
     DUMMY_IMAGE = "dummy.bin"
     DUMMY_IMAGE_PATH = "/tmp/"
@@ -943,7 +940,6 @@ class SystemConsts:
     NV_BRIDGE_SERVER_ADDRESS = 'server-address'
     NV_BRIDGE_CLIENT_ID = 'client-id'
     NV_BRIDGE_CLIENT_ACTIVE = 'active'
-    NV_BRIDGE_DISABLED = 'disabled'
     NV_BRIDGE_HEALTH_OK = 'ok'
     NV_BRIDGE_HEALTH_NOT_OK = 'not ok'
     NV_BRIDGE_GREP = '| grep nv-bridge'
@@ -1224,6 +1220,7 @@ class PlatformConsts:
     TIMEOUT_AFTER_FW_INSTALL = 1200
     DISK_SIZE = 'disk-size'
     MEMORY = 'memory'
+    DPC = "dpc"
 
 
 class ChassisLocationConsts:
@@ -1277,6 +1274,7 @@ class CableCartridgeConsts:
 
 class PowerCappingConsts:
     DEFAULT_PROFILE_ID = 'compute'
+    POWER = 'power'
     ACTIVE = 'active'
     STATE = 'state'
 
@@ -1291,20 +1289,6 @@ class PowerCappingConsts:
     PROFILES = ["networking", "reduced-bandwidth", DEFAULT_PROFILE_ID]
     ENUM_PROFILES = [profile.value for profile in ProfileName]
 
-    PROFILES_DEFAULT_DICT = {
-        'compute': {
-            'long-term-power-allocation': '475',
-            'short-term-power-allocation': '575'
-        },
-        'networking': {
-            'long-term-power-allocation': '575',
-            'short-term-power-allocation': '575'
-        },
-        'reduced-bandwidth': {
-            'long-term-power-allocation': '380',
-            'short-term-power-allocation': '475'
-        }
-    }
     TEST_PROFILES = ["test_profile1", "test_profile2", "test_profile3", "test_profile4", "test_profile5", "test_profile6"]  # Define 1 extra profile
     ATTRIBUTES = [
         'power-allocation-1', 'power-allocation-2', 'max-integral-1', 'max-integral-2',
@@ -1523,32 +1507,6 @@ class LinkTrainingConsts:
     FEC_MEASURE_MODE_OPERATIONAL_DEFAULT = FecMeasureMode.DISABLED
     FEC_MEASURE_MODE_APPLIED_DEFAULT = FecMeasureMode.FW_DEFAULT
 
-    FEC_MEASURE_FAIL_ACTION: str = 'fec-measure-fail-action'
-
-    class FecMeasureFailAction(Enum):
-        FW_DEFAULT = 'fw-default'
-        FORCE_LINKUP = 'force-linkup'
-        GOTO_POLLING = 'goto-polling'
-        GOTO_DISABLE = 'goto-disable'
-
-        @classmethod
-        def all(cls):
-            return [member.value for member in cls]
-
-        @classmethod
-        def operational(cls):
-            return [cls.FORCE_LINKUP.value, cls.GOTO_POLLING.value, cls.GOTO_DISABLE.value]
-
-    FEC_MEASURE_FAIL_ACTION_OPERATIONAL_DEFAULT = FecMeasureFailAction.FW_DEFAULT
-    FEC_MEASURE_FAIL_ACTION_APPLIED_DEFAULT = FecMeasureFailAction.FW_DEFAULT
-
-    FAIL_ACTION_PRIORITY: dict[str, int] = {
-        FecMeasureFailAction.FW_DEFAULT.value: 0,
-        FecMeasureFailAction.FORCE_LINKUP.value: 1,
-        FecMeasureFailAction.GOTO_POLLING.value: 2,
-        FecMeasureFailAction.GOTO_DISABLE.value: 3,
-    }
-
 
 class ImageConsts:
     NEXT_IMG = 'next'
@@ -1674,12 +1632,10 @@ class NtpConsts:
     KEY_VALUE = 'v1234'
     KEY1_VALUE = 'temp_value'
     KEY2_VALUE = 'temp_value123'
-    # NBU lab DHCP-provided NTP servers (ib-01/ib-02.yk-il.nvidia.com), reachable across all lab networks
-    # Can be verified via: nv show interface eth1 ipv4 dhcp-client lease
-    SERVER1_IPV4 = '10.80.74.100'
-    SERVER2_IPV4 = '10.80.74.101'
-    HOSTNAME_SUFFIX = '.yk-il.nvidia.com'
-    SERVER2_HOSTNAME = 'ib-02' + HOSTNAME_SUFFIX
+    SERVER1_IPV4 = '10.7.77.134'
+    SERVER2_IPV4 = '10.7.77.135'
+    HOSTNAME_SUFFIX = '.lab.mtl.com'
+    SERVER2_HOSTNAME = 'l-coreslave' + HOSTNAME_SUFFIX
     SERVER3_IPV4 = '10.7.77.136'
     SERVER4_IPV4 = 'time1.google.com'
     SERVER5_IPV4 = 'google.com'
@@ -1730,11 +1686,11 @@ class NtpConsts:
 
     LOG_MSG_UNSET_NTP = "NtpCfg: Set global config: {'admin_state': 'disabled', 'authentication': 'disabled', " \
                         "'dhcp': 'disabled', 'server_role': 'disabled', 'src_intf': 'eth0', 'vrf': 'default'}"
-    LOG_MSG_SERVER_CONFIG = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'enabled', 'association_type': 'server', " \
-        f"'iburst': 'off', 'resolve_as': '{SERVER1_IPV4}', 'trusted': 'no', 'version': '4'}}}}"
-    LOG_MSG_SERVER_CONFIG_UPDATE = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'disabled', " \
-        f"'association_type': 'server', 'iburst': 'off', 'key': '6', " \
-        f"'resolve_as': '{SERVER1_IPV4}', 'trusted': 'yes', 'version': '3'}}}}"
+    LOG_MSG_SERVER_CONFIG = "servers: {'10.7.77.134': {'admin_state': 'enabled', 'association_type': 'server', " \
+                            "'iburst': 'off', 'resolve_as': '10.7.77.134', 'trusted': 'no', 'version': '4'}}"
+    LOG_MSG_SERVER_CONFIG_UPDATE = "servers: {'10.7.77.134': {'admin_state': 'disabled', " \
+                                   "'association_type': 'server', 'iburst': 'off', 'key': '6', " \
+                                   "'resolve_as': '10.7.77.134', 'trusted': 'yes', 'version': '3'}}"
     LOG_MSG_SERVER_CONFIG_KEY = "NtpCfg: Set keys: {'6': {'trusted': 'yes', 'type': 'SHA1'}}"
 
     LOG_MSG_LIST = [LOG_MSG_UNSET_NTP, LOG_MSG_SERVER_CONFIG, LOG_MSG_SERVER_CONFIG_UPDATE, LOG_MSG_SERVER_CONFIG_KEY]
@@ -1968,7 +1924,6 @@ class SyslogConsts:
     PROTOCOL = 'protocol'
     STANDARD = 'standard'
     WELF = 'welf'
-    DEFAULT_PORT = 514
     MODULE_LINE = "module(load=\"im{protocol}\")"
     PORT_LINE = "input(type=\"im{protocol}\" port=\"{port}\")"
     RSYSLOG_CONF_FILE = '/etc/rsyslog.conf'
