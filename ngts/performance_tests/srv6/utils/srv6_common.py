@@ -156,6 +156,14 @@ class TestSRv6Base:
                 self.cli_object.trimming.clear_trimming_counters()
                 self.cli_object.interface.clear_queue_counters()
 
+            with allure.step("Attach pre-traffic packet-trim and WJH state"):
+                if isinstance(self.cli_object, NvueCli):
+                    scenario_tag = "many_to_one"
+                    nvue_pre_traffic_state_dump = (
+                        self.cli_object.trimming.build_pre_traffic_packet_trim_state_json(scenario_tag))
+                    allure.attach(nvue_pre_traffic_state_dump,
+                                  f"nvue_pre_traffic_state_{scenario_tag}.json",
+                                  attachment_type=allure.attachment_type.JSON)
             with allure.step(f"Run traffic"):
                 start_time = time.time()
                 run_traffic(self.players, self.scenario, traffic_jsons, attach_traffic_json=False)
@@ -192,6 +200,14 @@ class TestSRv6Base:
             self.cli_object.interface.clear_counters()
             self.cli_object.trimming.clear_trimming_counters()
             self.cli_object.interface.clear_queue_counters()
+        with allure.step("Attach pre-traffic packet-trim and WJH state"):
+            if isinstance(self.cli_object, NvueCli):
+                scenario_tag = "many_to_few"
+                nvue_pre_traffic_state_dump = (
+                    self.cli_object.trimming.build_pre_traffic_packet_trim_state_json(scenario_tag))
+                allure.attach(nvue_pre_traffic_state_dump,
+                              f"nvue_pre_traffic_state_{scenario_tag}.json",
+                              attachment_type=allure.attachment_type.JSON)
         with allure.step(f"Run many to few traffic on {len(ingress_ports)} ingress ports and {len(egress_ports)} egress ports, M={M}"):
             traffic_jsons = get_many_to_few_traffic(self.players, self.conf_args, traffic_type,
                                                     self.dut_interfaces_ipv6_configuration_dict,

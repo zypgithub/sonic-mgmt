@@ -30,6 +30,66 @@ class NvueTrimmingCli(TrimmingCommon):
         self.cli_obj.performance.execute_cmd(f"nv set system forwarding packet-trim size {trimming_size}")
         self.cli_obj.performance.execute_cmd(f"nv config apply -y")
 
+    def build_pre_traffic_packet_trim_state_json(self, scenario_tag):
+        """Collect pre-traffic packet-trim and WJH service state for NVUE diagnostics.
+
+        Runs NVUE and systemctl commands on the DUT, builds a structured payload, logs a
+        warning summary, and returns JSON text suitable for Allure attachment by the caller.
+
+        Args:
+            scenario_tag (str): Label for the traffic phase (e.g. ``many_to_one``).
+
+        Returns:
+            str: Pretty-printed JSON string of the diagnostic payload.
+        """
+        wjh_service_name = "what-just-happened.service"
+        wjh_status_cmd = f"systemctl status {wjh_service_name} --no-pager --full || true"
+        wjh_active_cmd = f"systemctl is-active {wjh_service_name} || true"
+        packet_trim_show_cmd = "nv show system forwarding packet-trim || true"
+        packet_trim_json_cmd = "nv sh system forwarding packet-trim -o json || true"
+
+        wjh_service_status = self.engine.run_cmd(wjh_status_cmd, print_output=False)
+        wjh_active_state = self.engine.run_cmd(wjh_active_cmd, print_output=False).strip()
+        packet_trim_show = self.engine.run_cmd(packet_trim_show_cmd, print_output=False)
+        packet_trim_json_raw = self.engine.run_cmd(packet_trim_json_cmd, print_output=False)
+
+        try:
+            packet_trim_json = json.loads(packet_trim_json_raw)
+        except json.JSONDecodeError:
+            packet_trim_json = {"raw_parse_error": "Failed to parse packet-trim JSON output"}
+
+        packet_trim_state = packet_trim_json.get("state")
+        session_info = packet_trim_json.get("session-info", {})
+        service_port = packet_trim_json.get("service-port")
+        session_down_reason = session_info.get("session-down-reason")
+
+        indicators = {
+            "wjh_service_name": wjh_service_name,
+            "wjh_active_state": wjh_active_state,
+            "wjh_is_active": wjh_active_state == "active",
+            "packet_trim_state": packet_trim_state,
+            "packet_trim_service_port": service_port,
+            "packet_trim_session_down_reason": session_down_reason,
+            "packet_trim_state_enabled": packet_trim_state == "enabled",
+            "recirc_session_reports_problem": bool(session_down_reason and "none" not in str(session_down_reason).lower())
+        }
+
+        payload = {
+            "scenario_tag": scenario_tag,
+            "indicators": indicators,
+            "raw": {
+                "systemctl_status_what_just_happened_service": wjh_service_status,
+                "nv_show_system_forwarding_packet_trim": packet_trim_show,
+                "nv_sh_system_forwarding_packet_trim_json": packet_trim_json
+            }
+        }
+        logging.warning(f"Pre-traffic NVUE diagnostics ({scenario_tag}): "
+                        f"wjh_active_state={wjh_active_state}, "
+                        f"packet_trim_state={packet_trim_state}, "
+                        f"service_port={service_port}, "
+                        f"session_down_reason={session_down_reason}")
+        return json.dumps(payload, indent=2)
+
     def get_trimming_counters(self):
         output_json = self.engine.run_cmd("nv sh system forwarding packet-trim -o json", print_output=False)
         output_dict = json.loads(output_json)
