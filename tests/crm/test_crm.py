@@ -132,10 +132,11 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
 
     # Wait for ACL configuration to propagate by polling for ACL table key
     logger.info("Waiting for ACL configuration to propagate...")
+    acl_tbl_key = {"value": None}
 
     def _acl_config_applied():
         try:
-            get_acl_tbl_key(asichost)
+            acl_tbl_key["value"] = get_acl_tbl_key(asichost)
             return True
         except Exception:
             return False
@@ -143,7 +144,7 @@ def apply_acl_config(duthost, asichost, test_name, collector, entry_num=1):
     pytest_assert(wait_until(CONFIG_UPDATE_TIME * 3, CRM_POLLING_INTERVAL, 0, _acl_config_applied),
                   "ACL configuration did not propagate within timeout")
 
-    collector["acl_tbl_key"] = get_acl_tbl_key(asichost)
+    collector["acl_tbl_key"] = acl_tbl_key["value"]
 
 
 def generate_mac(num):
@@ -245,6 +246,7 @@ def get_acl_tbl_key(asichost):
     cmd = "{db_cli} ASIC_DB HGET {key} \"SAI_ACL_ENTRY_ATTR_TABLE_ID\""
     oid = asichost.shell(cmd.format(db_cli=asichost.sonic_db_cli, key=key))["stdout"]
     logging.info(oid)
+    pytest_assert(oid, "ACL table ID was not found in SAI ACL Entry table")
     acl_tbl_key = "CRM:ACL_TABLE_STATS:{0}".format(oid.replace("oid:", ""))
 
     return acl_tbl_key
