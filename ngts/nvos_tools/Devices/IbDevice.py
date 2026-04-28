@@ -54,11 +54,6 @@ class IbSwitch(BaseSwitch):
         self.supports_mtu_testing = True
         self.documents_path = None
         self.documents_files = None
-        # Default firmware components list for IB switches (can be overridden by subclasses)
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_SSD,
-                                FW_COMPONENT_ASIC]
         self._init_sensors_dict()
         self._init_gnmi_consts()
         self.open_api_port = "443"
@@ -493,6 +488,12 @@ class IbSwitch(BaseSwitch):
         self.asic1 = 'asic1'
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.counters_db_name = 'COUNTERS_DB'
+
+        # Default firmware components list for IB switches (can be overridden by subclasses)
+        self.components_list = [FW_COMPONENT_CPLD,
+                                FW_COMPONENT_BIOS,
+                                FW_COMPONENT_SSD,
+                                FW_COMPONENT_ASIC]
 
         # Expected ACL rule counts after migration (device-specific, can be overridden)
         self.expected_acl_rule_counts = {
