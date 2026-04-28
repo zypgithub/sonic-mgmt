@@ -785,7 +785,7 @@ platform_tests/sfp/test_sfputil.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
   skip:
@@ -801,7 +801,13 @@ platform_tests/test_xcvr_info_in_db.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently. Target POR 2023.Rel.2"
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
 
 platform_tests/api/test_chassis.py::TestChassisApi::test_get_base_mac:
   skip:
@@ -914,35 +920,48 @@ platform_tests/api/test_sfp.py:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
     reason: "Testcase ignored on simx;QSFP eeprom emulation is not supported currently"
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
+
 
 platform_tests/mellanox/test_check_sfp_presence.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
 
 platform_tests/sfp/test_sfpshow.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
 
 platform_tests/sfp/test_show_intf_xcvr.py:
   skip:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions_logical_operator: or
     conditions:
-    - "'simx' in platform"
+    - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
 
 platform_tests/fw_utility/test_fwutil.py:
   skip:
