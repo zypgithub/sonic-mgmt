@@ -10,7 +10,7 @@ from infra.tools.linux_tools.linux_tools import scp_file
 from ngts.nvos_constants.constants_nvos import MultiPlanarConsts, PlatformConsts, HealthConsts, \
     ActionConsts, ChassisLocationConsts, CableCartridgeConsts, SSDConsts, TcpDumpConsts
 from ngts.nvos_constants.constants_nvos import (NvosConst, DatabaseConst, IbConsts, StatsConsts, FansConsts,
-                                                DocumentsConsts, RebootConsts, SystemConsts, OperationTimeConsts, SyslogConsts)
+                                                DocumentsConsts, RebootConsts, SystemConsts, SyslogConsts)
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.nvos_tools.Devices.BaseDevice import BaseSwitch
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
@@ -2129,7 +2129,7 @@ class JulietNonScaleoutSwitch(JulietScaleoutSwitch):
 
     @classmethod
     def _get_lane_bmap(cls, port):
-        raise NotImplementedError(f"Implemented only for sw ports. Juliet NSO doesn't have sw ports.")
+        raise NotImplementedError("Implemented only for sw ports. Juliet NSO doesn't have sw ports.")
 
 # -------------------------- JulietNonScaleoutSwitchGB300 Switch ----------------------------
 
@@ -2563,6 +2563,13 @@ class RosalindSurrogateSwitch(JulietNonScaleoutSwitch):
             'julietscaleout generate_tech_support': 165,
             'reboot with new user FW': 450 if is_bug_active(4854038) else 390,
         })
+        if is_bug_active(4694678):
+            power_cycle_increase_timeout = 60
+            # Make sure all operations that depend on power cycle have a longer timeout because of the bug 4694678.
+            self.expected_operation_durations.update({
+                operation: self.expected_operation_durations[operation] + power_cycle_increase_timeout
+                for operation in ('install sma', 'install bios', 'juliet-power-cycle', ActionConsts.POWER_CYCLE)
+            })
         self.nvl_access_ports_list = [
             'acp1', 'acp2', 'acp3', 'acp4', 'acp5', 'acp6',
             'acp7', 'acp8', 'acp9', 'acp10', 'acp11', 'acp12',
