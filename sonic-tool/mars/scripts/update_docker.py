@@ -354,7 +354,7 @@ def main():
     if args.registry_url:
         registry_url = args.registry_url
         logger.info("Override default registry_url value, now registry_url=%s" % registry_url)
-    docker_image_name = 'docker-ngts'
+    docker_image_name = constants.DOCKER_NGTS_IMAGE_NAME
     if args.docker_tag:
         docker_tag = args.docker_tag
     else:
@@ -413,7 +413,7 @@ def main():
 
 def get_docker_default_tag(docker_name):
     latest = "latest"
-    default_list = {'docker-ngts': '1.3.76'}
+    default_list = {constants.DOCKER_NGTS_IMAGE_NAME: constants.DOCKER_NGTS_DEFAULT_TAG}
     return default_list.get(docker_name, latest)
 
 

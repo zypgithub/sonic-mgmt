@@ -1,17 +1,14 @@
 #!/bin/bash
 
-source /opt/rh/rh-python38/enable
-PATH=/opt/rh/rh-python38/root/usr/bin:${PATH}
+set -e
 
-# Install pip if not present
-python3 -m ensurepip --default-pip 2>/dev/null || true
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+NGTS_VERSION=$(PYTHONPATH="${SCRIPT_DIR}/lib/" python3 -c 'import constants; print(constants.DOCKER_NGTS_DEFAULT_TAG)')
 
-# Clear PYTHONPATH to avoid conflicts with /opt/ver_sdk Python 2.7 packages
-unset PYTHONPATH
+if [ -z "${NGTS_VERSION}" ]; then
+    echo "Failed to read DOCKER_NGTS_DEFAULT_TAG from ${SCRIPT_DIR}/lib/constants.py" >&2
+    exit 1
+fi
 
-pip3 install --upgrade pip
-pip3 install --ignore-installed "devts@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@DEV_python38_adjusted"
-# to solve the issue of openssl and urllib3 version compatibility
-pip3 install "requests<2.32.0" "urllib3<2"
-
+pip3 install --ignore-installed "devts[air-start-sim]@git+https://svc_sonic_ver_bot:${GERRIT_API_KEY}@git-nbu-sw.nvidia.com/r/a/devts@${NGTS_VERSION}"
 python3 -m scripts.air_simulation_bringup "$@"
