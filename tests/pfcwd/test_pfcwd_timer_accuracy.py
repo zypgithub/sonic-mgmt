@@ -71,6 +71,8 @@ def pfcwd_timer_setup_restore(setup_pfc_test, enum_fanout_graph_facts, duthosts,
     duthost = duthosts[enum_rand_one_per_hwsku_frontend_hostname]
     asic_type = duthost.facts['asic_type']
     logger.info("--- Pfcwd timer test setup ---")
+    # Set syncd log level to INFO
+    duthost.command("swssloglevel -l INFO -c syncd")
     setup_info = setup_pfc_test
     test_ports = setup_info['test_ports']
     timers = setup_info['pfc_timers']
