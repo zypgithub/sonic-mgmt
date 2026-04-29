@@ -22,6 +22,8 @@ DOCKER_NGTS_DEFAULT_TAG = "1.3.67"
 SONIC_MGMT_REPO_URL = "http://10.7.77.140:8080/switchx/sonic/sonic-mgmt"
 SONIC_MGMT_MOUNTPOINTS = {
     '/.autodirect/mswg/projects': '/.autodirect/mswg/projects',
+    '/auto/cumulus': '/auto/cumulus',
+    '/.autodirect/cumulus': '/.autodirect/cumulus',
     '/auto/sw_system_project': '/auto/sw_system_project',
     '/auto/sw_system_release': '/auto/sw_system_release',
     '/.autodirect/sw_system_release/': '/.autodirect/sw_system_release/',
