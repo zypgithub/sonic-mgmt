@@ -15259,3 +15259,45 @@
     - mtvr-panther-05
   inv_name: lab
   comment: Community bringup - mtvr-panther-05_setup
+
+- conf-name: mtvr-panther-07-t0
+  group-name: vm-t1
+  topo: t0
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup
+
+- conf-name: mtvr-panther-07-t1-lag
+  group-name: vm-t1
+  topo: t1-lag
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup
+
+- conf-name: mtvr-panther-07-t0-56
+  group-name: vm-t1
+  topo: t0-56
+  ptf_image_name: docker-ptf-mlnx
+  ptf: ptf-mtvr-panther-07
+  ptf_ip: 10.245.44.42/20
+  ptf_ipv6:
+  server: server_20
+  vm_base: VM2001
+  dut:
+    - mtvr-panther-07
+  inv_name: lab
+  comment: Community bringup - mtvr-panther-07_setup

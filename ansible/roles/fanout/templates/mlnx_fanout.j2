@@ -150,6 +150,12 @@
                                    89, 90, 91, 92, 93, 94, 95, 96,
                                    83] %}
 
+{% set mtvr_panther_08_of_ports = [-1, 125, 127, 121, 123, 117, 119, 113, 115,
+                                   109, 111, 105, 107, 101, 103, 97, 99,
+                                   65, 67, 69, 71, 73, 75, 77, 79,
+                                   81, 82, 85, 87, 89, 91, 93, 95,
+                                   83] %}
+
 {% set r_anaconda_68_eth_ports = [-1, '1/1/1', '1/1/2', '1/1/3', '1/1/4', '1/3/1', '1/3/2', '1/3/3', '1/3/4',
                                   '1/5/1', '1/5/2', '1/6/1', '1/6/2', '1/7', '1/8', '1/9', '1/10',
                                   '1/11/1', '1/11/2', '1/12/1', '1/12/2', '1/13/1', '1/13/2', '1/14/1', '1/14/2',
@@ -436,6 +442,11 @@
                                  20624, 20640, 20656, 20672, 20688, 20704, 20720, 20736,
                                  20752, 20768, 20784, 20800, 20816, 20832, 20848, 20864,
                                  20880, 20896, 20912, 20928, 20944, 20960, 20976, 20992] %}
+{% set mtvr_panther_08_eth_ports = [-1, '1/1', '1/2', '1/3', '1/4', '1/5', '1/6', '1/7', '1/8',
+                                 '1/9', '1/10', '1/11', '1/12', '1/13', '1/14', '1/15', '1/16',
+                                 '1/17', '1/18', '1/19', '1/20', '1/21', '1/22', '1/23', '1/24',
+                                 '1/25/1', '1/25/2', '1/27', '1/28', '1/29', '1/30', '1/31', '1/32',
+                                 '1/26'] %}
 
 {% set mtvr_panther_06_eth_ports = [-1, '1/1/1', '1/1/2', '1/2/1', '1/2/2', '1/3/1', '1/3/2', '1/4/1', '1/4/2',
                                     '1/5/1', '1/5/2', '1/6/1', '1/6/2', '1/7', '1/8', '1/9', '1/10',
@@ -841,6 +852,11 @@
                                     400000, 400000, 400000, 400000, 400000, 400000, 400000, 400000,
                                     400000, 400000, 400000, 400000, 400000, 400000, 400000, 400000,
                                     400000, 400000, 400000, 400000, 400000, 400000, 400000, 'auto'] %}
+{% set mtvr_panther_08_port_speed = [-1, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
+                                    100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
+                                    100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
+                                    50000, 50000, 100000, 100000, 100000, 100000, 100000, 100000,
+                                    'auto'] %}
 
 {% set mtvr_panther_06_port_speed = [-1, 50000, 50000, 50000, 50000, 50000, 50000, 50000, 50000,
                                      50000, 50000, 50000, 50000, 100000, 100000, 100000, 100000,
@@ -887,7 +903,8 @@
     'mtvr-panther-04':[],
     'r-leopard-80':[],
     'r-leopard-82':[],
-    'mtvr-panther-06':[]
+    'mtvr-panther-06':[],
+    'mtvr-panther-08':[]
 } %}
 
 {% set qsfp_split_2_dict = {'c-panther-02':['1/26'],
@@ -960,7 +977,8 @@
                             'r-leopard-82':[],
                             'mtvr-panther-06':['1/1', '1/2', '1/3', '1/4', '1/5', '1/6', '1/11', '1/12', '1/13', '1/14',
                                                '1/15', '1/16', '1/17', '1/18', '1/19', '1/20', '1/21', '1/22', '1/25',
-                                               '1/27', '1/28', '1/29', '1/30', '1/31', '1/32']} %}
+                                               '1/27', '1/28', '1/29', '1/30', '1/31', '1/32'],
+                            'mtvr-panther-08':['1/25']} %}
 
 {% set qsfp_dd_split_4_dict = {
     'c-panther-02':[],
@@ -994,7 +1012,8 @@
     'mtvr-panther-04':[],
     'r-leopard-80':[],
     'r-leopard-82':[],
-    'mtvr-panther-06':[]
+    'mtvr-panther-06':[],
+    'mtvr-panther-08':[]
 } %}
 
 {% set qsfp_split_4_dict = {'c-panther-02':[],
@@ -1028,7 +1047,8 @@
                             'mtvr-panther-04':['1/1', '1/3'],
                             'r-leopard-80':[],
                             'r-leopard-82':[],
-                            'mtvr-panther-06':[]} %}
+                            'mtvr-panther-06':[],
+                            'mtvr-panther-08':[]} %}
 
 {% set eth_ports_dict = {'c-panther-02':c_panther_02_eth_ports,
                          'arc-switchmtbc02':arc_switchmtbc02_eth_ports,
@@ -1061,7 +1081,8 @@
                          'mtvr-panther-04':mtvr_panther_04_eth_ports,
                          'r-leopard-80': r_leopard_80_eth_ports,
                          'r-leopard-82': r_leopard_82_eth_ports,
-                         'mtvr-panther-06': mtvr_panther_06_eth_ports} %}
+                         'mtvr-panther-06': mtvr_panther_06_eth_ports,
+                         'mtvr-panther-08': mtvr_panther_08_eth_ports} %}
 
 {% set of_ports_dict = {'c-panther-02':c_panther_02_of_ports,
                         'arc-switchmtbc02':arc_switchmtbc02_of_ports,
@@ -1094,7 +1115,8 @@
                         'mtvr-panther-04':mtvr_panther_04_of_ports,
                         'r-leopard-80':r_leopard_80_of_ports,
                         'r-leopard-82':r_leopard_82_of_ports,
-                        'mtvr-panther-06':mtvr_panther_06_of_ports} %}
+                        'mtvr-panther-06':mtvr_panther_06_of_ports,
+                        'mtvr-panther-08':mtvr_panther_08_of_ports} %}
 
 {% set vlan_range_dict = {'c-panther-02':default_vlan_range,
                           'arc-switchmtbc02':default_vlan_range,
@@ -1127,7 +1149,8 @@
                           'mtvr-panther-04':[(vlanid_offset + 1)|string, (vlanid_offset + 56)|string],
                           'r-leopard-80':default_vlan_range,
                           'r-leopard-82':default_vlan_range,
-                          'mtvr-panther-06':mtvr_panther_06_vlan_range} %}
+                          'mtvr-panther-06':mtvr_panther_06_vlan_range,
+                          'mtvr-panther-08':default_vlan_range} %}
 
 {% set port_fec_dict = {'c-panther-02':default_port_fec,
                         'arc-switchmtbc02':default_port_fec,
@@ -1160,7 +1183,8 @@
                         'mtvr-panther-04':mtvr_panther_04_port_fec,
                         'r-leopard-80':default_port_fec,
                         'r-leopard-82':default_port_fec,
-                        'mtvr-panther-06':default_port_fec} %}
+                        'mtvr-panther-06':default_port_fec,
+                        'mtvr-panther-08':default_port_fec} %}
 
 {% set port_speed_dict = {'c-panther-02':c_panther_02_port_speed,
                           'arc-switchmtbc02':arc_switchmtbc02_port_speed,
@@ -1193,7 +1217,8 @@
                           'mtvr-panther-04':mtvr_panther_04_port_speed,
                           'r-leopard-80':r_leopard_80_port_speed,
                           'r-leopard-82':r_leopard_82_port_speed,
-                          'mtvr-panther-06':mtvr_panther_06_port_speed} %}
+                          'mtvr-panther-06':mtvr_panther_06_port_speed,
+                          'mtvr-panther-08':mtvr_panther_08_port_speed} %}
 
 {% set license_dict = {'c-panther-02':'LK2-RESTRICTED_CMDS_GEN2-43A1-4H83-REA1-288A-4QWL-0PW5-U7',
                        'arc-switchmtbc02':'LK2-RESTRICTED_CMDS_GEN2-43A7-43LN-YFMB-A88A-0VXP-TUXP-RJ',
@@ -1227,7 +1252,8 @@
                        'mtvr-leopard-02':'LK2-RESTRICTED_CMDS_GEN2-43A5-QRUU-8MLY-Q88A-3P97-L3PX-XW',
                        'r-leopard-80':'LK2-RESTRICTED_CMDS_GEN2-43A4-LDNP-6MAV-G88A-7NPM-YUQV-22',
                        'r-leopard-82':'LK2-RESTRICTED_CMDS_GEN2-43A4-LDNP-4FAJ-T88A-0L3V-0QLB-5D',
-                       'mtvr-panther-06':'LK2-RESTRICTED_CMDS_GEN2-43A7-43LN-YU2F-N88A-6PY1-AH96-7V'} %}
+                       'mtvr-panther-06':'LK2-RESTRICTED_CMDS_GEN2-43A7-43LN-YU2F-N88A-6PY1-AH96-7V',
+                       'mtvr-panther-08':'LK2-RESTRICTED_CMDS_GEN2-439C-8AGH-W0E6-88A0-PLFX-77G2-M'} %}
 
 {# -----------------------------End of params dictionary------------------------------- #}
 

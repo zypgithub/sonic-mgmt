@@ -1,0 +1,164 @@
+all:
+  children:
+    vm_host:
+      children:
+        vm_host_20:
+    eos:
+      children:
+        vms_20:
+
+    servers:
+      vars:
+        topologies:
+          - t0
+          - t1-lag
+          - ptf32
+          - ptf-any
+          - t0-56
+
+      children:
+        server_20:
+
+vm_host_20:
+  hosts:
+    MTVR-R730-04:
+      ansible_host: mtvr-r730-04
+
+vms_20:
+  hosts:
+    VM2001:
+      ansible_host: 10.245.47.41
+    VM2002:
+      ansible_host: 10.245.37.247
+    VM2003:
+      ansible_host: 10.245.39.160
+    VM2004:
+      ansible_host: 10.245.41.16
+    VM2005:
+      ansible_host: 10.245.41.17
+    VM2006:
+      ansible_host: 10.245.41.79
+    VM2007:
+      ansible_host: 10.245.41.93
+    VM2008:
+      ansible_host: 10.245.41.95
+    VM2009:
+      ansible_host: 10.245.41.236
+    VM2010:
+      ansible_host: 10.245.41.238
+    VM2011:
+      ansible_host: 10.245.44.3
+    VM2012:
+      ansible_host: 10.245.44.4
+    VM2013:
+      ansible_host: 10.245.44.6
+    VM2014:
+      ansible_host: 10.245.44.7
+    VM2015:
+      ansible_host: 10.245.44.8
+    VM2016:
+      ansible_host: 10.245.44.9
+    VM2017:
+      ansible_host: 10.245.44.10
+    VM2018:
+      ansible_host: 10.245.44.11
+    VM2019:
+      ansible_host: 10.245.44.12
+    VM2020:
+      ansible_host: 10.245.44.13
+    VM2021:
+      ansible_host: 10.245.44.14
+    VM2022:
+      ansible_host: 10.245.44.15
+    VM2023:
+      ansible_host: 10.245.44.16
+    VM2024:
+      ansible_host: 10.245.44.17
+    VM2025:
+      ansible_host: 10.245.44.18
+    VM2026:
+      ansible_host: 10.245.44.19
+    VM2027:
+      ansible_host: 10.245.44.20
+    VM2028:
+      ansible_host: 10.245.44.21
+    VM2029:
+      ansible_host: 10.245.44.22
+    VM2030:
+      ansible_host: 10.245.44.23
+    VM2031:
+      ansible_host: 10.245.44.24
+    VM2032:
+      ansible_host: 10.245.44.25
+    VM2033:
+      ansible_host: 10.245.44.26
+    VM2034:
+      ansible_host: 10.245.44.27
+    VM2035:
+      ansible_host: 10.245.44.28
+    VM2036:
+      ansible_host: 10.245.44.29
+    VM2037:
+      ansible_host: 10.245.44.30
+    VM2038:
+      ansible_host: 10.245.44.31
+    VM2039:
+      ansible_host: 10.245.44.32
+    VM2040:
+      ansible_host: 10.245.44.33
+    VM2041:
+      ansible_host: 10.245.44.34
+    VM2042:
+      ansible_host: 10.245.44.35
+    VM2043:
+      ansible_host: 10.245.44.36
+    VM2044:
+      ansible_host: 10.245.44.37
+    VM2045:
+      ansible_host: 10.245.44.38
+    VM2046:
+      ansible_host: 10.245.44.39
+    VM2047:
+      ansible_host: 10.245.44.40
+    VM2048:
+      ansible_host: 10.245.44.43
+    VM2049:
+      ansible_host: 10.245.44.44
+    VM2050:
+      ansible_host: 10.245.44.45
+    VM2051:
+      ansible_host: 10.245.44.46
+    VM2052:
+      ansible_host: 10.245.44.47
+    VM2053:
+      ansible_host: 10.245.44.48
+    VM2054:
+      ansible_host: 10.245.44.49
+    VM2055:
+      ansible_host: 10.245.44.50
+    VM2056:
+      ansible_host: 10.245.44.51
+    VM2057:
+      ansible_host: 10.245.44.52
+    VM2058:
+      ansible_host: 10.245.44.53
+    VM2059:
+      ansible_host: 10.245.44.54
+    VM2060:
+      ansible_host: 10.245.44.55
+    VM2061:
+      ansible_host: 10.245.44.56
+    VM2062:
+      ansible_host: 10.245.44.57
+    VM2063:
+      ansible_host: 10.245.44.58
+    VM2064:
+      ansible_host: 10.245.44.59
+
+server_20:
+  children:
+    vm_host_20:
+    vms_20:
+  vars:
+    host_var_file: host_vars/MTVR-R730-04.yml
+    mgmt_prefixlen: 20
