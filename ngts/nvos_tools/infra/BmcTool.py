@@ -1,6 +1,8 @@
+import base64
 import json
 import logging
-from typing import Dict
+import shlex
+from typing import Dict, Optional
 
 from retry import retry
 
@@ -205,6 +207,122 @@ class BmcTool:
         return BmcTool._get_fw_component_version_info(component_name, "previous")
 
     @staticmethod
+    def _is_curl_redfish_transport_failure(raw: Optional[str]) -> bool:
+        """True when the HTTP fetch could not get a response body (OOB down, no route, timeout, etc.).
+        """
+        if raw is None or not str(raw).strip():
+            return True
+        s = str(raw)
+        return bool(
+            s.strip().startswith("curl:") or
+            "Failed to connect" in s or
+            "Connection refused" in s or
+            "Could not resolve host" in s or
+            "Name or service not known" in s or
+            "No route to host" in s or
+            "Network is unreachable" in s or
+            "curl: (28)" in s or
+            "Connection timed out" in s or
+            "timed out" in s or
+            "Couldn't connect" in s
+        )
+
+    @staticmethod
+    def _redfish_bmc_eth0_fetch_slaac_line(engine, bmc_host: str) -> str:
+        """
+        On the DUT, one ``sudo python3 -c`` invocation (no bash script). The
+        DUT-side script obtains the BMC admin password locally from the TPM via
+        ``sonic_platform.bmc.BMC`` (the same lookup ``TpmTool`` uses), then
+        issues the Redfish GET via ``urllib.request`` and writes the body to
+        ``/tmp/ngts_bmc_eth0.json`` for parsing in the same process. A single
+        ``BMC_IP_FETCH:...`` line is printed for the runner to consume. Immune
+        to SSH splitting multiline shell; avoids truncated stdout for long
+        bodies.
+
+        Credentials never traverse the SSH command line -- not in plain text
+        and not in base64. The password is materialized only as an in-memory
+        Python string on the DUT and as the ``Authorization`` header on a
+        single TLS connection; no curl subprocess argv exposure, no on-disk
+        credential file.
+
+        BMC_IP_FETCH markers (kept stable for the caller):
+          slaac:<addr>     success; body parsed; SLAAC address extracted
+          redfish:<msg>    Redfish app-level error (HTTPError or error body)
+          json:<msg>       could not parse JSON body
+          empty            zero-length body written to disk
+          curl:<text>      transport failure (legacy prefix kept for
+                           ``_is_curl_redfish_transport_failure``); urllib
+                           transport errors share this prefix with curl errors
+          cred:<msg>       could not obtain BMC credentials on the DUT
+          parse:<repr>     no marker line found in stdout
+        """
+        eth0_url = f"https://{bmc_host}/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0"
+        script = f"""import json, ssl, base64, pathlib
+import urllib.request, urllib.error
+URL = {json.dumps(eth0_url)}
+USER = {json.dumps(BmcTool.USER_NAME)}
+OUT = "/tmp/ngts_bmc_eth0.json"
+try:
+    from sonic_platform.bmc import BMC
+    pwd = BMC("10.0.1.1").get_login_password()
+except Exception as e:
+    print("BMC_IP_FETCH:cred:" + type(e).__name__ + ":" + str(e)[:300].replace(chr(10), " "))
+    raise SystemExit(0)
+auth = "Basic " + base64.b64encode((USER + ":" + (pwd or "")).encode()).decode()
+req = urllib.request.Request(URL, headers={{"Authorization": auth}})
+ctx = ssl._create_unverified_context()
+try:
+    with urllib.request.urlopen(req, timeout=90, context=ctx) as r:
+        body = r.read()
+    pathlib.Path(OUT).write_bytes(body)
+except urllib.error.HTTPError as e:
+    try:
+        b = e.read()
+    except Exception:
+        b = b""
+    msg = (b.decode(errors="replace") or e.reason or "")[:1200].replace(chr(10), " ")
+    print("BMC_IP_FETCH:redfish:" + msg)
+    raise SystemExit(0)
+except urllib.error.URLError as e:
+    print("BMC_IP_FETCH:curl:" + str(e.reason)[:500].replace(chr(10), " "))
+    raise SystemExit(0)
+except Exception as e:
+    print("BMC_IP_FETCH:curl:" + type(e).__name__ + ":" + str(e)[:500].replace(chr(10), " "))
+    raise SystemExit(0)
+try:
+    if pathlib.Path(OUT).stat().st_size == 0:
+        print("BMC_IP_FETCH:empty")
+        raise SystemExit(0)
+except OSError as e:
+    print("BMC_IP_FETCH:curl:" + str(e))
+    raise SystemExit(0)
+try:
+    with open(OUT) as f:
+        d = json.load(f)
+except json.JSONDecodeError as e:
+    print("BMC_IP_FETCH:json:" + str(e))
+    raise SystemExit(0)
+if isinstance(d, dict) and "error" in d:
+    err = d.get("error", d)
+    msg = err.get("message", str(err)) if isinstance(err, dict) else str(err)
+    print("BMC_IP_FETCH:redfish:" + (msg or "")[:1200])
+else:
+    slaac = next(
+        (a["Address"] for a in d.get("IPv6Addresses", []) if a.get("AddressOrigin") == "SLAAC"),
+        None,
+    )
+    print("BMC_IP_FETCH:slaac:" + (slaac or ""))
+"""
+        b64 = base64.b64encode(script.encode()).decode("ascii")
+        on_dut = "import base64; exec(base64.b64decode(" + repr(b64) + ").decode())"
+        out = engine.run_cmd("sudo python3 -c " + shlex.quote(on_dut))
+        for line in (out or "").splitlines():
+            s = line.strip()
+            if s.startswith("BMC_IP_FETCH:"):
+                return s
+        return f"BMC_IP_FETCH:parse:{repr((out or '')[:400])}"
+
+    @staticmethod
     def get_bmc_ip_addresses(engines, topology_obj) -> Dict[str, str]:
         """
         get ipv4 using noga and ipv6 using curl -k -u <user>>:<password> https://<bmc_ip>/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0
@@ -218,17 +336,54 @@ class BmcTool:
             logger.info(f"the bmc IPv4 is {bmc_ipv4_address}")
             ip_addresses["IPv4"] = bmc_ipv4_address
 
-        with allure.step("Sending a curl request to get the IPv6 address from the BMC"):
-            curl_request = f'curl -s -k -u {BmcTool.USER_NAME}:{BmcTool._get_bmc_password(engines.dut)} https://{bmc_ipv4_address}/redfish/v1/Managers/BMC_0/EthernetInterfaces/eth0 | python3 -m json.tool'
-            eth0_details = OutputParsingTool.parse_json_str_to_dictionary(
-                engines.dut.run_cmd(curl_request)).verify_result()
-            ipv6_data = eth0_details["IPv6Addresses"]
-            slaac_address = next(
-                (address['Address'] for address in ipv6_data if address['AddressOrigin'] == 'SLAAC'),
-                None  # If no SLAAC address is found, return None
+        with allure.step("Sending a Redfish request to get the IPv6 address from the BMC"):
+            line = BmcTool._redfish_bmc_eth0_fetch_slaac_line(engines.dut, bmc_ipv4_address)
+            oob_line = line
+            if bmc_ipv4_address != BmcTool.BMC_LOCAL_IP and line.startswith("BMC_IP_FETCH:curl:") and (
+                BmcTool._is_curl_redfish_transport_failure(line[len("BMC_IP_FETCH:curl:"):])
+            ):
+                logger.warning(
+                    "get_bmc_ip_addresses: OOB Redfish to %s: %r; retrying in-band %s",
+                    bmc_ipv4_address,
+                    line,
+                    BmcTool.BMC_LOCAL_IP,
+                )
+                line = BmcTool._redfish_bmc_eth0_fetch_slaac_line(engines.dut, BmcTool.BMC_LOCAL_IP)
+            if line.startswith("BMC_IP_FETCH:slaac:"):
+                rest = line[len("BMC_IP_FETCH:slaac:"):].strip()
+                ip_addresses["IPv6"] = rest or None
+                return ip_addresses
+            if line.startswith("BMC_IP_FETCH:redfish:"):
+                msg = line[len("BMC_IP_FETCH:redfish:"):]
+                raise AssertionError(
+                    f"get_bmc_ip_addresses: Redfish error (eth0) NOGA bmc_ip={bmc_ipv4_address!r} "
+                    f"(OOB first line: {oob_line!r}): {msg}"
+                )
+            if line.startswith("BMC_IP_FETCH:cred:"):
+                msg = line[len("BMC_IP_FETCH:cred:"):]
+                raise AssertionError(
+                    f"get_bmc_ip_addresses: could not obtain BMC credentials on DUT "
+                    f"bmc_ip={bmc_ipv4_address!r} (OOB: {oob_line!r}): {msg}"
+                )
+            if line.startswith("BMC_IP_FETCH:json:"):
+                msg = line[len("BMC_IP_FETCH:json:"):]
+                raise AssertionError(
+                    f"get_bmc_ip_addresses: could not parse saved eth0 JSON on DUT bmc_ip={bmc_ipv4_address!r}: {msg}"
+                )
+            if line.startswith("BMC_IP_FETCH:empty"):
+                raise AssertionError(
+                    f"get_bmc_ip_addresses: empty HTTP body to /tmp/ngts_bmc_eth0.json from "
+                    f"NOGA bmc_ip={bmc_ipv4_address!r} (OOB: {oob_line!r})"
+                )
+            if line.startswith("BMC_IP_FETCH:curl:"):
+                msg = line[len("BMC_IP_FETCH:curl:"):]
+                raise AssertionError(
+                    f"get_bmc_ip_addresses: curl error for NOGA bmc_ip={bmc_ipv4_address!r} "
+                    f"(after in-band {BmcTool.BMC_LOCAL_IP!r} if retried): {msg!r} (OOB: {oob_line!r})"
+                )
+            raise AssertionError(
+                f"get_bmc_ip_addresses: unexpected result line: {line!r} (OOB attempt: {oob_line!r})"
             )
-            ip_addresses["IPv6"] = slaac_address
-            return ip_addresses
 
     @staticmethod
     def install_fw_image(platform_component, test_name, filename, topology_obj, name, skip_version_check=False) -> ResultObj:

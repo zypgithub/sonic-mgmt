@@ -272,12 +272,14 @@ def test_reboot_test(validate_health_history, verify_no_kernel_errors, engines):
 
     system.validate_health_status(OK)
     last_status_line = system.health.history.search_line(HealthConsts.SUMMARY_REGEX_OK)[-1]
+    expected_led = HealthConsts.LED_OK_STATUS if TestToolkit.devices.dut.is_eth() else None
 
     with allure.step('Reboot the system'):
         system.reboot.action_reboot()
 
     start_time = time.time()
-    system.health.wait_until_health_status_change_after_reboot(OK)
+    system.health.wait_until_health_status_change_after_reboot(
+        OK, expected_led=expected_led)
     end_time = time.time()
     duration = end_time - start_time
 
@@ -309,6 +311,10 @@ def test_reboot_test(validate_health_history, verify_no_kernel_errors, engines):
     with allure.step("Validate health history file indicates reboot occurred and print the status again"):
         logger.info("Validate health history file indicates reboot occurred and print the status again")
         system.health.history.validate_new_summary_line_in_history_file_after_boot(last_status_line)
+
+    with allure.step("Verify system health status and status-led after reboot"):
+        system.validate_health_status(
+            HealthConsts.OK, expected_led=expected_led)
 
 
 @pytest.mark.bug(redmine=4969519, note="show system health intermittent failure")

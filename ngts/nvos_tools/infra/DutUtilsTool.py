@@ -14,9 +14,10 @@ from retry.api import retry_call, retry
 from devts.infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
-from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst, RebootConsts
+from ngts.nvos_constants.constants_nvos import SystemConsts, HealthConsts, DatabaseConst, NvosConst, RebootConsts
 from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DatabaseTool import DatabaseTool
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.tests_nvos.general.post_upgrade_switch.constants import InstallSteps
 from ngts.tests_nvos.general.post_upgrade_switch.install_steps_timer import InstallStepsTimer
 from ngts.tools.test_utils import allure_utils as allure
@@ -243,6 +244,63 @@ class DutUtilsTool:
             logging.info('Got error: %s. Current engine was also disconnected', e)
             engine.disconnect()
             return "Action succeeded"
+
+    @staticmethod
+    def _nv_show_system_output_indicates_nvue_ready(output: str) -> bool:
+        if not output or "CLI is unavailable" in output:
+            return False
+        if "System is ready" in output:
+            return True
+        try:
+            out_obj = OutputParsingTool.parse_json_str_to_dictionary(output)
+            if not out_obj.result or not isinstance(out_obj.returned_value, dict):
+                return False
+            health = out_obj.returned_value.get(SystemConsts.HEALTH)
+            if isinstance(health, dict):
+                st = health.get(HealthConsts.STATUS)
+                if st in (HealthConsts.OK, SystemConsts.STATUS_DEFAULT_VALUE):
+                    return True
+        except (AttributeError, TypeError, KeyError, ValueError):
+            pass
+        return False
+
+    @staticmethod
+    def wait_for_nv_show_system_ready_on_ssh(engine: LinuxSshEngine, timeout_sec: int, poll_sec: int = 10) -> None:
+        """
+        Wait until `nv show system` shows NVUE is ready. Uses `retry_run=False` so ProxySshEngine
+        does not sit in its internal pre-check loop.
+
+        After a BMC-only reset the host may not reboot, so serial may never print a new
+        \"System is ready\"; use this instead of `wait_for_system_ready_in_serial` in that case.
+        """
+        cmd = "nv show system -o json --color off"
+        deadline = time.time() + timeout_sec
+        last_out = ""
+        while time.time() < deadline:
+            try:
+                last_out = engine.run_cmd(cmd, timeout=90, validate=False, retry_run=False)
+            except (OSError, socket.error, ReadTimeout) as e:
+                logger.warning(
+                    "wait_for_nv_show_system_ready_on_ssh: %s; reconnecting and retrying.", e
+                )
+                try:
+                    engine.disconnect()
+                except OSError:
+                    pass
+                DutUtilsTool.reconnect_engine(engine, find_prompt_tries=5, find_prompt_delay=3)
+                time.sleep(poll_sec)
+                continue
+            except Exception as e:
+                logger.warning("wait_for_nv_show_system_ready_on_ssh: %s", e)
+                time.sleep(poll_sec)
+                continue
+            if DutUtilsTool._nv_show_system_output_indicates_nvue_ready(last_out):
+                return
+            time.sleep(poll_sec)
+        raise TimeoutError(
+            f"Timed out after {timeout_sec}s waiting for NVUE readiness in `nv show system` output. "
+            f"Last output (truncated): {last_out[:1200]!r}"
+        )
 
     @staticmethod
     def get_engine_interface_name(engine, topology) -> str:
