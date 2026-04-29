@@ -1595,6 +1595,9 @@ SWITCH_MODELS = {
         },
         "fans": {
             "number": 0
+        },
+        "cpu_pack": {
+            "number": 0
         }
     },
     "x86_64-nvidia_sn6810_ld-r0": {
