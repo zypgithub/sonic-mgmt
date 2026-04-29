@@ -288,10 +288,11 @@ def test_toggle_interface_state(test_name, devices, has_loopbox, standalone_syst
 
     # Check for SW ports (trunk ports with transceivers)
     platform = Platform()
-    present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
-    if present_transceivers and devices.dut.nvl_trunk_ports_list:
-        toggleable_interface.append('sw')
-        logger.info(f"SW (trunk) ports available with transceivers: {len(present_transceivers)} transceivers")
+    if devices.dut.nvl_trunk_ports_list:
+        present_transceivers = platform.transceiver.get_list_of_connected_transceivers()
+        if present_transceivers:
+            toggleable_interface.append('sw')
+            logger.info(f"SW (trunk) ports available with transceivers: {len(present_transceivers)} transceivers")
 
     # Check for ACP ports (access ports)
     if (has_loopbox or not standalone_system) and devices.dut.nvl_access_ports_list:
