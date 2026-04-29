@@ -41,6 +41,7 @@ from ngts.tests_nvos.system.gnmi.helpers import verify_msg_not_in_out_or_err, ve
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import PhyRecoveryConsts, NvosConsts
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+from ngts.tests_nvos.constants import MINUTE
 
 logger = logging.getLogger()
 
@@ -274,6 +275,7 @@ def test_set_fae_phy_recovery_trunk_ports(devices, random_api):
 
 @pytest.mark.interface
 @pytest.mark.multiplanar
+@pytest.mark.timeout(18 * MINUTE)
 def test_set_fae_phy_recovery_access_ports(devices, random_api, standalone_system, has_loopbox, setup_name, is_simx):
     """
     @summary:
