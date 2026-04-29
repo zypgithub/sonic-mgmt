@@ -1,141 +1,100 @@
+from __future__ import annotations
+
 from argparse import ArgumentTypeError
-from typing import Dict, Optional
+from email.mime.text import MIMEText
+from dotted_dict import DottedDict
 import concurrent.futures
 from pathlib import Path
+import requests_cache
+import textwrap
 import datetime
 import logging
-import os
-import random
 import smtplib
+import pytest
+import random
+import pexpect
+import typing
+import retry
 import time
 import json
-from email.mime.text import MIMEText
-
+import os
 import re
 
-import requests_cache
-import pexpect
-import pytest
-from dotted_dict import DottedDict
-from retry import retry
-
-from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
-from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
-from infra.tools.exceptions.setup_issue import SetupIssue
-from infra.tools.linux_tools.linux_tools import scp_file
-from ngts.helpers.object_filters import filter_objects
-from ngts.nvos_tools.infra.BmcTool import BmcTool
-from infra.tools.sql.connect_to_mssql import ConnectMSSQL
-from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
-from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts
+from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
+from ngts.nvos_constants.constants_nvos import SyslogConsts, SystemConsts, CpoConsts
+from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
+from ngts.tests.nightly.logging import test_log_analyzer_errors_during_deploy_sonic
 from ngts.cli_wrappers.nvue.cumulus.cumulus_general_cli import CumulusGeneralCli
 from ngts.cli_wrappers.openapi.openapi_command_builder import OpenApiRequest
-from ngts.constants.constants import DbConstants, CliType, DebugKernelConsts, InfraConst, CoreDumpConsts
-from ngts.nvos_constants.constants_nvos import ApiType, OperationTimeConsts, OutputFormat, NvosConst, TestConsts, \
-    SyslogConsts, SystemConsts, CpoConsts
-from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
-from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
-from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
-from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
-from ngts.nvos_tools.infra import ExceptionTool
-from ngts.nvos_tools.infra.CmdRunner import CmdRunner
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
-from ngts.nvos_tools.infra.DiskTool import DiskTool
-from ngts.nvos_tools.infra.IpTool import IpTool
-from ngts.nvos_tools.infra.NvCommand import NvCommand
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.RegressionConfigurations import RegressionConfigurations
-from ngts.nvos_tools.infra.ResultObj import ResultObj
-from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
-from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
-from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.cli_coverage.nvue_cli_coverage import NVUECliCoverage
+from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+from ngts.cli_wrappers.linux.linux_general_clis import LinuxGeneralCli
 from ngts.scripts.code_coverage.code_coverage_consts import NvosConsts
-from ngts.scripts.code_coverage.test_code_coverage import extract_python_coverage_for_nvos
-from ngts.tests.nightly.logging.test_log_analyzer_errors_during_deploy_sonic import get_oldest_syslog_id, \
-    get_new_start_string, insert_new_start_string
-from ngts.tests_nvos.helpers.pytest_helpers import is_cur_test_has_marker, get_marker_arg_value, is_cur_test_passed
-from ngts.tests_nvos.helpers.pytest_items_filters import run_nvos_pytest_items_modification
-from ngts.tools.test_utils import allure_utils as allure
-from ngts.tools.test_utils.nvos_general_utils import wait_for_ldap_nvued_restart_workaround
-from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
-from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
-from ngts.ngts_types import EnginesT
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
 from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.infra.AirTool import get_internal_ip_for_oob_server
-from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.infra.SendCommandTool import SendCommandTool
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
+from ngts.nvos_tools.Devices.DeviceFactory import DeviceFactory
+from ngts.nvos_tools.infra.SecureBootTool import SecureBootTool
+from ngts.cli_wrappers.nvue.nvue_base_clis import NvueBaseCli
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.nvos_tools.ib.opensm.OpenSmTool import OpenSmTool
 from ngts.nvos_tools.infra.IbRouterTool import IbRouterTool
+from ngts.nvos_tools.Devices.BaseDevice import BaseDevice
+from infra.tools.exceptions.setup_issue import SetupIssue
+from infra.tools.sql.connect_to_mssql import ConnectMSSQL
+from ngts.scripts.code_coverage import test_code_coverage
+from ngts.ngts_types import EnginesT, TopologyT, DevicesT
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers import pytest_items_filters
+from ngts.nvos_tools.platform.Platform import Platform
+from ngts.nvos_tools.infra.CmdRunner import CmdRunner
+from ngts.nvos_tools.infra.NvCommand import NvCommand
+from ngts.nvos_tools.infra.ResultObj import ResultObj
+from ngts.tools.test_utils import nvos_general_utils
+from ngts.nvos_tools.infra.DiskTool import DiskTool
+from ngts.tests_nvos.helpers import pytest_helpers
+from ngts.nvos_tools.infra.BmcTool import BmcTool
+from ngts.nvos_tools.system.System import System
+from ngts.nvos_tools.infra.IpTool import IpTool
+from infra.tools.linux_tools import linux_tools
+from ngts.nvos_tools.infra import ExceptionTool
+from ngts.nvos_tools.infra import AirTool
+from ngts.helpers import object_filters
 
-logger = logging.getLogger()
+from ngts.tests_nvos.constants import PRODUCTION, DEVELOPMENT
+
+if typing.TYPE_CHECKING:
+    # DO NOT import, this is to avoid circular import
+    from tests.common.plugins.loganalyzer import LogAnalyzer
+
+from ngts.tests_nvos.helpers import redmine_helpers  # TODO: remove after https://redmine.mellanox.com/issues/4722825 is fixed
+
+logger = logging.getLogger(__name__)
 
 EXPECTED_KERNEL_PATTERNS = [
     re.compile(r".*DPC: error containment capabilities:.*"),
     re.compile(r".*ib3: multicast join failed for.*, status -\d+"),
 ]
 
+if redmine_helpers.is_bug_active(4722825):
+    # NVBug 5647119 classifies these boot-time messages as informational with no functional impact.
+    EXPECTED_KERNEL_PATTERNS.extend([
+        re.compile(r".*kernel/iomem\.c:\d+ memremap\+0x[0-9a-f]+/0x[0-9a-f]+"),
+        re.compile(r".*efi: memattr: Failed to map EFI Memory Attributes table @ 0x[0-9a-f]+"),
+        re.compile(r".*ipmi_si IPI\d+:\d+: Error clearing flags: c\d+"),
+    ])
+
 pytest_plugins = [
     "ngts.common.plugins.valgrind.plugin",
 ]
 
 
-def pytest_configure(config):
-    """
-    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
-    This hook runs before session start and any fixtures.
-
-    For MARS runs, secrets are already provided via environment variables.
-    For local runs, we fetch secrets from Vault.
-
-    This only runs when NVOS tests are being executed.
-    """
-    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
-    args = config.args if hasattr(config, 'args') else config.invocation_params.args
-    if not args or not any('tests_nvos' in str(arg) for arg in args):
-        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
-        return
-
-    mars_key_id = config.getoption("--mars_key_id", default=None)
-    session_id = config.getoption("--session_id", default=None)
-    if mars_key_id or session_id:
-        logger.info("MARS run detected - secrets already in environment, skipping Vault")
-        return
-
-    from ngts.nvos_tools.infra.VaultClient import VaultClient
-
-    logger.info("Local run detected - loading secrets from Vault...")
-    VaultClient.fetch_and_export_secrets()
-
-
-def pytest_configure(config):
-    """
-    Load Vault secrets early in pytest initialization for local (non-MARS) runs.
-    This hook runs before session start and any fixtures.
-
-    For MARS runs, secrets are already provided via environment variables.
-    For local runs, we fetch secrets from Vault.
-
-    This only runs when NVOS tests are being executed.
-    """
-    # Only run for NVOS tests - check if we're running tests from tests_nvos directory
-    args = config.args if hasattr(config, 'args') else config.invocation_params.args
-    if not args or not any('tests_nvos' in str(arg) for arg in args):
-        logger.debug("Not running NVOS tests, skipping Vault secrets loading")
-        return
-
-    mars_key_id = config.getoption("--mars_key_id", default=None)
-    session_id = config.getoption("--session_id", default=None)
-    if mars_key_id or session_id:
-        logger.info("MARS run detected - secrets already in environment, skipping Vault")
-        return
-
-    from ngts.nvos_tools.infra.VaultClient import VaultClient
-
-    logger.info("Local run detected - loading secrets from Vault...")
-    VaultClient.fetch_and_export_secrets()
-
-
-def pytest_configure(config):
+def pytest_configure(config: pytest.Config):
     """
     Load Vault secrets early in pytest initialization for local (non-MARS) runs.
     This hook runs before session start and any fixtures.
@@ -193,12 +152,12 @@ def pytest_addoption(parser: pytest.Parser):
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(config, items):
-    run_nvos_pytest_items_modification(config, items)
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]):
+    pytest_items_filters.run_nvos_pytest_items_modification(config, items)
 
 
 @pytest.fixture
-def verify_no_kernel_errors(engines):
+def verify_no_kernel_errors(engines: EnginesT):
     yield
     with allure.step("Validate no error logs in kernel"):
         kernel_errors = engines.dut.run_cmd("sudo dmesg | grep -Ei 'error|fail|warning'")
@@ -215,7 +174,7 @@ def verify_no_kernel_errors(engines):
 
 
 @pytest.fixture(scope='function')
-def show_platform_initial_state(engines):
+def show_platform_initial_state(engines: EnginesT):
     """
     For regression analysis, print the platform info before each test case.
     This helps to understand the initial state of the system (firmware versions, etc.).
@@ -228,9 +187,9 @@ def show_platform_initial_state(engines):
 
 
 @pytest.fixture(autouse=True)
-def check_disk_usage(request, engines):
+def check_disk_usage(request: pytest.FixtureRequest, engines: EnginesT):
     marker_name = 'check_disk_usage'
-    should_check = is_cur_test_has_marker(request, marker_name)
+    should_check = pytest_helpers.is_cur_test_has_marker(request, marker_name)
     if should_check:
         with allure.step("Get initial disk stats"):
             field_to_read = 'kB_wrtn'
@@ -248,19 +207,19 @@ def check_disk_usage(request, engines):
 
         allure.attach('Written data size', f'before: {initial_kb}KB\nafter: {final_kb}KB\ntest added: {delta_kb}KB')
 
-        if is_cur_test_passed(request):
-            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+        if pytest_helpers.is_cur_test_passed(request):
+            expected_threshold = pytest_helpers.get_marker_arg_value(request, marker_name, 'expect')
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
                     assert delta_kb <= expected_threshold, f"Wrote {delta_kb}KB (max {expected_threshold}KB allowed)"
 
 
 @pytest.fixture(autouse=True)
-def check_log_size(request, engines):
+def check_log_size(request: pytest.FixtureRequest, engines: EnginesT):
     def __get_syslog_file_size_kb(filename='syslog') -> int:
         return int(engines.dut.run_cmd(f'du -k /var/log/{filename} | cut -f1'))
     marker_name = 'check_log_size'
-    should_check = is_cur_test_has_marker(request, marker_name)
+    should_check = pytest_helpers.is_cur_test_has_marker(request, marker_name)
     if should_check:
         with allure.step('get syslog size before (in KB)'):
             size_before = __get_syslog_file_size_kb()
@@ -269,19 +228,19 @@ def check_log_size(request, engines):
         with allure.step('get syslog size after (in KB)'):
             size_after = __get_syslog_file_size_kb()
             if size_after <= size_before:
-                logging.info('log was rotated')
+                logger.info('log was rotated')
                 size_after += __get_syslog_file_size_kb('syslog.1')
             test_addition_to_syslog = size_after - size_before
         allure.attach('syslog sizes', f'before: {size_before}KB\nafter: {size_after}KB\ntest added: {test_addition_to_syslog}KB')
-        if is_cur_test_passed(request):
-            expected_threshold = get_marker_arg_value(request, marker_name, 'expect')
+        if pytest_helpers.is_cur_test_passed(request):
+            expected_threshold = pytest_helpers.get_marker_arg_value(request, marker_name, 'expect')
             if expected_threshold and isinstance(expected_threshold, int):
                 with allure.step(f'make sure test addition is less than expected ({expected_threshold})'):
                     assert test_addition_to_syslog <= expected_threshold, f'test added {test_addition_to_syslog}KB to syslog. allowed: {expected_threshold}'
 
 
 @pytest.fixture(autouse=True)
-def check_ib_output(request):
+def check_ib_output(request: pytest.FixtureRequest):
     """
     Method for getting check_ib_output and substrings_to_check from pytest arguments
     :param request: pytest builtin
@@ -293,7 +252,7 @@ def check_ib_output(request):
 
 
 @pytest.fixture(autouse=True)
-def track_serial_console(request, topology_obj, engines, devices):
+def track_serial_console(request: pytest.FixtureRequest, topology_obj: TopologyT, engines: EnginesT, devices: DevicesT):
     """
     fixture to track serial console during test run,
         and if the test is failing, attach the serial console output to allure report (for better debug).
@@ -301,13 +260,13 @@ def track_serial_console(request, topology_obj, engines, devices):
     This will apply for all test that has any of the defined interesting markers below.
     """
     interesting_markers = ['track_serial_console', 'reboot', 'factory_reset', 'reset_factory']
-    should_track_serial_console = any(is_cur_test_has_marker(request, marker) for marker in interesting_markers)
+    should_track_serial_console = any(pytest_helpers.is_cur_test_has_marker(request, marker) for marker in interesting_markers)
 
     if should_track_serial_console:
         with allure.step('start tracking serial console into file'):
             serial_log_file_path = '/tmp/serial.log'
             serial_connection_cmd = SerialConsoleTool.get_serial_console_connection_command(topology_obj)
-            logging.info('connect to serial console and save output into a file')
+            logger.info('connect to serial console and save output into a file')
             cmd = f'script -c "{serial_connection_cmd}" {serial_log_file_path}'
             child = pexpect.spawn(cmd)
 
@@ -330,9 +289,9 @@ def track_serial_console(request, topology_obj, engines, devices):
                         serial_log_content = file.read()
                 with allure.step('attach content to allure'):
                     allure.attach('Serial Console log during test', serial_log_content)
-            except Exception as e:
+            except Exception:
                 err = f'failed to attach serial output from {serial_log_file_path} : {ExceptionTool.format_traceback()}'
-                logging.warning(err)
+                logger.warning(err)
                 allure.attach('Attachment Failure', err)
         else:
             with allure.step('test passed. not attaching serial console log'):
@@ -340,13 +299,13 @@ def track_serial_console(request, topology_obj, engines, devices):
 
 
 @pytest.fixture(scope='session')
-def engines(topology_obj, devices, request, is_ipv6):
+def engines(topology_obj: TopologyT, devices: DevicesT, request: pytest.FixtureRequest, is_ipv6: bool):
     from ngts.nvos_tools.infra.CommandTracker import command_tracker
 
     engines_data = DottedDict()
 
     # Setup engines for all DUT players (dut, dut2, dut3, etc.)
-    for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
+    for player_name, player in object_filters.filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
         engine = player['engine']
         engines_data[player_name] = engine
     if not is_ipv6:
@@ -375,7 +334,7 @@ def engines(topology_obj, devices, request, is_ipv6):
 
     if "oob-mgmt-server" in topology_obj.players:
         engines_data.oob_mgmt_server = topology_obj.players['oob-mgmt-server']['engine']
-        engines_data.oob_mgmt_server.ip = get_internal_ip_for_oob_server(engines_data.oob_mgmt_server)
+        engines_data.oob_mgmt_server.ip = AirTool.get_internal_ip_for_oob_server(engines_data.oob_mgmt_server)
 
     TestToolkit.update_engines(engines_data)
     TestToolkit.update_topology_obj(topology_obj)
@@ -388,7 +347,7 @@ def engines(topology_obj, devices, request, is_ipv6):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def setup_cumulus_sudoers(topology_obj, engines):
+def setup_cumulus_sudoers(topology_obj: TopologyT, engines: EnginesT):
     """
     Automatically setup sudoers for cumulus user if the device is running Cumulus Linux.
     This fixture runs once per session and modifies sudoers for all cumulus tests.
@@ -420,12 +379,12 @@ def setup_cumulus_sudoers(topology_obj, engines):
 
 
 @pytest.fixture(scope='session')
-def dut_engines(engines):
-    return filter_objects(engines, host_type='dut', engine_type='ssh')
+def dut_engines(engines: EnginesT):
+    return object_filters.filter_objects(engines, host_type='dut', engine_type='ssh')
 
 
 @pytest.fixture(scope='session')
-def single_switch(dut_engines):
+def single_switch(dut_engines: dict[str, EnginesT]):
     """
     Check if setup has only one switch
     """
@@ -433,7 +392,7 @@ def single_switch(dut_engines):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def auto_command_tracking_for_cli_coverage(request):
+def auto_command_tracking_for_cli_coverage(request: pytest.FixtureRequest):
     """
     Automatically track commands for each test and attach results to Allure.
     This provides command tracking for both CLI coverage and general test insights.
@@ -503,20 +462,21 @@ def auto_command_tracking_for_cli_coverage(request):
                 )
 
                 # Create readable summary
-                text_summary = f"""
-Command Execution Summary for {request.node.name}
-{'=' * 50}
-Total Commands: {stats["total_commands"]}
-NVUE Commands: {len(nvue_commands)}
-Total Time: {stats["total_time"]:.3f}s
-Average Time: {stats["average_time"]:.3f}s
+                text_summary = textwrap.dedent(f"""
+                    Command Execution Summary for {request.node.name}
+                    {'=' * 50}
+                    Total Commands: {stats["total_commands"]}
+                    NVUE Commands: {len(nvue_commands)}
+                    Total Time: {stats["total_time"]:.3f}s
+                    Average Time: {stats["average_time"]:.3f}s
 
-Top 3 Slowest Commands:
-"""
+                    Top 3 Slowest Commands:
+                """)
+
                 for i, (cmd, time_taken, status) in enumerate(stats["slowest_commands"][:3], 1):
                     text_summary += f"{i}. {cmd[:60]}{'...' if len(cmd) > 60 else ''} - {time_taken:.3f}s ({status})\n"
 
-                text_summary += f"\nAll Commands (in execution order):\n"
+                text_summary += "\nAll Commands (in execution order):\n"
                 for i, (cmd, response_time, status) in enumerate(commands, 1):
                     text_summary += f"{i:3d}. [{response_time:6.3f}s] {cmd} ({status})\n"
 
@@ -526,31 +486,31 @@ Top 3 Slowest Commands:
                 )
 
 
-def get_dut_hostname(engines):
+def get_dut_hostname(engines: EnginesT):
     return engines.dut.run_cmd('hostname')
 
 
 @pytest.fixture(scope='session')
-def dut_hostname(engines):
+def dut_hostname(engines: EnginesT):
     return get_dut_hostname(engines)
 
 
 @pytest.fixture(scope='session')
-def dut_ipv6_addr(engines, devices):
+def dut_ipv6_addr(engines: EnginesT, devices: DevicesT):
     dut_ipv6_addr = IpTool.get_dut_ipv6_addr_of_given_eth_interface_using_nv_cli(devices.dut.cur_mgmt_port_name, engines.dut)
     if not dut_ipv6_addr:
         dut_ipv6_addr = IpTool.get_player_ipv6_addr(engines.dut.ip, engines.dut)
-    logging.info(f'dut ipv6 address: {dut_ipv6_addr}')
+    logger.info(f'dut ipv6 address: {dut_ipv6_addr}')
     return dut_ipv6_addr
 
 
 @pytest.fixture(scope='session')
-def sonic_mgmt_ipv6_addr(engines):
+def sonic_mgmt_ipv6_addr(engines: EnginesT):
     if hasattr(engines.sonic_mgmt, 'switch_reachable_ip'):
-        logging.info(f'sonic_mgmt ipv6 address (from switch_reachable_ip): {engines.sonic_mgmt.switch_reachable_ip}')
+        logger.info(f'sonic_mgmt ipv6 address (from switch_reachable_ip): {engines.sonic_mgmt.switch_reachable_ip}')
         return engines.sonic_mgmt.switch_reachable_ip
     sonic_mgmt_ipv6_addr = IpTool.get_player_ipv6_addr(engines.sonic_mgmt.ip, engines.sonic_mgmt)
-    logging.info(f'sonic_mgmt ipv6 address: {sonic_mgmt_ipv6_addr}')
+    logger.info(f'sonic_mgmt ipv6 address: {sonic_mgmt_ipv6_addr}')
     return sonic_mgmt_ipv6_addr
 
 
@@ -567,7 +527,7 @@ def uninstall_requests_cache():
         ExceptionTool.log_exception(e, "Failed to uninstall requests cache")
 
 
-def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
+def update_engine_dut_mgmt_port(topology: TopologyT, dut_engine: LinuxSshEngine, dut_device: BaseDevice):
     def attach_res_to_allure(available_ports_names, available_ports_ips, chosen_port_name, chosen_port_ip):
         attachment = (f'All ports: {available_ports_names} - {available_ports_ips}\n'
                       f'Chosen port: {chosen_port_name} - {chosen_port_ip}')
@@ -584,7 +544,7 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
         attach_res_to_allure(mgmt_ports, None, mgmt_ports[0] if mgmt_ports else None, dut_engine.ip)
         return
 
-    dut_setup_specific_attributes: Dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes'][
+    dut_setup_specific_attributes: dict[str, str] = topology.players['dut']['attributes'].noga_query_data['attributes'][
         'Specific']
     setup_mgmt_ips = [dut_setup_specific_attributes['ip_address'], dut_setup_specific_attributes['ip_address_2']]
     available_mgmt_ips = [ip for ip in setup_mgmt_ips if ip != '']
@@ -605,25 +565,25 @@ def update_engine_dut_mgmt_port(topology, dut_engine: LinuxSshEngine, dut_device
 
 
 @pytest.fixture(scope="session")
-def mst_device(request, engines):
+def mst_device(request: pytest.FixtureRequest, engines: EnginesT):
     return ""
 
 
 @pytest.fixture(scope='session')
-def original_version(engines):
+def original_version(engines: EnginesT):
     version = System().version.get_nvos_image_version()
     return version
 
 
 @pytest.fixture(scope='session', autouse=True)
-def devices(topology_obj):
+def devices(topology_obj: TopologyT):
     devices = DeviceFactory.create_devices_object(topology_obj)
     TestToolkit.update_devices(devices)
     return devices
 
 
 @pytest.fixture(scope='session', autouse=True)
-def update_open_api_port(topology_obj, devices, engines):
+def update_open_api_port(topology_obj: TopologyT, devices: DevicesT, engines: EnginesT):
     """
     Update OpenAPI port for all DUTs in the topology.
 
@@ -632,7 +592,7 @@ def update_open_api_port(topology_obj, devices, engines):
     :param engines: Engine objects for all DUTs
     """
     # Update OpenAPI port for each DUT player in topology
-    for player_name, player in filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
+    for player_name, player in object_filters.filter_objects(topology_obj.players, host_type='dut', engine_type='ssh').items():
         player_attrs = player['attributes']
         topology_conn = player_attrs.noga_query_data['attributes']['Topology Conn.']
         device = devices[player_name]
@@ -644,7 +604,7 @@ def update_open_api_port(topology_obj, devices, engines):
 
 
 @pytest.fixture
-def traffic_available(request):
+def traffic_available(request: pytest.FixtureRequest):
     """
     True is traffic functionality is available for current setup
     :param request: pytest builtin
@@ -654,7 +614,7 @@ def traffic_available(request):
 
 
 @pytest.fixture(scope='function')
-def serial_engine(topology_obj, devices):
+def serial_engine(topology_obj: TopologyT, devices: DevicesT):
     """
     :return: serial connection
     """
@@ -662,7 +622,7 @@ def serial_engine(topology_obj, devices):
 
 
 @pytest.fixture
-def tst_all_pwh_confs(request):
+def tst_all_pwh_confs(request: pytest.FixtureRequest):
     """
     True to test functionality of all password hardening configurations;
         False otherwise (only several random configurations will be picked to testing)
@@ -674,7 +634,7 @@ def tst_all_pwh_confs(request):
 
 
 @pytest.fixture
-def start_sm(engines, devices, traffic_available):
+def start_sm(engines: EnginesT, devices: DevicesT, traffic_available: bool):
     """
     Starts OpenSM
     """
@@ -709,32 +669,32 @@ def start_sm(engines, devices, traffic_available):
 
 
 @pytest.fixture
-def stop_sm(engines, devices):
+def stop_sm(engines: EnginesT, devices: DevicesT):
     """
     Stops OpenSM for the duration of the test, then restarts it after.
     """
     result = OpenSmTool.stop_open_sm(engines)
     if result is None or not result.result:
-        logging.warning(f"Failed to stop openSM: {result.info if result else 'No result returned'}")
+        logger.warning(f"Failed to stop openSM: {result.info if result else 'No result returned'}")
 
     yield  # Test runs here with SM stopped
 
     # Cleanup: restart OpenSM after test completes
-    logging.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
+    logger.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
     restart_result = OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
     if restart_result is None or not restart_result.result:
-        logging.error(f"Failed to restart OpenSM in stop_sm fixture cleanup: "
-                      f"{restart_result.info if restart_result else 'No result returned'}")
+        logger.error(f"Failed to restart OpenSM in stop_sm fixture cleanup: "
+                     f"{restart_result.info if restart_result else 'No result returned'}")
 
     yield  # Test runs here with SM stopped
 
     # Cleanup: restart OpenSM after test completes
-    logging.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
+    logger.info("Restarting OpenSM after test (stop_sm fixture cleanup)")
     OpenSmTool.start_open_sm(engines, multiplanar=devices.dut.multi_planar)
 
 
 @pytest.fixture(scope="session")
-def release_name(request):
+def release_name(request: pytest.FixtureRequest):
     """
     Method for getting release_name from pytest arguments
     :param request: pytest builtin
@@ -744,7 +704,7 @@ def release_name(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def branch_name(request):
+def branch_name(request: pytest.FixtureRequest):
     """
     Fixture that extracts branch name from --remote_test_path and sets it to TestToolkit.branch
     :param request: pytest builtin
@@ -786,7 +746,7 @@ def branch_name(request):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def api_type(nvos_api_type):
+def api_type(nvos_api_type: str):
     apitype = ApiType.NVUE
     if nvos_api_type.lower() == "openapi":
         apitype = ApiType.OPENAPI
@@ -796,7 +756,7 @@ def api_type(nvos_api_type):
 
 
 @pytest.fixture(scope='session')
-def cli_objects(topology_obj):
+def cli_objects(topology_obj: TopologyT):
     cli_obj_data = DottedDict()
     cli_obj_data.dut = topology_obj.players['dut']['cli']
     if "ha" in topology_obj.players:
@@ -806,7 +766,7 @@ def cli_objects(topology_obj):
     return cli_obj_data
 
 
-def check_switch_capacity(engine):
+def check_switch_capacity(engine: LinuxSshEngine):
     try:
         logger.info("Check used capacity for /var/lib/python/coverage")
         engine.run_cmd("df -h /var/lib/python/coverage/")
@@ -817,14 +777,14 @@ def check_switch_capacity(engine):
 
 
 @pytest.fixture(scope='session')
-def interfaces(topology_obj):
+def interfaces(topology_obj: TopologyT):
     interfaces_data = DottedDict()
     interfaces_data.ha_dut_1 = topology_obj.ports['ha-dut-1']
     interfaces_data.hb_dut_1 = topology_obj.ports['hb-dut-1']
     return interfaces_data
 
 
-def clear_security_config(item):
+def clear_security_config(item: pytest.FixtureRequest):
     with allure.step("Clear security config"):
         TestToolkit.update_apis(ApiType.NVUE)
 
@@ -833,70 +793,70 @@ def clear_security_config(item):
             try:
                 active_aaa_server = item.active_remote_aaa_server
 
-                logging.info('Test configured aaa authentication. find remote admin user to use')
+                logger.info('Test configured aaa authentication. find remote admin user to use')
                 remote_admin = [user for user in active_aaa_server.users if user.role == 'admin'][0]
-                logging.info(f'Create engine with remote user: {remote_admin.username}')
+                logger.info(f'Create engine with remote user: {remote_admin.username}')
                 remote_admin_engine = ProxySshEngine(device_type=TestToolkit.get_engine().device_type,
                                                      ip=TestToolkit.get_engine().ip,
                                                      username=remote_admin.username,
                                                      password=remote_admin.password)
 
-                logging.info('Clear authentication settings to allow local admin user engine continue')
+                logger.info('Clear authentication settings to allow local admin user engine continue')
                 res = System().aaa.authentication.unset(op_param='order', apply=True, dut_engine=remote_admin_engine)
                 assert 'verifyingreadying' in res.info, f'Expected to have "{"verifyingreadying"}" ' \
                     f'in output. Actual output: {res.info}'
             finally:
                 item.active_remote_aaa_server = None
-                wait_for_ldap_nvued_restart_workaround(item, engine_to_use=local_dut_engine)
+                nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=local_dut_engine)
         except Exception:
             local_dut_engine.disconnect()
-            wait_for_ldap_nvued_restart_workaround(item, engine_to_use=local_dut_engine)
+            nvos_general_utils.wait_for_ldap_nvued_restart_workaround(item, engine_to_use=local_dut_engine)
 
         # if isinstance(active_aaa_server, LdapServerInfo):
-        #     logging.info('Remove LDAP users home directories')
+        #     logger.info('Remove LDAP users home directories')
         #     remote_usernames = [user.username for user in active_aaa_server.users]
         #     for username in remote_usernames:
         #         TestToolKit.get_engine().run_cmd(f'sudo rm -rf /home/{username}')
 
 
 @pytest.fixture(scope="session")
-def root_dir(request):
+def root_dir(request: pytest.FixtureRequest):
     return request.config.rootdir
 
 
 @pytest.fixture(scope="session")
-def default_config_yml_path(engines, devices, root_dir):
+def default_config_yml_path(engines: EnginesT, devices: DevicesT, root_dir: str):
     return devices.dut.get_default_config_yml(engines.dut, root_dir)
 
 
-def pytest_exception_interact(report):
-    logging.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
+def pytest_exception_interact(report: pytest.TestReport):
+    logger.error(f'----------- The test failed - an exception occurred: ----------- \n{report.longreprtext}')
     if TestToolkit.devices is not None:
-        for dev_name, device in filter_objects(TestToolkit.devices, host_type='dut', engine_type='ssh').items():
+        for dev_name, device in object_filters.filter_objects(TestToolkit.devices, host_type='dut', engine_type='ssh').items():
             engine = TestToolkit.get_engine(dev_name)
             device.handle_exception(engine)
 
 
 @pytest.fixture(scope="function")
-def run_cli_coverage_flow(clear_config, request):
+def run_cli_coverage_flow(clear_config, request: pytest.FixtureRequest):
     yield
 
     try:
         item = request.node
-        logging.info('------- Running CLI coverage -------')
+        logger.info('------- Running CLI coverage -------')
         run_cli_coverage(item, item.keywords)
     except BaseException as err:
-        logging.warning(f"CLI coverage flow failed- {err}")
+        logger.warning(f"CLI coverage flow failed- {err}")
 
 
 def eth_handle_exception():
-    logging.info("Handle eth exception")
+    logger.info("Handle eth exception")
 
 
 @pytest.fixture(scope="function", autouse=True)
-def list_of_executed_commands(engines, run_cli_coverage_flow, request):
+def list_of_executed_commands(engines: EnginesT, run_cli_coverage_flow, request: pytest.FixtureRequest):
     pytest.s_time = time.time()
-    logging.info(f'------- TEST STARTED - {request.node.name} -------')
+    logger.info(f'------- TEST STARTED - {request.node.name} -------')
     if 'no_log_test_wrapper' not in request.keywords:
         try:
             SendCommandTool.execute_command(LinuxGeneralCli(engines.dut).clear_history)
@@ -929,22 +889,30 @@ def list_of_executed_commands(engines, run_cli_coverage_flow, request):
             local_file_path = local_commands_dir / "executed_commands.txt"
 
             # Copy from remote to local
-            scp_file(engines.dut, file_path, str(local_file_path), download_from_remote=True)
+            linux_tools.scp_file(engines.dut, file_path, str(local_file_path), download_from_remote=True)
 
     except BaseException as err:
-        logging.warning(f"Failed to get list of executed commands - {err}")
+        logger.warning(f"Failed to get list of executed commands - {err}")
 
 
 @pytest.fixture(scope="function")
-def clear_config(request, devices, engines, default_config_yml_path, root_dir, skip_clear_config, markers=None):
+def clear_config(
+    request: pytest.FixtureRequest,
+    devices: DevicesT,
+    engines: EnginesT,
+    default_config_yml_path: str,
+    root_dir: str,
+    skip_clear_config: bool,
+    markers: list[str] | None = None,
+):
     yield
 
     TestToolkit.tested_api = ApiType.NVUE
     test_result = request.node.rep_call.outcome if hasattr(request.node, 'rep_call') else request.node.rep_setup.outcome
-    logging.info(f"------- Test '{request.node.name}' {test_result} -------")
+    logger.info(f"------- Test '{request.node.name}' {test_result} -------")
 
     try:
-        should_skip = skip_clear_config or test_result == TestConsts.SKIPPED or is_cur_test_has_marker(request, 'skip_clear_config')
+        should_skip = skip_clear_config or test_result == TestConsts.SKIPPED or pytest_helpers.is_cur_test_has_marker(request, 'skip_clear_config')
         if not should_skip:
             with allure.step(f"Clear config for test {request.node.name}"):
                 """ if hasattr(item, 'active_remote_aaa_server') and item.active_remote_aaa_server:
@@ -953,17 +921,17 @@ def clear_config(request, devices, engines, default_config_yml_path, root_dir, s
                     security_cleanup(item.security_pexpect_ssh_session)"""
                 devices.dut.clear_config(engines.dut, markers, default_config_yml_path, root_dir)
         else:
-            logging.info("skipping clear_config functionality")
+            logger.info("skipping clear_config functionality")
     except Exception as err:
-        logging.warning("Failed to clear config:" + str(err))
+        logger.warning("Failed to clear config:" + str(err))
     finally:
-        logging.info('Clear global OpenApi changeset and payload')
+        logger.info('Clear global OpenApi changeset and payload')
         OpenApiRequest.clear_changeset_and_payload()
         OpenApiRequest.update_client_certs_info(None)
 
 
 @pytest.fixture(scope='function', autouse=True)
-def teardown_collect_code_coverage(topology_obj, engines):
+def teardown_collect_code_coverage(topology_obj: TopologyT, engines: EnginesT):
     yield
     if pytest.is_code_coverage:
         collect_coverage = False
@@ -973,7 +941,7 @@ def teardown_collect_code_coverage(topology_obj, engines):
             try:
                 capacity_percentage = DiskTool.get_path_available_capacity_percentage(engines.dut,
                                                                                       NvosConst.COVERAGE_PATH)
-                logging.info(f"Coverage folder capacity: {capacity_percentage}%")
+                logger.info(f"Coverage folder capacity: {capacity_percentage}%")
                 collect_coverage = int(capacity_percentage) >= NvosConst.MAX_COVERAGE_PATH_CAPACITY_PERCENTAGE
             except BaseException:
                 collect_coverage = True
@@ -981,12 +949,16 @@ def teardown_collect_code_coverage(topology_obj, engines):
 
         if collect_coverage:
             with allure.step(f"Collect python coverage (folder capacity {capacity_percentage}%"):
-                extract_python_coverage_for_nvos(dest=NvosConsts.DEST_PATH, engines=engines, cli_obj=cli_obj,
-                                                 topology_obj=topology_obj)
+                test_code_coverage.extract_python_coverage_for_nvos(
+                    dest=NvosConsts.DEST_PATH,
+                    engines=engines,
+                    cli_obj=cli_obj,
+                    topology_obj=topology_obj,
+                )
 
 
 @pytest.fixture(scope='function', autouse=True)
-def debug_kernel_check(engines, test_name, setup_name, session_id):
+def debug_kernel_check(engines: EnginesT, test_name: str, setup_name: str, session_id: str):
     yield
     if pytest.is_debug_kernel:
         engines.dut.run_cmd("sudo dmesg | grep {}".format(DebugKernelConsts.KMEMLEAK))
@@ -1012,7 +984,7 @@ def debug_kernel_check(engines, test_name, setup_name, session_id):
 
 
 @pytest.fixture(autouse=True)
-def skip_coredump_check(request):
+def skip_coredump_check(request: pytest.FixtureRequest):
     """
     Method for getting skip_coredump_check from pytest arguments
     :param request: pytest builtin
@@ -1021,7 +993,7 @@ def skip_coredump_check(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
+def coredump_check(engines: EnginesT, test_name: str, setup_name: str, dumps_folder: str, session_id: str):
     yield
     if pytest.skip_coredump_check:
         logger.info('NVOS: Skip coredump check')
@@ -1036,7 +1008,7 @@ def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
                 file_path = os.path.join(CoreDumpConsts.COREDUMP_PATH, file)
                 logger.info('Copy dump {} to log folder {}'.format(file_path, dumps_folder))
                 dest_file = dumps_folder + '/' + file
-                scp_file(engines.dut, file_path, dest_file, download_from_remote=True)
+                linux_tools.scp_file(engines.dut, file_path, dest_file, download_from_remote=True)
                 os.chmod(dest_file, 0o655)
                 logger.info('Dump file location: {}'.format(dest_file))
                 logger.info('Delete coredump {} from the switch'.format(file_path))
@@ -1061,7 +1033,7 @@ def coredump_check(engines, test_name, setup_name, dumps_folder, session_id):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def insert_operation_time_to_db(setup_name, session_id, platform_params, topology_obj):
+def insert_operation_time_to_db(setup_name: str, session_id: str, platform_params: dict, topology_obj: TopologyT):
     '''
     @summary:   insert operation times to operation_time table DB.
     during the tests we will add to pytest.operation_list the operations that we want to measure,
@@ -1080,8 +1052,8 @@ def insert_operation_time_to_db(setup_name, session_id, platform_params, topolog
             logger.warning("Failed to save operation duration data, because: {}".format(err))
 
 
-@retry(Exception, tries=3, delay=3)
-def insert_operation_duration_to_db(setup_name, type, version, session_id, release_name):
+@retry.retry(Exception, tries=3, delay=3)
+def insert_operation_duration_to_db(setup_name: str, type: str, version: str, session_id: str, release_name: str):
     connections_params = DbConstants.CREDENTIALS[CliType.NVUE]
     mssql_connection_obj = ConnectMSSQL(connections_params['server'], connections_params['database'],
                                         connections_params['username'], connections_params['password'])
@@ -1117,7 +1089,7 @@ def insert_operation_duration_to_db(setup_name, type, version, session_id, relea
 
 
 @pytest.fixture(autouse=True)
-def disable_cli_coverage(request):
+def disable_cli_coverage(request: pytest.FixtureRequest):
     """
     Method for getting disable_cli_coverage from pytest arguments
     :param request: pytest builtin
@@ -1126,7 +1098,7 @@ def disable_cli_coverage(request):
 
 
 @pytest.fixture(autouse=True)
-def skip_clear_config(request):
+def skip_clear_config(request: pytest.FixtureRequest):
     """
     Method for getting skip_clear_config from pytest arguments
     :param request: pytest builtin
@@ -1134,20 +1106,20 @@ def skip_clear_config(request):
     return request.config.getoption('--skip_clear_config')
 
 
-def run_cli_coverage(item, markers):
+def run_cli_coverage(item: pytest.FixtureRequest, markers: list[str]):
     if TestToolkit.tested_api == ApiType.NVUE and \
             'no_cli_coverage_run' not in markers and \
             not pytest.is_sanitizer and \
             pytest.is_mars_run and \
             not pytest.disable_cli_coverage:
-        logging.info("API type is NVUE and is it not a sanitizer version, so CLI coverage script will run")
+        logger.info("API type is NVUE and is it not a sanitizer version, so CLI coverage script will run")
         NVUECliCoverage.run(item=item, start_time=pytest.s_time,
                             project=TestToolkit.devices.dut.cli_coverage_project_name, department='verification',
                             nvue_dir=TestToolkit.devices.dut.cli_coverage_path)
 
 
 @pytest.fixture(autouse=True)
-def security_post_checker(request):
+def security_post_checker(request: pytest.FixtureRequest):
     """
     Method for getting security_post_checker from pytest arguments
     :param request: pytest builtin
@@ -1160,7 +1132,7 @@ def security_post_checker(request):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def store_and_manage_loganalyzer(request):
+def store_and_manage_loganalyzer(request: pytest.FixtureRequest):
     ignore_failure = request.config.getoption("--ignore_la_failure")
     store_la_logs = request.config.getoption("--store_la_logs")
     if not ignore_failure:
@@ -1170,7 +1142,7 @@ def store_and_manage_loganalyzer(request):
 
 
 @pytest.fixture(scope='function', autouse=True)
-def extend_log_analyzer_match_regex(loganalyzer):
+def extend_log_analyzer_match_regex(loganalyzer: dict[str, LogAnalyzer]):
     """
     Extend the loganalyzer match_regex list and ignore_regex list.
     """
@@ -1192,17 +1164,17 @@ def extend_log_analyzer_match_regex(loganalyzer):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def disable_loganalyzer_rotate_logs(request):
+def disable_loganalyzer_rotate_logs(request: pytest.FixtureRequest):
     request.config.option.loganalyzer_rotate_logs = False
 
 
 @pytest.fixture(scope='function', autouse=True)
-def initialize_testtoolkit_loganalyzer(loganalyzer):
+def initialize_testtoolkit_loganalyzer(loganalyzer: dict[str, LogAnalyzer]):
     TestToolkit.loganalyzer_duts = loganalyzer
 
 
 @pytest.fixture
-def prepare_traffic(engines, setup_name):
+def prepare_traffic(engines: EnginesT, setup_name: str):
     """
     - Bring up traffic containers in case are in down state.
     - Starts OpenSM
@@ -1212,44 +1184,44 @@ def prepare_traffic(engines, setup_name):
 
 
 @pytest.fixture
-def output_format(test_api):
+def output_format(test_api: ApiType):
     return OutputFormat.auto if test_api == ApiType.NVUE else OutputFormat.json
 
 
 @pytest.fixture(scope='session')
-def target_version_realpath(target_version):
+def target_version_realpath(target_version: str):
     assert target_version is not None, "No target image is specified"
     cmd_runner = CmdRunner()
     with allure.step('get real full path of target version'):
         target_version_path = cmd_runner.run_cmd(f'realpath {target_version}')
-        logging.info(f'target version path: {target_version_path}')
+        logger.info(f'target version path: {target_version_path}')
     return target_version_path
 
 
 @pytest.fixture(scope='session')
-def base_version_realpath(base_version):
+def base_version_realpath(base_version: str):
     assert base_version is not None, "No base image is specified"
     cmd_runner = CmdRunner()
     with allure.step('get real full path of target version'):
         base_version_path = cmd_runner.run_cmd(f'realpath {base_version}')
-        logging.info(f'base version path: {base_version_path}')
+        logger.info(f'base version path: {base_version_path}')
     return base_version_path
 
 
 @pytest.fixture(scope='session')
-def downgrade_version_realpath(downgrade_version, base_version):
+def downgrade_version_realpath(downgrade_version: str, base_version: str):
     version = downgrade_version or base_version
     if not version:
         raise SetupIssue('Must specify downgrade_version or base_version in command-line')
     cmd_runner = CmdRunner()
     with allure.step('get real full path of version'):
         version_path = cmd_runner.run_cmd(f'realpath {version}')
-        logging.info(f'{version_path=}')
+        logger.info(f'{version_path=}')
     return version_path
 
 
 @pytest.fixture(params=ApiType.ALL_TYPES)
-def test_api(request):
+def test_api(request: pytest.FixtureRequest):
     """This fixture runs the test twice (once for each api)."""
     TestToolkit.tested_api = request.param
     return request.param
@@ -1265,10 +1237,10 @@ def pytest_generate_tests(metafunc: pytest.Metafunc):
 
         if is_collecting:
             param_list = ApiType.ALL_TYPES
-            logging.warning(f"  -> COLLECT MODE: Parametrizing with all values: {param_list}")
+            logger.warning(f"  -> COLLECT MODE: Parametrizing with all values: {param_list}")
         else:
             random_api_choice = random.choice(ApiType.ALL_TYPES)
-            logging.warning(f"  -> Test run Selected API: {random_api_choice}")
+            logger.warning(f"  -> Test run Selected API: {random_api_choice}")
             param_list = [random_api_choice]
 
         metafunc.parametrize('random_api', param_list, indirect=True)
@@ -1296,14 +1268,14 @@ def verify_result_objects():
 
 
 @pytest.fixture(scope='session', autouse=True)
-def update_fw_versions_json_file(fw_versions_json_file):
-    logging.info(f'fw_versions_json_file path: {fw_versions_json_file}')
+def update_fw_versions_json_file(fw_versions_json_file: str):
+    logger.info(f'fw_versions_json_file path: {fw_versions_json_file}')
     BmcTool.set_fw_versions_json_file(fw_versions_json_file)
     return fw_versions_json_file
 
 
 @pytest.fixture
-def handle_la_marker_in_manufacture(engines, loganalyzer):
+def handle_la_marker_in_manufacture(engines: EnginesT, loganalyzer: dict[str, LogAnalyzer]):
     """
     When the test ends, injects the log-analyzer test-start marker as the first line in the log.
     This is intended for tests that cause all log files to be deleted, e.g. by manufacture or factory-reset.
@@ -1320,12 +1292,12 @@ def handle_la_marker_in_manufacture(engines, loganalyzer):
 
     if marker_find_exception:
         raise marker_find_exception
-    oldest_syslog_id = get_oldest_syslog_id(engines.dut)
-    new_marker = get_new_start_string(engines.dut, oldest_syslog_id, marker)
-    insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
+    oldest_syslog_id = test_log_analyzer_errors_during_deploy_sonic.get_oldest_syslog_id(engines.dut)
+    new_marker = test_log_analyzer_errors_during_deploy_sonic.get_new_start_string(engines.dut, oldest_syslog_id, marker)
+    test_log_analyzer_errors_during_deploy_sonic.insert_new_start_string(engines.dut, oldest_syslog_id, new_marker)
 
 
-def _validate_matrix_arg(matrix_arg: str) -> Optional[Dict]:
+def _validate_matrix_arg(matrix_arg: str) -> dict | None:
     """
     Validate matrix argument.
     If the argument is a path to a json file, return the json object.
@@ -1353,7 +1325,7 @@ def provisioning(engines: EnginesT) -> str:
 
 
 @pytest.fixture(scope='module')
-def disable_els_init_state_for_taipan(engines, devices, nv_command):
+def disable_els_init_state_for_taipan(engines: EnginesT, devices: DevicesT, nv_command: NvCommand):
     """
     Fixture to disable ELS init state before test and re-enable it after test.
     This fixture is used for Taipan devices only.
@@ -1374,7 +1346,7 @@ def disable_els_init_state_for_taipan(engines, devices, nv_command):
 
 
 @pytest.fixture(scope='session')
-def ib_router(is_ib_router, engines):
+def ib_router(is_ib_router: bool, engines: EnginesT):
     """
     Method for get ib_router value from pytest arguments and change profile on the switch if needed
     :param request: pytest builtin
