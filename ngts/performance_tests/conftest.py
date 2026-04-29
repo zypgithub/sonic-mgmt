@@ -223,6 +223,20 @@ def sdk_branch(players):
 
 
 @pytest.fixture(scope='session', autouse=True)
+def fix_tg_cli_objects_alias_keys(cli_objects, topology_obj):
+    """
+    Patch cli_objects so traffic generators are changed back to their hyphenated alias (e.g. 'left-tg')
+    instead of the underscore key from DottedDict(e.g. 'left_tg').
+    """
+    for player_alias in topology_obj.players:
+        if re.match(PerfConsts.TG_REGEX, player_alias):
+            underscore_key = player_alias.replace('-', '_')
+            if underscore_key in cli_objects.__dict__:
+                del cli_objects.__dict__[underscore_key]
+            cli_objects.__dict__[player_alias] = topology_obj.players[player_alias]['cli']
+
+
+@pytest.fixture(scope='session', autouse=True)
 def unsplit_all_ports_on_spc5(players):
     """
     Unsplits all ports on the SPC5.
