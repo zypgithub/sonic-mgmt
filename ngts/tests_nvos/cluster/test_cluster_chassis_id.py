@@ -22,11 +22,11 @@ logger = logging.getLogger()
 
 
 @pytest.fixture(scope='function', autouse=True)
-def enable_stop_cluster(setup_name, devices):
+def enable_stop_cluster(setup_name, devices, engines):
     cluster = Cluster()
-    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, devices=devices)
+    ClusterTools.start_cluster(cluster, setup_name, OutputFormat.json, engine=engines.dut, devices=devices)
     yield
-    ClusterTools.stop_cluster(cluster, OutputFormat.json)
+    ClusterTools.stop_cluster(cluster, OutputFormat.json, engine=engines.dut)
 
 
 @pytest.mark.nmx
@@ -72,7 +72,7 @@ def test_cluster_chassis_id(engines, devices, random_api):
             sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].files.file_name[
                 filename].action_delete().verify_result()
         with allure.step("Running sdn factory reset"):
-            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster)
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
 
 
 def get_name_from_generate_config_file(output):

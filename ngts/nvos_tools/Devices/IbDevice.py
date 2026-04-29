@@ -3003,7 +3003,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.psu_list = []
         self.psu_fan_list = []
 
-    def setup_cluster_for_sdn_config(self, cluster, engines):
+    def setup_cluster_for_sdn_config(self, cluster, engine, dut_engines):
         """
         Rosalind-specific: Setup cluster before generating SDN configs.
         This method sets the cluster node primary server and enables the cluster.
@@ -3012,12 +3012,13 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         from ngts.nvos_constants.constants_nvos import SystemConsts
         from ngts.tools.test_utils import allure_utils as allure
 
-        with allure.step("Set cluster node primary server"):
-            logger.info(f"Setting cluster node primary server to {engines.dut.ip}")
-            cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
-                                                  op_param_value=engines.dut.ip, apply=True)
+        with allure.step("Set cluster nodes"):
+            for _, dut_engine in dut_engines.items():
+                cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                                                      op_param_value=dut_engine.ip, apply=True,
+                                                      dut_engine=engine)
 
-    def wa_restart_nv_bridge_after_sm_config(self, cluster, engines):
+    def wa_restart_nv_bridge_after_sm_config(self, cluster, engine):
         """
         Rosalind-specific workaround for Bug SW #4910763.
         After loading SM config on Rosalind, restart nv-bridge to recover connections.
@@ -3032,13 +3033,13 @@ class RosalindSwitch(RosalindSurrogateSwitch):
             with allure.step("WA for Bug 4910763: Restart nv-bridge after SM config"):
                 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
                 logger.info("Stopping nmx-controller app")
-                cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
+                cluster.apps.app_name['nmx-controller'].action_stop_cluster_app(engine=engine)
 
                 logger.info("Starting nmx-controller app")
-                cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
+                cluster.apps.app_name['nmx-controller'].action_start_cluster_app(engine=engine)
 
                 logger.info("Waiting for nmx-controller to be ready after restart")
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
         else:
             logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 

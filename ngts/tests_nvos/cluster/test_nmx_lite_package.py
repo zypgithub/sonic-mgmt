@@ -31,13 +31,13 @@ def start_cluster_and_sdn_fm_config(engines, setup_name):
     topology_value = "vr_nvl8r1_c2g4_rtf_topology"
     try:
         with allure.step("Enable cluster"):
-            ClusterTools.start_cluster(cluster, setup_name)
+            ClusterTools.start_cluster(cluster, setup_name, engine=engines.dut)
 
         with allure.step("Config fm config"):
             ClusterSimulation.config_fm_config(engines.dut, topology_value=topology_value)
 
         with allure.step("Wait for nmx-controller to be in ok status"):
-            ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok")
+            ClusterTools.wait_until_app_expected_status(cluster, ClusterConsts.NMX_CONTROLLER, "ok", engine=engines.dut)
 
         yield
 
@@ -45,10 +45,10 @@ def start_cluster_and_sdn_fm_config(engines, setup_name):
         with allure.step("Reset sdn fm config"):
 
             with allure.step("Disable cluster"):
-                ClusterTools.stop_cluster(cluster)
+                ClusterTools.stop_cluster(cluster, engine=engines.dut)
 
             with allure.step("Reset sdn factory default"):
-                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster)
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(Sdn(), cluster, engine=engines.dut)
 
 
 @pytest.mark.gpu_tel
