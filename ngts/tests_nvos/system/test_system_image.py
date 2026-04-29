@@ -33,6 +33,7 @@ from ngts.tools.test_utils import nvos_general_utils
 from ngts.nvos_tools.actions.Actions import Action
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.IpTool import IpTool
+from ngts.tests_nvos.general.security.security_test_tools.tool_classes.RemoteAaaServerInfo import ping_server
 
 from ngts.tests_nvos.constants import MINUTE
 
@@ -47,6 +48,42 @@ PATH_TO_IMAGE_TEMPLATE = "{}/amd64/"
 
 BASE_IMAGE_VERSION_TO_INSTALL = "nvos-amd64-{pre_release_name}.bin"
 BASE_IMAGE_VERSION_TO_INSTALL_PATH = "/auto/sw_system_release/nos/nvos/{pre_release_name}/amd64/{base_image}"
+
+
+def _assert_dut_can_reach_sonic_mgmt_ipv6(dut_engine, sonic_mgmt_ipv6_addr):
+    ipv6_addr = sonic_mgmt_ipv6_addr.strip("[]")
+    if not IpTool.is_address_ipv6(ipv6_addr):
+        raise AssertionError(f"Invalid sonic-mgmt IPv6 address for image fetch precheck: {sonic_mgmt_ipv6_addr}")
+
+    with allure.step(f"Check DUT IPv6 connectivity to sonic-mgmt {ipv6_addr}"):
+        is_reachable = ping_server(ipv6_addr, count=3, timeout=2, dut_engine=dut_engine)
+        assert is_reachable, f"DUT cannot reach sonic-mgmt IPv6 address {ipv6_addr}; not running IPv6 image fetch."
+
+
+def _delete_existing_image_files(system, image_names):
+    image_names = sorted(set(image_names))
+    if not image_names:
+        logger.info("No fetched image files were recorded for cleanup")
+        return
+
+    existing_files = system.image.files.get_files()
+    files_to_delete = [image_name for image_name in image_names if image_name in existing_files]
+    missing_files = sorted(set(image_names) - set(files_to_delete))
+    if missing_files:
+        logger.info("Skipping cleanup for image files that are already missing: %s", missing_files)
+    if not files_to_delete:
+        logger.info("No recorded fetched image files still exist on the DUT")
+        return
+
+    delete_result = system.image.files.delete_files(files_to_delete)
+    if not delete_result and "File not found" in delete_result.info:
+        logger.warning(
+            "Ignoring cleanup file-not-found result for image files: %s\n%s",
+            files_to_delete,
+            delete_result.info,
+        )
+        return
+    delete_result.verify_result()
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -338,7 +375,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
     with allure.step("Get an available image file"):
         _, _, _, _, image_name = get_image_data_and_fetch_base_image(system, downgrade_version_realpath)
         image_path = downgrade_version_realpath
-        images_name = []
+        images_name = {image_name}
         image_file = system.image.files.file_name[image_name]
 
     try:
@@ -348,13 +385,15 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
                 scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
                                                               ip=player.ip, path=image_path)
                 system.image.action_fetch(scp_path, base_url='').verify_result()
-                images_name.append(image_name)
+                images_name.add(image_name)
 
             if IpTool.is_dhcp_client6_has_lease(engines.dut):
                 with allure.independent_step("Fetch the same image again using ipv6 address"):
-                    scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
-                                                                  ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
-                    system.image.action_fetch(scp_path, base_url='').verify_result()
+                    _assert_dut_can_reach_sonic_mgmt_ipv6(engines.dut, sonic_mgmt_ipv6_addr)
+                    ipv6_scp_path = ImageConsts.SCP_PATH_SERVER.format(username=player.username, password=player.password,
+                                                                       ip=f"[{sonic_mgmt_ipv6_addr}]", path=image_path)
+                    system.image.action_fetch(ipv6_scp_path, base_url='').verify_result()
+                    scp_path = ipv6_scp_path
 
             with allure.independent_step("Fetch an image that does not exist"):
                 system.image.action_fetch(scp_path + rand_name, base_url='').verify_result(False)
@@ -399,7 +438,7 @@ def test_system_image_bad_flow(engines, release_name, random_api, original_versi
                         player.run_cmd(cmd='rm -f /tmp/{}'.format(image_name))
     finally:
         with allure.step("Delete all images that have been fetch during the test"):
-            system.image.files.delete_files(images_name).verify_result()
+            _delete_existing_image_files(system, images_name)
 
 
 @pytest.mark.checklist
