@@ -108,3 +108,7 @@ master:
     <<: *platform_defaults
     sx_sdk: 5
     syncd: 2
+  SN6810_LD: # Chameleon 6s
+    <<: *platform_defaults
+    sx_sdk: 5
+    syncd: 2

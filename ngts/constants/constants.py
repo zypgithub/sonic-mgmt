@@ -1802,7 +1802,8 @@ class SerialConsts:
         "x86_64-nvidia_sn5640_simx-r0": "MT25116050YD",
         "x86_64-nvidia_sn5800_ld_simx-r0": "MT251160509J",
         "x86_64-nvidia_sn6600_simx-r0": "MT25116050YD",
-        "x86_64-nvidia_sn6600_ld_simx-r0": "MT25116050YD"
+        "x86_64-nvidia_sn6600_ld_simx-r0": "MT25116050YD",
+        "x86_64-nvidia_sn6810_ld_simx-r0": "MT2607601EDV"
     }
     PLATFORM_MODEL_MAP = {
         "x86_64-mlnx_msn2700_simx-r0": "MSN2700-CS2FO",
@@ -1811,7 +1812,8 @@ class SerialConsts:
         "x86_64-nvidia_sn5640_simx-r0": "MSN5640",
         "x86_64-nvidia_sn5800_ld_simx-r0": "SN5800_LD",
         "x86_64-nvidia_sn6600_simx-r0": "SN6600_LD",
-        "x86_64-nvidia_sn6600_ld_simx-r0": "SN6600_LD"
+        "x86_64-nvidia_sn6600_ld_simx-r0": "SN6600_LD",
+        "x86_64-nvidia_sn6810_ld_simx-r0": "SN6810_LD"
     }
 
 
