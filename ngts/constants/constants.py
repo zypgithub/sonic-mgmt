@@ -137,7 +137,8 @@ class SonicConst:
     TIMEZONE = 'Asia/Jerusalem'
     BASIC_SESSION_INFO_FILE_NAME = "basic_session_info.json"
 
-    BREAKOUT_MODE_WITH_DIFF_LANE_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G\(\d\)\+\dx\d+G\(\d\)"  # i.e, 2x25G(2)+1x50G(2)
+    # i.e, 2x400G[200G](4)+1x800G[400G](4) or 2x25G(2)+1x50G(2)
+    BREAKOUT_MODE_WITH_DIFF_LANE_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G(?:\[[\d+G,]+\])?\(\d+\)\+\dx\d+G(?:\[[\d+G,]+\])?\(\d+\)"
 
     # 1x100G[50G,25G,1G]
     BREAKOUT_MODE_WITH_ADDITIONAL_SUPPORTED_SPEEDS_REGEX = r"\dx\d+G\[[\d+G,]+\]|\dx\d+\[[\d,]+\]"

@@ -103,11 +103,25 @@ def get_split_mode_supported_speeds(breakout_modes):
     2: {'40G', '10G', '25G', '50G'},
     4: {'10G', '25G'}}
     """
-    split_mode_supported_speeds = {1: set(), 2: set(), 4: set(), 8: set()}
-    breakout_port_by_modes = get_speed_option_by_breakout_modes(breakout_modes)
-    for breakout_mode, supported_speeds_list in breakout_port_by_modes.items():
-        breakout_num, _ = breakout_mode.split("x")
-        split_mode_supported_speeds[int(breakout_num)].update(supported_speeds_list)
+    split_mode_supported_speeds = {1: set(), 2: set(), 3: set(), 4: set(), 8: set()}
+    for breakout_mode in breakout_modes:
+        split_num = 0
+        supported_speeds = set()
+        breakout_mode_segments = breakout_mode.split("+")
+        for breakout_mode_segment in breakout_mode_segments:
+            breakout_mode_segment = breakout_mode_segment.strip()
+            breakout_match = re.search(r"(\d+)x(\d+G|\d+)", breakout_mode_segment)
+            if not breakout_match:
+                continue
+            split_num += int(breakout_match.group(1))
+            supported_speeds.add(breakout_match.group(2))
+
+            bracket_match = re.search(r"\[([^\]]+)\]", breakout_mode_segment)
+            if bracket_match:
+                supported_speeds.update(speed.strip() for speed in bracket_match.group(1).split(",") if speed.strip())
+
+        if split_num and supported_speeds:
+            split_mode_supported_speeds.setdefault(split_num, set()).update(supported_speeds)
     return split_mode_supported_speeds
 
 
@@ -120,12 +134,12 @@ def get_split_mode_supported_breakout_modes(breakout_modes):
     2: {'2x50G[40G,25G,10G]'},
     4: {'4x25G[10G]'}
     """
-    split_mode_supported_breakout_modes = {1: set(), 2: set(), 4: set(), 8: set()}
+    split_mode_supported_breakout_modes = {1: set(), 2: set(), 3: set(), 4: set(), 8: set()}
     for breakout_mode in breakout_modes:
-        breakout_pattern = r"(\dx\d+G\[[\d*G,]*\]|\dx\d+G|\dx\d+\[[\d+,]*\])"
-        if re.search(breakout_pattern, breakout_mode):
-            breakout_num, _ = breakout_mode.split("x")
-            split_mode_supported_breakout_modes[int(breakout_num)].add(breakout_mode)
+        breakout_nums = re.findall(r"(\d+)x", breakout_mode)
+        if breakout_nums:
+            split_num = sum(int(breakout_num) for breakout_num in breakout_nums)
+            split_mode_supported_breakout_modes.setdefault(split_num, set()).add(breakout_mode)
     return split_mode_supported_breakout_modes
 
 
