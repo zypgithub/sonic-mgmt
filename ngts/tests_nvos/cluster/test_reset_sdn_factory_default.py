@@ -75,6 +75,11 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         config_files_paths = get_current_config_files_paths(sdn, devices)
+        with allure.step("Wait for chassis_mapping to be populated by nmx-c before baseline snapshot"):
+            _wait_until_chassis_mapping_file_has_content(
+                engines, config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING]
+            )
+
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
@@ -156,3 +161,14 @@ def get_current_config_files_paths(sdn, devices):
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
     return files_dict
+
+
+def _wait_until_chassis_mapping_file_has_content(engines, file_path):
+    """Wait until chassis_mapping file is updated"""
+    for _ in range(20):
+        content = engines.dut.run_cmd("sudo cat {}".format(file_path))
+        lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
+        if lines:
+            return
+        logger.info("Sleeping for 5 seconds")
+        time.sleep(5)

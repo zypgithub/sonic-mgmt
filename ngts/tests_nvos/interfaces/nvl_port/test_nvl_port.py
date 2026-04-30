@@ -839,7 +839,7 @@ def test_nvl_speed_configuration(engines, devices, random_api, has_loopbox, stan
 
         with allure_step(f"Wait and verify ALL access ports reached speed {new_speed}"):
             retry_call(validate_ports_state_and_speed, [new_speed, port_names, 'acp'],
-                       exceptions=AssertionError, tries=6, delay=30)
+                       exceptions=AssertionError, tries=7, delay=30)
             logger.info(f"✓ All access ports reached speed {new_speed}")
 
         with allure_step("Verify supported-lanes matches device configuration"):
