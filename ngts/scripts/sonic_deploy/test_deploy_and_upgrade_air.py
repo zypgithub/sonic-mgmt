@@ -35,7 +35,7 @@ def test_deploy_and_upgrade_air(topology_obj, engines, target_version, sonic_top
 
         if isinstance(cli_obj, SonicGeneralCliDefault) and not isinstance(cli_obj, NvueGeneralCli):
             sonic_chassis_cli = SonicChassisCli(engine=dut['engine'])
-            supported_hwsku = sonic_chassis_cli.get_supported_hwsku_platform_dir()
+            supported_hwsku = sonic_chassis_cli.get_supported_hwsku_platform_dir(platform=platform_params['platform'])
             hwsku = destination_hwsku if destination_hwsku else platform_params['hwsku']
             if hwsku not in supported_hwsku:
                 raise Exception(f"Unsupported hwsku provided: {hwsku}, "
