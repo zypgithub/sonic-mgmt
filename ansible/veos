@@ -228,6 +228,8 @@ all:
           - lt2-p32o64
           - lt2-o128
           - ptp-256
+          - urh
+          - lrh
       children:
         server_1:
         server_2:
