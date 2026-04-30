@@ -336,8 +336,9 @@ class ClusterTools:
                                                               field_name=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE,
                                                               expected_value=IbInterfaceConsts.LINK_PHYSICAL_PORT_STATE_LINK_UP).verify_result()
 
-        with allure.step("Verify switch ports state - that are connected to transceivers"):
-            ClusterTools().verify_external_interfaces_state_up_and_active(devices)
+        if hasattr(devices.dut, 'nvl_trunk_ports_list') and devices.dut.nvl_trunk_ports_list:
+            with allure.step("Verify switch ports state - that are connected to transceivers"):
+                ClusterTools().verify_external_interfaces_state_up_and_active(devices)
 
     @staticmethod
     def get_all_interfaces_with_transceivers(devices):
