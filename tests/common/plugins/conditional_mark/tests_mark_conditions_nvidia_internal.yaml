@@ -676,7 +676,12 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
     conditions_logical_operator: or
     conditions:
     - "https://redmine.mellanox.com/issues/4258556 and 'sn5640_simx' in platform"
-    - "'6600_simx' in platform or '5810_simx' in platform"
+    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4996773"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4996773 and '6810_ld_simx' in platform"
 
 platform_tests/sfp/test_show_intf_xcvr.py::test_check_show_lpmode:
   skip:
@@ -716,52 +721,58 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_sfps:
 
 platform_tests/api/test_chassis_fans.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support Chassis Fans"
+    reason: "sn5810, sn6600, sn6810 doesn't support Chassis Fans"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 platform_tests/api/test_fan_drawer.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support Fan Drawer"
+    reason: "sn5810, sn6600, sn6810 doesn't support Fan Drawer"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 platform_tests/api/test_fan_drawer_fans.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support Fan Drawer"
+    reason: "sn5810, sn6600, sn6810 doesn't support Fan Drawer"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 platform_tests/api/test_psu.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support PSU"
+    reason: "sn5810, sn6600, sn6810 doesn't support PSU"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 
 platform_tests/api/test_psu_fans.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support PSU"
+    reason: "sn5810, sn6600, sn6810 doesn't support PSU"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 platform_tests/daemon/test_psud.py:
   skip:
-    reason: "sn5810, sn6600 doesn't support PSU"
+    reason: "sn5810, sn6600, sn6810 doesn't support PSU"
     conditions_logical_operator: or
     conditions:
     - "'5810' in platform"
     - "'6600' in platform"
+    - "'6810' in platform"
 
 platform_tests/sfp/software_control/test_software_control.py:
   skip:
@@ -786,6 +797,12 @@ platform_tests/sfp/test_sfputil.py:
     reason: "QSFP eeprom emulation is not supported currently."
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+
+platform_tests/sfp/test_sfputil.py::test_check_sfputil_low_power_mode:
+  skip:
+    reason: "Currently, sn6810_ld_simx platform doesn't support low power mode"
+    conditions:
+    - "'sn6810_ld_simx' in platform"
 
 platform_tests/sfp/test_sfputil.py::test_check_sfputil_error_status:
   skip:
@@ -921,6 +938,28 @@ platform_tests/api/test_sfp.py:
     conditions_logical_operator: or
     conditions:
     - "'simx' in platform and 'sn6810_ld_simx' not in platform"
+
+platform_tests/api/test_sfp.py::TestSfpApi::test_lpmode_support:
+  skip:
+    reason: "Currently, sn6810_ld_simx platform doesn't support low power mode"
+    conditions:
+    - "'sn6810_ld_simx' in platform"
+
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_info:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
+
+platform_tests/api/test_sfp.py::TestSfpApi::test_get_transceiver_threshold_info:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4989247 or https://redmine.mellanox.com/issues/4989326"
+    conditions_logical_operator: or
+    conditions:
+    - "https://redmine.mellanox.com/issues/4989247 and 'sn6810_ld_simx' in platform"
+    - "https://redmine.mellanox.com/issues/4989326 and 'sn6810_ld_simx' in platform"
 
 platform_tests/mellanox/test_check_sfp_eeprom.py:
   skip:
@@ -1101,12 +1140,6 @@ everflow/test_everflow_ipv6.py::TestEgressEverflowIPv6:
     - "'sn6600' in platform"
 
 high_frequency_telemetry/test_high_frequency_telemetry.py:
-  xfail:
-    reason: "xfail due to RM issue 4983538"
-    conditions:
-    - "https://redmine.mellanox.com/issues/4983538"
-
-high_frequency_telemetry/test_high_frequency_telemetry.py:
   skip:
     reason: "Test is skipped due to RM issue 4924461 for sn6600_ld_simx platform"
     conditions:
@@ -1119,41 +1152,6 @@ platform_tests/api/test_chassis.py::TestChassisApi::test_get_watchdog:
     conditions:
     - "'simx' in platform"
 
-platform_tests/api/test_chassis.py::TestChassisApi::test_thermals:
-  skip:
-    reason: "Test is skipped - thermals not supported on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
-
-platform_tests/api/test_fan_drawer.py:
-  skip:
-    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
-
-platform_tests/api/test_fan_drawer_fans.py:
-  skip:
-    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
-
-platform_tests/api/test_psu.py:
-  skip:
-    reason: "Test is skipped - no psu emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
-
-platform_tests/api/test_psu_fans.py:
-  skip:
-    reason: "Test is skipped - no fan/psu emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
-
-platform_tests/api/test_chassis_fans.py:
-  skip:
-    reason: "Test is skipped - no fan emulation on sn6600_simx/sn6600_ld_simx/sn5810_simx platforms"
-    conditions:
-    - "'6600_simx' in platform or '6600_ld_simx' in platform or '5810_simx' in platform"
 
 platform_tests/api/test_thermal.py:
   skip:
@@ -1187,11 +1185,17 @@ platform_tests/cli/test_show_platform.py::test_show_platform_fan:
     conditions:
     - "'6600_simx' in platform or '6600_ld_simx' in platform"
 
-platform_tests/mellanox/test_check_sysfs.py::test_check_hw_mgmt_sysfs:
-  skip:
-    reason: "Skipped on SPC6 due to RM 4817671"
+qos/test_buffer.py::test_shared_headroom_pool_configure:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
     conditions:
-    - "https://redmine.mellanox.com/issues/4817671 and ('6600_simx' in platform or '6600_ld_simx' in platform)"
+    - "https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
+
+qos/test_buffer.py::test_port_admin_down:
+  xfail:
+    reason: "Testcase ignored due to RM issue: https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
+    conditions:
+    - "https://redmine.mellanox.com/issues/4997273 and '6810_ld_simx' in platform"
 
 span/test_port_mirroring.py::test_mirroring_both:
   skip:
