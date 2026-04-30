@@ -1,26 +1,29 @@
 import logging
-import time
-
-from ngts.tools.test_utils import allure_utils as allure
 import pytest
 import ast
+
+from infra.tools.connection_tools.proxy_ssh_engine import ProxySshEngine
+
+from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
-from ngts.nvos_tools.infra.Fae import Fae
-from ngts.tests_nvos.system.test_unsolicited_mgmt.helpers import *
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
-from ngts.nvos_constants.constants_nvos import SystemConsts, DatabaseConst, NvosConst
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.ngts_types import EnginesT, DevicesT
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_tools.infra.Fae import Fae
 
-logger = logging.getLogger()
-ipv4_eth0_expected_logs = f"NOTICE mgmt-unsolicited: Detected cable connection - running script with interface eth0"
-ipv4_eth1_expected_logs = f"NOTICE mgmt-unsolicited: Detected cable connection - running script with interface eth1"
+from ngts.tests_nvos.constants import MINUTE
+from . import helpers as unsolicited_mgmt_helpers
+
+logger = logging.getLogger(__name__)
+ipv4_eth0_expected_logs = "NOTICE mgmt-unsolicited: Detected cable connection - running script with interface eth0"
+ipv4_eth1_expected_logs = "NOTICE mgmt-unsolicited: Detected cable connection - running script with interface eth1"
 feature_disabled_logs = "NOTICE mgmt-unsolicited: Feature is disabled"
 
 
 @pytest.mark.system
-def test_show_system_mgmt_unsolicited_default_values(engines, devices):
+def test_show_system_mgmt_unsolicited_default_values(engines: EnginesT, devices: DevicesT):
     """
     @summary:
         in this function we will verify the mgmt unsolicited default value
@@ -39,17 +42,26 @@ def test_show_system_mgmt_unsolicited_default_values(engines, devices):
     with allure.step('verify default values'):
         with allure.independent_step('show command output'):
             show_output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.mgmt_unsolicited.show()).verify_result()
-            ValidationTool.verify_field_value_in_output(show_output, SystemConsts.FAE_SYSTEM_STATE, SystemConsts.FAE_SYSTEM_STATE_DEFAULT_VALUE).verify_result()
+            ValidationTool.verify_field_value_in_output(
+                show_output,
+                SystemConsts.FAE_SYSTEM_STATE,
+                SystemConsts.FAE_SYSTEM_STATE_DEFAULT_VALUE
+            ).verify_result()
 
         with allure.independent_step('database table'):
             table_name = '\"DEVICE_METADATA|localhost\"'
-            database_values = Tools.DatabaseTool.sonic_db_cli_hgetall(engine=engines.dut, asic="", db_name=DatabaseConst.CONFIG_DB_NAME, table_name=table_name)
+            database_values = Tools.DatabaseTool.sonic_db_cli_hgetall(
+                engine=engines.dut,
+                asic="",
+                db_name=DatabaseConst.CONFIG_DB_NAME,
+                table_name=table_name,
+            )
             output_dict = ast.literal_eval(database_values)
             ValidationTool.verify_field_value_in_output(output_dict, 'mgmt_unsolicited_state', NvosConst.ENABLED).verify_result()
 
 
 @pytest.mark.system
-def test_system_mgmt_unsolicited_enabled(engines, devices, dut_hostname):
+def test_system_mgmt_unsolicited_enabled(engines: EnginesT, devices: DevicesT, dut_hostname: str):
     """
     @summary:
         in this function we want to check the basic flow configuring ip address and unsolicited feature is enabled
@@ -64,11 +76,16 @@ def test_system_mgmt_unsolicited_enabled(engines, devices, dut_hostname):
     ipv4_eth0_expected_logs = "NOTICE mgmt-unsolicited: Executing command: arping -c 1 -U -i eth0 -S {}"
     ipv4_eth1_expected_logs = "NOTICE mgmt-unsolicited: Executing command: arping -c 1 -U -i eth1 -S {}"
 
-    swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[ipv4_eth0_expected_logs, ipv4_eth1_expected_logs], is_enabled=True, hostname=dut_hostname)
+    unsolicited_mgmt_helpers.swap_ips_and_verify_logs_and_packets(
+        engine=engines.dut,
+        expected_messages=[ipv4_eth0_expected_logs, ipv4_eth1_expected_logs],
+        is_enabled=True,
+        hostname=dut_hostname
+    )
 
 
 @pytest.mark.system
-def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
+def test_system_mgmt_unsolicited_disabled(engines: EnginesT, devices: DevicesT, dut_hostname: str):
     """
     @summary:
         in this case we want to disable the unsolicited feature and verify basic flow
@@ -91,7 +108,12 @@ def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
                 show_output = OutputParsingTool.parse_json_str_to_dictionary(fae.system.mgmt_unsolicited.show()).verify_result()
                 ValidationTool.verify_field_value_in_output(show_output, SystemConsts.FAE_SYSTEM_STATE, NvosConst.DISABLED).verify_result()
 
-            swap_ips_and_verify_logs_and_packets(engine=engines.dut, expected_messages=[feature_disabled_logs, feature_disabled_logs], is_enabled=False, hostname=dut_hostname)
+            unsolicited_mgmt_helpers.swap_ips_and_verify_logs_and_packets(
+                engine=engines.dut,
+                expected_messages=[feature_disabled_logs, feature_disabled_logs],
+                is_enabled=False,
+                hostname=dut_hostname,
+            )
         finally:
             with allure.step("enable mgmt unsolicited feature"):
                 fae.system.mgmt_unsolicited.set(op_param_name=SystemConsts.STATE, op_param_value=NvosConst.ENABLED, apply=True)
@@ -101,7 +123,7 @@ def test_system_mgmt_unsolicited_disabled(engines, devices, dut_hostname):
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
-def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices, serial_engine):
+def test_system_mgmt_unsolicited_shutdown_enabled(engines: EnginesT, devices: DevicesT, serial_engine: ProxySshEngine):
     """
     @summary:
         in this function we want to check the shutdown of mgmt interface while unsolicited feature is enabled
@@ -111,17 +133,27 @@ def test_system_mgmt_unsolicited_shutdown_enabled(engines, devices, serial_engin
             2. check logs
     """
     with allure.step("shutdown a management interface and verify logs"):
-        config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=ipv4_eth0_expected_logs)
+        unsolicited_mgmt_helpers.config_management_interface_verify_logs(
+            engine=serial_engine,
+            mgmt_interface='eth1',
+            state=NvosConsts.LINK_STATE_DOWN,
+            expected_logs=ipv4_eth0_expected_logs,
+        )
 
     with allure.step("activate a management interface and verify logs"):
-        config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=ipv4_eth1_expected_logs)
+        unsolicited_mgmt_helpers.config_management_interface_verify_logs(
+            engine=serial_engine,
+            mgmt_interface='eth1',
+            state=NvosConsts.LINK_STATE_UP,
+            expected_logs=ipv4_eth1_expected_logs,
+        )
 
 
 @pytest.mark.check_log_size
 @pytest.mark.check_disk_usage
 @pytest.mark.system
 @pytest.mark.timeout(3 * MINUTE, func_only=True)
-def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices, serial_engine):
+def test_system_mgmt_unsolicited_shutdown_disabled(engines: EnginesT, devices: DevicesT, serial_engine: EnginesT):
     """
     @summary:
         in this function we want to check the shutdown of mgmt interface while unsolicited feature is disabled
@@ -142,10 +174,20 @@ def test_system_mgmt_unsolicited_shutdown_disabled(engines, devices, serial_engi
 
     try:
         with allure.step("shutdown a management interface and verify logs"):
-            config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_DOWN, expected_logs=feature_disabled_logs)
+            unsolicited_mgmt_helpers.config_management_interface_verify_logs(
+                engine=serial_engine,
+                mgmt_interface='eth1',
+                state=NvosConsts.LINK_STATE_DOWN,
+                expected_logs=feature_disabled_logs,
+            )
 
         with allure.step("activate a management interface and verify logs"):
-            config_management_interface_verify_logs(engine=serial_engine, mgmt_interface='eth1', state=NvosConsts.LINK_STATE_UP, expected_logs=feature_disabled_logs)
+            unsolicited_mgmt_helpers.config_management_interface_verify_logs(
+                engine=serial_engine,
+                mgmt_interface='eth1',
+                state=NvosConsts.LINK_STATE_UP,
+                expected_logs=feature_disabled_logs,
+            )
     finally:
         with allure.step("enable mgmt unsolicited feature"):
             fae.system.mgmt_unsolicited.set(op_param_name=SystemConsts.STATE, op_param_value=NvosConst.ENABLED, apply=True)
