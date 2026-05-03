@@ -8,8 +8,9 @@ from ngts.nvos_constants.constants_nvos import LinkDetectionConsts
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch
 from ngts.nvos_tools.ib.InterfaceConfiguration.Interface import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port
-from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import IbInterfaceConsts, MloopConsts
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.infra.NvCommand import NvCommand
 from ngts.nvos_tools.infra.LinuxCmdBuilderTool import LinuxCmdBuilderTool
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
@@ -147,69 +148,50 @@ class IbInterfaceTool:
         return get_log_port(table_output, port_number, lane_bmap)
 
     @staticmethod
-    def configure_rosalind_simx_loopback(engines, devices):
+    def configure_rosalind_simx_loopback(engines, devices,
+                                         mloop_mode: MloopConsts.Mode = MloopConsts.Mode.LOGICAL):
         """
-        Configure RosalindSimx using MLOOP workaround to enable link simulation.
+        Configure RosalindSimx using per-interface MLOOP to enable link simulation.
 
-        This utility function performs the following configuration sequence:
-        1. Sets all access ports to down state
-        2. Enables mloop-workaround feature
-        3. Sets all access ports back to up state
-        4. Saves configuration for persistence across reboots
+        Per nvbug 6072833 the FAE mloop knob is per-interface (replacing the old
+        system-wide knob). The system toggles affected ports automatically, so no
+        manual link state down/up dance is needed.
+
+        Steps:
+        1. Set fae mloop=<mloop_mode> on all access ports (system auto-toggles ports)
+        2. Save configuration for persistence across reboots
 
         Args:
             engines: Engine objects containing DUT connection
             devices: Device objects containing device configuration
+            mloop_mode: MloopConsts.Mode to apply (default: LOGICAL = LLU2LLU loopback)
 
         Returns:
             bool: True if configuration was successful, False if skipped
-
-        Example:
-            >>> success = IbInterfaceTool.configure_rosalind_simx_loopback(engines, devices)
-            >>> if success:
-            ...     logger.info("RosalindSimx MLOOP workaround configured successfully")
         """
-        # Check if this device requires MLOOP setup (RosalindSimx/PortiaSimx and future compatible platforms)
         if not getattr(devices.dut, 'require_mloop_setup', False):
-            logger.info("Device does not require MLOOP setup, skipping MLOOP workaround configuration")
+            logger.info("Device does not require MLOOP setup, skipping MLOOP configuration")
             return False
 
-        logger.info("RosalindSimx detected, configuring MLOOP workaround")
+        logger.info(f"RosalindSimx detected, configuring per-interface MLOOP (mode={mloop_mode})")
 
-        with allure.step("RosalindSimx MLOOP Workaround Configuration"):
-            # Get access ports list and create range string
+        with allure.step(f"RosalindSimx per-interface MLOOP Configuration (mode={mloop_mode})"):
             access_ports = devices.dut.nvl_access_ports_list
             if not access_ports:
                 logger.warning("No access ports found, skipping RosalindSimx configuration")
                 return False
 
-            # Create port range string (e.g., "acp1-144")
             port_range = summarize_switch_ports(access_ports)
             logger.info(f"Access ports range: {port_range}")
 
-            # Step 1: Bring ports down
-            with allure.step(f"Set {port_range} interfaces to down state"):
-                engines.dut.run_cmd(f'nv set interface {port_range} link state down')
-                engines.dut.run_cmd('nv config apply')
-                logger.info(f"Set {port_range} to down state")
-
-            # Step 2: Enable MLOOP workaround
-            with allure.step("Enable MLOOP workaround"):
-                fae = Fae()
-                fae.system.mloop.state.set(
-                    op_param_name='enabled',
-                    apply=False,
-                    ask_for_confirmation=True
+            with allure.step(f"Enable mloop={mloop_mode} on {port_range}"):
+                NvCommand().fae.interfaces[port_range].link.mloop.set(
+                    op_param_name=mloop_mode,
+                    apply=True,
+                    ask_for_confirmation=True,
                 ).verify_result()
-                logger.info("MLOOP workaround enabled")
+                logger.info(f"Set mloop={mloop_mode} on {port_range} (system auto-toggles ports)")
 
-            # Step 3: Bring ports up
-            with allure.step(f"Set {port_range} interfaces to up state"):
-                engines.dut.run_cmd(f'nv set interface {port_range} link state up')
-                engines.dut.run_cmd('nv config apply')
-                logger.info(f"Set {port_range} to up state")
-
-            # Step 4: Save config for persistence across reboots
             with allure.step("Save configuration"):
                 engines.dut.run_cmd('nv config save')
                 logger.info("Configuration saved")
@@ -217,9 +199,7 @@ class IbInterfaceTool:
             with allure.step("Final stabilization wait - 1 minute"):
                 logger.info("Waiting 1 minute for system stabilization...")
                 time.sleep(60)
-                logger.info("RosalindSimx loopback configuration completed")
-
-            logger.info("RosalindSimx MLOOP workaround configuration completed")
+                logger.info("RosalindSimx per-interface MLOOP configuration completed")
 
         return True
 

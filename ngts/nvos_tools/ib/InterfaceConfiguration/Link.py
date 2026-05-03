@@ -26,3 +26,4 @@ class LinkMgmt(BaseComponent):
         self.plr = BaseComponent(self, path='/plr')
         self.ib_subnet = BaseComponent(self, path='/ib-subnet')
         self.low_power = LowPower(self)
+        self.mloop = BaseComponent(self, path='/mloop')

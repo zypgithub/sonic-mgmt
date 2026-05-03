@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 class InternalNvosConsts:
@@ -214,6 +214,15 @@ class IbInterfaceConsts:
 class AutoNegotiateConsts:
     class State(Enum):
         ENABLED = 'enabled'
+        DISABLED = 'disabled'
+
+
+class MloopConsts:
+    """FAE per-interface mloop knob: nv set fae interface <port> link mloop <mode>."""
+
+    class Mode(StrEnum):
+        PHY = 'phy'              # PHY-level loopback (was system-wide "enabled")
+        LOGICAL = 'logical'      # LLU2LLU loopback
         DISABLED = 'disabled'
 
 

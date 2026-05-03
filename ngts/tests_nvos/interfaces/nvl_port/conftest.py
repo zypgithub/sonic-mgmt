@@ -9,8 +9,8 @@ from ngts.nvos_constants.constants_nvos import MultiPlanarConsts
 from ngts.nvos_tools.infra.MultiPlanarTool import MultiPlanarTool
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.Devices.IbDevice import RosalindSimx, RosalindStackedSimx, RosalindSwitch  # TODO: Remove RosalindSwitch import when XDR WA is removed
+from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import MloopConsts
 from ngts.nvos_tools.infra.IbInterfaceTool import IbInterfaceTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
@@ -20,26 +20,50 @@ from ngts.tests_nvos.interfaces.nvl_port.helpers import get_linked_ports_pair
 logger = logging.getLogger()
 
 
+@pytest.fixture(scope='module')
+def mloop_mode(request) -> MloopConsts.Mode:
+    """
+    FAE mloop mode applied by rosalind_simx_setup. Default: LOGICAL (LLU2LLU loopback).
+
+    Indirect-parametrizable: tests can pick a mode via::
+
+        @pytest.mark.parametrize('mloop_mode', [MloopConsts.Mode.PHY], indirect=True)
+        def test_something(...):
+            ...
+
+    Accepts either a MloopConsts.Mode member or its string value ('phy', 'logical',
+    'disabled'). Invalid values raise ValueError with the list of valid modes.
+    """
+    raw = getattr(request, 'param', MloopConsts.Mode.LOGICAL)
+    if isinstance(raw, MloopConsts.Mode):
+        return raw
+    try:
+        return MloopConsts.Mode(raw)
+    except ValueError:
+        valid = ', '.join(m.value for m in MloopConsts.Mode)
+        raise ValueError(
+            f"mloop_mode={raw!r} is not a valid MloopConsts.Mode (valid: {valid})"
+        )
+
+
 @pytest.fixture(scope='module', autouse=True)
 @pytest.mark.timeout(20 * MINUTE, func_only=True)  # 20 minutes - setup typically takes 7-15 minutes
-def rosalind_simx_setup(engines, devices, is_air, is_simx):
+def rosalind_simx_setup(engines, devices, mloop_mode, nv_command):
     """
     RosalindSimx specific setup configuration that runs once per test module (.py file).
 
-    This fixture performs the following configuration for RosalindSimx systems:
-    1. Sets all access ports to down state
-    2. Configures mlxreg loopback settings on all access ports
-    3. Sets all access ports back to up state
-    4. Waits for 1 minute for stabilization
+    Per nvbug 6072833 the FAE mloop knob is per-interface, and the system toggles
+    affected ports automatically. The fixture:
+    1. Sets fae mloop=<mloop_mode> on all access ports (auto-toggles ports up)
+    2. Waits for stabilization
+    3. On teardown, sets fae mloop=disabled on the same ports
+
+    The mode comes from the `mloop_mode` fixture (default: LOGICAL); test modules
+    can override that fixture to pick a different mode.
 
     Note: 20 minute timeout allows for variability in setup time (typically 7-15 minutes).
     Individual tests still have 900s timeout from MARS configuration.
     """
-    if is_air or is_simx:
-        logger.info("Skipping MLOOP workaround on AIR/SIMX")
-        yield
-        return
-
     # Skip setup if bug 4681425 is active (SIMX instability with loopback config)
     if is_bug_active(4681425):
         logger.warning("Bug 4681425 is active - skipping RosalindSimx loopback setup, tests will run without it")
@@ -53,7 +77,8 @@ def rosalind_simx_setup(engines, devices, is_air, is_simx):
         return
 
     # Use the reusable utility function for RosalindSimx loopback configuration
-    config_success = IbInterfaceTool.configure_rosalind_simx_loopback(engines, devices)
+    config_success = IbInterfaceTool.configure_rosalind_simx_loopback(
+        engines, devices, mloop_mode=mloop_mode)
     if not config_success:
         pytest.fail("RosalindSimx loopback configuration failed - cannot run tests")
 
@@ -68,40 +93,23 @@ def rosalind_simx_setup(engines, devices, is_air, is_simx):
 
     yield  # ALL tests in module execute here
 
-    # Cleanup: Disable MLOOP workaround and bring ports down after all tests complete
+    # Cleanup: disable per-interface MLOOP after all tests complete (system auto-toggles ports)
     if config_success:
-        logger.info("Cleaning up: Bringing ports down and disabling MLOOP workaround")
+        logger.info("Cleaning up: disabling per-interface MLOOP")
         try:
-            # Get port range (same as setup)
             access_ports = devices.dut.nvl_access_ports_list
             if access_ports:
                 port_range = summarize_switch_ports(access_ports)
+                with allure.step(f"Disable mloop on {port_range}"):
+                    nv_command.fae.interfaces[port_range].link.mloop.set(
+                        op_param_name=MloopConsts.Mode.DISABLED,
+                        apply=True,
+                        ask_for_confirmation=True,
+                    ).verify_result()
+                    logger.info(f"Set mloop=disabled on {port_range} (system auto-toggles ports)")
 
-                # Bring ports down first
-                with allure.step(f"Set {port_range} interfaces to down state"):
-                    engines.dut.run_cmd(f'nv set interface {port_range} link state down')
-                    engines.dut.run_cmd('nv config apply')
-                    logger.info(f"Set {port_range} to down state")
-
-            # Disable MLOOP
-            fae = Fae()
-            fae.system.mloop.state.set(
-                op_param_name='disabled',
-                apply=True,
-                ask_for_confirmation=True
-            ).verify_result()
-            logger.info("MLOOP workaround disabled")
-
-            # Bring ports back UP to restore initial state
-            if access_ports:
-                with allure.step(f"Set {port_range} interfaces back to up state"):
-                    engines.dut.run_cmd(f'nv set interface {port_range} link state up')
-                    engines.dut.run_cmd('nv config apply')
-                    logger.info(f"Set {port_range} to up state")
-
-            # Save configuration
             engines.dut.run_cmd('nv config save')
-            logger.info("System restored to initial state: ports UP, MLOOP disabled, config saved")
+            logger.info("System restored to initial state: MLOOP disabled, config saved")
         except Exception as e:
             logger.warning(f"Failed during cleanup: {e}")
 
