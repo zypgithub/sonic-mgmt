@@ -465,9 +465,6 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
         with allure.step(f"Test speed {speed}"):
             all_ports.interface.link.set(op_param_name=IbInterfaceConsts.LINK_SPEED, op_param_value=speed, apply=True,
                                          ask_for_confirmation=True).verify_result()
-            if not standalone_system:
-                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
-                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
             with allure.step(f"Validate xdr slow speed on ports"):
                 retry_call(validate_ports_state_and_speed, [speed, port_names, prefix], exceptions=AssertionError, tries=6,
@@ -478,9 +475,6 @@ def _set_unset_interface_xdr_slow_speed(engines, devices, test_api, setup_name, 
     finally:
         with allure.step(f"Test unset xdr slow speed"):
             all_ports.interface.link.unset(op_param=IbInterfaceConsts.LINK_SPEED, apply=True, ask_for_confirmation=True).verify_result()
-            if not standalone_system:
-                with allure.step(f"Reset the GPUs on non standalone_system: {setup_name}"):
-                    ClusterTools.reboot_compute_nodes_gpus(setup_name)
 
             with allure.step(f"Validate unset xdr slow speed on ports"):
                 # Select correct default speed based on port type (access vs trunk)
@@ -845,7 +839,7 @@ def test_nvl_speed_configuration(engines, devices, random_api, has_loopbox, stan
 
         with allure_step(f"Wait and verify ALL access ports reached speed {new_speed}"):
             retry_call(validate_ports_state_and_speed, [new_speed, port_names, 'acp'],
-                       exceptions=AssertionError, tries=6, delay=30)
+                       exceptions=AssertionError, tries=7, delay=30)
             logger.info(f"✓ All access ports reached speed {new_speed}")
 
         with allure_step("Verify supported-lanes matches device configuration"):

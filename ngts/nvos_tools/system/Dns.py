@@ -24,7 +24,7 @@ class Dns(BaseComponent):
         """
         # If using OpenAPI and op_param_value is a string (e.g., DNS server IP), wrap it in dict format
         if TestToolkit.tested_api == ApiType.OPENAPI and isinstance(op_param_value, str):
-            op_param_value = {op_param_value: {}}
+            op_param_value = {op_param_value.strip('"'): {}}
 
         # Call parent's set method with the adjusted parameter
         return super().set(op_param_name, op_param_value, expected_str, apply, ask_for_confirmation,

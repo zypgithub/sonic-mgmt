@@ -20,6 +20,7 @@ from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.nmx.Sdn import Sdn
 from ngts.tests_nvos.cluster.cluster_consts import ClusterConsts
 from retry.api import retry_call
+from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 
 logger = logging.getLogger()
 
@@ -49,7 +50,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     TestToolkit.tested_api = test_api
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
 
         with allure.step("Configure custom DSCP before reboot"):
             dscp_value, dscp_numeric = _get_random_dscp_not_default()
@@ -59,36 +60,45 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
 
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
+        if not (is_bug_active(4207869) and standalone_system):
+            ClusterTools.wait_for_app_healthy(cluster, ClusterConsts.NMX_CONTROLLER, engine=engines.dut)
+
         if has_loopbox or not standalone_system:
             with allure.step("Verify LIDs bigger than 0 prior to reboot"):
-                ClusterTools.verify_lid_value(devices)
+                ClusterTools.verify_lid_value(devices, engine=engines.dut)
             with allure.step("Verify links Active prior to reboot"):
-                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
+                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name, engine=engines.dut)
 
         if not standalone_system:
             with allure.step("Creating Empty partition, then adding a GPU to it with no-reroute option"):
                 logger.info("After reboot, empty partition should persist, but GPU added to it with no-reroute should be deleted")
-                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute')
+                uuid, location, _, partition_to_remove_from = ClusterTools.create_empty_partition_and_add_gpu(sdn, 'no-reroute', engine=engines.dut)
 
         with allure.step('Run nv action reboot system'):
             result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot)
 
         with allure.step("Check Cluster status and cluster apps after reboot"):
-            ClusterTools.validate_cluster_enabled(cluster)
+            ClusterTools.validate_cluster_enabled(cluster, engine=engines.dut)
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                             nmx_c_expected_state='up')
-            # ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+                                                             nmx_c_expected_state='up', engine=engines.dut)
+            # ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
             retry_call(ClusterTools.verify_apps_running,
-                       [engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox],
+                       [engines.dut, devices, cluster, 'ok', output_format, standalone_system, has_loopbox],
                        exceptions=AssertionError, tries=6, delay=5)
 
         if has_loopbox or not standalone_system:
             with allure.step("Verify LIDs bigger than 0 after reboot"):
-                ClusterTools.verify_lid_value(devices)
+                ClusterTools.verify_lid_value(devices, engine=engines.dut)
             with allure.step("Verify links Active after reboot"):
-                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name)
+                ClusterTools.verify_interface_up(devices, has_loopbox, setup_name, engine=engines.dut)
 
-        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices).verify_result()
+        cluster_reboot_extra_time = 60
+        # Reboot time when cluster is enabled is longer than when cluster is disabled, so we add extra time to the threshold
+        reboot_threshold = devices.dut.expected_operation_durations.get(devices.dut.reboot_type)
+        if reboot_threshold is not None:
+            reboot_threshold += cluster_reboot_extra_time
+        OperationTime.verify_operation_time(duration, devices.dut.reboot_type, devices,
+                                            threshold=reboot_threshold).verify_result()
 
         with allure.step("Verify DSCP persisted after reboot"):
             show_output = OutputParsingTool.parse_show_output_to_dict(
@@ -112,12 +122,7 @@ def test_reboot_command(engines, devices, test_name, test_api, has_loopbox, stan
     finally:
         if not standalone_system:
             with allure.step("Running sdn factory reset"):
-                sdn.factory_default.action_reset(param='force')
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                                 nmx_c_expected_state='down')
-                time.sleep(1)
-                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled',
-                                                                 nmx_c_expected_state='up')
-        cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+                ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+        cluster.unset(apply=True, dut_engine=engines.dut)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engines.dut)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)

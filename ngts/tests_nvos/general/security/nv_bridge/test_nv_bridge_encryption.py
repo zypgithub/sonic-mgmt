@@ -30,6 +30,7 @@ from ngts.tests_nvos.general.security.nmx_cert.constants import (
     NV_BRIDGE_SERVER_PORT,
     EncryptionMode,
 )
+from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tests_nvos.general.security.nmx_cert.helpers import (
     enable_cluster,
 )
@@ -243,7 +244,15 @@ def test_bridge_cluster_encryption_set(
 
     with allure.step(f"Update cluster apps {app_name} internal encryption to mtls"):
         app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
-        wait_for_cluster_app_update(cluster, engines.dut)
+        # Cluster app internal is mTLS, but system internal is still default, so nmxc-conn stays down until
+        # system internal is also configured.
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(
+            cluster,
+            cluster_expected_state="enabled",
+            nmx_c_expected_state="down",
+            engine=engines.dut,
+        )
+        time.sleep(1)
         with allure.step("Verify show reflects encryption update"):
             verify_cluster_app_internal_show(
                 app_name,
@@ -480,7 +489,15 @@ def test_bridge_main_flow(
         app.internal.certificate.action_update(bridge_cert.name).verify_result()
         app.internal.ca_certificate.action_update(bridge_cert.cacert_name).verify_result()
         app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
-        wait_for_cluster_app_update(cluster, engines.dut)
+        # Cluster app internal is mTLS, but system internal is still default, so nmxc-conn stays down until
+        # system internal is also configured.
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(
+            cluster,
+            cluster_expected_state="enabled",
+            nmx_c_expected_state="down",
+            engine=engines.dut,
+        )
+        time.sleep(1)
 
         with allure.step("Verify cluster internal configuration"):
             verify_cluster_app_internal_show(
@@ -682,7 +699,15 @@ def test_bridge_cluster_encryption_negative(
     with allure.step(f"Update cluster apps {app_name} with matching cert and ca-cert"):
         app.internal.ca_certificate.action_update(bridge_cert.cacert_name).verify_result()
         app.internal.encryption.action_update(EncryptionMode.MTLS).verify_result()
-        wait_for_cluster_app_update(cluster, engines.dut)
+        # Cluster app internal is mTLS, but system internal is still default, so nmxc-conn stays down until
+        # system internal is also configured.
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(
+            cluster,
+            cluster_expected_state="enabled",
+            nmx_c_expected_state="down",
+            engine=engines.dut,
+        )
+        time.sleep(1)
 
 
 @pytest.mark.system

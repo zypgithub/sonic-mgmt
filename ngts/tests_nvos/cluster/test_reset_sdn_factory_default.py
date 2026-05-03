@@ -35,7 +35,7 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
         with allure.step("Disable cluster"):
             cluster.unset(apply=True).verify_result()
             ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
+                                                             nmx_c_expected_state='down', engine=engines.dut)
 
         with allure.step("Run sdn reset factory while cluster is disabled"):
             sdn = Sdn()
@@ -52,7 +52,7 @@ def test_cluster_sdn_factory_reset_nmx_down(engines, devices, test_api, has_loop
     finally:
         cluster.unset(apply=True).verify_result()
         ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                         nmx_c_expected_state='down')
+                                                         nmx_c_expected_state='down', engine=engines.dut)
 
 
 @pytest.mark.nmx
@@ -71,10 +71,15 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
         initial_configuration_restored = False
     try:
         logger.info("Setting cluster state to enabled")
-        ClusterTools.start_cluster(cluster, setup_name, output_format, devices=devices)
+        ClusterTools.start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
         TestToolkit.GeneralApi[TestToolkit.tested_api].save_config(engines.dut)
 
         config_files_paths = get_current_config_files_paths(sdn, devices)
+        with allure.step("Wait for chassis_mapping to be populated by nmx-c before baseline snapshot"):
+            _wait_until_chassis_mapping_file_has_content(
+                engines, config_files_paths[ClusterConsts.NMX_CONTROLLER_CONFIG_CHASSIS_MAPPING]
+            )
+
         for file_type, file_path in config_files_paths.items():
             initial_config_contents[file_type] = engines.dut.run_cmd("sudo cat {}".format(file_path))
 
@@ -90,11 +95,7 @@ def test_sdn_reset_factory(engines, devices, test_api, has_loopbox, test_name, s
                 sdn.config.apps.app_name[app].type.file_type[file_type].files.file_name[file_name].action_file_install(force=False)
 
         with allure.step("Running sdn factory reset"):
-            sdn.factory_default.action_reset(param='force')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
-            time.sleep(1)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
 
         verify_current_config_equals_given_config(sdn, engines, devices, initial_config_contents, output_format)
 
@@ -160,3 +161,14 @@ def get_current_config_files_paths(sdn, devices):
                 current_installed_config_path = output[installed_file]['path']
                 files_dict[file_type] = current_installed_config_path
     return files_dict
+
+
+def _wait_until_chassis_mapping_file_has_content(engines, file_path):
+    """Wait until chassis_mapping file is updated"""
+    for _ in range(20):
+        content = engines.dut.run_cmd("sudo cat {}".format(file_path))
+        lines = [line.strip() for line in content.strip().split("\n") if line.strip()]
+        if lines:
+            return
+        logger.info("Sleeping for 5 seconds")
+        time.sleep(5)

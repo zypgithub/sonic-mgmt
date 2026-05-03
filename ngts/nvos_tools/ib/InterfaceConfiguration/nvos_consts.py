@@ -221,12 +221,14 @@ class PhyRecoveryConsts:
     ENABLED = 'enabled'
     DISABLED = 'disabled'
     FW_DEFAULT = 'fw-default'
+    AUTO = 'auto'
 
     # NVL6 attributes
     LINK_DOWN_TIMEOUT = 'link-down-timeout'
     RECOVERY_SUPPORTED = 'recovery-supported'
     RECOVERY_STATUS = 'recovery-status'
     RECOVERY_NEGATIVE_TYPE = 'recovery-neg-type'
+    RECOVERY_NEG_TYPE_FORCE_PEER = 'force-peer'
     RECOVERY_ENTRY_REASON = 'recovery-entry-reason'
     PRESENT_MODE = 'preset-mode'
     PEQ_NUMBER_OF_RETRY_PRESET1 = 'peq-number-of-retry-preset1'
@@ -315,7 +317,8 @@ class PhyRecoveryConsts:
         SerdesEQ.TIMEOUT: str(0),
     }
 
-    MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL5_MODES = [ENABLED, DISABLED, FW_DEFAULT]
+    NVL6_MODES = [ENABLED, DISABLED, AUTO]
 
 
 class TxBwLossMonitorConsts:

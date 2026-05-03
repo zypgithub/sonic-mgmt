@@ -11,7 +11,7 @@ from ngts.tools.test_utils import allure_utils as allure
 from ngts.nvos_constants.constants_nvos import ApiType, PlatformConsts
 from ngts.nvos_tools.Devices.IbDevice import RosalindSurrogateSwitch
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.OnieTool import OnieTool
+
 from ngts.scripts.bios_config import configure_bios
 from ngts.tests_nvos.constants import MINUTE
 
@@ -67,16 +67,7 @@ def test_bios_manual_update(engines, devices, topology_obj, test_api, platform_c
         BmcTool.verify_platform_component_version(platform_component_with_clear, version_name)
         DMIDecodeTool.verify_dmi_info(engines, devices)
 
-        # On Rosalind systems, verify AutomaticBackgroundCopyEnabled based on OPN status
-        # OPN (production): should be True, DEV (not OPN): should be False
         if isinstance(devices.dut, RosalindSurrogateSwitch):
-            is_opn = OnieTool.is_opn(topology_obj)
-            bg_copy_enabled = BmcTool.is_automatic_background_copy_enabled(engines.dut, PlatformConsts.EROT_CPU_PATH_NAME)
-            if is_opn:
-                with allure.step("Assert AutomaticBackgroundCopyEnabled is true on Rosalind OPN system"):
-                    assert bg_copy_enabled, \
-                        f"AutomaticBackgroundCopyEnabled is false for {PlatformConsts.EROT_CPU_PATH_NAME} on Rosalind OPN system - expected true"
-            else:
-                with allure.step("Assert AutomaticBackgroundCopyEnabled is false on Rosalind DEV system"):
-                    assert not bg_copy_enabled, \
-                        f"AutomaticBackgroundCopyEnabled is true for {PlatformConsts.EROT_CPU_PATH_NAME} on Rosalind DEV system - expected false"
+            with allure.step("Assert AutomaticBackgroundCopyEnabled is true on Rosalind system"):
+                assert BmcTool.is_automatic_background_copy_enabled(engines.dut, PlatformConsts.EROT_CPU_PATH_NAME), \
+                    f"AutomaticBackgroundCopyEnabled is false for {PlatformConsts.EROT_CPU_PATH_NAME} on Rosalind system - expected true"

@@ -52,13 +52,9 @@ class IbSwitch(BaseSwitch):
 
     def __init__(self, asic_amount, switch_type=NvosConst.IB_SWITCH_TYPE, switch_class=NvosConst.IB_SWITCH_TYPE):
         super().__init__(switch_type=switch_type, asic_amount=asic_amount, switch_class=switch_class)
+        self.supports_mtu_testing = True
         self.documents_path = None
         self.documents_files = None
-        # Default firmware components list for IB switches (can be overridden by subclasses)
-        self.components_list = [FW_COMPONENT_CPLD,
-                                FW_COMPONENT_BIOS,
-                                FW_COMPONENT_SSD,
-                                FW_COMPONENT_ASIC]
         self._init_sensors_dict()
         self._init_gnmi_consts()
         self.open_api_port = "443"
@@ -312,15 +308,6 @@ class IbSwitch(BaseSwitch):
              "KDUMP": 1}
         }
         self.available_tables['database'][DatabaseConst.ASIC_DB_ID].update(
-            {"ASIC_STATE:SAI_OBJECT_TYPE_PORT": self.get_ib_ports_num() / 2,
-             "ASIC_STATE:SAI_OBJECT_TYPE_SWITCH": 0,
-             "LANES": 0,
-             "VIDCOUNTER": 0,
-             "RIDTOVID": 0,
-             "HIDDEN": 0,
-             "COLDVIDS": 0})
-
-        self.available_tables['database'][DatabaseConst.ASIC_DB_ID].update(
             {"ASIC_STATE:SAI_OBJECT_TYPE_PORT": self.get_ib_ports_num(),
              "ASIC_STATE:SAI_OBJECT_TYPE_SWITCH": 0,
              "LANES": 0,
@@ -494,6 +481,12 @@ class IbSwitch(BaseSwitch):
         self.asic1 = 'asic1'
         self.asic_numbers = [f"ASIC{i}" for i in range(1, self.asic_amount + 1)]
         self.counters_db_name = 'COUNTERS_DB'
+
+        # Default firmware components list for IB switches (can be overridden by subclasses)
+        self.components_list = [FW_COMPONENT_CPLD,
+                                FW_COMPONENT_BIOS,
+                                FW_COMPONENT_SSD,
+                                FW_COMPONENT_ASIC]
 
         # Expected ACL rule counts after migration (device-specific, can be overridden)
         self.expected_acl_rule_counts = {
@@ -1454,6 +1447,7 @@ class NvLinkSwitch(IbSwitch):
     def __init__(self, asic_amount):
         super().__init__(switch_type=NvosConst.NVL_SWITCH_TYPE, asic_amount=asic_amount,
                          switch_class=NvosConst.JULIET_SWITCH)
+        self.supports_mtu_testing = False
 
     def _init_interface_lists(self):
         super()._init_interface_lists()
@@ -1630,7 +1624,7 @@ class JulietSwitch(NvLinkSwitch):
             "sudo grep -q '^MNNVL_PARTIALLY_POPULATED_TOPOLOGY=' {file} || echo 'MNNVL_PARTIALLY_POPULATED_TOPOLOGY=1' | sudo tee -a {file}"
         ]
         self.sdn_fm_config_edits = self.sdn_fm_config_edits_standalone
-        # SM config edits for Juliet (only when has_loopbox)
+        # SM config edits for Juliet (only when has_loopbox or is_simx)
         self.sdn_sm_config_edits = [
             "# Ensure nvlink_enable=FALSE",
             "sudo sed -i '/^nvlink_enable[ ]*TRUE/c\\nvlink_enable FALSE' {file}",
@@ -2813,6 +2807,12 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         super()._init_constants()
         self.asic_type = NvosConst.NVL6
         self.supported_nvl_speeds = ['200G', '400G', '360G', '328G']  # Rosalind supports all speeds
+        # MHz -> NVL link speeds allowed for that FAE core-clock (operational profile).
+        self.fae_supported_core_clocks = {
+            755: ['400G', '360G', '328G'],
+            800: self.supported_nvl_speeds,
+        }
+        self.default_core_clock = 800
         # Note: Rosalind has no regular FNM (nvl_fnm_ports is empty), only internal FNM
 
         # Rosalind cluster apps expose additional internal defaults in show output.
@@ -2854,6 +2854,10 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         # Rosalind requires explicit cluster setup before SM config generation (pre-cluster config)
         # Flag to indicate this device needs pre-cluster setup
         self.sdn_needs_pre_cluster_setup = True
+
+        self.nmx_cluster_apps_versions_file_path = (
+            "/auto/sw_system_project/NVOS_INFRA/verification_files/nmx-versions/rosalind_versions.json"
+        )
 
         # TODO -- Define the following new file. It has only 2 cplds instead of 3/4
         self.fw_versions_json_file_path = "/auto/sw_system_project/NVOS_INFRA/verification_files/platform_components/rosalind_versions.json"
@@ -2937,50 +2941,53 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.requires_tpm_pass = True
         # These attributes should be only on QTM4
         self.default_phy_recovery_attributes = {
-            PhyRecoveryConsts.LINK_DOWN_TIMEOUT: 0,
-            PhyRecoveryConsts.RECOVERY_SUPPORTED: 'true',
-            PhyRecoveryConsts.RECOVERY_NEGATIVE_TYPE: 'auto',
+            PhyRecoveryConsts.LINK_DOWN_TIMEOUT: '0',
             PhyRecoveryConsts.RECOVERY_ENTRY_REASON: 'Received_TS1',
+            PhyRecoveryConsts.RECOVERY_NEGATIVE_TYPE: PhyRecoveryConsts.AUTO,
+            PhyRecoveryConsts.RECOVERY_STATUS: PhyRecoveryConsts.DISABLED,
+            PhyRecoveryConsts.RECOVERY_SUPPORTED: 'true',
             PhyRecoveryConsts.STEP_1: {
-                PhyRecoveryConsts.PRESENT_MODE: 'auto',
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: 0,
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: 0,
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: 0,
-                PhyRecoveryConsts.STATE_60_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_61_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_62_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: 0
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: '0',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: '0',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: '0',
+                PhyRecoveryConsts.PRESENT_MODE: PhyRecoveryConsts.AUTO,
+                PhyRecoveryConsts.STATE_60_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_61_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_62_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: '0',
             },
             PhyRecoveryConsts.STEP_2: {
-                PhyRecoveryConsts.PRESENT_MODE: 'auto',
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: 0,
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: 0,
-                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: 0,
-                PhyRecoveryConsts.STATE_60_TO_LINKUP_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_60_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_61_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_62_TIMEOUT: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: 0,
-                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: 0
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET1: '0',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET2: '0',
+                PhyRecoveryConsts.PEQ_NUMBER_OF_RETRY_PRESET3: '0',
+                PhyRecoveryConsts.PRESENT_MODE: PhyRecoveryConsts.AUTO,
+                PhyRecoveryConsts.STATE_60_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_60_TO_LINKUP_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_61_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_62_TIMEOUT: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_65_TO_66_TIME_PRESET3: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_66_TO_67_TIME_PRESET3: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET1: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET2: '0',
+                PhyRecoveryConsts.STATE_67_TO_68_TIME_PRESET3: '0',
             }
         }
         self.memory_size: List[float] = [30.77, 31.21]
         self.supported_disk_list: List[SSDConsts.SSDType] = [SSDConsts.VTPM24GLXI160_BM11, SSDConsts.VTPM24GLXI160_BM12]
+
+        self.techsupport_etc_empty_files_to_ignore += ['gpu_telemetry_enable']
 
     def _init_fan_list(self):
         """Rosalind does not have fans (100% liquid cooled)"""
@@ -2992,7 +2999,7 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         self.psu_list = []
         self.psu_fan_list = []
 
-    def setup_cluster_for_sdn_config(self, cluster, engines):
+    def setup_cluster_for_sdn_config(self, cluster, engine, dut_engines):
         """
         Rosalind-specific: Setup cluster before generating SDN configs.
         This method sets the cluster node primary server and enables the cluster.
@@ -3001,12 +3008,13 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         from ngts.nvos_constants.constants_nvos import SystemConsts
         from ngts.tools.test_utils import allure_utils as allure
 
-        with allure.step("Set cluster node primary server"):
-            logger.info(f"Setting cluster node primary server to {engines.dut.ip}")
-            cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
-                                                  op_param_value=engines.dut.ip, apply=True)
+        with allure.step("Set cluster nodes"):
+            for _, dut_engine in dut_engines.items():
+                cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER,
+                                                      op_param_value=dut_engine.ip, apply=True,
+                                                      dut_engine=engine)
 
-    def wa_restart_nv_bridge_after_sm_config(self, cluster, engines):
+    def wa_restart_nv_bridge_after_sm_config(self, cluster, engine):
         """
         Rosalind-specific workaround for Bug SW #4910763.
         After loading SM config on Rosalind, restart nv-bridge to recover connections.
@@ -3014,18 +3022,19 @@ class RosalindSwitch(RosalindSurrogateSwitch):
         """
         from ngts.tools.test_utils import allure_utils as allure
         from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
+        from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 
         # Only apply workaround if bug is active
         if is_bug_active(4910763):
             with allure.step("WA for Bug 4910763: Restart nv-bridge after SM config"):
                 logger.info("Stopping nmx-controller app")
-                cluster.apps.app_name['nmx-controller'].action_stop_cluster_app()
-
-                # logger.info("Restarting nv-bridge container")
-                # engines.dut.run_cmd("sudo systemctl restart nv-bridge")
+                cluster.apps.app_name['nmx-controller'].action_stop_cluster_app(engine=engine)
 
                 logger.info("Starting nmx-controller app")
-                cluster.apps.app_name['nmx-controller'].action_start_cluster_app()
+                cluster.apps.app_name['nmx-controller'].action_start_cluster_app(engine=engine)
+
+                logger.info("Waiting for nmx-controller to be ready after restart")
+                ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up', engine=engine)
         else:
             logger.info("Bug 4910763 is not active, skipping nv-bridge restart workaround")
 

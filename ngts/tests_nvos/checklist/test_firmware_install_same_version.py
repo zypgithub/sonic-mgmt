@@ -9,16 +9,25 @@ from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_constants.constants_nvos import NvosConst, PlatformConsts
 from ngts.tests_nvos.constants import (FW_COMPONENT_EROT, FW_COMPONENT_BMC, FW_COMPONENT_FPGA,
                                        FW_COMPONENT_CPLD, FW_COMPONENT_BIOS, FW_COMPONENT_SMA,
-                                       FW_COMPONENT_SSD)
+                                       FW_COMPONENT_SSD, FW_COMPONENT_ASIC)
 from ngts.nvos_tools.infra.BmcTool import BmcTool
 from ngts.nvos_tools.infra.FWComponentsTool import FWComponentsTool
 from ngts.nvos_tools.infra.Fae import Fae
+from ngts.nvos_tools.system.System import System
 from ngts.tests_nvos.constants import MINUTE
 from ngts.tests_nvos.system.gnmi.helpers import verify_msg_in_out_or_err, verify_msg_not_in_out_or_err
 from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
 from ngts.tools.test_utils import allure_utils as allure
 
 logger = logging.getLogger()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def cleanup(engines):
+    """Single reboot after all tests in this module (not per test that used skip-version-check)."""
+    yield
+    with allure.step("Reboot for cleanup"):
+        System().reboot.action_reboot(params="force", engine=engines.dut).verify_result()
 
 
 @pytest.mark.timeout(5 * MINUTE, func_only=True)
@@ -154,7 +163,7 @@ def install_same_firmware_version(devices, test_name, component, platform_compon
             with allure.step(f"Verify current fw version on {component} is {version_name}"):
                 if component == 'cpld':
                     BmcTool.verify_cpld_versions(version_name)
-                else:
+                elif component != FW_COMPONENT_ASIC:
                     BmcTool.verify_platform_component_version(platform_component, version_name)
 
             operation = f'install {component}'
@@ -247,7 +256,7 @@ def select_random_component(devices):
             components_list = devices.dut.components_list
 
     # Add SSD for switches that support SSD firmware updates
-    if devices.dut.supports_ssd_upgrade:
+    if devices.dut.supports_ssd_upgrade and FW_COMPONENT_SSD not in components_list:
         components_list.append(FW_COMPONENT_SSD)
 
     with allure.step("Randomize a components from components list"):

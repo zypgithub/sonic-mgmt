@@ -457,8 +457,8 @@ def set_local_users(engines, users, apply=False):
 def check_ldap_user_with_getent_passwd(engine: ProxySshEngine, username: str, user_should_exist: bool):
     with allure.step('Get getent passwd output'):
         output = engine.run_cmd('getent passwd | grep ldap')
-    with allure.step(f'Verify "{username}" does not exist'):
-        err_msg = f'username "{username}" unexpectedly {"does not " if not user_should_exist else ""}exist ' \
+    with allure.step(f'Verify "{username}" {"exists" if user_should_exist else "does not exist"}'):
+        err_msg = f'username "{username}" unexpectedly {"does not " if user_should_exist else ""}exist ' \
             f'in getent passwd output\ngetent passwd output: {output}\n'
         if not output:
             assert not user_should_exist, err_msg

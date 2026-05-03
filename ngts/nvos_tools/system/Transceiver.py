@@ -58,7 +58,7 @@ class Transceiver(BaseComponent):
         return self.show(op_param=op_param)
 
     def action_reset(self, transceiver_name, expected_str="", dut_engine=None):
-        """nv action install platform transceiver firmware files <file-name> """
+        """nv action reset platform transceiver <transceiver-name> """
         return self.action_deprecated(ActionConsts.RESET, transceiver_name, expected_output=expected_str, dut_engine=dut_engine)
 
     def action_install(self, transceiver_name, file_name, expected_str="", dut_engine=None):
@@ -85,6 +85,7 @@ class Transceiver(BaseComponent):
 
             return dict_of_transceivers
 
-    def get_list_of_connected_transceivers(self):
-        dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(self.show(op_param='--view=brief')).get_returned_value()
+    def get_list_of_connected_transceivers(self, dut_engine=None):
+        dict_of_transceivers = OutputParsingTool.parse_show_output_to_dict(
+            self.show(op_param='--view=brief', dut_engine=dut_engine)).get_returned_value()
         return list(dict_of_transceivers.keys())

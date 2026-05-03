@@ -75,7 +75,7 @@ class CumulusConsts:
     TECHSUPPORT_FILE_NOT_FOUND_MESSAGE = "File not found: nonexist"
     NTP_SYNCHRONIZATION_MAX_TIME = 300
     NTP_LOGS_COMPONENT_ID = "nvue"
-    LOG_MSG_SET_NTP = ["nv set system ntp server 10.7.77.134 state"]
+    LOG_MSG_SET_NTP = ["nv set system ntp server 10.80.74.100 state"]
 
     DISK_MODE_FULL_DISK = 'full-disk'
     DISK_MODE_USAGE = 'usage'
@@ -136,7 +136,7 @@ class NvosConst:
     QTM3 = "Quantum3"
     QTM4 = "Quantum4"
     NVL5 = 'NVLink-5 switch'
-    NVL6 = 'NVLink-6 switch'
+    NVL6 = 'NVLink-6 Switch'
     NVL7 = 'NVLink-7 Switch'
     QTM3_AND_NEWER = [QTM3, QTM4]
     DESCRIPTION = 'description'
@@ -977,16 +977,6 @@ class SystemConsts:
 
         COMPRESSION = 'compression'
 
-    class ApiConsts:
-        class CompressionT:
-            GZIP = 'gzip'
-
-            @classmethod
-            def all(cls):
-                return [v for k, v in vars(cls).items() if k.isupper()]
-
-        COMPRESSION = 'compression'
-
 
 class EventConsts:
     TABLE_SIZE = 'table-size'
@@ -1684,10 +1674,12 @@ class NtpConsts:
     KEY_VALUE = 'v1234'
     KEY1_VALUE = 'temp_value'
     KEY2_VALUE = 'temp_value123'
-    SERVER1_IPV4 = '10.7.77.134'
-    SERVER2_IPV4 = '10.7.77.135'
-    HOSTNAME_SUFFIX = '.lab.mtl.com'
-    SERVER2_HOSTNAME = 'l-coreslave' + HOSTNAME_SUFFIX
+    # NBU lab DHCP-provided NTP servers (ib-01/ib-02.yk-il.nvidia.com), reachable across all lab networks
+    # Can be verified via: nv show interface eth1 ipv4 dhcp-client lease
+    SERVER1_IPV4 = '10.80.74.100'
+    SERVER2_IPV4 = '10.80.74.101'
+    HOSTNAME_SUFFIX = '.yk-il.nvidia.com'
+    SERVER2_HOSTNAME = 'ib-02' + HOSTNAME_SUFFIX
     SERVER3_IPV4 = '10.7.77.136'
     SERVER4_IPV4 = 'time1.google.com'
     SERVER5_IPV4 = 'google.com'
@@ -1738,11 +1730,11 @@ class NtpConsts:
 
     LOG_MSG_UNSET_NTP = "NtpCfg: Set global config: {'admin_state': 'disabled', 'authentication': 'disabled', " \
                         "'dhcp': 'disabled', 'server_role': 'disabled', 'src_intf': 'eth0', 'vrf': 'default'}"
-    LOG_MSG_SERVER_CONFIG = "servers: {'10.7.77.134': {'admin_state': 'enabled', 'association_type': 'server', " \
-                            "'iburst': 'off', 'resolve_as': '10.7.77.134', 'trusted': 'no', 'version': '4'}}"
-    LOG_MSG_SERVER_CONFIG_UPDATE = "servers: {'10.7.77.134': {'admin_state': 'disabled', " \
-                                   "'association_type': 'server', 'iburst': 'off', 'key': '6', " \
-                                   "'resolve_as': '10.7.77.134', 'trusted': 'yes', 'version': '3'}}"
+    LOG_MSG_SERVER_CONFIG = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'enabled', 'association_type': 'server', " \
+        f"'iburst': 'off', 'resolve_as': '{SERVER1_IPV4}', 'trusted': 'no', 'version': '4'}}}}"
+    LOG_MSG_SERVER_CONFIG_UPDATE = f"servers: {{'{SERVER1_IPV4}': {{'admin_state': 'disabled', " \
+        f"'association_type': 'server', 'iburst': 'off', 'key': '6', " \
+        f"'resolve_as': '{SERVER1_IPV4}', 'trusted': 'yes', 'version': '3'}}}}"
     LOG_MSG_SERVER_CONFIG_KEY = "NtpCfg: Set keys: {'6': {'trusted': 'yes', 'type': 'SHA1'}}"
 
     LOG_MSG_LIST = [LOG_MSG_UNSET_NTP, LOG_MSG_SERVER_CONFIG, LOG_MSG_SERVER_CONFIG_UPDATE, LOG_MSG_SERVER_CONFIG_KEY]

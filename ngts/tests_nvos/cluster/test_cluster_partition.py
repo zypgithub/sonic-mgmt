@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name, standalone_system):
+def test_cluster_partition(engines, dut_engines, devices, random_api, has_loopbox, setup_name, standalone_system, is_simx):
     if standalone_system:
         pytest.skip("Skipping test - supported only for non standalone systems.")
 
@@ -41,14 +41,22 @@ def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name
         gpus_removed_from_default = []
         initial_partition_output = None
         partitions_mapping = {}  # key: partition_id, value: list of tuples, each index is (uuid, location)
+        zero_uuid_gpus = set()
     try:
         with allure.step("Enable cluster"):
-            ClusterTools().start_cluster(cluster, setup_name, output_format, devices=devices)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
+            ClusterTools().start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                             standalone_system=standalone_system, engine=engines.dut)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
-            initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
-                                                                                   output_format=output_format).get_returned_value()
+            for _ in range(3):
+                initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
+                                                                                       output_format=output_format).get_returned_value()
+                if initial_partition_output:
+                    break
+                logger.info("Trying after 2 seconds...")
+                time.sleep(2)
+
             partition_ids = list(initial_partition_output.keys())
             default_partition_id = partition_ids[0]
             default_partition_type = initial_partition_output[default_partition_id]['partition-type']
@@ -64,36 +72,37 @@ def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name
                 list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
                 partitions_mapping[partition_id] = list_of_tuples
 
-        ClusterTools.create_empty_partition(sdn, partitions_mapping)
+        ClusterTools.collect_zero_uuid_gpus(partitions_mapping, zero_uuid_gpus)
 
-        ClusterTools.delete_empty_partition(sdn, partitions_mapping)
+        ClusterTools.create_empty_partition(sdn, partitions_mapping, engine=engines.dut)
 
-        ClusterTools.create_empty_partition(sdn, partitions_mapping)
+        ClusterTools.delete_empty_partition(sdn, partitions_mapping, engine=engines.dut)
+
+        ClusterTools.create_empty_partition(sdn, partitions_mapping, engine=engines.dut)
 
         with allure.step("Remove first GPU and add to new partition"):
             partition_name1 = ClusterConsts.CREATED_PARTITION_NAME + '1'
-            new_partition_id1, partition_type_1 = remove_gpu_from_partition_and_add_to_new_partition(sdn, default_partition_id, partitions_mapping, used_partition_ids, default_partition_type, partition_name1)
+            new_partition_id1, partition_type_1 = remove_gpu_from_partition_and_add_to_new_partition(sdn, default_partition_id, partitions_mapping, used_partition_ids, default_partition_type, partition_name1, zero_uuid_gpus=zero_uuid_gpus)
 
         with allure.step("Remove second GPU and add to new partition"):
             partition_name2 = ClusterConsts.CREATED_PARTITION_NAME + '2'
-            new_partition_id2, partition_type_2 = remove_gpu_from_partition_and_add_to_new_partition(sdn, default_partition_id, partitions_mapping, used_partition_ids, default_partition_type, partition_name2)
+            new_partition_id2, partition_type_2 = remove_gpu_from_partition_and_add_to_new_partition(sdn, default_partition_id, partitions_mapping, used_partition_ids, default_partition_type, partition_name2, zero_uuid_gpus=zero_uuid_gpus)
 
         # At this point we have 4 partitions. default, empty, 1, 1
 
-        remove_gpu_from_partition_and_add_to_existing_partition(sdn, new_partition_id2, new_partition_id1, partitions_mapping, used_partition_ids, partition_type_2, partition_name1, partition_type_1)
+        remove_gpu_from_partition_and_add_to_existing_partition(sdn, new_partition_id2, new_partition_id1, partitions_mapping, used_partition_ids, partition_type_2, partition_name1, partition_type_1, zero_uuid_gpus=zero_uuid_gpus)
 
         # TODO - Once we have a way to test the reroute option, cover the gaps. (need to run nv action update sdn partition <partition_id> reroute)
         # And also, need to run with no-reroute randomization.
         with allure.step("Running sdn factory reset"):
-            sdn.factory_default.action_reset(param='force')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
-            time.sleep(1)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
-        ClusterTools().stop_cluster(cluster)
-        ClusterTools().start_cluster(cluster, setup_name, devices=devices)
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
+        ClusterTools().stop_cluster(cluster, engine=engines.dut)
+        ClusterTools().start_cluster(cluster, setup_name, engine=engines.dut, devices=devices)
         TestToolkit.tested_api = ApiType.NVUE
-        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                         standalone_system=standalone_system, engine=engines.dut)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines.dut, dut_engines, has_loopbox, setup_name, standalone_system, is_simx)
         next(interfaces_wa)
         interface_wa_called = True
         with allure.step("Checking if partition is restored to original"):
@@ -101,26 +110,27 @@ def test_cluster_partition(engines, devices, random_api, has_loopbox, setup_name
                                                                  output_format=output_format).get_returned_value()
             assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
 
+        with allure.step("Verify no GPUs have uuid=0"):
+            ClusterTools.assert_no_zero_uuid_gpus(zero_uuid_gpus)
+
     finally:
+        TestToolkit.tested_api = random_api
         with allure.step("Running sdn factory reset"):
-            sdn.factory_default.action_reset(param='force')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
-            time.sleep(1)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
         if interface_wa_called:
             try:
                 next(interfaces_wa)
             except StopIteration:
                 pass  # Or handle it if necessary
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engines.dut)
 
 
 @disabled_access_ports
 @pytest.mark.nmx
 @pytest.mark.timeout(30 * MINUTE, func_only=True)
-def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, standalone_system, setup_name):
+def test_cluster_partition_bad_flow(engines, dut_engines, devices, random_api, has_loopbox, standalone_system, setup_name, is_simx):
 
     if standalone_system:
         pytest.skip("Skipping test - supported only for non standalone systems.")
@@ -139,10 +149,12 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
         gpus_removed_from_default = []
         initial_partition_output = None
         partitions_mapping = {}  # key: partition_id, value: list of tuples, each index is (uuid, location)
+        zero_uuid_gpus = set()
     try:
         with allure.step("Enable cluster"):
-            ClusterTools().start_cluster(cluster, setup_name, output_format, devices=devices)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER)
+            ClusterTools().start_cluster(cluster, setup_name, output_format, engine=engines.dut, devices=devices)
+            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                             standalone_system=standalone_system, engine=engines.dut)
 
         with allure.step("Show All Partitions - at the beginning its just the default partition"):
             initial_partition_output = OutputParsingTool.parse_show_output_to_dict(sdn.partition.show(output_format=output_format),
@@ -158,8 +170,10 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                 list_of_tuples = ClusterTools.get_partition_uuid_location_map(output)
                 partitions_mapping[partition_id] = list_of_tuples
 
+        ClusterTools.collect_zero_uuid_gpus(partitions_mapping, zero_uuid_gpus)
+
         gpus_in_partition = partitions_mapping[default_partition_id]
-        (uuid, location) = random.choice(gpus_in_partition)
+        (uuid, location) = ClusterTools.choose_valid_gpu(gpus_in_partition, zero_uuid_gpus)
         with allure.step("Add GPU to a second partition"):
             resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
             mcast_limit = random.randrange(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST + 1, 4)
@@ -214,7 +228,7 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
 
         with allure.step("Run partition commands with invalid parameters and make sure apps are still running"):
             gpus_in_partition = partitions_mapping[default_partition_id]
-            (uuid, location) = random.choice(gpus_in_partition)
+            (uuid, location) = ClusterTools.choose_valid_gpu(gpus_in_partition, zero_uuid_gpus)
             with allure.step("Add GPU with wrong resiliency_mode"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES) + '1'  # Invalid.
                 mcast_limit = random.randrange(ClusterConsts.MIN_MCAST, ClusterConsts.MAX_MCAST + 1, 4)
@@ -241,7 +255,7 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                     assert extracted_resiliency_modes == set(ClusterConsts.RESILIENCY_MODES), msg
 
                 TestToolkit.tested_api = ApiType.NVUE
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+                ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system, has_loopbox, is_simx)
 
             with allure.step("Add GPU with wrong mcast_limit"):
                 resiliency_mode = random.choice(ClusterConsts.RESILIENCY_MODES)
@@ -260,18 +274,17 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                 err_msg = "Valid range for mcast-limit is 0 - 1024" if random_api == 'NVUE' else "1025 is greater than the maximum of 1024"
                 assert err_msg in output, f"Expected message to include {err_msg}, instead\n {output}"
                 TestToolkit.tested_api = ApiType.NVUE
-                ClusterTools.verify_apps_running(engines, devices, cluster, 'ok', output_format, standalone_system, has_loopbox)
+                ClusterTools.verify_apps_running(engines.dut, devices, cluster, 'ok', output_format, standalone_system, has_loopbox, is_simx)
 
         with allure.step("Running sdn factory reset"):
-            sdn.factory_default.action_reset(param='force')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
-            time.sleep(1)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
-        ClusterTools().stop_cluster(cluster)
-        ClusterTools().start_cluster(cluster, setup_name, devices=devices)
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
+        ClusterTools().stop_cluster(cluster, engine=engines.dut)
+        ClusterTools().start_cluster(cluster, setup_name, engine=engines.dut, devices=devices)
         TestToolkit.tested_api = ApiType.NVUE
-        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines, has_loopbox, setup_name, standalone_system)
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, app=ClusterConsts.NMX_CONTROLLER,
+                                                         standalone_system=standalone_system, engine=engines.dut)
+        interfaces_wa = ClusterTools().wa_to_get_active_interface_for_loopbox_systems(cluster, sdn, devices, engines.dut, dut_engines, has_loopbox, setup_name, standalone_system, is_simx)
         next(interfaces_wa)
         interface_wa_called = True
         with allure.step("Checking if partition is restored to original"):
@@ -279,20 +292,21 @@ def test_cluster_partition_bad_flow(engines, devices, random_api, has_loopbox, s
                                                                  output_format=output_format).get_returned_value()
             assert initial_partition_output == output, f"Initial partition was {initial_partition_output}, but current partition is {output}"
 
+        with allure.step("Verify no GPUs have uuid=0"):
+            ClusterTools.assert_no_zero_uuid_gpus(zero_uuid_gpus)
+
     finally:
+        TestToolkit.tested_api = random_api
         with allure.step("Running sdn factory reset"):
-            sdn.factory_default.action_reset(param='force')
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
-                                                             nmx_c_expected_state='down')
-            time.sleep(1)
-            ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='enabled', nmx_c_expected_state='up')
+            ClusterTools.reset_sdn_factory_default_and_wait_for_restart(sdn, cluster, engine=engines.dut)
+
         if interface_wa_called:
             try:
                 next(interfaces_wa)
             except StopIteration:
                 pass  # Or handle it if necessary
         cluster.unset(apply=True)
-        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down')
+        ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled', nmx_c_expected_state='down', engine=engines.dut)
 
 
 def choose_new_partition_id(used_partition_ids):
@@ -300,10 +314,10 @@ def choose_new_partition_id(used_partition_ids):
     return random.choice(list(available_partitions))
 
 
-def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partition_id, target_partition_id, partitions_mapping, used_partition_ids, original_partition_type, target_partition_name, target_partition_type, output_format=OutputFormat.json):
+def remove_gpu_from_partition_and_add_to_existing_partition(sdn, original_partition_id, target_partition_id, partitions_mapping, used_partition_ids, original_partition_type, target_partition_name, target_partition_type, output_format=OutputFormat.json, zero_uuid_gpus=None):
     # Remove GPU from default partition, and add it to a newly created one - randomize adding it by uuid or location.
     gpus_in_partition = partitions_mapping[original_partition_id]
-    (uuid, location) = random.choice(gpus_in_partition)
+    (uuid, location) = ClusterTools.choose_valid_gpu(gpus_in_partition, zero_uuid_gpus)
 
     remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partitions_mapping, original_partition_type)
     no_reroute = random.choice(['', 'no-reroute'])
@@ -362,11 +376,11 @@ def remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partit
     assert (uuid, location) not in original_partition_mapping_list, f"{uuid} {location} should not be part of the partition {original_partition_id}, after it was removed. but its part of it: {original_partition_mapping_list}"
 
 
-def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_id, partitions_mapping, used_partition_ids, original_partition_type, partition_name, output_format=OutputFormat.json):
+def remove_gpu_from_partition_and_add_to_new_partition(sdn, original_partition_id, partitions_mapping, used_partition_ids, original_partition_type, partition_name, output_format=OutputFormat.json, zero_uuid_gpus=None):
     # Remove GPU from default partition, and add it to a newly created one - randomize adding it by uuid or location.
     partition_type = random.choice(ClusterConsts.PARTITION_TYPES)
     gpus_in_partition = partitions_mapping[original_partition_id]
-    (uuid, location) = random.choice(gpus_in_partition)
+    (uuid, location) = ClusterTools.choose_valid_gpu(gpus_in_partition, zero_uuid_gpus)
 
     remove_gpu_from_partition(sdn, original_partition_id, location, uuid, partitions_mapping, original_partition_type)
 

@@ -490,6 +490,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
 
             # Check lease information instead of has-lease (new schema)
             with allure.step('Check DHCP lease information'):
+                logger.info(f"dhcp hostname from noga: {dhcp_hostname}, hostname from show system command:{system_output['hostname']}")
                 lease_output = mgmt_port.interface.ipv4.dhcp_client.lease.show()
                 assert lease_output is not None, "DHCP lease information should be available"
                 logger.info(" DHCP lease information is accessible")
@@ -502,7 +503,7 @@ def test_interface_eth0_dhcp_hostname(engines, topology_obj, serial_engine):
                                                               field_name='state',
                                                               expected_value='enabled').verify_result()
 
-            assert dhcp_hostname in system_output['hostname'], "hostname wasn't changed"
+            assert system_output['hostname'].replace("-mgmt2", "") in dhcp_hostname, "hostname wasn't changed"
 
         with allure.step('Disable dhcp and unset hostname, check port down and not reachable'):
             serial_engine.serial_engine.sendline("nv set interface {} ipv4 dhcp-client state disabled".format(mgmt_port_name))
@@ -832,7 +833,8 @@ def wait_for_mtu_changed(port_obj, mtu_to_verify):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with (allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname))):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], "hostname wasn't changed"
+        logger.info(f"dhcp hostname from noga: {dhcp_hostname}, hostname from show system command:{system_output[SystemConsts.HOSTNAME]}")
+        assert system_output[SystemConsts.HOSTNAME].replace("-mgmt2", "") in dhcp_hostname, "hostname wasn't changed"
 
 
 @retry(Exception, tries=25, delay=2)
@@ -906,7 +908,7 @@ def test_interface_eth0_show_after_reboot(engines, topology_obj, serial_engine):
             check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port, tries=15, delay=2)
             ipv4_output = Tools.OutputParsingTool.parse_show_interface_pluggable_output_to_dictionary(
                 mgmt_port.interface.ipv4.show()).get_returned_value()
-            validate_interface_ip_address(engines.dut.ip, ipv4_output, True)
+            validate_interface_ip_address(engines.dut.ip, ipv4_output, validate_in=True, run_show=True, mgmt_port=mgmt_port)
             NvueGeneralCli.save_config(engine=serial_engine)
 
 

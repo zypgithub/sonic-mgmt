@@ -1,29 +1,33 @@
-import pytest
+from __future__ import annotations
+
+from datetime import datetime, timezone
 import logging
 import random
+import pytest
+import retry
+import math
+import json
 import time
 import re
-import json
-from datetime import datetime, timedelta
-from retry import retry
+import os
 
-from ngts.nvos_constants.constants_nvos import DatabaseConst
-from ngts.nvos_constants.constants_nvos import NvosConst
-from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
-from ngts.constants.constants import GnmiConsts
-from ngts.tests_nvos.constants import MINUTE
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos.system.clock.ClockTools import ClockTools
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
+from ngts.tests_nvos.system.gnmi.GnmiClient import GnmiClient
+from ngts.nvos_constants.constants_nvos import DatabaseConst
+from ngts.constants.constants import GnmiConsts, InfraConst
+from ngts.nvos_constants.constants_nvos import NvosConst
+from ngts.tools.test_utils import allure_utils as allure
+from ngts.tests_nvos.helpers import redmine_helpers
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.nmx.Cluster import Cluster
+from ngts.ngts_types import EnginesT, DevicesT
 from ngts.nvos_tools.infra.Tools import Tools
-from ngts.tests_nvos.system.clock.ClockTools import ClockTools
-from ngts.tests_nvos.conftest import devices
-from ngts.tests_nvos.helpers.redmine_helpers import is_bug_active
-from ngts.tools.test_utils import allure_utils as allure
+from ngts.nvos_tools.infra.Fae import Fae
+from ngts.tests_nvos import constants
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 CPU_WARNING_THRESHOLD = "cpu-warning-threshold"
@@ -57,8 +61,8 @@ BACK_TO_NORMAL_USAGE_MSG_PATTERN = r"INFO cpu_memory_container_checker: (Memory|
 NORMAL_USAGE_EVENT_MSG_PATTERN = r"NOTICE cpu_memory_container_checker: :- publish: EVENT_PUBLISHED:.*\"resource\":\"{}\".*\"text\":\"(Memory|CPU) usage is back to normal\""
 
 
-@pytest.mark.timeout(5 * MINUTE, func_only=True)
-def test_configuration_cli(engines, devices, random_api):
+@pytest.mark.timeout(5 * constants.MINUTE, func_only=True)
+def test_configuration_cli(engines: EnginesT, devices: DevicesT, random_api: str) -> None:
     """
         @summary: check 'CPU/memory monitoring' functionality
 
@@ -112,7 +116,7 @@ def test_configuration_cli(engines, devices, random_api):
             set_value_and_verify(limit=tested_threshold, new_value=new_cpu_threshold)
             changed_configurations.append(tested_threshold)
 
-        with allure.step(f"Change number of samples"):
+        with allure.step("Change number of samples"):
             new_sample_number = randomize_new_value(NUMBER_OF_SAMPLES, output_dict)
             set_value_and_verify(limit=NUMBER_OF_SAMPLES, new_value=new_sample_number)
             changed_configurations.append(NUMBER_OF_SAMPLES)
@@ -130,7 +134,7 @@ def test_configuration_cli(engines, devices, random_api):
         with allure.step("Verify monitored dockers list includes all potential dockers"):
             init_monitored_dockers_list(devices, has_nmx, output_dict)
 
-        with allure.step(f"Randomize a docker from monitored dockers list"):
+        with allure.step("Randomize a docker from monitored dockers list"):
             monitored_dockers_list = [item.strip() for item in output_dict["monitored-list"].split(",")]
             docker = random.choice(monitored_dockers_list)
             logger.info(f"Selected docker: {docker}")
@@ -145,12 +149,12 @@ def test_configuration_cli(engines, devices, random_api):
                 Cluster().unset(apply=True)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
-        with allure.step(f"Set thresholds to default values"):
+        with allure.step("Set thresholds to default values"):
             restore_thresholds_to_defaults(changed_configurations)
 
 
-@pytest.mark.timeout(15 * MINUTE, func_only=True)
-def test_high_memory_usage_simulation(engines, devices, random_api):
+@pytest.mark.timeout(15 * constants.MINUTE, func_only=True)
+def test_high_memory_usage_simulation(engines: EnginesT, devices: DevicesT, random_api: str) -> None:
     """
         @summary: simulate high memory usage and test feature functionality
 
@@ -193,26 +197,26 @@ def test_high_memory_usage_simulation(engines, devices, random_api):
         with allure.step("Verify monitored dockers list includes all potential dockers"):
             init_monitored_dockers_list(devices, has_nmx, output_dict)
 
-        with allure.step(f"Randomize a docker from monitored dockers list"):
+        with allure.step("Randomize a docker from monitored dockers list"):
             monitored_dockers_list = [item.strip() for item in output_dict["monitored-list"].split(",")]
             docker = random.choice(monitored_dockers_list)
             logger.info(f"Selected docker: {docker}")
 
         with allure.step(f"Change {MEMORY_WARNING_THRESHOLD} and start high memory usage simulation"):
-            warning_threshold = 15
+            warning_threshold = max(_get_max_docker_mem_usage(engines) + 5, 15)
             set_value_and_verify(limit=MEMORY_WARNING_THRESHOLD, new_value=warning_threshold)
             changed_configurations.append(MEMORY_WARNING_THRESHOLD)
-            simulate_and_verify_high_memory_usage(engines, devices, docker, warning_phase=True)
+            simulate_and_verify_high_memory_usage(engines, devices, docker, warning_phase=True, threshold=warning_threshold)
 
         with allure.step(f"Change {MEMORY_RESTART_THRESHOLD} and start another high memory simulation"):
             # Restart threshold must be greater than warning threshold
             restart_threshold = warning_threshold + 1
             set_value_and_verify(limit=MEMORY_RESTART_THRESHOLD, new_value=restart_threshold)
             changed_configurations.append(MEMORY_RESTART_THRESHOLD)
-            simulate_and_verify_high_memory_usage(engines, devices, docker)
+            simulate_and_verify_high_memory_usage(engines, devices, docker, threshold=restart_threshold)
 
-        with allure.step(f"Simulate high memory usage again and verify no new tech-support file was generated"):
-            verify_no_new_tech_support_on_repeated_high_usage(engines, docker)
+        with allure.step("Simulate high memory usage again and verify no new tech-support file was generated"):
+            verify_no_new_tech_support_on_repeated_high_usage(engines, docker, warning_threshold)
 
     finally:
         with allure.step("Disable cluster in case device has NMX"):
@@ -220,12 +224,12 @@ def test_high_memory_usage_simulation(engines, devices, random_api):
                 Cluster().unset(apply=True)
                 ClusterTools.wait_for_apps_to_be_in_wanted_state(cluster, cluster_expected_state='disabled',
                                                                  nmx_c_expected_state='down')
-        with allure.step(f"Set thresholds to default values"):
+        with allure.step("Set thresholds to default values"):
             restore_thresholds_to_defaults(changed_configurations)
 
 
-@pytest.mark.timeout(10 * MINUTE, func_only=True)
-def test_high_cpu_usage_simulation(engines, devices, random_api):
+@pytest.mark.timeout(10 * constants.MINUTE, func_only=True)
+def test_high_cpu_usage_simulation(engines: EnginesT, devices: DevicesT, random_api: str) -> None:
     """
         @summary: simulate high cpu usage and test feature functionality
 
@@ -260,7 +264,7 @@ def test_high_cpu_usage_simulation(engines, devices, random_api):
         with allure.step("Check dockers in monitored dockers list"):
             init_monitored_dockers_list(devices, has_nmx, output_dict)
 
-        with allure.step(f"Randomize a docker from monitored dockers list"):
+        with allure.step("Randomize a docker from monitored dockers list"):
             monitored_dockers_list = [item.strip() for item in output_dict["monitored-list"].split(",")]
             docker = random.choice(monitored_dockers_list)
             logger.info(f"Selected docker: {docker}")
@@ -272,13 +276,22 @@ def test_high_cpu_usage_simulation(engines, devices, random_api):
 
         with allure.step(f"Simulate high CPU usage on {docker}"):
             start_time = datetime.now()
+            start_time_utc = _get_system_time()
             simulate_high_cpu_usage(engines, devices, docker)
 
         with allure.step("Sleeping for 1.5 min"):
-            time.sleep(1.5 * MINUTE)
+            time.sleep(1.5 * constants.MINUTE)
 
         with allure.step("Verify behavior after high CPU usage"):
-            verify_behavior_after_simulation(engines, devices, resource="cpu", docker=docker, start_time=start_time)
+            verify_behavior_after_simulation(
+                engines,
+                devices,
+                resource="cpu",
+                docker=docker,
+                start_time=start_time,
+                start_time_utc=start_time_utc,
+                warning_phase=True,
+            )
 
     finally:
         with allure.step("Disable cluster in case device has NMX"):
@@ -290,7 +303,88 @@ def test_high_cpu_usage_simulation(engines, devices, random_api):
             restore_thresholds_to_defaults(changed_configurations)
 
 
-def randomize_new_value(limit, output_dict):
+def _get_system_time() -> datetime:
+    date_format = "%Y-%m-%d %H:%M:%S"
+    sys_datetime = System().datetime.show()
+
+    return datetime.strptime(
+        ClockTools.get_local_time_from_show_system_date_time_output(sys_datetime),
+        date_format,
+    )
+
+
+def _get_system_time_utc(engines: EnginesT) -> datetime:
+    with allure.step("Get DUT UTC time"):
+        result: str = engines.dut.run_cmd(r"date -u '+%Y-%m-%dT%H:%M:%SZ'")
+        timestamp_utc = result.strip().splitlines()[-1]
+        allure.attach("DUT UTC time", timestamp_utc, log=False)
+
+    return _parse_utc_timestamp(timestamp_utc)
+
+
+def _parse_utc_timestamp(timestamp: str) -> datetime:
+    """Parse a UTC timestamp with or without fractional seconds."""
+    normalized_timestamp = timestamp.strip()
+    match = re.fullmatch(r"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d+))?Z", normalized_timestamp)
+    assert match, f"Failed to parse UTC timestamp: {timestamp!r}"
+
+    seconds = match.group(1)
+    fraction = (match.group(2) or "")[:6].ljust(6, "0")
+    parsed_timestamp = datetime.strptime(f"{seconds}.{fraction}", "%Y-%m-%dT%H:%M:%S.%f")
+    return parsed_timestamp.replace(tzinfo=timezone.utc)
+
+
+def _get_a_docker_allocated_memory(engines: EnginesT, docker: str) -> int:
+    with allure.step("Get a docker allocated memory"):
+        result: str = engines.dut.run_cmd(r'docker stats %s --no-stream --format "{{.MemUsage}}"' % docker)
+        allure.attach("Docker memory usage", result, log=False)
+        _, allocated_memory = result.strip().split(' / ')
+        return _parse_memory_value_to_gib(allocated_memory)
+
+
+def _get_max_docker_mem_usage(engines: EnginesT) -> int:
+    with allure.step("Get docker memory usage"):
+        result: str = engines.dut.run_cmd(r'docker stats --no-stream --format "table {{.Name}}\t{{.MemUsage}}\t{{.MemPerc}}"')
+        allure.attach("Docker memory usage", result, log=False)
+
+        mem_usage_percentages = [float(i.rsplit(maxsplit=1)[-1].strip('%')) for i in result.splitlines()[1:]]
+        assert mem_usage_percentages, "docker stats returned no docker memory usage rows"
+        max_mem_usage = max(mem_usage_percentages)
+        logger.info(f"Max memory usage: {max_mem_usage}%")
+
+    return math.ceil(max_mem_usage)
+
+
+def _parse_memory_value_to_gib(memory_str: str) -> float:
+    """
+        Helper function to parse memory value to GiB.
+    """
+    mapper = {
+        'B': 1,
+        'KB': 1000,
+        'KiB': 1024,
+        'MB': 1000 ** 2,
+        'MiB': 1024 ** 2,
+        'GB': 1000 ** 3,
+        'GiB': 1024 ** 3,
+    }
+
+    match = re.fullmatch(r"([0-9]+(?:\.[0-9]+)?)([KMGT]i?B|B)", memory_str.strip())
+    assert match, f"Failed to parse docker memory value: {memory_str!r}"
+
+    value = float(match.group(1))
+    unit = match.group(2)
+    return value * mapper[unit] / (1024 ** 3)
+
+
+def _get_docker_mem_limit(engines: EnginesT, docker: str) -> float:
+    with allure.step("Get docker memory limit"):
+        result: str = engines.dut.run_cmd(r'docker stats %s --no-stream --format "{{.MemUsage}}"' % docker)
+        _, limit = result.strip().split(' / ')
+        return _parse_memory_value_to_gib(limit)
+
+
+def randomize_new_value(limit: str, output_dict: dict) -> int:
     """
         Helper function to randomize new value for resource.
         For warning thresholds: value must be less than restart threshold.
@@ -319,7 +413,7 @@ def randomize_new_value(limit, output_dict):
     return random.choice([n for n in range(min_val, max_val + 1) if n != curr_value])
 
 
-def enable_feature_and_verify(status=True):
+def enable_feature_and_verify(status: bool = True) -> None:
     """
         Helper function to enable/disable the CPU/memory monitoring feature.
     """
@@ -329,7 +423,7 @@ def enable_feature_and_verify(status=True):
     show_and_verify(attribute="state", expected_value=state)
 
 
-def set_value_and_verify(limit, new_value):
+def set_value_and_verify(limit: str, new_value: int) -> None:
     """
         Helper function to set a resource value and verify it.
     """
@@ -338,7 +432,7 @@ def set_value_and_verify(limit, new_value):
         show_and_verify(attribute=limit, expected_value=str(new_value))
 
 
-def restore_thresholds_to_defaults(changed_configurations):
+def restore_thresholds_to_defaults(changed_configurations: list[str]) -> None:
     """
         Helper function to restore thresholds to default values in the correct order.
         Restart thresholds must be set before warning thresholds to avoid constraint violation
@@ -355,7 +449,7 @@ def restore_thresholds_to_defaults(changed_configurations):
         set_value_and_verify(limit=limit, new_value=DEFAULT_VALUES[limit])
 
 
-def show_and_verify(attribute, expected_value):
+def show_and_verify(attribute: str, expected_value: str) -> None:
     """
         Helper function to show output of "nv show fae system control dockers resource-limit" command, and verify it.
     """
@@ -364,7 +458,7 @@ def show_and_verify(attribute, expected_value):
     assert curr_value == expected_value, f"Expected: {attribute}={expected_value}. Got: {attribute}={curr_value}"
 
 
-def set_value_for_docker_and_verify(engines, limit, docker):
+def set_value_for_docker_and_verify(engines: EnginesT, limit: str, docker: str) -> None:
     """
         Helper function to set a resource value for a specific docker in config_db and verify it.
     """
@@ -387,7 +481,7 @@ def set_value_for_docker_and_verify(engines, limit, docker):
                                              db_config=db_config, param=limit)
 
 
-def verify_resource_value_in_db(engines, output_dict, limit, tested_docker, new_value):
+def verify_resource_value_in_db(engines: EnginesT, output_dict: dict, limit: str, tested_docker: str, new_value: str) -> None:
     """
         Helper function to verify a resource value for a specific docker in config_db.
     """
@@ -403,7 +497,7 @@ def verify_resource_value_in_db(engines, output_dict, limit, tested_docker, new_
             assert curr_value != new_value, f"{limit} changed for {docker} unexpectedly"
 
 
-def simulate_high_cpu_usage(engines, devices, docker):
+def simulate_high_cpu_usage(engines: EnginesT, devices: DevicesT, docker: str) -> None:
     """
         Helper function to simulate high CPU usage for a docker.
     """
@@ -439,67 +533,90 @@ def simulate_high_cpu_usage(engines, devices, docker):
     logger.info("High CPU usage simulation was executed successfully")
 
 
-def simulate_and_verify_high_memory_usage(engines, devices, docker, warning_phase=False):
+def simulate_and_verify_high_memory_usage(
+    engines: EnginesT,
+    devices: DevicesT,
+    docker: str,
+    /, *,
+    warning_phase: bool = False,
+    threshold: int = 15,
+) -> None:
     """
         Helper function to simulate high memory usage for a docker.
     """
-    system = System()
-    total_memory = OutputParsingTool.parse_json_str_to_dictionary(system.memory.show()).verify_result()["physical"][
-        "total"]
-    memory_to_use = round((0.20 * total_memory) / 1e9)  # Calculate memory to exceed 15%
-    date_format = "%Y-%m-%d %H:%M:%S"
-    start_time = datetime.strptime(ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show()),
-                                   date_format)
+    total_memory = _get_docker_mem_limit(engines, docker)
+    memory_to_use = math.ceil(total_memory * (min(100, (threshold + 10)) / 100.0))
+    start_time = _get_system_time()
+    start_time_utc = _get_system_time_utc(engines)
 
-    phase_desc = "memory-warning-threshold" if warning_phase else "memory-restart-threshold"
-    with allure.step(f"Simulate high memory usage for {docker} - exceed 15% during {phase_desc} phase"):
+    phase_desc = MEMORY_WARNING_THRESHOLD if warning_phase else MEMORY_RESTART_THRESHOLD
+    with allure.step(f"Simulate high memory usage for {docker} - exceed {threshold}% during {phase_desc} phase"):
         engines.dut.run_cmd(f"docker exec -it {docker} bash -c 'head -c {memory_to_use}G /dev/zero | tail | sleep 120'")
         execution_res = engines.dut.run_cmd("echo $?").strip().split('\n')[-1]
         assert execution_res in ['0', '137'], "High memory usage simulation failed"  # 0=success, 137=killed
     logger.info("High memory usage simulation was executed successfully")
 
-    sleep_time = 1.5 * MINUTE if warning_phase else 4 * MINUTE  # generating tech-support needs 3+ mins (bug: 4445420), change to 1.5 after fix
-    with allure.step(f"Sleeping for {sleep_time / MINUTE:.1f} min"):
-        time.sleep(sleep_time)
+    verify_behavior_after_simulation(
+        engines,
+        devices,
+        resource="memory",
+        docker=docker,
+        start_time=start_time,
+        start_time_utc=start_time_utc,
+        warning_phase=warning_phase,
+    )
 
-    if warning_phase:
-        verify_behavior_after_simulation(engines, devices, resource="memory", docker=docker, start_time=start_time)
-    else:
-        verify_behavior_after_simulation(engines, devices, resource="memory", docker=docker, start_time=start_time,
-                                         check_tech_support=True, should_generate_tech_support=True,
-                                         check_docker_restart=True)
 
-
-def verify_no_new_tech_support_on_repeated_high_usage(engines, docker):
+def verify_no_new_tech_support_on_repeated_high_usage(engines: EnginesT, docker: str, threshold: int) -> None:
     """
         Helper function to simulate high memory usage for a second time and verify no new tech-support file was generated.
     """
-    system = System()
-    total_memory = OutputParsingTool.parse_json_str_to_dictionary(system.memory.show()).verify_result()["physical"][
-        "total"]
-    memory_to_use = round((0.20 * total_memory) / 1e9)
+    total_memory = _get_a_docker_allocated_memory(engines, docker)
+    memory_to_use = math.ceil(total_memory * min(100, (threshold + 10)) / 100.0)
 
-    with allure.step(f"Simulate high memory usage for {docker} - exceed 15%"):
-        start_time = datetime.now()
+    with allure.step(f"Simulate high memory usage for {docker} - exceed {threshold}%"):
+        start_time_utc = _get_system_time()
         engines.dut.run_cmd(
             f"docker exec -it {docker} bash -c 'head -c {memory_to_use}G /dev/zero | tail | sleep 120'")
 
     with allure.step("Sleeping for 1 min"):
-        time.sleep(MINUTE)
+        time.sleep(constants.MINUTE)
 
     with allure.step("Verify no new tech-support file was generated"):
-        verify_tech_support_generation_time(engines, start_time)
+        verify_tech_support_generation_time(engines, start_time_utc)
 
 
-def verify_behavior_after_simulation(engines, devices, resource, docker, start_time, check_tech_support=False,
-                                     check_docker_restart=False, should_generate_tech_support=False):
+def _verify_expected_logs_by_time(engines: EnginesT, system: System, start_time: datetime, warning_phase: bool) -> None:
+    # generating tech-support needs 3+ mins (bug: 4445420), change to 1.5 after fix
+    tries = 6
+    if redmine_helpers.is_bug_active(4445420) or not warning_phase:
+        logger.info("Generating tech-support needs 3+ mins, increasing retry attempts to 7")
+        tries = 9
+
+    @retry.retry(tries=tries, delay=constants.MINUTE)
+    def _verify_expected_logs_by_time() -> None:
+        system.log.verify_expected_logs_by_time([WARNING_MSG_PATTERN], engines.dut, only_latest_log=False, start_time=start_time)
+
+    return _verify_expected_logs_by_time()
+
+
+def verify_behavior_after_simulation(
+    engines: EnginesT,
+    devices: DevicesT,
+    /, *,
+    resource: str,
+    docker: str,
+    start_time: datetime,
+    start_time_utc: datetime = None,
+    warning_phase: bool = False,
+) -> None:
     """
         Helper function to verify behavior after high usage simulation.
     """
     system = System()
-    with allure.step("Verify warning message in log"):
-        system.log.verify_expected_logs_by_time([WARNING_MSG_PATTERN], engines.dut, only_latest_log=False,
-                                                start_time=start_time)
+    with allure.step(f"Verify warning message in log from {start_time}"):
+        _verify_expected_logs_by_time(engines, system, start_time, warning_phase)
+
     with allure.step("Verify events in log"):
         verify_events_in_logs(engines, system, docker, start_time)
 
@@ -508,15 +625,16 @@ def verify_behavior_after_simulation(engines, devices, resource, docker, start_t
         verify_events_in_events_table(events, docker)
     with allure.step("Verify events were streamed by gnmi client"):
         verify_gnmic_events(engines, devices, events, docker, resource)
-    if check_docker_restart:
+    if not warning_phase:
         with allure.step("Verify docker was restarted"):
-            verify_docker_restart(engines, resource, docker, start_time)
-    if check_tech_support:
+            verify_docker_restart(engines, resource, docker, start_time, start_time_utc)
+
+    if not warning_phase:
         with allure.step("Verify tech-support file was generated"):
-            verify_tech_support_generation_time(engines, start_time, should_generate_tech_support)
+            verify_tech_support_generation_time(engines, start_time, not warning_phase)
 
 
-def get_events(resource):
+def get_events(resource: str) -> tuple[tuple[str, dict], tuple[str, dict]]:
     events_dict = OutputParsingTool.parse_json_str_to_dictionary(System().events.show()).verify_result()
     high_usage_event = normal_usage_event = ""
     for event_id, event in events_dict.items():
@@ -528,15 +646,15 @@ def get_events(resource):
     return high_usage_event, normal_usage_event
 
 
-@retry(tries=8, delay=10)
-def verify_events_in_logs(engines, system, docker, start_time):
+@retry.retry(tries=12, delay=10)
+def verify_events_in_logs(engines: EnginesT, system: System, docker: str, start_time: datetime) -> None:
     log_message_list = [HIGH_USAGE_EVENT_MSG_PATTERN.format(docker),
                         NORMAL_USAGE_EVENT_MSG_PATTERN.format(docker)]
     system.log.verify_expected_logs_by_time(log_message_list, engines.dut, only_latest_log=False,
                                             start_time=start_time)
 
 
-def verify_events_in_events_table(events, docker):
+def verify_events_in_events_table(events: tuple[tuple[str, dict], tuple[str, dict]], docker: str) -> None:
     """
         Helper function to check that events were added to events table.
     """
@@ -551,7 +669,7 @@ def verify_events_in_events_table(events, docker):
             assert docker_in_log == docker, docker_in_log_err_msg
 
 
-def verify_gnmic_events(engines, devices, events, docker, resource):
+def verify_gnmic_events(engines: EnginesT, devices: DevicesT, events: tuple[tuple[str, dict], tuple[str, dict]], docker: str, resource: str) -> None:
     with allure.step("Get events-id"):
         high_usage_event_id = events[0][0]
         normal_usage_event_id = events[1][0]
@@ -567,7 +685,7 @@ def verify_gnmic_events(engines, devices, events, docker, resource):
                                                               keep_session_alive=False)
             # WA: Extract valid JSON from output (may contain extra text after termination)
             # bug: https://redmine.mellanox.com/issues/4782619
-            if is_bug_active(4782619):
+            if redmine_helpers.is_bug_active(4782619):
                 json_start = out.find('{')
                 json_end = out.rfind('}') + 1
                 json_object = json.loads(out[json_start:json_end])
@@ -586,7 +704,7 @@ def verify_gnmic_events(engines, devices, events, docker, resource):
                     assert msg.lower() == pattern, f"Event's message is not as expected. Got: '{msg}'"
 
 
-def get_gnmic_attribute(gnmic_out, attribute):
+def get_gnmic_attribute(gnmic_out: dict, attribute: str) -> str:
     res = ""
     for update in gnmic_out["updates"]:
         if f"state/{attribute}" in update["values"].keys():
@@ -594,7 +712,7 @@ def get_gnmic_attribute(gnmic_out, attribute):
     return res
 
 
-def verify_docker_restart(engines, resource, docker, start):
+def verify_docker_restart(engines: EnginesT, resource: str, docker: str, start: datetime, start_time_utc: datetime) -> None:
     """
         Helper function to check:
         1. message in log indicating docker was restarted.
@@ -606,44 +724,60 @@ def verify_docker_restart(engines, resource, docker, start):
                             NORMAL_USAGE_EVENT_MSG_PATTERN.format(docker)]
         system.log.verify_expected_logs_by_time(log_message_list, engines.dut, only_latest_log=False,
                                                 start_time=start)
-    with allure.step(f"Verify docker started after {start}"):
+    with allure.step(f"Verify docker started after {start_time_utc}"):
         with allure.step("Get docker up-time"):
-            dockers_data = engines.dut.run_cmd(f"docker ps | grep '{docker}'")
-            match = re.search(r'Up (\d+) minutes', dockers_data)
-            if not match:
-                match = re.search(r'Up About a minute', dockers_data)
-                assert match, f"{docker} in not up"
-                minutes = 0
-            else:
-                minutes = int(match.group(1))
+            docker_started_at = engines.dut.run_cmd(r"docker inspect -f '{{.State.StartedAt}}' %s" % docker).strip().splitlines()[-1]
+            allure.attach("Docker StartedAt", docker_started_at, log=False)
+            up_time = _parse_utc_timestamp(docker_started_at)
 
-        current_time_str = ClockTools.get_local_time_from_show_system_date_time_output(system.datetime.show())
-        current_time = datetime.strptime(current_time_str, "%Y-%m-%d %H:%M:%S")
-        up_time = current_time - timedelta(minutes=minutes)
-        assert start <= up_time, f"Unexpectedly, {docker} did not restart after high {resource} usage simulation"
+        assert start_time_utc <= up_time, (f"Unexpectedly, {docker} did not restart after high {resource} usage simulation")
 
 
-def verify_tech_support_generation_time(engines, start_time, should_generate_tech_support=False):
+def verify_tech_support_generation_time(engines: EnginesT, start_time: datetime, should_generate_tech_support: bool = False) -> None:
     """
         Helper function to verify that a new tech-support file was generated
     """
     system = System()
+    skip_verify_tech_support_birth_time = False
+
+    def _verify_tech_support_logs(logs_to_find: list[str]) -> None:
+        system.log.verify_expected_logs_by_time(
+            logs_to_find,
+            engines.dut,
+            only_latest_log=False,
+            start_time=start_time,
+        )
+
     with allure.step("Look for message in log describing tech-support file was generated/was not generated"):
         if should_generate_tech_support:
             log_message_list = [GENERATING_TECH_SUPPORT_MSG_PATTERN, TECH_SUPPORT_GENERATED_MSG_PATTERN]
         else:
             log_message_list = [NO_TECH_SUPPORT_GENERATED_MSG_PATTERN]
-        system.log.verify_expected_logs_by_time(log_message_list, engines.dut, only_latest_log=False,
-                                                start_time=start_time)
-    with allure.step(f"Verify tech-support birth time"):
-        with allure.step(f"Run 'nv show system tech-support' and get the last one generated"):
+
+        try:
+            _verify_tech_support_logs(log_message_list)
+        except AssertionError as e:
+            if os.getenv(InfraConst.ENV_SESSION_ID) or not should_generate_tech_support:
+                raise e  # This a CI run, tech-support should be generated
+            # This is a local run, tech-support might not be generated because it was already generated earlier.
+            logger.info("check that tech-support was already generated.")
+            _verify_tech_support_logs([NO_TECH_SUPPORT_GENERATED_MSG_PATTERN])
+            # there is no need to verify the tech-support birth time, because it's already generated.
+            skip_verify_tech_support_birth_time = True
+
+    with allure.step("Verify tech-support birth time"):
+        with allure.step("Run 'nv show system tech-support' and get the last one generated"):
             output_list = list(Tools.OutputParsingTool.parse_show_files_to_dict(
                 system.techsupport.files.show()).get_returned_value().values())
             latest = output_list[0]
-        system.techsupport.check_techsupport_file_age(engines.dut, system, latest)
+
+        if skip_verify_tech_support_birth_time:
+            logger.info("Skipping tech-support birth time verification, because it's a local run and tech-support was already generated.")
+        else:
+            system.techsupport.check_techsupport_file_age(engines.dut, system, latest)
 
 
-def init_monitored_dockers_list(devices, has_nmx, output_dict):
+def init_monitored_dockers_list(devices: DevicesT, has_nmx: bool, output_dict: dict) -> None:
     """
         Helper function to make sure all relevant docker are in monitored dockers list: [nmx-c, nmx-t, gnmi-server]
     """
@@ -652,7 +786,9 @@ def init_monitored_dockers_list(devices, has_nmx, output_dict):
         System().gnmi_server.enable_gnmi_server()
     while (len(monitored_dockers) == 0) or (has_nmx and monitored_dockers == "gnmi-server"):
         with allure.step("Wait 1 min to the next poll from db and check if list is updated"):
-            time.sleep(MINUTE)
+            time.sleep(constants.MINUTE)
             output_dict = OutputParsingTool.parse_json_str_to_dictionary(Fae().system.resource_limit.show()).verify_result()
             monitored_dockers = output_dict["monitored-list"]
+
+    assert output_dict["state"] == NvosConst.ENABLED, "CPU/memory monitoring feature is unexpectedly disabled"
     logger.info(f"Dockers to monitor: {monitored_dockers}")

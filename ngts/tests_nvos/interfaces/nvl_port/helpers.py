@@ -1,14 +1,18 @@
 import random
+import re
 import pytest
 import logging
 
+from retry.api import retry_call
+
 from ngts.nvos_tools.Devices.IbDevice import JulietSwitch, JulietNonScaleoutSwitch, RosalindSurrogateSwitch
-from ngts.nvos_tools.ib.InterfaceConfiguration import Interface
 from ngts.nvos_tools.ib.InterfaceConfiguration.Port import Port, PortRequirements
 from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
 from ngts.nvos_tools.infra.RandomizationTool import RandomizationTool
 from ngts.nvos_tools.infra.RegressionConfigurations import Configurations
 from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
+from ngts.cli_wrappers.nvue.nvue_ib_interface_clis import NvueIbInterfaceCli
 from ngts.tests_nvos.cluster.cluster_tools import ClusterTools
 from ngts.tools.test_utils.allure_utils import step as allure_step
 from ngts.nvos_tools.ib.InterfaceConfiguration.nvos_consts import NvosConsts
@@ -47,25 +51,6 @@ def validate_ports_state_and_speed(speed, expected_ports: list, prefix: str, sta
     actual_ports = [port.name for port in Port.get_list_of_ports(port_requirements_object=port_requirements) if port.name.startswith(prefix)]
 
     ValidationTool.validate_subset_in_superset(expected_ports, actual_ports).verify_result()
-
-
-def validate_mode_set(selected_port, mode: str, timeout: int = None):
-    with allure.step(f"Validate mode {mode} is applied"):
-        output = OutputParsingTool.parse_json_str_to_dictionary(
-            selected_port.port.interface.link.phy_recovery.show()
-        ).get_returned_value()
-        mode = PhyRecoveryConsts.DISABLED if mode == PhyRecoveryConsts.FW_DEFAULT else mode
-        ValidationTool.compare_values(output[PhyRecoveryConsts.SerdesEQ.MODE], mode).verify_result()
-        if timeout:
-            ValidationTool.compare_values(int(output[PhyRecoveryConsts.SerdesEQ.TIMEOUT]), timeout).verify_result()
-
-
-def validate_default_config(selected_port):
-    with allure_step("Check default config"):
-        output_fae_port = OutputParsingTool.parse_json_str_to_dictionary(
-            selected_port.port.interface.link.phy_recovery.show()).get_returned_value()
-        filtered_out = {key: value for key, value in output_fae_port.items() if key in PhyRecoveryConsts.DEFAULT_PHY_RECOVERY_DICT}
-        ValidationTool.compare_dictionaries(filtered_out, PhyRecoveryConsts.DEFAULT_PHY_RECOVERY_DICT).verify_result()
 
 
 def select_random_nvl_port_name(devices, prefix=None):
@@ -114,7 +99,8 @@ EXPECTED_LINK_DIAGNOSTIC_STATUS = {'0': {'status': 'No issue was observed'}}
 
 
 def verify_link_diagnostic(ports: list[str]) -> None:
-    output_dict = Interface.Interface(parent_obj=None).parse_show(op_param='--view link-diagnostics')
+    output = NvueIbInterfaceCli.show_interface(TestToolkit.engines.dut, port_name='--view link-diagnostics')
+    output_dict = OutputParsingTool.parse_json_str_to_dictionary(output).get_returned_value()
     for port_name in ports:
         port_diagnostics = output_dict[port_name]['link']['diagnostics']
         assert port_diagnostics == EXPECTED_LINK_DIAGNOSTIC_STATUS, f"Port {port_name} diagnostics status is not 0"
@@ -141,3 +127,74 @@ def get_linked_ports_pair(devices: DevicesT, engines: EnginesT) -> tuple[str, st
         assert acp_port_dst_name in devices.dut.nvl_access_ports_list, f"Destination port {acp_port_dst_name} not found in {devices.dut.nvl_access_ports_list}"
         logger.info(f"Linked ports pair: {acp_port_src_name} <-> {acp_port_dst_name}")
         return (acp_port_src_name, acp_port_dst_name)
+
+
+def setup_nvl_speed(devices, exclude_speeds=None, required=False):
+    """
+    Set NVL port(s) to a random speed different from the current one.
+
+    Args:
+        devices: Devices fixture.
+        port: Target port object. If None, applies to all access ports (bulk mode).
+        exclude_speeds: Speeds to exclude from selection (e.g. ['200G']).
+        required: If True, pytest.skip when no speed change is possible.
+                  If False, return None.
+
+    Returns:
+        A (new_speed, port_obj, original_speed, port_names) tuple for restore_nvl_speed,
+        or None if no change was made.
+    """
+    supported_speeds = getattr(devices.dut, 'supported_nvl_speeds', [])
+    if not supported_speeds:
+        if required:
+            pytest.skip("No supported_nvl_speeds available on device")
+        return None
+
+    candidates = [s for s in supported_speeds if s not in (exclude_speeds or [])]
+
+    port_names = getattr(devices.dut, 'nvl_access_ports_list', [])
+    if not port_names:
+        if required:
+            pytest.skip("No access ports available")
+        return None
+    original_speed = getattr(devices.dut, 'access_port_speed', '400G')
+
+    candidates = [s for s in candidates if s != original_speed]
+    if not candidates:
+        if required:
+            pytest.skip(f"No speed change possible (current: {original_speed}, excluded: {exclude_speeds})")
+        return None
+
+    new_speed = random.choice(candidates)
+
+    with allure.step(f"Set all access ports to {new_speed}"):
+        port_obj = Port(f'acp1-{len(port_names)}')
+        port_obj.interface.link.set(
+            op_param_name='speed', op_param_value=new_speed,
+            ask_for_confirmation=True, apply=True
+        ).verify_result()
+        prefix = re.match(r'[a-zA-Z]+', port_names[0]).group() if port_names else 'acp'
+        retry_call(
+            validate_ports_state_and_speed,
+            [new_speed, port_names, prefix],
+            exceptions=AssertionError,
+            tries=6,
+            delay=30,
+        )
+
+    logger.info(f"Speed changed from {original_speed} to {new_speed}")
+    return (new_speed, port_obj, original_speed, port_names)
+
+
+def restore_nvl_speed(speed_info):
+    """Restore NVL port speed to default."""
+    if speed_info is None:
+        return
+    _, ports_obj, default_speed, port_names = speed_info
+    prefix = re.match(r'[a-zA-Z]+', port_names[0]).group() if port_names else 'acp'
+    with allure.step(f"Restore ports to default speed {default_speed}"):
+        ports_obj.interface.link.unset(
+            op_param='speed', apply=True, ask_for_confirmation=True
+        ).verify_result()
+        retry_call(validate_ports_state_and_speed, [default_speed, port_names, prefix],
+                   exceptions=AssertionError, tries=6, delay=30)

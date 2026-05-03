@@ -498,7 +498,7 @@ class NvosInstallationSteps:
 
         Args:
             speed_info: Tuple from setup_test_environment_with_config_and_speed or None
-                       Format: (Port, original_speed, new_speed, supported_speeds)
+                       Format: (Port, original_speed, new_speed, supported_speeds, nvl_access_info)
             device: Device object for speed operations
 
         Example:
@@ -507,11 +507,15 @@ class NvosInstallationSteps:
         """
         if speed_info:
             try:
-                selected_port, original_speed, new_speed, supported_speeds = speed_info
+                selected_port, original_speed, new_speed, supported_speeds, nvl_access_info = speed_info
 
-                # Import here to avoid circular imports
-                from ngts.tests_nvos.system.test_system_image import _verify_and_cleanup_speed_after_upgrade
-                _verify_and_cleanup_speed_after_upgrade(selected_port, original_speed, new_speed, device)
+                if nvl_access_info:
+                    from ngts.tests_nvos.system.test_system_image import _verify_and_cleanup_speed_after_upgrade_nvl_access
+                    _verify_and_cleanup_speed_after_upgrade_nvl_access(
+                        selected_port, original_speed, new_speed, device, nvl_access_info)
+                else:
+                    from ngts.tests_nvos.system.test_system_image import _verify_and_cleanup_speed_after_upgrade
+                    _verify_and_cleanup_speed_after_upgrade(selected_port, original_speed, new_speed, device)
 
                 logger.info(f"Speed testing cleanup completed successfully for port {selected_port.name}")
             except Exception as e:

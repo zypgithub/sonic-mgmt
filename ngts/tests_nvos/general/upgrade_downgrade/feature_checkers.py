@@ -906,7 +906,7 @@ def _check_ldap_auth(engines: EnginesT, devices: DevicesT, **kwargs) -> Generato
         update_auth_mode_func=update_ldap_encryption_mode,
         aaa_obj=System().aaa.ldap,
         remote_aaa_type=RemoteAaaType.LDAP,
-        extra_setup_func=wait_for_ldap_nvued_restart_workaround,
+        extra_setup_func=functools.partial(wait_for_ldap_nvued_restart_workaround, engine_to_use=engines.dut),
     )
 
 

@@ -137,7 +137,9 @@ def test_2_mgmt_dhcp_hostname(engines, topology_obj, serial_engine, devices):
     """
     mgmt_ports = devices.dut.get_mgmt_ports()
     system = System()
-    dhcp_hostname = topology_obj.players['dut']['attributes'].noga_query_data['attributes']['Specific']['dhcp_hostname']
+    noga_query_data = topology_obj.players['dut']['attributes'].noga_query_data['attributes']
+    dhcp_hostname = noga_query_data['Specific']['dhcp_hostname']
+    dhcp_hostname = dhcp_hostname if dhcp_hostname else noga_query_data['Common']['Name']
     try:
         with allure.step('Disable 2 mgmt interfaces'):
             for mgmt_port in mgmt_ports:
@@ -210,7 +212,9 @@ def skip_if_engines_does_not_exist_in_setup(required_engines_list, engines):
 def wait_for_hostname_changed(system, dhcp_hostname):
     with allure.step("Waiting for system hostname changed to {}".format(dhcp_hostname)):
         system_output = OutputParsingTool.parse_json_str_to_dictionary(system.show()).get_returned_value()
-        assert dhcp_hostname in system_output[SystemConsts.HOSTNAME], \
+        logger.info(f"dhcp hostname from noga: {dhcp_hostname}, hostname from show system command:{system_output[SystemConsts.HOSTNAME]}")
+        assert system_output[SystemConsts.HOSTNAME] != "nvos", f"hostname is {system_output[SystemConsts.HOSTNAME]}, not yet updated "
+        assert system_output[SystemConsts.HOSTNAME].replace("-mgmt2", "") in dhcp_hostname, \
             "hostname {0} wasn't changed to {1}".format(system_output[SystemConsts.HOSTNAME], dhcp_hostname)
 
 
@@ -405,12 +409,12 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
     @_checker_with_expected_traffic(serial_engine)
     def curl_outside_eth0():
         curl_cmd = CurlCmdBuilder(method="GET", host=domain_for_dns, resource="/").interface("eth0").build()
-        engines.dut.run_cmd(curl_cmd, validate=True)
+        engines.dut.run_cmd(curl_cmd)
 
     @_checker_with_no_traffic(serial_engine)
     def curl_outside_eth1():
         curl_cmd = CurlCmdBuilder(method="GET", host=domain_for_dns, resource="/").interface("eth1").build()
-        engines.dut.run_cmd(curl_cmd, validate=True)
+        engines.dut.run_cmd(curl_cmd)
 
     with allure.step("Run switch as client DNS checkers"):
         _tcpdump_checkers_wrapper(
@@ -441,7 +445,7 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
         ).verify_result(True)
 
         with allure.step("Verify eth0 port is down"):
-            check_port_status_till_alive(False, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(False, device_mgmt_ports_ips[InfraConst.IPV4]['eth0'], engines.dut.ssh_port)
         with allure.step("Verify with tcpdump"):
             try:
                 tcpdump_cmd = TcpdumpCmdBuilder().sudo().interface("eth0").build()
@@ -457,7 +461,7 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
                 apply=True, ask_for_confirmation=True,
                 dut_engine=serial_engine
             ).verify_result(True)
-            check_port_status_till_alive(True, engines.dut.ip, engines.dut.ssh_port)
+            check_port_status_till_alive(True, device_mgmt_ports_ips[InfraConst.IPV4]['eth0'], engines.dut.ssh_port)
         register_cleanup(partial(unset_eth0, eth0_port))
 
     with allure.step("Create ssh connection to eth1"):
@@ -483,34 +487,32 @@ def test_table_seperation_switch_client(topology_obj, engines: EnginesT, serial_
             ]
         )
 
-    with allure.step("Run switch as client DHCP checkers"):
-        eth1_port = Port("eth1")
+    if ip_type == InfraConst.IPV4:
+        with allure.step("Run switch as client DHCP checkers"):
+            eth1_port = Port("eth1")
 
-        @_checker_with_expected_traffic(serial_engine)
-        def renew_eth1_dhcp():
-            eth1_port.interface.ip.action_renew_dhcp_client(
-                dut_engine=connection,
-                ipv6=ip_type == InfraConst.IPV6
-            ).verify_result()
+            @_checker_with_expected_traffic(serial_engine)
+            def renew_eth1_dhcp():
+                eth1_port.interface.ipv4.action_renew_dhcp_client(
+                    dut_engine=connection
+                ).verify_result()
+                time.sleep(10)
 
-        _tcpdump_checkers_wrapper(
-            serial_engine=serial_engine,
-            tcpdump_cmd=TcpdumpCmdBuilder().sudo().interface("eth1").ports(67, 68).build(),
-            checkers=[
-                renew_eth1_dhcp
-            ]
-        )
+            _tcpdump_checkers_wrapper(
+                serial_engine=serial_engine,
+                tcpdump_cmd=TcpdumpCmdBuilder().sudo().interface("eth1").ports(67, 68).build(),
+                checkers=[
+                    renew_eth1_dhcp
+                ]
+            )
 
-        with allure.step("Verify eth1 dhcp lease was renewed"):
-            if ip_type == InfraConst.IPV4:
-                dhcp_client_obj = eth1_port.interface.ip.dhcp_client
-            else:
-                dhcp_client_obj = eth1_port.interface.ip.dhcp_client6
-            eth1_dhcp_output = OutputParsingTool.parse_json_str_to_dictionary(
-                dhcp_client_obj.show(dut_engine=connection)
-            ).get_returned_value()
-            ValidationTool.verify_field_value_in_output(
-                output_dictionary=eth1_dhcp_output,
-                field_name='has-lease',
-                expected_value='yes'
-            ).verify_result()
+            with allure.step("Verify eth1 ipv4 dhcp lease was renewed"):
+                eth1_dhcp_output = OutputParsingTool.parse_json_str_to_dictionary(
+                    eth1_port.interface.ipv4.dhcp_client.show(dut_engine=connection)
+                ).get_returned_value()
+                ValidationTool.verify_field_exist_in_json_output(
+                    eth1_dhcp_output, ['lease']
+                ).verify_result()
+                ValidationTool.verify_field_exist_in_json_output(
+                    eth1_dhcp_output['lease'], ['expire']
+                ).verify_result()

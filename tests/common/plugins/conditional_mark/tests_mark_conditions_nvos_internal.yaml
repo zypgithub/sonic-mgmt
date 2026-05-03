@@ -574,11 +574,15 @@ tests_nvos/interfaces/nvl_port/test_interface_phy_recovery.py::test_set_fae_phy_
     conditions:
       - "'rosalind' in testbed"
 
-
 tests_nvos/general/security/platform_certificate/test_platform_certificate.py::test_upload_platform_certificate:
   skip:
     reason: "this device has hardware problem"
     conditions:
       - "'rosalind-eb1-10' in testbed"
 
+tests_nvos/cluster/test_nmx_t_distributed.py:
+  skip:
+    reason: "nmx-t distributed tests are supported only on Rosalind systems"
+    conditions:
+      - "'rosalind' not in testbed"
 ########################## NVOS IGNORE END ##########################

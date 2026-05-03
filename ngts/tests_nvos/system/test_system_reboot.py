@@ -1,24 +1,19 @@
 import logging
+import pytest
 import time
 
-import pytest
 
-from retry import retry
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_constants.constants_nvos import ApiType, RebootConsts
-from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
-from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
-from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
-from ngts.nvos_tools.infra.ValidationTool import ValidationTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool, RebootParams, ping_device
-from ngts.nvos_tools.system.System import System
-from ngts.nvos_constants.constants_nvos import ActionConsts
-from ngts.tests_nvos.constants import MINUTE
+from ngts.nvos_constants.constants_nvos import RebootConsts, ActionConsts
+from ngts.nvos_tools.cli_coverage.operation_time import OperationTime
+from ngts.nvos_tools.infra.OutputParsingTool import OutputParsingTool
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.nvos_tools.infra.ValidationTool import ValidationTool
+from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
 from ngts.tools.test_utils import allure_utils as allure
-from retry.api import retry_call
-from infra.tools.redmine.redmine_api import is_redmine_issue_active
+from ngts.nvos_tools.system.System import System
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
@@ -40,7 +35,7 @@ def test_reboot_command(engines, devices, test_name):
     with allure.step('Run nv action reboot system and wait for system to be ready in serial'):
         result_obj, duration = OperationTime.save_duration('reboot', '', test_name, system.reboot.action_reboot, check_system_is_functional=False)
 
-    with allure.step(f"wait for system to become functional"):
+    with allure.step("wait for system to become functional"):
         DutUtilsTool.wait_for_nvos_to_become_functional(engines.dut).verify_result()
 
     with allure.step("Check system reboot output"):
@@ -93,7 +88,6 @@ def test_reboot_command_bad_flow(engines, devices):
         3. run nv action reboot system --type warm
         4. expected message: not supported for IB
     """
-    system = System()
     substring = 'Error: Invalid parameter'
     invalid_command = 'Error: Invalid Command:'
     err_message = 'Reboot types should not be supported in NVOS'
@@ -155,7 +149,6 @@ def test_reboot_mode(engines, devices, topology_obj, mode, random_api, test_name
 
 @pytest.mark.usefixtures("disable_els_init_state_for_taipan")
 @pytest.mark.system
-@pytest.mark.timeout(6 * MINUTE)
 def test_reboot_via_remote_reboot(engines, devices, topology_obj):
     """
     Test flow:
@@ -249,8 +242,8 @@ def validate_lspci_status(engines, cap_arr, sta_arr, line_sta, line_cap):
     with allure.step("Validating speed in LnkCap and LnkSta"):
         number_gts_sta = get_number_gts(sta_arr, "")
         number_gts_cap = get_number_gts(cap_arr, "")
-        assert number_gts_sta, f"The string number_gts_sta is empty: {cap_arr}"
-        assert number_gts_cap, f"The string number_gts_cap is empty: {sta_arr}"
+        assert number_gts_sta, f"The string number_gts_sta is empty: {sta_arr}"
+        assert number_gts_cap, f"The string number_gts_cap is empty: {cap_arr}"
         assert number_gts_cap in number_gts_sta, \
             f"Speed NUMBER GT/s mismatch: LnkCap={number_gts_cap}, LnkSta={number_gts_sta}"
 

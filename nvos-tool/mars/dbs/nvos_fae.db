@@ -44,4 +44,7 @@
 	<test>
 		<cases> sonic-mgmt/nvos-tool/mars/cases/fae/nvos_fae.cases </cases>
 	</test>
+	<test>
+		<cases> sonic-mgmt/nvos-tool/mars/cases/fae/nvos_fae_system_profile_core_clock.cases </cases>
+	</test>
 </DBDEF>
