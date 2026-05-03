@@ -8,6 +8,7 @@ from paramiko.ssh_exception import SSHException
 import allure as raw_allure
 import pytest
 from abc import ABC, abstractmethod
+from datetime import timedelta
 
 from tests.common.helpers.parallel import parallel_run
 from infra.tools.redmine.redmine_api import REDMINE_ISSUES_URL
@@ -113,6 +114,7 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                                   "session_id": session_id,
                                   "test_name": test_name}
 
+            list_of_bugs_ids = []
             for log_errors_file_path in log_errors_dir_path.iterdir():
                 with log_errors_file_path.open("r") as log_errors_file:
                     data = json.load(log_errors_file)
@@ -129,33 +131,38 @@ def handle_log_analyzer_errors(cli_type, branch, test_name, duthost, log_analyze
                     logger.info(f"[AFTER] Number of errors in each group: {[len(group) for group in error_groups]}")
                 log_errors_file_path.unlink()
 
-                for error_group in error_groups:
-                    yaml_file_path = create_log_analyzer_yaml_file(error_group, session_tmp_folder, redmine_project,
-                                                                   test_name, hostname,
-                                                                   log_analyzer_bug_metadata, bug_handler_params,
-                                                                   bug_handler_dumps_results, is_serial_log)
-                    logger.info(f"yaml_file_path: {yaml_file_path}")
-                    logger.info(f"{yaml_file_path} exists?: {os.path.exists(yaml_file_path)}")
-                    if yaml_file_path:
-                        with allure.step("Run Bug Handler on Log Analyzer error"):
-                            logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
-                            error_dict = {BugHandlerConst.LA_ERROR: error_group}
-                            error_dict.update(
-                                bug_handler_wrapper_err_msg(
-                                    conf_path,
-                                    redmine_project,
-                                    branch,
-                                    yaml_file_path,
-                                    BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
-                                    BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"]),
-                                    bug_handler_action,
-                                    bug_handler_params
+                for trace_number, error_group in enumerate(error_groups, 1):
+                    with allure.step(f"Handling trace number {trace_number} of {len(error_groups)}"):
+                        yaml_file_path = create_log_analyzer_yaml_file(error_group, session_tmp_folder, redmine_project,
+                                                                    test_name, hostname,
+                                                                    log_analyzer_bug_metadata, bug_handler_params,
+                                                                    bug_handler_dumps_results, is_serial_log)
+                        logger.info(f"yaml_file_path: {yaml_file_path}")
+                        logger.info(f"{yaml_file_path} exists?: {os.path.exists(yaml_file_path)}")
+                        if yaml_file_path:
+                            with allure.step("Run Bug Handler on Log Analyzer error"):
+                                start_time = time.perf_counter()
+                                # logger.info(f"Run Bug Handler on Log Analyzer error: {error_group}")
+                                error_dict = {BugHandlerConst.LA_ERROR: error_group}
+                                error_dict.update(
+                                    bug_handler_wrapper_err_msg(
+                                        conf_path,
+                                        redmine_project,
+                                        branch,
+                                        yaml_file_path,
+                                        BugHandlerConst.BUG_HANDLER_LOG_ANALYZER_USER,
+                                        BugHandlerConst.BUG_HANDLER_SCRIPT.get(redmine_project, BugHandlerConst.BUG_HANDLER_SCRIPT["default"]),
+                                        bug_handler_action,
+                                        bug_handler_params
+                                    )
                                 )
-                            )
-                            bug_handler_dumps_results.append(error_dict)
+                                bug_handler_dumps_results.append(error_dict)
+                                list_of_bugs_ids.append(error_dict.get(BugHandlerConst.BUG_HANDLER_BUG_ID, ''))
+                                logger.info(f"Bug handler took {timedelta(seconds=time.perf_counter() - start_time)} seconds for trace number {trace_number}")
         except Exception as err:
             logger.error("Bug handler failed")
             raise err
+        logger.info(f"List of bugs ids: {list_of_bugs_ids}")
         return summarize_la_bug_handler(bug_handler_dumps_results, bug_handler_action), la_errors
 
 
