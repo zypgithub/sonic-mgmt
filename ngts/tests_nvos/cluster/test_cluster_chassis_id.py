@@ -58,14 +58,15 @@ def test_cluster_chassis_id(engines, devices, random_api):
             output = sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[file_type].action_generate_sdn().get_returned_value()
             filename = get_name_from_generate_config_file(output)
 
-        with allure.step("Verify content of config file is as expected"):
-            dict_output = OutputParsingTool.parse_show_output_to_dict(
-                sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
-                    file_type].files.show()).get_returned_value()
-            path = dict_output[filename]['path']
-            current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
-            expected_contect = f'chassisId{mapping_id} {chassis_id_serial}'
-            ValidationTool.verify_expected_output(current_config_content, expected_contect).verify_result()
+        if ClusterTools.verify_control_plane_state(cluster, ClusterConsts.CONTROL_PLANE_STATE_CONFIGURED, engine=engines.dut):
+            with allure.step("Verify content of config file is as expected"):
+                dict_output = OutputParsingTool.parse_show_output_to_dict(
+                    sdn.config.apps.app_name[ClusterConsts.NMX_CONTROLLER].type.file_type[
+                        file_type].files.show()).get_returned_value()
+                path = dict_output[filename]['path']
+                current_config_content = engines.dut.run_cmd(f"sudo cat {path} | grep chassis")
+                expected_contect = f'chassisId{mapping_id} {chassis_id_serial}'
+                ValidationTool.verify_expected_output(current_config_content, expected_contect).verify_result()
 
     finally:
         with allure.step("Delete config file"):

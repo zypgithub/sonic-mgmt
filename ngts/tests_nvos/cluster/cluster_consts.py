@@ -28,6 +28,7 @@ class ClusterConsts:
     NMX_LOG_MESSAGES_TAGS = ['nmxc-sm', 'nmxc-fm', 'nmxc-fib', 'nmxc-gw_api', 'nmxc-rest', 'nmxc-config_daemon']
     INITIAL_CONFIGURATIONS_PATH = '/auto/sw_system_project/NVOS_INFRA/verification_files/cluster/uploaded_control_plane_files'
     UNDEFINED_STATE = 'undefined'
+    CONTROL_PLANE_STATE_CONFIGURED = 'CONTROL_PLANE_STATE_CONFIGURED'
     UNDEFINED_STATE_ERR_MSG_NVUE = "'undefined' is not one of ['enabled', 'disabled']"
     UNDEFINED_STATE_ERR_MSG_OPENAPI = 'Error: Request failed. Details: Error: \'undefined\' is not one of [\'enabled\', \'disabled\', None]'
     UNDEFINED_STATE_DICT = {'NVUE': UNDEFINED_STATE_ERR_MSG_NVUE, 'OpenApi': UNDEFINED_STATE_ERR_MSG_OPENAPI}

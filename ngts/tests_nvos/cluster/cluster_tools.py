@@ -974,6 +974,14 @@ class ClusterTools:
             assert app_status == expected_status, f"App {app} status is {app_status} instead of {expected_status}"
 
     @staticmethod
+    def verify_control_plane_state(cluster, expected_state, engine=None):
+        with allure.step(f"Verify nmx-controller control plane state is {expected_state}"):
+            output = OutputParsingTool.parse_show_output_to_dict(
+                cluster.apps.running.show(output_format=OutputFormat.json, dut_engine=engine)).get_returned_value()
+            control_plane_state = output[ClusterConsts.NMX_CONTROLLER]['addition-info']
+            return control_plane_state == expected_state
+
+    @staticmethod
     def wait_for_app_healthy(cluster, app, expected_output=None, max_retries=7, delay=10, engine=None):
         """
         Wait for a cluster app to become healthy. NMX-T can take up to ~60s after cluster
