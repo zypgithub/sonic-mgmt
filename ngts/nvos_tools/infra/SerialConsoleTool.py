@@ -3,6 +3,7 @@ import time
 from retry import retry
 
 from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
+from devts.infra.tools.connection_tools.serial_engine_factory import SerialEngineFactory
 from devts.infra.tools.connection_tools.utils import generate_strong_password
 from devts.infra.tools.general_constants.constants import DefaultConnectionValues
 from ngts.tests.nightly.secure.conftest import serial_engine
@@ -33,6 +34,12 @@ class SerialConsoleTool:
     def get_serial_console_connection_command(cls, topology_obj, dut_alias='dut') -> str:
         serial_alias = dut_alias + "_serial"
         att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
+        if att['Specific'].get('is_air_resource'):
+            raise ValueError(
+                f"AIR resources have no rcon command — they reach the console over wss://. "
+                f"Use SerialEngineFactory.create() instead. "
+                f"(player={serial_alias}, url={att['Specific'].get('serial_console_url')})"
+            )
         # add connection options to pass connection problems
         extended_rcon_command = att['Specific']['serial_conn_cmd'].split(' ')
         extended_rcon_command.insert(1, DefaultConnectionValues.BASIC_SSH_CONNECTION_OPTIONS)
@@ -40,15 +47,10 @@ class SerialConsoleTool:
         return extended_rcon_command
 
     @classmethod
-    def get_serial_console_session(cls, topology_obj, dut_alias='dut') -> PexpectSerialEngine:
+    def get_serial_console_session(cls, topology_obj, dut_alias='dut'):
         serial_alias = dut_alias + "_serial"
         att = topology_obj.players[serial_alias]['attributes'].noga_query_data['attributes']
-        extended_rcon_command = cls.get_serial_console_connection_command(topology_obj, dut_alias)
-        serial_engine = PexpectSerialEngine(ip=att['Specific']['ip'],
-                                            username=att['Topology Conn.']['CONN_USER'],
-                                            password=att['Topology Conn.']['CONN_PASSWORD'],
-                                            rcon_command=extended_rcon_command,
-                                            timeout=120)
+        serial_engine = SerialEngineFactory.create(att, timeout=120)
         # we don't want to login to switch because we are doing remote reboot
         serial_engine.create_serial_engine(login_to_switch=False)
         return serial_engine

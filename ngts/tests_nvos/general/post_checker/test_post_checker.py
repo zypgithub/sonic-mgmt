@@ -1,24 +1,21 @@
 import logging
 import os
+
 import pytest
-import smtplib
+
 from devts.infra.tools.validations.traffic_validations.port_check.port_checker import check_port_status_till_alive
+from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
+from ngts.constants.constants import FatalStateConsts
+from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.nvos_tools.infra.DutUtilsTool import DutUtilsTool
 from ngts.nvos_tools.infra.TrafficGeneratorTool import TrafficGeneratorTool
 from ngts.nvos_tools.system.System import System
-from ngts.cli_wrappers.nvue.nvue_general_clis import NvueGeneralCli
-from ngts.nvos_tools.infra.ConnectionTool import ConnectionTool
 from ngts.tools.test_utils import allure_utils as allure
 from ngts.tools.test_utils.nvos_config_utils import clear_conf
 from ngts.tools.test_utils.switch_recovery import check_switch_connectivity
-from ngts.constants.constants import FatalStateConsts
-from devts.scripts.setup_status import get_setup_info_from_noga
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger()
-from devts.infra.tools.connection_tools.pexpect_serial_engine import PexpectSerialEngine
-from ngts.nvos_tools.infra.SerialConsoleTool import SerialConsoleTool
+from devts.infra.tools.connection_tools.serial_engine_factory import SerialEngineFactory
 
 
 @pytest.mark.general
@@ -60,7 +57,12 @@ def test_post_checker(engines, topology_obj,
 
                 with allure.step("Create serial engine"):
                     system = System()
-                    serial_engine = topology_obj.players['dut_serial']['engine']
+                    # post_checker.copy_file is Mellanox/netmiko-only, so build a
+                    # MellanoxSerialEngine explicitly regardless of how the
+                    # topology factory dispatched at build time. Fails loudly
+                    # on AIR (no serial_connection_command) — Phase 2.
+                    attributes = topology_obj.players['dut_serial']['attributes'].noga_query_data['attributes']
+                    serial_engine = SerialEngineFactory.create_mellanox(attributes)
 
                 with allure.step("Try to generate techsupport using serial console"):
                     generate_techsupport(dumps_folder, system, serial_engine)
