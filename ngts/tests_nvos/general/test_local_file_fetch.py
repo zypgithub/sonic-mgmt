@@ -6,9 +6,10 @@ from typing import Callable, List, Optional
 import pytest
 
 from ngts.tools.test_utils import allure_utils as allure
-from ngts.ngts_types import EnginesT, DevicesT
+from ngts.ngts_types.engines_T import EnginesT
 from ngts.tools.test_utils.nvos_general_utils import get_file_hash
-from ngts.nvos_constants.constants_nvos import ApiType, NvosConst, PlatformConsts
+from ngts.nvos_constants.constants_nvos import ApiType
+from ngts.nvos_constants.constants_nvos import NvosConst
 from ngts.tools.test_utils.nvos_general_utils import generate_file_location_uri
 from ngts.nvos_tools.system.System import System
 from ngts.nvos_tools.infra.NvosTestToolkit import TestToolkit
@@ -16,15 +17,12 @@ from infra.tools.connection_tools.linux_ssh_engine import LinuxSshEngine
 from ngts.tests_nvos.general.config_commands.test_config_fetch import YAML_FILES_LIST, YAML_FILES_PATH
 from ngts.nvos_tools.platform.Platform import Platform
 from ngts.nvos_tools.infra.BmcTool import BmcTool
-from ngts.nvos_tools.infra.Fae import Fae
 from ngts.nvos_tools.system.Files import Files
-from ngts.nvos_tools.Devices.IbDevice import RosalindSwitch
 
 
 SYSTEM_IMAGE_FETCH = 'System Image Fetch'
 SYSTEM_CONFIG_FETCH = 'System Config Fetch'
 PLATFORM_FIRMWARE_FETCH = 'Platform Firmware Fetch'
-FAE_VOLTAGE_DPC_FETCH = 'Fae Voltage DPC Fetch'
 
 
 @dataclass
@@ -61,7 +59,7 @@ def test_config(request):
 
 
 @pytest.fixture
-def file_fetch_path(test_config, devices, downgrade_version_realpath, firmware_component) -> Path:
+def file_fetch_path(test_config, downgrade_version_realpath, firmware_component) -> Path:
     """
     Provides the source file path for fetch operations based on test configuration.
     """
@@ -73,10 +71,6 @@ def file_fetch_path(test_config, devices, downgrade_version_realpath, firmware_c
         return Path(YAML_FILES_PATH) / YAML_FILES_LIST[0]
     elif fetch_type == PLATFORM_FIRMWARE_FETCH:
         return Path(BmcTool.get_fw_component_version_dict(firmware_component, "latest")['path'])
-    elif fetch_type == FAE_VOLTAGE_DPC_FETCH:
-        if not isinstance(devices.dut, RosalindSwitch):
-            pytest.skip("DPC voltage fetch is only supported on Rosalind devices")
-        return Path(BmcTool.get_fw_component_version_dict(PlatformConsts.DPC, "latest")['path'])
     else:
         raise ValueError(f"Unknown file fetch type: {fetch_type}")
 
@@ -108,19 +102,12 @@ def component_handler(test_config, firmware_component) -> ComponentHandler:
     elif fetch_type == PLATFORM_FIRMWARE_FETCH:
         fw_platform = getattr(Platform().firmware, firmware_component)
         return ComponentHandler(
+            # Use action_fetch (inherited from BaseComponent) for all firmware components
             action=lambda url: fw_platform.action_fetch(path=url, base_url=""),
             verify=lambda files: partial(fw_platform.files.verify_show_files_output, expected_files=files),
             path=Path(NvosConst.PATH_TO_FW_IMAGES) / firmware_component,
             files_obj=fw_platform.files,
             component=firmware_component
-        )
-    elif fetch_type == FAE_VOLTAGE_DPC_FETCH:
-        voltage_dpc = Fae().platform.voltage_dpc
-        return ComponentHandler(
-            action=lambda url: voltage_dpc.action_fetch_local(url),
-            verify=lambda files: partial(voltage_dpc.files.verify_show_files_output, expected_files=files),
-            path=Path(NvosConst.PATH_TO_DPC_ON_DUT),
-            files_obj=voltage_dpc.files,
         )
     else:
         raise ValueError(f"Unknown file fetch type: {fetch_type}")
@@ -132,8 +119,7 @@ def component_handler(test_config, firmware_component) -> ComponentHandler:
     {'test_api': random.choice(ApiType.ALL_TYPES), 'fetch_type': SYSTEM_IMAGE_FETCH},
     {'test_api': ApiType.NVUE, 'fetch_type': SYSTEM_CONFIG_FETCH},
     {'test_api': random.choice(ApiType.ALL_TYPES), 'fetch_type': PLATFORM_FIRMWARE_FETCH},
-    {'test_api': random.choice(ApiType.ALL_TYPES), 'fetch_type': FAE_VOLTAGE_DPC_FETCH},
-], indirect=True, ids=[SYSTEM_IMAGE_FETCH, SYSTEM_CONFIG_FETCH, PLATFORM_FIRMWARE_FETCH, FAE_VOLTAGE_DPC_FETCH])
+], indirect=True, ids=[SYSTEM_IMAGE_FETCH, SYSTEM_CONFIG_FETCH, PLATFORM_FIRMWARE_FETCH])
 def test_local_file_fetch(engines: EnginesT, test_config, register_cleanup, file_fetch_path: Path, component_handler: ComponentHandler):
     """
     Test that verifies local file fetch functionality for system images, configuration files, and platform firmware.
