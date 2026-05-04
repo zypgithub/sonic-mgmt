@@ -20,6 +20,24 @@ SERVICE_PEM = 'service.pem'
 
 MAX_GNMI_SUBSCRIBERS = 10
 MAX_GNMI_CONNECTIVITY_TIME = 6
+MAX_GNMI_BAD_SUBSCRIBERS = 100
+
+
+# PAM / load tests: wrong credentials for background ``gnmic`` clients (must not match a real user)
+GNMI_INVALID_AUTH_CLIENT_USERNAME = 'abc'
+GNMI_INVALID_AUTH_CLIENT_PASSWORD = 'abc'
+
+# ``test_gnmi_auth_failing_clients_ddos``: poll DUT ``ss`` until TCP count drops from a peak
+GNMI_PAM_DUT_TCP_WAIT_TIMEOUT_SEC = 180
+GNMI_PAM_DUT_TCP_WAIT_POLL_SEC = 0.25
+# Base seconds added to bad-subscriber count when joining the plain bad-client launcher thread.
+GNMI_PAM_BAD_PLAIN_LAUNCH_JOIN_SLACK_SEC = 90
+# Minimum invalid plain STREAM clients that must start before the foreground probe (capped by ``MAX_GNMI_BAD_SUBSCRIBERS``).
+GNMI_PAM_BAD_PLAIN_THREAD_MIN_BEFORE_GOOD = 10
+# Timeout waiting for that readiness gate in ``_plain_bad_gnmi_background_start_and_wait_ready``.
+GNMI_PAM_BAD_PLAIN_READY_WAIT_SEC = 30.0
+# Delay between transient-error retries in ``_gnmic_capabilities_mtls_spiffe_success``.
+GNMI_PAM_SPIFFE_CAPABILITIES_TRANSIENT_RETRY_SLEEP_SEC = 1.0
 
 CERTIFICATE = 'certificate'
 DEFAULT_CERTIFICATE = 'self-signed'
