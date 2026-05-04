@@ -171,8 +171,8 @@ def test_system_nv_bridge_negative(engines, devices, nv_command, random_api):
 
         with allure.step("Set cluster node without ip"):
             err_msg = PwhConsts.ERR_INCOMPLETE_SET_CMD
-            if random_api == ApiType.OPENAPI and is_bug_active(4882988):
-                err_msg = "Error: '' is too short"
+            if random_api == ApiType.OPENAPI:
+                err_msg = "Error: Server address must be a valid IPv4 or IPv6 address"
             cluster.node.primary.set_cluster_node(op_param_name=SystemConsts.NV_BRIDGE_NODE_SERVER, op_param_value='', expected_str=err_msg)
 
         with allure.step("Set cluster negative ip"):
